@@ -519,7 +519,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -604,7 +604,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -668,7 +668,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -781,7 +781,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -892,7 +892,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -980,7 +980,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -1046,7 +1046,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -1162,7 +1162,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1273,7 +1273,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1361,7 +1361,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1428,7 +1428,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -1544,7 +1544,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1655,7 +1655,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1743,7 +1743,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -1810,7 +1810,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -1926,7 +1926,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2037,7 +2037,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2125,7 +2125,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2192,7 +2192,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -2308,7 +2308,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2419,7 +2419,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2507,7 +2507,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -2573,7 +2573,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -2689,7 +2689,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2800,7 +2800,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -2888,7 +2888,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -2954,7 +2954,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -3070,7 +3070,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3181,7 +3181,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3269,7 +3269,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3336,7 +3336,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -3452,7 +3452,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3563,7 +3563,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3651,7 +3651,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -3718,7 +3718,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+				"expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -3834,7 +3834,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -4096,7 +4096,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 				"current": {
 					"selected": true,
 					"text": "All",
-					"value": "$__all"
+					"value": ["$__all"]
 				},
 				"hide": 0,
 				"includeAll": true,
@@ -4148,7 +4148,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 				"current": {
 					"selected": true,
 					"text": "All",
-					"value": "$__all"
+					"value": ["$__all"]
 				},
 				"hide": 0,
 				"includeAll": true,
@@ -4806,7 +4806,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4898,7 +4898,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4966,7 +4966,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -5085,7 +5085,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5203,7 +5203,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5298,7 +5298,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5369,7 +5369,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -5491,7 +5491,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5609,7 +5609,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5704,7 +5704,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5775,7 +5775,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
+          "expr": "sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -5897,7 +5897,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -6117,7 +6117,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
         "current": {
           "selected": true,
           "text": "All",
-          "value": "$__all"
+          "value": ["$__all"]
         },
         "hide": 0,
         "includeAll": true,
@@ -6150,7 +6150,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
         "current": {
           "selected": true,
           "text": "All",
-          "value": "$__all"
+          "value": ["$__all"]
         },
         "hide": 0,
         "includeAll": true,
@@ -6177,9 +6177,14 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
             "selected": false,
             "text": "` + nsPrefix + `user-sso|Keycloak",
             "value": "` + nsPrefix + `user-sso|Keycloak"
-          }
+		  },
+		  {
+			"selected": false,
+			"text": "` + nsPrefix + `marin3r|Marin3r",
+			"value": "` + nsPrefix + `marin3r|Marin3r"
+		  }
         ],
-        "query": "` + nsPrefix + `3scale|ThreeScale, ` + nsPrefix + `rhsso|Keycloak, ` + nsPrefix + `user-sso|Keycloak",
+        "query": "` + nsPrefix + `3scale|ThreeScale, ` + nsPrefix + `rhsso|Keycloak, ` + nsPrefix + `user-sso|Keycloak, ` + nsPrefix + `marin3r|Marin3r" ,
         "skipUrlSync": false,
         "type": "custom"
       }
