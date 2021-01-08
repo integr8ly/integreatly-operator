@@ -21,6 +21,7 @@ We want to validate that customer is able to install RHOAM via OCM UI and can us
 ## Prerequisites
 
 - access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) installed locally
 - login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
 - access to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs)
 
@@ -58,7 +59,7 @@ Host prefix: /26
 3. Fill in the following parameters and click on `Install`
 
 ```
-CIDR range: "10.1.0.0/24"
+CIDR range: "10.1.0.0/24" (note this down to use it later for another verification step)
 Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.com"
 ```
 
@@ -86,6 +87,24 @@ watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage"
 6. Once the status is "completed", the installation is finished and you can go to another step
 7. Go to `Monitoring` section of your cluster in OCM UI
    > Make sure no alerts are firing
+
+**Verify custom RHOAM CIDR range was applied correctly**
+
+1. Export following variables (it is required to be logged into the OpenShift cluster as kubeadmin)
+
+```bash
+export AWS_ACCESS_KEY_ID=$(oc get secret aws-creds -n kube-system -o jsonpath={.data.aws_access_key_id} | base64 --decode) \
+AWS_SECRET_ACCESS_KEY=$(oc get secret aws-creds -n kube-system -o jsonpath={.data.aws_secret_access_key} | base64 --decode) \
+AWS_REGION=$(oc get infrastructure cluster -o jsonpath='{.status.platformStatus.aws.region}')
+```
+
+2. Run following AWS command
+
+```bash
+aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" --region $AWS_REGION | jq -r '.Vpcs[0].CidrBlockAssociationSet[0].CidrBlock'
+```
+
+> Verify that the CIDR block you get on the output matches with the one that was specified in the installation form (iva OCM UI) ^
 
 **Verify that LDAP IDP can be configured**
 
