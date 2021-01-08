@@ -350,8 +350,8 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 					Params: map[string][]string{
 						"match[]": []string{"{__name__=\"ALERTS\",alertstate=\"firing\"}"},
 					},
-					Interval:      "30s",
-					ScrapeTimeout: "30s",
+					Interval:      r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeInterval, config.MonitoringDefaultFederateScrapeInterval),
+					ScrapeTimeout: r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeTimeout, config.MonitoringDefaultFederateScrapeTimeout),
 					HonorLabels:   true,
 				},
 			},
@@ -618,6 +618,8 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	r.extraParams["openshift_monitoring_namespace"] = OpenshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
+	r.extraParams["openshift_monitoring_federate_scrape_interval"] = r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeInterval, config.MonitoringDefaultFederateScrapeInterval)
+	r.extraParams["openshift_monitoring_federate_scrape_timeout"] = r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeTimeout, config.MonitoringDefaultFederateScrapeTimeout)
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

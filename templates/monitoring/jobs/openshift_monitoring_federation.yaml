@@ -5,7 +5,8 @@
     namespaces:
       names:
       - {{ index .Params "openshift_monitoring_namespace" }}
-  scrape_interval: 30s
+  scrape_interval: {{ index .Params "openshift_monitoring_federate_scrape_interval" }}
+  scrape_timeout: {{ index .Params "openshift_monitoring_federate_scrape_timeout" }}
   metrics_path: /federate
   params:
     match[]:
