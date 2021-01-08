@@ -133,6 +133,13 @@ var (
 		},
 	}
 
+	rhoamUserSsoRoutes = []ExpectedRoute{
+		ExpectedRoute{
+			Name:  "keycloak",
+			isTLS: true,
+		},
+	}
+
 	apicuritoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "apicurito",
@@ -168,7 +175,7 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale":                         threeScaleRoutes,
 	"middleware-monitoring-operator": middlewareMonitoringRoutes,
 	"rhsso":                          rhssoRoutes,
-	"user-sso":                       userSsoRoutes,
+	"user-sso":                       rhoamUserSsoRoutes,
 	"customer-monitoring-operator":   customerGrafanaRoutes,
 }
 

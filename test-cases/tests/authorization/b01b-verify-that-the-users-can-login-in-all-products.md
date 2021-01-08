@@ -19,7 +19,7 @@ Products:
 
 - OpenShift Console
 - 3Scale (redhat-rhoam-3scale), route name: zync-3scale-provider, URL starting with "https://3scale-admin"
-- User SSO (redhat-rhoam-user-sso), route name: keycloak-edge
+- User SSO (redhat-rhoam-user-sso), route name: keycloak
 
 ## Steps
 
