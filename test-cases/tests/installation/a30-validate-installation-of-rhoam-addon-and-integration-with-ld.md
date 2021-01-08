@@ -7,9 +7,8 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
-    targets:
-      - 1.0.0
-      - 1.0.1
+tags:
+  - per-release
 ---
 
 # A30 - Validate installation of RHOAM addon and integration with LDAP IDP
@@ -59,7 +58,7 @@ Host prefix: /26
 3. Fill in the following parameters and click on `Install`
 
 ```
-CIDR range: "10.1.0.0/24" (note this down to use it later for another verification step)
+CIDR range: "10.1.0.0/26" (note this down to use it later for another verification step)
 Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.com"
 ```
 
@@ -104,7 +103,7 @@ AWS_REGION=$(oc get infrastructure cluster -o jsonpath='{.status.platformStatus.
 aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" --region $AWS_REGION | jq -r '.Vpcs[0].CidrBlockAssociationSet[0].CidrBlock'
 ```
 
-> Verify that the CIDR block you get on the output matches with the one that was specified in the installation form (iva OCM UI) ^
+> Verify that the CIDR block you get on the output matches with the one that was specified in the installation form (via OCM UI) ^
 
 **Verify that LDAP IDP can be configured**
 
