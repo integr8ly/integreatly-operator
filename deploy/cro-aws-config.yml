@@ -4,6 +4,6 @@ metadata:
   name: cloud-resources-aws-strategies
 data:
   _network: >-
-    { "production": { "createStrategy": { "CidrBlock": "10.1.0.0/23" } } }
+    { "production": { "createStrategy": {} } }
   blobstorage: >-
     { "production": { "createStrategy": {}, "deleteStrategy": {} } }
