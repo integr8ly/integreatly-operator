@@ -48,7 +48,7 @@ metadata:
     certified: "false"
     containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.1.0-rc2
     description: RHOAM integration suite of tools
-    serviceAffecting: "false"
+    serviceAffecting: "true"
     support: RHOAM
   name: managed-api-service.v1.1.0
   namespace: placeholder
