@@ -5,9 +5,9 @@ products:
       - osd-post-upgrade
       - osd-fresh-install
       - osd-private-post-upgrade
+    targets:
+      - 1.0.0
 estimate: 1h
-tags:
-  - per-release
 ---
 
 # H22 - Validate that Rate Limit service is working as expected

@@ -5,9 +5,9 @@ products:
       - osd-post-upgrade
       - osd-fresh-install
       - osd-private-post-upgrade
+    targets:
+      - 1.0.0
 estimate: 15m
-tags:
-  - per-release
 ---
 
 # A29 - Verify Rate limit service pods are running

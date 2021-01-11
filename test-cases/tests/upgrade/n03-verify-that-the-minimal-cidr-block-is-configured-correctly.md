@@ -6,7 +6,6 @@ products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-      - osd-fresh-install
 estimate: 30m
 tags:
   - per-release
