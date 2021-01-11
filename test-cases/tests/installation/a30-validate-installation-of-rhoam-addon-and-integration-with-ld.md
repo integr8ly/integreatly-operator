@@ -105,6 +105,10 @@ aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" 
 
 > Verify that the CIDR block you get on the output matches with the one that was specified in the installation form (via OCM UI) ^
 
+**Note**
+
+The scenario with **default CIDR range**, when user doesn't specify any CIDR, so it is automatically created by CRO, is covered by [the installation pipeline](https://github.com/integr8ly/delorean/blob/0cd8e05a49540c0c505c3c291629dd737d7cc818/scripts/ocm/ocm.sh#L144) - it doesn't provide any addon params, so CIDR block has to be created by CRO. If the pipeline finishes successfully, it means that the CIDR block was correct.
+
 **Verify that LDAP IDP can be configured**
 
 1. Go to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) again and search for "ldap-server-tester AWS UI credentials"
