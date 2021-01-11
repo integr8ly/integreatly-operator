@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -740,11 +741,16 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		smtpToCustomerAddress = prepareEmailAddresses(smtpToCustomerAddressCRVal)
 	}
 
+	smtpAlertFromAddress := os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
+	if r.installation.Spec.AlertFromAddress != "" {
+		smtpAlertFromAddress = r.installation.Spec.AlertFromAddress
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
 		"SMTPPort":              string(smtpSecret.Data["port"]),
-		"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+		"SMTPFrom":              smtpAlertFromAddress,
 		"SMTPUsername":          string(smtpSecret.Data["username"]),
 		"SMTPPassword":          string(smtpSecret.Data["password"]),
 		"SMTPToCustomerAddress": smtpToCustomerAddress,

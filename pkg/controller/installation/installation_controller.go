@@ -664,6 +664,12 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 			_, err := strconv.ParseBool(s)
 			return err
 		}),
+		integreatlyv1alpha1.EnvKeyAlertSMTPFrom: requiredEnvVar(func(s string) error {
+			if s == "" {
+				return fmt.Errorf(" env var %s is required ", integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
+			}
+			return nil
+		}),
 	}); err != nil {
 		return result, err
 	}

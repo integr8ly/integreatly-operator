@@ -151,6 +151,12 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertingEmailAddresses"),
 						},
 					},
+					"alertFromAddress": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"operatorsInProductNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OperatorsInProductNamespace is a flag that decides if the product operators should be installed in the product namespace (when set to true) or in standalone namespace (when set to false, default). Standalone namespace will be used only for those operators that support it.",

@@ -54,3 +54,6 @@ spec:
               value: "managed"
             - name: REBALANCE_PODS
               value: "true"
+            # this should be set for production and development via MT repo
+            - name: ALERT_SMTP_FROM
+              value: "default@test.com"
