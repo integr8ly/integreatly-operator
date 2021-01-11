@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -406,8 +407,8 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		return err
 	}
 
-	if !ok {
-		return nil
+	if !ok || cidrValue == "" && r.installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1*time.Minute))) {
+		cidrValue = ""
 	}
 
 	cfgMap := &corev1.ConfigMap{}
