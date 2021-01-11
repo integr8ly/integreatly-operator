@@ -468,3 +468,12 @@ rules:
     verbs:
       - list
   # END Permission to list nodes in order to determine if a cluster is multi-az
+
+  # Permission to get cluster infrastructure details for alerting
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - infrastructures
+    verbs:
+      - get
+  # END Permission to get cluster infrastructure details for alerting
