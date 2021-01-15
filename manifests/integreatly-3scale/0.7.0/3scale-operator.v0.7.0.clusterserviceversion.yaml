@@ -1,0 +1,751 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager"
+          },
+          "spec": {
+            "wildcardDomain": "example.com"
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager"
+          },
+          "spec": {
+            "apicast": {
+              "image": "quay.io/3scale/apicast:nightly"
+            },
+            "backend": {
+              "image": "quay.io/3scale/apisonator:nightly"
+            },
+            "system": {
+              "image": "quay.io/3scale/porta:nightly"
+            },
+            "wildcardDomain": "example.com",
+            "zync": {
+              "image": "quay.io/3scale/zync:nightly"
+            }
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager"
+          },
+          "spec": {
+            "podDisruptionBudget": {
+              "enabled": true
+            },
+            "wildcardDomain": "example.com"
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager-ha"
+          },
+          "spec": {
+            "highAvailability": {
+              "enabled": true
+            },
+            "wildcardDomain": "example.com"
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager-monitoring"
+          },
+          "spec": {
+            "monitoring": {
+              "enabled": true
+            },
+            "wildcardDomain": "example.com"
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManager",
+          "metadata": {
+            "name": "example-apimanager-s3"
+          },
+          "spec": {
+            "system": {
+              "fileStorage": {
+                "simpleStorageService": {
+                  "configurationSecretRef": {
+                    "name": "\u003cconfiguration-secret-name\u003e"
+                  }
+                }
+              }
+            },
+            "wildcardDomain": "\u003cdesired-domain\u003e"
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManagerBackup",
+          "metadata": {
+            "name": "example-apimanagerbackup"
+          },
+          "spec": {
+            "backupDestination": {
+              "persistentVolumeClaim": {
+                "volumeName": "mypreexistingvolume"
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "apps.3scale.net/v1alpha1",
+          "kind": "APIManagerRestore",
+          "metadata": {
+            "name": "example-apimanagerrestore"
+          },
+          "spec": {
+            "restoreSource": {
+              "persistentVolumeClaim": {
+                "claimSource": {
+                  "claimName": "mybackeduppvc"
+                }
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1alpha1",
+          "kind": "Tenant",
+          "metadata": {
+            "name": "example-tenant"
+          },
+          "spec": {
+            "email": "admin@example.com",
+            "masterCredentialsRef": {
+              "name": "system-seed"
+            },
+            "organizationName": "Example.com",
+            "passwordCredentialsRef": {
+              "name": "ecorp-admin-secret"
+            },
+            "systemMasterUrl": "https://master.example.com",
+            "tenantSecretRef": {
+              "name": "ecorp-tenant-secret",
+              "namespace": "operator-test"
+            },
+            "username": "admin"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Backend",
+          "metadata": {
+            "name": "backend1"
+          },
+          "spec": {
+            "name": "Operated Backend 1",
+            "privateBaseURL": "https://api.example.com",
+            "systemName": "backend1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "name": "OperatedProduct 1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "deployment": {
+              "apicastHosted": {}
+            },
+            "name": "OperatedProduct 1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "deployment": {
+              "apicastSelfManaged": {
+                "productionPublicBaseURL": "https://production.api.example.com",
+                "stagingPublicBaseURL": "https://staging.api.example.com"
+              }
+            },
+            "name": "OperatedProduct 1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "applicationPlans": {
+              "plan01": {
+                "limits": [
+                  {
+                    "metricMethodRef": {
+                      "backend": "backendA",
+                      "systemName": "hits"
+                    },
+                    "period": "month",
+                    "value": 300
+                  },
+                  {
+                    "metricMethodRef": {
+                      "systemName": "hits"
+                    },
+                    "period": "week",
+                    "value": 100
+                  }
+                ],
+                "name": "My Plan 01"
+              }
+            },
+            "metrics": {
+              "hits": {
+                "description": "Number of API hits",
+                "friendlyName": "Hits",
+                "unit": "hit"
+              }
+            },
+            "name": "OperatedProduct 1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "applicationPlans": {
+              "plan01": {
+                "name": "My Plan 01",
+                "pricingRules": [
+                  {
+                    "from": 1,
+                    "metricMethodRef": {
+                      "systemName": "hits"
+                    },
+                    "pricePerUnit": "15.45",
+                    "to": 100
+                  },
+                  {
+                    "from": 1,
+                    "metricMethodRef": {
+                      "backend": "backendA",
+                      "systemName": "hits"
+                    },
+                    "pricePerUnit": "15.45",
+                    "to": 300
+                  }
+                ]
+              }
+            },
+            "metrics": {
+              "hits": {
+                "description": "Number of API hits",
+                "friendlyName": "Hits",
+                "unit": "hit"
+              }
+            },
+            "name": "OperatedProduct 1"
+          }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "Product",
+          "metadata": {
+            "name": "product1"
+          },
+          "spec": {
+            "mappingRules": [
+              {
+                "httpMethod": "GET",
+                "increment": 1,
+                "metricMethodRef": "hits",
+                "pattern": "/pets"
+              },
+              {
+                "httpMethod": "GET",
+                "increment": 1,
+                "metricMethodRef": "method01",
+                "pattern": "/cars"
+              }
+            ],
+            "methods": {
+              "method01": {
+                "friendlyName": "Method01"
+              }
+            },
+            "metrics": {
+              "hits": {
+                "description": "Number of API hits",
+                "friendlyName": "Hits",
+                "unit": "hit"
+              }
+            },
+            "name": "OperatedProduct 1"
+          }
+        }
+      ]
+    capabilities: Full Lifecycle
+    categories: Integration & Delivery
+    certified: "false"
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_6a9d113ef388d771a12dd12707352af02cc6c6cbecaf0b4070cadb7c7af8111d
+    createdAt: "2019-05-30T22:40:00Z"
+    description: 3scale Operator to provision 3scale and publish/manage API
+    operators.openshift.io/infrastructure-features: '["Disconnected"]'
+    repository: https://github.com/3scale/3scale-operator
+    support: Red Hat
+    tectonic-visibility: ocs
+  name: 3scale-operator.v0.7.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: APIManagerBackup represents an APIManager backup
+      displayName: APIManagerBackup
+      kind: APIManagerBackup
+      name: apimanagerbackups.apps.3scale.net
+      version: v1alpha1
+    - description: APIManagerRestore represents an APIManager restore
+      displayName: APIManagerRestore
+      kind: APIManagerRestore
+      name: apimanagerrestores.apps.3scale.net
+      version: v1alpha1
+    - description: APIManager is the Schema for the apimanagers API
+      displayName: APIManager
+      kind: APIManager
+      name: apimanagers.apps.3scale.net
+      resources:
+      - kind: DeploymentConfig
+        name: ""
+        version: apps.openshift.io/v1
+      - kind: ImageStream
+        name: ""
+        version: image.openshift.io/v1
+      - kind: PersistentVolumeClaim
+        name: ""
+        version: v1
+      - kind: Route
+        name: ""
+        version: route.openshift.io/v1
+      - kind: Service
+        name: ""
+        version: v1
+      specDescriptors:
+      - description: Wildcard domain as configured in the API Manager object
+        displayName: Wildcard Domain
+        path: wildcardDomain
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:label
+      statusDescriptors:
+      - description: APIManager Deployment Configs
+        displayName: Deployments
+        path: deployments
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podStatuses
+      version: v1alpha1
+    - description: Backend is the Schema for the backends API
+      displayName: 3scale Backend
+      kind: Backend
+      name: backends.capabilities.3scale.net
+      version: v1beta1
+    - description: Product is the Schema for the products API
+      displayName: 3scale Product
+      kind: Product
+      name: products.capabilities.3scale.net
+      version: v1beta1
+    - description: Tenant is the Schema for the tenants API
+      displayName: Tenant
+      kind: Tenant
+      name: tenants.capabilities.3scale.net
+      version: v1alpha1
+  description: |
+    The 3scale Operator creates and maintains the Red Hat 3scale API Management on [OpenShift](https://www.openshift.com/) in various deployment configurations.
+
+    [3scale API Management](https://www.redhat.com/en/technologies/jboss-middleware/3scale) makes it easy to manage your APIs.
+    Share, secure, distribute, control, and monetize your APIs on an infrastructure platform built for performance, customer control, and future growth.
+
+    ### Supported Features
+    * **Installer** A way to install a 3scale API Management solution, providing configurability options at the time of installation
+    * **Upgrade** Upgrade from previously installed 3scale API Management solution
+    * **Reconcilliation** Tunable CRD parameters after 3scale API Management solution is installed
+    * **Capabilities** Ability to define 3scale API definitions and set them into a 3scale API Management solution
+
+    ### Documentation
+    [3scale api management](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management)
+    [Deploying 3scale using the operator](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.10/html/installing_3scale/install-threescale-on-openshift-guide#deploying-threescale-using-the-operator)
+
+    ### Getting help
+    If you encounter any issues while using 3scale operator, you can create an issue on our [Github repo](https://github.com/3scale/3scale-operator) for bugs, enhancements, or other requests.
+
+    ### Contributing
+    You can contribute by:
+
+    * Raising any issues you find using 3scale Operator
+    * Fixing issues by opening [Pull Requests](https://github.com/3scale/3scale-operator/pulls)
+    * Talking about 3scale Operator
+
+    All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/3scale/3scale-operator/issues).
+
+    ### License
+    3scale Operator is licensed under the [Apache 2.0 license](https://github.com/3scale/3scale-operator/blob/master/LICENSE)
+  displayName: Red Hat Integration - 3scale
+  icon:
+  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+
+    mediatype: image/svg+xml
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consolelinks
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        serviceAccountName: 3scale-operator
+      deployments:
+      - name: 3scale-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: threescale-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                com.redhat.component-name: 3scale-operator
+                com.redhat.component-type: infrastructure
+                com.redhat.component-version: 0.7.0
+                com.redhat.product-name: 3scale
+                com.redhat.product-version: "2.10"
+                name: threescale-operator
+            spec:
+              containers:
+              - command:
+                - 3scale-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: threescale-operator
+                - name: BACKEND_IMAGE
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_94659073aa7631aaa56dd39f177a8348bcbca30130e6e0dc0783d2b32eb63c9f
+                - name: APICAST_IMAGE
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_71f5d655f2fc6c474aa0f81664fec5cb853423ab43aa420dbf97cfb8399370d0
+                - name: SYSTEM_IMAGE
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_dfcf435bf977e18886d34a50fb7b1564b575c777a2083ea2a9f9b9d5adbb751e
+                - name: ZYNC_IMAGE
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
+                - name: SYSTEM_MEMCACHED_IMAGE
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
+                - name: BACKEND_REDIS_IMAGE
+                  value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
+                - name: SYSTEM_REDIS_IMAGE
+                  value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
+                - name: SYSTEM_MYSQL_IMAGE
+                  value: quay.io/integreatly/delorean:rhscl-mysql-57-rhel7_9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+                - name: SYSTEM_POSTGRESQL_IMAGE
+                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+                - name: ZYNC_POSTGRESQL_IMAGE
+                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+                - name: OC_CLI_IMAGE
+                  value: quay.io/integreatly/delorean:openshift4-ose-cli_353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_6a9d113ef388d771a12dd12707352af02cc6c6cbecaf0b4070cadb7c7af8111d
+                name: 3scale-operator
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 100m
+              serviceAccountName: 3scale-operator
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - replicationcontrollers
+          - services
+          - services/finalizers
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          - serviceaccounts
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resourceNames:
+          - 3scale-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods/exec
+          verbs:
+          - create
+        - apiGroups:
+          - apps
+          resources:
+          - replicasets
+          - deployments
+          verbs:
+          - get
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apps.3scale.net
+          resources:
+          - '*'
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - '*'
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          - imagestreams/layers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreamtags
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes/custom-host
+          verbs:
+          - create
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes/status
+          verbs:
+          - get
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - policy
+          resources:
+          - poddisruptionbudgets
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - watch
+          - delete
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - podmonitors
+          - servicemonitors
+          - prometheusrules
+          verbs:
+          - list
+          - get
+          - create
+          - update
+          - watch
+          - delete
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - grafanadashboards
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - watch
+          - delete
+        serviceAccountName: 3scale-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: false
+    type: AllNamespaces
+  keywords:
+  - 3scale
+  - API
+  links:
+  - name: GitHub
+    url: https://github.com/3scale/3scale-operator
+  - name: Documentation
+    url: https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.10/html/installing_3scale/install-threescale-on-openshift-guide#deploying-threescale-using-the-operator
+  maintainers:
+  - email: eastizle+3scaleoperator@redhat.com
+    name: 3scale
+  - email: msoriano+3scaleoperator@redhat.com
+    name: 3scale
+  maturity: stable
+  provider:
+    name: Red Hat
+  relatedImages:
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:71f5d655f2fc6c474aa0f81664fec5cb853423ab43aa420dbf97cfb8399370d0
+    name: apicast-gateway-rhel8
+  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:94659073aa7631aaa56dd39f177a8348bcbca30130e6e0dc0783d2b32eb63c9f
+    name: backend-rhel7
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:dfcf435bf977e18886d34a50fb7b1564b575c777a2083ea2a9f9b9d5adbb751e
+    name: system-rhel7
+  - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
+    name: zync-rhel7
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
+    name: memcached-rhel7
+  - image: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
+    name: redis-32-rhel7
+  - image: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+    name: mysql-57-rhel7
+  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+    name: postgresql-10-rhel7
+  - image: registry.redhat.io/openshift4/ose-cli@sha256:353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
+    name: openshift-cli
+  replaces: 3scale-operator.v0.6.1
+  version: 0.7.0
