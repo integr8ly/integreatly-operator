@@ -21,12 +21,11 @@ estimate: 15m
 
 1. Run following commands
 
-```
-oc get pods -n redhat-rhoam-user-sso -o yaml | grep "cpu: 650m" | wc -l
-oc get pods -n redhat-rhoam-rhsso -o yaml | grep "cpu: 650m" | wc -l
+```bash
+oc get pods -n redhat-rhoam-rhsso -o yaml | grep "cpu: \""
 ```
 
-> Make sure you get "4" in the output from both commands
+> Make sure that the output from this command contains only the lines with `cpu: "650m"`
 
 **Validate RHSSO URL from RHOAM CR**
 
