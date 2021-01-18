@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetRhmiCr(client k8sclient.Client, ctx context.Context, namespace string) (*integreatlyv1alpha1.RHMI, error) {
-	logrus.Infof("Looking for RHMI CR in %s namespace", namespace)
+func GetRhmiCr(client k8sclient.Client, ctx context.Context, namespace string, log l.Logger) (*integreatlyv1alpha1.RHMI, error) {
+	log.Infof("Looking for RHMI CR", l.Fields{"ns": namespace})
 
 	installationList := &integreatlyv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{

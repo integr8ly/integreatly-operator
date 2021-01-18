@@ -18,6 +18,7 @@ require (
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/envoyproxy/go-control-plane v0.9.5
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-openapi/runtime v0.19.15
 	github.com/go-openapi/spec v0.19.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-querystring v1.0.0
@@ -43,6 +44,7 @@ require (
 	github.com/operator-framework/operator-sdk v0.19.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/common v0.10.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200921104849-b99c54c8a481

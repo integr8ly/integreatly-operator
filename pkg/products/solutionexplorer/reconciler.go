@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -15,8 +16,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	consolev1 "github.com/openshift/api/console/v1"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
@@ -69,7 +68,7 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	log           l.Logger
 	OauthResolver OauthResolver
 	installation  *integreatlyv1alpha1.RHMI
 	recorder      record.EventRecorder
@@ -85,7 +84,7 @@ type productInfo struct {
 	Version integreatlyv1alpha1.ProductVersion
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
@@ -105,13 +104,11 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("solution explorer config is not valid: %w", err)
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		OauthResolver: resolver,
 		oauthv1Client: oauthv1Client,
@@ -138,17 +135,17 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling solution explorer")
+	r.log.Info("Reconciling solution explorer")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -164,24 +161,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName(), r.log)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
@@ -240,7 +237,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertReconciler().ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertReconciler(r.log).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile solution explorer alerts", err)
 	}
@@ -386,7 +383,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 		},
 	}
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
-	logrus.Info("ReconcileCustomResource setting url for openshift host ", oauthURL)
+	r.log.Infof("ReconcileCustomResource setting url for openshift host ", l.Fields{"oauthURL": oauthURL})
 
 	installedServices, err := r.getInstalledProducts(installation)
 	if err != nil {
@@ -507,5 +504,6 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		backup.NewNoopBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }

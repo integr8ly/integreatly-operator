@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/sirupsen/logrus"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -21,13 +19,13 @@ var (
 	}
 )
 
-func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, installation *integreatlyv1alpha1.RHMI) resources.AlertReconciler {
+func (r *ReconcileInstallation) newAlertsReconciler(installation *integreatlyv1alpha1.RHMI) resources.AlertReconciler {
 	installationName := installationNames[installation.Spec.Type]
 
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,
-		Logger:       logger,
+		Log:          log,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: fmt.Sprintf("%s-installation-controller-alerts", installationName),

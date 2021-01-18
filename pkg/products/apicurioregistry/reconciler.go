@@ -3,6 +3,7 @@ package apicurioregistry
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
@@ -17,7 +18,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	appsv1 "github.com/openshift/api/apps/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -39,14 +39,14 @@ const (
 type Reconciler struct {
 	Config        *config.ApicurioRegistry
 	ConfigManager config.ConfigReadWriter
-	logger        *logrus.Entry
+	log           l.Logger
 	mpm           marketplace.MarketplaceInterface
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
 // NewReconciler creates a new Reconciler.
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadApicurioRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("could not read apicurio registry config: %w", err)
@@ -63,12 +63,10 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		Config:        config,
 		ConfigManager: configManager,
-		logger:        logger,
+		log:           logger,
 		mpm:           mpm,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
@@ -100,28 +98,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
@@ -162,7 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s is successfully reconciled", r.Config.GetProductName())
+	r.log.Infof("Successfully reconciled", l.Fields{"product": r.Config.GetProductName()})
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -243,7 +241,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Debug("checking service registry replicas")
+	r.log.Debug("checking service registry replicas")
 
 	cr := &apicurioregistry.ApicurioRegistry{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: string(r.Config.GetProductName()), Namespace: r.Config.GetNamespace()}, cr)
@@ -255,12 +253,12 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	r.logger.Infof("service registry replicas ready, returning complete")
+	r.log.Info("service registry replicas ready, returning complete")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Infof("reconciling config")
+	r.log.Info("reconciling config")
 
 	cr := &apicurioregistry.ApicurioRegistry{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: string(r.Config.GetProductName()), Namespace: r.Config.GetNamespace()}, cr)
@@ -297,5 +295,6 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		backup.NewNoopBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }

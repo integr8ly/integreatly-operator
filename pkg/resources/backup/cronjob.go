@@ -3,9 +3,9 @@ package backup
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
@@ -31,7 +31,7 @@ func NewCronJobBackupExecutor(cronJobName, namespace, jobGenerateName string) Ba
 }
 
 func (e *CronJobBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.Duration) error {
-	logrus.Infof("Performing backup by creating Job from CronJob %s in namespace %s", e.CronJobName, e.Namespace)
+	log.Infof("Performing backup by creating Job", l.Fields{"cronJob": e.CronJobName, "ns": e.Namespace})
 
 	// Generate the job name
 	jobName := fmt.Sprintf("%s-%s", e.JobGenerateName, time.Now().Format("2006-01-02-150405"))

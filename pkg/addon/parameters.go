@@ -15,7 +15,7 @@ import (
 // GetParameter retrieves the value for an addon parameter by finding the RHMI
 // CR and selecting the addon name for its installation type.
 func GetParameter(ctx context.Context, client k8sclient.Client, namespace, parameter string) ([]byte, bool, error) {
-	rhmi, err := resources.GetRhmiCr(client, ctx, namespace)
+	rhmi, err := resources.GetRhmiCr(client, ctx, namespace, log)
 	if err != nil {
 		return nil, false, err
 	}

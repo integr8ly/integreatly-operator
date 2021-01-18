@@ -3,8 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
@@ -45,8 +44,8 @@ var (
 	BackupRoleBindingName    = "rhmi-backupjob"
 )
 
-func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, configManager productsConfig.ConfigReadWriter) error {
-	logrus.Infof("reconciling backups: %s", config.Name)
+func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, configManager productsConfig.ConfigReadWriter, log l.Logger) error {
+	log.Infof("reconciling backups", l.Fields{"configMap": config.Name})
 
 	err := reconcileBackendSecret(ctx, serverClient, config, configManager.GetBackupsSecretName(), configManager.GetOperatorNamespace())
 	if err != nil {

@@ -12,7 +12,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "CodeReady",
 		Installation: r.installation,
-		Logger:       r.logger,
+		Log:          r.log,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "ksm-endpoint-alerts",

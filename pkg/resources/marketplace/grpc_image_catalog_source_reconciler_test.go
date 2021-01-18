@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"errors"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -152,7 +153,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			csReconciler := NewGRPCImageCatalogSourceReconciler(scenario.DesiredGRPCImage, scenario.FakeClient, testNameSpace, scenario.DesiredCatalogSourceName)
+			csReconciler := NewGRPCImageCatalogSourceReconciler(scenario.DesiredGRPCImage, scenario.FakeClient, testNameSpace, scenario.DesiredCatalogSourceName, l.NewLogger())
 			res, err := csReconciler.Reconcile(context.TODO())
 			scenario.Verify(scenario.DesiredCatalogSourceName, scenario.DesiredGRPCImage, res, err, scenario.FakeClient)
 		})

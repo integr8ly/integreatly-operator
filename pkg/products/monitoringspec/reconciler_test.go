@@ -3,6 +3,7 @@ package monitoringspec
 import (
 	"context"
 	"errors"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -206,7 +207,7 @@ func TestReconciler_config(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -320,7 +321,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -472,7 +473,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -532,4 +533,8 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductMonitoringSpec})
 }

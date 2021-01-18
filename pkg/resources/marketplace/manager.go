@@ -3,8 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -20,6 +19,8 @@ const (
 	OperatorGroupName  = "rhmi-registry-og"
 	Publisher          = "RHMI"
 )
+
+var log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "marketplace"})
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
@@ -75,14 +76,14 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 	err = serverClient.Create(ctx, og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		logrus.Infof("error creating operator group")
+		log.Error("error creating operator group", err)
 		return err
 	}
 
-	logrus.Infof("creating subscription in ns if it doesn't already exist: %s", t.Namespace)
+	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
 	err = serverClient.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		logrus.Infof("error creating sub")
+		log.Error("error creating sub", err)
 		return err
 	}
 
@@ -100,7 +101,7 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err != nil {
-		logrus.Infof("Error getting subscription %s in ns: %s", subName, ns)
+		log.Errorf("Error getting subscription", l.Fields{"name": subName, "ns": ns}, err)
 		return nil, err
 	}
 	return sub, nil

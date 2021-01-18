@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"time"
 
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -13,16 +14,12 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var (
-	log = logf.Log.WithName("controller_user")
-	// A set of pre configured groups used to exclude a user from rhmi specific groups
-)
+var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_controller"})
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -56,11 +53,12 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 var _ reconcile.Reconciler = &ReconcileUser{}
 
 // ReconcileUser reconciles a User object
-type ReconcileUser struct{}
+type ReconcileUser struct {
+}
 
 func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling User")
+	log.Logger = log.WithContext(l.Fields{l.ControllerLogContext: "user_controller"})
+	log.Info("Reconciling User")
 
 	// new client to avoid caching issues
 	restConfig := controllerruntime.GetConfigOrDie()
@@ -91,7 +89,7 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 
 		return nil
 	})
-	reqLogger.Info("The operation result for group " + rhmiGroup.Name + " was " + string(or))
+	log.Infof("Operation Result", l.Fields{"groupName": rhmiGroup.Name, "result": string(or)})
 
 	return reconcile.Result{}, err
 }

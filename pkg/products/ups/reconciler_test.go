@@ -3,6 +3,7 @@ package ups
 import (
 	"context"
 	"errors"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
@@ -202,7 +203,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -269,7 +270,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -285,4 +286,8 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductUps})
 }

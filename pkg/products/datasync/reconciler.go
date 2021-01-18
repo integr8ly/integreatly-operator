@@ -3,6 +3,7 @@ package datasync
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,8 +17,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/sirupsen/logrus"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -46,7 +45,7 @@ type Reconciler struct {
 	Config        *config.DataSync
 	ConfigManager config.ConfigReadWriter
 	httpClient    http.Client
-	logger        *logrus.Entry
+	log           l.Logger
 	recorder      record.EventRecorder
 	installation  *integreatlyv1alpha1.RHMI
 }
@@ -63,7 +62,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadDataSync()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductDataSync, err)
@@ -77,7 +76,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("%s config is not valid: %w", integreatlyv1alpha1.ProductDataSync, err)
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	var httpClient http.Client
 	httpClient.Timeout = time.Second * 10
 	httpClient.Transport = &http.Transport{DisableKeepAlives: true, IdleConnTimeout: time.Second * 10}
@@ -85,7 +83,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
-		logger:        logger,
+		log:           logger,
 		httpClient:    httpClient,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,

@@ -94,6 +94,11 @@ func main() {
 	// be propagated through the whole operator, generating
 	// uniform and structured logs.
 	logf.SetLogger(zap.Logger())
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:      true,
+		FullTimestamp:    true,
+		QuoteEmptyFields: false,
+	})
 	if err := setLogLevel(); err != nil {
 		// print as assume loggers may not work
 		fmt.Printf("Failed to set log level %s ", err)

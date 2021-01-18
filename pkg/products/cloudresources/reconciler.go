@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -16,8 +18,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/version"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -49,12 +49,12 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	log           l.Logger
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadCloudResources()
 	if err != nil {
 		return nil, fmt.Errorf("could not read cloud resources config: %w", err)
@@ -69,14 +69,13 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
 		}
 	}
-	logger := logrus.WithFields(logrus.Fields{"product": config.GetProductName()})
 
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
@@ -121,19 +120,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			}
 
 			// remove the namespace
-			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
+			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
@@ -159,7 +158,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, client)
+	phase, err = r.newAlertsReconciler(r.log).ReconcileAlerts(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
@@ -174,13 +173,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.CloudResourcesStage, r.Config.GetProductName())
-	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	r.log.Infof("Reconcile successful", l.Fields{"product": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	logrus.Infof("Removing postgres and redis snapshots")
+	r.log.Info("Removing postgres and redis snapshots")
 
 	pgSnaps := &crov1alpha1.PostgresSnapshotList{}
 	listOpts := []k8sclient.ListOption{
@@ -188,14 +187,14 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 	err := client.List(ctx, pgSnaps, listOpts...)
 	if err != nil {
-		logrus.Error("Failed to list postgres snapshots")
+		r.log.Error("Failed to list postgres snapshots", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres snapshots: %w", err)
 	}
 
 	for _, pgSnap := range pgSnaps.Items {
-		logrus.Infof("Deleting postgres snapshot %s", pgSnap.Name)
+		r.log.Infof("Deleting postgres snapshot", l.Fields{"name": pgSnap.Name})
 		if err := client.Delete(ctx, &pgSnap); err != nil {
-			logrus.Infof("Failed to delete postgres snapshot %s", pgSnap.Name)
+			r.log.Infof("Failed to delete postgres snapshot", l.Fields{"name": pgSnap.Name})
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
@@ -206,19 +205,19 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 	err = client.List(ctx, redisSnaps, listOpts...)
 	if err != nil {
-		logrus.Error("Failed to list redis snapshots")
+		r.log.Error("Failed to list redis snapshots", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list redis snapshots: %w", err)
 	}
 
 	for _, redisSnap := range redisSnaps.Items {
-		logrus.Infof("Deleting redis snapshot %s", redisSnap.Name)
+		r.log.Infof("Deleting redis snapshot", l.Fields{"name": redisSnap.Name})
 		if err := client.Delete(ctx, &redisSnap); err != nil {
-			logrus.Infof("Failed to delete redis snapshot %s", redisSnap.Name)
+			r.log.Infof("Failed to delete redis snapshot", l.Fields{"name": redisSnap.Name})
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 
-	logrus.Infof("Finished postgres and redis snapshots removal")
+	r.log.Info("Finished postgres and redis snapshots removal")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -266,7 +265,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 }
 
 func (r *Reconciler) cleanupResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("ensuring cloud resources are cleaned up")
+	r.log.Info("ensuring cloud resources are cleaned up")
 
 	// ensure postgres instances are cleaned up
 	postgresInstances := &crov1alpha1.PostgresList{}
@@ -314,17 +313,17 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	if len(postgresInstances.Items) > 0 {
-		r.logger.Info("deletion of postgres instances in progress")
+		r.log.Info("deletion of postgres instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	if len(redisInstances.Items) > 0 {
-		r.logger.Info("deletion of redis instances in progress")
+		r.log.Info("deletion of redis instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	if len(blobStorages.Items) > 0 {
-		r.logger.Info("deletion of blob storage instances in progress")
+		r.log.Info("deletion of blob storage instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -372,6 +371,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		backup.NewNoopBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }
 

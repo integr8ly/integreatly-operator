@@ -3,6 +3,7 @@ package marketplace
 import (
 	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
@@ -31,19 +31,19 @@ func GenerateRegistryConfigMapFromManifest(manifestPackageName string) (map[stri
 
 	csvStringList, err := GetFilesFromManifestAsStringList(manifestDir, "^*.clusterserviceversion.yaml$", "")
 	if err != nil {
-		logrus.Fatalf("Error proccessing cluster service versions from %s with error: %s", manifestPackageName, err)
+		log.Fatalf("Error proccessing cluster service versions", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
 	packageStringList, err := GetFilesFromManifestAsStringList(manifestDir, "^*.package.yaml$", "")
 	if err != nil {
-		logrus.Fatalf("Error proccessing csv packages from %s with error: %s", manifestPackageName, err)
+		log.Fatalf("Error proccessing csv packages", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
 	crdStringList, err := GetCRDsFromManifestAsStringList(manifestDir, "^*.crd.yaml$", packageStringList, manifestPackageName)
 	if err != nil {
-		logrus.Fatalf("Error proccessing crds from %s with error: %s", manifestPackageName, err)
+		log.Fatalf("Error proccessing crds", l.Fields{"manifestPackageName": manifestPackageName}, err)
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 	libRegEx, e := regexp.Compile(regex)
 	if packageYaml != "" {
 		if e != nil {
-			logrus.Fatalf("Error compiling regex for registry file: %s", e)
+			log.Fatal("Error compiling regex for registry file:", e)
 		}
 
 		var folders []string
@@ -80,7 +80,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 		for i, r := range folders {
 			v, err := semver.NewVersion(r)
 			if err != nil {
-				logrus.Errorf("Error parsing version: %s", err)
+				log.Error("Error parsing version:", err)
 			}
 
 			vs[i] = v
@@ -90,7 +90,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 
 		err := ReverseSlice(vs)
 		if err != nil {
-			logrus.Error("ReverseSlice erorr %w", err)
+			log.Error("ReverseSlice erorr", err)
 		}
 
 		var currentVersion string
@@ -100,7 +100,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 			currentVersion, err = GetCurrentCSVFromManifest(packageYaml)
 		}
 		if err != nil {
-			logrus.Fatal("Error")
+			log.Fatal("Error getting current csv from manifest", err)
 		}
 
 		// iterate through all folders
@@ -205,7 +205,7 @@ func GetFilesFromManifestAsStringList(dir string, regex string, packageYaml stri
 	var stringList strings.Builder
 	libRegEx, e := regexp.Compile(regex)
 	if e != nil {
-		logrus.Fatalf("Error compiling regex for registry file: %s", e)
+		log.Fatal("Error compiling regex for registry file", e)
 	}
 
 	e = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -285,10 +285,10 @@ func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
 // Get the manifest directory for when running locally vs when in container image
 func GetManifestDirEnvVar() string {
 	if envVar := os.Getenv(manifestEnvVarKey); envVar != "" {
-		logrus.Infof("Using env var manifest dir: %s", envVar)
+		log.Infof("Using env var manifest dir", l.Fields{"envVar": envVar})
 		return envVar
 	}
 
-	logrus.Info("Using default manifest package dir")
+	log.Info("Using default manifest package dir")
 	return defaultManifestDir
 }

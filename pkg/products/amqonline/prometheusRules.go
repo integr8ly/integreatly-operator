@@ -2,19 +2,20 @@ package amqonline
 
 import (
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconciler {
 	keycloakServicePortCount := 2
 
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "AMQ Online",
 		Installation: r.inst,
-		Logger:       r.logger,
+		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "rhmi-amq-online-slo",

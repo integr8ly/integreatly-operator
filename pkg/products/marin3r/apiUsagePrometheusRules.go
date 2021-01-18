@@ -9,9 +9,9 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -21,11 +21,11 @@ var (
 
 func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.AlertReconciler, error) {
 
-	requestsAllowedPerSecond, err := getRateLimitInSeconds(r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit)
+	requestsAllowedPerSecond, err := r.getRateLimitInSeconds(r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit)
 	if err != nil {
 		return nil, err
 	}
-	alerts, err := mapAlertsConfiguration(r.logger, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
+	alerts, err := mapAlertsConfiguration(r.log, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -33,7 +33,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "3Scale",
 		Installation: r.installation,
-		Logger:       r.logger,
+		Log:          r.log,
 		Alerts:       alerts,
 	}, nil
 }
@@ -41,7 +41,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(logger *logrus.Entry, namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
@@ -94,7 +94,7 @@ func mapAlertsConfiguration(logger *logrus.Entry, namespace, rateLimitUnit strin
 
 			result = append(result, alert)
 		default:
-			logger.Infof("Unsupported Alert Type found for %s", alertName)
+			logger.Infof("Unsupported Alert Type found", l.Fields{"alertName": alertName})
 		}
 
 	}
@@ -147,7 +147,7 @@ func increaseExpr(totalRequestsMetric, period string, comparisonOperator string,
 	return &result
 }
 
-func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (float64, error) {
+func (r *Reconciler) getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (float64, error) {
 	if rateLimitUnit == "second" {
 		return float64(rateLimitRequestsPerUnit), nil
 	} else if rateLimitUnit == "minute" {
@@ -157,8 +157,9 @@ func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32
 	} else if rateLimitUnit == "day" {
 		return float64(rateLimitRequestsPerUnit) / (60 * 60 * 24), nil
 	} else {
-		logrus.Errorf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit)
-		return 0, errors.New(fmt.Sprintf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit))
+		err := errors.New(fmt.Sprintf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit))
+		r.log.Error("", err)
+		return 0, err
 	}
 }
 

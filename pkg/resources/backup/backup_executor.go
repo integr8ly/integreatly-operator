@@ -2,10 +2,9 @@ package backup
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"golang.org/x/sync/errgroup"
+	"time"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -25,7 +24,7 @@ func NewNoopBackupExecutor() BackupExecutor {
 
 // PerformBackup simply returns a `nil` error
 func (e *NoopBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.Duration) error {
-	logrus.Infof("No backup to perform")
+	log.Info("No backup to perform")
 	return nil
 }
 
@@ -43,7 +42,7 @@ func NewConcurrentBackupExecutor(executors ...BackupExecutor) BackupExecutor {
 }
 
 func (e *ConcurrentBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.Duration) error {
-	logrus.Infof("Concurrently performing %d backups", len(e.Executors))
+	log.Infof("Concurrently performing backups", l.Fields{"backups": len(e.Executors)})
 
 	var g errgroup.Group
 

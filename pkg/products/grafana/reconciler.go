@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"sort"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -19,7 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +44,7 @@ type Reconciler struct {
 	Config        *config.Grafana
 	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	log           l.Logger
 	extraParams   map[string]string
 	recorder      record.EventRecorder
 }
@@ -61,7 +61,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	config, err := configManager.ReadGrafana()
 	if err != nil {
@@ -79,43 +79,42 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Start Grafana reconcile")
+	r.log.Info("Start Grafana reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
 		return phase, err
@@ -162,7 +161,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
-	alertsReconciler := r.newAlertReconciler()
+	alertsReconciler := r.newAlertReconciler(r.log)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana alerts", err)
 		return phase, err
@@ -173,7 +172,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	r.log.Info("Reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -189,7 +188,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 		if secret.Data == nil {
 			secret.Data = map[string][]byte{}
 		}
-		secret.Data["session_secret"] = []byte(populateSessionProxySecret())
+		secret.Data["session_secret"] = []byte(r.populateSessionProxySecret())
 		return nil
 	})
 
@@ -230,13 +229,13 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if opRes != controllerutil.OperationResultNone {
-		r.logger.Infof("operation result of creating/updating grafana dashboard %v was %v", grafanaDB.Name, opRes)
+		r.log.Infof("Operation result grafana dashboard", l.Fields{"grafanaDashboard": grafanaDB.Name, "result": opRes})
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling grafana custom resource")
+	r.log.Info("reconciling grafana custom resource")
 
 	var annotations = map[string]string{}
 	annotations["service.alpha.openshift.io/serving-cert-secret-name"] = "grafana-k8s-tls"
@@ -350,7 +349,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	logrus.Info("Grafana Status: ", status)
+	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
 	prometheusNamespace := fmt.Sprintf("%smiddleware-monitoring-operator", installation.Spec.NamespacePrefix)
 
@@ -409,14 +408,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	logrus.Info("grafana datasource status: ", status)
+	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
 
 	// if there are no errors, the phase is complete
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling subscription")
+	r.log.Info("reconciling subscription")
 
 	target := marketplace.Target{
 		Pkg:       constants.GrafanaSubscriptionName,
@@ -436,6 +435,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }
 
@@ -444,10 +444,10 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 }
 
 // PopulateSessionProxySecret generates a session secret
-func populateSessionProxySecret() string {
+func (r *Reconciler) populateSessionProxySecret() string {
 	p, err := generatePassword(43)
 	if err != nil {
-		logrus.Info("Error executing PopulateSessionProxySecret")
+		r.log.Error("Error executing PopulateSessionProxySecret", err)
 	}
 	return p
 }

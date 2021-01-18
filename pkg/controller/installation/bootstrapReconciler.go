@@ -12,7 +12,7 @@ import (
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -38,13 +38,14 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 )
 
-func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
 		mpm:           mpm,
 		installation:  installation,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
+		log:           logger,
 	}, nil
 }
 
@@ -55,6 +56,7 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.RHMI
 	*resources.Reconciler
 	recorder record.EventRecorder
+	log      l.Logger
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -62,7 +64,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling bootstrap stage")
+	r.log.Info("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -121,9 +123,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	metrics.SetRHMIInfo(installation)
-	logrus.Info("Metric rhmi_info exposed")
+	r.log.Info("Metric rhmi_info exposed")
 
-	logrus.Info("Bootstrap stage reconciled successfully")
+	r.log.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -355,7 +357,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 			} else {
 				// recover secret from existing OAuthClient object in case Secret object was deleted
 				oauthClientSecrets.Data[string(product)] = []byte(oauthClient.Secret)
-				logrus.Warningf("OAuth client secret for %s recovered from OAutchClient object", string(product))
+				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"product": string(product)})
 			}
 		}
 	}
@@ -365,7 +367,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling OAuth clients secrets: %w", err)
 	}
-	logrus.Info("Bootstrap OAuth client secrets successfully reconciled")
+	r.log.Info("Bootstrap OAuth client secrets successfully reconciled")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -430,7 +432,7 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling Github OAuth secrets: %w", err)
 	}
 
-	logrus.Info("Bootstrap Github OAuth secrets successfully reconciled")
+	r.log.Info("Bootstrap Github OAuth secrets successfully reconciled")
 
 	secretRoleCR := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -475,7 +477,7 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role binding: %w", err)
 	}
-	logrus.Info("Bootstrap Github OAuth secrets Role and Role Binding successfully reconciled")
+	r.log.Info("Bootstrap Github OAuth secrets Role and Role Binding successfully reconciled")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 
@@ -501,7 +503,7 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	logrus.Info("Found and deleted rhmiconfig-dedicated-admins-role-binding")
+	r.log.Info("Found and deleted rhmiconfig-dedicated-admins-role-binding")
 
 	// Delete the role binding
 	if err := serverClient.Delete(ctx, configRoleBinding); err != nil {

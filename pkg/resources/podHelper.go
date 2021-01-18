@@ -2,8 +2,8 @@ package resources
 
 import (
 	"bytes"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	kube "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -14,7 +14,7 @@ import (
 
 // ExecCmd exec command on specific pod and wait the command's output.
 //func ExecuteRemoteCommand(ns string, podName string, command string, container string) (string, string, error) {
-func ExecuteRemoteCommand(ns string, podName string, command string) (string, string, error) {
+func ExecuteRemoteCommand(ns string, podName string, command string, log l.Logger) (string, string, error) {
 	cmd := []string{
 		"/bin/bash",
 		"-c",
@@ -48,7 +48,7 @@ func ExecuteRemoteCommand(ns string, podName string, command string) (string, st
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
-	logrus.Infof("Executing command, %s, on pod, %s", command, podName)
+	log.Infof("Executing", l.Fields{"command": command, "pod": podName})
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdout: buf,

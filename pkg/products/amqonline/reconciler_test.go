@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -248,7 +249,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -261,6 +262,10 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductAMQOnline})
 }
 
 func TestReconcile_reconcileInfraConfigs(t *testing.T) {
@@ -299,7 +304,7 @@ func TestReconcile_reconcileInfraConfigs(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -347,7 +352,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -395,7 +400,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -441,7 +446,7 @@ func TestReconcile_reconcileServiceAdmin(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -584,7 +589,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 	}
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, nil, nil, s.Recorder)
+			r, err := NewReconciler(s.FakeConfig, nil, nil, s.Recorder, getLogger())
 			if err != nil {
 				t.Fatal("could not create reconciler", err)
 			}
@@ -744,6 +749,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
