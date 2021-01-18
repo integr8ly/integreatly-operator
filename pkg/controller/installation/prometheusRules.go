@@ -38,10 +38,10 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 						Alert: fmt.Sprintf("%sInstallationControllerIsInReconcilingErrorState", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for the last 5 minutes", strings.ToUpper(installationName)),
+							"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for 5 of the last 10 minutes", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) (controller_runtime_reconcile_total{controller='installation-controller', result='error'}) >= 1", installationName)),
-						For:    "5m",
+						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='error'}[5m]) > 0", installationName)),
+						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
 				},
