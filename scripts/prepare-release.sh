@@ -137,9 +137,10 @@ set_images() {
   esac
 }
 
-set_csv_service_affecting() {
-  echo "Update CSV for release $SEMVER to be service affecting"
-  yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.serviceAffecting "true"
+set_csv_service_affecting_field() {
+  local value=$1
+  echo "Update CSV for release $SEMVER to be 'serviceAffecting: $value'"
+  yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.serviceAffecting "$value"
 }
 
 if [[ -z "$SEMVER" ]]; then
@@ -176,6 +177,6 @@ set_descriptions
 set_clusterPermissions
 set_images
 
-if [[ "$SERVICE_AFFECTING" == true ]]; then
- set_csv_service_affecting
+if [[ -n "$SERVICE_AFFECTING" ]]; then
+ set_csv_service_affecting_field "$SERVICE_AFFECTING"
 fi
