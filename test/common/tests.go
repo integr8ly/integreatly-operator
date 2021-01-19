@@ -61,7 +61,7 @@ var (
 				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
+				/*FLAKY*/ {"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
@@ -72,13 +72,13 @@ var (
 	IDP_BASED_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
+				/*FLAKY*/ {"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
 				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
-				{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
-				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
-				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
+				/*FLAKY*/ {"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
+				/*FLAKY*/ {"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
+				/*FLAKY*/ {"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
