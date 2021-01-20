@@ -50,6 +50,8 @@ import (
 var (
 	log           = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "namespacelabel_controller"})
 	configMapName = "cloud-resources-aws-strategies"
+	//configMap name derived from the addons metadata id
+	deletionConfigMap = "managed-api-service"
 )
 
 //  patchStringValue specifies a patch operation for a string.
@@ -89,6 +91,17 @@ var (
 		"api.openshift.com/addon-managed-api-service-delete": Uninstall,
 		// Update CIDR value
 		"cidr": CheckCidrValueAndUpdate,
+	}
+
+	// Map that associates the labels on the configMap to actions to perform
+	// - Keys are labels that might be set to the configMap object
+	// - Values are functions that receive the value of the label, the reconcile request,
+	//   and the reconciler instance.
+	configMapLabelBasedActions = map[string]func(string, reconcile.Request, *ReconcileNamespaceLabel) error{
+		// Uninstall RHMI
+		"api.openshift.com/addon-rhmi-operator-delete": Uninstall,
+		// Uninstall MAO
+		"api.openshift.com/addon-managed-api-service-delete": Uninstall,
 	}
 )
 
@@ -130,6 +143,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch the for changes in config maps
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		&handler.EnqueueRequestForObject{},
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -162,6 +184,16 @@ func (r *ReconcileNamespaceLabel) Reconcile(request reconcile.Request) (reconcil
 		if err != nil {
 			r.log.Error("could not retrieve %s namespace:", err)
 		}
+
+		rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace, log)
+		if rhmiCr.Spec.Type == "managed" {
+			deletionConfigMap = "rhmi"
+		}
+		err = r.CheckConfigMap(ns, request, deletionConfigMap)
+		if err != nil {
+			return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
+		}
+
 		err = r.CheckLabel(ns, request)
 
 		if err != nil {
@@ -201,6 +233,26 @@ func (r *ReconcileNamespaceLabel) CheckLabel(o metav1.Object, request reconcile.
 		}
 	}
 
+	return nil
+}
+
+// CheckConfigMap Checks configMap for labels determines what action to use
+func (r *ReconcileNamespaceLabel) CheckConfigMap(o metav1.Object, request reconcile.Request, deletionConfigMapName string) error {
+	configMap := &corev1.ConfigMap{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: request.NamespacedName.Name, Name: deletionConfigMapName}, configMap)
+	if err != nil {
+		return err
+	}
+	for k, v := range configMap.GetLabels() {
+		action, ok := configMapLabelBasedActions[k]
+		if !ok {
+			continue
+		}
+
+		if err := action(v, request, r); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
