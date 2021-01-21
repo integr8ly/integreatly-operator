@@ -20,32 +20,6 @@ for (( i=0; i<5; i++ )) do
     sleep 5
 done
 
-echo "Obtaining address allocation details"
-ELIP=`aws ec2 describe-addresses --filters Name=instance-id,Values=$EC2 --region ${CLUSTER_REGION} --query Addresses[0].AllocationId --output text`
-for (( i=0; i<5; i++ )) do
-    if [[ $ELIP =~ "eipalloc-" ]]; then
-      echo "Address "${ELIP}" identified"
-      break
-    fi
-    sleep 5
-done
-
-echo "Obtaining address association details"
-ASSOC=`aws ec2 describe-addresses --filters Name=instance-id,Values=$EC2 --region ${CLUSTER_REGION} --query Addresses[0].AssociationId --output text`
-for (( i=0; i<5; i++ )) do
-    if [[ $ASSOC =~ "eipassoc-" ]]; then
-      echo "Address "${ASSOC}" identified"
-      break
-    fi
-    sleep 5
-done
-
-echo "Disassociating address "$ASSOC
-aws ec2 disassociate-address --association-id $ASSOC --region $CLUSTER_REGION
-
-echo "Releasing address "$ELIP
-aws ec2 release-address --allocation-id $ELIP --region $CLUSTER_REGION
-
 echo "Terminating EC2 instance "$EC2
 aws ec2 terminate-instances --instance-ids $EC2 --region $CLUSTER_REGION
 for (( i=0; i<60; i++ )) do

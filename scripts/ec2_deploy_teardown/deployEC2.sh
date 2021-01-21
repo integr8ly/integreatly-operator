@@ -35,6 +35,16 @@ for (( i=0; i<5; i++ )) do
     sleep 5
 done
 
+# For Hyperfoil
+if [[ "${INSTALL_HYPERFOIL}x" == "truex" ]]; then
+    echo "Setting up ingress rules required for Hyperfoil"
+    if [[ "${FULL_ACCESS_IP}x" != "x" ]]; then
+        aws ec2 authorize-security-group-ingress --group-id ${SECGRP} --protocol all --cidr ${FULL_ACCESS_IP}/32 --region ${CLUSTER_REGION}
+    fi
+
+    aws ec2 authorize-security-group-ingress --group-id ${SECGRP} --protocol all --cidr 127.0.0.1/32 --region ${CLUSTER_REGION}
+fi
+
 echo "Authorising security group"
 aws ec2 authorize-security-group-ingress --group-id $SECGRP --protocol tcp --port 22 --cidr 0.0.0.0/0 --region ${CLUSTER_REGION}
 sleep 5
@@ -49,36 +59,10 @@ for (( i=0; i<5; i++ )) do
     sleep 5
 done
 
-echo "Starting EC2 micro-t2 instance"
-EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_NAME}Key --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --query 'Instances[0].InstanceId' --output text`
-for (( i=0; i<60; i++ )) do
-    commandResult=$(aws ec2 describe-instance-status --region $CLUSTER_REGION --instance-ids $EC2 --query 'InstanceStatuses[0].InstanceState.Name' --output text)
-    if [[ $commandResult == "running" ]]; then
-      echo "ec2 "$EC2" instance is running"
-      break
-    fi
-    sleep 10
-done
+echo "Starting EC2 instance"
+EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_NAME}Key --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --associate-public-ip-address --query 'Instances[0].InstanceId' --output text`
 
-echo "Allocating address"
-ELIP=`aws ec2 allocate-address --domain vpc --region ${CLUSTER_REGION} --query 'AllocationId' --output text`
-for (( i=0; i<5; i++ )) do
-    if [[ $ELIP =~ "eipalloc-" ]]; then
-      echo "Address "${ELIP}" is allocated"
-      break
-    fi
-    sleep 5
-done
-
-echo "Associating address"
-ASSOC=`aws ec2 associate-address --allocation-id $ELIP --instance-id $EC2 --region ${CLUSTER_REGION}  --output text --query 'AssociationId'`
-for (( i=0; i<5; i++ )) do
-    if [[ $ASSOC =~ "eipassoc-" ]]; then
-      echo "Address "${ASSOC}" is associated"
-      break
-    fi
-    sleep 5
-done
+aws ec2 wait instance-status-ok --instance-ids ${EC2} --region ${CLUSTER_REGION}
 
 echo "Getting public ip"
 PUBIP=`aws ec2 describe-instances --filters "Name=instance-id,Values=$EC2" --query 'Reservations[].Instances[].PublicDnsName' --region ${CLUSTER_REGION} --output text`
@@ -99,4 +83,3 @@ cat ${EC2_NAME}Key.pem
 echo ""
 echo "chmod 700 ${EC2_NAME}Key.pem"
 echo "ssh -i ${EC2_NAME}Key.pem ec2-user@$PUBIP"
-
