@@ -33,23 +33,13 @@ func (r *ReconcileInstallation) newAlertsReconciler(installation *integreatlyv1a
 				GroupName: fmt.Sprintf("%s-installation.rules", installationName),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: fmt.Sprintf("%sInstallationControllerIsNotReconciling", strings.ToUpper(installationName)),
+						Alert: fmt.Sprintf("%sInstallationControllerIsInReconcilingErrorState", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": fmt.Sprintf("%s operator has not reconciled successfully in the interval of 15m over the past 1 hour", strings.ToUpper(installationName)),
+							"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for 5 of the last 10 minutes", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[15m]) == 0", installationName)),
-						For:    "1h",
-						Labels: map[string]string{"severity": "warning"},
-					},
-					{
-						Alert: fmt.Sprintf("%sInstallationControllerStoppedReconciling", strings.ToUpper(installationName)),
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": fmt.Sprintf("%s operator has not reconciled successfully in the interval of 30m over the past 2 hours", strings.ToUpper(installationName)),
-						},
-						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[30m]) == 0", installationName)),
-						For:    "2h",
+						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='error'}[5m]) > 0", installationName)),
+						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
 				},
