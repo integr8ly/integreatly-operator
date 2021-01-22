@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
 	"github.com/pkg/errors"
-
 	"strconv"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -34,6 +32,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -480,11 +479,18 @@ func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8s
 								ContainerPort: metricsPort,
 							},
 						},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    k8sresource.MustParse("3m"),
+								corev1.ResourceMemory: k8sresource.MustParse("40Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    k8sresource.MustParse("3m"),
+								corev1.ResourceMemory: k8sresource.MustParse("40Mi")},
+						},
 					},
 				},
 			},
 		}
-
 		return nil
 	})
 
