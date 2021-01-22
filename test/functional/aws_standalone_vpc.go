@@ -182,23 +182,22 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 		t.Fatal("could not get cidr block from strategy map", err)
 	}
 
-	vpcCidrBlock := expectedCidr
-	// if the cidr strategy map is empty then attempt to retrieve the cidr block from the vpc
+	// if the cidr strategy map is empty then attempt to retrieve the standaloneCidr cidr block from the vpc
 	if expectedCidr == "" {
-		vpcCidrBlock, err = getVpcCidrBlock(ec2Sess, vpcClusterTagKey, clusterTag)
+		standaloneCidr, err := getVpcCidrBlock(ec2Sess, vpcClusterTagKey, clusterTag)
 		if err != nil {
 			t.Fatal("could not get cidr block from vpc", err)
 		}
 
-		// check the cidr block is in the allowed range
-		err = verifyCidrBlockIsInAllowedRange(vpcCidrBlock)
+		// check if the cidr block is in the allowed range
+		err = verifyCidrBlockIsInAllowedRange(standaloneCidr)
 		if err != nil {
-			t.Fatalf("cidr block %s is not within the allowed range %s", vpcCidrBlock, err)
+			t.Fatalf("cidr block %s is not within the allowed range %s", standaloneCidr, err)
 		}
 
 		// build tag key to retrieve cluster vpc
 		// denoted -> kubernetes.io/cluster/<cluster-id>=owned
-		clusterOwnedVpcKey := clusterOwnedTagKeyPrefix + clusterTag
+		clusterOwnedVpcKey := fmt.Sprintf("%s%s", clusterOwnedTagKeyPrefix, clusterTag)
 
 		// retrieve the cluster cidr
 		clusterCidr, err := getVpcCidrBlock(ec2Sess, clusterOwnedVpcKey, clusterOwnedTagValue)
@@ -207,10 +206,12 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 		}
 
 		// check if the cidr blocks overlap
-		err = checkForOverlappingCidrBlocks(vpcCidrBlock, clusterCidr)
+		err = checkForOverlappingCidrBlocks(standaloneCidr, clusterCidr)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		expectedCidr = standaloneCidr
 	}
 
 	clusterNodes := &v1.NodeList{}
@@ -221,7 +222,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	availableZones := GetClustersAvailableZones(clusterNodes)
 
 	// verify vpc
-	vpc, err := verifyVpc(ec2Sess, clusterTag, vpcCidrBlock)
+	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 
 	// fail immediately if the vpc is nil, since all of the
@@ -231,7 +232,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	}
 
 	// verify subnets
-	subnets, err := verifySubnets(ec2Sess, clusterTag, vpcCidrBlock)
+	subnets, err := verifySubnets(ec2Sess, clusterTag, expectedCidr)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
 
 	// verify security groups
@@ -259,7 +260,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.cacheSubnetGroupsError = err.(*networkConfigTestError).cacheSubnetGroupsError
 
 	// verify peering connection
-	conn, err := verifyPeeringConnection(ec2Sess, clusterTag, vpcCidrBlock, aws.StringValue(vpc.VpcId))
+	conn, err := verifyPeeringConnection(ec2Sess, clusterTag, expectedCidr, aws.StringValue(vpc.VpcId))
 	testErrors.peeringConnError = err.(*networkConfigTestError).peeringConnError
 
 	// verify standalone vpc route table
@@ -267,12 +268,12 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.standaloneRouteTableError = err.(*networkConfigTestError).standaloneRouteTableError
 
 	// verify cluster route table
-	err = verifyClusterRouteTables(ec2Sess, clusterTag, vpcCidrBlock, conn, availableZones)
+	err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn, availableZones)
 	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
 	// update the _network create strategy in the aws strategy map and ensure
 	// this does not change the existing vpc
-	err = verifyCidrBlockUpdate(ctx, testingCtx, ec2Sess, strategyMap, clusterTag, vpcCidrBlock)
+	err = verifyCidrBlockUpdate(ctx, testingCtx, ec2Sess, strategyMap, clusterTag, expectedCidr)
 	testErrors.updateCidrBlockError = err.(*networkConfigTestError).updateCidrBlockError
 
 	// if any error was found, fail the test

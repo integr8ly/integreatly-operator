@@ -303,12 +303,12 @@ func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
 	return zones
 }
 
-// getVpcCidrBlock returns the cidr block using a key/value tag pairing
+// getVpcCidrBlock returns a cidr block using a key/value tag pairing
 func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
 	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(fmt.Sprintf("%s", clusterTagName)),
+				Name:   aws.String(clusterTagName),
 				Values: []*string{aws.String(clusterTagValue)},
 			},
 		},
