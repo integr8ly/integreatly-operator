@@ -37,10 +37,15 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
 
-	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, ctx.HttpClient, ctx.Client, t)
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, httpClient, ctx.Client, t)
 
 	// Login to 3Scale
-	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
+	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", httpClient)
 	if err != nil {
 		dumpAuthResources(ctx.Client, t)
 		// t.Fatalf("[%s] error occurred: %v", getTimeStampPrefix(), err)
