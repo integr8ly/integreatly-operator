@@ -8,6 +8,17 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
+const (
+	// Configuration key to set the scrape interval for the federate metrics
+	MonitoringParamFederateScrapeInterval = "FEDERATE_SCRAPE_INTERVAL"
+	// Configuration key to set the scrape timeout for the federate metrics
+	MonitoringParamFederateScrapeTimeout = "FEDERATE_SCRAPE_TIMEOUT"
+	// The default value for the scrape interval for the federate metrics. Default is 60s.
+	MonitoringDefaultFederateScrapeInterval = "60s"
+	// The default value for the scrape interval for the federate timeout. Default is 30s.
+	MonitoringDefaultFederateScrapeTimeout = "30s"
+)
+
 type Monitoring struct {
 	Config ProductConfig
 }
@@ -175,4 +186,12 @@ func (m *Monitoring) Validate() error {
 	}
 
 	return nil
+}
+
+// Try to get the value for the given key from the configuration if it exists. Otherwise return the default value instead.
+func (m *Monitoring) GetExtraParamWithDefault(key string, v string) string {
+	if val, ok := m.Config[key]; ok {
+		return val
+	}
+	return v
 }
