@@ -15,10 +15,12 @@ import (
 const (
 	// ZoneLabel is the label that specifies the zone where a node is
 	ZoneLabel = "topology.kubernetes.io/zone"
+	// NodeLabel is the label that specifies pods listed on a node
+	NodeLabel = "kubernetes.io/hostname"
 	// AntiAffinityRequiredEnvVar is an environment variable that, when set to
 	// true, makes the product pod replicas use "required" anti affinity rules
-	// by AZ
-	AntiAffinityRequiredEnvVar = "FORCE_ZONE_DISTRIBUTION"
+	// by AZ and Node
+	AntiAffinityRequiredEnvVar = "FORCED_DISTRIBUTION"
 )
 
 // MutateMultiAZAntiAffinity returns a PodTemplateMutation that sets the anti
@@ -61,6 +63,15 @@ func MultiAZAntiAffinityPreferred(matchLabels map[string]string) *corev1.Affinit
 					},
 					Weight: 100,
 				},
+				{
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &v1.LabelSelector{
+							MatchLabels: matchLabels,
+						},
+						TopologyKey: NodeLabel,
+					},
+					Weight: 100,
+				},
 			},
 		},
 	}
@@ -77,6 +88,12 @@ func MultiAZAntiAffinityRequired(matchLabels map[string]string) *corev1.Affinity
 						MatchLabels: matchLabels,
 					},
 					TopologyKey: ZoneLabel,
+				},
+				{
+					LabelSelector: &v1.LabelSelector{
+						MatchLabels: matchLabels,
+					},
+					TopologyKey: NodeLabel,
 				},
 			},
 		},
