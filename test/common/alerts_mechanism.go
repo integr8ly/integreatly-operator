@@ -69,18 +69,21 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 	}
 
 	if threescaleAlertsFiring {
+		t.Log("3Scale alerts firing unexpectedly")
 		t.FailNow()
 	}
 
 	// scale down Threescale operator and product pods and verify that threescale alert is firing
 	err = performTest(t, ctx, originalOperatorReplicas)
 	if err != nil {
+		t.Log("Error During scale down 3Scale operator and product pods and verify that 3scale alert is firing")
 		t.Fatal(err)
 	}
 
 	// verify the operator has been scaled backup
 	err = checkThreescaleOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
 	if err != nil {
+		t.Log("Error During verify the operator has been scaled backup")
 		t.Fatal(err)
 	}
 
