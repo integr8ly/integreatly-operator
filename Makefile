@@ -12,7 +12,7 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=1.2.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-IN_PROW="false"
+IN_PROW ?= "false"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
