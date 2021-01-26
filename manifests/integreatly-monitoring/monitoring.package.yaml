@@ -1,4 +1,4 @@
 packageName: rhmi-monitoring
 channels:
-- currentCSV: application-monitoring-operator.v1.4.0
+- currentCSV: application-monitoring-operator.v1.5.0
   name: rhmi
