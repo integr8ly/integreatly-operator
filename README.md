@@ -277,10 +277,43 @@ Prerequisites:
 
 Tip: set `PASSWORD` env var to define a password for the users. Random password is generated when this env var is not set.
 
+Note: The script can be also instructed to run the `scripts/refine-oauth-token-timeouts.sh` script below to configure the session expiration and token inactivity timeouts
+      for the OSD cluster. Set `SESSION_EXPIRATION_TIMEOUT` and `TOKEN_INACTIVITY_TIMEOUT` environment variables to achieve this. You can also specify the list of OAuth
+      clients that should be configured as part of running the `scripts/refine-oauth-token-timeouts.sh` script by enumerating them via `OAUTH_CLIENTS` environment variable.
 
 ## Set up dedicated admins
 
 To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
+
+Note: The script can be also instructed to run the `scripts/refine-oauth-token-timeouts.sh` script below to configure the session expiration and token inactivity timeouts
+      for the OSD cluster. Set `SESSION_EXPIRATION_TIMEOUT` and `TOKEN_INACTIVITY_TIMEOUT` environment variables to achieve this. You can also specify the list of OAuth
+      clients that should be configured as part of running the `scripts/refine-oauth-token-timeouts.sh` script by enumerating them via `OAUTH_CLIENTS` environment variable.
+
+## Set session expiration and token inactivity timeouts for OSD cluster (and SSO IDP if defined)
+You can use the `scripts/refine-oauth-token-timeouts.sh` script to configure session expiration (duration of the OAuth access token) and token inactivity timeout for your OSD cluster. Both values can be customized (see `scripts/refine-oauth-token-timeouts.sh -h` for additional help and examples). Moreover, it is possible to specify the list of OAuth clients the token inactivity and session expiration fields of which should be updated as part of the script run.
+
+The minimum value of token inactivity timeout is 300 seconds (5 minutes). The script defaults to this value unless specified. The default value of the token (session) expiration timeout is 3000 seconds (50 minutes). Settings of the following OAuth clients are updated by default if not overridden by the `OAUTH_CLIENTS` environment variable:
+* `console`
+* `openshift-browser-client`
+* `openshift-challenging-client`
+* `redhat-rhoam-3scale`
+* `redhat-rhoam-rhsso`
+* `redhat-rhoam-rhssouser`
+
+The script recognizes the following environment variables (see script `--help` for additional guidance):
+
+* `DONT_UPDATE_OAUTH_CLIENTS`   Skip updating token timeout settings for OAuth clients defined within the `openshift-config` namespace of the OSD cluster.
+* `DONT_UPDATE_OAUTH_SERVER`    Skip updating token timeouts settings for the internal OAuth server of the OSD cluster.
+* `DONT_UPDATE_SSO_IDP`         Skip updating token timeout settings for the SSO identity provider associated with the OSD cluster.
+* `OAUTH_CLIENTS`               Enumerated list of OAuth clients, defined in the `openshift-config` namespace of the OSD cluster token timeout(s)
+                                settings for which should be updated as part of the script run.
+* `SESSION_EXPIRATION_TIMEOUT`  Defines value to be used to configure session expiration timeout setting for the OSD cluster and associated SSO identity provider.
+* `TOKEN_INACTIVITY_TIMEOUT`    Defines value to be used to configure token inactivity timeout setting for the OSD cluster and associated SSO identity provider.
+* `VERBOSE`                     Enable verbose output.
+
+Prerequisites:
+- `oc` command available on your machine (latest version can be downloaded [here](https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/))
+- OC session with cluster admin permissions in a target cluster
 
 ## Tests
 
