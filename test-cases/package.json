@@ -11,7 +11,6 @@
     "@types/jira-client": "6.13.1",
     "@types/xml2js": "0.4.5",
     "@types/yargs": "15.0.5",
-    "axios": "0.19.2",
     "form-data": "3.0.0",
     "gray-matter": "4.0.2",
     "jira-client": "6.18.0",
@@ -26,5 +25,8 @@
     "winston": "3.3.3",
     "xml2js": "0.4.23",
     "yargs": "15.4.1"
+  },
+  "devDependencies": {
+     "axios": "0.19.2"
   }
 }
