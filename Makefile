@@ -13,6 +13,7 @@ OPERATOR_SDK_VERSION=0.17.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW="false"
+TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
@@ -435,6 +436,6 @@ vendor/fix:
 	go mod tidy
 	go mod vendor
 
-.PHONY: manifest/release
-manifest/release:
-	@./scripts/rhoam-manifest-generator.sh
+.PHONY: manifest/prodsec
+manifest/prodsec:
+	@./scripts/prodsec-manifest-generator.sh ${TYPE_OF_MANIFEST}
