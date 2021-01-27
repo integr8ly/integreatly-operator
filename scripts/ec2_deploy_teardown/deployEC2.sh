@@ -60,7 +60,7 @@ for (( i=0; i<5; i++ )) do
 done
 
 echo "Starting EC2 instance"
-EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_NAME}Key --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --associate-public-ip-address --query 'Instances[0].InstanceId' --output text`
+EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_NAME}Key --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --associate-public-ip-address --block-device-mapping "[ { \"DeviceName\": \"/dev/sda1\", \"Ebs\": { \"VolumeSize\": 50 } } ]" --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${EC2_NAME}}]" --query 'Instances[0].InstanceId' --output text`
 
 aws ec2 wait instance-status-ok --instance-ids ${EC2} --region ${CLUSTER_REGION}
 
