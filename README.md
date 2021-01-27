@@ -145,15 +145,29 @@ image contains references to image bundles which specify the specific versions o
 
 Make sure to export the variables above (see [local setup](#local-setup)), then run:
 
+For RHMI:
 ```sh
 make cluster/prepare/bundle
 ```
 
+For RHOAM:
+```sh
+INSTALLATION_TYPE=managed-api make cluster/prepare/bundle
+```
+
 For local development, update the ORG and ensure the repositories are publicly accessible.
 Potentially, 3 repositories need to be publicly available, 
+
+For RHMI:
 * \<REG>/\<ORG>/integreatly-operator
 * \<REG>/\<ORG>/integreatly-index
 * \<REG>/\<ORG>/integreatly-bundle 
+
+For RHOAM:
+* \<REG>/\<ORG>/integreatly-operator
+* \<REG>/\<ORG>/managed-api-service-index
+* \<REG>/\<ORG>/managed-api-service-bundle 
+
 
 ### Variables
 The following variables can prepend the make target below 
@@ -161,27 +175,44 @@ The following variables can prepend the make target below
 * ORG, default integreatly
 * REG, default quay.io
 * BUILD_TOOL, default docker
+* OLM_TYPE, default integreatly-operator
 
 ### Deployment Scenarios
 
+Depending on the deployment type, you need to specify whether it is RHOAM or RHMI that you would like to work with.
+
+For RHMI:
+```sh
+export OLM_TYPE=integreatly-operator
+```
+For RHOAM:
+```sh
+export OLM_TYPE=managed-api-service
+```
+
 #### Deploy the latest bundle version 
-This assumes no prior installation of the RHMI operator. As such, it will remove the replaces field in the CSV file to 
+This assumes no prior installation of the RHMI/RHOAM operator. As such, it will remove the replaces field in the CSV file to 
 prevent the attempted replacement of an existing version of the operator available for installation.
+
 ```sh
 ORG=<YOUR_ORG> make install/olm/bundle 
 ```
 
 #### Deploy a specific bundle version
-This will assume not upgrading and remove the replaces field from CSV 2.5.0
+This will assume not upgrading and remove the replaces field from the CSV
+
+Note: The version you are pointing to, must exist in the deploy/OLM_TYPE 
+
 ```sh
-ORG=<YOUR_ORG> BUNDLE_VERSIONS="2.5.0" make install/olm/bundle
+ORG=<YOUR_ORG> BUNDLE_VERSIONS="1.1.0" make install/olm/bundle
 ```
 
 #### Deploy an upgrade version
-Example shows upgrade from 2.5.0 to 2.4.0. 2.4.0 must already be installed on the cluster.
-2.5.0 must reference 2.4.0 in the CSV replaces field 
+Example shows upgrade from 1.1.0 to 1.2.0. 1.1.0 must already be installed on the cluster and a 1.2.0 release must be available.
+1.2.0 must reference 1.1.0 in the CSV replaces field but 1.1.0 can not have the "replaces" field set.
+
 ```sh
-ORG=<YOUR_ORG> BUNDLE_VERSIONS="2.5.0,2.4.0" UPGRADE=true make install/olm/bundle 
+ORG=<YOUR_ORG> BUNDLE_VERSIONS="1.2.0,1.1.0" UPGRADE=true make install/olm/bundle 
 ```
 
 #### Create a new bundle and deploy
