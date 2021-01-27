@@ -43,13 +43,14 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		dumpAuthResources(ctx.Client, t)
-		// t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
+		// t.Fatalf("[%s] error occurred: %v", getTimeStampPrefix(), err)
 		t.Skipf("flakey test [%s] error ocurred: %v jira https://issues.redhat.com/browse/MGDAPI-557 ", getTimeStampPrefix(), err)
 	}
 
 	// Make sure 3Scale is available
 	err = tsClient.Ping()
 	if err != nil {
+		t.Log("Error during making sure 3Scale is available")
 		t.Fatal(err)
 	}
 
@@ -59,12 +60,14 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	// Create a product
 	productId, err := tsClient.CreateProduct(fmt.Sprintf("dummy-product-%v", r1.Intn(100000)))
 	if err != nil {
+		t.Log("Error during create the product")
 		t.Fatal(err)
 	}
 
 	// Delete the product
 	err = tsClient.DeleteProduct(productId)
 	if err != nil {
+		t.Log("Error during deleting the product")
 		t.Fatal(err)
 	}
 }
