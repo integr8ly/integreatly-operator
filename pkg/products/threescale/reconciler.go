@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 	"strings"
@@ -1477,17 +1478,29 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
 		res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
-		if err != nil || res.StatusCode != http.StatusCreated {
-			r.log.Error("Failed to add user", err)
-			return integreatlyv1alpha1.PhaseInProgress, err
+
+		// when the failure of user happens we don't want to block the reconciler.
+		// failure to create a user can happen in the case of the username being too long
+		// the max allowed user length is 40 characters in 3scale.
+		// The reconciler will continue to allow the installation to happen and a metric
+		// will be exposed and alert fire to alert to the creation failure
+		metrics.SetThreeScaleUserAction(res.StatusCode, kcUser.UserName, http.MethodPost)
+		if err != nil {
+			r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
+		}
+		if res.StatusCode != http.StatusCreated {
+			r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale with status code %d", kcUser.UserName, res.StatusCode), errors.New("error on http request"))
 		}
 	}
 	for _, tsUser := range deleted {
 		if tsUser.UserDetails.Username != *systemAdminUsername {
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
-			if err != nil || res.StatusCode != http.StatusOK {
-				r.log.Error("Failed to delete user", err)
-				return integreatlyv1alpha1.PhaseInProgress, err
+			metrics.SetThreeScaleUserAction(res.StatusCode, string(tsUser.UserDetails.Id), http.MethodDelete)
+			if err != nil {
+				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale", tsUser.UserDetails.Id), err)
+			}
+			if res.StatusCode != http.StatusOK {
+				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale with status code %d", tsUser.UserDetails.Id, res.StatusCode), errors.New("error on http request"))
 			}
 		}
 	}
