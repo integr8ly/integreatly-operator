@@ -3,9 +3,9 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
+    targets:
+      - 1.0.0
 estimate: 1h
-tags:
-  - per-release
 ---
 
 # H23 - Validate rate limit service with default customer config

@@ -3,9 +3,9 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
+    targets:
+      - 1.0.0
 estimate: 90m
-tags:
-  - per-release
 ---
 
 # C18 - Validate API usage alerts
