@@ -1,24 +1,24 @@
 #!/bin/bash
 
+set -ex
+
 echo "Obtaining security group"
 SECGRP=`aws ec2 describe-security-groups --region ${CLUSTER_REGION} --filters Name=group-name,Values=${EC2_NAME}-sg --query SecurityGroups[0].GroupId --output text`
-for (( i=0; i<5; i++ )) do
-    if [[ $SECGRP =~ "sg-" ]]; then
-      echo "SECGRP "${SECGRP}" identified"
-      break
-    fi
-    sleep 5
-done
+if [[ $SECGRP =~ "sg-" ]]; then
+  echo "SECGRP "${SECGRP}" identified"
+else
+  echo "Security group not found!"
+  exit 1
+fi
 
 echo "Obtaining EC2 instance"
 EC2=`aws ec2 describe-instances  --region ${CLUSTER_REGION} --filters Name=key-name,Values=${EC2_NAME}Key Name=instance-state-name,Values=running --query Reservations[0].Instances[0].InstanceId --output text`
-for (( i=0; i<5; i++ )) do
-    if [[ $EC2 =~ "i-" ]]; then
-      echo "EC2 "${EC2}" identified"
-      break
-    fi
-    sleep 5
-done
+if [[ $EC2 =~ "i-" ]]; then
+  echo "EC2 "${EC2}" identified"
+else
+  echo "EC2 instance not found!"
+  exit 1
+fi
 
 echo "Terminating EC2 instance "$EC2
 aws ec2 terminate-instances --instance-ids $EC2 --region $CLUSTER_REGION
