@@ -30,10 +30,20 @@ import (
 )
 
 var (
-	resourceType    = "_network"
-	tier            = "production"
-	dummyIpAddress  = "172.11.0.0/24"
-	strategyMapName = "cloud-resources-aws-strategies"
+	resourceType      = "_network"
+	tier              = "production"
+	dummyIpAddress    = "172.11.0.0/24"
+	strategyMapName   = "cloud-resources-aws-strategies"
+	allowedCidrRanges = []string{
+		"10.255.255.255/8",
+		"172.31.255.255/12",
+	}
+)
+
+const (
+	vpcClusterTagKey         = "tag:integreatly.org/clusterID"
+	clusterOwnedTagKeyPrefix = "tag:kubernetes.io/cluster/"
+	clusterOwnedTagValue     = "owned"
 )
 
 type strategyMap struct {
@@ -160,16 +170,48 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 		t.Skip("_network key does not exist in aws strategy configmap, skipping standalone vpc network test")
 	}
 
-	// get the vpc cidr block
-	expectedCidr, err := getCidrBlock(strat)
-	if err != nil {
-		t.Fatal("could not get cidr block", err)
-	}
-
 	// get the cluster id used for tagging aws resources
 	clusterTag, err := getClusterID(ctx, testingCtx.Client)
 	if err != nil {
 		t.Fatal("could not get cluster id", err)
+	}
+
+	// get the vpc cidr block
+	expectedCidr, err := getCidrBlockFromStrategyMap(strat)
+	if err != nil {
+		t.Fatal("could not get cidr block from strategy map", err)
+	}
+
+	// if the cidr strategy map is empty then attempt to retrieve the standaloneCidr cidr block from the vpc
+	if expectedCidr == "" {
+		standaloneCidr, err := getVpcCidrBlock(ec2Sess, vpcClusterTagKey, clusterTag)
+		if err != nil {
+			t.Fatal("could not get cidr block from vpc", err)
+		}
+
+		// check if the cidr block is in the allowed range
+		err = verifyCidrBlockIsInAllowedRange(standaloneCidr)
+		if err != nil {
+			t.Fatalf("cidr block %s is not within the allowed range %s", standaloneCidr, err)
+		}
+
+		// build tag key to retrieve cluster vpc
+		// denoted -> kubernetes.io/cluster/<cluster-id>=owned
+		clusterOwnedVpcKey := fmt.Sprintf("%s%s", clusterOwnedTagKeyPrefix, clusterTag)
+
+		// retrieve the cluster cidr
+		clusterCidr, err := getVpcCidrBlock(ec2Sess, clusterOwnedVpcKey, clusterOwnedTagValue)
+		if err != nil {
+			t.Fatal("could not get cidr block from vpc", err)
+		}
+
+		// check if the cidr blocks overlap
+		err = checkForOverlappingCidrBlocks(standaloneCidr, clusterCidr)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedCidr = standaloneCidr
 	}
 
 	clusterNodes := &v1.NodeList{}
@@ -198,7 +240,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.securityGroupError = err.(*networkConfigTestError).securityGroupError
 
 	// we have to manually construct the subnet group names for rds and elasticache,
-	// since tag filtering isnt currently available
+	// since tag filtering isn't currently available
 	subnetGroupName := resources.ShortenString(fmt.Sprintf("%s-%s", clusterTag, "subnet-group"), 40)
 
 	// build array list of all vpc private subnets
@@ -250,7 +292,7 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:integreatly.org/clusterID"),
+				Name:   aws.String(vpcClusterTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -288,7 +330,7 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 	describeSubnets, err := session.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:integreatly.org/clusterID"),
+				Name:   aws.String(vpcClusterTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -338,7 +380,7 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 	describeGroups, err := session.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:integreatly.org/clusterID"),
+				Name:   aws.String(vpcClusterTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -448,7 +490,7 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 	peeringConn, err := session.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:integreatly.org/clusterID"),
+				Name:   aws.String(vpcClusterTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -493,7 +535,7 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 	describeRouteTables, err := session.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String("tag:integreatly.org/clusterID"),
+				Name:   aws.String(vpcClusterTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -633,7 +675,7 @@ func verifyCidrBlockUpdate(ctx context.Context, testingCtx *common.TestingContex
 		vpcOutput, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 			Filters: []*ec2.Filter{
 				{
-					Name:   aws.String("tag:integreatly.org/clusterID"),
+					Name:   aws.String(vpcClusterTagKey),
 					Values: []*string{aws.String(clusterTag)},
 				},
 			},
@@ -702,13 +744,13 @@ func getClusterID(ctx context.Context, client client.Client) (string, error) {
 	return infra.Status.InfrastructureName, nil
 }
 
-func getCidrBlock(strat *strategyMap) (string, error) {
+func getCidrBlockFromStrategyMap(strat *strategyMap) (string, error) {
 	vpcCreateConfig := &ec2.CreateVpcInput{}
 	if err := json.Unmarshal(strat.CreateStrategy, vpcCreateConfig); err != nil {
 		return "", err
 	}
 	if vpcCreateConfig.CidrBlock == nil {
-		return "", fmt.Errorf("cidr block cannot be empty")
+		return "", fmt.Errorf("cidr block cannot be nil")
 	}
 	return aws.StringValue(vpcCreateConfig.CidrBlock), nil
 }
@@ -720,4 +762,40 @@ func contains(strs []*string, str *string) bool {
 		}
 	}
 	return false
+}
+
+func checkForOverlappingCidrBlocks(vpcCidrBlock, clusterCIDRBlock string) error {
+	_, vpcCidr, err := net.ParseCIDR(vpcCidrBlock)
+	if err != nil {
+		return fmt.Errorf("error parsing vpc cidr block: %s", vpcCidr)
+	}
+
+	_, clusterCidr, err := net.ParseCIDR(clusterCIDRBlock)
+	if err != nil {
+		return fmt.Errorf("error parsing cluster cidr block: %s", clusterCidr)
+	}
+
+	if vpcCidr.Contains(clusterCidr.IP) || clusterCidr.Contains(vpcCidr.IP) {
+		return fmt.Errorf("vpc cidr block (%s) overlaps with the cluster cidr block: (%s)", vpcCidr, clusterCidr)
+	}
+
+	return nil
+}
+
+func verifyCidrBlockIsInAllowedRange(cidrBlock string) error {
+	_, cidr, err := net.ParseCIDR(cidrBlock)
+	if err != nil {
+		return fmt.Errorf("error parsing cidr %s", cidrBlock)
+	}
+
+	for _, allowedCidrRanges := range allowedCidrRanges {
+		_, cidrRangeNet, err := net.ParseCIDR(allowedCidrRanges)
+		if err != nil {
+			return fmt.Errorf("error parsing cidr %s", cidrBlock)
+		}
+		if cidrRangeNet.Contains(cidr.IP) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s is not in the expected cidr range", cidrBlock)
 }

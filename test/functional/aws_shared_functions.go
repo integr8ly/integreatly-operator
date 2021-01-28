@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/ec2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
@@ -300,4 +301,27 @@ func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
 		}
 	}
 	return zones
+}
+
+// getVpcCidrBlock returns a cidr block using a key/value tag pairing
+func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
+	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String(clusterTagName),
+				Values: []*string{aws.String(clusterTagValue)},
+			},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("could not find vpc: %v", err)
+	}
+
+	// only one vpc is expected
+	vpcs := describeVpcs.Vpcs
+	if len(vpcs) != 1 {
+		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
+	}
+
+	return aws.StringValue(vpcs[0].CidrBlock), nil
 }
