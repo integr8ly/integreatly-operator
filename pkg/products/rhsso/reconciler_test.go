@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	configv1 "github.com/openshift/api/config/v1"
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -150,7 +151,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	err = configv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	return scheme, err
 }
 

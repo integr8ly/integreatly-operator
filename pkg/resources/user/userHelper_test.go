@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"testing"
 
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -70,6 +71,100 @@ func TestGetUserEmailFromIdentity(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetUsersInActiveIDPs(t *testing.T) {
+
+	scheme := runtime.NewScheme()
+	err := userv1.AddToScheme(scheme)
+	err = configv1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("Error creating build scheme")
+	}
+
+	tests := []struct {
+		Name          string
+		FakeClient    k8sclient.Client
+		ExpectedUsers *userv1.UserList
+		ExpectError   bool
+	}{
+		{
+			Name: "Test get email from identity",
+			FakeClient: fake.NewFakeClientWithScheme(scheme, &userv1.Identity{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "active-idp",
+				},
+				ProviderName: "exists",
+			},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "exists",
+					},
+					Identities: []string{"active-idp"},
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "inactive-idp",
+					},
+					ProviderName: "non-existant",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "non-existant",
+					},
+					Identities: []string{"inactive-idp"},
+				},
+				&configv1.OAuth{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "cluster",
+					},
+					Spec: configv1.OAuthSpec{
+						IdentityProviders: []configv1.IdentityProvider{
+							{Name: "exists"},
+						},
+					},
+				}),
+			ExpectedUsers: &userv1.UserList{
+				TypeMeta: v1.TypeMeta{},
+				ListMeta: v1.ListMeta{},
+				Items: []userv1.User{
+					userv1.User{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "exists",
+						},
+						Identities: []string{"active-idp"},
+					},
+				},
+			},
+			ExpectError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			got, err := GetUsersInActiveIDPs(context.TODO(), tt.FakeClient)
+			if (err != nil) != tt.ExpectError {
+				t.Errorf("GetUsersInActiveIDPs() error = %v, ExpectedErr %v", err, tt.ExpectError)
+				return
+			}
+			if len(tt.ExpectedUsers.Items) != len(got.Items) {
+				t.Errorf("unexpected amount of found users, got %v expected %v", len(got.Items), len(tt.ExpectedUsers.Items))
+			}
+			for _, expectedUser := range tt.ExpectedUsers.Items {
+				if !contains(got.Items, expectedUser) {
+					t.Errorf("expected user: %v not found", expectedUser)
+				}
+			}
+		})
+	}
+}
+
+func contains(s []userv1.User, e userv1.User) bool {
+	for _, a := range s {
+		if a.Name == e.Name {
+			return true
+		}
+	}
+	return false
 }
 
 func TestAppendUpdateProfileActionForUserWithoutEmail(t *testing.T) {

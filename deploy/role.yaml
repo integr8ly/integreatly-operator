@@ -474,6 +474,8 @@ rules:
       - config.openshift.io
     resources:
       - infrastructures
+      - oauths
     verbs:
       - get
+      - list
   # END Permission to get cluster infrastructure details for alerting

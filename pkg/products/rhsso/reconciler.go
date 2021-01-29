@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -431,10 +432,9 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 }
 
 func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
-	openshiftUsers := &usersv1.UserList{}
-	err := serverClient.List(ctx, openshiftUsers)
+	openshiftUsers, err := userHelper.GetUsersInActiveIDPs(ctx, serverClient)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not get users in active IDPs")
 	}
 
 	groups := &usersv1.GroupList{}
