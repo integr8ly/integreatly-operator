@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"fmt"
+	v1 "github.com/openshift/api/config/v1"
+	"github.com/pkg/errors"
 	"regexp"
 	"strings"
 
@@ -92,4 +94,62 @@ func UserInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
 		}
 	}
 	return false
+}
+
+func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
+	openshiftUsers := &usersv1.UserList{}
+	err := serverClient.List(ctx, openshiftUsers)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list users")
+	}
+	idpNames := map[string]bool{}
+
+	oAuths := &v1.OAuthList{}
+	err = serverClient.List(ctx, oAuths)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list oAuths")
+	}
+
+	// get active idp names
+	for _, oauth := range oAuths.Items {
+		for _, idp := range oauth.Spec.IdentityProviders {
+			idpNames[idp.Name] = true
+		}
+	}
+
+	activeUsers := &usersv1.UserList{}
+
+	//go over each user
+	for _, user := range openshiftUsers.Items {
+		// get  their identities - can be multiple?
+		identities, err := GetIdentities(ctx, serverClient, user)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not get identities for user %v", user.Name)
+		}
+
+		for _, identity := range identities.Items {
+			//if any identity is provided by an active idp
+			if _, ok := idpNames[identity.ProviderName]; ok {
+				//add user to return set
+				activeUsers.Items = append(activeUsers.Items, user)
+				//move to next user - so we don't add a user twice
+				break
+			}
+		}
+	}
+	return activeUsers, nil
+}
+
+func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (*usersv1.IdentityList, error) {
+	identities := &usersv1.IdentityList{}
+
+	for _, identityName := range user.Identities {
+		identity := &usersv1.Identity{}
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: identityName}, identity)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not get identity %v for user %v", identityName, user.Name)
+		}
+		identities.Items = append(identities.Items, *identity)
+	}
+	return identities, nil
 }
