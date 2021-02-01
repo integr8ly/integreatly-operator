@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -200,7 +199,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", target.Namespace, err)
 	}
-	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, target.Pkg, target.Namespace)
+	ips, sub, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, target.Pkg, target.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(err) || k8serr.IsNotFound(errors.Unwrap(err)) {
@@ -217,6 +216,24 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 		err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, &ip, log)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.Pkg, err)
+		}
+
+		// Workaround to re-install product operator if install plan fails due to https://bugzilla.redhat.com/show_bug.cgi?id=1923111
+		if ip.Status.Phase == operatorsv1alpha1.InstallPlanPhaseFailed {
+			if sub.Status.InstalledCSV != "" {
+				log.Warningf("Deleting csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg, "csv": sub.Status.InstalledCSV})
+				csv := &operatorsv1alpha1.ClusterServiceVersion{
+					ObjectMeta: metav1.ObjectMeta{Namespace: target.Namespace, Name: sub.Status.InstalledCSV},
+				}
+				if err := client.Delete(ctx, csv); err != nil && k8serr.IsNotFound(err) {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete csv for re-intstall: %s", err)
+				}
+			}
+			log.Warningf("Deleting subscription and csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
+			if err := client.Delete(ctx, sub); err != nil && k8serr.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete subscription for re-intstall: %s", err)
+			}
+			return integreatlyv1alpha1.PhaseAwaitingOperator, nil
 		}
 
 		//if it's approved but not complete, then it's in progress

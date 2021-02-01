@@ -144,6 +144,109 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Installation:     ownerInstall,
 			ExpectErr:        true,
 		},
+		{
+			Name: "test reconcile subscription returns phase in progress if there is an install plan approved but not completed or failed",
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
+						{
+							Spec: alpha1.InstallPlanSpec{Approved: true},
+							Status: alpha1.InstallPlanStatus{
+								Phase: alpha1.InstallPlanPhaseInstalling,
+							},
+						},
+					}}, &alpha1.Subscription{}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseInProgress,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+		},
+		{
+			Name: "test reconcile subscription returns phase failed if unable to retrieve install plans",
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return nil, nil, fmt.Errorf("simulate error gettiing install plans")
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+			ExpectErr:        true,
+		},
+		{
+			Name: "test reconcile subscription returns phase in progress if there are no install plans for subscription",
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{}}, &alpha1.Subscription{}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseInProgress,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+		},
+		{
+			Name:   "test reconcile subscription returns phase failed if unable to delete subscription due for re-install ",
+			client: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
+						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
+					}}, &alpha1.Subscription{}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+			ExpectErr:        true,
+		},
+		{
+			Name:   "test reconcile subscription returns phase failed if unable to delete csv due for re-install ",
+			client: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
+						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
+					}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+			ExpectErr:        true,
+		},
+		{
+			Name:   "test reconcile subscription returns phase awaiting operator after successful delete of failed install plan and csv",
+			client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.ClusterServiceVersion{ObjectMeta: metav1.ObjectMeta{Name: "test-csv", Namespace: "test-ns"}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
+						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
+					}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseAwaitingOperator,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+		},
 	}
 
 	for _, tc := range cases {
