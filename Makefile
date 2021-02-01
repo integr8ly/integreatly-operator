@@ -114,12 +114,10 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
 
 .PHONY: code/rerun
 code/rerun: setup/service_account
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
