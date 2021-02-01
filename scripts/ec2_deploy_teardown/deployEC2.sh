@@ -63,7 +63,7 @@ aws ec2 wait instance-status-ok --instance-ids ${EC2} --region ${CLUSTER_REGION}
 
 echo "Getting public ip"
 PUBIP=`aws ec2 describe-instances --filters "Name=instance-id,Values=$EC2" --query 'Reservations[].Instances[].PublicDnsName' --region ${CLUSTER_REGION} --output text`
-if [[ $PUBIP =~ "compute-1.amazonaws.com" ]]; then
+if [[ $PUBIP =~ "amazonaws.com" ]]; then
   echo "Public IP "${PUBIP}" is available"
 else
   echo "EC2 ${EC2} has been created but it does not seem to have public IP!"
