@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"strings"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
@@ -237,7 +238,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertReconciler(r.log).ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertReconciler(r.log, r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile solution explorer alerts", err)
 	}

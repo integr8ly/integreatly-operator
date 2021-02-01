@@ -3,8 +3,9 @@ package amqonline
 import (
 	"context"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"strconv"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
@@ -195,7 +196,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(r.log).ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(r.log, r.inst.Spec.Type).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline alerts", err)
 		return phase, err
@@ -572,7 +573,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 		},
 	}
 
-	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager, r.log)
+	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager, r.log, r.inst.Spec.Type)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for amq-online: %w", err)
 	}

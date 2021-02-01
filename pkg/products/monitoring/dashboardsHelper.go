@@ -5,9 +5,11 @@ import (
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/products/monitoring/dashboards"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
-func getSpecDetailsForDashboard(dashboard, nsPrefix string) (string, string, error) {
+func getSpecDetailsForDashboard(dashboard, nsPrefix string, installType string) (string, string, error) {
+	product := resources.InstallationNames[installType]
 
 	switch dashboard {
 
@@ -30,10 +32,10 @@ func getSpecDetailsForDashboard(dashboard, nsPrefix string) (string, string, err
 		return monitoring.MonitoringGrafanaDBClusterResourcesJSON, "cluster-resources-new.json", nil
 
 	case "critical-slo-rhmi-alerts":
-		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix), "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix, product), "critical-slo-alerts.json", nil
 
 	case "critical-slo-managed-api-alerts":
-		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix), "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix, product), "critical-slo-alerts.json", nil
 
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")

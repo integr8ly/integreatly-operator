@@ -54,13 +54,13 @@ const (
 
 func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (v1alpha1.StatusPhase, error) {
 	// create prometheus failed rule
-	_, err := createPostgresResourceStatusPhaseFailedAlert(ctx, client, inst, cr, log)
+	_, err := createPostgresResourceStatusPhaseFailedAlert(ctx, client, inst, cr, log, inst.Spec.Type)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus deletion rule
-	if _, err = createPostgresResourceDeletionStatusFailedAlert(ctx, client, inst, cr, log); err != nil {
+	if _, err = createPostgresResourceDeletionStatusFailedAlert(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for %s: %w", cr.Name, err)
 	}
 
@@ -69,37 +69,37 @@ func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst 
 	}
 
 	// create the prometheus pending rule
-	_, err = createPostgresResourceStatusPhasePendingAlert(ctx, client, inst, cr, log)
+	_, err = createPostgresResourceStatusPhasePendingAlert(ctx, client, inst, cr, log, inst.Spec.Type)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus availability rule
-	if _, err = createPostgresAvailabilityAlert(ctx, client, inst, cr, log); err != nil {
+	if _, err = createPostgresAvailabilityAlert(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus connectivity rule
-	if _, err = createPostgresConnectivityAlert(ctx, client, inst, cr, log); err != nil {
+	if _, err = createPostgresConnectivityAlert(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus deletion rule
-	if _, err = createPostgresResourceDeletionStatusFailedAlert(ctx, client, inst, cr, log); err != nil {
+	if _, err = createPostgresResourceDeletionStatusFailedAlert(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus free storage alert rules
-	if err = reconcilePostgresFreeStorageAlerts(ctx, client, inst, cr, log); err != nil {
+	if err = reconcilePostgresFreeStorageAlerts(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for %s: %w", cr.Name, err)
 	}
 
-	if err = reconcilePostgresFreeableMemoryAlert(ctx, client, inst, cr, log); err != nil {
+	if err = reconcilePostgresFreeableMemoryAlert(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres freeable memory alert for %s: %w", cr.Name, err)
 	}
 
 	// create the prometheus high cpu alert rule
-	if err = reconcilePostgresCPUUtilizationAlerts(ctx, client, inst, cr, log); err != nil {
+	if err = reconcilePostgresCPUUtilizationAlerts(ctx, client, inst, cr, log, inst.Spec.Type); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres cpu utilization prometheus alerts for %s: %w", cr.Name, err)
 	}
 
@@ -157,6 +157,8 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 // CreateSmtpSecretExists creates a PrometheusRule to alert if the rhmi-smtp-secret is present
 // the ocm sendgrid service creates a secret automatically this is a check for when that service fails
 func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
+	installationName := InstallationNames[cr.Spec.Type]
+
 	alertName := "SendgridSmtpSecretExists"
 	ruleName := "sendgrid-smtp-secret-exists-rule"
 	alertExp := intstr.FromString(
@@ -165,6 +167,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 	alertDescription := fmt.Sprintf("The Sendgrid SMTP secret has not been created in the %s namespace and may need to be created manualy", cr.Namespace)
 	labels := map[string]string{
 		"severity": "warning",
+		"product":  installationName,
 	}
 	// create the rule
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
@@ -176,7 +179,9 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
-func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+	installationName := InstallationNames[installType]
+
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres alert creation, useClusterStorage is true")
 		return nil, nil
@@ -203,6 +208,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	labels := map[string]string{
 		"severity":    alertSeverity,
 		"productName": cr.Labels["productName"],
+		"product":     installationName,
 	}
 
 	// create the rule
@@ -215,7 +221,9 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 
 // createPostgresConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Postgres instance
-func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+	installationName := InstallationNames[installType]
+
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres connectivity alert creation, useClusterStorage is true")
 		return nil, nil
@@ -241,6 +249,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	labels := map[string]string{
 		"severity":    alertSeverity,
 		"productName": cr.Labels["productName"],
+		"product":     installationName,
 	}
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
@@ -251,7 +260,9 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 }
 
 // createPostgresResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Postgres CR state
-func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+	installationName := InstallationNames[installType]
+
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres state alert creation, useClusterStorage is true")
 		return nil, nil
@@ -268,6 +279,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
+		"product":     installationName,
 	}
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
@@ -278,7 +290,9 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 }
 
 // createPostgresResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Postgres CR state
-func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+	installationName := InstallationNames[installType]
+
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres state alert creation, useClusterStorage is true")
 		return nil, nil
@@ -295,6 +309,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
+		"product":     installationName,
 	}
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
@@ -305,7 +320,9 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 }
 
 // createPostgresResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Postgres CRs
-func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+	installationName := InstallationNames[installType]
+
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres state alert creation, useClusterStorage is true")
 		return nil, nil
@@ -321,6 +338,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
+		"product":     installationName,
 	}
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
@@ -336,7 +354,9 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 //
 // the low storage alert fires if storage is under 10% of current capacity, with a 30 minute alertOn value to allow for any
 // provider autoscaling to happen, if after 30 minutes the instance will require manual intervention
-func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) error {
+func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
+	installationName := InstallationNames[installType]
+
 	// dont create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
@@ -353,6 +373,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 hours"
 	labels := map[string]string{
 		"severity": "critical",
+		"product":  installationName,
 	}
 
 	// building a predict_linear query using 2 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -372,6 +393,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 days"
 	labels = map[string]string{
 		"severity": "warning",
+		"product":  installationName,
 	}
 
 	// building a predict_linear query using 2 hour of data points to predict a 4 day projection, and checking if it is less than or equal 0
@@ -391,6 +413,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, storage is currently under 10 percent of its capacity"
 	labels = map[string]string{
 		"severity": "warning",
+		"product":  installationName,
 	}
 
 	// checking if the percentage of free storage is less than 10% of the current allocated storage
@@ -403,7 +426,9 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	return nil
 }
 
-func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) error {
+func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
+	installationName := InstallationNames[installType]
+
 	// dont create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
@@ -416,6 +441,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 10 percent of its capacity"
 	labels := map[string]string{
 		"severity": "warning",
+		"product":  installationName,
 	}
 
 	// checking if the percentage of freeable memory is less than 10% of the max memory
@@ -430,7 +456,9 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	return nil
 }
 
-func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) error {
+func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
+	installationName := InstallationNames[installType]
+
 	// dont create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
@@ -442,6 +470,7 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for 15 minutes or more"
 	labels := map[string]string{
 		"severity": "warning",
+		"product":  installationName,
 	}
 
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")

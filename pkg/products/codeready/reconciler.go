@@ -3,6 +3,7 @@ package codeready
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -169,7 +170,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
@@ -309,7 +310,7 @@ func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient k8sclien
 			},
 		},
 	}
-	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager, r.log); err != nil {
+	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager, r.log, r.installation.Spec.Type); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for codeready: %w", err)
 	}
 

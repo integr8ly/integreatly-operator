@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/ghodss/yaml"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
 
@@ -295,7 +296,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(isMultiAZCluster, r.Log).ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(isMultiAZCluster, r.Log, r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
 	r.Log.Infof("reconcilePrometheusRule", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
@@ -541,7 +542,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		},
 	}
 
-	specJSON, name, err := getSpecDetailsForDashboard(dashboard, r.installation.Spec.NamespacePrefix)
+	specJSON, name, err := getSpecDetailsForDashboard(dashboard, r.installation.Spec.NamespacePrefix, r.installation.Spec.Type)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconciler {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -28,7 +30,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='marin3r-instance'} * on(namespace) group_left() kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "Marin3rPromstatsdExporterServiceEndpointDown",
@@ -38,7 +40,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='prom-statsd-exporter'} * on(namespace) group_left() kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "Marin3rRateLimitServiceEndpointDown",
@@ -48,7 +50,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='ratelimit'} * on(namespace) group_left() kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -65,7 +67,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%[1]v'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -82,7 +84,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-manager',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-manager',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -99,7 +101,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-webhook',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-webhook',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "Marin3rPromstatsdExporterPod",
@@ -109,7 +111,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='prom-statsd-exporter',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='prom-statsd-exporter',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "Marin3rRateLimitPod",
@@ -119,7 +121,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='ratelimit',namespace='%[1]v'}))", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},

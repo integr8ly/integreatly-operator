@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
+	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	"strings"
-	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -158,7 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(r.log).ReconcileAlerts(ctx, client)
+	phase, err = r.newAlertsReconciler(r.log, r.installation.Spec.Type).ReconcileAlerts(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err

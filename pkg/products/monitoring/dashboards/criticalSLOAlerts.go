@@ -1,7 +1,7 @@
 package monitoring
 
 //GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
-func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
+func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product string) string {
 	return `{
 	"annotations": {
 		"list": [{
@@ -92,7 +92,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(ALERTS {severity='critical', alertstate='firing'})",
+				"expr": "sum(ALERTS {severity='critical',  alertstate='firing', product='` + product + `'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -170,7 +170,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -227,7 +227,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(ALERTS{severity='critical', alertstate='firing'}) or vector(0)",
+				"expr": "sum(ALERTS{severity='critical', alertstate='firing', product='` + product + `'}) or vector(0)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
@@ -332,7 +332,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -413,7 +413,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
@@ -4250,7 +4250,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 }
 
 //GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON configured with given namespace prefix
-func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) string {
+func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, product string) string {
 	return `{
   "annotations": {
     "list": [
@@ -4348,7 +4348,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(ALERTS {severity='critical', alertstate='firing'})",
+          "expr": "sum(ALERTS {severity='critical', alertstate='firing', product='` + product + `'})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4433,8 +4433,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
           "instant": true,
           "intervalFactor": 1,
           "refId": "A"
@@ -4494,7 +4494,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(ALERTS{severity='critical', alertstate='firing'}) or vector(0)",
+          "expr": "sum(ALERTS{severity='critical', alertstate='firing', product='` + product + `'}) or vector(0)",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -4605,7 +4605,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+          "expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4693,7 +4693,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
