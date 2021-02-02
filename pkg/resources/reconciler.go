@@ -225,12 +225,12 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 				csv := &operatorsv1alpha1.ClusterServiceVersion{
 					ObjectMeta: metav1.ObjectMeta{Namespace: target.Namespace, Name: sub.Status.InstalledCSV},
 				}
-				if err := client.Delete(ctx, csv); err != nil && k8serr.IsNotFound(err) {
+				if err := client.Delete(ctx, csv); err != nil && !k8serr.IsNotFound(err) {
 					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete csv for re-intstall: %s", err)
 				}
 			}
-			log.Warningf("Deleting subscription and csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
-			if err := client.Delete(ctx, sub); err != nil && k8serr.IsNotFound(err) {
+			log.Warningf("Deleting subscription for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
+			if err := client.Delete(ctx, sub); err != nil && !k8serr.IsNotFound(err) {
 				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete subscription for re-intstall: %s", err)
 			}
 			return integreatlyv1alpha1.PhaseAwaitingOperator, nil

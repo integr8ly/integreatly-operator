@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"testing"
 	"time"
 
@@ -195,8 +196,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Installation:     &integreatlyv1alpha1.RHMI{},
 		},
 		{
-			Name:   "test reconcile subscription returns phase failed if unable to delete subscription due for re-install ",
-			client: fakeclient.NewFakeClientWithScheme(scheme),
+			Name: "test reconcile subscription returns phase failed if unable to delete subscription due for re-install ",
+			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+				return fmt.Errorf("some error")
+			}},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
@@ -213,8 +216,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			ExpectErr:        true,
 		},
 		{
-			Name:   "test reconcile subscription returns phase failed if unable to delete csv due for re-install ",
-			client: fakeclient.NewFakeClientWithScheme(scheme),
+			Name: "test reconcile subscription returns phase failed if unable to delete csv for re-install ",
+			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+				return fmt.Errorf("some error")
+			}},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
