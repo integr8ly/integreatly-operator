@@ -90,6 +90,17 @@ var (
 			"stage",
 		},
 	)
+
+	ThreeScaleUserAction = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "threescale_user_action",
+			Help: "Status of user CRUD action in 3scale",
+		},
+		[]string{
+			"username",
+			"action",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -125,4 +136,8 @@ func SetRhmiVersions(stage string, version string, toVersion string, firstInstal
 
 	RHOAMVersion.Reset()
 	RHOAMVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
+}
+
+func SetThreeScaleUserAction(httpStatus int, username, action string) {
+	ThreeScaleUserAction.WithLabelValues(username, action).Set(float64(httpStatus))
 }
