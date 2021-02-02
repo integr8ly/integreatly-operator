@@ -300,8 +300,8 @@ cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prep
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
-.PHONY: install/olm/bundle
-install/olm/bundle:
+.PHONY: create/olm/bundle
+create/olm/bundle:
 	./scripts/bundle-rhmi-operators.sh
 
 .PHONY: cluster/prepare/project
