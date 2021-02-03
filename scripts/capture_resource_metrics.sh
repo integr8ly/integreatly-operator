@@ -84,7 +84,7 @@ LOAD_QUERIES=(\
 #
 for query in "${INSTANT_QUERIES[@]}";
 do
-  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
+  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" --data-urlencode "time=$endTime" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
 done
 
 for query in "${IDLE_QUERIES[@]}";
