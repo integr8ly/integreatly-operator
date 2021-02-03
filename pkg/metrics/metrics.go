@@ -141,3 +141,7 @@ func SetRhmiVersions(stage string, version string, toVersion string, firstInstal
 func SetThreeScaleUserAction(httpStatus int, username, action string) {
 	ThreeScaleUserAction.WithLabelValues(username, action).Set(float64(httpStatus))
 }
+
+func ResetThreeScaleUserAction() {
+	ThreeScaleUserAction.Reset()
+}
