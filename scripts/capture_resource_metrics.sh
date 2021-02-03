@@ -42,7 +42,7 @@ INSTANT_QUERIES=(\
   "sum(kube_node_status_allocatable_cpu_cores * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))))"\
   "sum(cluster:capacity_memory_bytes:sum)/1024/1024/1024"\
   "sum(cluster:capacity_memory_bytes:sum{label_node_role_kubernetes_io!~'master|infra'})/1024/1024/1024"\
-  "kube_node_status_allocatable_memory_bytes * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))) / 1024 / 1024 / 1024"\
+  "sum(kube_node_status_allocatable_memory_bytes * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))) / 1024 / 1024 / 1024)"\
   "sum(kube_pod_container_resource_requests_cpu_cores{namespace=~'redhat-rhoam-.*',container!='lifecycle'} * on(namespace, pod) group_left() max by (namespace, pod) ( kube_pod_status_phase{phase='Running'} == 1 ))"\
   "sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'redhat-rhoam-.*', container!='lifecycle'} * on(namespace, pod) group_left() max by (namespace, pod) ( kube_pod_status_phase{phase='Running'} == 1 )) / 1024 /1024"\
 )
