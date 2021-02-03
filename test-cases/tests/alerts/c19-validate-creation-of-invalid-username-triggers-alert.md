@@ -6,6 +6,8 @@ products:
       - osd-post-upgrade
     targets:
       - 1.2.0
+tags:
+  - destructive
 estimate: 15m
 ---
 
@@ -18,6 +20,8 @@ estimate: 15m
    ```shell script
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
+
+2. Access to OCM QE console
 
 ## Steps
 
@@ -53,3 +57,27 @@ open "https://$(oc get route alertmanager-route -n redhat-rhoam-middleware-monit
 ```
 
 > Validate there is "ThreeScaleUserCreationFailed" alert firing
+
+11. Delete the user from OpenShift
+
+```bash
+oc delete user alongusernamethatisabovefourtycharacterslong2
+```
+
+12. Go back to the alert manager
+    > Validate that the alert is no longer firing (it might take some time)
+13. In a new anonymous window, login to the cluster via testing-idp as customer-admin01 user
+14. Get 3scale admin password and note it down
+
+```bash
+oc get secret system-seed -n redhat-rhoam-3scale -o json | jq -r '.data.ADMIN_PASSWORD' | base64 --decode
+```
+
+15. In OpenShift console, go to 3scale namespace -> Routes and navigate to 3scale admin console
+16. Log in as `admin` and use the password from the previous step
+17. Go to settings -> Users -> Listing
+    > Verify that customer-admin01 user is listed there
+18. Go to OCM UI console and search for the testing cluster
+19. Go to Access control and delete testing-idp and all customer admin users
+20. Go back to 3scale admin console and refresh the page with user listing
+    > Verify that the customer-admin01 user is no longer present in 3scale
