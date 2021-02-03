@@ -21,7 +21,7 @@ TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.7.0
-RHOAM_TAG ?= 1.1.0
+RHOAM_TAG ?= 1.2.0
 
 export SKIP_FLAKES := true
 
