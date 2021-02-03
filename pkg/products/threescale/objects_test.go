@@ -128,6 +128,22 @@ var rhssoTest2 = &keycloak.KeycloakUser{
 	},
 }
 
+var rhssoTest3 = &keycloak.KeycloakUser{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "alongusernamethatisabovefourtycharacterslong",
+		Namespace: testRhssoNamespace,
+		Labels: map[string]string{
+			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
+		},
+	},
+	Spec: keycloak.KeycloakUserSpec{
+		User: keycloak.KeycloakAPIUser{
+			UserName: "alongusernamethatisabovefourtycharacterslong",
+			Email:    "test2@example.com",
+		},
+	},
+}
+
 var testDedicatedAdminsGroup = &usersv1.Group{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "dedicated-admins",
@@ -722,6 +738,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		backendRedisSec,
 		rhssoTest2,
 		rhssoTest1,
+		rhssoTest3,
 		ns,
 		operatorNS,
 		apicastProduction,

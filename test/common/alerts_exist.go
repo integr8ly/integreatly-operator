@@ -454,6 +454,13 @@ func commonExpectedRules() []alertsTestRule {
 			},
 		},
 		{
+			File: NamespacePrefix + "3scale-ksm-3scale-user-alerts.yaml",
+			Rules: []string{
+				"ThreeScaleUserCreationFailed",
+				"ThreeScaleUserDeletionFailed",
+			},
+		},
+		{
 			File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIUserRhssoKeycloakServiceEndpointDown",

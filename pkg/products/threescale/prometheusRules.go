@@ -3,6 +3,7 @@ package threescale
 import (
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"net/http"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -146,6 +147,29 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='threescale-operator'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
+						Labels: map[string]string{"severity": "warning"},
+					},
+				},
+			},
+			{
+				AlertName: "ksm-3scale-user-alerts",
+				GroupName: "general.rules",
+				Namespace: r.Config.GetNamespace(),
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "ThreeScaleUserCreationFailed",
+						Annotations: map[string]string{
+							"message": "3Scale user creation failed for user {{  $labels.username  }}",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf("threescale_user_action{action='%s'} != %d", http.MethodPost, http.StatusCreated)),
+						Labels: map[string]string{"severity": "warning"},
+					},
+					{
+						Alert: "ThreeScaleUserDeletionFailed",
+						Annotations: map[string]string{
+							"message": "3Scale user deletion failed for user {{  $labels.username  }}",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf("threescale_user_action{action='%s'} != %d", http.MethodDelete, http.StatusOK)),
 						Labels: map[string]string{"severity": "warning"},
 					},
 				},
