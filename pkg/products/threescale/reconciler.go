@@ -1476,9 +1476,6 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
-	// reset the user action metric before we re-reconcile
-	// in order to get up to date metrics on user creation
-	metrics.ResetThreeScaleUserAction()
 	// the deleted entries are addressed first
 	// a common use case is where one idp is added to give early access to the cluster
 	// later that idp is removed and a more permanent one is added
