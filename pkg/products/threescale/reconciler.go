@@ -1078,11 +1078,11 @@ func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Cli
 		return false, err
 	}
 
-	if len(routes.Items) >= expectedRoutes {
+	if len(routes.Items) < expectedRoutes {
 		r.log.Warningf("Required number of routes do not exist", l.Fields{"found": len(routes.Items), "required": expectedRoutes})
-		return true, nil
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
 
 func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
