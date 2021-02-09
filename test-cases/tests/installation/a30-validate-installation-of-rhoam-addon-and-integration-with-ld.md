@@ -84,8 +84,6 @@ watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage"
 ```
 
 6. Once the status is "completed", the installation is finished and you can go to another step
-7. Go to `Monitoring` section of your cluster in OCM UI
-   > Make sure no alerts are firing
 
 **Verify custom RHOAM CIDR range was applied correctly**
 
