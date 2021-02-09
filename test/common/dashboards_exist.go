@@ -31,9 +31,6 @@ var commonExpectedDashboards = []dashboardsTestRule{
 		Title: "Endpoints Summary",
 	},
 	{
-		Title: "Keycloak",
-	},
-	{
 		Title: "Resource Usage By Namespace",
 	},
 	{
@@ -44,6 +41,9 @@ var commonExpectedDashboards = []dashboardsTestRule{
 	},
 	{
 		Title: "Critical SLO summary",
+	},
+	{
+		Title: "Keycloak Metrics",
 	},
 }
 
