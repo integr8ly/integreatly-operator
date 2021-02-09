@@ -20,7 +20,7 @@ This test case should prove that it is possible for SRE to disable/enable rate l
 ## Prerequisites
 
 - access to `cloud-services-qe-reporting@redhat.com` mailing list
-- workload webapp should be running on the cluster https://github.com/integr8ly/workload-web-app/
+- [workload webapp](https://github.com/integr8ly/workload-web-app) should be running on the cluster https://github.com/integr8ly/workload-web-app/
 
 ## Steps
 
