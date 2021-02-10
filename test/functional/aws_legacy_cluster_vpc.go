@@ -3,7 +3,6 @@ package functional
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -17,7 +16,7 @@ import (
 
 var internalSubnetTag = "kubernetes.io/role/internal-elb"
 
-func TestLegacyClusterVPC(t *testing.T, testingCtx *common.TestingContext) {
+func TestLegacyClusterVPC(t common.TestingTB, testingCtx *common.TestingContext) {
 	ctx := context.TODO()
 	testErrors := &networkConfigTestError{}
 

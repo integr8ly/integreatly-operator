@@ -2,10 +2,10 @@ package common
 
 import (
 	goctx "context"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func rhmi2Namespaces() []string {
@@ -50,7 +50,7 @@ func managedApiNamespaces() []string {
 	}
 }
 
-func TestNamespaceCreated(t *testing.T, ctx *TestingContext) {
+func TestNamespaceCreated(t TestingTB, ctx *TestingContext) {
 
 	namespacesCreated := getNamespaces(t, ctx)
 
@@ -65,7 +65,7 @@ func TestNamespaceCreated(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getNamespaces(t *testing.T, ctx *TestingContext) []string {
+func getNamespaces(t TestingTB, ctx *TestingContext) []string {
 
 	//get RHMI
 	rhmi, err := GetRHMI(ctx.Client, true)

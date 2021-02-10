@@ -1,8 +1,8 @@
 package solutionexplorer
 
 import (
-	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/tutorial-web-app-operator/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -31,8 +31,8 @@ var webappRoute = &routev1.Route{
 
 var installation = &integreatlyv1alpha1.RHMI{
 	TypeMeta: metav1.TypeMeta{
-		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+		Kind:       "RHMI",
+		APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 	},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "example-installation",

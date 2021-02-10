@@ -7,10 +7,9 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"testing"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -80,7 +79,7 @@ var (
 )
 
 // TestDashboardsData verifies that all dashboards are installed and all the graphs are filled with data
-func TestDashboardsData(t *testing.T, ctx *TestingContext) {
+func TestDashboardsData(t TestingTB, ctx *TestingContext) {
 	// Get grafana pod ip to curl
 	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
 	grafanaPodIP := monitoringGrafanaPods.Items[0].Status.PodIP
@@ -150,7 +149,7 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string, ctx *TestingContext, t *testing.T) ([]string, error) {
+func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string, ctx *TestingContext, t TestingTB) ([]string, error) {
 
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -18,7 +18,6 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +46,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
-	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
@@ -83,8 +81,8 @@ func TestReconciler_config(t *testing.T) {
 			Namespace: defaultInstallationNamespace,
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.String(),
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
 
@@ -264,8 +262,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
 	ns := &corev1.Namespace{

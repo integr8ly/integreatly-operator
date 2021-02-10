@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	pkgerr "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,6 +27,8 @@ import (
 // CRs pointing to the server.
 type IntegreatlyWebhookConfig struct {
 	scheme *runtime.Scheme
+
+	Enabled bool
 
 	Port        int
 	CertDir     string
@@ -81,7 +83,7 @@ var Config *IntegreatlyWebhookConfig = &IntegreatlyWebhookConfig{
 // webhookConfig. It sets the port and cert dir based on the settings and
 // registers the Validator implementations from each webhook from webhookConfig.Webhooks
 func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) error {
-	if !enabled() {
+	if !webhookConfig.enabled() {
 		return nil
 	}
 
@@ -128,11 +130,11 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 // A ownerRef to the owner parameter is set on the reconciled resources. This
 // parameter is optional, if `nil` is passed, no ownerReference will be set
 func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
-	if !enabled() {
+	if !webhookConfig.enabled() {
 		return nil
 	}
 
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -187,7 +189,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 
 // ReconcileService creates or updates the service that points to the Pod
 func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -217,7 +219,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 }
 
 func createService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -260,7 +262,7 @@ func createService(ctx context.Context, client k8sclient.Client, owner ownerutil
 // setupCerts waits for the secret created for the operator Service to exist, and
 // when it's ready, extracts the certificates and saves them in webhookConfig.CertDir
 func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, client k8sclient.Client) error {
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -294,7 +296,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, c
 
 func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.Context, client k8sclient.Client) ([]byte, error) {
 	var caBundle []byte
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -350,9 +352,6 @@ func (webhookConfig *IntegreatlyWebhookConfig) saveCertFromSecret(secretData map
 	return err
 }
 
-func enabled() bool {
-	// The webhooks feature can't work when the operator runs locally, as it
-	// needs to be accessible by kubernetes and depends on the TLS certificates
-	// being mounted
-	return os.Getenv(k8sutil.ForceRunModeEnv) != string(k8sutil.LocalRunMode)
+func (webhookConfig *IntegreatlyWebhookConfig) enabled() bool {
+	return webhookConfig.Enabled
 }

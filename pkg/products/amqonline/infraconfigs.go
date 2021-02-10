@@ -1,7 +1,7 @@
 package amqonline
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
+	"github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -2,13 +2,13 @@ package solutionexplorer
 
 import (
 	"context"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	consolev1 "github.com/openshift/api/console/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -81,7 +81,7 @@ var oauthResolver = func() OauthResolver {
 func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	// Initialize scheme so that types required by the scenarios are available
 	scheme := scheme.Scheme
-	if err := apis.AddToScheme(scheme); err != nil {
+	if err := integreatlyv1alpha1.AddToSchemes.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to initialize scheme: %s", err)
 	}
 
@@ -132,7 +132,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 func TestSolutionExplorer(t *testing.T) {
 	// Initialize scheme so that types required by the scenarios are available
 	scheme := scheme.Scheme
-	if err := apis.AddToScheme(scheme); err != nil {
+	if err := integreatlyv1alpha1.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to initialize scheme: %s", err)
 	}
 

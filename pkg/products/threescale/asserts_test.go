@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -113,14 +114,14 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	}
 
 	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
-	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get("system-app", metav1.GetOptions{})
+	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-app", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Error getting deplymentconfig: %v", err)
 	}
 	if sa.Status.LatestVersion == 1 {
 		return fmt.Errorf("system-app was not rolled out")
 	}
-	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get("system-sidekiq", metav1.GetOptions{})
+	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-sidekiq", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Error getting deplymentconfig: %v", err)
 	}

@@ -3,13 +3,13 @@ package functional
 import (
 	goctx "context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/integr8ly/integreatly-operator/test/common"
-	"testing"
 )
 
-func AWSElasticacheResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
+func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
 	rhmi, err := common.GetRHMI(ctx.Client, true)

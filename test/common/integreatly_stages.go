@@ -2,11 +2,10 @@ package common
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -67,7 +66,7 @@ var (
 	}
 )
 
-func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyStagesStatus(t TestingTB, ctx *TestingContext) {
 	err := wait.PollImmediateInfinite(time.Second*15, func() (bool, error) {
 		done := true
 

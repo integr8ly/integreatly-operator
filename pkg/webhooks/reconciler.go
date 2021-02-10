@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	pkgerr "github.com/pkg/errors"
 
 	"k8s.io/api/admissionregistration/v1beta1"
@@ -67,7 +67,7 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 		failurePolicy  = v1beta1.Fail
 		timeoutSeconds = int32(30)
 	)
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -123,7 +123,7 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, cl
 		failurePolicy  = v1beta1.Fail
 		timeoutSeconds = int32(30)
 	)
-	watchNS, err := k8sutil.GetWatchNamespace()
+	watchNS, err := resources.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}

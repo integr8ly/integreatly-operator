@@ -3,11 +3,11 @@ package datasync
 import (
 	"context"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
@@ -55,7 +55,7 @@ func setupRecorder() record.EventRecorder {
 func TestDataSync(t *testing.T) {
 	// Initialize scheme so that types required by the scenarios are available
 	scheme := scheme.Scheme
-	if err := apis.AddToScheme(scheme); err != nil {
+	if err := integreatlyv1alpha1.AddToSchemes.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to initialize scheme: %s", err)
 	}
 

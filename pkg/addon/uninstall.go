@@ -5,7 +5,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"

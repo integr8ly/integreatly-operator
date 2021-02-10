@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	goctx "context"
@@ -24,7 +23,7 @@ const (
 // default email adress if no email is present from the IDP.
 //
 // Verify that the email address is generated as <username>@rhmi.io
-func TestDefaultUserEmail(t *testing.T, ctx *TestingContext) {
+func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)
 	if err != nil {
 		t.Fatalf("Error occurred creating testing IDP: %v", err)

@@ -3,7 +3,10 @@ package poddistribution
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"strconv"
+	"time"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/sirupsen/logrus"
@@ -15,8 +18,6 @@ import (
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
 )
 
 const (

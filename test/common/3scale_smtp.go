@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
@@ -45,7 +44,7 @@ var (
 )
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
-func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
+func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	inst, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
@@ -115,7 +114,7 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 
 }
 
-func checkHostAddressIsReady(ctx *TestingContext, t *testing.T, retryInterval, timeout time.Duration) error {
+func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		// get console master url
@@ -124,8 +123,8 @@ func checkHostAddressIsReady(ctx *TestingContext, t *testing.T, retryInterval, t
 			t.Fatalf("error getting RHMI CR: %v", err)
 		}
 
-		host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
-		status := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Status
+		host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
+		status := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Status
 		if host == "" || status == "in progress" {
 			t.Log("3scale host URL not ready yet.")
 			return false, nil
@@ -156,7 +155,7 @@ func removeNamespace(ctx *TestingContext) error {
 	return nil
 }
 
-func checkSMTPReconciliation(ctx *TestingContext, t *testing.T) error {
+func checkSMTPReconciliation(ctx *TestingContext, t TestingTB) error {
 	//Check that the smtp details have reconciled to the 3scale secret
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		threescaleSecret, err := get3scaleSecret(ctx)
@@ -182,10 +181,10 @@ func checkSMTPReconciliation(ctx *TestingContext, t *testing.T) error {
 	})
 }
 
-func checkEmail(ctx *TestingContext, t *testing.T, email string) error {
+func checkEmail(ctx *TestingContext, t TestingTB, email string) error {
 	//Check that we have received the test email
 	receivedEmail := false
-	pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(metav1.ListOptions{})
+	pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
 	if err != nil {
 		t.Logf("Couldn't find pods: %v", err)
 	}
@@ -212,7 +211,7 @@ func checkEmail(ctx *TestingContext, t *testing.T, email string) error {
 	return nil
 }
 
-func sendTestEmail(ctx *TestingContext, t *testing.T) {
+func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	// Send test email using the 3scale api
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
@@ -224,11 +223,11 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 	}
 
 	// Get the fuse host url from the rhmi status
-	host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
-	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
+	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
 	redirectURL := fmt.Sprintf("%v/p/admin/dashboard", host)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectURL, ctx.HttpClient, ctx.Client, t)
@@ -236,7 +235,6 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 	// Login to 3Scale
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
-		dumpAuthResources(ctx.Client, t)
 		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA:  https://issues.redhat.com/browse/MGDAPI-558")
 		// t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
@@ -248,14 +246,13 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 	}
 
 	t.Log("Sending email")
-	_, err = tsClient.SendUserInvitation(emailAddress, t)
+	_, err = tsClient.SendUserInvitation(emailAddress)
 	if err != nil {
-		dumpAuthResources(ctx.Client, t)
 		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
 }
 
-func resetSecret(ctx *TestingContext, t *testing.T) (string, error) {
+func resetSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	//Reset the smtp details back to the pre test version
 	secret, err := getSecret(ctx)
 
@@ -282,7 +279,7 @@ func resetSecret(ctx *TestingContext, t *testing.T) (string, error) {
 	return "", nil
 }
 
-func patchSecret(ctx *TestingContext, t *testing.T) (string, error) {
+func patchSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	// Update secret with our test smtp details
 	serviceIP, err := getServiceIP(ctx)
 
@@ -344,13 +341,13 @@ func getServiceIP(ctx *TestingContext) (string, error) {
 	return service.Spec.ClusterIP, nil
 }
 
-func createNamespace(ctx *TestingContext, t *testing.T) error {
+func createNamespace(ctx *TestingContext, t TestingTB) error {
 
 	// Create namespace for our test smtp-server
 	t.Log("Creating namespace, deployment and service")
 	nsSpec := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testNamespace}}
 
-	_, err := ctx.KubeClient.CoreV1().Namespaces().Create(nsSpec)
+	_, err := ctx.KubeClient.CoreV1().Namespaces().Create(goctx.TODO(), nsSpec, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to create namespace : %v", err)
 	}
@@ -392,7 +389,7 @@ func createNamespace(ctx *TestingContext, t *testing.T) error {
 		},
 	}
 
-	_, err = ctx.KubeClient.AppsV1().Deployments(testNamespace).Create(deployment)
+	_, err = ctx.KubeClient.AppsV1().Deployments(testNamespace).Create(goctx.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to create deployment : %v", err)
 	}
@@ -414,7 +411,7 @@ func createNamespace(ctx *TestingContext, t *testing.T) error {
 		},
 	}
 
-	_, err = ctx.KubeClient.CoreV1().Services(testNamespace).Create(&service)
+	_, err = ctx.KubeClient.CoreV1().Services(testNamespace).Create(goctx.TODO(), &service, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to create service : %v", err)
 	}

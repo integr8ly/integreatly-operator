@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -93,7 +92,7 @@ var customerRHOAMDashboards = []dashboardsTestRule{
 	},
 }
 
-func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -131,7 +130,7 @@ func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
 	verifyExpectedDashboards(t, expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
 }
 
-func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext) {
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -170,7 +169,7 @@ func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext
 
 }
 
-func verifyExpectedDashboards(t *testing.T, expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) {
+func verifyExpectedDashboards(t TestingTB, expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) {
 	var expectedDashboardTitles []string
 	for _, dashboard := range expectedDashboards {
 		expectedDashboardTitles = append(expectedDashboardTitles, dashboard.Title)
@@ -211,7 +210,7 @@ func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
 	}
 }
 
-func getGrafanaPods(t *testing.T, ctx *TestingContext, ns string) corev1.PodList {
+func getGrafanaPods(t TestingTB, ctx *TestingContext, ns string) corev1.PodList {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ns),

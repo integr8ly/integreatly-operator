@@ -3,9 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -37,7 +37,7 @@ var (
 	}
 )
 
-func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
+func TestReplicasInThreescale(t TestingTB, ctx *TestingContext) {
 
 	apim, err := getAPIManager(ctx.Client)
 	if err != nil {
@@ -171,7 +171,7 @@ func updateAPIManager(dynClient *TestingContext, replicas map[string]int64) (thr
 		Resource(kind).
 		Name(name).
 		Namespace(GetPrefixedNamespace("3scale")).
-		RequestURI(requestURL3scale).Body(replicaBytes).Do()
+		RequestURI(requestURL3scale).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
 
 	apim, err := getAPIManager(dynClient.Client)
@@ -182,7 +182,7 @@ func updateAPIManager(dynClient *TestingContext, replicas map[string]int64) (thr
 	return apim, nil
 }
 
-func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *TestingContext, replicas map[string]int64, retryInterval, timeout time.Duration, t *testing.T) error {
+func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *TestingContext, replicas map[string]int64, retryInterval, timeout time.Duration, t TestingTB) error {
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		apim, err = getAPIManager(ctx.Client)
 		if err != nil {
@@ -238,7 +238,7 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 	})
 }
 
-func check3ScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas map[string]int64, retryInterval, timeout time.Duration) error {
+func check3ScaleReplicasAreReady(ctx *TestingContext, t TestingTB, replicas map[string]int64, retryInterval, timeout time.Duration) error {
 
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 

@@ -1,7 +1,7 @@
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.13
 
 # OPERATOR_SDK should match the version of operator-sdk version in go.mod
-ENV OPERATOR_SDK_VERSION=v0.17.1 \
+ENV OPERATOR_SDK_VERSION=v1.2.0 \
     DELOREAN_VERSION=master \
     GOFLAGS=""
 
@@ -24,7 +24,6 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && git clone --depth 1 -b $OPERATOR_SDK_VERSION https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
     && go mod vendor \
-    && make tidy \
     && make install \
     && chmod -R 0777 $GOPATH \
     && rm -rf $GOPATH/.cache

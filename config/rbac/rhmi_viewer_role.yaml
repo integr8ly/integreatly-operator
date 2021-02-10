@@ -1,0 +1,20 @@
+# permissions for end users to view rhmis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhmi-viewer-role
+rules:
+- apiGroups:
+  - integreatly.org
+  resources:
+  - rhmis
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - integreatly.org
+  resources:
+  - rhmis/status
+  verbs:
+  - get

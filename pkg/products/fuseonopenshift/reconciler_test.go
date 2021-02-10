@@ -4,20 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"net/http/httptest"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
@@ -91,7 +92,7 @@ func setupRecorder() record.EventRecorder {
 func TestFuseOnOpenShift(t *testing.T) {
 	// Initialize scheme so that types required by the scenarios are available
 	scheme := scheme.Scheme
-	if err := apis.AddToScheme(scheme); err != nil {
+	if err := integreatlyv1alpha1.AddToSchemes.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to initialize scheme: %s", err)
 	}
 

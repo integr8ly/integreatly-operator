@@ -3,9 +3,11 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+var (
+	defaultNamespace = "redhat-rhmi-operator"
+)
+
 func TestReconcile(t *testing.T) {
 	// Set up testing scheme
 	scheme := runtime.NewScheme()
@@ -26,8 +32,15 @@ func TestReconcile(t *testing.T) {
 	v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	scheme.AddKnownTypes(schemeBuilder.GroupVersion, &mockValidator{})
 
+	if err := rhmiv1alpha1.AddToSchemes.AddToScheme(scheme); err != nil {
+
+	}
+
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
 	// Create testing webhook config
 	settings := IntegreatlyWebhookConfig{
+		Enabled:     true,
 		scheme:      scheme,
 		Port:        8090,
 		CAConfigMap: "test-configmap",
@@ -79,7 +92,7 @@ func TestReconcile(t *testing.T) {
 	}
 
 	secret := &corev1.Secret{}
-	if err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-webhook-cert", Namespace: "testing-namespaces-operator"}, secret); err != nil {
+	if err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-webhook-cert", Namespace: defaultNamespace}, secret); err != nil {
 		t.Errorf("Secret with TlS certs not found")
 	} else {
 		if string(secret.Data["tls.key"]) != "TLS KEY" {
@@ -183,6 +196,9 @@ type mockValidator struct {
 	Value string
 }
 
+var _ admission.Validator = &mockValidator{}
+var _ runtime.Object = &mockValidator{}
+
 func (m *mockValidator) ValidateCreate() error {
 	if m.Value == "correct" {
 		return nil
@@ -235,7 +251,7 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 		// Get the list of config maps
 		configMaps := &corev1.ConfigMapList{}
 		err := client.List(ctx, configMaps,
-			k8sclient.InNamespace("testing-namespaces-operator"))
+			k8sclient.InNamespace(defaultNamespace))
 		if err != nil {
 			continue
 		}
@@ -256,7 +272,7 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 		// Get the list of services
 		services := &corev1.ServiceList{}
 		if err := client.List(ctx, services,
-			k8sclient.InNamespace("testing-namespaces-operator")); err != nil {
+			k8sclient.InNamespace(defaultNamespace)); err != nil {
 			continue
 		}
 
@@ -269,7 +285,7 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretName,
-					Namespace: "testing-namespaces-operator",
+					Namespace: defaultNamespace,
 				},
 				Data: map[string][]byte{
 					"tls.key": []byte("TLS KEY"),

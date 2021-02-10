@@ -3,9 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -80,7 +79,7 @@ func priorityDeploymentConfigs() []DeploymentConfigs {
 }
 
 // TestPriorityClass tests to ensure the pod priority class is created and verifies the deploymentconfigs and statefulsets are updated correctly
-func TestPriorityClass(t *testing.T, ctx *TestingContext) {
+func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -103,7 +102,7 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 	}
 
 	for _, priority := range priorityStatefulSets() {
-		item, err := ctx.KubeClient.AppsV1().StatefulSets(priority.Namespace).Get(priority.Name, metav1.GetOptions{})
+		item, err := ctx.KubeClient.AppsV1().StatefulSets(priority.Namespace).Get(goctx.TODO(), priority.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("Error: %v", err)
 		}
@@ -147,7 +146,7 @@ func checkDeploymentConfigPriorityIsSet(deploymentConfig *openshiftappsv1.Deploy
 func checkPriorityClassExists(priorityClass *schedulingv1.PriorityClass, ctx *TestingContext) error {
 	//err := ctx.Client.Get(goctx.TODO(), priorityClass, &k8sclient.ListOptions{Namespace: ""})
 
-	_, err := ctx.KubeClient.SchedulingV1().PriorityClasses().Get(priorityClass.Name, metav1.GetOptions{})
+	_, err := ctx.KubeClient.SchedulingV1().PriorityClasses().Get(goctx.TODO(), priorityClass.Name, metav1.GetOptions{})
 
 	if err != nil {
 		return fmt.Errorf("priority Class : %v", err)

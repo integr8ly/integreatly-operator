@@ -3,12 +3,12 @@ package resources
 import (
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	url2 "net/url"
 	"strconv"
 	"strings"
-	"testing"
+
+	"github.com/PuerkitoBio/goquery"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -27,7 +27,7 @@ type ThreeScaleAPIClient interface {
 	Login3Scale(clientSecret string) error
 	CreateProduct(name string) (string, error)
 	DeleteProduct(href string) error
-	SendUserInvitation(name string, t *testing.T) (string, error)
+	SendUserInvitation(name string) (string, error)
 	SetUserAsAdmin(username string, email string, userID string) error
 	GetUserId(username string) (string, error)
 	VerifyUserIsAdmin(userID string) (bool, error)
@@ -214,13 +214,11 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 }
 
 // Create a 3Scale user invite
-func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string, t *testing.T) (string, error) {
+func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string) (string, error) {
 
 	url := fmt.Sprintf(ThreeScaleUserInviteUrl, r.host)
 	formUrl := fmt.Sprintf("%v/p/admin/account/invitations/new", r.host)
 
-	t.Log(formUrl)
-	t.Log(name)
 	// First try to get the CRSF token by requesting the form
 	csrf, err := requestCRSFToken(r.client, formUrl)
 	if err != nil {

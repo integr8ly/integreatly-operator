@@ -4,10 +4,9 @@ import (
 	goctx "context"
 	"fmt"
 	"math/rand"
-	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 )
 
@@ -17,7 +16,7 @@ var (
 
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
-func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
+func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
@@ -30,11 +29,11 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// Get the fuse host url from the rhmi status
-	host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
-	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
+	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, ctx.HttpClient, ctx.Client, t)
@@ -42,7 +41,6 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	// Login to 3Scale
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
-		dumpAuthResources(ctx.Client, t)
 		// t.Fatalf("[%s] error occurred: %v", getTimeStampPrefix(), err)
 		t.Skipf("flakey test [%s] error ocurred: %v jira https://issues.redhat.com/browse/MGDAPI-557 ", getTimeStampPrefix(), err)
 	}

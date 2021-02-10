@@ -1,8 +1,9 @@
 package config
 
 import (
-	marin3rv1alpha "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	marin3rv1alpha1 "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -49,10 +50,10 @@ func (m *Marin3r) GetHost() string {
 
 func (m *Marin3r) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&marin3rv1alpha.EnvoyConfig{
+		&marin3rv1alpha1.EnvoyConfig{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "EnvoyConfig",
-				APIVersion: marin3rv1alpha.SchemeGroupVersion.String(),
+				APIVersion: marin3rv1alpha1.GroupVersion.String(),
 			},
 		},
 	}

@@ -16,7 +16,7 @@ import (
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	monitoringv1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -25,7 +25,6 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -58,8 +57,8 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
 			SMTPSecret:           mockSMTPSecretName,
@@ -99,9 +98,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {

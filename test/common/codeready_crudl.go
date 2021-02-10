@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"testing"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
 	"gopkg.in/yaml.v2"
@@ -93,7 +92,7 @@ var (
 	password = DefaultPassword
 )
 
-func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
+func TestCodereadyCrudlPermisssions(t TestingTB, ctx *TestingContext) {
 	t.Log("Test codeready workspace creation")
 
 	// Ensure testing-idp is available
@@ -120,7 +119,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// login to codeready
-	token, err := loginClient.CodereadyLogin(keycloakHost, redirectUrl, t)
+	token, err := loginClient.CodereadyLogin(keycloakHost, redirectUrl)
 	if err != nil {
 		t.Fatalf("failed to login to codeready: %v", err)
 	}
@@ -187,7 +186,7 @@ func ensureWorkspaceResourcesRemoved(ctx *TestingContext, workspaceId, namespace
 		LabelSelector: labelSelector,
 	}
 
-	deployments, err := ctx.KubeClient.AppsV1().Deployments(namespace).List(listOpts)
+	deployments, err := ctx.KubeClient.AppsV1().Deployments(namespace).List(goctx.TODO(), listOpts)
 	if err != nil {
 		return fmt.Errorf("failed to list deployments in %v namespace: %v", namespace, err)
 	}
@@ -196,7 +195,7 @@ func ensureWorkspaceResourcesRemoved(ctx *TestingContext, workspaceId, namespace
 		return fmt.Errorf("there are %v workspace deployments remaining", len(deployments.Items))
 	}
 
-	pods, err := ctx.KubeClient.CoreV1().Pods(namespace).List(listOpts)
+	pods, err := ctx.KubeClient.CoreV1().Pods(namespace).List(goctx.TODO(), listOpts)
 	if err != nil {
 		return fmt.Errorf("failed to list pods in %v namespace: %v", namespace, err)
 	}
@@ -205,7 +204,7 @@ func ensureWorkspaceResourcesRemoved(ctx *TestingContext, workspaceId, namespace
 		return fmt.Errorf("there are %v workspace pods remaining", len(pods.Items))
 	}
 
-	services, err := ctx.KubeClient.CoreV1().Services(namespace).List(listOpts)
+	services, err := ctx.KubeClient.CoreV1().Services(namespace).List(goctx.TODO(), listOpts)
 	if err != nil {
 		return fmt.Errorf("failed to list services in %v namespace: %v", namespace, err)
 	}
@@ -214,7 +213,7 @@ func ensureWorkspaceResourcesRemoved(ctx *TestingContext, workspaceId, namespace
 		return fmt.Errorf("there are %v workspace services remaining", len(services.Items))
 	}
 
-	secrets, err := ctx.KubeClient.CoreV1().Secrets(namespace).List(listOpts)
+	secrets, err := ctx.KubeClient.CoreV1().Secrets(namespace).List(goctx.TODO(), listOpts)
 	if err != nil {
 		return fmt.Errorf("failed to list secrets in %v namespace: %v", namespace, err)
 	}

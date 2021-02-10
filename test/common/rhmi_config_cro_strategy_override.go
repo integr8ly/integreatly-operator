@@ -3,15 +3,15 @@ package common
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"strings"
+	"time"
+
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 	* Some of the functions are shared with functional/aws_strategy_override.go
 	* aws_strategy_override.go tests full e2e from updating RHMIConfig to updating AWS resource
 */
-func TestRHMIConfigCROStrategyOverride(t *testing.T, testingCtx *TestingContext) {
+func TestRHMIConfigCROStrategyOverride(t TestingTB, testingCtx *TestingContext) {
 	ctx := context.TODO()
 
 	// rhmi config we need to use is the rhmi config provisioned in the RHMI install

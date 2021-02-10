@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	goctx "context"
@@ -105,7 +104,7 @@ func (e *alertsFiringError) isValid() bool {
 }
 
 // This test ensures that no alerts are firing during or after installation
-func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
 	if err := getFiringAlerts(t, ctx); err != nil {
 		podLogs(t, ctx)
@@ -114,7 +113,7 @@ func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	}
 
 }
-func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
+func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -173,7 +172,7 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 }
 
 // Makes a api call a to get all pods in the rhmi namespaces
-func podLogs(t *testing.T, ctx *TestingContext) {
+func podLogs(t TestingTB, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -203,7 +202,7 @@ func getPodNamespaces(installType string) []string {
 }
 
 // TestIntegreatlyAlertsFiring reports any firing or pending alerts
-func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes

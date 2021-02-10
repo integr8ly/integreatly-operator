@@ -9,7 +9,6 @@ import (
 	"net/http/httputil"
 	"os"
 	"strings"
-	"testing"
 
 	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
@@ -24,7 +23,7 @@ var (
 	grafanaCredsPassword = DefaultPassword
 )
 
-func TestCustomerGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
+func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
 	if os.Getenv("SKIP_FLAKES") == "true" {
 		// https://issues.redhat.com/browse/MGDAPI-555
 		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
@@ -38,7 +37,7 @@ func TestCustomerGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContex
 	testRoute(t, ctx, grafanaRootHostname)
 }
 
-func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
+func TestGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, MonitoringOperatorNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
@@ -47,7 +46,7 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	testRoute(t, ctx, grafanaRootHostname)
 }
 
-func testRoute(t *testing.T, ctx *TestingContext, grafanaRootHostname string) {
+func testRoute(t TestingTB, ctx *TestingContext, grafanaRootHostname string) {
 	// create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
@@ -71,7 +70,7 @@ func testRoute(t *testing.T, ctx *TestingContext, grafanaRootHostname string) {
 	}
 }
 
-func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
+func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	const (
 		serviceAccountName = "test"
 		bindingName        = "test"
@@ -119,7 +118,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	}
 
 	token := ""
-	secrets, err := ctx.KubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).List(metav1.ListOptions{})
+	secrets, err := ctx.KubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal("failed to get secrets", err)
 	}

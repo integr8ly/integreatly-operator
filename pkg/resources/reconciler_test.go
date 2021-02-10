@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"testing"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -17,9 +18,6 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
-	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -51,8 +49,6 @@ func buildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := alpha1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
-	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
-	err = marketplacev2.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
@@ -64,17 +60,11 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 	}
 	ownerInstall := &integreatlyv1alpha1.RHMI{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
-	catalogSourceConfig := &marketplacev2.CatalogSourceConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installed-integreatly-test-ns",
-			Namespace: "openshift-marketplace",
-		},
-	}
-	ownerutil.AddOwner(catalogSourceConfig, ownerInstall, true, true)
+
 	cases := []struct {
 		Name             string
 		FakeMPM          marketplace.MarketplaceInterface
@@ -129,7 +119,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name: "test reconcile subscription returns waiting for operator when catalog source config not ready",
-			client: fakeclient.NewFakeClientWithScheme(scheme, catalogSourceConfig, &alpha1.CatalogSourceList{
+			client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.CatalogSourceList{
 				Items: []alpha1.CatalogSource{
 					alpha1.CatalogSource{
 						ObjectMeta: metav1.ObjectMeta{
@@ -364,6 +354,9 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 		t.Fatalf("error building scheme: %s", err.Error())
 	}
 	existingClient := &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		Secret:       "test",
 		RedirectURIs: []string{"http://test.com"},
@@ -379,14 +372,17 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 		{
 			Name: "test oauth client is reconciled correctly when it does not exist",
 			OauthClient: &oauthv1.OAuthClient{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
 				GrantMethod:  oauthv1.GrantHandlerAuto,
 				Secret:       "test",
 				RedirectURIs: []string{"http://test.com"},
 			},
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
@@ -400,8 +396,8 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 			OauthClient: existingClient,
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
@@ -437,8 +433,8 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			UID:  types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
 	cases := []struct {

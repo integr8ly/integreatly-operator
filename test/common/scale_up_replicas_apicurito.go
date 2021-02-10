@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 	"time"
 
 	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
@@ -26,7 +25,7 @@ var (
 	kindApicurito              = "apicuritos"
 )
 
-func TestReplicasInApicurito(t *testing.T, ctx *TestingContext) {
+func TestReplicasInApicurito(t TestingTB, ctx *TestingContext) {
 
 	apicuritoCR, err := getApicurito(ctx.Client)
 	if err != nil {
@@ -65,11 +64,11 @@ func TestReplicasInApicurito(t *testing.T, ctx *TestingContext) {
 
 }
 
-func checkReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int32) error {
+func checkReplicasAreReady(dynClient *TestingContext, t TestingTB, replicas int32) error {
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
-		deployment, err := dynClient.KubeClient.AppsV1().Deployments(apicuritoNamespace).Get(apicuritoName, metav1.GetOptions{})
+		deployment, err := dynClient.KubeClient.AppsV1().Deployments(apicuritoNamespace).Get(goctx.TODO(), apicuritoName, metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("Failed to get Deployment %s in namespace %s with error: %s", apicuritoName, apicuritoNamespace, err)
 		}
@@ -95,7 +94,7 @@ func getApicurito(dynClient k8sclient.Client) (apicuritov1alpha1.Apicurito, erro
 	return *apicuritoCR, nil
 }
 
-func updateApicurito(ctx *TestingContext, replicas int32, t *testing.T) (apicuritov1alpha1.Apicurito, error) {
+func updateApicurito(ctx *TestingContext, replicas int32, t TestingTB) (apicuritov1alpha1.Apicurito, error) {
 
 	replica := fmt.Sprintf(`{
 		"apiVersion": "apicur.io/v1alpha1",
@@ -111,7 +110,7 @@ func updateApicurito(ctx *TestingContext, replicas int32, t *testing.T) (apicuri
 		Resource(kindApicurito).
 		Name(apicuritoName).
 		Namespace(apicuritoNamespace).
-		RequestURI(requestURLApicturito).Body(replicaBytes).Do()
+		RequestURI(requestURLApicturito).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
 
 	apicuritoCR, err := getApicurito(ctx.Client)
@@ -122,7 +121,7 @@ func updateApicurito(ctx *TestingContext, replicas int32, t *testing.T) (apicuri
 	return apicuritoCR, nil
 }
 
-func checkNumberOfReplicasAgainstValueApicurito(apicuritoCR apicuritov1alpha1.Apicurito, ctx *TestingContext, numberOfRequiredReplicas int32, retryInterval, timeout time.Duration, t *testing.T) error {
+func checkNumberOfReplicasAgainstValueApicurito(apicuritoCR apicuritov1alpha1.Apicurito, ctx *TestingContext, numberOfRequiredReplicas int32, retryInterval, timeout time.Duration, t TestingTB) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		apicuritoCR, err = getApicurito(ctx.Client)
 		if err != nil {

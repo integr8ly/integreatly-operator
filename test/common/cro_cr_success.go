@@ -1,11 +1,11 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -74,7 +74,7 @@ func getBlobStorageToCheck(installType, installationName string) []string {
 	return append(common, rhmi2...)
 }
 
-func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
+func TestCROPostgresSuccessfulState(t TestingTB, ctx *TestingContext) {
 	originalStrategy := getResourceStrategy(t, ctx)
 
 	// get console master url
@@ -105,7 +105,7 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
+func TestCRORedisSuccessfulState(t TestingTB, ctx *TestingContext) {
 	strategy := getResourceStrategy(t, ctx)
 
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -129,7 +129,7 @@ func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func TestCROBlobStorageSuccessfulState(t *testing.T, ctx *TestingContext) {
+func TestCROBlobStorageSuccessfulState(t TestingTB, ctx *TestingContext) {
 	strategy := getResourceStrategy(t, ctx)
 
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -172,7 +172,7 @@ func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string,
 
 // Function to get a custom resource json without needing to depend on operator-sdk
 func getCustomResourceJson(ctx *TestingContext, resource string, resourceName string) ([]byte, error) {
-	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNamespace).RequestURI(requestUrl).Do()
+	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNamespace).RequestURI(requestUrl).Do(context.TODO())
 	requestBody, err := request.Raw()
 
 	if err != nil {
@@ -183,7 +183,7 @@ func getCustomResourceJson(ctx *TestingContext, resource string, resourceName st
 }
 
 // Get resource provision strategy
-func getResourceStrategy(t *testing.T, ctx *TestingContext) string {
+func getResourceStrategy(t TestingTB, ctx *TestingContext) string {
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)

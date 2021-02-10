@@ -2,8 +2,8 @@ package common
 
 import (
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	goctx "context"
 
@@ -180,7 +180,7 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created
-func TestIntegreatlyRoutesExist(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 
@@ -217,7 +217,7 @@ func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
 	}
 }
 
-func getRoute(t *testing.T, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
+func getRoute(t TestingTB, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
 	if expectedRoute.IsGeneratedName {
 		return getRouteByGeneratedName(t, ctx, product, expectedRoute)
 	}
@@ -227,7 +227,7 @@ func getRoute(t *testing.T, ctx *TestingContext, product string, expectedRoute E
 
 // getRouteByName finds a Route by searching for a route that has a matching name
 // to expectedRoute.Name
-func getRouteByName(t *testing.T, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
+func getRouteByName(t TestingTB, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
 	route := &routev1.Route{}
 	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: expectedRoute.Name, Namespace: NamespacePrefix + product}, route)
 
@@ -241,7 +241,7 @@ func getRouteByName(t *testing.T, ctx *TestingContext, product string, expectedR
 // getRouteByGeneratedName finds a Route by querying the product routes and finding the
 // first route with a generated name that matches expectedRoute.Name and pointing
 // to a service that matches expectedRoute.ServiceName
-func getRouteByGeneratedName(t *testing.T, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
+func getRouteByGeneratedName(t TestingTB, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
 	routes := &routev1.RouteList{}
 
 	// Get the routes for the product

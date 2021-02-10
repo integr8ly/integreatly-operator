@@ -6,11 +6,11 @@ fi
 
 case $OLM_TYPE in
   "integreatly-operator")
-    LATEST_VERSION=$(grep $OLM_TYPE deploy/olm-catalog/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
+    LATEST_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
     PACKAGE="integreatly"
     ;;
   "managed-api-service")
-    LATEST_VERSION=$(grep $OLM_TYPE deploy/olm-catalog/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
+    LATEST_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
     PACKAGE="managed-api-service"
     ;;
   *)
@@ -44,7 +44,7 @@ start() {
 create_work_area() {
   printf "Creating Work Area \n"
 
-  cd ./deploy/olm-catalog/$OLM_TYPE/
+  cd ./packagemanifests/$OLM_TYPE/
   mkdir temp && cd temp
 }
 
@@ -70,8 +70,8 @@ check_upgrade_install() {
   OLDEST_VERSION=${VERSIONS##*,}
 
   printf "Removing replaces field from CSV \n"
-  file='./'${OLDEST_VERSION}'/'${OLM_TYPE}'.v'${OLDEST_VERSION}'.clusterserviceversion.yaml'
-  sed '/replaces/d' $file > newfile ; mv newfile $file
+  file=`ls './'$OLDEST_VERSION | grep .clusterserviceversion.yaml`
+  sed '/replaces/d' './'$OLDEST_VERSION'/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/'$file
 }
 
 generate_bundles() {
@@ -123,12 +123,12 @@ create_catalog_source() {
   printf 'Creating catalog source '$INDEX_IMAGE'\n'
   cd $ROOT
   oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
-  oc process -p INDEX_IMAGE=$INDEX_IMAGE  -f ./deploy/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
+  oc process -p INDEX_IMAGE=$INDEX_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
 }
 
 clean_up() {
   printf 'Cleaning up work area \n'
-  rm -rf $ROOT/deploy/olm-catalog/$OLM_TYPE/temp
+  rm -rf $ROOT/packagemanifests/$OLM_TYPE/temp
 }
 
 start

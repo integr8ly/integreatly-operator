@@ -3,10 +3,10 @@ package functional
 import (
 	goctx "context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 )
@@ -24,7 +24,7 @@ func getExpectedThreeScaleBucketResourceName(installationName string) string {
 	return fmt.Sprintf("threescale-blobstorage-%s", installationName)
 }
 
-func TestAWSs3BlobStorageResourcesExist(t *testing.T, ctx *common.TestingContext) {
+func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
 	rhmi, err := common.GetRHMI(ctx.Client, true)

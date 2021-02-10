@@ -1,0 +1,14 @@
+# This patch sets the INSTALLATION_TYPE enviroment variable to managed-api
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rhmi-operator
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - name: rhmi-operator
+        env:
+          - name: INSTALLATION_TYPE
+            value: "managed-api"

@@ -2,11 +2,11 @@ package common
 
 import (
 	goctx "context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -136,13 +136,13 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"marin3rOperatorDeployment": Namespace{
 			Name: Marin3rOperatorNamespace,
 			Products: []Product{
-				{Name: "marin3r-operator", ExpectedReplicas: 1},
+				{Name: "marin3r-controller-manager", ExpectedReplicas: 1},
+				{Name: "marin3r-controller-webhook", ExpectedReplicas: 2},
 			},
 		},
 		"marin3rDeployment": Namespace{
 			Name: Marin3rProductNamespace,
 			Products: []Product{
-				{Name: "marin3r-instance", ExpectedReplicas: 1},
 				{Name: "prom-statsd-exporter", ExpectedReplicas: 1},
 				{Name: "ratelimit", ExpectedReplicas: 3},
 			},
@@ -224,7 +224,7 @@ func getClusterStorageDeployments(installationName string, installType string) [
 	}
 }
 
-func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
+func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -249,7 +249,7 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	for _, namespace := range deployments {
 		for _, product := range namespace.Products {
 
-			deployment, err := ctx.KubeClient.AppsV1().Deployments(namespace.Name).Get(product.Name, v1.GetOptions{})
+			deployment, err := ctx.KubeClient.AppsV1().Deployments(namespace.Name).Get(goctx.TODO(), product.Name, v1.GetOptions{})
 			if err != nil {
 				// Fail the test without failing immideatlly
 				t.Errorf("Failed to get Deployment %s in namespace %s with error: %s", product.Name, namespace.Name, err)
@@ -302,7 +302,7 @@ func getDeployments(inst *integreatlyv1alpha1.RHMI) []Namespace {
 	}
 }
 
-func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
+func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
@@ -361,7 +361,7 @@ func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI) []Namespace {
 	}
 }
 
-func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
+func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
@@ -400,7 +400,7 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 
 	for _, namespace := range statefulSets {
 		for _, product := range namespace.Products {
-			statefulSet, err := ctx.KubeClient.AppsV1().StatefulSets(namespace.Name).Get(product.Name, v1.GetOptions{})
+			statefulSet, err := ctx.KubeClient.AppsV1().StatefulSets(namespace.Name).Get(goctx.TODO(), product.Name, v1.GetOptions{})
 			if err != nil {
 				t.Errorf("Failed to get StatefulSet %s in namespace %s with error: %s", product.Name, namespace.Name, err)
 				continue

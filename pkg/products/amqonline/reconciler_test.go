@@ -15,11 +15,11 @@ import (
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
-	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
-	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	enmassev1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/admin/v1beta1"
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
+	enmassev1beta2 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta2"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -28,7 +28,6 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -49,7 +48,6 @@ func buildScheme() *runtime.Scheme {
 	keycloak.SchemeBuilder.AddToScheme(scheme)
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	operatorsv1alpha1.AddToScheme(scheme)
-	marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
 	enmassev1.SchemeBuilder.AddToScheme(scheme)
@@ -646,8 +644,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
 

@@ -19,7 +19,7 @@ import (
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -34,7 +34,6 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -88,9 +87,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
@@ -181,7 +177,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 			}),
 			FakeConfig: basicConfigMock(),
@@ -273,8 +269,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRHMINamespace,
@@ -289,8 +285,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRHMINamespace,
@@ -306,8 +302,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRHMINamespace,
@@ -322,8 +318,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRHMINamespace,
@@ -345,8 +341,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRHMINamespace,
@@ -395,8 +391,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 	}
 
