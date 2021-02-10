@@ -36,7 +36,7 @@ func schema_pkg_apis_keycloak_v1alpha1_Keycloak(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Keycloak is the Schema for the keycloaks API",
+				Description: "Keycloak is the Schema for the keycloaks API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -80,7 +80,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakAWSSpec(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakAWSSpec defines the desired state of KeycloakBackupSpec",
+				Description: "KeycloakAWSSpec defines the desired state of KeycloakBackupSpec.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"encryptionKeySecretName": {
@@ -99,7 +99,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakAWSSpec(ref common.ReferenceCallb
 					},
 					"schedule": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If specified, it will be used as a schedule for creating a CronJob",
+							Description: "If specified, it will be used as a schedule for creating a CronJob.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -114,7 +114,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakBackup(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakBackup is the Schema for the keycloakbackups API",
+				Description: "KeycloakBackup is the Schema for the keycloakbackups API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -158,7 +158,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakBackupSpec(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakBackupSpec defines the desired state of KeycloakBackup",
+				Description: "KeycloakBackupSpec defines the desired state of KeycloakBackup.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"restore": {
@@ -180,6 +180,13 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakBackupSpec(ref common.ReferenceCa
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
+					"storageClassName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the StorageClass for Postgresql Backup Persistent Volume Claim",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -192,7 +199,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakBackupStatus(ref common.Reference
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakBackupStatus defines the observed state of KeycloakBackup",
+				Description: "KeycloakBackupStatus defines the observed state of KeycloakBackup.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"phase": {
@@ -249,7 +256,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakClient(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakClient is the Schema for the keycloakclients API",
+				Description: "KeycloakClient is the Schema for the keycloakclients API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -293,7 +300,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakClientSpec(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakClientSpec defines the desired state of KeycloakClient",
+				Description: "KeycloakClientSpec defines the desired state of KeycloakClient.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"realmSelector": {
@@ -422,9 +429,16 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakRealmSpec(ref common.ReferenceCal
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakRealmSpec defines the desired state of KeycloakRealm",
+				Description: "KeycloakRealmSpec defines the desired state of KeycloakRealm.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"unmanaged": {
+						SchemaProps: spec.SchemaProps{
+							Description: "When set to true, this KeycloakRealm will be marked as unmanaged and not be managed by this operator. It can then be used for targeting purposes.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"instanceSelector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Selector for looking up Keycloak Custom Resources.",
@@ -440,7 +454,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakRealmSpec(ref common.ReferenceCal
 					"realmOverrides": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "map",
+								"x-kubernetes-list-type": "atomic",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -531,8 +545,22 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakSpec(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "KeycloakSpec defines the desired state of Keycloak.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"unmanaged": {
+						SchemaProps: spec.SchemaProps{
+							Description: "When set to true, this Keycloak will be marked as unmanaged and will not be managed by this operator. It can then be used for targeting purposes.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"external": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Contains configuration for external Keycloak instances. Unmanaged needs to be set to true to use this.",
+							Ref:         ref("github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternal"),
+						},
+					},
 					"extensions": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -580,7 +608,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakSpec(ref common.ReferenceCallback
 					},
 					"podDisruptionBudget": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specify PodDisruptionBudget configuration",
+							Description: "Specify PodDisruptionBudget configuration.",
 							Ref:         ref("github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.PodDisruptionBudgetConfig"),
 						},
 					},
@@ -590,11 +618,30 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakDeploymentSpec"),
 						},
 					},
+					"postgresDeploymentSpec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Resources (Requests and Limits) for PostgresDeployment.",
+							Ref:         ref("github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.PostgresqlDeploymentSpec"),
+						},
+					},
+					"migration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specify Migration configuration",
+							Ref:         ref("github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.MigrateConfig"),
+						},
+					},
+					"storageClassName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the StorageClass for Postgresql Persistent Volume Claim",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakDeploymentSpec", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternalAccess", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternalDatabase", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.PodDisruptionBudgetConfig"},
+			"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakDeploymentSpec", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternal", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternalAccess", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.KeycloakExternalDatabase", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.MigrateConfig", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.PodDisruptionBudgetConfig", "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1.PostgresqlDeploymentSpec"},
 	}
 }
 
@@ -602,7 +649,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakStatus(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakStatus defines the observed state of Keycloak",
+				Description: "KeycloakStatus defines the observed state of Keycloak.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"phase": {
@@ -628,7 +675,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakStatus(ref common.ReferenceCallba
 					},
 					"secondaryResources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "A map of all the secondary resources types and names created for this CR. e.g \"Deployment\": [ \"DeploymentName1\", \"DeploymentName2\" ]",
+							Description: "A map of all the secondary resources types and names created for this CR. e.g \"Deployment\": [ \"DeploymentName1\", \"DeploymentName2\" ].",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -650,21 +697,21 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakStatus(ref common.ReferenceCallba
 					},
 					"version": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Version of Keycloak or RHSSO running on the cluster",
+							Description: "Version of Keycloak or RHSSO running on the cluster.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"internalURL": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Service IP and Port for in-cluster access to the keycloak instance",
+							Description: "Service IP and Port for in-cluster access to the keycloak instance.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"credentialSecret": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The secret where the admin credentials are to be found",
+							Description: "The secret where the admin credentials are to be found.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -680,7 +727,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakUser(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakUser is the Schema for the keycloakusers API",
+				Description: "KeycloakUser is the Schema for the keycloakusers API.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -724,7 +771,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakUserSpec(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakUserSpec defines the desired state of KeycloakUser",
+				Description: "KeycloakUserSpec defines the desired state of KeycloakUser.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"realmSelector": {
@@ -752,7 +799,7 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakUserStatus(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "KeycloakUserStatus defines the observed state of KeycloakUser",
+				Description: "KeycloakUserStatus defines the observed state of KeycloakUser.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"phase": {

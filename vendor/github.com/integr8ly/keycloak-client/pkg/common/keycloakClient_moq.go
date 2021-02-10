@@ -8,73 +8,6 @@ import (
 	"sync"
 )
 
-var (
-	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow      sync.RWMutex
-	lockKeycloakInterfaceMockAddUserToGroup                       sync.RWMutex
-	lockKeycloakInterfaceMockCreateAuthenticationFlow             sync.RWMutex
-	lockKeycloakInterfaceMockCreateAuthenticatorConfig            sync.RWMutex
-	lockKeycloakInterfaceMockCreateClient                         sync.RWMutex
-	lockKeycloakInterfaceMockCreateFederatedIdentity              sync.RWMutex
-	lockKeycloakInterfaceMockCreateGroup                          sync.RWMutex
-	lockKeycloakInterfaceMockCreateGroupClientRole                sync.RWMutex
-	lockKeycloakInterfaceMockCreateGroupRealmRole                 sync.RWMutex
-	lockKeycloakInterfaceMockCreateIdentityProvider               sync.RWMutex
-	lockKeycloakInterfaceMockCreateRealm                          sync.RWMutex
-	lockKeycloakInterfaceMockCreateUser                           sync.RWMutex
-	lockKeycloakInterfaceMockCreateUserClientRole                 sync.RWMutex
-	lockKeycloakInterfaceMockCreateUserRealmRole                  sync.RWMutex
-	lockKeycloakInterfaceMockDeleteAuthenticatorConfig            sync.RWMutex
-	lockKeycloakInterfaceMockDeleteClient                         sync.RWMutex
-	lockKeycloakInterfaceMockDeleteIdentityProvider               sync.RWMutex
-	lockKeycloakInterfaceMockDeleteRealm                          sync.RWMutex
-	lockKeycloakInterfaceMockDeleteUser                           sync.RWMutex
-	lockKeycloakInterfaceMockDeleteUserClientRole                 sync.RWMutex
-	lockKeycloakInterfaceMockDeleteUserFromGroup                  sync.RWMutex
-	lockKeycloakInterfaceMockDeleteUserRealmRole                  sync.RWMutex
-	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow   sync.RWMutex
-	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias        sync.RWMutex
-	lockKeycloakInterfaceMockFindAvailableGroupClientRole         sync.RWMutex
-	lockKeycloakInterfaceMockFindGroupByName                      sync.RWMutex
-	lockKeycloakInterfaceMockFindGroupClientRole                  sync.RWMutex
-	lockKeycloakInterfaceMockFindUserByEmail                      sync.RWMutex
-	lockKeycloakInterfaceMockFindUserByUsername                   sync.RWMutex
-	lockKeycloakInterfaceMockGetAuthenticatorConfig               sync.RWMutex
-	lockKeycloakInterfaceMockGetClient                            sync.RWMutex
-	lockKeycloakInterfaceMockGetClientInstall                     sync.RWMutex
-	lockKeycloakInterfaceMockGetClientSecret                      sync.RWMutex
-	lockKeycloakInterfaceMockGetIdentityProvider                  sync.RWMutex
-	lockKeycloakInterfaceMockGetRealm                             sync.RWMutex
-	lockKeycloakInterfaceMockGetUser                              sync.RWMutex
-	lockKeycloakInterfaceMockGetUserFederatedIdentities           sync.RWMutex
-	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow  sync.RWMutex
-	lockKeycloakInterfaceMockListAuthenticationFlows              sync.RWMutex
-	lockKeycloakInterfaceMockListAvailableGroupClientRoles        sync.RWMutex
-	lockKeycloakInterfaceMockListAvailableGroupRealmRoles         sync.RWMutex
-	lockKeycloakInterfaceMockListAvailableUserClientRoles         sync.RWMutex
-	lockKeycloakInterfaceMockListAvailableUserRealmRoles          sync.RWMutex
-	lockKeycloakInterfaceMockListClients                          sync.RWMutex
-	lockKeycloakInterfaceMockListDefaultGroups                    sync.RWMutex
-	lockKeycloakInterfaceMockListGroupClientRoles                 sync.RWMutex
-	lockKeycloakInterfaceMockListGroupRealmRoles                  sync.RWMutex
-	lockKeycloakInterfaceMockListIdentityProviders                sync.RWMutex
-	lockKeycloakInterfaceMockListRealms                           sync.RWMutex
-	lockKeycloakInterfaceMockListUserClientRoles                  sync.RWMutex
-	lockKeycloakInterfaceMockListUserRealmRoles                   sync.RWMutex
-	lockKeycloakInterfaceMockListUsers                            sync.RWMutex
-	lockKeycloakInterfaceMockListUsersInGroup                     sync.RWMutex
-	lockKeycloakInterfaceMockMakeGroupDefault                     sync.RWMutex
-	lockKeycloakInterfaceMockPing                                 sync.RWMutex
-	lockKeycloakInterfaceMockRemoveFederatedIdentity              sync.RWMutex
-	lockKeycloakInterfaceMockSetGroupChild                        sync.RWMutex
-	lockKeycloakInterfaceMockUpdateAuthenticationExecutionForFlow sync.RWMutex
-	lockKeycloakInterfaceMockUpdateAuthenticatorConfig            sync.RWMutex
-	lockKeycloakInterfaceMockUpdateClient                         sync.RWMutex
-	lockKeycloakInterfaceMockUpdateIdentityProvider               sync.RWMutex
-	lockKeycloakInterfaceMockUpdatePassword                       sync.RWMutex
-	lockKeycloakInterfaceMockUpdateRealm                          sync.RWMutex
-	lockKeycloakInterfaceMockUpdateUser                           sync.RWMutex
-)
-
 // Ensure, that KeycloakInterfaceMock does implement KeycloakInterface.
 // If this is not the case, regenerate this file with moq.
 var _ KeycloakInterface = &KeycloakInterfaceMock{}
@@ -957,6 +890,70 @@ type KeycloakInterfaceMock struct {
 			RealmName string
 		}
 	}
+	lockAddExecutionToAuthenticatonFlow      sync.RWMutex
+	lockAddUserToGroup                       sync.RWMutex
+	lockCreateAuthenticationFlow             sync.RWMutex
+	lockCreateAuthenticatorConfig            sync.RWMutex
+	lockCreateClient                         sync.RWMutex
+	lockCreateFederatedIdentity              sync.RWMutex
+	lockCreateGroup                          sync.RWMutex
+	lockCreateGroupClientRole                sync.RWMutex
+	lockCreateGroupRealmRole                 sync.RWMutex
+	lockCreateIdentityProvider               sync.RWMutex
+	lockCreateRealm                          sync.RWMutex
+	lockCreateUser                           sync.RWMutex
+	lockCreateUserClientRole                 sync.RWMutex
+	lockCreateUserRealmRole                  sync.RWMutex
+	lockDeleteAuthenticatorConfig            sync.RWMutex
+	lockDeleteClient                         sync.RWMutex
+	lockDeleteIdentityProvider               sync.RWMutex
+	lockDeleteRealm                          sync.RWMutex
+	lockDeleteUser                           sync.RWMutex
+	lockDeleteUserClientRole                 sync.RWMutex
+	lockDeleteUserFromGroup                  sync.RWMutex
+	lockDeleteUserRealmRole                  sync.RWMutex
+	lockFindAuthenticationExecutionForFlow   sync.RWMutex
+	lockFindAuthenticationFlowByAlias        sync.RWMutex
+	lockFindAvailableGroupClientRole         sync.RWMutex
+	lockFindGroupByName                      sync.RWMutex
+	lockFindGroupClientRole                  sync.RWMutex
+	lockFindUserByEmail                      sync.RWMutex
+	lockFindUserByUsername                   sync.RWMutex
+	lockGetAuthenticatorConfig               sync.RWMutex
+	lockGetClient                            sync.RWMutex
+	lockGetClientInstall                     sync.RWMutex
+	lockGetClientSecret                      sync.RWMutex
+	lockGetIdentityProvider                  sync.RWMutex
+	lockGetRealm                             sync.RWMutex
+	lockGetUser                              sync.RWMutex
+	lockGetUserFederatedIdentities           sync.RWMutex
+	lockListAuthenticationExecutionsForFlow  sync.RWMutex
+	lockListAuthenticationFlows              sync.RWMutex
+	lockListAvailableGroupClientRoles        sync.RWMutex
+	lockListAvailableGroupRealmRoles         sync.RWMutex
+	lockListAvailableUserClientRoles         sync.RWMutex
+	lockListAvailableUserRealmRoles          sync.RWMutex
+	lockListClients                          sync.RWMutex
+	lockListDefaultGroups                    sync.RWMutex
+	lockListGroupClientRoles                 sync.RWMutex
+	lockListGroupRealmRoles                  sync.RWMutex
+	lockListIdentityProviders                sync.RWMutex
+	lockListRealms                           sync.RWMutex
+	lockListUserClientRoles                  sync.RWMutex
+	lockListUserRealmRoles                   sync.RWMutex
+	lockListUsers                            sync.RWMutex
+	lockListUsersInGroup                     sync.RWMutex
+	lockMakeGroupDefault                     sync.RWMutex
+	lockPing                                 sync.RWMutex
+	lockRemoveFederatedIdentity              sync.RWMutex
+	lockSetGroupChild                        sync.RWMutex
+	lockUpdateAuthenticationExecutionForFlow sync.RWMutex
+	lockUpdateAuthenticatorConfig            sync.RWMutex
+	lockUpdateClient                         sync.RWMutex
+	lockUpdateIdentityProvider               sync.RWMutex
+	lockUpdatePassword                       sync.RWMutex
+	lockUpdateRealm                          sync.RWMutex
+	lockUpdateUser                           sync.RWMutex
 }
 
 // AddExecutionToAuthenticatonFlow calls AddExecutionToAuthenticatonFlowFunc.
@@ -975,9 +972,9 @@ func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlow(flowAlias str
 		ProviderID:  providerID,
 		Requirement: requirement,
 	}
-	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.Lock()
+	mock.lockAddExecutionToAuthenticatonFlow.Lock()
 	mock.calls.AddExecutionToAuthenticatonFlow = append(mock.calls.AddExecutionToAuthenticatonFlow, callInfo)
-	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.Unlock()
+	mock.lockAddExecutionToAuthenticatonFlow.Unlock()
 	return mock.AddExecutionToAuthenticatonFlowFunc(flowAlias, realmName, providerID, requirement)
 }
 
@@ -996,9 +993,9 @@ func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlowCalls() []stru
 		ProviderID  string
 		Requirement Requirement
 	}
-	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.RLock()
+	mock.lockAddExecutionToAuthenticatonFlow.RLock()
 	calls = mock.calls.AddExecutionToAuthenticatonFlow
-	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.RUnlock()
+	mock.lockAddExecutionToAuthenticatonFlow.RUnlock()
 	return calls
 }
 
@@ -1016,9 +1013,9 @@ func (mock *KeycloakInterfaceMock) AddUserToGroup(realmName string, userID strin
 		UserID:    userID,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockAddUserToGroup.Lock()
+	mock.lockAddUserToGroup.Lock()
 	mock.calls.AddUserToGroup = append(mock.calls.AddUserToGroup, callInfo)
-	lockKeycloakInterfaceMockAddUserToGroup.Unlock()
+	mock.lockAddUserToGroup.Unlock()
 	return mock.AddUserToGroupFunc(realmName, userID, groupID)
 }
 
@@ -1035,9 +1032,9 @@ func (mock *KeycloakInterfaceMock) AddUserToGroupCalls() []struct {
 		UserID    string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockAddUserToGroup.RLock()
+	mock.lockAddUserToGroup.RLock()
 	calls = mock.calls.AddUserToGroup
-	lockKeycloakInterfaceMockAddUserToGroup.RUnlock()
+	mock.lockAddUserToGroup.RUnlock()
 	return calls
 }
 
@@ -1053,9 +1050,9 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticationFlow(authFlow Authenticat
 		AuthFlow:  authFlow,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockCreateAuthenticationFlow.Lock()
+	mock.lockCreateAuthenticationFlow.Lock()
 	mock.calls.CreateAuthenticationFlow = append(mock.calls.CreateAuthenticationFlow, callInfo)
-	lockKeycloakInterfaceMockCreateAuthenticationFlow.Unlock()
+	mock.lockCreateAuthenticationFlow.Unlock()
 	return mock.CreateAuthenticationFlowFunc(authFlow, realmName)
 }
 
@@ -1070,9 +1067,9 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticationFlowCalls() []struct {
 		AuthFlow  AuthenticationFlow
 		RealmName string
 	}
-	lockKeycloakInterfaceMockCreateAuthenticationFlow.RLock()
+	mock.lockCreateAuthenticationFlow.RLock()
 	calls = mock.calls.CreateAuthenticationFlow
-	lockKeycloakInterfaceMockCreateAuthenticationFlow.RUnlock()
+	mock.lockCreateAuthenticationFlow.RUnlock()
 	return calls
 }
 
@@ -1090,9 +1087,9 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfig(authenticatorConfig
 		RealmName:           realmName,
 		ExecutionID:         executionID,
 	}
-	lockKeycloakInterfaceMockCreateAuthenticatorConfig.Lock()
+	mock.lockCreateAuthenticatorConfig.Lock()
 	mock.calls.CreateAuthenticatorConfig = append(mock.calls.CreateAuthenticatorConfig, callInfo)
-	lockKeycloakInterfaceMockCreateAuthenticatorConfig.Unlock()
+	mock.lockCreateAuthenticatorConfig.Unlock()
 	return mock.CreateAuthenticatorConfigFunc(authenticatorConfig, realmName, executionID)
 }
 
@@ -1109,9 +1106,9 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfigCalls() []struct {
 		RealmName           string
 		ExecutionID         string
 	}
-	lockKeycloakInterfaceMockCreateAuthenticatorConfig.RLock()
+	mock.lockCreateAuthenticatorConfig.RLock()
 	calls = mock.calls.CreateAuthenticatorConfig
-	lockKeycloakInterfaceMockCreateAuthenticatorConfig.RUnlock()
+	mock.lockCreateAuthenticatorConfig.RUnlock()
 	return calls
 }
 
@@ -1127,9 +1124,9 @@ func (mock *KeycloakInterfaceMock) CreateClient(client *v1alpha1.KeycloakAPIClie
 		Client:    client,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockCreateClient.Lock()
+	mock.lockCreateClient.Lock()
 	mock.calls.CreateClient = append(mock.calls.CreateClient, callInfo)
-	lockKeycloakInterfaceMockCreateClient.Unlock()
+	mock.lockCreateClient.Unlock()
 	return mock.CreateClientFunc(client, realmName)
 }
 
@@ -1144,9 +1141,9 @@ func (mock *KeycloakInterfaceMock) CreateClientCalls() []struct {
 		Client    *v1alpha1.KeycloakAPIClient
 		RealmName string
 	}
-	lockKeycloakInterfaceMockCreateClient.RLock()
+	mock.lockCreateClient.RLock()
 	calls = mock.calls.CreateClient
-	lockKeycloakInterfaceMockCreateClient.RUnlock()
+	mock.lockCreateClient.RUnlock()
 	return calls
 }
 
@@ -1164,9 +1161,9 @@ func (mock *KeycloakInterfaceMock) CreateFederatedIdentity(fid v1alpha1.Federate
 		UserID:    userID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockCreateFederatedIdentity.Lock()
+	mock.lockCreateFederatedIdentity.Lock()
 	mock.calls.CreateFederatedIdentity = append(mock.calls.CreateFederatedIdentity, callInfo)
-	lockKeycloakInterfaceMockCreateFederatedIdentity.Unlock()
+	mock.lockCreateFederatedIdentity.Unlock()
 	return mock.CreateFederatedIdentityFunc(fid, userID, realmName)
 }
 
@@ -1183,9 +1180,9 @@ func (mock *KeycloakInterfaceMock) CreateFederatedIdentityCalls() []struct {
 		UserID    string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockCreateFederatedIdentity.RLock()
+	mock.lockCreateFederatedIdentity.RLock()
 	calls = mock.calls.CreateFederatedIdentity
-	lockKeycloakInterfaceMockCreateFederatedIdentity.RUnlock()
+	mock.lockCreateFederatedIdentity.RUnlock()
 	return calls
 }
 
@@ -1201,9 +1198,9 @@ func (mock *KeycloakInterfaceMock) CreateGroup(group string, realmName string) (
 		Group:     group,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockCreateGroup.Lock()
+	mock.lockCreateGroup.Lock()
 	mock.calls.CreateGroup = append(mock.calls.CreateGroup, callInfo)
-	lockKeycloakInterfaceMockCreateGroup.Unlock()
+	mock.lockCreateGroup.Unlock()
 	return mock.CreateGroupFunc(group, realmName)
 }
 
@@ -1218,9 +1215,9 @@ func (mock *KeycloakInterfaceMock) CreateGroupCalls() []struct {
 		Group     string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockCreateGroup.RLock()
+	mock.lockCreateGroup.RLock()
 	calls = mock.calls.CreateGroup
-	lockKeycloakInterfaceMockCreateGroup.RUnlock()
+	mock.lockCreateGroup.RUnlock()
 	return calls
 }
 
@@ -1240,9 +1237,9 @@ func (mock *KeycloakInterfaceMock) CreateGroupClientRole(role *v1alpha1.Keycloak
 		ClientID:  clientID,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockCreateGroupClientRole.Lock()
+	mock.lockCreateGroupClientRole.Lock()
 	mock.calls.CreateGroupClientRole = append(mock.calls.CreateGroupClientRole, callInfo)
-	lockKeycloakInterfaceMockCreateGroupClientRole.Unlock()
+	mock.lockCreateGroupClientRole.Unlock()
 	return mock.CreateGroupClientRoleFunc(role, realmName, clientID, groupID)
 }
 
@@ -1261,9 +1258,9 @@ func (mock *KeycloakInterfaceMock) CreateGroupClientRoleCalls() []struct {
 		ClientID  string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockCreateGroupClientRole.RLock()
+	mock.lockCreateGroupClientRole.RLock()
 	calls = mock.calls.CreateGroupClientRole
-	lockKeycloakInterfaceMockCreateGroupClientRole.RUnlock()
+	mock.lockCreateGroupClientRole.RUnlock()
 	return calls
 }
 
@@ -1281,9 +1278,9 @@ func (mock *KeycloakInterfaceMock) CreateGroupRealmRole(role *v1alpha1.KeycloakU
 		RealmName: realmName,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockCreateGroupRealmRole.Lock()
+	mock.lockCreateGroupRealmRole.Lock()
 	mock.calls.CreateGroupRealmRole = append(mock.calls.CreateGroupRealmRole, callInfo)
-	lockKeycloakInterfaceMockCreateGroupRealmRole.Unlock()
+	mock.lockCreateGroupRealmRole.Unlock()
 	return mock.CreateGroupRealmRoleFunc(role, realmName, groupID)
 }
 
@@ -1300,9 +1297,9 @@ func (mock *KeycloakInterfaceMock) CreateGroupRealmRoleCalls() []struct {
 		RealmName string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockCreateGroupRealmRole.RLock()
+	mock.lockCreateGroupRealmRole.RLock()
 	calls = mock.calls.CreateGroupRealmRole
-	lockKeycloakInterfaceMockCreateGroupRealmRole.RUnlock()
+	mock.lockCreateGroupRealmRole.RUnlock()
 	return calls
 }
 
@@ -1318,9 +1315,9 @@ func (mock *KeycloakInterfaceMock) CreateIdentityProvider(identityProvider *v1al
 		IdentityProvider: identityProvider,
 		RealmName:        realmName,
 	}
-	lockKeycloakInterfaceMockCreateIdentityProvider.Lock()
+	mock.lockCreateIdentityProvider.Lock()
 	mock.calls.CreateIdentityProvider = append(mock.calls.CreateIdentityProvider, callInfo)
-	lockKeycloakInterfaceMockCreateIdentityProvider.Unlock()
+	mock.lockCreateIdentityProvider.Unlock()
 	return mock.CreateIdentityProviderFunc(identityProvider, realmName)
 }
 
@@ -1335,9 +1332,9 @@ func (mock *KeycloakInterfaceMock) CreateIdentityProviderCalls() []struct {
 		IdentityProvider *v1alpha1.KeycloakIdentityProvider
 		RealmName        string
 	}
-	lockKeycloakInterfaceMockCreateIdentityProvider.RLock()
+	mock.lockCreateIdentityProvider.RLock()
 	calls = mock.calls.CreateIdentityProvider
-	lockKeycloakInterfaceMockCreateIdentityProvider.RUnlock()
+	mock.lockCreateIdentityProvider.RUnlock()
 	return calls
 }
 
@@ -1351,9 +1348,9 @@ func (mock *KeycloakInterfaceMock) CreateRealm(realm *v1alpha1.KeycloakRealm) (s
 	}{
 		Realm: realm,
 	}
-	lockKeycloakInterfaceMockCreateRealm.Lock()
+	mock.lockCreateRealm.Lock()
 	mock.calls.CreateRealm = append(mock.calls.CreateRealm, callInfo)
-	lockKeycloakInterfaceMockCreateRealm.Unlock()
+	mock.lockCreateRealm.Unlock()
 	return mock.CreateRealmFunc(realm)
 }
 
@@ -1366,9 +1363,9 @@ func (mock *KeycloakInterfaceMock) CreateRealmCalls() []struct {
 	var calls []struct {
 		Realm *v1alpha1.KeycloakRealm
 	}
-	lockKeycloakInterfaceMockCreateRealm.RLock()
+	mock.lockCreateRealm.RLock()
 	calls = mock.calls.CreateRealm
-	lockKeycloakInterfaceMockCreateRealm.RUnlock()
+	mock.lockCreateRealm.RUnlock()
 	return calls
 }
 
@@ -1384,9 +1381,9 @@ func (mock *KeycloakInterfaceMock) CreateUser(user *v1alpha1.KeycloakAPIUser, re
 		User:      user,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockCreateUser.Lock()
+	mock.lockCreateUser.Lock()
 	mock.calls.CreateUser = append(mock.calls.CreateUser, callInfo)
-	lockKeycloakInterfaceMockCreateUser.Unlock()
+	mock.lockCreateUser.Unlock()
 	return mock.CreateUserFunc(user, realmName)
 }
 
@@ -1401,9 +1398,9 @@ func (mock *KeycloakInterfaceMock) CreateUserCalls() []struct {
 		User      *v1alpha1.KeycloakAPIUser
 		RealmName string
 	}
-	lockKeycloakInterfaceMockCreateUser.RLock()
+	mock.lockCreateUser.RLock()
 	calls = mock.calls.CreateUser
-	lockKeycloakInterfaceMockCreateUser.RUnlock()
+	mock.lockCreateUser.RUnlock()
 	return calls
 }
 
@@ -1423,9 +1420,9 @@ func (mock *KeycloakInterfaceMock) CreateUserClientRole(role *v1alpha1.KeycloakU
 		ClientID:  clientID,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockCreateUserClientRole.Lock()
+	mock.lockCreateUserClientRole.Lock()
 	mock.calls.CreateUserClientRole = append(mock.calls.CreateUserClientRole, callInfo)
-	lockKeycloakInterfaceMockCreateUserClientRole.Unlock()
+	mock.lockCreateUserClientRole.Unlock()
 	return mock.CreateUserClientRoleFunc(role, realmName, clientID, userID)
 }
 
@@ -1444,9 +1441,9 @@ func (mock *KeycloakInterfaceMock) CreateUserClientRoleCalls() []struct {
 		ClientID  string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockCreateUserClientRole.RLock()
+	mock.lockCreateUserClientRole.RLock()
 	calls = mock.calls.CreateUserClientRole
-	lockKeycloakInterfaceMockCreateUserClientRole.RUnlock()
+	mock.lockCreateUserClientRole.RUnlock()
 	return calls
 }
 
@@ -1464,9 +1461,9 @@ func (mock *KeycloakInterfaceMock) CreateUserRealmRole(role *v1alpha1.KeycloakUs
 		RealmName: realmName,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockCreateUserRealmRole.Lock()
+	mock.lockCreateUserRealmRole.Lock()
 	mock.calls.CreateUserRealmRole = append(mock.calls.CreateUserRealmRole, callInfo)
-	lockKeycloakInterfaceMockCreateUserRealmRole.Unlock()
+	mock.lockCreateUserRealmRole.Unlock()
 	return mock.CreateUserRealmRoleFunc(role, realmName, userID)
 }
 
@@ -1483,9 +1480,9 @@ func (mock *KeycloakInterfaceMock) CreateUserRealmRoleCalls() []struct {
 		RealmName string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockCreateUserRealmRole.RLock()
+	mock.lockCreateUserRealmRole.RLock()
 	calls = mock.calls.CreateUserRealmRole
-	lockKeycloakInterfaceMockCreateUserRealmRole.RUnlock()
+	mock.lockCreateUserRealmRole.RUnlock()
 	return calls
 }
 
@@ -1501,9 +1498,9 @@ func (mock *KeycloakInterfaceMock) DeleteAuthenticatorConfig(configID string, re
 		ConfigID:  configID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockDeleteAuthenticatorConfig.Lock()
+	mock.lockDeleteAuthenticatorConfig.Lock()
 	mock.calls.DeleteAuthenticatorConfig = append(mock.calls.DeleteAuthenticatorConfig, callInfo)
-	lockKeycloakInterfaceMockDeleteAuthenticatorConfig.Unlock()
+	mock.lockDeleteAuthenticatorConfig.Unlock()
 	return mock.DeleteAuthenticatorConfigFunc(configID, realmName)
 }
 
@@ -1518,9 +1515,9 @@ func (mock *KeycloakInterfaceMock) DeleteAuthenticatorConfigCalls() []struct {
 		ConfigID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockDeleteAuthenticatorConfig.RLock()
+	mock.lockDeleteAuthenticatorConfig.RLock()
 	calls = mock.calls.DeleteAuthenticatorConfig
-	lockKeycloakInterfaceMockDeleteAuthenticatorConfig.RUnlock()
+	mock.lockDeleteAuthenticatorConfig.RUnlock()
 	return calls
 }
 
@@ -1536,9 +1533,9 @@ func (mock *KeycloakInterfaceMock) DeleteClient(clientID string, realmName strin
 		ClientID:  clientID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockDeleteClient.Lock()
+	mock.lockDeleteClient.Lock()
 	mock.calls.DeleteClient = append(mock.calls.DeleteClient, callInfo)
-	lockKeycloakInterfaceMockDeleteClient.Unlock()
+	mock.lockDeleteClient.Unlock()
 	return mock.DeleteClientFunc(clientID, realmName)
 }
 
@@ -1553,9 +1550,9 @@ func (mock *KeycloakInterfaceMock) DeleteClientCalls() []struct {
 		ClientID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockDeleteClient.RLock()
+	mock.lockDeleteClient.RLock()
 	calls = mock.calls.DeleteClient
-	lockKeycloakInterfaceMockDeleteClient.RUnlock()
+	mock.lockDeleteClient.RUnlock()
 	return calls
 }
 
@@ -1571,9 +1568,9 @@ func (mock *KeycloakInterfaceMock) DeleteIdentityProvider(alias string, realmNam
 		Alias:     alias,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockDeleteIdentityProvider.Lock()
+	mock.lockDeleteIdentityProvider.Lock()
 	mock.calls.DeleteIdentityProvider = append(mock.calls.DeleteIdentityProvider, callInfo)
-	lockKeycloakInterfaceMockDeleteIdentityProvider.Unlock()
+	mock.lockDeleteIdentityProvider.Unlock()
 	return mock.DeleteIdentityProviderFunc(alias, realmName)
 }
 
@@ -1588,9 +1585,9 @@ func (mock *KeycloakInterfaceMock) DeleteIdentityProviderCalls() []struct {
 		Alias     string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockDeleteIdentityProvider.RLock()
+	mock.lockDeleteIdentityProvider.RLock()
 	calls = mock.calls.DeleteIdentityProvider
-	lockKeycloakInterfaceMockDeleteIdentityProvider.RUnlock()
+	mock.lockDeleteIdentityProvider.RUnlock()
 	return calls
 }
 
@@ -1604,9 +1601,9 @@ func (mock *KeycloakInterfaceMock) DeleteRealm(realmName string) error {
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockDeleteRealm.Lock()
+	mock.lockDeleteRealm.Lock()
 	mock.calls.DeleteRealm = append(mock.calls.DeleteRealm, callInfo)
-	lockKeycloakInterfaceMockDeleteRealm.Unlock()
+	mock.lockDeleteRealm.Unlock()
 	return mock.DeleteRealmFunc(realmName)
 }
 
@@ -1619,9 +1616,9 @@ func (mock *KeycloakInterfaceMock) DeleteRealmCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockDeleteRealm.RLock()
+	mock.lockDeleteRealm.RLock()
 	calls = mock.calls.DeleteRealm
-	lockKeycloakInterfaceMockDeleteRealm.RUnlock()
+	mock.lockDeleteRealm.RUnlock()
 	return calls
 }
 
@@ -1637,9 +1634,9 @@ func (mock *KeycloakInterfaceMock) DeleteUser(userID string, realmName string) e
 		UserID:    userID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockDeleteUser.Lock()
+	mock.lockDeleteUser.Lock()
 	mock.calls.DeleteUser = append(mock.calls.DeleteUser, callInfo)
-	lockKeycloakInterfaceMockDeleteUser.Unlock()
+	mock.lockDeleteUser.Unlock()
 	return mock.DeleteUserFunc(userID, realmName)
 }
 
@@ -1654,9 +1651,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserCalls() []struct {
 		UserID    string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockDeleteUser.RLock()
+	mock.lockDeleteUser.RLock()
 	calls = mock.calls.DeleteUser
-	lockKeycloakInterfaceMockDeleteUser.RUnlock()
+	mock.lockDeleteUser.RUnlock()
 	return calls
 }
 
@@ -1676,9 +1673,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserClientRole(role *v1alpha1.KeycloakU
 		ClientID:  clientID,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockDeleteUserClientRole.Lock()
+	mock.lockDeleteUserClientRole.Lock()
 	mock.calls.DeleteUserClientRole = append(mock.calls.DeleteUserClientRole, callInfo)
-	lockKeycloakInterfaceMockDeleteUserClientRole.Unlock()
+	mock.lockDeleteUserClientRole.Unlock()
 	return mock.DeleteUserClientRoleFunc(role, realmName, clientID, userID)
 }
 
@@ -1697,9 +1694,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserClientRoleCalls() []struct {
 		ClientID  string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockDeleteUserClientRole.RLock()
+	mock.lockDeleteUserClientRole.RLock()
 	calls = mock.calls.DeleteUserClientRole
-	lockKeycloakInterfaceMockDeleteUserClientRole.RUnlock()
+	mock.lockDeleteUserClientRole.RUnlock()
 	return calls
 }
 
@@ -1717,9 +1714,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserFromGroup(realmName string, userID 
 		UserID:    userID,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockDeleteUserFromGroup.Lock()
+	mock.lockDeleteUserFromGroup.Lock()
 	mock.calls.DeleteUserFromGroup = append(mock.calls.DeleteUserFromGroup, callInfo)
-	lockKeycloakInterfaceMockDeleteUserFromGroup.Unlock()
+	mock.lockDeleteUserFromGroup.Unlock()
 	return mock.DeleteUserFromGroupFunc(realmName, userID, groupID)
 }
 
@@ -1736,9 +1733,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserFromGroupCalls() []struct {
 		UserID    string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockDeleteUserFromGroup.RLock()
+	mock.lockDeleteUserFromGroup.RLock()
 	calls = mock.calls.DeleteUserFromGroup
-	lockKeycloakInterfaceMockDeleteUserFromGroup.RUnlock()
+	mock.lockDeleteUserFromGroup.RUnlock()
 	return calls
 }
 
@@ -1756,9 +1753,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserRealmRole(role *v1alpha1.KeycloakUs
 		RealmName: realmName,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockDeleteUserRealmRole.Lock()
+	mock.lockDeleteUserRealmRole.Lock()
 	mock.calls.DeleteUserRealmRole = append(mock.calls.DeleteUserRealmRole, callInfo)
-	lockKeycloakInterfaceMockDeleteUserRealmRole.Unlock()
+	mock.lockDeleteUserRealmRole.Unlock()
 	return mock.DeleteUserRealmRoleFunc(role, realmName, userID)
 }
 
@@ -1775,9 +1772,9 @@ func (mock *KeycloakInterfaceMock) DeleteUserRealmRoleCalls() []struct {
 		RealmName string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockDeleteUserRealmRole.RLock()
+	mock.lockDeleteUserRealmRole.RLock()
 	calls = mock.calls.DeleteUserRealmRole
-	lockKeycloakInterfaceMockDeleteUserRealmRole.RUnlock()
+	mock.lockDeleteUserRealmRole.RUnlock()
 	return calls
 }
 
@@ -1795,9 +1792,9 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationExecutionForFlow(flowAlias 
 		RealmName: realmName,
 		Predicate: predicate,
 	}
-	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow.Lock()
+	mock.lockFindAuthenticationExecutionForFlow.Lock()
 	mock.calls.FindAuthenticationExecutionForFlow = append(mock.calls.FindAuthenticationExecutionForFlow, callInfo)
-	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow.Unlock()
+	mock.lockFindAuthenticationExecutionForFlow.Unlock()
 	return mock.FindAuthenticationExecutionForFlowFunc(flowAlias, realmName, predicate)
 }
 
@@ -1814,9 +1811,9 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationExecutionForFlowCalls() []s
 		RealmName string
 		Predicate func(*v1alpha1.AuthenticationExecutionInfo) bool
 	}
-	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow.RLock()
+	mock.lockFindAuthenticationExecutionForFlow.RLock()
 	calls = mock.calls.FindAuthenticationExecutionForFlow
-	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow.RUnlock()
+	mock.lockFindAuthenticationExecutionForFlow.RUnlock()
 	return calls
 }
 
@@ -1832,9 +1829,9 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAlias(flowAlias strin
 		FlowAlias: flowAlias,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.Lock()
+	mock.lockFindAuthenticationFlowByAlias.Lock()
 	mock.calls.FindAuthenticationFlowByAlias = append(mock.calls.FindAuthenticationFlowByAlias, callInfo)
-	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.Unlock()
+	mock.lockFindAuthenticationFlowByAlias.Unlock()
 	return mock.FindAuthenticationFlowByAliasFunc(flowAlias, realmName)
 }
 
@@ -1849,9 +1846,9 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAliasCalls() []struct
 		FlowAlias string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.RLock()
+	mock.lockFindAuthenticationFlowByAlias.RLock()
 	calls = mock.calls.FindAuthenticationFlowByAlias
-	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.RUnlock()
+	mock.lockFindAuthenticationFlowByAlias.RUnlock()
 	return calls
 }
 
@@ -1871,9 +1868,9 @@ func (mock *KeycloakInterfaceMock) FindAvailableGroupClientRole(realmName string
 		GroupID:   groupID,
 		Predicate: predicate,
 	}
-	lockKeycloakInterfaceMockFindAvailableGroupClientRole.Lock()
+	mock.lockFindAvailableGroupClientRole.Lock()
 	mock.calls.FindAvailableGroupClientRole = append(mock.calls.FindAvailableGroupClientRole, callInfo)
-	lockKeycloakInterfaceMockFindAvailableGroupClientRole.Unlock()
+	mock.lockFindAvailableGroupClientRole.Unlock()
 	return mock.FindAvailableGroupClientRoleFunc(realmName, clientID, groupID, predicate)
 }
 
@@ -1892,9 +1889,9 @@ func (mock *KeycloakInterfaceMock) FindAvailableGroupClientRoleCalls() []struct 
 		GroupID   string
 		Predicate func(*v1alpha1.KeycloakUserRole) bool
 	}
-	lockKeycloakInterfaceMockFindAvailableGroupClientRole.RLock()
+	mock.lockFindAvailableGroupClientRole.RLock()
 	calls = mock.calls.FindAvailableGroupClientRole
-	lockKeycloakInterfaceMockFindAvailableGroupClientRole.RUnlock()
+	mock.lockFindAvailableGroupClientRole.RUnlock()
 	return calls
 }
 
@@ -1910,9 +1907,9 @@ func (mock *KeycloakInterfaceMock) FindGroupByName(groupName string, realmName s
 		GroupName: groupName,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockFindGroupByName.Lock()
+	mock.lockFindGroupByName.Lock()
 	mock.calls.FindGroupByName = append(mock.calls.FindGroupByName, callInfo)
-	lockKeycloakInterfaceMockFindGroupByName.Unlock()
+	mock.lockFindGroupByName.Unlock()
 	return mock.FindGroupByNameFunc(groupName, realmName)
 }
 
@@ -1927,9 +1924,9 @@ func (mock *KeycloakInterfaceMock) FindGroupByNameCalls() []struct {
 		GroupName string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockFindGroupByName.RLock()
+	mock.lockFindGroupByName.RLock()
 	calls = mock.calls.FindGroupByName
-	lockKeycloakInterfaceMockFindGroupByName.RUnlock()
+	mock.lockFindGroupByName.RUnlock()
 	return calls
 }
 
@@ -1949,9 +1946,9 @@ func (mock *KeycloakInterfaceMock) FindGroupClientRole(realmName string, clientI
 		GroupID:   groupID,
 		Predicate: predicate,
 	}
-	lockKeycloakInterfaceMockFindGroupClientRole.Lock()
+	mock.lockFindGroupClientRole.Lock()
 	mock.calls.FindGroupClientRole = append(mock.calls.FindGroupClientRole, callInfo)
-	lockKeycloakInterfaceMockFindGroupClientRole.Unlock()
+	mock.lockFindGroupClientRole.Unlock()
 	return mock.FindGroupClientRoleFunc(realmName, clientID, groupID, predicate)
 }
 
@@ -1970,9 +1967,9 @@ func (mock *KeycloakInterfaceMock) FindGroupClientRoleCalls() []struct {
 		GroupID   string
 		Predicate func(*v1alpha1.KeycloakUserRole) bool
 	}
-	lockKeycloakInterfaceMockFindGroupClientRole.RLock()
+	mock.lockFindGroupClientRole.RLock()
 	calls = mock.calls.FindGroupClientRole
-	lockKeycloakInterfaceMockFindGroupClientRole.RUnlock()
+	mock.lockFindGroupClientRole.RUnlock()
 	return calls
 }
 
@@ -1988,9 +1985,9 @@ func (mock *KeycloakInterfaceMock) FindUserByEmail(email string, realm string) (
 		Email: email,
 		Realm: realm,
 	}
-	lockKeycloakInterfaceMockFindUserByEmail.Lock()
+	mock.lockFindUserByEmail.Lock()
 	mock.calls.FindUserByEmail = append(mock.calls.FindUserByEmail, callInfo)
-	lockKeycloakInterfaceMockFindUserByEmail.Unlock()
+	mock.lockFindUserByEmail.Unlock()
 	return mock.FindUserByEmailFunc(email, realm)
 }
 
@@ -2005,9 +2002,9 @@ func (mock *KeycloakInterfaceMock) FindUserByEmailCalls() []struct {
 		Email string
 		Realm string
 	}
-	lockKeycloakInterfaceMockFindUserByEmail.RLock()
+	mock.lockFindUserByEmail.RLock()
 	calls = mock.calls.FindUserByEmail
-	lockKeycloakInterfaceMockFindUserByEmail.RUnlock()
+	mock.lockFindUserByEmail.RUnlock()
 	return calls
 }
 
@@ -2023,9 +2020,9 @@ func (mock *KeycloakInterfaceMock) FindUserByUsername(name string, realm string)
 		Name:  name,
 		Realm: realm,
 	}
-	lockKeycloakInterfaceMockFindUserByUsername.Lock()
+	mock.lockFindUserByUsername.Lock()
 	mock.calls.FindUserByUsername = append(mock.calls.FindUserByUsername, callInfo)
-	lockKeycloakInterfaceMockFindUserByUsername.Unlock()
+	mock.lockFindUserByUsername.Unlock()
 	return mock.FindUserByUsernameFunc(name, realm)
 }
 
@@ -2040,9 +2037,9 @@ func (mock *KeycloakInterfaceMock) FindUserByUsernameCalls() []struct {
 		Name  string
 		Realm string
 	}
-	lockKeycloakInterfaceMockFindUserByUsername.RLock()
+	mock.lockFindUserByUsername.RLock()
 	calls = mock.calls.FindUserByUsername
-	lockKeycloakInterfaceMockFindUserByUsername.RUnlock()
+	mock.lockFindUserByUsername.RUnlock()
 	return calls
 }
 
@@ -2058,9 +2055,9 @@ func (mock *KeycloakInterfaceMock) GetAuthenticatorConfig(configID string, realm
 		ConfigID:  configID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetAuthenticatorConfig.Lock()
+	mock.lockGetAuthenticatorConfig.Lock()
 	mock.calls.GetAuthenticatorConfig = append(mock.calls.GetAuthenticatorConfig, callInfo)
-	lockKeycloakInterfaceMockGetAuthenticatorConfig.Unlock()
+	mock.lockGetAuthenticatorConfig.Unlock()
 	return mock.GetAuthenticatorConfigFunc(configID, realmName)
 }
 
@@ -2075,9 +2072,9 @@ func (mock *KeycloakInterfaceMock) GetAuthenticatorConfigCalls() []struct {
 		ConfigID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetAuthenticatorConfig.RLock()
+	mock.lockGetAuthenticatorConfig.RLock()
 	calls = mock.calls.GetAuthenticatorConfig
-	lockKeycloakInterfaceMockGetAuthenticatorConfig.RUnlock()
+	mock.lockGetAuthenticatorConfig.RUnlock()
 	return calls
 }
 
@@ -2093,9 +2090,9 @@ func (mock *KeycloakInterfaceMock) GetClient(clientID string, realmName string) 
 		ClientID:  clientID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetClient.Lock()
+	mock.lockGetClient.Lock()
 	mock.calls.GetClient = append(mock.calls.GetClient, callInfo)
-	lockKeycloakInterfaceMockGetClient.Unlock()
+	mock.lockGetClient.Unlock()
 	return mock.GetClientFunc(clientID, realmName)
 }
 
@@ -2110,9 +2107,9 @@ func (mock *KeycloakInterfaceMock) GetClientCalls() []struct {
 		ClientID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetClient.RLock()
+	mock.lockGetClient.RLock()
 	calls = mock.calls.GetClient
-	lockKeycloakInterfaceMockGetClient.RUnlock()
+	mock.lockGetClient.RUnlock()
 	return calls
 }
 
@@ -2128,9 +2125,9 @@ func (mock *KeycloakInterfaceMock) GetClientInstall(clientID string, realmName s
 		ClientID:  clientID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetClientInstall.Lock()
+	mock.lockGetClientInstall.Lock()
 	mock.calls.GetClientInstall = append(mock.calls.GetClientInstall, callInfo)
-	lockKeycloakInterfaceMockGetClientInstall.Unlock()
+	mock.lockGetClientInstall.Unlock()
 	return mock.GetClientInstallFunc(clientID, realmName)
 }
 
@@ -2145,9 +2142,9 @@ func (mock *KeycloakInterfaceMock) GetClientInstallCalls() []struct {
 		ClientID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetClientInstall.RLock()
+	mock.lockGetClientInstall.RLock()
 	calls = mock.calls.GetClientInstall
-	lockKeycloakInterfaceMockGetClientInstall.RUnlock()
+	mock.lockGetClientInstall.RUnlock()
 	return calls
 }
 
@@ -2163,9 +2160,9 @@ func (mock *KeycloakInterfaceMock) GetClientSecret(clientID string, realmName st
 		ClientID:  clientID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetClientSecret.Lock()
+	mock.lockGetClientSecret.Lock()
 	mock.calls.GetClientSecret = append(mock.calls.GetClientSecret, callInfo)
-	lockKeycloakInterfaceMockGetClientSecret.Unlock()
+	mock.lockGetClientSecret.Unlock()
 	return mock.GetClientSecretFunc(clientID, realmName)
 }
 
@@ -2180,9 +2177,9 @@ func (mock *KeycloakInterfaceMock) GetClientSecretCalls() []struct {
 		ClientID  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetClientSecret.RLock()
+	mock.lockGetClientSecret.RLock()
 	calls = mock.calls.GetClientSecret
-	lockKeycloakInterfaceMockGetClientSecret.RUnlock()
+	mock.lockGetClientSecret.RUnlock()
 	return calls
 }
 
@@ -2198,9 +2195,9 @@ func (mock *KeycloakInterfaceMock) GetIdentityProvider(alias string, realmName s
 		Alias:     alias,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetIdentityProvider.Lock()
+	mock.lockGetIdentityProvider.Lock()
 	mock.calls.GetIdentityProvider = append(mock.calls.GetIdentityProvider, callInfo)
-	lockKeycloakInterfaceMockGetIdentityProvider.Unlock()
+	mock.lockGetIdentityProvider.Unlock()
 	return mock.GetIdentityProviderFunc(alias, realmName)
 }
 
@@ -2215,9 +2212,9 @@ func (mock *KeycloakInterfaceMock) GetIdentityProviderCalls() []struct {
 		Alias     string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetIdentityProvider.RLock()
+	mock.lockGetIdentityProvider.RLock()
 	calls = mock.calls.GetIdentityProvider
-	lockKeycloakInterfaceMockGetIdentityProvider.RUnlock()
+	mock.lockGetIdentityProvider.RUnlock()
 	return calls
 }
 
@@ -2231,9 +2228,9 @@ func (mock *KeycloakInterfaceMock) GetRealm(realmName string) (*v1alpha1.Keycloa
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetRealm.Lock()
+	mock.lockGetRealm.Lock()
 	mock.calls.GetRealm = append(mock.calls.GetRealm, callInfo)
-	lockKeycloakInterfaceMockGetRealm.Unlock()
+	mock.lockGetRealm.Unlock()
 	return mock.GetRealmFunc(realmName)
 }
 
@@ -2246,9 +2243,9 @@ func (mock *KeycloakInterfaceMock) GetRealmCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetRealm.RLock()
+	mock.lockGetRealm.RLock()
 	calls = mock.calls.GetRealm
-	lockKeycloakInterfaceMockGetRealm.RUnlock()
+	mock.lockGetRealm.RUnlock()
 	return calls
 }
 
@@ -2264,9 +2261,9 @@ func (mock *KeycloakInterfaceMock) GetUser(userID string, realmName string) (*v1
 		UserID:    userID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetUser.Lock()
+	mock.lockGetUser.Lock()
 	mock.calls.GetUser = append(mock.calls.GetUser, callInfo)
-	lockKeycloakInterfaceMockGetUser.Unlock()
+	mock.lockGetUser.Unlock()
 	return mock.GetUserFunc(userID, realmName)
 }
 
@@ -2281,9 +2278,9 @@ func (mock *KeycloakInterfaceMock) GetUserCalls() []struct {
 		UserID    string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetUser.RLock()
+	mock.lockGetUser.RLock()
 	calls = mock.calls.GetUser
-	lockKeycloakInterfaceMockGetUser.RUnlock()
+	mock.lockGetUser.RUnlock()
 	return calls
 }
 
@@ -2299,9 +2296,9 @@ func (mock *KeycloakInterfaceMock) GetUserFederatedIdentities(userName string, r
 		UserName:  userName,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockGetUserFederatedIdentities.Lock()
+	mock.lockGetUserFederatedIdentities.Lock()
 	mock.calls.GetUserFederatedIdentities = append(mock.calls.GetUserFederatedIdentities, callInfo)
-	lockKeycloakInterfaceMockGetUserFederatedIdentities.Unlock()
+	mock.lockGetUserFederatedIdentities.Unlock()
 	return mock.GetUserFederatedIdentitiesFunc(userName, realmName)
 }
 
@@ -2316,9 +2313,9 @@ func (mock *KeycloakInterfaceMock) GetUserFederatedIdentitiesCalls() []struct {
 		UserName  string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockGetUserFederatedIdentities.RLock()
+	mock.lockGetUserFederatedIdentities.RLock()
 	calls = mock.calls.GetUserFederatedIdentities
-	lockKeycloakInterfaceMockGetUserFederatedIdentities.RUnlock()
+	mock.lockGetUserFederatedIdentities.RUnlock()
 	return calls
 }
 
@@ -2334,9 +2331,9 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationExecutionsForFlow(flowAlias
 		FlowAlias: flowAlias,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.Lock()
+	mock.lockListAuthenticationExecutionsForFlow.Lock()
 	mock.calls.ListAuthenticationExecutionsForFlow = append(mock.calls.ListAuthenticationExecutionsForFlow, callInfo)
-	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.Unlock()
+	mock.lockListAuthenticationExecutionsForFlow.Unlock()
 	return mock.ListAuthenticationExecutionsForFlowFunc(flowAlias, realmName)
 }
 
@@ -2351,9 +2348,9 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationExecutionsForFlowCalls() []
 		FlowAlias string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.RLock()
+	mock.lockListAuthenticationExecutionsForFlow.RLock()
 	calls = mock.calls.ListAuthenticationExecutionsForFlow
-	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.RUnlock()
+	mock.lockListAuthenticationExecutionsForFlow.RUnlock()
 	return calls
 }
 
@@ -2367,9 +2364,9 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationFlows(realmName string) ([]
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListAuthenticationFlows.Lock()
+	mock.lockListAuthenticationFlows.Lock()
 	mock.calls.ListAuthenticationFlows = append(mock.calls.ListAuthenticationFlows, callInfo)
-	lockKeycloakInterfaceMockListAuthenticationFlows.Unlock()
+	mock.lockListAuthenticationFlows.Unlock()
 	return mock.ListAuthenticationFlowsFunc(realmName)
 }
 
@@ -2382,9 +2379,9 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationFlowsCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListAuthenticationFlows.RLock()
+	mock.lockListAuthenticationFlows.RLock()
 	calls = mock.calls.ListAuthenticationFlows
-	lockKeycloakInterfaceMockListAuthenticationFlows.RUnlock()
+	mock.lockListAuthenticationFlows.RUnlock()
 	return calls
 }
 
@@ -2402,9 +2399,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupClientRoles(realmName strin
 		ClientID:  clientID,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockListAvailableGroupClientRoles.Lock()
+	mock.lockListAvailableGroupClientRoles.Lock()
 	mock.calls.ListAvailableGroupClientRoles = append(mock.calls.ListAvailableGroupClientRoles, callInfo)
-	lockKeycloakInterfaceMockListAvailableGroupClientRoles.Unlock()
+	mock.lockListAvailableGroupClientRoles.Unlock()
 	return mock.ListAvailableGroupClientRolesFunc(realmName, clientID, groupID)
 }
 
@@ -2421,9 +2418,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupClientRolesCalls() []struct
 		ClientID  string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockListAvailableGroupClientRoles.RLock()
+	mock.lockListAvailableGroupClientRoles.RLock()
 	calls = mock.calls.ListAvailableGroupClientRoles
-	lockKeycloakInterfaceMockListAvailableGroupClientRoles.RUnlock()
+	mock.lockListAvailableGroupClientRoles.RUnlock()
 	return calls
 }
 
@@ -2439,9 +2436,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupRealmRoles(realmName string
 		RealmName: realmName,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockListAvailableGroupRealmRoles.Lock()
+	mock.lockListAvailableGroupRealmRoles.Lock()
 	mock.calls.ListAvailableGroupRealmRoles = append(mock.calls.ListAvailableGroupRealmRoles, callInfo)
-	lockKeycloakInterfaceMockListAvailableGroupRealmRoles.Unlock()
+	mock.lockListAvailableGroupRealmRoles.Unlock()
 	return mock.ListAvailableGroupRealmRolesFunc(realmName, groupID)
 }
 
@@ -2456,9 +2453,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableGroupRealmRolesCalls() []struct 
 		RealmName string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockListAvailableGroupRealmRoles.RLock()
+	mock.lockListAvailableGroupRealmRoles.RLock()
 	calls = mock.calls.ListAvailableGroupRealmRoles
-	lockKeycloakInterfaceMockListAvailableGroupRealmRoles.RUnlock()
+	mock.lockListAvailableGroupRealmRoles.RUnlock()
 	return calls
 }
 
@@ -2476,9 +2473,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserClientRoles(realmName string
 		ClientID:  clientID,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockListAvailableUserClientRoles.Lock()
+	mock.lockListAvailableUserClientRoles.Lock()
 	mock.calls.ListAvailableUserClientRoles = append(mock.calls.ListAvailableUserClientRoles, callInfo)
-	lockKeycloakInterfaceMockListAvailableUserClientRoles.Unlock()
+	mock.lockListAvailableUserClientRoles.Unlock()
 	return mock.ListAvailableUserClientRolesFunc(realmName, clientID, userID)
 }
 
@@ -2495,9 +2492,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserClientRolesCalls() []struct 
 		ClientID  string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockListAvailableUserClientRoles.RLock()
+	mock.lockListAvailableUserClientRoles.RLock()
 	calls = mock.calls.ListAvailableUserClientRoles
-	lockKeycloakInterfaceMockListAvailableUserClientRoles.RUnlock()
+	mock.lockListAvailableUserClientRoles.RUnlock()
 	return calls
 }
 
@@ -2513,9 +2510,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserRealmRoles(realmName string,
 		RealmName: realmName,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockListAvailableUserRealmRoles.Lock()
+	mock.lockListAvailableUserRealmRoles.Lock()
 	mock.calls.ListAvailableUserRealmRoles = append(mock.calls.ListAvailableUserRealmRoles, callInfo)
-	lockKeycloakInterfaceMockListAvailableUserRealmRoles.Unlock()
+	mock.lockListAvailableUserRealmRoles.Unlock()
 	return mock.ListAvailableUserRealmRolesFunc(realmName, userID)
 }
 
@@ -2530,9 +2527,9 @@ func (mock *KeycloakInterfaceMock) ListAvailableUserRealmRolesCalls() []struct {
 		RealmName string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockListAvailableUserRealmRoles.RLock()
+	mock.lockListAvailableUserRealmRoles.RLock()
 	calls = mock.calls.ListAvailableUserRealmRoles
-	lockKeycloakInterfaceMockListAvailableUserRealmRoles.RUnlock()
+	mock.lockListAvailableUserRealmRoles.RUnlock()
 	return calls
 }
 
@@ -2546,9 +2543,9 @@ func (mock *KeycloakInterfaceMock) ListClients(realmName string) ([]*v1alpha1.Ke
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListClients.Lock()
+	mock.lockListClients.Lock()
 	mock.calls.ListClients = append(mock.calls.ListClients, callInfo)
-	lockKeycloakInterfaceMockListClients.Unlock()
+	mock.lockListClients.Unlock()
 	return mock.ListClientsFunc(realmName)
 }
 
@@ -2561,9 +2558,9 @@ func (mock *KeycloakInterfaceMock) ListClientsCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListClients.RLock()
+	mock.lockListClients.RLock()
 	calls = mock.calls.ListClients
-	lockKeycloakInterfaceMockListClients.RUnlock()
+	mock.lockListClients.RUnlock()
 	return calls
 }
 
@@ -2577,9 +2574,9 @@ func (mock *KeycloakInterfaceMock) ListDefaultGroups(realmName string) ([]*Group
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListDefaultGroups.Lock()
+	mock.lockListDefaultGroups.Lock()
 	mock.calls.ListDefaultGroups = append(mock.calls.ListDefaultGroups, callInfo)
-	lockKeycloakInterfaceMockListDefaultGroups.Unlock()
+	mock.lockListDefaultGroups.Unlock()
 	return mock.ListDefaultGroupsFunc(realmName)
 }
 
@@ -2592,9 +2589,9 @@ func (mock *KeycloakInterfaceMock) ListDefaultGroupsCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListDefaultGroups.RLock()
+	mock.lockListDefaultGroups.RLock()
 	calls = mock.calls.ListDefaultGroups
-	lockKeycloakInterfaceMockListDefaultGroups.RUnlock()
+	mock.lockListDefaultGroups.RUnlock()
 	return calls
 }
 
@@ -2612,9 +2609,9 @@ func (mock *KeycloakInterfaceMock) ListGroupClientRoles(realmName string, client
 		ClientID:  clientID,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockListGroupClientRoles.Lock()
+	mock.lockListGroupClientRoles.Lock()
 	mock.calls.ListGroupClientRoles = append(mock.calls.ListGroupClientRoles, callInfo)
-	lockKeycloakInterfaceMockListGroupClientRoles.Unlock()
+	mock.lockListGroupClientRoles.Unlock()
 	return mock.ListGroupClientRolesFunc(realmName, clientID, groupID)
 }
 
@@ -2631,9 +2628,9 @@ func (mock *KeycloakInterfaceMock) ListGroupClientRolesCalls() []struct {
 		ClientID  string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockListGroupClientRoles.RLock()
+	mock.lockListGroupClientRoles.RLock()
 	calls = mock.calls.ListGroupClientRoles
-	lockKeycloakInterfaceMockListGroupClientRoles.RUnlock()
+	mock.lockListGroupClientRoles.RUnlock()
 	return calls
 }
 
@@ -2649,9 +2646,9 @@ func (mock *KeycloakInterfaceMock) ListGroupRealmRoles(realmName string, groupID
 		RealmName: realmName,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockListGroupRealmRoles.Lock()
+	mock.lockListGroupRealmRoles.Lock()
 	mock.calls.ListGroupRealmRoles = append(mock.calls.ListGroupRealmRoles, callInfo)
-	lockKeycloakInterfaceMockListGroupRealmRoles.Unlock()
+	mock.lockListGroupRealmRoles.Unlock()
 	return mock.ListGroupRealmRolesFunc(realmName, groupID)
 }
 
@@ -2666,9 +2663,9 @@ func (mock *KeycloakInterfaceMock) ListGroupRealmRolesCalls() []struct {
 		RealmName string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockListGroupRealmRoles.RLock()
+	mock.lockListGroupRealmRoles.RLock()
 	calls = mock.calls.ListGroupRealmRoles
-	lockKeycloakInterfaceMockListGroupRealmRoles.RUnlock()
+	mock.lockListGroupRealmRoles.RUnlock()
 	return calls
 }
 
@@ -2682,9 +2679,9 @@ func (mock *KeycloakInterfaceMock) ListIdentityProviders(realmName string) ([]*v
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListIdentityProviders.Lock()
+	mock.lockListIdentityProviders.Lock()
 	mock.calls.ListIdentityProviders = append(mock.calls.ListIdentityProviders, callInfo)
-	lockKeycloakInterfaceMockListIdentityProviders.Unlock()
+	mock.lockListIdentityProviders.Unlock()
 	return mock.ListIdentityProvidersFunc(realmName)
 }
 
@@ -2697,9 +2694,9 @@ func (mock *KeycloakInterfaceMock) ListIdentityProvidersCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListIdentityProviders.RLock()
+	mock.lockListIdentityProviders.RLock()
 	calls = mock.calls.ListIdentityProviders
-	lockKeycloakInterfaceMockListIdentityProviders.RUnlock()
+	mock.lockListIdentityProviders.RUnlock()
 	return calls
 }
 
@@ -2710,9 +2707,9 @@ func (mock *KeycloakInterfaceMock) ListRealms() ([]*v1alpha1.KeycloakAPIRealm, e
 	}
 	callInfo := struct {
 	}{}
-	lockKeycloakInterfaceMockListRealms.Lock()
+	mock.lockListRealms.Lock()
 	mock.calls.ListRealms = append(mock.calls.ListRealms, callInfo)
-	lockKeycloakInterfaceMockListRealms.Unlock()
+	mock.lockListRealms.Unlock()
 	return mock.ListRealmsFunc()
 }
 
@@ -2723,9 +2720,9 @@ func (mock *KeycloakInterfaceMock) ListRealmsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockKeycloakInterfaceMockListRealms.RLock()
+	mock.lockListRealms.RLock()
 	calls = mock.calls.ListRealms
-	lockKeycloakInterfaceMockListRealms.RUnlock()
+	mock.lockListRealms.RUnlock()
 	return calls
 }
 
@@ -2743,9 +2740,9 @@ func (mock *KeycloakInterfaceMock) ListUserClientRoles(realmName string, clientI
 		ClientID:  clientID,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockListUserClientRoles.Lock()
+	mock.lockListUserClientRoles.Lock()
 	mock.calls.ListUserClientRoles = append(mock.calls.ListUserClientRoles, callInfo)
-	lockKeycloakInterfaceMockListUserClientRoles.Unlock()
+	mock.lockListUserClientRoles.Unlock()
 	return mock.ListUserClientRolesFunc(realmName, clientID, userID)
 }
 
@@ -2762,9 +2759,9 @@ func (mock *KeycloakInterfaceMock) ListUserClientRolesCalls() []struct {
 		ClientID  string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockListUserClientRoles.RLock()
+	mock.lockListUserClientRoles.RLock()
 	calls = mock.calls.ListUserClientRoles
-	lockKeycloakInterfaceMockListUserClientRoles.RUnlock()
+	mock.lockListUserClientRoles.RUnlock()
 	return calls
 }
 
@@ -2780,9 +2777,9 @@ func (mock *KeycloakInterfaceMock) ListUserRealmRoles(realmName string, userID s
 		RealmName: realmName,
 		UserID:    userID,
 	}
-	lockKeycloakInterfaceMockListUserRealmRoles.Lock()
+	mock.lockListUserRealmRoles.Lock()
 	mock.calls.ListUserRealmRoles = append(mock.calls.ListUserRealmRoles, callInfo)
-	lockKeycloakInterfaceMockListUserRealmRoles.Unlock()
+	mock.lockListUserRealmRoles.Unlock()
 	return mock.ListUserRealmRolesFunc(realmName, userID)
 }
 
@@ -2797,9 +2794,9 @@ func (mock *KeycloakInterfaceMock) ListUserRealmRolesCalls() []struct {
 		RealmName string
 		UserID    string
 	}
-	lockKeycloakInterfaceMockListUserRealmRoles.RLock()
+	mock.lockListUserRealmRoles.RLock()
 	calls = mock.calls.ListUserRealmRoles
-	lockKeycloakInterfaceMockListUserRealmRoles.RUnlock()
+	mock.lockListUserRealmRoles.RUnlock()
 	return calls
 }
 
@@ -2813,9 +2810,9 @@ func (mock *KeycloakInterfaceMock) ListUsers(realmName string) ([]*v1alpha1.Keyc
 	}{
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockListUsers.Lock()
+	mock.lockListUsers.Lock()
 	mock.calls.ListUsers = append(mock.calls.ListUsers, callInfo)
-	lockKeycloakInterfaceMockListUsers.Unlock()
+	mock.lockListUsers.Unlock()
 	return mock.ListUsersFunc(realmName)
 }
 
@@ -2828,9 +2825,9 @@ func (mock *KeycloakInterfaceMock) ListUsersCalls() []struct {
 	var calls []struct {
 		RealmName string
 	}
-	lockKeycloakInterfaceMockListUsers.RLock()
+	mock.lockListUsers.RLock()
 	calls = mock.calls.ListUsers
-	lockKeycloakInterfaceMockListUsers.RUnlock()
+	mock.lockListUsers.RUnlock()
 	return calls
 }
 
@@ -2846,9 +2843,9 @@ func (mock *KeycloakInterfaceMock) ListUsersInGroup(realmName string, groupID st
 		RealmName: realmName,
 		GroupID:   groupID,
 	}
-	lockKeycloakInterfaceMockListUsersInGroup.Lock()
+	mock.lockListUsersInGroup.Lock()
 	mock.calls.ListUsersInGroup = append(mock.calls.ListUsersInGroup, callInfo)
-	lockKeycloakInterfaceMockListUsersInGroup.Unlock()
+	mock.lockListUsersInGroup.Unlock()
 	return mock.ListUsersInGroupFunc(realmName, groupID)
 }
 
@@ -2863,9 +2860,9 @@ func (mock *KeycloakInterfaceMock) ListUsersInGroupCalls() []struct {
 		RealmName string
 		GroupID   string
 	}
-	lockKeycloakInterfaceMockListUsersInGroup.RLock()
+	mock.lockListUsersInGroup.RLock()
 	calls = mock.calls.ListUsersInGroup
-	lockKeycloakInterfaceMockListUsersInGroup.RUnlock()
+	mock.lockListUsersInGroup.RUnlock()
 	return calls
 }
 
@@ -2881,9 +2878,9 @@ func (mock *KeycloakInterfaceMock) MakeGroupDefault(groupID string, realmName st
 		GroupID:   groupID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockMakeGroupDefault.Lock()
+	mock.lockMakeGroupDefault.Lock()
 	mock.calls.MakeGroupDefault = append(mock.calls.MakeGroupDefault, callInfo)
-	lockKeycloakInterfaceMockMakeGroupDefault.Unlock()
+	mock.lockMakeGroupDefault.Unlock()
 	return mock.MakeGroupDefaultFunc(groupID, realmName)
 }
 
@@ -2898,9 +2895,9 @@ func (mock *KeycloakInterfaceMock) MakeGroupDefaultCalls() []struct {
 		GroupID   string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockMakeGroupDefault.RLock()
+	mock.lockMakeGroupDefault.RLock()
 	calls = mock.calls.MakeGroupDefault
-	lockKeycloakInterfaceMockMakeGroupDefault.RUnlock()
+	mock.lockMakeGroupDefault.RUnlock()
 	return calls
 }
 
@@ -2911,9 +2908,9 @@ func (mock *KeycloakInterfaceMock) Ping() error {
 	}
 	callInfo := struct {
 	}{}
-	lockKeycloakInterfaceMockPing.Lock()
+	mock.lockPing.Lock()
 	mock.calls.Ping = append(mock.calls.Ping, callInfo)
-	lockKeycloakInterfaceMockPing.Unlock()
+	mock.lockPing.Unlock()
 	return mock.PingFunc()
 }
 
@@ -2924,9 +2921,9 @@ func (mock *KeycloakInterfaceMock) PingCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockKeycloakInterfaceMockPing.RLock()
+	mock.lockPing.RLock()
 	calls = mock.calls.Ping
-	lockKeycloakInterfaceMockPing.RUnlock()
+	mock.lockPing.RUnlock()
 	return calls
 }
 
@@ -2944,9 +2941,9 @@ func (mock *KeycloakInterfaceMock) RemoveFederatedIdentity(fid v1alpha1.Federate
 		UserID:    userID,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockRemoveFederatedIdentity.Lock()
+	mock.lockRemoveFederatedIdentity.Lock()
 	mock.calls.RemoveFederatedIdentity = append(mock.calls.RemoveFederatedIdentity, callInfo)
-	lockKeycloakInterfaceMockRemoveFederatedIdentity.Unlock()
+	mock.lockRemoveFederatedIdentity.Unlock()
 	return mock.RemoveFederatedIdentityFunc(fid, userID, realmName)
 }
 
@@ -2963,9 +2960,9 @@ func (mock *KeycloakInterfaceMock) RemoveFederatedIdentityCalls() []struct {
 		UserID    string
 		RealmName string
 	}
-	lockKeycloakInterfaceMockRemoveFederatedIdentity.RLock()
+	mock.lockRemoveFederatedIdentity.RLock()
 	calls = mock.calls.RemoveFederatedIdentity
-	lockKeycloakInterfaceMockRemoveFederatedIdentity.RUnlock()
+	mock.lockRemoveFederatedIdentity.RUnlock()
 	return calls
 }
 
@@ -2983,9 +2980,9 @@ func (mock *KeycloakInterfaceMock) SetGroupChild(groupID string, realmName strin
 		RealmName:  realmName,
 		ChildGroup: childGroup,
 	}
-	lockKeycloakInterfaceMockSetGroupChild.Lock()
+	mock.lockSetGroupChild.Lock()
 	mock.calls.SetGroupChild = append(mock.calls.SetGroupChild, callInfo)
-	lockKeycloakInterfaceMockSetGroupChild.Unlock()
+	mock.lockSetGroupChild.Unlock()
 	return mock.SetGroupChildFunc(groupID, realmName, childGroup)
 }
 
@@ -3002,9 +2999,9 @@ func (mock *KeycloakInterfaceMock) SetGroupChildCalls() []struct {
 		RealmName  string
 		ChildGroup *Group
 	}
-	lockKeycloakInterfaceMockSetGroupChild.RLock()
+	mock.lockSetGroupChild.RLock()
 	calls = mock.calls.SetGroupChild
-	lockKeycloakInterfaceMockSetGroupChild.RUnlock()
+	mock.lockSetGroupChild.RUnlock()
 	return calls
 }
 
@@ -3022,9 +3019,9 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticationExecutionForFlow(flowAlia
 		RealmName: realmName,
 		Execution: execution,
 	}
-	lockKeycloakInterfaceMockUpdateAuthenticationExecutionForFlow.Lock()
+	mock.lockUpdateAuthenticationExecutionForFlow.Lock()
 	mock.calls.UpdateAuthenticationExecutionForFlow = append(mock.calls.UpdateAuthenticationExecutionForFlow, callInfo)
-	lockKeycloakInterfaceMockUpdateAuthenticationExecutionForFlow.Unlock()
+	mock.lockUpdateAuthenticationExecutionForFlow.Unlock()
 	return mock.UpdateAuthenticationExecutionForFlowFunc(flowAlias, realmName, execution)
 }
 
@@ -3041,9 +3038,9 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticationExecutionForFlowCalls() [
 		RealmName string
 		Execution *v1alpha1.AuthenticationExecutionInfo
 	}
-	lockKeycloakInterfaceMockUpdateAuthenticationExecutionForFlow.RLock()
+	mock.lockUpdateAuthenticationExecutionForFlow.RLock()
 	calls = mock.calls.UpdateAuthenticationExecutionForFlow
-	lockKeycloakInterfaceMockUpdateAuthenticationExecutionForFlow.RUnlock()
+	mock.lockUpdateAuthenticationExecutionForFlow.RUnlock()
 	return calls
 }
 
@@ -3059,9 +3056,9 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticatorConfig(authenticatorConfig
 		AuthenticatorConfig: authenticatorConfig,
 		RealmName:           realmName,
 	}
-	lockKeycloakInterfaceMockUpdateAuthenticatorConfig.Lock()
+	mock.lockUpdateAuthenticatorConfig.Lock()
 	mock.calls.UpdateAuthenticatorConfig = append(mock.calls.UpdateAuthenticatorConfig, callInfo)
-	lockKeycloakInterfaceMockUpdateAuthenticatorConfig.Unlock()
+	mock.lockUpdateAuthenticatorConfig.Unlock()
 	return mock.UpdateAuthenticatorConfigFunc(authenticatorConfig, realmName)
 }
 
@@ -3076,9 +3073,9 @@ func (mock *KeycloakInterfaceMock) UpdateAuthenticatorConfigCalls() []struct {
 		AuthenticatorConfig *v1alpha1.AuthenticatorConfig
 		RealmName           string
 	}
-	lockKeycloakInterfaceMockUpdateAuthenticatorConfig.RLock()
+	mock.lockUpdateAuthenticatorConfig.RLock()
 	calls = mock.calls.UpdateAuthenticatorConfig
-	lockKeycloakInterfaceMockUpdateAuthenticatorConfig.RUnlock()
+	mock.lockUpdateAuthenticatorConfig.RUnlock()
 	return calls
 }
 
@@ -3094,9 +3091,9 @@ func (mock *KeycloakInterfaceMock) UpdateClient(specClient *v1alpha1.KeycloakAPI
 		SpecClient: specClient,
 		RealmName:  realmName,
 	}
-	lockKeycloakInterfaceMockUpdateClient.Lock()
+	mock.lockUpdateClient.Lock()
 	mock.calls.UpdateClient = append(mock.calls.UpdateClient, callInfo)
-	lockKeycloakInterfaceMockUpdateClient.Unlock()
+	mock.lockUpdateClient.Unlock()
 	return mock.UpdateClientFunc(specClient, realmName)
 }
 
@@ -3111,9 +3108,9 @@ func (mock *KeycloakInterfaceMock) UpdateClientCalls() []struct {
 		SpecClient *v1alpha1.KeycloakAPIClient
 		RealmName  string
 	}
-	lockKeycloakInterfaceMockUpdateClient.RLock()
+	mock.lockUpdateClient.RLock()
 	calls = mock.calls.UpdateClient
-	lockKeycloakInterfaceMockUpdateClient.RUnlock()
+	mock.lockUpdateClient.RUnlock()
 	return calls
 }
 
@@ -3129,9 +3126,9 @@ func (mock *KeycloakInterfaceMock) UpdateIdentityProvider(specIdentityProvider *
 		SpecIdentityProvider: specIdentityProvider,
 		RealmName:            realmName,
 	}
-	lockKeycloakInterfaceMockUpdateIdentityProvider.Lock()
+	mock.lockUpdateIdentityProvider.Lock()
 	mock.calls.UpdateIdentityProvider = append(mock.calls.UpdateIdentityProvider, callInfo)
-	lockKeycloakInterfaceMockUpdateIdentityProvider.Unlock()
+	mock.lockUpdateIdentityProvider.Unlock()
 	return mock.UpdateIdentityProviderFunc(specIdentityProvider, realmName)
 }
 
@@ -3146,9 +3143,9 @@ func (mock *KeycloakInterfaceMock) UpdateIdentityProviderCalls() []struct {
 		SpecIdentityProvider *v1alpha1.KeycloakIdentityProvider
 		RealmName            string
 	}
-	lockKeycloakInterfaceMockUpdateIdentityProvider.RLock()
+	mock.lockUpdateIdentityProvider.RLock()
 	calls = mock.calls.UpdateIdentityProvider
-	lockKeycloakInterfaceMockUpdateIdentityProvider.RUnlock()
+	mock.lockUpdateIdentityProvider.RUnlock()
 	return calls
 }
 
@@ -3166,9 +3163,9 @@ func (mock *KeycloakInterfaceMock) UpdatePassword(user *v1alpha1.KeycloakAPIUser
 		RealmName: realmName,
 		NewPass:   newPass,
 	}
-	lockKeycloakInterfaceMockUpdatePassword.Lock()
+	mock.lockUpdatePassword.Lock()
 	mock.calls.UpdatePassword = append(mock.calls.UpdatePassword, callInfo)
-	lockKeycloakInterfaceMockUpdatePassword.Unlock()
+	mock.lockUpdatePassword.Unlock()
 	return mock.UpdatePasswordFunc(user, realmName, newPass)
 }
 
@@ -3185,9 +3182,9 @@ func (mock *KeycloakInterfaceMock) UpdatePasswordCalls() []struct {
 		RealmName string
 		NewPass   string
 	}
-	lockKeycloakInterfaceMockUpdatePassword.RLock()
+	mock.lockUpdatePassword.RLock()
 	calls = mock.calls.UpdatePassword
-	lockKeycloakInterfaceMockUpdatePassword.RUnlock()
+	mock.lockUpdatePassword.RUnlock()
 	return calls
 }
 
@@ -3201,9 +3198,9 @@ func (mock *KeycloakInterfaceMock) UpdateRealm(specRealm *v1alpha1.KeycloakRealm
 	}{
 		SpecRealm: specRealm,
 	}
-	lockKeycloakInterfaceMockUpdateRealm.Lock()
+	mock.lockUpdateRealm.Lock()
 	mock.calls.UpdateRealm = append(mock.calls.UpdateRealm, callInfo)
-	lockKeycloakInterfaceMockUpdateRealm.Unlock()
+	mock.lockUpdateRealm.Unlock()
 	return mock.UpdateRealmFunc(specRealm)
 }
 
@@ -3216,9 +3213,9 @@ func (mock *KeycloakInterfaceMock) UpdateRealmCalls() []struct {
 	var calls []struct {
 		SpecRealm *v1alpha1.KeycloakRealm
 	}
-	lockKeycloakInterfaceMockUpdateRealm.RLock()
+	mock.lockUpdateRealm.RLock()
 	calls = mock.calls.UpdateRealm
-	lockKeycloakInterfaceMockUpdateRealm.RUnlock()
+	mock.lockUpdateRealm.RUnlock()
 	return calls
 }
 
@@ -3234,9 +3231,9 @@ func (mock *KeycloakInterfaceMock) UpdateUser(specUser *v1alpha1.KeycloakAPIUser
 		SpecUser:  specUser,
 		RealmName: realmName,
 	}
-	lockKeycloakInterfaceMockUpdateUser.Lock()
+	mock.lockUpdateUser.Lock()
 	mock.calls.UpdateUser = append(mock.calls.UpdateUser, callInfo)
-	lockKeycloakInterfaceMockUpdateUser.Unlock()
+	mock.lockUpdateUser.Unlock()
 	return mock.UpdateUserFunc(specUser, realmName)
 }
 
@@ -3251,8 +3248,8 @@ func (mock *KeycloakInterfaceMock) UpdateUserCalls() []struct {
 		SpecUser  *v1alpha1.KeycloakAPIUser
 		RealmName string
 	}
-	lockKeycloakInterfaceMockUpdateUser.RLock()
+	mock.lockUpdateUser.RLock()
 	calls = mock.calls.UpdateUser
-	lockKeycloakInterfaceMockUpdateUser.RUnlock()
+	mock.lockUpdateUser.RUnlock()
 	return calls
 }

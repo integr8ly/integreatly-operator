@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v13 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -17,12 +19,40 @@ const (
 	//10s (curl) + 10s (curl) + 2s (just in case)
 	ProbeTimeoutSeconds         = 22
 	ProbeTimeBetweenRunsSeconds = 30
+	ProbeFailureThreshold       = 10
 )
 
 func GetServiceEnvVar(suffix string) string {
 	serviceName := strings.ToUpper(PostgresqlServiceName)
 	serviceName = strings.ReplaceAll(serviceName, "-", "_")
 	return fmt.Sprintf("%v_%v", serviceName, suffix)
+}
+
+func getResources(cr *v1alpha1.Keycloak) v1.ResourceRequirements {
+	requirements := v1.ResourceRequirements{}
+	requirements.Limits = v1.ResourceList{}
+	requirements.Requests = v1.ResourceList{}
+
+	cpu, err := resource.ParseQuantity(cr.Spec.KeycloakDeploymentSpec.Resources.Requests.Cpu().String())
+	if err == nil && cpu.String() != "0" {
+		requirements.Requests[v1.ResourceCPU] = cpu
+	}
+
+	memory, err := resource.ParseQuantity(cr.Spec.KeycloakDeploymentSpec.Resources.Requests.Memory().String())
+	if err == nil && memory.String() != "0" {
+		requirements.Requests[v1.ResourceMemory] = memory
+	}
+
+	cpu, err = resource.ParseQuantity(cr.Spec.KeycloakDeploymentSpec.Resources.Limits.Cpu().String())
+	if err == nil && cpu.String() != "0" {
+		requirements.Limits[v1.ResourceCPU] = cpu
+	}
+	memory, err = resource.ParseQuantity(cr.Spec.KeycloakDeploymentSpec.Resources.Limits.Memory().String())
+	if err == nil && memory.String() != "0" {
+		requirements.Limits[v1.ResourceMemory] = memory
+	}
+
+	return requirements
 }
 
 func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
@@ -38,7 +68,7 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 		},
 		{
 			Name:  "DB_ADDR",
-			Value: PostgresqlServiceName + "." + cr.Namespace + ".svc.cluster.local",
+			Value: PostgresqlServiceName + "." + cr.Namespace,
 		},
 		{
 			Name:  "DB_DATABASE",
@@ -77,7 +107,7 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 		},
 		{
 			Name:  "JGROUPS_DISCOVERY_PROPERTIES",
-			Value: "dns_query=" + KeycloakDiscoveryServiceName + "." + cr.Namespace + ".svc.cluster.local",
+			Value: "dns_query=" + KeycloakDiscoveryServiceName + "." + cr.Namespace,
 		},
 		// Cache settings
 		{
@@ -113,6 +143,10 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 		{
 			Name:  "X509_CA_BUNDLE",
 			Value: "/var/run/secrets/kubernetes.io/serviceaccount/*.crt",
+		},
+		{
+			Name:  "PROXY_ADDRESS_FORWARDING",
+			Value: "true",
 		},
 	}
 
@@ -189,6 +223,7 @@ func KeycloakDeployment(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) *v13.Statefu
 							Env:            getKeycloakEnv(cr, dbSecret),
 							Args:           cr.Spec.KeycloakDeploymentSpec.Experimental.Args,
 							Command:        cr.Spec.KeycloakDeploymentSpec.Experimental.Command,
+							Resources:      getResources(cr),
 						},
 					},
 				},
@@ -233,6 +268,7 @@ func KeycloakDeploymentReconciled(cr *v1alpha1.Keycloak, currentState *v13.State
 			LivenessProbe:  livenessProbe(),
 			ReadinessProbe: readinessProbe(),
 			Env:            getKeycloakEnv(cr, dbSecret),
+			Resources:      getResources(cr),
 		},
 	}
 	reconciled.Spec.Template.Spec.InitContainers = KeycloakExtensionsInitContainers(cr)
@@ -356,6 +392,7 @@ func livenessProbe() *v1.Probe {
 		InitialDelaySeconds: LivenessProbeInitialDelay,
 		TimeoutSeconds:      ProbeTimeoutSeconds,
 		PeriodSeconds:       ProbeTimeBetweenRunsSeconds,
+		FailureThreshold:    ProbeFailureThreshold,
 	}
 }
 
@@ -373,5 +410,6 @@ func readinessProbe() *v1.Probe {
 		InitialDelaySeconds: ReadinessProbeInitialDelay,
 		TimeoutSeconds:      ProbeTimeoutSeconds,
 		PeriodSeconds:       ProbeTimeBetweenRunsSeconds,
+		FailureThreshold:    ProbeFailureThreshold,
 	}
 }

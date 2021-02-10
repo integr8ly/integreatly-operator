@@ -25,21 +25,28 @@ func NewClientState(context context.Context, realm *kc.KeycloakRealm) *ClientSta
 }
 
 func (i *ClientState) Read(context context.Context, cr *kc.KeycloakClient, realmClient KeycloakInterface, controllerClient client.Client) error {
-	client, err := realmClient.GetClient(cr.Spec.Client.ID, i.Realm.Spec.Realm.Realm)
-	i.Client = client
-	if err != nil {
-		return err
-	}
-
-	if client == nil {
+	if cr.Spec.Client.ID == "" {
 		return nil
 	}
 
-	clientSecret, err := realmClient.GetClientSecret(cr.Spec.Client.ID, i.Realm.Spec.Realm.Realm)
+	client, err := realmClient.GetClient(cr.Spec.Client.ID, i.Realm.Spec.Realm.Realm)
+
 	if err != nil {
 		return err
 	}
-	cr.Spec.Client.Secret = clientSecret
+
+	i.Client = client
+
+	// CR could have updated with new secret, so set saved secret to Spec only when empty
+	// Otherwise let reconcile loop to update secret with desired secret in CR
+	if cr.Spec.Client.Secret == "" {
+		clientSecret, err := realmClient.GetClientSecret(cr.Spec.Client.ID, i.Realm.Spec.Realm.Realm)
+		if err != nil {
+			return err
+		}
+
+		cr.Spec.Client.Secret = clientSecret
+	}
 
 	err = i.readClientSecret(context, cr, i.Client, controllerClient)
 	if err != nil {

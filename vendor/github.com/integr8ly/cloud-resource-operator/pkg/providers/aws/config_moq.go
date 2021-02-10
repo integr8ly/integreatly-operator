@@ -9,10 +9,6 @@ import (
 	"sync"
 )
 
-var (
-	lockConfigManagerMockReadStorageStrategy sync.RWMutex
-)
-
 // Ensure, that ConfigManagerMock does implement ConfigManager.
 // If this is not the case, regenerate this file with moq.
 var _ ConfigManager = &ConfigManagerMock{}
@@ -48,6 +44,7 @@ type ConfigManagerMock struct {
 			Tier string
 		}
 	}
+	lockReadStorageStrategy sync.RWMutex
 }
 
 // ReadStorageStrategy calls ReadStorageStrategyFunc.
@@ -64,9 +61,9 @@ func (mock *ConfigManagerMock) ReadStorageStrategy(ctx context.Context, rt provi
 		Rt:   rt,
 		Tier: tier,
 	}
-	lockConfigManagerMockReadStorageStrategy.Lock()
+	mock.lockReadStorageStrategy.Lock()
 	mock.calls.ReadStorageStrategy = append(mock.calls.ReadStorageStrategy, callInfo)
-	lockConfigManagerMockReadStorageStrategy.Unlock()
+	mock.lockReadStorageStrategy.Unlock()
 	return mock.ReadStorageStrategyFunc(ctx, rt, tier)
 }
 
@@ -83,8 +80,8 @@ func (mock *ConfigManagerMock) ReadStorageStrategyCalls() []struct {
 		Rt   providers.ResourceType
 		Tier string
 	}
-	lockConfigManagerMockReadStorageStrategy.RLock()
+	mock.lockReadStorageStrategy.RLock()
 	calls = mock.calls.ReadStorageStrategy
-	lockConfigManagerMockReadStorageStrategy.RUnlock()
+	mock.lockReadStorageStrategy.RUnlock()
 	return calls
 }

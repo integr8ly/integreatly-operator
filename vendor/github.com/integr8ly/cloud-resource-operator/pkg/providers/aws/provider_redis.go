@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/integr8ly/cloud-resource-operator/internal/k8sutil"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -21,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
@@ -36,9 +39,9 @@ import (
 const (
 	redisProviderName = "aws-elasticache"
 	// default create params
-	defaultCacheNodeType = "cache.t2.micro"
+	defaultCacheNodeType = "cache.t3.micro"
 	// required for at rest encryption, see https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/at-rest-encryption.html
-	defaultEngineVersion     = "3.2.6"
+	defaultEngineVersion     = "5.0.6"
 	defaultDescription       = "A Redis replication group"
 	defaultNumCacheClusters  = 2
 	defaultSnapshotRetention = 31
@@ -46,6 +49,14 @@ const (
 	// 3scale does not support in transit encryption (redis with tls)
 	defaultInTransitEncryption = false
 )
+
+var healthyAWSReplicationGroupStatuses = []string{
+	"creating",
+	"available",
+	"modifying",
+	"deleting",
+	"snapshotting",
+}
 
 var _ providers.RedisProvider = (*RedisProvider)(nil)
 
@@ -86,6 +97,8 @@ func (p *RedisProvider) GetReconcileTime(r *v1alpha1.Redis) time.Duration {
 
 // CreateRedis Create an Elasticache Replication Group from strategy config
 func (p *RedisProvider) CreateRedis(ctx context.Context, r *v1alpha1.Redis) (*providers.RedisCluster, croType.StatusMessage, error) {
+	logger := p.Logger.WithField("action", "CreateRedis")
+	logger.Infof("reconciling redes %s", r.Name)
 	// handle provider-specific finalizer
 	if err := resources.CreateFinalizer(ctx, p.Client, r, DefaultFinalizer); err != nil {
 		return nil, "failed to set finalizer", err
@@ -111,30 +124,86 @@ func (p *RedisProvider) CreateRedis(ctx context.Context, r *v1alpha1.Redis) (*pr
 		errMsg := "failed to create aws session to create elasticache replication group"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
+
+	// check if a standalone network is required
+	networkManager := NewNetworkManager(sess, p.Client, logger)
+	isEnabled, err := networkManager.IsEnabled(ctx)
+	if err != nil {
+		errMsg := "failed to check cluster vpc subnets"
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+
+	//networkManager isEnabled checks for the presence of valid RHMI subnets in the cluster vpc
+	//when rhmi subnets are present in a cluster vpc it indicates that the vpc configuration
+	//was created in a cluster with a cluster version <= 4.4.5
+	//
+	//when rhmi subnets are absent in a cluster vpc it indicates that the vpc configuration has not been created
+	//and a new vpc is created for all resources to be deployed in and peered with the cluster vpc
+	if isEnabled {
+		// get cidr block from _network strat map, based on tier from redis cr
+		vpcCidrBlock, err := networkManager.ReconcileNetworkProviderConfig(ctx, p.ConfigManager, r.Spec.Tier, logger)
+		if err != nil {
+			errMsg := "failed to get _network strategy config"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+		logger.Debug("standalone network provider enabled, reconciling standalone vpc")
+
+		// create the standalone vpc, subnets and subnet groups
+		standaloneNetwork, err := networkManager.CreateNetwork(ctx, vpcCidrBlock)
+		if err != nil {
+			errMsg := "failed to create resource network"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+		// we've created the standalone vpc, now we peer it to the cluster vpc
+		logger.Infof("creating network peering")
+		networkPeering, err := networkManager.CreateNetworkPeering(ctx, standaloneNetwork)
+		if err != nil {
+			errMsg := "failed to peer standalone network"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+		logger.Infof("created network peering %s", aws.StringValue(networkPeering.PeeringConnection.VpcPeeringConnectionId))
+
+		// we have created the peering connection we must now create the security groups and update the route tables
+		securityGroup, err := networkManager.CreateNetworkConnection(ctx, standaloneNetwork)
+		if err != nil {
+			errMsg := "failed to create standalone network"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+		logger.Infof("created security group %s", aws.StringValue(securityGroup.StandaloneSecurityGroup.GroupName))
+	}
+
 	// create the aws elasticache cluster
-	return p.createElasticacheCluster(ctx, r, elasticache.New(sess), sts.New(sess), ec2.New(sess), elasticacheCreateConfig, stratCfg)
+	return p.createElasticacheCluster(ctx, r, elasticache.New(sess), sts.New(sess), ec2.New(sess), elasticacheCreateConfig, stratCfg, isEnabled)
 }
 
-func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI, stsSvc stsiface.STSAPI, ec2Svc ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, stratCfg *StrategyConfig) (*providers.RedisCluster, types.StatusMessage, error) {
+func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI, stsSvc stsiface.STSAPI, ec2Svc ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, stratCfg *StrategyConfig, standaloneNetworkExists bool) (*providers.RedisCluster, types.StatusMessage, error) {
+	logger := p.Logger.WithField("action", "createElasticacheCluster")
 	// the aws access key can sometimes still not be registered in aws on first try, so loop
 	rgs, err := getReplicationGroups(cacheSvc)
 	if err != nil {
 		// return nil error so this function can be requeueed
 		errMsg := "error getting replication groups"
-		logrus.Info(errMsg, err)
+		logger.Info(errMsg, err)
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
 	}
 
-	// setup vpc
-	if err := p.configureElasticacheVpc(ctx, cacheSvc, ec2Svc); err != nil {
-		errMsg := "error setting up resource vpc"
-		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
-	}
+	// we handle standalone networking in CreateRedis() for installs on >= 4.4.6 openshift clusters
+	// this check is to ensure backward compatibility with <= 4.4.5 openshift clusters
+	// creating bundled (in cluster vpc) subnets, subnet groups, security groups
+	//
+	// standaloneNetworkExists if no bundled subnets (created by this operator) are found in the cluster vpc
+	if !standaloneNetworkExists {
+		// setup networking in cluster vpc
+		if err := p.configureElasticacheVpc(ctx, cacheSvc, ec2Svc); err != nil {
+			errMsg := "error setting up resource vpc"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
 
-	// setup security group
-	if err := configureSecurityGroup(ctx, p.Client, ec2Svc); err != nil {
-		errMsg := "error setting up security group"
-		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		// setup security group for cluster vpc
+		if err := configureSecurityGroup(ctx, p.Client, ec2Svc, logger); err != nil {
+			errMsg := "error setting up security group"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
 	}
 
 	// verify and build elasticache create config
@@ -163,9 +232,9 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 
 	// create elasticache cluster if it doesn't exist
 	if foundCache == nil {
-		if annotations.Has(r, resourceIdentifierAnnotation) {
-			errMsg := fmt.Sprintf("Redis CR %s in %s namespace has %s annotation with value %s, but no corresponding Elasticache instance was found",
-				r.Name, r.Namespace, resourceIdentifierAnnotation, r.ObjectMeta.Annotations[resourceIdentifierAnnotation])
+		if annotations.Has(r, ResourceIdentifierAnnotation) {
+			errMsg := fmt.Sprintf("Redis CR %s in %s namespace has %s annotation with value %s, but no corresponding Elasticache cluster was found",
+				r.Name, r.Namespace, ResourceIdentifierAnnotation, r.ObjectMeta.Annotations[ResourceIdentifierAnnotation])
 			return nil, croType.StatusMessage(errMsg), fmt.Errorf(errMsg)
 		}
 
@@ -175,7 +244,7 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
 
-		annotations.Add(r, resourceIdentifierAnnotation, *elasticacheConfig.ReplicationGroupId)
+		annotations.Add(r, ResourceIdentifierAnnotation, *elasticacheConfig.ReplicationGroupId)
 		if err := p.Client.Update(ctx, r); err != nil {
 			return nil, croType.StatusMessage("failed to add annotation"), err
 		}
@@ -184,10 +253,10 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 
 	// check elasticache phase
 	if *foundCache.Status != "available" {
-		logrus.Infof("found instance %s current status %s", *foundCache.ReplicationGroupId, *foundCache.Status)
+		logger.Infof("found instance %s current status %s", *foundCache.ReplicationGroupId, *foundCache.Status)
 		return nil, croType.StatusMessage(fmt.Sprintf("createReplicationGroup() in progress, current aws elasticache status is %s", *foundCache.Status)), nil
 	}
-	logrus.Infof("found existing elasticache instance %s", *foundCache.ReplicationGroupId)
+	logger.Infof("found existing elasticache cluster %s", *foundCache.ReplicationGroupId)
 
 	cacheClustersOutput, err := cacheSvc.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{})
 	if err != nil {
@@ -200,24 +269,31 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 			replicationGroupClusters = append(replicationGroupClusters, *checkedCluster)
 		}
 	}
-	//check if found cluster and user strategy differs, and modify instance
-	modifyInput := buildElasticacheUpdateStrategy(elasticacheConfig, foundCache, replicationGroupClusters)
-	if modifyInput == nil {
-		logrus.Infof("elasticache replication group %s is as expected", *foundCache.ReplicationGroupId)
+
+	// check if any modifications are required to bring the elasticache instance up to date with the strategy map.
+	modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger)
+	if err != nil {
+		errMsg := "failed to build elasticache modify strategy"
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
+	if modifyInput == nil {
+		logger.Infof("elasticache replication group %s is as expected", *foundCache.ReplicationGroupId)
+	}
+
+	// modifications are required to bring the elasticache instance up to date with the strategy map, perform updates.
 	if modifyInput != nil {
-		logrus.Infof("%s differs from expected strategy, applying pending modifications :\n%s", *foundCache.ReplicationGroupId, modifyInput)
+		logger.Infof("%s differs from expected strategy, applying pending modifications :\n%s", *foundCache.ReplicationGroupId, modifyInput)
 		if _, err := cacheSvc.ModifyReplicationGroup(modifyInput); err != nil {
 			errMsg := "failed to modify elasticache cluster"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
-		logrus.Infof("set pending modifications to elasticache replication group %s", *foundCache.ReplicationGroupId)
+		logger.Infof("set pending modifications to elasticache replication group %s", *foundCache.ReplicationGroupId)
 	}
 
 	// add tags to cache nodes
 	cacheInstance := *foundCache.NodeGroups[0]
 	if *cacheInstance.Status != "available" {
-		logrus.Infof("elasticache node %s current status is %s", *cacheInstance.NodeGroupId, *cacheInstance.Status)
+		logger.Infof("elasticache node %s current status is %s", *cacheInstance.NodeGroupId, *cacheInstance.Status)
 		return nil, croType.StatusMessage(fmt.Sprintf("cache node status not available, current status:  %s", *foundCache.Status)), nil
 	}
 
@@ -344,7 +420,12 @@ func (p *RedisProvider) TagElasticacheNode(ctx context.Context, cacheSvc elastic
 //DeleteRedis Delete elasticache replication group
 func (p *RedisProvider) DeleteRedis(ctx context.Context, r *v1alpha1.Redis) (croType.StatusMessage, error) {
 	// resolve elasticache information for elasticache created by provider
-	p.Logger.Info("getting cluster id from infrastructure for redis naming")
+	logger := p.Logger.WithField("action", "DeleteRedis")
+	logger.Infof("reconciling delete redis %s", r.Name)
+
+	// expose metrics about the redis being deleted
+	p.setRedisDeletionTimestampMetric(ctx, r)
+
 	elasticacheCreateConfig, elasticacheDeleteConfig, stratCfg, err := p.getElasticacheConfig(ctx, r)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to retrieve aws elasticache config for instance %s", r.Name)
@@ -365,11 +446,34 @@ func (p *RedisProvider) DeleteRedis(ctx context.Context, r *v1alpha1.Redis) (cro
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
+	// network manager required for cleaning up network.
+	networkManager := NewNetworkManager(sess, p.Client, logger)
+
+	isEnabled, err := networkManager.IsEnabled(ctx)
+	if err != nil {
+		errMsg := "failed to check cluster vpc subnets"
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+
+	namespace, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		errMsg := "Failed to get watch namespace"
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+
+	isLastResource, err := p.isLastResource(ctx, namespace)
+	if err != nil {
+		errMsg := "failed to check if this cr is the last cr of type postgres and redis"
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+
 	// delete the elasticache cluster
-	return p.deleteElasticacheCluster(ctx, elasticache.New(sess), elasticacheCreateConfig, elasticacheDeleteConfig, r)
+	return p.deleteElasticacheCluster(ctx, networkManager, elasticache.New(sess), elasticacheCreateConfig, elasticacheDeleteConfig, r, isEnabled, isLastResource)
 }
 
-func (p *RedisProvider) deleteElasticacheCluster(ctx context.Context, cacheSvc elasticacheiface.ElastiCacheAPI, elasticacheCreateConfig *elasticache.CreateReplicationGroupInput, elasticacheDeleteConfig *elasticache.DeleteReplicationGroupInput, r *v1alpha1.Redis) (croType.StatusMessage, error) {
+func (p *RedisProvider) deleteElasticacheCluster(ctx context.Context, networkManager NetworkManager, cacheSvc elasticacheiface.ElastiCacheAPI, elasticacheCreateConfig *elasticache.CreateReplicationGroupInput, elasticacheDeleteConfig *elasticache.DeleteReplicationGroupInput, r *v1alpha1.Redis, standaloneNetworkExists bool, isLastResource bool) (croType.StatusMessage, error) {
+	logger := p.Logger.WithField("action", "deleteElasticacheCluster")
+
 	// the aws access key can sometimes still not be registered in aws on first try, so loop
 	rgs, err := getReplicationGroups(cacheSvc)
 	if err != nil {
@@ -392,33 +496,66 @@ func (p *RedisProvider) deleteElasticacheCluster(ctx context.Context, cacheSvc e
 	}
 
 	// check if replication group does not exist and delete finalizer
-	if foundCache == nil {
-		// remove the finalizer added by the provider
-		resources.RemoveFinalizer(&r.ObjectMeta, DefaultFinalizer)
-		if err := p.Client.Update(ctx, r); err != nil {
-			errMsg := "failed to update instance as part of finalizer reconcile"
+	if foundCache != nil {
+		// set status metric
+		p.exposeRedisMetrics(ctx, r, foundCache)
+
+		// if status is not available return
+		if *foundCache.Status != "available" {
+			return croType.StatusMessage(fmt.Sprintf("delete detected, deleteReplicationGroup() in progress, current aws elasticache status is %s", *foundCache.Status)), nil
+		}
+
+		// delete elasticache cluster
+		_, err = cacheSvc.DeleteReplicationGroup(elasticacheDeleteConfig)
+		elasticacheErr, isAwsErr := err.(awserr.Error)
+		if err != nil && (!isAwsErr || elasticacheErr.Code() != elasticache.ErrCodeReplicationGroupNotFoundFault) {
+			errMsg := fmt.Sprintf("failed to delete elasticache cluster : %s", err)
 			return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
 		}
-		return croType.StatusEmpty, nil
+
+		return "delete detected, deleteReplicationGroup started", nil
+	}
+	if standaloneNetworkExists && isLastResource {
+		logger.Info("found the last instance of types postgres and redis so deleting the standalone network")
+		networkPeering, err := networkManager.GetClusterNetworkPeering(ctx)
+		if err != nil {
+			msg := "failed to get cluster network peering"
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+		}
+
+		if err = networkManager.DeleteNetworkConnection(ctx, networkPeering); err != nil {
+			msg := "failed to delete network connection"
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+		}
+
+		if err = networkManager.DeleteNetworkPeering(networkPeering); err != nil {
+			msg := "failed to delete cluster network peering"
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+		}
+
+		if err = networkManager.DeleteNetwork(ctx); err != nil {
+			msg := "failed to delete aws networking"
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+		}
 	}
 
-	// set status metric
-	p.exposeRedisMetrics(ctx, r, foundCache)
-
-	// if status is not available return
-	if *foundCache.Status != "available" {
-		return croType.StatusMessage(fmt.Sprintf("delete detected, deleteReplicationGroup() in progress, current aws elasticache status is %s", *foundCache.Status)), nil
+	// in the case of standalone network not existing and the last resource is being deleted the
+	// bundled networking resources should be cleaned up similarly to standalone networking resources
+	// this involves the deletion of bundled elasticace and rds subnet group and ec2 security group
+	if !standaloneNetworkExists && isLastResource {
+		err := networkManager.DeleteBundledCloudResources(ctx)
+		if err != nil {
+			msg := "failed to delete bundled networking resources"
+			return croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+		}
 	}
-
-	// delete elasticache cluster
-	_, err = cacheSvc.DeleteReplicationGroup(elasticacheDeleteConfig)
-	elasticacheErr, isAwsErr := err.(awserr.Error)
-	if err != nil && (!isAwsErr || elasticacheErr.Code() != elasticache.ErrCodeReplicationGroupNotFoundFault) {
-		errMsg := fmt.Sprintf("failed to delete elasticache cluster : %s", err)
+	// remove the finalizer added by the provider
+	resources.RemoveFinalizer(&r.ObjectMeta, DefaultFinalizer)
+	if err := p.Client.Update(ctx, r); err != nil {
+		errMsg := "failed to update instance as part of finalizer reconcile"
 		return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
 	}
-
-	return "delete detected, deleteReplicationGroup started", nil
+	return croType.StatusEmpty, nil
 }
 
 // poll for replication groups
@@ -466,36 +603,132 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 	return elasticacheCreateConfig, elasticacheDeleteConfig, stratCfg, nil
 }
 
-// checks found config vs user strategy for changes, if found returns a modify replication group
-func buildElasticacheUpdateStrategy(elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster) *elasticache.ModifyReplicationGroupInput {
-	logrus.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
+func (p *RedisProvider) isLastResource(ctx context.Context, namespace string) (bool, error) {
+	listOptions := client.ListOptions{
+		Namespace: namespace,
+	}
+	var postgresList = &v1alpha1.PostgresList{}
+	if err := p.Client.List(ctx, postgresList, &listOptions); err != nil {
+		msg := "failed to retrieve postgres cr(s)"
+		return false, errorUtil.Wrap(err, msg)
+	}
+	var redisList = &v1alpha1.RedisList{}
+	if err := p.Client.List(ctx, redisList, &listOptions); err != nil {
+		msg := "failed to retrieve redis cr(s)"
+		return false, errorUtil.Wrap(err, msg)
+	}
+	return len(postgresList.Items) == 0 && len(redisList.Items) == 1, nil
+}
+
+// buildElasticacheUpdateStrategy compare the current elasticache state to the proposed elasticache state from the
+// strategy map.
+//
+// if modifications are required, a modify input struct will be returned with all proposed changes.
+//
+// if no modifications are required, nil will be returned.
+func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry) (*elasticache.ModifyReplicationGroupInput, error) {
+	// setup logger.
+	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
+	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
+
+	// indicates whether an update should be attempted or not.
 	updateFound := false
+
+	// contains the proposed modifications to be made.
 	modifyInput := &elasticache.ModifyReplicationGroupInput{}
 	modifyInput.ReplicationGroupId = foundConfig.ReplicationGroupId
 
+	// check to see if the cache node type requires a modification.
 	if *elasticacheConfig.CacheNodeType != *foundConfig.CacheNodeType {
-		modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
-		updateFound = true
+		// we need to determine if the proposed cache node type is supported in the availability zones that the instance is
+		// deployed into.
+		//
+		// get the availability zones that support the proposed instance type.
+		describeInstanceTypeOfferingOutput, err := ec2Client.DescribeInstanceTypeOfferings(&ec2.DescribeInstanceTypeOfferingsInput{
+			Filters: []*ec2.Filter{
+				{
+					Name:   aws.String("instance-type"),
+					Values: aws.StringSlice([]string{strings.Replace(*elasticacheConfig.CacheNodeType, "cache.", "", 1)}),
+				},
+			},
+			LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
+		})
+		if err != nil {
+			return nil, errorUtil.Wrapf(err, "failed to get instance type offerings for type %s", aws.StringValue(foundConfig.CacheNodeType))
+		}
+
+		// normalise returned instance type offerings to a list of availability zones, to make comparison easier.
+		var supportedAvailabilityZones []string
+		for _, instanceTypeOffering := range describeInstanceTypeOfferingOutput.InstanceTypeOfferings {
+			supportedAvailabilityZones = append(supportedAvailabilityZones, aws.StringValue(instanceTypeOffering.Location))
+		}
+
+		// get the availability zones of the instance.
+		var usedAvailabilityZones []string
+		for _, replicationGroupCluster := range replicationGroupClusters {
+			usedAvailabilityZones = append(usedAvailabilityZones, aws.StringValue(replicationGroupCluster.PreferredAvailabilityZone))
+		}
+
+		// ensure the availability zones of the instance support the instance type.
+		instanceTypeSupported := true
+		for _, usedAvailabilityZone := range usedAvailabilityZones {
+			if !resources.Contains(supportedAvailabilityZones, usedAvailabilityZone) {
+				instanceTypeSupported = false
+				break
+			}
+		}
+
+		// the instance type is supported, go ahead with the modification.
+		if instanceTypeSupported {
+			modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
+			updateFound = true
+		} else {
+			// the instance type isn't supported, log and skip.
+			actionLogger.Infof("cache node type %s is not supported, skipping cache node type modification", *elasticacheConfig.CacheNodeType)
+		}
 	}
+
+	// check if the amount of time snapshots should be kept for requires an update.
 	if *elasticacheConfig.SnapshotRetentionLimit != *foundConfig.SnapshotRetentionLimit {
 		modifyInput.SnapshotRetentionLimit = elasticacheConfig.SnapshotRetentionLimit
 		updateFound = true
 	}
 
+	// elasticache replication groups consist of a group of cache clusters. some information can only be retrieved from
+	// these cache clusters instead of the replication group itself.
+	//
+	// if any cache cluster requires an update, then the replication group itself requires an update. this will update
+	// the underlying cache clusters.
 	for _, foundCacheCluster := range replicationGroupClusters {
+		// check if the redis compatibility version requires an update.
+		if elasticacheConfig.EngineVersion != nil {
+			engineUpgradeNeeded, err := resources.VerifyVersionUpgradeNeeded(*foundCacheCluster.EngineVersion, *elasticacheConfig.EngineVersion)
+			if err != nil {
+				return nil, errorUtil.Wrap(err, "invalid redis version")
+			}
+			if engineUpgradeNeeded {
+				modifyInput.EngineVersion = elasticacheConfig.EngineVersion
+				updateFound = true
+			}
+		}
+
+		// check if the maintenance window requires an update.
 		if elasticacheConfig.PreferredMaintenanceWindow != nil && *elasticacheConfig.PreferredMaintenanceWindow != *foundCacheCluster.PreferredMaintenanceWindow {
 			modifyInput.PreferredMaintenanceWindow = elasticacheConfig.PreferredMaintenanceWindow
 			updateFound = true
 		}
+
+		// check if the time window in which elasticache snapshots can be taken requires an update.
 		if elasticacheConfig.SnapshotWindow != nil && *elasticacheConfig.SnapshotWindow != *foundCacheCluster.SnapshotWindow {
 			modifyInput.SnapshotWindow = elasticacheConfig.SnapshotWindow
 			updateFound = true
 		}
 	}
+
 	if updateFound {
-		return modifyInput
+		return modifyInput, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // verifyRedisConfig checks elasticache config, if none exist sets values to default
@@ -613,7 +846,7 @@ func (p *RedisProvider) configureElasticacheVpc(ctx context.Context, cacheSvc el
 	}
 
 	// get cluster vpc subnets
-	subIDs, err := GetPrivateSubnetIDS(ctx, p.Client, ec2Svc)
+	subIDs, err := GetPrivateSubnetIDS(ctx, p.Client, ec2Svc, p.Logger)
 	if err != nil {
 		return errorUtil.Wrap(err, "error getting vpc subnets")
 	}
@@ -701,10 +934,33 @@ func (p *RedisProvider) exposeRedisMetrics(ctx context.Context, cr *v1alpha1.Red
 	// consider available and snapshotting as non-failure states.
 	// see .ReplicationGroups.Status in https://docs.aws.amazon.com/cli/latest/reference/elasticache/describe-replication-groups.html#output
 	// for more details on possible status values.
-	if instance == nil || !resources.Contains([]string{"available", "snapshotting"}, *instance.Status) {
+	if instance == nil || !replicationGroupStatusIsHealthy(instance) {
 		resources.SetMetric(resources.DefaultRedisAvailMetricName, genericLabels, 0)
 	} else {
 		resources.SetMetric(resources.DefaultRedisAvailMetricName, genericLabels, 1)
+	}
+}
+
+// set metrics about the redis instance being deleted
+// works in a similar way to kube_pod_deletion_timestamp
+// https://github.com/kubernetes/kube-state-metrics/blob/0bfc2981f9c281c78e33052abdc2d621630562b9/internal/store/pod.go#L200-L218
+func (p *RedisProvider) setRedisDeletionTimestampMetric(ctx context.Context, cr *v1alpha1.Redis) {
+	if cr.DeletionTimestamp != nil && !cr.DeletionTimestamp.IsZero() {
+		// build cache name
+		cacheName, err := p.buildCacheName(ctx, cr)
+		if err != nil {
+			logrus.Errorf("error occurred while building instance name while exposing redis metrics: %v", err)
+		}
+
+		logrus.Info("setting redis information metric")
+		clusterID, err := resources.GetClusterID(ctx, p.Client)
+		if err != nil {
+			logrus.Errorf("failed to get cluster id while exposing information metrics for %s : %v", cacheName, err)
+			return
+		}
+
+		labels := buildRedisStatusMetricsLabels(cr, clusterID, cacheName, cr.Status.Phase)
+		resources.SetMetric(resources.DefaultRedisDeletionMetricName, labels, float64(cr.DeletionTimestamp.Unix()))
 	}
 }
 
@@ -795,4 +1051,8 @@ func (p *RedisProvider) buildCacheName(ctx context.Context, rd *v1alpha1.Redis) 
 		return "", errorUtil.Errorf("error occurred building cache name: %v", err)
 	}
 	return cacheName, nil
+}
+
+func replicationGroupStatusIsHealthy(cache *elasticache.ReplicationGroup) bool {
+	return resources.Contains(healthyAWSReplicationGroupStatuses, *cache.Status)
 }

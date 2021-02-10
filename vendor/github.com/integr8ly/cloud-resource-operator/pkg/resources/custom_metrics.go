@@ -18,20 +18,26 @@ import (
 )
 
 const (
-	sleepytime                              = 3600
-	DefaultPostgresMaintenanceMetricName    = "cro_postgres_service_maintenance"
-	DefaultPostgresInfoMetricName           = "cro_postgres_info"
-	DefaultPostgresAvailMetricName          = "cro_postgres_available"
-	DefaultPostgresConnectionMetricName     = "cro_postgres_connection"
-	DefaultPostgresStatusMetricName         = "cro_postgres_status_phase"
-	DefaultPostgresSnapshotStatusMetricName = "cro_postgres_snapshot_status_phase"
-	DefaultRedisMaintenanceMetricName       = "cro_redis_service_maintenance"
-	DefaultRedisInfoMetricName              = "cro_redis_info"
-	DefaultRedisAvailMetricName             = "cro_redis_available"
-	DefaultRedisConnectionMetricName        = "cro_redis_connection"
-	DefaultRedisStatusMetricName            = "cro_redis_status_phase"
-	DefaultRedisSnapshotStatusMetricName    = "cro_redis_snapshot_status_phase"
-	DefaultBlobStorageStatusMetricName      = "cro_blobstorage_status_phase"
+	sleepytime                                = 3600
+	DefaultPostgresMaintenanceMetricName      = "cro_postgres_service_maintenance"
+	DefaultPostgresInfoMetricName             = "cro_postgres_info"
+	DefaultPostgresAvailMetricName            = "cro_postgres_available"
+	DefaultPostgresConnectionMetricName       = "cro_postgres_connection"
+	DefaultPostgresStatusMetricName           = "cro_postgres_status_phase"
+	DefaultPostgresDeletionMetricName         = "cro_postgres_deletion_timestamp"
+	DefaultPostgresSnapshotStatusMetricName   = "cro_postgres_snapshot_status_phase"
+	DefaultPostgresAllocatedStorageMetricName = "cro_postgres_current_allocated_storage"
+	DefaultPostgresMaxMemoryMetricName        = "cro_postgres_max_memory"
+	DefaultRedisMaintenanceMetricName         = "cro_redis_service_maintenance"
+	DefaultRedisInfoMetricName                = "cro_redis_info"
+	DefaultRedisAvailMetricName               = "cro_redis_available"
+	DefaultRedisConnectionMetricName          = "cro_redis_connection"
+	DefaultRedisStatusMetricName              = "cro_redis_status_phase"
+	DefaultRedisDeletionMetricName            = "cro_redis_deletion_timestamp"
+	DefaultRedisSnapshotStatusMetricName      = "cro_redis_snapshot_status_phase"
+	DefaultBlobStorageStatusMetricName        = "cro_blobstorage_status_phase"
+
+	BytesInGibiBytes = 1073741824
 )
 
 var (
