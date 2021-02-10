@@ -479,3 +479,18 @@ rules:
       - get
       - list
   # END Permission to get cluster infrastructure details for alerting
+
+  # Permissions to grant those roles to child operators that use the OAuth proxy
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+  # END Permissions to grant those roles to child operators that use the OAuth proxy
