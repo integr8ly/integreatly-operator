@@ -44,14 +44,15 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "middleware-monitoring"
-	defaultMonitoringName        = "middleware-monitoring"
-	packageName                  = "monitoring"
-	OpenshiftMonitoringNamespace = "openshift-monitoring"
-	grafanaDataSourceSecretName  = "grafana-datasources"
-	grafanaDataSourceSecretKey   = "prometheus.yaml"
-	defaultBlackboxModule        = "http_2xx"
-	manifestPackage              = "integreatly-monitoring"
+	defaultInstallationNamespace  = "middleware-monitoring"
+	defaultMonitoringName         = "middleware-monitoring"
+	defaultGrafanaClusterRoleName = "grafana-cluster-permissions"
+	packageName                   = "monitoring"
+	OpenshiftMonitoringNamespace  = "openshift-monitoring"
+	grafanaDataSourceSecretName   = "grafana-datasources"
+	grafanaDataSourceSecretKey    = "prometheus.yaml"
+	defaultBlackboxModule         = "http_2xx"
+	manifestPackage               = "integreatly-monitoring"
 
 	// alert manager configuration
 	alertManagerRouteName            = "alertmanager-route"
@@ -243,6 +244,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 	*/
+
+	phase, err = r.reconcileGrafanaServiceaccountRole(ctx, serverClient)
+	r.Log.Infof("ReconcileGrafanaServiceaccountRole", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "failed to reconcile grafana serviceaccount role", err)
+		r.Log.Error("failed to reconcile grafana serviceaccount role", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileGrafanaServiceaccountRolebinding(ctx, serverClient)
+	r.Log.Infof("ReconcileGrafanaServiceaccountRolebinding", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "failed to reconcile grafana serviceaccount role binding", err)
+		r.Log.Error("failed to reconcile grafana serviceaccount role binding", err)
+		return phase, err
+	}
 
 	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
@@ -691,6 +708,72 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 	r.extraParams["openshift_monitoring_federate_scrape_interval"] = r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeInterval, config.MonitoringDefaultFederateScrapeInterval)
 	r.extraParams["openshift_monitoring_federate_scrape_timeout"] = r.Config.GetExtraParamWithDefault(config.MonitoringParamFederateScrapeTimeout, config.MonitoringDefaultFederateScrapeTimeout)
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileGrafanaServiceaccountRole(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.Log.Info("reconciling grafana service account permissions")
+	role := &rbac.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultGrafanaClusterRoleName,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	owner.AddIntegreatlyOwnerAnnotations(role, r.installation)
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, role, func() error {
+		role.Rules = []rbac.PolicyRule{
+			{
+				Verbs:     []string{"create"},
+				APIGroups: []string{"authentication.k8s.io"},
+				Resources: []string{"tokenreviews"},
+			},
+			{
+				Verbs:     []string{"create"},
+				APIGroups: []string{"authorization.k8s.io"},
+				Resources: []string{"subjectaccessreviews"},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana serviceaccount role")
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileGrafanaServiceaccountRolebinding(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.Log.Info("reconciling grafana service account permissions")
+	binding := &rbac.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-rb", defaultGrafanaClusterRoleName),
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	owner.AddIntegreatlyOwnerAnnotations(binding, r.installation)
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, binding, func() error {
+		binding.Subjects = []rbac.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "grafana-serviceaccount",
+				Namespace: r.Config.GetOperatorNamespace(),
+			},
+		}
+		binding.RoleRef = rbac.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     defaultGrafanaClusterRoleName,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana serviceaccount role binding")
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

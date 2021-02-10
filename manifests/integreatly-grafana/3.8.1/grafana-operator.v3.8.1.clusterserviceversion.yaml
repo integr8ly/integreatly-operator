@@ -94,21 +94,6 @@ spec:
       mediatype: image/svg+xml
   install:
     spec:
-      clusterPermissions:
-        - rules:
-            - apiGroups:
-                - authentication.k8s.io
-              resources:
-                - tokenreviews
-              verbs:
-                - create
-            - apiGroups:
-                - authorization.k8s.io
-              resources:
-                - subjectaccessreviews
-              verbs:
-                - create
-          serviceAccountName: grafana-serviceaccount
       deployments:
         - name: grafana-operator
           spec:
