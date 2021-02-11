@@ -828,7 +828,7 @@ func (r *Reconciler) getExistingSMTPFromAddress(ctx context.Context, client k8sc
 		return "", err
 	}
 
-	monitoring := amSecret.Data["alertmanager.yaml"]
+	monitoring := amSecret.Data[alertManagerConfigSecretFileName]
 
 	var config alertManagerConfig
 	err = yaml.Unmarshal(monitoring, &config)
