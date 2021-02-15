@@ -2,17 +2,17 @@ package osde2e
 
 import (
 	"fmt"
-	"testing"
-
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"testing"
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
@@ -52,12 +52,15 @@ func TestAPIs(t *testing.T) {
 	}
 	//TODO: Trigger operator install
 
-	//TODO: validate operator has completed install
-
 	// get install type
+	setVars("redhat-rhmi-operator", "redhat-rhmi-", t)
 	installType, err = common.GetInstallType(cfg)
 	if err != nil {
-		t.Fatalf("could not get install type %s", err)
+		setVars("redhat-rhoam-operator", "redhat-rhoam-", t)
+		installType, err = common.GetInstallType(cfg)
+		if err != nil {
+			t.Fatalf("could not get install type %s", err)
+		}
 	}
 
 	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("%s/%s", testResultsDirectory, jUnitOutputFilename))
@@ -86,3 +89,42 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+
+func setVars(possibleWN, possibleNS string, t *testing.T) {
+	err := os.Setenv("WATCH_NAMESPACE", possibleWN)
+	if err != nil {
+		t.Fatalf("Failed to set WATCH_NAMESPACE env var %s", err)
+	}
+	err = os.Setenv("SKIP_FLAKES", "true")
+	if err != nil {
+		t.Logf("Failed to set SKIP_FLAKES env var %s", err)
+	}
+	common.NamespacePrefix = possibleNS
+	common.RHMIOperatorNamespace = common.NamespacePrefix + "operator"
+	common.MonitoringOperatorNamespace = common.NamespacePrefix + "middleware-monitoring-operator"
+	common.MonitoringFederateNamespace = common.NamespacePrefix + "middleware-monitoring-federate"
+	common.AMQOnlineOperatorNamespace = common.NamespacePrefix + "amq-online"
+	common.ApicurioRegistryProductNamespace = common.NamespacePrefix + "apicurio-registry"
+	common.ApicurioRegistryOperatorNamespace = common.ApicurioRegistryProductNamespace + "-operator"
+	common.ApicuritoProductNamespace = common.NamespacePrefix + "apicurito"
+	common.ApicuritoOperatorNamespace = common.ApicuritoProductNamespace + "-operator"
+	common.CloudResourceOperatorNamespace = common.NamespacePrefix + "cloud-resources-operator"
+	common.CodeReadyProductNamespace = common.NamespacePrefix + "codeready-workspaces"
+	common.CodeReadyOperatorNamespace = common.CodeReadyProductNamespace + "-operator"
+	common.FuseProductNamespace = common.NamespacePrefix + "fuse"
+	common.FuseOperatorNamespace = common.FuseProductNamespace + "-operator"
+	common.RHSSOUserProductOperatorNamespace = common.NamespacePrefix + "user-sso"
+	common.RHSSOUserOperatorNamespace = common.RHSSOUserProductOperatorNamespace + "-operator"
+	common.RHSSOProductNamespace = common.NamespacePrefix + "rhsso"
+	common.RHSSOOperatorNamespace = common.RHSSOProductNamespace + "-operator"
+	common.SolutionExplorerProductNamespace = common.NamespacePrefix + "solution-explorer"
+	common.SolutionExplorerOperatorNamespace = common.SolutionExplorerProductNamespace + "-operator"
+	common.ThreeScaleProductNamespace = common.NamespacePrefix + "3scale"
+	common.ThreeScaleOperatorNamespace = common.ThreeScaleProductNamespace + "-operator"
+	common.UPSProductNamespace = common.NamespacePrefix + "ups"
+	common.UPSOperatorNamespace = common.UPSProductNamespace + "-operator"
+	common.MonitoringSpecNamespace = common.NamespacePrefix + "monitoring"
+	common.Marin3rOperatorNamespace = common.NamespacePrefix + "marin3r-operator"
+	common.Marin3rProductNamespace = common.NamespacePrefix + "marin3r"
+	common.CustomerGrafanaNamespace = common.NamespacePrefix + "customer-monitoring-operator"
+}
