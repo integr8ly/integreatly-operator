@@ -376,6 +376,7 @@ rules:
     resources:
       - prometheusrules
       - servicemonitors
+      - podmonitors
     verbs:
       - get
       - list

@@ -3,6 +3,7 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"strings"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -36,6 +37,7 @@ import (
 var (
 	idpAlias        = "openshift-v4"
 	manifestPackage = "integreatly-rhsso"
+	podMonitorName  = "keycloak-pod-monitor"
 )
 
 type Reconciler struct {
@@ -534,6 +536,30 @@ func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rhsso blackbox target: %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) RemovePodMonitors(ctx context.Context, client k8sclient.Client, config config.ConfigReadable) (integreatlyv1alpha1.StatusPhase, error) {
+
+	podMonitor := &monitoringv1.PodMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podMonitorName,
+			Namespace: config.GetNamespace(),
+		},
+	}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: podMonitorName, Namespace: config.GetNamespace()}, podMonitor)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = client.Delete(ctx, podMonitor)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -244,6 +244,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.RemovePodMonitors(ctx, serverClient, r.Config)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to remove pod monitor", err)
+		return phase, err
+	}
+
 	if err := r.reconcileConsoleLink(ctx, serverClient); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
