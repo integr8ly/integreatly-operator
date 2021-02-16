@@ -46,7 +46,7 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.8.0-rc2
+    containerImage: quay.io/integreatly/integreatly-operator:v2.8.0-rc3
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     olm.skipRange: '>=2.4.0 <2.6.1'
@@ -249,6 +249,7 @@ spec:
           resources:
           - prometheusrules
           - servicemonitors
+          - podmonitors
           verbs:
           - get
           - list
@@ -369,7 +370,7 @@ spec:
                   value: "true"
                 - name: ALERT_SMTP_FROM
                   value: default@test.com
-                image: quay.io/integreatly/integreatly-operator:v2.8.0-rc2
+                image: quay.io/integreatly/integreatly-operator:v2.8.0-rc3
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
