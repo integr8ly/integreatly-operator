@@ -246,7 +246,7 @@ The environment field specify against which environment/setup the test need to b
 
 - `osd-post-upgrade` This is the environment where most of the tests will be executed and also the **default** choice for most of the tests. It consist in a BYOC OSD on AWS cluster installed with the previous version using addon-flow and upgraded to the version to test.
 - `osd-fresh-install` This environment should be used for tests that are for sure not affected from the upgrade. It consist in a BYOC OSD on AWS cluster installed with the version to test using the addon-flow.
-- `osd-private-post-upgrade` This is a special environment and should be used only for tests that are specifically targeting it, the only difference with the pervious environments, is that this environment resides behind a VPN
+- `osd-private-post-upgrade` This is a special environment and should be used only for tests that are specifically targeting it, the only difference with the previous environments, is that this environment resides behind a VPN
 - `rhpds` This is the RHMI demo environment and should be used only for tests that are specifically targeting it.
 - `external` This is a special tag that is used to identify tests that needs a special environment or a stand-alone one, the test in this case would have to specify how to setup the cluster.
 

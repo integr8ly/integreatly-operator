@@ -25,7 +25,7 @@ add_user_to_dedicated_admin_group() {
     if [[ $(ocm get "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/groups/dedicated-admins/users" | jq ".items[] | select( .id == \"$1\")") ]]; then
       echo "$1 is already in dedicated-admins group"
     else
-      echo '{"id":"'$1'"}' | ocm post "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/groups/dedicated-admins/users"
+      echo '{"id":"'"$1"'"}' | ocm post "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/groups/dedicated-admins/users"
       echo "$1 added to dedicated-admins group"
     fi
   else # Add to dedicated admin group via oc
@@ -42,7 +42,7 @@ create_dedicated_admins() {
 
   echo "Creating dedicated admin users"
   for ((i = 1; i <= NUM_ADMIN; i++)); do
-    format_user_name $i "$ADMIN_USERNAME"
+    format_user_name "$i" "$ADMIN_USERNAME"
     oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$DEDICATED_ADMIN_PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Customer" -p LASTNAME="Admin ${USER_NUM}" -f "${BASH_SOURCE%/*}/admin-template.yml" | oc apply -f -
     add_user_to_dedicated_admin_group "$USERNAME"
   done
@@ -57,7 +57,7 @@ create_regular_users() {
 
   echo "Creating regular users"
   for ((i = 1; i <= NUM_REGULAR_USER; i++)); do
-    format_user_name $i "$REGULAR_USERNAME"
+    format_user_name "$i" "$REGULAR_USERNAME"
     oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Test" -p LASTNAME="User ${USER_NUM}" -f "${BASH_SOURCE%/*}/user-template.yml" | oc apply -f -
   done
 }
@@ -149,7 +149,7 @@ else
     oc patch oauth cluster --type=json -p '[{"op":"add", "path":"/spec/identityProviders", "value":[]}]'
   fi
   # try to add the testing IDP .spec.identityProviders of "cluster" OAuth resource
-  if [[ $(oc patch oauth cluster --type=json -p '[{"op":"add", "path":"/spec/identityProviders/-", "value":{ "name": "'$REALM'", "mappingMethod": "claim", "type": "OpenID", "openID": { "ca": {"name": "'$CA_CONFIGMAP_NAME'"}, "clientID": "openshift", "clientSecret": { "name": "'$CLIENT_SECRET_NAME'" }, "issuer": "'$KEYCLOAK_URL'/auth/realms/'$REALM'", "claims": { "preferredUsername": ["preferred_username"], "email": ["email"], "name": ["name"] } } } }]' 2>&1) =~ "must have a unique name" ]]; then
+  if [[ $(oc patch oauth cluster --type=json -p '[{"op":"add", "path":"/spec/identityProviders/-", "value":{ "name": "'"$REALM"'", "mappingMethod": "claim", "type": "OpenID", "openID": { "ca": {"name": "'"$CA_CONFIGMAP_NAME"'"}, "clientID": "openshift", "clientSecret": { "name": "'"$CLIENT_SECRET_NAME"'" }, "issuer": "'"$KEYCLOAK_URL"'/auth/realms/'"$REALM"'", "claims": { "preferredUsername": ["preferred_username"], "email": ["email"], "name": ["name"] } } } }]' 2>&1) =~ "must have a unique name" ]]; then
     echo "$REALM IDP already exists in \"cluster\" OAuth, this resource will not be updated!"
   fi
 
@@ -161,3 +161,13 @@ until ! oc get deployment oauth-openshift -n openshift-authentication -o yaml | 
   echo "\"oauth-openshift\" deployment is still updating, trying again in 10s"
   sleep 10s
 done
+
+# Also configure session expiration (OAuth access token duration) and token inactivity timeouts if both of
+# TOKEN_INACTIVITY_TIMEOUT and SESSION_EXPIRATION_TIMEOUT environment variables were specified
+# See: https://github.com/integr8ly/integreatly-operator/pull/1561#discussion_r566491866 for examples
+# See also script help for list of supported environment variables and additional examples
+if [ "x${TOKEN_INACTIVITY_TIMEOUT}" != x ] && [ "x${SESSION_EXPIRATION_TIMEOUT}" != x ]
+then
+  # shellcheck source=/dev/null
+  source "$(dirname "$0")/refine-oauth-token-timeouts.sh"
+fi

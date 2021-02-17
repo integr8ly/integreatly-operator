@@ -220,7 +220,7 @@ func (process *Process) waitBackground() {
 }
 
 // Wait waits for the process to exit. If the process has already exited returns
-// the pervious error (if any).
+// the previous error (if any).
 func (process *Process) Wait() error {
 	<-process.waitBlock
 	return process.waitError
