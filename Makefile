@@ -13,6 +13,7 @@ OPERATOR_SDK_VERSION=1.2.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
+SKU="DEV_SKU"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -84,7 +85,7 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	INSTALLATION_SHORTHAND ?= rhoam
 endif
 
-NAMESPACE=$(NAMESPACE_PREFIX)operator
+NAMESPACE ?= $(NAMESPACE_PREFIX)operator
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -323,7 +324,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean cluster/prepare/croaws
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/sku cluster/prepare/delorean cluster/prepare/croaws
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -358,6 +359,11 @@ cluster/prepare/dms:
 .PHONY: cluster/prepare/ratelimits
 cluster/prepare/ratelimits:
 	@-oc create -n $(NAMESPACE) -f config/configmap/sku-limits-configmap.yaml
+
+.PHONY: cluster/prepare/sku
+cluster/prepare/sku:
+	@-oc create -n $(NAMESPACE) -f config/configmap/sku-config.yaml
+	@-oc process -n $(NAMESPACE) SKU=$(SKU) -f config/secrets/sku-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/delorean
 cluster/prepare/delorean: cluster/prepare/delorean/pullsecret

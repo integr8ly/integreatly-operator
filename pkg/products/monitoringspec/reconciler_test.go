@@ -3,6 +3,7 @@ package monitoringspec
 import (
 	"context"
 	"errors"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -324,7 +325,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			ctx := context.TODO()
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient)
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -493,7 +494,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			}
 
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient)
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
