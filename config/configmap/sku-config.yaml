@@ -1,0 +1,232 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sku-config
+data:
+  sku-configs: |-
+    [
+    {
+              "name": "TWENTY_MILLION_SKU",
+              "rate-limiting": {
+                  "unit": "minute",
+                  "requests_per_unit": 1389,
+                  "alert_limits": []
+              },
+              "resources": {
+                  "backend_listener": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.25,
+                              "memory": 450
+                          },
+                          "limits": {
+                              "cpu": 0.3,
+                              "memory": 500
+                          }
+                      }
+                  },
+                  "backend_worker": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.15,
+                              "memory": 100
+                          },
+                          "limits": {
+                              "cpu": 0.2,
+                              "memory": 100
+                          }
+                      }
+                  },
+                  "apicast_production": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.3,
+                              "memory": 250
+                          },
+                          "limits": {
+                              "cpu": 0.3,
+                              "memory": 300
+                          }
+                      }
+                  },
+                  "keycloak": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.75,
+                              "memory": 1500
+                          },
+                          "limits": {
+                              "cpu": 0.75,
+                              "memory": 1500
+                          }
+                      }
+                  },
+                "ratelimit": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.10,
+                              "memory": 50
+                          },
+                          "limits": {
+                              "cpu": 0.20,
+                              "memory": 100
+                          }
+                      }
+                  }
+              }
+          },
+       {
+          "name": "FIVE_MILLION_SKU",
+          "rate-limiting": {
+              "unit": "minute",
+              "requests_per_unit": 347,
+              "alert_limits": []
+          },
+          "resources": {
+              "backend_listener": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.1,
+                          "memory": 450
+                      },
+                      "limits": {
+                          "cpu": 0.11,
+                          "memory": 500
+                      }
+                  }
+              },
+              "backend_worker": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.03,
+                          "memory": 55
+                      },
+                      "limits": {
+                          "cpu": 0.04,
+                          "memory": 60
+                      }
+                  }
+              },
+              "apicast_production": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.09,
+                          "memory": 250
+                      },
+                      "limits": {
+                          "cpu": 0.1,
+                          "memory": 270
+                      }
+                  }
+              },
+              "keycloak": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.75,
+                          "memory": 1500
+                      },
+                      "limits": {
+                          "cpu": 0.75,
+                          "memory": 1500
+                      }
+                  }
+              },
+              "ratelimit": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.05,
+                          "memory": 50
+                      },
+                      "limits": {
+                          "cpu": 0.15,
+                          "memory": 100
+                      }
+                  }
+              }
+          }
+      },
+      {
+          "name": "DEV_SKU",
+          "rate-limiting": {
+              "unit": "minute",
+              "requests_per_unit": 20,
+              "alert_limits": []
+          },
+          "resources": {
+              "backend_listener": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.1,
+                          "memory": 450
+                      },
+                      "limits": {
+                          "cpu": 0.11,
+                          "memory": 500
+                      }
+                  }
+              },
+              "backend_worker": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.03,
+                          "memory": 55
+                      },
+                      "limits": {
+                          "cpu": 0.04,
+                          "memory": 60
+                      }
+                  }
+              },
+              "apicast_production": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.09,
+                          "memory": 250
+                      },
+                      "limits": {
+                          "cpu": 0.1,
+                          "memory": 270
+                      }
+                  }
+              },
+              "keycloak": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.75,
+                          "memory": 1500
+                      },
+                      "limits": {
+                          "cpu": 0.75,
+                          "memory": 1500
+                      }
+                  }
+              },
+              "ratelimit": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.05,
+                          "memory": 50
+                      },
+                      "limits": {
+                          "cpu": 0.15,
+                          "memory": 100
+                      }
+                  }
+              }
+          }
+      }]

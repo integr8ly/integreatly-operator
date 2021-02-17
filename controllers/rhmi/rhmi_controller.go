@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"os"
 	"reflect"
 	"strconv"
@@ -303,6 +304,20 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Stages = map[rhmiv1alpha1.StageName]rhmiv1alpha1.RHMIStageStatus{}
 	}
 
+	installationSKU := &sku.SKU{}
+	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if err = r.processSKU(installation, request.Namespace, installationSKU); err != nil {
+			log.Error("Error while processing the SKU", err)
+			if err = r.Status().Update(context.TODO(), installation); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, err
+		}
+		if err = r.Status().Update(context.TODO(), installation); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
@@ -349,7 +364,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if stage.Name == rhmiv1alpha1.BootstrapStage {
 			stagePhase, err = r.bootstrapStage(installation, configManager, stageLog)
 		} else {
-			stagePhase, err = r.processStage(installation, &stage, configManager, stageLog)
+			stagePhase, err = r.processStage(installation, &stage, configManager, installationSKU, stageLog)
 		}
 
 		if installation.Status.Stages == nil {
@@ -380,6 +395,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		installation.Status.SKU = installationSKU.GetName()
+		installation.Status.ToSKU = ""
 		log.Info("installation completed successfully")
 	}
 
@@ -390,6 +407,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		retryRequeue.RequeueAfter = 5 * time.Minute
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
+		}
+		if installationSKU.IsUpdated() {
+			installation.Status.SKU = installationSKU.GetName()
+			installation.Status.ToSKU = ""
 		}
 	}
 	metrics.SetRHMIStatus(installation)
@@ -490,7 +511,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
-		for product, _ := range stage.Products {
+		for product := range stage.Products {
 			productName := string(product)
 			log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
 			productStatus := installation.GetProductStatusObject(product)
@@ -509,7 +530,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
 				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient)
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.ProductConfig{})
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
 				}
@@ -747,7 +768,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	return phase, nil
 }
 
-func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, log l.Logger) (rhmiv1alpha1.StatusPhase, error) {
+func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, skuconfig *sku.SKU, _ l.Logger) (rhmiv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	productVersionMismatchFound = false
 
@@ -755,7 +776,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 	productsAux := make(map[rhmiv1alpha1.ProductName]rhmiv1alpha1.RHMIProductStatus)
 	installation.Status.Stage = stage.Name
 
-	for _, product := range stage.Products {
+	for productName, product := range stage.Products {
 		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: product.Name})
 
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
@@ -774,7 +795,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient)
+		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient, skuconfig.GetProduct(productName))
 
 		if err != nil {
 			if mErr == nil {
@@ -1057,4 +1078,49 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 		return check(value)
 	}
+}
+
+func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
+	isSKUUpdated := false
+	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "add-managed-api-service")
+	if err != nil {
+		return errors.Wrap(err, "Error checking for SKU secret")
+	}
+
+	//!found means the param wasn't found so we want to default rather than return
+	//if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
+	//a sku value is required for the installation to begin, the dev value is provided by the make cluster/prepare/sku for local installs
+	//or as a required value from an ocm add-on installation
+	if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
+		return errors.Wrap(err, "no sku value provided, sku is a required parameter for a managed-api install")
+	}
+
+	// get a configmap from the cluster
+	cm := &corev1.ConfigMap{}
+	err = r.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: sku.ConfigMapName}, cm)
+	if err != nil {
+		return errors.Wrap(err, "Error getting sku config map")
+	}
+
+	// if the secret is different to what's currently set in SKU there has been an update
+	// OR there is a TOSKU value in the cr, which can happen if a second sku change is made before the operator reaches
+	// the end of the reconcile on a first sku change where it resets the SKU and to sku values
+	if skuParam != installation.Status.SKU || installation.Status.ToSKU != "" {
+		isSKUUpdated = true
+	}
+
+	err = sku.GetSKU(skuParam, cm, installationSKU, isSKUUpdated)
+	if err != nil {
+		return err
+	}
+
+	// if both are empty it's the first round of installation
+	// or if the secretname is not the same as what the SKU is marked there has been a change
+	// so set toSKU and update the status object
+	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
+		skuParam != installation.Status.SKU {
+		installation.Status.ToSKU = installationSKU.GetName()
+	}
+
+	return nil
 }
