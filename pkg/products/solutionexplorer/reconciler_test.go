@@ -2,6 +2,7 @@ package solutionexplorer
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -195,7 +196,7 @@ func TestSolutionExplorer(t *testing.T) {
 				return
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client)
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client, sku.ProductConfig{})
 			if err != nil && !tc.ExpectErr {
 				t.Fatalf("expected error but got one: %v", err)
 			}
