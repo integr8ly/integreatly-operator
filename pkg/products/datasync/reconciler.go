@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -91,7 +92,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileTemplates(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile configmap", err)

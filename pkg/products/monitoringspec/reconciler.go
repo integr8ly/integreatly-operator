@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -88,7 +89,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 // Reconcile method for monitorspec
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI,
-	product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()),
 		func() (integreatlyv1alpha1.StatusPhase, error) {
 			r.Log.Info("Phase: Monitoringspec ReconcileFinalizer")

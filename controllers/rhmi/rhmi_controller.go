@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"os"
 	"reflect"
 	"strconv"
@@ -237,6 +238,33 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
+	installationSKU := &sku.SKU{}
+	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		skuSecretName, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, request.NamespacedName.Namespace, "sku")
+		if err != nil {
+			return retryRequeue, errors.Wrap(err, "Error checking for SKU secret")
+		}
+
+		if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
+			return retryRequeue, nil
+		}
+		//!found means the param wasn't found so we want to default rather than return
+		//but don't do it until the installation object is more than a minute old in case the secret is slow to create
+		if !found && installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
+			skuSecretName = "TWENTY_MILLION_SKU"
+		}
+		// get a configmap from the cluster
+		cm := &corev1.ConfigMap{}
+		err = r.Get(context.TODO(), types.NamespacedName{Namespace: request.Namespace, Name: "sku-config"}, cm)
+		if err != nil {
+			return retryRequeue, errors.Wrap(err, "Error getting sku config map")
+		}
+		err = sku.GetSKU(skuSecretName, cm, installationSKU)
+		if err != nil {
+			return retryRequeue, err
+		}
+	}
+
 	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
 	if installation.Spec.AlertingEmailAddresses.CSSRE == "" && cssreAlertingEmailAddress != "" {
 		log.Info("Adding CS-SRE alerting email address to RHMI CR")
@@ -349,7 +377,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if stage.Name == rhmiv1alpha1.BootstrapStage {
 			stagePhase, err = r.bootstrapStage(installation, configManager, stageLog)
 		} else {
-			stagePhase, err = r.processStage(installation, &stage, configManager, stageLog)
+			stagePhase, err = r.processStage(installation, &stage, configManager, installationSKU, stageLog)
 		}
 
 		if installation.Status.Stages == nil {
@@ -509,7 +537,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
 				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient)
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.ProductConfig{})
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
 				}
@@ -747,7 +775,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	return phase, nil
 }
 
-func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, log l.Logger) (rhmiv1alpha1.StatusPhase, error) {
+func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, skuconfig *sku.SKU, _ l.Logger) (rhmiv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	productVersionMismatchFound = false
 
@@ -755,7 +783,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 	productsAux := make(map[rhmiv1alpha1.ProductName]rhmiv1alpha1.RHMIProductStatus)
 	installation.Status.Stage = stage.Name
 
-	for _, product := range stage.Products {
+	for productName, product := range stage.Products {
 		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: product.Name})
 
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
@@ -774,7 +802,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient)
+		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient, skuconfig.GetProduct(productName))
 
 		if err != nil {
 			if mErr == nil {
