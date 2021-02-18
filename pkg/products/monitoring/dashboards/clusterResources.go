@@ -2762,7 +2762,7 @@ const MonitoringGrafanaDBClusterResourcesJSON = `{
 				"values": []
 			},
 			"yaxes": [{
-					"format": "decbytes",
+					"format": "bytes",
 					"label": null,
 					"logBase": 1,
 					"max": null,
@@ -2859,7 +2859,7 @@ const MonitoringGrafanaDBClusterResourcesJSON = `{
 					"pattern": "Value #A",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests",
@@ -2873,7 +2873,7 @@ const MonitoringGrafanaDBClusterResourcesJSON = `{
 					"pattern": "Value #B",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests %",
@@ -2901,7 +2901,7 @@ const MonitoringGrafanaDBClusterResourcesJSON = `{
 					"pattern": "Value #D",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Limits %",

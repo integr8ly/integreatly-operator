@@ -579,7 +579,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 					"pattern": "Value #A",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests",
@@ -593,7 +593,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 					"pattern": "Value #B",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests %",
@@ -621,7 +621,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 					"pattern": "Value #D",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Limits %",

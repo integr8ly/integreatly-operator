@@ -547,7 +547,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 					"pattern": "Value #A",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests",
@@ -561,7 +561,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 					"pattern": "Value #B",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Requests %",
@@ -589,7 +589,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 					"pattern": "Value #D",
 					"thresholds": [],
 					"type": "number",
-					"unit": "decbytes"
+					"unit": "bytes"
 				},
 				{
 					"alias": "Memory Limits %",

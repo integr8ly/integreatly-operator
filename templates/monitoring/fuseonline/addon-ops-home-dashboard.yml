@@ -1238,7 +1238,7 @@ spec:
             "rgba(237, 129, 40, 0.89)",
             "#d44a3a"
           ],
-          "format": "decbytes",
+          "format": "bytes",
           "gauge": {
             "maxValue": 100,
             "minValue": 0,
