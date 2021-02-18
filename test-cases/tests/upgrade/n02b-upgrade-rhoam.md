@@ -82,7 +82,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    ```
    cd delorean
    make build/cli
-   ./delorean pipeline query-report --config-file ./configurations/downtime-report-config.yaml -o <output_dir>
+   ./delorean pipeline query-report --namespace redhat-rhoam-middleware-monitoring-operator --config-file ./configurations/downtime-report-config.yaml -o <output_dir>
    ```
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)

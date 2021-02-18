@@ -15,7 +15,7 @@ tags:
 ## Prerequisites
 
 - access to `cloud-services-qe-reporting@redhat.com` email list
-- workload webapp should be running on cluster and have been deployed shortly after cluster was provisioned
+- [workload webapp](https://github.com/integr8ly/workload-web-app) should be running on cluster and have been deployed shortly after cluster was provisioned
 
 ## Description
 
@@ -39,11 +39,10 @@ oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .spec.alertingEmailAddr
 
 3. Check the inbox of the e-mail address and check if there are any alert notifications that are not related to testing. This can be acheived by subscribing to cloud-services-qe-reporting@redhat.com here: https://post-office.corp.redhat.com/mailman/listinfo/cloud-services-qe-reporting or alternatively you can view the archives without subscription here: http://post-office.corp.redhat.com/archives/cloud-services-qe-reporting/
 
-4. Check there are no currently firing alerts. From the cluster manager console on https://qaprodauth.cloud.redhat.com/beta/openshift/
+4. Check there are no currently firing alerts.
 
-   - Select the test cluster
-   - Select the Monitoring tab
-   - Expand Alerts firing from the menu
+   - In Openshift console, go to Monitoring -> Alerting
+   - In filter, select Source -> User
 
    > The only RHMI alert here should be DeadMansSwitch.
    >

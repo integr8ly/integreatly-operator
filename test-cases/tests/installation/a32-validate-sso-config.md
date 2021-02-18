@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-1262
 products:
   - name: rhoam
     environments:
