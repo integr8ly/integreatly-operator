@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -69,21 +70,21 @@ func getExpectedRedis(installType string, installationName string) []string {
 }
 
 func getExpectedBlobStorage(installType string, installationName string) []string {
-	// common blob storage
-	commonBlobStorage := []string{
+	// backups blob storage
+	backupsBlobStorage := []string{
+		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
+	}
+
+	// 3scale blob storage
+	threescaleBlobStorage := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
 	}
 
-	// rhmi blob storage
-	rhmiBlobStorage := []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
-	}
-
+	// Managed API (RHOAM) contains only 3scale blobstorage
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonBlobStorage
-	} else {
-		return append(commonBlobStorage, rhmiBlobStorage...)
+		return threescaleBlobStorage
 	}
+	return append(backupsBlobStorage, threescaleBlobStorage...)
 }
 
 /*
