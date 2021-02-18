@@ -4,7 +4,7 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"sync"
 )
 
@@ -14,91 +14,91 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 
 // ConfigReadWriterMock is a mock implementation of ConfigReadWriter.
 //
-//     func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
+// 	func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
 //
-//         // make and configure a mocked ConfigReadWriter
-//         mockedConfigReadWriter := &ConfigReadWriterMock{
-//             GetBackupsSecretNameFunc: func() string {
-// 	               panic("mock out the GetBackupsSecretName method")
-//             },
-//             GetGHOauthClientsSecretNameFunc: func() string {
-// 	               panic("mock out the GetGHOauthClientsSecretName method")
-//             },
-//             GetOauthClientsSecretNameFunc: func() string {
-// 	               panic("mock out the GetOauthClientsSecretName method")
-//             },
-//             GetOperatorNamespaceFunc: func() string {
-// 	               panic("mock out the GetOperatorNamespace method")
-//             },
-//             ReadAMQOnlineFunc: func() (*AMQOnline, error) {
-// 	               panic("mock out the ReadAMQOnline method")
-//             },
-//             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
-// 	               panic("mock out the ReadAMQStreams method")
-//             },
-//             ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
-// 	               panic("mock out the ReadApicurioRegistry method")
-//             },
-//             ReadApicuritoFunc: func() (*Apicurito, error) {
-// 	               panic("mock out the ReadApicurito method")
-//             },
-//             ReadCloudResourcesFunc: func() (*CloudResources, error) {
-// 	               panic("mock out the ReadCloudResources method")
-//             },
-//             ReadCodeReadyFunc: func() (*CodeReady, error) {
-// 	               panic("mock out the ReadCodeReady method")
-//             },
-//             ReadDataSyncFunc: func() (*DataSync, error) {
-// 	               panic("mock out the ReadDataSync method")
-//             },
-//             ReadFuseFunc: func() (*Fuse, error) {
-// 	               panic("mock out the ReadFuse method")
-//             },
-//             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
-// 	               panic("mock out the ReadFuseOnOpenshift method")
-//             },
-//             ReadGrafanaFunc: func() (*Grafana, error) {
-// 	               panic("mock out the ReadGrafana method")
-//             },
-//             ReadMarin3rFunc: func() (*Marin3r, error) {
-// 	               panic("mock out the ReadMarin3r method")
-//             },
-//             ReadMonitoringFunc: func() (*Monitoring, error) {
-// 	               panic("mock out the ReadMonitoring method")
-//             },
-//             ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
-// 	               panic("mock out the ReadMonitoringSpec method")
-//             },
-//             ReadProductFunc: func(product v1alpha1.ProductName) (ConfigReadable, error) {
-// 	               panic("mock out the ReadProduct method")
-//             },
-//             ReadRHSSOFunc: func() (*RHSSO, error) {
-// 	               panic("mock out the ReadRHSSO method")
-//             },
-//             ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
-// 	               panic("mock out the ReadRHSSOUser method")
-//             },
-//             ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
-// 	               panic("mock out the ReadSolutionExplorer method")
-//             },
-//             ReadThreeScaleFunc: func() (*ThreeScale, error) {
-// 	               panic("mock out the ReadThreeScale method")
-//             },
-//             ReadUpsFunc: func() (*Ups, error) {
-// 	               panic("mock out the ReadUps method")
-//             },
-//             WriteConfigFunc: func(config ConfigReadable) error {
-// 	               panic("mock out the WriteConfig method")
-//             },
-//             readConfigForProductFunc: func(product v1alpha1.ProductName) (ProductConfig, error) {
-// 	               panic("mock out the readConfigForProduct method")
-//             },
-//         }
+// 		// make and configure a mocked ConfigReadWriter
+// 		mockedConfigReadWriter := &ConfigReadWriterMock{
+// 			GetBackupsSecretNameFunc: func() string {
+// 				panic("mock out the GetBackupsSecretName method")
+// 			},
+// 			GetGHOauthClientsSecretNameFunc: func() string {
+// 				panic("mock out the GetGHOauthClientsSecretName method")
+// 			},
+// 			GetOauthClientsSecretNameFunc: func() string {
+// 				panic("mock out the GetOauthClientsSecretName method")
+// 			},
+// 			GetOperatorNamespaceFunc: func() string {
+// 				panic("mock out the GetOperatorNamespace method")
+// 			},
+// 			ReadAMQOnlineFunc: func() (*AMQOnline, error) {
+// 				panic("mock out the ReadAMQOnline method")
+// 			},
+// 			ReadAMQStreamsFunc: func() (*AMQStreams, error) {
+// 				panic("mock out the ReadAMQStreams method")
+// 			},
+// 			ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
+// 				panic("mock out the ReadApicurioRegistry method")
+// 			},
+// 			ReadApicuritoFunc: func() (*Apicurito, error) {
+// 				panic("mock out the ReadApicurito method")
+// 			},
+// 			ReadCloudResourcesFunc: func() (*CloudResources, error) {
+// 				panic("mock out the ReadCloudResources method")
+// 			},
+// 			ReadCodeReadyFunc: func() (*CodeReady, error) {
+// 				panic("mock out the ReadCodeReady method")
+// 			},
+// 			ReadDataSyncFunc: func() (*DataSync, error) {
+// 				panic("mock out the ReadDataSync method")
+// 			},
+// 			ReadFuseFunc: func() (*Fuse, error) {
+// 				panic("mock out the ReadFuse method")
+// 			},
+// 			ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
+// 				panic("mock out the ReadFuseOnOpenshift method")
+// 			},
+// 			ReadGrafanaFunc: func() (*Grafana, error) {
+// 				panic("mock out the ReadGrafana method")
+// 			},
+// 			ReadMarin3rFunc: func() (*Marin3r, error) {
+// 				panic("mock out the ReadMarin3r method")
+// 			},
+// 			ReadMonitoringFunc: func() (*Monitoring, error) {
+// 				panic("mock out the ReadMonitoring method")
+// 			},
+// 			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
+// 				panic("mock out the ReadMonitoringSpec method")
+// 			},
+// 			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
+// 				panic("mock out the ReadProduct method")
+// 			},
+// 			ReadRHSSOFunc: func() (*RHSSO, error) {
+// 				panic("mock out the ReadRHSSO method")
+// 			},
+// 			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
+// 				panic("mock out the ReadRHSSOUser method")
+// 			},
+// 			ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
+// 				panic("mock out the ReadSolutionExplorer method")
+// 			},
+// 			ReadThreeScaleFunc: func() (*ThreeScale, error) {
+// 				panic("mock out the ReadThreeScale method")
+// 			},
+// 			ReadUpsFunc: func() (*Ups, error) {
+// 				panic("mock out the ReadUps method")
+// 			},
+// 			WriteConfigFunc: func(config ConfigReadable) error {
+// 				panic("mock out the WriteConfig method")
+// 			},
+// 			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
+// 				panic("mock out the readConfigForProduct method")
+// 			},
+// 		}
 //
-//         // use mockedConfigReadWriter in code that requires ConfigReadWriter
-//         // and then make assertions.
+// 		// use mockedConfigReadWriter in code that requires ConfigReadWriter
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type ConfigReadWriterMock struct {
 	// GetBackupsSecretNameFunc mocks the GetBackupsSecretName method.
 	GetBackupsSecretNameFunc func() string
@@ -152,7 +152,7 @@ type ConfigReadWriterMock struct {
 	ReadMonitoringSpecFunc func() (*MonitoringSpec, error)
 
 	// ReadProductFunc mocks the ReadProduct method.
-	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
+	ReadProductFunc func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
@@ -173,7 +173,7 @@ type ConfigReadWriterMock struct {
 	WriteConfigFunc func(config ConfigReadable) error
 
 	// readConfigForProductFunc mocks the readConfigForProduct method.
-	readConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
+	readConfigForProductFunc func(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -231,7 +231,7 @@ type ConfigReadWriterMock struct {
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
 			// Product is the product argument value.
-			Product v1alpha1.ProductName
+			Product integreatlyv1alpha1.ProductName
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -256,7 +256,7 @@ type ConfigReadWriterMock struct {
 		// readConfigForProduct holds details about calls to the readConfigForProduct method.
 		readConfigForProduct []struct {
 			// Product is the product argument value.
-			Product v1alpha1.ProductName
+			Product integreatlyv1alpha1.ProductName
 		}
 	}
 	lockGetBackupsSecretName        sync.RWMutex
@@ -729,12 +729,12 @@ func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
 }
 
 // ReadProduct calls ReadProductFunc.
-func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
+func (mock *ConfigReadWriterMock) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
 	if mock.ReadProductFunc == nil {
 		panic("ConfigReadWriterMock.ReadProductFunc: method is nil but ConfigReadWriter.ReadProduct was just called")
 	}
 	callInfo := struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}{
 		Product: product,
 	}
@@ -748,10 +748,10 @@ func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (Con
 // Check the length with:
 //     len(mockedConfigReadWriter.ReadProductCalls())
 func (mock *ConfigReadWriterMock) ReadProductCalls() []struct {
-	Product v1alpha1.ProductName
+	Product integreatlyv1alpha1.ProductName
 } {
 	var calls []struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}
 	mock.lockReadProduct.RLock()
 	calls = mock.calls.ReadProduct
@@ -921,12 +921,12 @@ func (mock *ConfigReadWriterMock) WriteConfigCalls() []struct {
 }
 
 // readConfigForProduct calls readConfigForProductFunc.
-func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
+func (mock *ConfigReadWriterMock) readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
 	if mock.readConfigForProductFunc == nil {
 		panic("ConfigReadWriterMock.readConfigForProductFunc: method is nil but ConfigReadWriter.readConfigForProduct was just called")
 	}
 	callInfo := struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}{
 		Product: product,
 	}
@@ -940,10 +940,10 @@ func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductN
 // Check the length with:
 //     len(mockedConfigReadWriter.readConfigForProductCalls())
 func (mock *ConfigReadWriterMock) readConfigForProductCalls() []struct {
-	Product v1alpha1.ProductName
+	Product integreatlyv1alpha1.ProductName
 } {
 	var calls []struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}
 	mock.lockreadConfigForProduct.RLock()
 	calls = mock.calls.readConfigForProduct

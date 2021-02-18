@@ -2,8 +2,8 @@ package common
 
 import (
 	"context"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -81,7 +81,7 @@ func managedApiSubscriptionsToCheck() []SubscriptionCheck {
 	}
 }
 
-func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
+func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {

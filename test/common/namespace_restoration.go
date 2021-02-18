@@ -2,17 +2,18 @@ package common
 
 import (
 	goctx "context"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"testing"
-	"time"
 )
 
 const (
@@ -115,7 +116,7 @@ var (
 	}
 )
 
-func TestNamespaceRestoration(t *testing.T, ctx *TestingContext) {
+func TestNamespaceRestoration(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
 
 	if err != nil {
@@ -168,7 +169,7 @@ func TestNamespaceRestoration(t *testing.T, ctx *TestingContext) {
 }
 
 // Wait for the product stage to be a specific status
-func waitForProductStageStatusInRHMI(t *testing.T, ctx *TestingContext, stage integreatlyv1alpha1.StageName, status integreatlyv1alpha1.StatusPhase) error {
+func waitForProductStageStatusInRHMI(t TestingTB, ctx *TestingContext, stage integreatlyv1alpha1.StageName, status integreatlyv1alpha1.StatusPhase) error {
 	err := wait.Poll(stageRetryInterval, stageRestorationTimeOut, func() (done bool, err error) {
 		rhmi, err := GetRHMI(ctx.Client, true)
 		if err != nil {

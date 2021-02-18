@@ -3,9 +3,10 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
-	"strconv"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -17,9 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	marin3roperator "github.com/3scale/marin3r/apis/operator/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -261,12 +261,12 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 
 	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
-		if productsStage, ok := installation.Status.Stages[v1alpha1.ProductsStage]; ok {
+		if productsStage, ok := installation.Status.Stages[integreatlyv1alpha1.ProductsStage]; ok {
 			if productsStage.Products != nil {
-				grafanaProduct, grafanaProductExists := productsStage.Products[v1alpha1.ProductGrafana]
+				grafanaProduct, grafanaProductExists := productsStage.Products[integreatlyv1alpha1.ProductGrafana]
 				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
 				if !grafanaProductExists ||
-					(grafanaProduct.Status != v1alpha1.PhaseCompleted &&
+					(grafanaProduct.Status != integreatlyv1alpha1.PhaseCompleted &&
 						(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
 
 					r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
@@ -360,17 +360,16 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
 	}
 
-	enabledNamespaces := []string{threescaleConfig.GetNamespace()}
-	discoveryService := &marin3r.DiscoveryService{
+	discoveryService := &marin3roperator.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: discoveryServiceName,
+			Name:      discoveryServiceName,
+			Namespace: threescaleConfig.GetNamespace(),
 		},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, discoveryService, func() error {
-		discoveryService.Spec.DiscoveryServiceNamespace = productNamespace
-		discoveryService.Spec.EnabledNamespaces = enabledNamespaces
-		discoveryService.Spec.Image = fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
+		image := fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
+		discoveryService.Spec.Image = &image
 		return nil
 	})
 	if err != nil {
@@ -383,9 +382,15 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 }
 
 func (r *Reconciler) deleteDiscoveryService(ctx context.Context, client k8sclient.Client) error {
-	discoveryService := &marin3r.DiscoveryService{}
+	threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+	if err != nil {
+		return errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
+	}
+
+	discoveryService := &marin3roperator.DiscoveryService{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{
-		Name: discoveryServiceName,
+		Name:      discoveryServiceName,
+		Namespace: threescaleConfig.GetNamespace(),
 	}, discoveryService); err != nil {
 		if k8serr.IsNotFound(err) {
 			return nil

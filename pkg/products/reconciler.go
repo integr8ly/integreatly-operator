@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
@@ -13,7 +14,7 @@ import (
 
 	"net/http"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqstreams"
 	"github.com/integr8ly/integreatly-operator/pkg/products/apicurioregistry"

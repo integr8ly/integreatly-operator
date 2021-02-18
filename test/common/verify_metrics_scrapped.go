@@ -3,9 +3,9 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"testing"
 )
 
 func mangedApiTargets() map[string][]string {
@@ -17,7 +17,7 @@ func mangedApiTargets() map[string][]string {
 	}
 }
 
-func TestMetricsScrappedByPrometheus(t *testing.T, ctx *TestingContext) {
+func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("curl localhost:9090/api/v1/targets?state=active",
 		"prometheus-application-monitoring-0",

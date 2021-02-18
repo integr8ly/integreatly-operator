@@ -1,67 +1,78 @@
 package functional
 
 import (
+	"fmt"
 	"os"
-	"testing"
-
-	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
-	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	. "github.com/onsi/ginkgo"
 )
 
-func TestIntegreatly(t *testing.T) {
-	config, err := runtimeConfig.GetConfig()
-	config.Impersonate = rest.ImpersonationConfig{
-		UserName: "system:admin",
-		Groups:   []string{"system:authenticated"},
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	installType, err := common.GetInstallType(config)
-	if err != nil {
-		t.Fatalf("failed to get install type, err: %s, %v", installType, err)
-	}
-	t.Run("Integreatly Happy Path Tests", func(t *testing.T) {
+var _ = Describe("integreatly", func() {
 
-		// running ALL_TESTS test cases
-		common.RunTestCases(common.ALL_TESTS, t, config)
+	var (
+		restConfig = cfg
+		t          = GinkgoT()
+	)
 
-		// get happy path test cases according to the install type
-		happyPathTestCases := common.GetHappyPathTestCases(installType)
-
-		// running HAPPY_PATH_TESTS tests cases
-		common.RunTestCases(happyPathTestCases, t, config)
-
-		// running functional tests
-		common.RunTestCases(FUNCTIONAL_TESTS, t, config)
+	BeforeEach(func() {
+		restConfig = cfg
+		t = GinkgoT()
 	})
 
-	t.Run("Integreatly IDP Based Tests", func(t *testing.T) {
+	RunTests := func() {
 
-		// get IDP test cases according to the install type
-		idpTestCases := common.GetIDPBasedTestCases(installType)
+		// get all automated tests
+		tests := []common.Tests{
+			{
+				Type:      "ALL TESTS",
+				TestCases: common.ALL_TESTS,
+			},
+			{
+				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
+				TestCases: common.GetHappyPathTestCases(installType),
+			},
+			{
+				Type:      fmt.Sprintf("%s IDP BASED", installType),
+				TestCases: common.GetIDPBasedTestCases(installType),
+			},
+			{
+				Type:      fmt.Sprintf("%s Functional", installType),
+				TestCases: FUNCTIONAL_TESTS,
+			},
+		}
 
-		// running IDP Based test cases
-		common.RunTestCases(idpTestCases, t, config)
-	})
-
-	t.Run("API Managed Multi-AZ Tests", func(t *testing.T) {
-		// Do not execute these tests unless MULTIAZ is set to true
 		if os.Getenv("MULTIAZ") != "true" {
-			t.Skip("Skipping Multi-AZ tests as MULTIAZ env var is not set to true")
+			tests = append(tests, common.Tests{
+				Type:      fmt.Sprintf("%s Multi AZ", installType),
+				TestCases: MULTIAZ_TESTS,
+			})
 		}
 
-		common.RunTestCases(MULTIAZ_TESTS, t, config)
-	})
-
-	t.Run("Integreatly Destructive Tests", func(t *testing.T) {
-		// Do not execute these tests unless DESTRUCTIVE is set to true
-		if os.Getenv("DESTRUCTIVE") != "true" {
-			t.Skip("Skipping Destructive tests as DESTRUCTIVE env var is not set to true")
+		if os.Getenv("DESTRUCTIVE") == "true" {
+			tests = append(tests, common.Tests{
+				Type:      "Destructive Tests",
+				TestCases: common.DESTRUCTIVE_TESTS,
+			})
 		}
 
-		common.RunTestCases(common.DESTRUCTIVE_TESTS, t, config)
-	})
-}
+		for _, test := range tests {
+			Context(test.Type, func() {
+				for _, testCase := range test.TestCases {
+					currentTest := testCase
+					It(currentTest.Description, func() {
+						testingContext, err := common.NewTestingContext(restConfig)
+						if err != nil {
+							t.Fatal("failed to create testing context", err)
+						}
+						currentTest.Test(t, testingContext)
+					})
+				}
+			})
+		}
+
+	}
+
+	RunTests()
+
+})

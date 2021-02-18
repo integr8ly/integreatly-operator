@@ -1,0 +1,3 @@
+resources:
+- sku-limits-configmap.yaml
+- cro-configmaps.yaml

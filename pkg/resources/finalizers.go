@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -31,7 +32,7 @@ func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8
 
 // RemoveOauthClient deletes an oauth client by name
 func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string, log l.Logger) error {
-	err := oauthClient.OAuthClients().Delete(oauthClientName, &metav1.DeleteOptions{})
+	err := oauthClient.OAuthClients().Delete(context.TODO(), oauthClientName, metav1.DeleteOptions{})
 	if err != nil && !k8serr.IsNotFound(err) {
 		log.Error("Error cleaning up oauth client", err)
 		return err

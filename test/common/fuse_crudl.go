@@ -3,9 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 )
 
@@ -14,7 +13,7 @@ var (
 	fuseLoginPassword = DefaultPassword
 )
 
-func loginOpenshift(t *testing.T, ctx *TestingContext, masterUrl, username, password, namespacePrefix string) error {
+func loginOpenshift(t TestingTB, ctx *TestingContext, masterUrl, username, password, namespacePrefix string) error {
 	authUrl := fmt.Sprintf("%s/auth/login", masterUrl)
 
 	if err := resources.DoAuthOpenshiftUser(authUrl, username, password, ctx.HttpClient, "testing-idp", t); err != nil {
@@ -30,7 +29,7 @@ func loginOpenshift(t *testing.T, ctx *TestingContext, masterUrl, username, pass
 
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
-func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
+func TestFuseCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}

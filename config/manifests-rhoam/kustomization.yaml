@@ -1,0 +1,4 @@
+resources:
+- ../redhat-rhoam
+- ../samples
+- ../scorecard

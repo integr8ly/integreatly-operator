@@ -2,10 +2,9 @@ package common
 
 import (
 	"context"
-	"testing"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"k8s.io/apimachinery/pkg/types"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +17,7 @@ var (
 )
 
 // TestApicurioRegistryAPI tests the ApicurioRegistry API
-func TestApicurioRegistryAPI(t *testing.T, ctx *TestingContext) {
+func TestApicurioRegistryAPI(t TestingTB, ctx *TestingContext) {
 	host, err := getHost(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting ApicurioRegistry CR: %v", err)

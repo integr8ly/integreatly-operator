@@ -3,15 +3,15 @@ package functional
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
-	"time"
 )
 
 /*
@@ -48,7 +48,7 @@ var strategyTestCases = []strategytestCase{
 }
 
 // tests e2e cro strategy override
-func CROStrategyOverrideAWSResourceTest(t *testing.T, testingContext *common.TestingContext) {
+func CROStrategyOverrideAWSResourceTest(t common.TestingTB, testingContext *common.TestingContext) {
 	ctx := context.TODO()
 	var testErrors []string
 

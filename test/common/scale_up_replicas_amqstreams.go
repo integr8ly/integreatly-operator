@@ -4,10 +4,9 @@ import (
 	goctx "context"
 	"fmt"
 	"strconv"
-	"testing"
 	"time"
 
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +23,7 @@ var (
 	timeoutAmqstreams           = time.Minute * 7
 )
 
-func TestReplicasInAmqstreams(t *testing.T, ctx *TestingContext) {
+func TestReplicasInAmqstreams(t TestingTB, ctx *TestingContext) {
 
 	amqstreams, err := getAmqstreams(ctx.Client)
 	if err != nil {
@@ -68,7 +67,7 @@ func getAmqstreams(dynClient k8sclient.Client) (kafkav1alpha1.Kafka, error) {
 	return *amqstreams, nil
 }
 
-func updateAmqstreams(dynClient k8sclient.Client, replicas int, t *testing.T) (kafkav1alpha1.Kafka, error) {
+func updateAmqstreams(dynClient k8sclient.Client, replicas int, t TestingTB) (kafkav1alpha1.Kafka, error) {
 
 	amqstreams, err := getAmqstreams(dynClient)
 
@@ -120,7 +119,7 @@ func updateAmqstreams(dynClient k8sclient.Client, replicas int, t *testing.T) (k
 	return amqstreams, nil
 }
 
-func checkNumberOfReplicasAgainstValueAmqstreams(amqstreams kafkav1alpha1.Kafka, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t *testing.T) error {
+func checkNumberOfReplicasAgainstValueAmqstreams(amqstreams kafkav1alpha1.Kafka, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t TestingTB) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		amqstreams, err = getAmqstreams(ctx.Client)
 		if err != nil {

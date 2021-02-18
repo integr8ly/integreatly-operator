@@ -1,0 +1,4 @@
+resources:
+- ../redhat-rhmi
+- ../samples
+- ../scorecard

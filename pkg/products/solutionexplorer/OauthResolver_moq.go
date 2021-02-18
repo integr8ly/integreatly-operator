@@ -14,19 +14,19 @@ var _ OauthResolver = &OauthResolverMock{}
 
 // OauthResolverMock is a mock implementation of OauthResolver.
 //
-//     func TestSomethingThatUsesOauthResolver(t *testing.T) {
+// 	func TestSomethingThatUsesOauthResolver(t *testing.T) {
 //
-//         // make and configure a mocked OauthResolver
-//         mockedOauthResolver := &OauthResolverMock{
-//             GetOauthEndPointFunc: func() (*resources.OauthServerConfig, error) {
-// 	               panic("mock out the GetOauthEndPoint method")
-//             },
-//         }
+// 		// make and configure a mocked OauthResolver
+// 		mockedOauthResolver := &OauthResolverMock{
+// 			GetOauthEndPointFunc: func() (*resources.OauthServerConfig, error) {
+// 				panic("mock out the GetOauthEndPoint method")
+// 			},
+// 		}
 //
-//         // use mockedOauthResolver in code that requires OauthResolver
-//         // and then make assertions.
+// 		// use mockedOauthResolver in code that requires OauthResolver
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type OauthResolverMock struct {
 	// GetOauthEndPointFunc mocks the GetOauthEndPoint method.
 	GetOauthEndPointFunc func() (*resources.OauthServerConfig, error)

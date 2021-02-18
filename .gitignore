@@ -9,7 +9,7 @@ perf-test-end-time.txt
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
 tmp/_output/bin/managed-api-service
-cmd/manager/debug
+debug
 build/_output
 build/_test
 test-results
@@ -69,6 +69,7 @@ anaconda-mode/
 *.dll
 *.so
 *.dylib
+/bin
 # Test binary, build with 'go test -c'
 *.test
 # Output of the go coverage tool, specifically when used with LiteIDE
@@ -87,8 +88,7 @@ tags
 ### VisualStudioCode ###
 .vscode/*
 .history
-# End of https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
-deploy/integreatly-rhmi-cr.yml
+config/samples/integreatly-rhmi-cr.yml
 #ocm generated templates
 ocm/
 htpasswd
@@ -97,22 +97,9 @@ htpasswd
 scripts/jenkins/build.json
 scripts/jenkins/report.txt
 
-# CRDs that get generated because of our odd duplicated type stuff in
-# pkg/apis. We should really not have those in pkg/apis, and instead
-# depend on them as Go modules.
-deploy/crds/apicur.io_apicuritoes_crd.yaml
-deploy/crds/enmasse.io_addresses_crd.yaml
-deploy/crds/enmasse.io_addressplans_crd.yaml
-deploy/crds/enmasse.io_addressspaces_crd.yaml
-deploy/crds/integreatly.org_webapps_crd.yaml
-deploy/crds/kafka.strimzi.io_kafkas_crd.yaml
-deploy/crds/enmasse.io_addressspaceplans_crd.yaml
-deploy/crds/admin.enmasse.io_consoleservices_crd.yaml
-deploy/crds/admin.enmasse.io_brokeredinfraconfigs_crd.yaml
-deploy/crds/admin.enmasse.io_standardinfraconfigs_crd.yaml
-deploy/crds/admin.enmasse.io_authenticationservices_crd.yaml
-deploy/crds/applicationmonitoring.integreatly.org_blackboxtargets_crd.yaml
-deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
-
 # persisted oc resources on some test failures
 test/*.json
+
+# Kubernetes Generated files - skip generated files, except for vendored files
+
+!vendor/**/zz_generated.*

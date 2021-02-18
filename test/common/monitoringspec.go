@@ -2,8 +2,8 @@ package common
 
 import (
 	goctx "context"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -55,7 +55,7 @@ func getServiceMonitorsByType(monitorsType string) []string {
 // Verifies the list of servicemonitors that are cloned in monitoring namespace
 // Verifies the rolebindings exist
 // Verifies if there are any stale service monitors in the monitoring namespace
-func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingContext) {
+func TestServiceMonitorsCloneAndRolebindingsExist(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)

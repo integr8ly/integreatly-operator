@@ -8,10 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
@@ -32,7 +31,7 @@ const (
 	threeScaleOnboardingURI    = "p/admin/onboarding/wizard/intro"
 )
 
-func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
+func TestAuthDelayFirstBrokerLogin(t TestingTB, ctx *TestingContext) {
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
@@ -67,7 +66,6 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 
 	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
-		dumpAuthResources(ctx.Client, t)
 		// t.Fatalf("[%s] error logging in to three scale: %v ", getTimeStampPrefix(), err)
 		t.Skipf("[%s] error logging in to three scale: %v Jira https://issues.redhat.com/browse/MGDAPI-525", getTimeStampPrefix(), err)
 	}
@@ -125,7 +123,7 @@ func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client
 	return nil
 }
 
-func loginToThreeScale(t *testing.T, tsHost, username, password string, idp string, client *http.Client) error {
+func loginToThreeScale(t TestingTB, tsHost, username, password string, idp string, client *http.Client) error {
 
 	// const variable to validate authentication
 	const (

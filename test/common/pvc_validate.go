@@ -3,8 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,7 +51,7 @@ func commonPvcNamespaces() []PersistentVolumeClaim {
 	}
 }
 
-func TestPVClaims(t *testing.T, ctx *TestingContext) {
+func TestPVClaims(t TestingTB, ctx *TestingContext) {
 
 	//get full list of volume claim items
 	pvcs := &corev1.PersistentVolumeClaimList{}

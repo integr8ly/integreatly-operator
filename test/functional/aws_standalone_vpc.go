@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -140,7 +139,7 @@ func (e *networkConfigTestError) hasError() bool {
 
 // TestStandaloneVPCExists tests that the cloud resource operator network components
 // have been correctly set up and configured
-func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
+func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingContext) {
 	ctx := context.TODO()
 	testErrors := &networkConfigTestError{}
 

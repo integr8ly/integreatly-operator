@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	marin3rv1alpha "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	marin3rv1alpha "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
@@ -46,7 +46,7 @@ import (
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -754,8 +754,9 @@ func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, r.installation)
+		serialization := "yaml"
 		envoyconfig.Spec.NodeID = apicastRatelimiting
-		envoyconfig.Spec.Serialization = "yaml"
+		envoyconfig.Spec.Serialization = &serialization
 		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha.EnvoyResources{
 			Clusters: []marin3rv1alpha.EnvoyResource{
 				{
@@ -869,12 +870,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		}
 
 		if smtpUpdated {
-			err = r.RolloutDeployment("system-app")
+			err = r.RolloutDeployment(ctx, "system-app")
 			if err != nil {
 				r.log.Error("Rollout system-app deployment", err)
 			}
 
-			err = r.RolloutDeployment("system-sidekiq")
+			err = r.RolloutDeployment(ctx, "system-sidekiq")
 			if err != nil {
 				r.log.Error("Rollout system-sidekiq deployment", err)
 			}
@@ -1644,13 +1645,13 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	}
 
 	if status != controllerutil.OperationResultNone {
-		err = r.RolloutDeployment("system-app")
+		err = r.RolloutDeployment(ctx, "system-app")
 		if err != nil {
 			r.log.Error("Failed to rollout deployment (system-app)", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 
-		err = r.RolloutDeployment("system-sidekiq")
+		err = r.RolloutDeployment(ctx, "system-sidekiq")
 		if err != nil {
 			r.log.Error("Failed to rollout deployment (system-sidekiq)", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
@@ -1797,12 +1798,12 @@ func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient k8sclient.C
 	return &accessToken, nil
 }
 
-func (r *Reconciler) RolloutDeployment(name string) error {
-	_, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Instantiate(name, &appsv1.DeploymentRequest{
+func (r *Reconciler) RolloutDeployment(ctx context.Context, name string) error {
+	_, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Instantiate(ctx, name, &appsv1.DeploymentRequest{
 		Name:   name,
 		Force:  true,
 		Latest: true,
-	})
+	}, metav1.CreateOptions{})
 
 	return err
 }
@@ -1856,6 +1857,8 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 }
 
 func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.KeycloakClientSpec {
+	fullScopeAllowed := true
+
 	return keycloak.KeycloakClientSpec{
 		RealmSelector: &metav1.LabelSelector{
 			MatchLabels: rhsso.GetInstanceLabels(),
@@ -1871,7 +1874,7 @@ func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.Key
 			},
 			StandardFlowEnabled: true,
 			RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
-			FullScopeAllowed:    true,
+			FullScopeAllowed:    &fullScopeAllowed,
 			Access: map[string]bool{
 				"view":      true,
 				"configure": true,

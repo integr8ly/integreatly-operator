@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +47,7 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
+func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
 
 	// checks if the IDP is created already
 	if hasIDPCreated(ctx, client, t) {
@@ -442,6 +441,7 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) e
 
 // creates keycloak client
 func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName string) error {
+	fullScopeAllowed := true
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakClientName,
@@ -473,7 +473,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 				},
 				StandardFlowEnabled:       true,
 				DirectAccessGrantsEnabled: true,
-				FullScopeAllowed:          true,
+				FullScopeAllowed:          &fullScopeAllowed,
 				ProtocolMappers: []v1alpha1.KeycloakProtocolMapper{
 					{
 						Config: map[string]string{
@@ -668,7 +668,7 @@ func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) erro
 	return nil
 }
 
-func hasIDPCreated(ctx context.Context, client dynclient.Client, t *testing.T) bool {
+func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB) bool {
 	clusterOauth := &configv1.OAuth{}
 	if err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
 		t.Logf("error occurred while getting cluster oauth: %w", err)

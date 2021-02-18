@@ -19,6 +19,7 @@ const (
 	PostgresqlUsername                   = ApplicationName
 	PostgresqlPasswordLength             = 32
 	PostgresqlPersistentVolumeCapacity   = "1Gi"
+	PostgresqlPersistentVolumeMountPath  = "/var/lib/pgsql/data"
 	DatabaseSecretUsernameProperty       = "POSTGRES_USERNAME" // nolint
 	DatabaseSecretPasswordProperty       = "POSTGRES_PASSWORD" // nolint
 	// Required by the Integreately Backup Image
@@ -31,8 +32,8 @@ const (
 	DatabaseSecretExternalPortProperty    = "POSTGRES_EXTERNAL_PORT"    // nolint
 	KeycloakServicePort                   = 8443
 	PostgresDefaultPort                   = 5432
-	AdminUsernameProperty                 = "ADMIN_USERNAME"        // nolint
-	AdminPasswordProperty                 = "ADMIN_PASSWORD"        // nolint
+	AdminUsernameProperty                 = "ADMIN_USERNAME"
+	AdminPasswordProperty                 = "ADMIN_PASSWORD"
 	ServingCertSecretName                 = "sso-x509-https-secret" // nolint
 	LivenessProbeProperty                 = "liveness_probe.sh"
 	ReadinessProbeProperty                = "readiness_probe.sh"
@@ -40,13 +41,13 @@ const (
 	IngressDefaultHost                    = "keycloak.local"
 	PostgresqlBackupServiceAccountName    = "keycloak-operator"
 	KeycloakExtensionEnvVar               = "KEYCLOAK_EXTENSIONS"
-	KeycloakExtensionPath                 = "/opt/jboss/keycloak/providers"
+	KeycloakExtensionPath                 = "/opt/jboss/keycloak/standalone/deployments"
 	KeycloakExtensionsInitContainerPath   = "/opt/extensions"
-	RhssoExtensionPath                    = "/opt/eap/providers"
+	RhssoExtensionPath                    = "/opt/eap/standalone/deployments"
 	ClientSecretName                      = ApplicationName + "-client-secret"
 	ClientSecretClientIDProperty          = "CLIENT_ID"
 	ClientSecretClientSecretProperty      = "CLIENT_SECRET"
 	MaxUnavailableNumberOfPods            = 1
-	PodMonitorName                        = ApplicationName + "-pod-monitor"
 	ServiceMonitorName                    = ApplicationName + "-service-monitor"
+	MigrateBackupName                     = "migrate-backup"
 )

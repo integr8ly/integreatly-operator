@@ -1,21 +1,19 @@
 package osde2e
 
 import (
+	"context"
 	goctx "context"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,7 +27,7 @@ var (
 )
 
 //PreTest This tests if an installation of Managed-API was finished and is successful
-func PreTest(t *testing.T, ctx *common.TestingContext) {
+func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 	err := wait.Poll(time.Second*15, time.Minute*40, func() (done bool, err error) {
 
 		rhmi, err := getRHMI(ctx.Client)
@@ -53,7 +51,7 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 				Resource("rhmis").
 				Name("rhoam").
 				Namespace(common.RHMIOperatorNamespace).
-				RequestURI("/apis/integreatly.org/v1alpha1").Body(rhmiCRBytes).Do()
+				RequestURI("/apis/integreatly.org/v1alpha1").Body(rhmiCRBytes).Do(context.TODO())
 			_, err := request.Raw()
 
 			if err != nil {
@@ -132,10 +130,7 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 
 func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
-	watchNS, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get watch namespace from getRHMI function")
-	}
+	watchNS := common.GetNamespacePrefix()
 	nsSegments := strings.Split(watchNS, "-")
 	crName := nsSegments[1]
 	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: crName, Namespace: common.RHMIOperatorNamespace}, rhmi); err != nil {

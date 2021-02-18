@@ -420,9 +420,9 @@ func (p *BlobStorageProvider) reconcileBucketCreate(ctx context.Context, bs *v1a
 	// foundBucket == nil at this point, so if the CR already has a resourceIdentifier
 	// annotation, then we expect it to be there. We shouldn't create it again, it will require
 	// manual intervention to restore from a backup.
-	if annotations.Has(bs, resourceIdentifierAnnotation) {
+	if annotations.Has(bs, ResourceIdentifierAnnotation) {
 		errMsg := fmt.Sprintf("BlobStorage CR %s in %s namespace has %s annotation with value %s, but no corresponding S3 Bucket was found",
-			bs.Name, bs.Namespace, resourceIdentifierAnnotation, bs.ObjectMeta.Annotations[resourceIdentifierAnnotation])
+			bs.Name, bs.Namespace, ResourceIdentifierAnnotation, bs.ObjectMeta.Annotations[ResourceIdentifierAnnotation])
 		return croType.StatusMessage(errMsg), fmt.Errorf(errMsg)
 	}
 
@@ -434,7 +434,7 @@ func (p *BlobStorageProvider) reconcileBucketCreate(ctx context.Context, bs *v1a
 		return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
 	}
 
-	annotations.Add(bs, resourceIdentifierAnnotation, *bucketCfg.Bucket)
+	annotations.Add(bs, ResourceIdentifierAnnotation, *bucketCfg.Bucket)
 	if err := p.Client.Update(ctx, bs); err != nil {
 		errMsg := "failed to add annotation"
 		return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)

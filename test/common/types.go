@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"testing"
 
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -18,6 +16,8 @@ import (
 
 var (
 	NamespacePrefix                   = GetNamespacePrefix()
+	OpenShiftConsoleRoute             = "console"
+	OpenShiftConsoleNamespace         = "openshift-console"
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
@@ -45,8 +45,6 @@ var (
 	Marin3rOperatorNamespace          = NamespacePrefix + "marin3r-operator"
 	Marin3rProductNamespace           = NamespacePrefix + "marin3r"
 	CustomerGrafanaNamespace          = NamespacePrefix + "customer-monitoring-operator"
-	OpenShiftConsoleRoute             = "console"
-	OpenShiftConsoleNamespace         = "openshift-console"
 )
 
 type TestingContext struct {
@@ -60,12 +58,17 @@ type TestingContext struct {
 
 type TestCase struct {
 	Description string
-	Test        func(t *testing.T, ctx *TestingContext)
+	Test        func(t TestingTB, ctx *TestingContext)
 }
 
 type TestSuite struct {
 	TestCases   []TestCase
-	InstallType []integreatlyv1alpha1.InstallationType
+	InstallType []rhmiv1alpha1.InstallationType
+}
+
+type Tests struct {
+	Type      string
+	TestCases []TestCase
 }
 
 type prometheusAPIResponse struct {
@@ -76,15 +79,39 @@ type prometheusAPIResponse struct {
 	Warnings  []string               `json:"warnings,omitempty"`
 }
 
-type Namespace struct {
-	Name                     string
-	Products                 []Product
-	PodDisruptionBudgetNames []string
+type TestingTB interface {
+	Fail()
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	FailNow()
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
+	Failed() bool
+	Parallel()
+	Skip(args ...interface{})
+	Skipf(format string, args ...interface{})
+	SkipNow()
+	Skipped() bool
 }
 
-type Product struct {
-	Name             string
-	ExpectedReplicas int32
+type SubscriptionCheck struct {
+	Name      string
+	Namespace string
+}
+
+func GetNamespacePrefix() string {
+	ns, err := resources.GetWatchNamespace()
+	if err != nil {
+		return ""
+	}
+	return strings.Join(strings.Split(ns, "-")[0:2], "-") + "-"
+
+}
+
+func GetPrefixedNamespace(subNS string) string {
+	return NamespacePrefix + subNS
 }
 
 // ExpectedRoute contains the data of a route that is expected to be found
@@ -103,11 +130,6 @@ type ExpectedRoute struct {
 	IsGeneratedName bool
 }
 
-type SubscriptionCheck struct {
-	Name      string
-	Namespace string
-}
-
 type PersistentVolumeClaim struct {
 	Namespace                  string
 	PersistentVolumeClaimNames []string
@@ -118,20 +140,18 @@ type StatefulSets struct {
 	Name      string
 }
 
+type Namespace struct {
+	Name                     string
+	Products                 []Product
+	PodDisruptionBudgetNames []string
+}
+
+type Product struct {
+	Name             string
+	ExpectedReplicas int32
+}
+
 type DeploymentConfigs struct {
 	Namespace string
 	Name      string
-}
-
-func GetNamespacePrefix() string {
-	ns, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return ""
-	}
-	return strings.Join(strings.Split(ns, "-")[0:2], "-") + "-"
-
-}
-
-func GetPrefixedNamespace(subNS string) string {
-	return NamespacePrefix + subNS
 }

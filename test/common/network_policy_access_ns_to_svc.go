@@ -4,7 +4,6 @@ import (
 	goctx "context"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -28,7 +27,7 @@ var (
 	podEndpoitResponse  = "success"
 )
 
-func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
+func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 	dedicatedAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {

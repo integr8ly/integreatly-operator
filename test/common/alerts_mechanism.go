@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -46,7 +45,7 @@ var threescaleAlertsToTest = map[string]string{
 }
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
-func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 
 	originalOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)
 	if err != nil {
@@ -103,7 +102,7 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 
 func verifySecrets(kubeClient kubernetes.Interface) error {
 	var pagerdutyKey, dmsURL string
-	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
+	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -115,7 +114,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("url is undefined in dead mans snitch secret")
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"pagerduty", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"pagerduty", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -128,13 +127,13 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("secret key is undefined in pager duty secret")
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"smtp", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"smtp", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
 	smtp := res.Data
 
-	res, err = kubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).Get("alertmanager-application-monitoring", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -174,7 +173,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 	return nil
 }
 
-func performTest(t *testing.T, ctx *TestingContext, originalOperatorReplicas int32) error {
+func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32) error {
 	originalUIReplicas, err := getNumOfReplicasDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, ctx.Client)
 	if err != nil {
 		t.Errorf("failed to get number of replicas: %s", err)
@@ -208,7 +207,7 @@ func performTest(t *testing.T, ctx *TestingContext, originalOperatorReplicas int
 	return err
 }
 
-func checkAlertManager(ctx *TestingContext, t *testing.T) error {
+func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
 		"alertmanager-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -244,7 +243,7 @@ func repeat(function repeatFunc, quit chan struct{}) {
 	}
 }
 
-func waitForThreescaleAlertState(expectedState string, ctx *TestingContext, t *testing.T) error {
+func waitForThreescaleAlertState(expectedState string, ctx *TestingContext, t TestingTB) error {
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		err = getThreescaleAlertState(ctx)
 		if err != nil {
@@ -314,7 +313,7 @@ func getThreescaleAlertState(ctx *TestingContext) error {
 func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (int32, error) {
 	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
 
-	result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
+	result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})
 	if getErr != nil {
 		return 0, fmt.Errorf("failed to get latest version of Deployment: %v", getErr)
 	}
@@ -341,13 +340,13 @@ func scaleDeployment(name string, replicas int32, kubeClient kubernetes.Interfac
 	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
+		result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get latest version of Deployment: %v", getErr)
 		}
 
 		result.Spec.Replicas = &replicas
-		_, updateErr := deploymentsClient.Update(result)
+		_, updateErr := deploymentsClient.Update(goctx.TODO(), result, metav1.UpdateOptions{})
 		return updateErr
 	})
 	if retryErr != nil {
@@ -381,7 +380,7 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 	return nil
 }
 
-func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t *testing.T, originalOperatorReplicas int32) error {
+func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, originalOperatorReplicas int32) error {
 	t.Logf("Checking correct number of threescale operator replicas (%d) are set", originalOperatorReplicas)
 	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
 		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)

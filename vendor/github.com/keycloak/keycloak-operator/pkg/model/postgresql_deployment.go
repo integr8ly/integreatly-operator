@@ -4,10 +4,37 @@ import (
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v13 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+func getPostgresResources(cr *v1alpha1.Keycloak) v1.ResourceRequirements {
+	requirements := v1.ResourceRequirements{}
+	requirements.Limits = v1.ResourceList{}
+	requirements.Requests = v1.ResourceList{}
+
+	cpu, err := resource.ParseQuantity(cr.Spec.PostgresDeploymentSpec.Resources.Requests.Cpu().String())
+	if err == nil && cpu.String() != "0" {
+		requirements.Requests[v1.ResourceCPU] = cpu
+	}
+	memory, err := resource.ParseQuantity(cr.Spec.PostgresDeploymentSpec.Resources.Requests.Memory().String())
+	if err == nil && memory.String() != "0" {
+		requirements.Requests[v1.ResourceMemory] = memory
+	}
+
+	cpu, err = resource.ParseQuantity(cr.Spec.PostgresDeploymentSpec.Resources.Limits.Cpu().String())
+	if err == nil && cpu.String() != "0" {
+		requirements.Limits[v1.ResourceCPU] = cpu
+	}
+	memory, err = resource.ParseQuantity(cr.Spec.PostgresDeploymentSpec.Resources.Limits.Memory().String())
+	if err == nil && memory.String() != "0" {
+		requirements.Limits[v1.ResourceMemory] = memory
+	}
+	return requirements
+}
 
 func PostgresqlDeployment(cr *v1alpha1.Keycloak) *v13.Deployment {
 	return &v13.Deployment{
@@ -36,6 +63,26 @@ func PostgresqlDeployment(cr *v1alpha1.Keycloak) *v13.Deployment {
 					},
 				},
 				Spec: v1.PodSpec{
+					InitContainers: []v1.Container{
+						{
+							Name:  "init-pvc",
+							Image: Images.Images[PostgresqlImage],
+							SecurityContext: &v1.SecurityContext{
+								RunAsUser: pointer.Int64Ptr(0),
+							},
+							Command: []string{
+								"sh",
+								"-c",
+								"chown -R postgres:postgres " + PostgresqlPersistentVolumeMountPath,
+							},
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      PostgresqlPersistentVolumeName,
+									MountPath: PostgresqlPersistentVolumeMountPath,
+								},
+							},
+						},
+					},
 					Containers: []v1.Container{
 						{
 							Name:  PostgresqlDeploymentName,
@@ -99,9 +146,10 @@ func PostgresqlDeployment(cr *v1alpha1.Keycloak) *v13.Deployment {
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      PostgresqlPersistentVolumeName,
-									MountPath: "/var/lib/pgsql/data",
+									MountPath: PostgresqlPersistentVolumeMountPath,
 								},
 							},
+							Resources: getPostgresResources(cr),
 						},
 					},
 					Volumes: []v1.Volume{
@@ -199,9 +247,10 @@ func PostgresqlDeploymentReconciled(cr *v1alpha1.Keycloak, currentState *v13.Dep
 			VolumeMounts: []v1.VolumeMount{
 				{
 					Name:      PostgresqlPersistentVolumeName,
-					MountPath: "/var/lib/postgresql/data",
+					MountPath: PostgresqlPersistentVolumeMountPath,
 				},
 			},
+			Resources: getPostgresResources(cr),
 		},
 	}
 	reconciled.Spec.Template.Spec.Volumes = []v1.Volume{

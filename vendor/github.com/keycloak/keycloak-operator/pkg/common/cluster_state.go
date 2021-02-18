@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"time"
 
 	v1beta12 "k8s.io/api/policy/v1beta1"
 
@@ -10,14 +11,23 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	kc "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/keycloak/keycloak-operator/pkg/model"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// BackupTime is used for generating a unique Backup job name
+var BackupTime string
+
+func init() {
+	BackupTime = time.Now().Format("20060102-150405")
+}
 
 // The desired cluster state is defined by a list of actions that have to be run to
 // get from the current state to the desired state
@@ -39,7 +49,6 @@ func (d *DesiredClusterState) AddActions(actions []ClusterAction) DesiredCluster
 
 type ClusterState struct {
 	KeycloakServiceMonitor          *monitoringv1.ServiceMonitor
-	KeycloakPodMonitor              *monitoringv1.PodMonitor
 	KeycloakPrometheusRule          *monitoringv1.PrometheusRule
 	KeycloakGrafanaDashboard        *grafanav1alpha1.GrafanaDashboard
 	DatabaseSecret                  *v1.Secret
@@ -55,9 +64,10 @@ type ClusterState struct {
 	PostgresqlServiceEndpoints      *v1.Endpoints
 	PodDisruptionBudget             *v1beta12.PodDisruptionBudget
 	KeycloakProbes                  *v1.ConfigMap
+	KeycloakBackup                  *v1alpha1.KeycloakBackup
 }
 
-func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error { //nolint
+func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
 	stateManager := GetStateManager()
 	routeKindExists, keyExists := stateManager.GetState(RouteKind).(bool)
 
@@ -67,11 +77,6 @@ func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controller
 	}
 
 	err = i.readKeycloakServiceMonitorCurrentState(context, cr, controllerClient)
-	if err != nil {
-		return err
-	}
-
-	err = i.readKeycloakPodMonitorCurrentState(context, cr, controllerClient)
 	if err != nil {
 		return err
 	}
@@ -146,6 +151,11 @@ func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controller
 		if err != nil {
 			return err
 		}
+	}
+
+	err = i.readKeycloakBackupCurrentState(context, cr, controllerClient)
+	if err != nil {
+		return err
 	}
 
 	// Read other things
@@ -277,27 +287,6 @@ func (i *ClusterState) readKeycloakServiceMonitorCurrentState(context context.Co
 	} else {
 		i.KeycloakServiceMonitor = keycloakServiceMonitor.DeepCopy()
 		cr.UpdateStatusSecondaryResources(i.KeycloakServiceMonitor.Kind, i.KeycloakServiceMonitor.Name)
-	}
-	return nil
-}
-
-// Keycloak Pod Monitor. Resource type provided by Prometheus operator
-func (i *ClusterState) readKeycloakPodMonitorCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
-	keycloakPodMonitor := model.PodMonitor(cr)
-	keycloakPodMonitorSelector := model.PodMonitorSelector(cr)
-
-	err := controllerClient.Get(context, keycloakPodMonitorSelector, keycloakPodMonitor)
-
-	if err != nil {
-		// If the resource type doesn't exist on the cluster or does exist but is not found
-		if meta.IsNoMatchError(err) || apiErrors.IsNotFound(err) {
-			i.KeycloakPodMonitor = nil
-		} else {
-			return err
-		}
-	} else {
-		i.KeycloakPodMonitor = keycloakPodMonitor.DeepCopy()
-		cr.UpdateStatusSecondaryResources(i.KeycloakPodMonitor.Kind, i.KeycloakPodMonitor.Name)
 	}
 	return nil
 }
@@ -472,23 +461,60 @@ func (i *ClusterState) readPodDisruptionCurrentState(context context.Context, cr
 	return nil
 }
 
-func (i *ClusterState) IsResourcesReady() (bool, error) {
+func (i *ClusterState) IsResourcesReady(cr *kc.Keycloak) (bool, error) {
+	if cr.Spec.Unmanaged {
+		return true, nil
+	}
+
 	// Check keycloak statefulset is ready
 	keycloakDeploymentReady, _ := IsStatefulSetReady(i.KeycloakDeployment)
 	// Default Route ready to true in case we are running on native Kubernetes
 	keycloakRouteReady := true
+
 	// Check keycloak postgres deployment is ready
 	postgresqlDeploymentReady, err := IsDeploymentReady(i.PostgresqlDeployment)
 	if err != nil {
 		return false, err
 	}
 
+	// If the instance is using an external database, always set to true
+	if cr.Spec.ExternalDatabase.Enabled {
+		postgresqlDeploymentReady = true
+	}
+
 	// If running on OpenShift, check the Route is ready
-	stateManager := GetStateManager()
-	openshift, keyExists := stateManager.GetState(RouteKind).(bool)
-	if keyExists && openshift {
-		keycloakRouteReady = IsRouteReady(i.KeycloakRoute)
+	if cr.Spec.ExternalAccess.Enabled {
+		stateManager := GetStateManager()
+		openshift, keyExists := stateManager.GetState(RouteKind).(bool)
+		if keyExists && openshift {
+			keycloakRouteReady = IsRouteReady(i.KeycloakRoute)
+		}
 	}
 
 	return keycloakDeploymentReady && postgresqlDeploymentReady && keycloakRouteReady, nil
+}
+
+// Read Custom Resource KeycloakBackup for migration backup
+func (i *ClusterState) readKeycloakBackupCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
+	labelSelect := metav1.LabelSelector{
+		MatchLabels: cr.Labels,
+	}
+	backupCr := &v1alpha1.KeycloakBackup{}
+	backupCr.Namespace = cr.Namespace
+	backupCr.Name = model.MigrateBackupName + "-" + BackupTime
+	backupCr.Spec.InstanceSelector = &labelSelect
+	backupCr.Spec.StorageClassName = cr.Spec.StorageClassName
+
+	KeycloakBackup := model.KeycloakMigrationOneTimeBackup(backupCr)
+	KeycloakBackupSelector := model.KeycloakMigrationOneTimeBackupSelector(backupCr)
+
+	err := controllerClient.Get(context, KeycloakBackupSelector, KeycloakBackup)
+	if err != nil {
+		if !apiErrors.IsNotFound(err) {
+			return err
+		}
+	} else {
+		i.KeycloakBackup = KeycloakBackup.DeepCopy()
+	}
+	return nil
 }

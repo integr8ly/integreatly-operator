@@ -88,7 +88,7 @@ func getRHSSOEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 		},
 		{
 			Name:  "X509_CA_BUNDLE",
-			Value: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+			Value: "/var/run/secrets/kubernetes.io/serviceaccount/*.crt",
 		},
 	}
 
@@ -163,12 +163,14 @@ func RHSSODeployment(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) *v13.StatefulSe
 									Protocol:      "TCP",
 								},
 							},
-							LivenessProbe:  livenessProbe(),
-							ReadinessProbe: readinessProbe(),
-							Env:            getRHSSOEnv(cr, dbSecret),
+							LivenessProbe:   livenessProbe(),
+							ReadinessProbe:  readinessProbe(),
+							Env:             getRHSSOEnv(cr, dbSecret),
 							Args:            cr.Spec.KeycloakDeploymentSpec.Experimental.Args,
 							Command:         cr.Spec.KeycloakDeploymentSpec.Experimental.Command,
 							VolumeMounts:    KeycloakVolumeMounts(cr, RhssoExtensionPath),
+							Resources:       getResources(cr),
+							ImagePullPolicy: "Always",
 						},
 					},
 				},
@@ -214,9 +216,11 @@ func RHSSODeploymentReconciled(cr *v1alpha1.Keycloak, currentState *v13.Stateful
 				},
 			},
 			VolumeMounts:    KeycloakVolumeMounts(cr, RhssoExtensionPath),
-			LivenessProbe:  livenessProbe(),
-			ReadinessProbe: readinessProbe(),
-			Env:            getRHSSOEnv(cr, dbSecret),
+			LivenessProbe:   livenessProbe(),
+			ReadinessProbe:  readinessProbe(),
+			Env:             getRHSSOEnv(cr, dbSecret),
+			Resources:       getResources(cr),
+			ImagePullPolicy: "Always",
 		},
 	}
 	reconciled.Spec.Template.Spec.InitContainers = KeycloakExtensionsInitContainers(cr)

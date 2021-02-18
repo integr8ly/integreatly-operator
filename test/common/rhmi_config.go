@@ -2,14 +2,13 @@ package common
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	goctx "context"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -33,7 +32,7 @@ type MaintenanceBackup struct {
 
 // this state check covers test case - A22
 // verify that the RHMIConfig validation webhook for Maintenance and Backup values work as expected
-var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error) error{
+var maintenanceBackupStates = map[MaintenanceBackup]func(TestingTB) func(error) error{
 	// we expect no error as blank strings will be set to default vals
 	{
 		Backup: v1alpha1.Backup{
@@ -110,7 +109,7 @@ var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error)
 	}: assertValidationError,
 }
 
-var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error) error{
+var upgradeSectionStates = map[v1alpha1.Upgrade]func(TestingTB) func(error) error{
 	{}: assertNoError,
 
 	{
@@ -127,7 +126,7 @@ var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error) err
 
 // TestRHMIConfigCRs tests that the RHMIConfig CR is created successfuly and
 // validated.
-func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
+func TestRHMIConfigCRs(t TestingTB, ctx *TestingContext) {
 	t.Log("Test rhmi config cr creation")
 
 	rhmiConfig := RHMIConfigTemplate()
@@ -204,7 +203,7 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func verifyCr(t *testing.T, ctx *TestingContext) {
+func verifyCr(t TestingTB, ctx *TestingContext) {
 	t.Log("Verify rhmi config cr creation")
 
 	rhmiConfig := &v1alpha1.RHMIConfig{}
@@ -225,7 +224,7 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func deleteRHMIConfigCR(t *testing.T, client dynclient.Client, cr *v1alpha1.RHMIConfig) {
+func deleteRHMIConfigCR(t TestingTB, client dynclient.Client, cr *v1alpha1.RHMIConfig) {
 	if err := client.Delete(goctx.TODO(), cr); err != nil {
 		t.Errorf("Failed to delete the rhmi config")
 	}
@@ -251,7 +250,7 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 // verifyRHMIConfigMutatingWebhook tests the mutating webhook by logging in as
 // a customer admin in the testing IDP and performing an update to the RHMIConfig
 // instance, and checking that the webhooks adds the correct annotations
-func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) error {
+func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t TestingTB) error {
 	currentUser := &userv1.User{}
 	if err := ctx.Client.Get(goctx.TODO(), dynclient.ObjectKey{
 		Name: "~",
@@ -338,7 +337,7 @@ func waitForValidatingWebhook(client dynclient.Client) error {
 	})
 }
 
-func assertNoError(t *testing.T) func(error) error {
+func assertNoError(t TestingTB) func(error) error {
 	return func(err error) error {
 		if err != nil {
 			t.Logf("Expected error to be nil. Got %v", err)
@@ -348,7 +347,7 @@ func assertNoError(t *testing.T) func(error) error {
 	}
 }
 
-func assertValidationError(t *testing.T) func(error) error {
+func assertValidationError(t TestingTB) func(error) error {
 	return func(err error) error {
 		switch e := err.(type) {
 		case errors.APIStatus:

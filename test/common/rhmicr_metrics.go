@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
+func TestRHMICRMetrics(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {

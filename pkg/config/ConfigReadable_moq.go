@@ -4,7 +4,7 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sync"
 )
@@ -15,37 +15,37 @@ var _ ConfigReadable = &ConfigReadableMock{}
 
 // ConfigReadableMock is a mock implementation of ConfigReadable.
 //
-//     func TestSomethingThatUsesConfigReadable(t *testing.T) {
+// 	func TestSomethingThatUsesConfigReadable(t *testing.T) {
 //
-//         // make and configure a mocked ConfigReadable
-//         mockedConfigReadable := &ConfigReadableMock{
-//             GetHostFunc: func() string {
-// 	               panic("mock out the GetHost method")
-//             },
-//             GetNamespaceFunc: func() string {
-// 	               panic("mock out the GetNamespace method")
-//             },
-//             GetOperatorVersionFunc: func() v1alpha1.OperatorVersion {
-// 	               panic("mock out the GetOperatorVersion method")
-//             },
-//             GetProductNameFunc: func() v1alpha1.ProductName {
-// 	               panic("mock out the GetProductName method")
-//             },
-//             GetProductVersionFunc: func() v1alpha1.ProductVersion {
-// 	               panic("mock out the GetProductVersion method")
-//             },
-//             GetWatchableCRDsFunc: func() []runtime.Object {
-// 	               panic("mock out the GetWatchableCRDs method")
-//             },
-//             ReadFunc: func() ProductConfig {
-// 	               panic("mock out the Read method")
-//             },
-//         }
+// 		// make and configure a mocked ConfigReadable
+// 		mockedConfigReadable := &ConfigReadableMock{
+// 			GetHostFunc: func() string {
+// 				panic("mock out the GetHost method")
+// 			},
+// 			GetNamespaceFunc: func() string {
+// 				panic("mock out the GetNamespace method")
+// 			},
+// 			GetOperatorVersionFunc: func() integreatlyv1alpha1.OperatorVersion {
+// 				panic("mock out the GetOperatorVersion method")
+// 			},
+// 			GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
+// 				panic("mock out the GetProductName method")
+// 			},
+// 			GetProductVersionFunc: func() integreatlyv1alpha1.ProductVersion {
+// 				panic("mock out the GetProductVersion method")
+// 			},
+// 			GetWatchableCRDsFunc: func() []runtime.Object {
+// 				panic("mock out the GetWatchableCRDs method")
+// 			},
+// 			ReadFunc: func() ProductConfig {
+// 				panic("mock out the Read method")
+// 			},
+// 		}
 //
-//         // use mockedConfigReadable in code that requires ConfigReadable
-//         // and then make assertions.
+// 		// use mockedConfigReadable in code that requires ConfigReadable
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type ConfigReadableMock struct {
 	// GetHostFunc mocks the GetHost method.
 	GetHostFunc func() string
@@ -54,13 +54,13 @@ type ConfigReadableMock struct {
 	GetNamespaceFunc func() string
 
 	// GetOperatorVersionFunc mocks the GetOperatorVersion method.
-	GetOperatorVersionFunc func() v1alpha1.OperatorVersion
+	GetOperatorVersionFunc func() integreatlyv1alpha1.OperatorVersion
 
 	// GetProductNameFunc mocks the GetProductName method.
-	GetProductNameFunc func() v1alpha1.ProductName
+	GetProductNameFunc func() integreatlyv1alpha1.ProductName
 
 	// GetProductVersionFunc mocks the GetProductVersion method.
-	GetProductVersionFunc func() v1alpha1.ProductVersion
+	GetProductVersionFunc func() integreatlyv1alpha1.ProductVersion
 
 	// GetWatchableCRDsFunc mocks the GetWatchableCRDs method.
 	GetWatchableCRDsFunc func() []runtime.Object
@@ -154,7 +154,7 @@ func (mock *ConfigReadableMock) GetNamespaceCalls() []struct {
 }
 
 // GetOperatorVersion calls GetOperatorVersionFunc.
-func (mock *ConfigReadableMock) GetOperatorVersion() v1alpha1.OperatorVersion {
+func (mock *ConfigReadableMock) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	if mock.GetOperatorVersionFunc == nil {
 		panic("ConfigReadableMock.GetOperatorVersionFunc: method is nil but ConfigReadable.GetOperatorVersion was just called")
 	}
@@ -180,7 +180,7 @@ func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
 }
 
 // GetProductName calls GetProductNameFunc.
-func (mock *ConfigReadableMock) GetProductName() v1alpha1.ProductName {
+func (mock *ConfigReadableMock) GetProductName() integreatlyv1alpha1.ProductName {
 	if mock.GetProductNameFunc == nil {
 		panic("ConfigReadableMock.GetProductNameFunc: method is nil but ConfigReadable.GetProductName was just called")
 	}
@@ -206,7 +206,7 @@ func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 }
 
 // GetProductVersion calls GetProductVersionFunc.
-func (mock *ConfigReadableMock) GetProductVersion() v1alpha1.ProductVersion {
+func (mock *ConfigReadableMock) GetProductVersion() integreatlyv1alpha1.ProductVersion {
 	if mock.GetProductVersionFunc == nil {
 		panic("ConfigReadableMock.GetProductVersionFunc: method is nil but ConfigReadable.GetProductVersion was just called")
 	}

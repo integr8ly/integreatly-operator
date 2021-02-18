@@ -6,7 +6,6 @@ import (
 	"math"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 	v1 "k8s.io/api/core/v1"
@@ -28,7 +27,7 @@ type podDistribution struct {
 	namespace string
 }
 
-func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
+func TestMultiAZPodDistribution(t common.TestingTB, ctx *common.TestingContext) {
 	var testErrors []string
 	pods := &v1.PodList{}
 	nodes := &v1.NodeList{}

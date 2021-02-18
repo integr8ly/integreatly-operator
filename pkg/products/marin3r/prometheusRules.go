@@ -80,7 +80,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "Marin3r operator has no pods in ready state.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='marin3r-operator',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='marin3r-operator',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-manager',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-manager',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning"},
 					},
@@ -92,12 +92,12 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 				Namespace: r.Config.GetNamespace(),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "Marin3rDiscoveryServicePod",
+						Alert: "Marin3rWebhookPod",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "Marin3r Discovery Service has no pods in ready state.",
+							"message": "Marin3r has no webhook pods in ready state.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app_kubernetes_io_component='discovery-service',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app_kubernetes_io_component='discovery-service',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-webhook',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_control_plane='controller-webhook',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning"},
 					},

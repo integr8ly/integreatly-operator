@@ -8,10 +8,6 @@ import (
 	"sync"
 )
 
-var (
-	lockKeycloakClientFactoryMockAuthenticatedClient sync.RWMutex
-)
-
 // Ensure, that KeycloakClientFactoryMock does implement KeycloakClientFactory.
 // If this is not the case, regenerate this file with moq.
 var _ KeycloakClientFactory = &KeycloakClientFactoryMock{}
@@ -43,6 +39,7 @@ type KeycloakClientFactoryMock struct {
 			Kc v1alpha1.Keycloak
 		}
 	}
+	lockAuthenticatedClient sync.RWMutex
 }
 
 // AuthenticatedClient calls AuthenticatedClientFunc.
@@ -55,9 +52,9 @@ func (mock *KeycloakClientFactoryMock) AuthenticatedClient(kc v1alpha1.Keycloak)
 	}{
 		Kc: kc,
 	}
-	lockKeycloakClientFactoryMockAuthenticatedClient.Lock()
+	mock.lockAuthenticatedClient.Lock()
 	mock.calls.AuthenticatedClient = append(mock.calls.AuthenticatedClient, callInfo)
-	lockKeycloakClientFactoryMockAuthenticatedClient.Unlock()
+	mock.lockAuthenticatedClient.Unlock()
 	return mock.AuthenticatedClientFunc(kc)
 }
 
@@ -70,8 +67,8 @@ func (mock *KeycloakClientFactoryMock) AuthenticatedClientCalls() []struct {
 	var calls []struct {
 		Kc v1alpha1.Keycloak
 	}
-	lockKeycloakClientFactoryMockAuthenticatedClient.RLock()
+	mock.lockAuthenticatedClient.RLock()
 	calls = mock.calls.AuthenticatedClient
-	lockKeycloakClientFactoryMockAuthenticatedClient.RUnlock()
+	mock.lockAuthenticatedClient.RUnlock()
 	return calls
 }

@@ -3,10 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/go-querystring/query"
@@ -29,7 +28,7 @@ type LogOptions struct {
 	TailLines string `url:"tailLines"`
 }
 
-func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
+func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 	testUser := fmt.Sprintf("%v%02d", DefaultTestUserName, 1)
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
@@ -108,7 +107,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
-func verifyRHMIDeveloper3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+func verifyRHMIDeveloper3ScaleRoutePermissions(t TestingTB, client *resources.OpenshiftClient) {
 	ns := NamespacePrefix + "3scale"
 	route := "backend"
 
@@ -183,7 +182,7 @@ func testManagedApiDeveloperProjects(masterURL string, openshiftClient *resource
 	return nil
 }
 
-func verifyRHMIDeveloperRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyRHMIDeveloperRHMIConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying RHMI Developer permissions for RHMIConfig Resource")
 
 	expectedPermission := ExpectedPermissions{

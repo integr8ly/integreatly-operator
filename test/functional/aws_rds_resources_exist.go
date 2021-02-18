@@ -3,14 +3,13 @@ package functional
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/integr8ly/integreatly-operator/test/common"
 )
 
-func AWSRDSResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
+func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
 	rhmi, err := common.GetRHMI(ctx.Client, true)

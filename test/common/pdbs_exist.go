@@ -1,7 +1,7 @@
 package common
 
 import (
-	"testing"
+	"context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,10 +37,10 @@ func getKeycloakNamespaces() []Namespace {
 	}
 }
 
-func TestIntegreatlyPodDisruptionBudgetsExist(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyPodDisruptionBudgetsExist(t TestingTB, ctx *TestingContext) {
 	for _, namespace := range getKeycloakNamespaces() {
 		for _, podDisruptionBudgetName := range namespace.PodDisruptionBudgetNames {
-			_, err := ctx.KubeClient.PolicyV1beta1().PodDisruptionBudgets(namespace.Name).Get(podDisruptionBudgetName, v1.GetOptions{})
+			_, err := ctx.KubeClient.PolicyV1beta1().PodDisruptionBudgets(namespace.Name).Get(context.TODO(), podDisruptionBudgetName, v1.GetOptions{})
 			if err != nil {
 				t.Errorf("PodDisruptionBudget %s not found in namespace %s - Error: %s", podDisruptionBudgetName, namespace.Name, err)
 			}

@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -22,7 +21,7 @@ var (
 	kindSSO       = "Keycloaks"
 )
 
-func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
+func TestReplicasInRHSSO(t TestingTB, ctx *TestingContext) {
 	inst, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
@@ -34,7 +33,7 @@ func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
 
 }
 
-func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
+func TestReplicasInUserSSO(t TestingTB, ctx *TestingContext) {
 	inst, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
@@ -45,7 +44,7 @@ func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
 	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfUserRhssoReplicas)
 }
 
-func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string, expectedReplicas int) {
+func checkScalingOfKeycloakReplicas(t TestingTB, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string, expectedReplicas int) {
 	scaleUpRhssoReplicas := expectedReplicas + 1
 	scaleDownRhssoReplicas := expectedReplicas - 1
 	keycloakCR, err := getKeycloakCR(ctx.Client, keycloakCRName, keycloakCRNamespace)
@@ -120,7 +119,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 		Resource(kindSSO).
 		Name(keycloakCRName).
 		Namespace(keycloakCRNamespace).
-		RequestURI(requestURLSSO).Body(replicaBytes).Do()
+		RequestURI(requestURLSSO).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
 
 	keycloakCR, err := getKeycloakCR(dynClient.Client, keycloakCRName, keycloakCRNamespace)
@@ -131,7 +130,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 	return keycloakCR, nil
 }
 
-func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t *testing.T) error {
+func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t TestingTB) error {
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		keycloakCR, err = getKeycloakCR(ctx.Client, keycloakCR.Name, keycloakCR.Namespace)
 		if err != nil {
@@ -146,11 +145,11 @@ func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak
 	})
 }
 
-func checkSSOReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int32, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
+func checkSSOReplicasAreReady(dynClient *TestingContext, t TestingTB, replicas int32, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
-		statefulSet, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get("keycloak", metav1.GetOptions{})
+		statefulSet, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get(goctx.TODO(), "keycloak", metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("failed to get Statefulset %s in namespace %s with error: %s", "Keycloak", keycloakCRNamespace, err)
 		}

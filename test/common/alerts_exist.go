@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"testing"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
 
@@ -278,7 +276,7 @@ func managedApiSpecificRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
 			Rules: []string{
-				"Marin3rDiscoveryServicePod",
+				"Marin3rWebhookPod",
 				"Marin3rPromstatsdExporterPod",
 				"Marin3rRateLimitPod",
 			},
@@ -882,7 +880,7 @@ func managedApiAwsExpectedRules(installtionName string) []alertsTestRule {
 
 }
 
-func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
+func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
@@ -1008,7 +1006,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 }
 
 func getExpectedAWSRules(installType string, installationName string) []alertsTestRule {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 		return append(commonExpectedAWSRules(installationName), managedApiAwsExpectedRules(installationName)...)
 	} else {
 		return append(commonExpectedAWSRules(installationName), rhmi2ExpectedAWSRules(installationName)...)
@@ -1016,7 +1014,7 @@ func getExpectedAWSRules(installType string, installationName string) []alertsTe
 }
 
 func getExpectedRules(installType string) []alertsTestRule {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 		return append(commonExpectedRules(), managedApiSpecificRules()...)
 	} else {
 		return append(commonExpectedRules(), rhmi2ExpectedRules()...)
@@ -1054,4 +1052,22 @@ func buildReport(actualRule, expectedRule alertsTestRule, report *alertsTestRepo
 		report.Status = fileExists
 	}
 	return report
+}
+
+// difference one-way diff that return strings in sliceSource that are not in sliceTarget
+func difference(sliceSource, sliceTarget []string) []string {
+	// create an empty lookup map with keys from sliceTarget
+	diffSourceLookupMap := make(map[string]struct{}, len(sliceTarget))
+	for _, item := range sliceTarget {
+		diffSourceLookupMap[item] = struct{}{}
+	}
+	// use the lookup map to find items in sliceSource that are not in sliceTarget
+	// and store them in a diff slice
+	var diff []string
+	for _, item := range sliceSource {
+		if _, found := diffSourceLookupMap[item]; !found {
+			diff = append(diff, item)
+		}
+	}
+	return diff
 }

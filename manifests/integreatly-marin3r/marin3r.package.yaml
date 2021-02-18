@@ -1,5 +1,5 @@
 channels:
-  - currentCSV: marin3r.v0.5.1
+  - currentCSV: marin3r.v0.7.0
     name: rhmi
 defaultChannel: rhmi
 packageName: rhmi-marin3r

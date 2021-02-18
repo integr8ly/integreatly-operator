@@ -14,49 +14,49 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 
 // ThreeScaleInterfaceMock is a mock implementation of ThreeScaleInterface.
 //
-//     func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
+// 	func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
 //
-//         // make and configure a mocked ThreeScaleInterface
-//         mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
-//             AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the AddAuthenticationProvider method")
-//             },
-//             AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the AddUser method")
-//             },
-//             DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the DeleteUser method")
-//             },
-//             GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
-// 	               panic("mock out the GetAuthenticationProviderByName method")
-//             },
-//             GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
-// 	               panic("mock out the GetAuthenticationProviders method")
-//             },
-//             GetUserFunc: func(username string, accessToken string) (*User, error) {
-// 	               panic("mock out the GetUser method")
-//             },
-//             GetUsersFunc: func(accessToken string) (*Users, error) {
-// 	               panic("mock out the GetUsers method")
-//             },
-//             SetNamespaceFunc: func(ns string)  {
-// 	               panic("mock out the SetNamespace method")
-//             },
-//             SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the SetUserAsAdmin method")
-//             },
-//             SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the SetUserAsMember method")
-//             },
-//             UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the UpdateUser method")
-//             },
-//         }
+// 		// make and configure a mocked ThreeScaleInterface
+// 		mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
+// 			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
+// 				panic("mock out the AddAuthenticationProvider method")
+// 			},
+// 			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
+// 				panic("mock out the AddUser method")
+// 			},
+// 			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 				panic("mock out the DeleteUser method")
+// 			},
+// 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
+// 				panic("mock out the GetAuthenticationProviderByName method")
+// 			},
+// 			GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
+// 				panic("mock out the GetAuthenticationProviders method")
+// 			},
+// 			GetUserFunc: func(username string, accessToken string) (*User, error) {
+// 				panic("mock out the GetUser method")
+// 			},
+// 			GetUsersFunc: func(accessToken string) (*Users, error) {
+// 				panic("mock out the GetUsers method")
+// 			},
+// 			SetNamespaceFunc: func(ns string)  {
+// 				panic("mock out the SetNamespace method")
+// 			},
+// 			SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 				panic("mock out the SetUserAsAdmin method")
+// 			},
+// 			SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 				panic("mock out the SetUserAsMember method")
+// 			},
+// 			UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
+// 				panic("mock out the UpdateUser method")
+// 			},
+// 		}
 //
-//         // use mockedThreeScaleInterface in code that requires ThreeScaleInterface
-//         // and then make assertions.
+// 		// use mockedThreeScaleInterface in code that requires ThreeScaleInterface
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type ThreeScaleInterfaceMock struct {
 	// AddAuthenticationProviderFunc mocks the AddAuthenticationProvider method.
 	AddAuthenticationProviderFunc func(data map[string]string, accessToken string) (*http.Response, error)

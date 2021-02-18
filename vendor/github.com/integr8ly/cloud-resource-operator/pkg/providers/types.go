@@ -21,6 +21,7 @@ const (
 	BlobStorageResourceType ResourceType = "blobstorage"
 	PostgresResourceType    ResourceType = "postgres"
 	RedisResourceType       ResourceType = "redis"
+	NetworkResourceType     ResourceType = "_network"
 )
 
 type DeploymentDetails interface {
@@ -37,6 +38,14 @@ type RedisCluster struct {
 
 type PostgresInstance struct {
 	DeploymentDetails DeploymentDetails
+}
+
+type PostgresSnapshotInstance struct {
+	Name string
+}
+
+type RedisSnapshotInstance struct {
+	Name string
 }
 
 type BlobStorageProvider interface {
@@ -61,6 +70,22 @@ type PostgresProvider interface {
 	GetReconcileTime(ps *v1alpha1.Postgres) time.Duration
 	CreatePostgres(ctx context.Context, ps *v1alpha1.Postgres) (*PostgresInstance, croType.StatusMessage, error)
 	DeletePostgres(ctx context.Context, ps *v1alpha1.Postgres) (croType.StatusMessage, error)
+}
+
+type PostgresSnapshotProvider interface {
+	GetName() string
+	SupportsStrategy(s string) bool
+	GetReconcileTime(snapshot *v1alpha1.PostgresSnapshot) time.Duration
+	CreatePostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, postgres *v1alpha1.Postgres) (*PostgresSnapshotInstance, croType.StatusMessage, error)
+	DeletePostgresSnapshot(ctx context.Context, snapshot *v1alpha1.PostgresSnapshot, posgres *v1alpha1.Postgres) (croType.StatusMessage, error)
+}
+
+type RedisSnapshotProvider interface {
+	GetName() string
+	SupportsStrategy(s string) bool
+	GetReconcileTime(snapshot *v1alpha1.RedisSnapshot) time.Duration
+	CreateRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis) (*RedisSnapshotInstance, croType.StatusMessage, error)
+	DeleteRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis) (croType.StatusMessage, error)
 }
 
 // RedisDeploymentDetails provider specific details about the AWS Redis Cluster created
@@ -93,4 +118,38 @@ func (d *PostgresDeploymentDetails) Data() map[string][]byte {
 		"database": []byte(d.Database),
 		"port":     []byte(strconv.Itoa(d.Port)),
 	}
+}
+
+// GenericCloudMetric is a wrapper to represent provider specific metrics generically
+type GenericCloudMetric struct {
+	Name   string
+	Labels map[string]string
+	Value  float64
+}
+
+// CloudProviderMetricType is used to declare a generic type of metric
+// it maps provider specific metrics to metrics we expose in prometheus
+type CloudProviderMetricType struct {
+	//PromethuesMetricName the name of the metric exposed via cro
+	PromethuesMetricName string
+	//ProviderMetricName the metric we scrape from the cloud provider
+	ProviderMetricName string
+	//Statistic the type of metric value we return e.g. Average, Sum, Max, Min etc.
+	Statistic string
+}
+
+// ScrapeMetricsData is a wrapper for output of scrape metrics
+type ScrapeMetricsData struct {
+	// Metrics is an array of built cloud metrics from scraping a provider
+	Metrics []*GenericCloudMetric
+}
+
+type RedisMetricsProvider interface {
+	SupportsStrategy(s string) bool
+	ScrapeRedisMetrics(ctx context.Context, redis *v1alpha1.Redis, metricsTypes []CloudProviderMetricType) (*ScrapeMetricsData, error)
+}
+
+type PostgresMetricsProvider interface {
+	SupportsStrategy(s string) bool
+	ScrapePostgresMetrics(ctx context.Context, postgres *v1alpha1.Postgres, metricTypes []CloudProviderMetricType) (*ScrapeMetricsData, error)
 }

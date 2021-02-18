@@ -6,12 +6,11 @@ import (
 	"io/ioutil"
 	"reflect"
 	"strings"
-	"testing"
 
-	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
-	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
-	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/admin/v1beta1"
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
+	enmassev1beta2 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta2"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -63,7 +62,7 @@ type ExpectedPermissions struct {
 	ObjectToCreate           interface{}
 }
 
-func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
+func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 	customerAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
@@ -132,7 +131,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
-func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+func verifyDedicatedAdmin3ScaleRoutePermissions(t TestingTB, client *resources.OpenshiftClient) {
 	ns := NamespacePrefix + "3scale"
 	route := "backend"
 
@@ -179,7 +178,7 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
 }
 
-func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, installType string) {
+func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient, installType string) {
 	t.Log("Verifying Dedicated admin permissions for Secrets Resource")
 
 	productNamespaces := getProductNamespaces(installType)
@@ -223,7 +222,7 @@ func getProductNamespaces(installType string) []string {
 }
 
 // Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
-func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminRHMIConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
 
 	expectedPermission := ExpectedPermissions{
@@ -250,7 +249,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 }
 
 // Verify Dedicated admin permissions for StandardInfraConfig Resource - CRUDL
-func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminStandardInfraConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for StandardInfraConfig Resource")
 
 	resourceName := "test-standard-infra-config"
@@ -284,7 +283,7 @@ func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftC
 }
 
 // Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
-func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminBrokeredInfraConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for BrokeredInfraConfig Resource")
 
 	resourceName := "test-brokered-infra-config"
@@ -318,7 +317,7 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 }
 
 // Verify Dedicated admin permissions for AddressSpacePlan Resource - CRUDL
-func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminAddressSpacePlanPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AddressSpacePlan Resource")
 
 	resourceName := "test-address-plan-space"
@@ -357,7 +356,7 @@ func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClie
 }
 
 // Verify Dedicated admin permissions for AddressPlan Resource - CRUDL
-func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminAddressPlanPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AddressPlan Resource")
 
 	resourceName := "test-address-plan"
@@ -393,7 +392,7 @@ func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *r
 }
 
 // Verify Dedicated admin permissions for AuthenticationService Resource - CRUDL
-func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminAuthenticationServicePermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AuthenticationService Resource")
 
 	resourceName := "test-authentication-service"
@@ -431,7 +430,7 @@ func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshif
 	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }
 
-func verifyDedicatedAdminAMQOnlineRolePermissions(t *testing.T, ctx *TestingContext) {
+func verifyDedicatedAdminAMQOnlineRolePermissions(t TestingTB, ctx *TestingContext) {
 	t.Log("Verifying Dedicated admin AMQ Online resource role / role binding")
 
 	roleBinding := &rbacv1.RoleBinding{}

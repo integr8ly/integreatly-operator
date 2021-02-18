@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// KeycloakClientSpec defines the desired state of KeycloakClient
+// KeycloakClientSpec defines the desired state of KeycloakClient.
 // +k8s:openapi-gen=true
 type KeycloakClientSpec struct {
 	// Selector for looking up KeycloakRealm Custom Resources.
@@ -69,10 +69,10 @@ type KeycloakAPIClient struct {
 	ConsentRequired bool `json:"consentRequired,omitempty"`
 	// True if Standard flow is enabled.
 	// +optional
-	StandardFlowEnabled bool `json:"standardFlowEnabled,omitempty"`
+	StandardFlowEnabled bool `json:"standardFlowEnabled"`
 	// True if Implicit flow is enabled.
 	// +optional
-	ImplicitFlowEnabled bool `json:"implicitFlowEnabled,omitempty"`
+	ImplicitFlowEnabled bool `json:"implicitFlowEnabled"`
 	// True if Direct Grant is enabled.
 	// +optional
 	DirectAccessGrantsEnabled bool `json:"directAccessGrantsEnabled"`
@@ -81,7 +81,7 @@ type KeycloakAPIClient struct {
 	ServiceAccountsEnabled bool `json:"serviceAccountsEnabled,omitempty"`
 	// True if this is a public Client.
 	// +optional
-	PublicClient bool `json:"publicClient,omitempty"`
+	PublicClient bool `json:"publicClient"`
 	// True if this client supports Front Channel logout.
 	// +optional
 	FrontchannelLogout bool `json:"frontchannelLogout,omitempty"`
@@ -93,7 +93,7 @@ type KeycloakAPIClient struct {
 	Attributes map[string]string `json:"attributes,omitempty"`
 	// True if Full Scope is allowed.
 	// +optional
-	FullScopeAllowed bool `json:"fullScopeAllowed,omitempty"`
+	FullScopeAllowed *bool `json:"fullScopeAllowed,omitempty"`
 	// Node registration timeout.
 	// +optional
 	NodeReRegistrationTimeout int `json:"nodeReRegistrationTimeout,omitempty"`
@@ -112,6 +112,17 @@ type KeycloakAPIClient struct {
 	// Access options.
 	// +optional
 	Access map[string]bool `json:"access,omitempty"`
+	// A list of optional client scopes. Optional client scopes are
+	// applied when issuing tokens for this client, but only when they
+	// are requested by the scope parameter in the OpenID Connect
+	// authorization request.
+	// +optional
+	OptionalClientScopes []string `json:"optionalClientScopes,omitempty"`
+	// A list of default client scopes. Default client scopes are
+	// always applied when issuing OpenID Connect tokens or SAML
+	// assertions for this client.
+	// +optional
+	DefaultClientScopes []string `json:"defaultClientScopes,omitempty"`
 }
 
 type KeycloakProtocolMapper struct {
@@ -151,12 +162,10 @@ type KeycloakClientStatus struct {
 	SecondaryResources map[string][]string `json:"secondaryResources,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// KeycloakClient is the Schema for the keycloakclients API
+// KeycloakClient is the Schema for the keycloakclients API.
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=keycloakclients,scope=Namespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakClient struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -165,9 +174,8 @@ type KeycloakClient struct {
 	Status KeycloakClientStatus `json:"status,omitempty"`
 }
 
+// KeycloakClientList contains a list of KeycloakClient.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// KeycloakClientList contains a list of KeycloakClient
 type KeycloakClientList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

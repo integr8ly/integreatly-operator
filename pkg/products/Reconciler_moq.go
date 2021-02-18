@@ -5,9 +5,9 @@ package products
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
 
@@ -17,34 +17,34 @@ var _ Interface = &InterfaceMock{}
 
 // InterfaceMock is a mock implementation of Interface.
 //
-//     func TestSomethingThatUsesInterface(t *testing.T) {
+// 	func TestSomethingThatUsesInterface(t *testing.T) {
 //
-//         // make and configure a mocked Interface
-//         mockedInterface := &InterfaceMock{
-//             GetPreflightObjectFunc: func(ns string) runtime.Object {
-// 	               panic("mock out the GetPreflightObject method")
-//             },
-//             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
-// 	               panic("mock out the Reconcile method")
-//             },
-//             VerifyVersionFunc: func(installation *v1alpha1.RHMI) bool {
-// 	               panic("mock out the VerifyVersion method")
-//             },
-//         }
+// 		// make and configure a mocked Interface
+// 		mockedInterface := &InterfaceMock{
+// 			GetPreflightObjectFunc: func(ns string) runtime.Object {
+// 				panic("mock out the GetPreflightObject method")
+// 			},
+// 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+// 				panic("mock out the Reconcile method")
+// 			},
+// 			VerifyVersionFunc: func(installation *integreatlyv1alpha1.RHMI) bool {
+// 				panic("mock out the VerifyVersion method")
+// 			},
+// 		}
 //
-//         // use mockedInterface in code that requires Interface
-//         // and then make assertions.
+// 		// use mockedInterface in code that requires Interface
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type InterfaceMock struct {
 	// GetPreflightObjectFunc mocks the GetPreflightObject method.
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error)
 
 	// VerifyVersionFunc mocks the VerifyVersion method.
-	VerifyVersionFunc func(installation *v1alpha1.RHMI) bool
+	VerifyVersionFunc func(installation *integreatlyv1alpha1.RHMI) bool
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -58,16 +58,16 @@ type InterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Installation is the installation argument value.
-			Installation *v1alpha1.RHMI
+			Installation *integreatlyv1alpha1.RHMI
 			// Product is the product argument value.
-			Product *v1alpha1.RHMIProductStatus
+			Product *integreatlyv1alpha1.RHMIProductStatus
 			// ServerClient is the serverClient argument value.
-			ServerClient client.Client
+			ServerClient k8sclient.Client
 		}
 		// VerifyVersion holds details about calls to the VerifyVersion method.
 		VerifyVersion []struct {
 			// Installation is the installation argument value.
-			Installation *v1alpha1.RHMI
+			Installation *integreatlyv1alpha1.RHMI
 		}
 	}
 	lockGetPreflightObject sync.RWMutex
@@ -107,15 +107,15 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		Installation *v1alpha1.RHMI
-		Product      *v1alpha1.RHMIProductStatus
-		ServerClient client.Client
+		Installation *integreatlyv1alpha1.RHMI
+		Product      *integreatlyv1alpha1.RHMIProductStatus
+		ServerClient k8sclient.Client
 	}{
 		Ctx:          ctx,
 		Installation: installation,
@@ -133,15 +133,15 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
-	Installation *v1alpha1.RHMI
-	Product      *v1alpha1.RHMIProductStatus
-	ServerClient client.Client
+	Installation *integreatlyv1alpha1.RHMI
+	Product      *integreatlyv1alpha1.RHMIProductStatus
+	ServerClient k8sclient.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
-		Installation *v1alpha1.RHMI
-		Product      *v1alpha1.RHMIProductStatus
-		ServerClient client.Client
+		Installation *integreatlyv1alpha1.RHMI
+		Product      *integreatlyv1alpha1.RHMIProductStatus
+		ServerClient k8sclient.Client
 	}
 	mock.lockReconcile.RLock()
 	calls = mock.calls.Reconcile
@@ -150,12 +150,12 @@ func (mock *InterfaceMock) ReconcileCalls() []struct {
 }
 
 // VerifyVersion calls VerifyVersionFunc.
-func (mock *InterfaceMock) VerifyVersion(installation *v1alpha1.RHMI) bool {
+func (mock *InterfaceMock) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
 	if mock.VerifyVersionFunc == nil {
 		panic("InterfaceMock.VerifyVersionFunc: method is nil but Interface.VerifyVersion was just called")
 	}
 	callInfo := struct {
-		Installation *v1alpha1.RHMI
+		Installation *integreatlyv1alpha1.RHMI
 	}{
 		Installation: installation,
 	}
@@ -169,10 +169,10 @@ func (mock *InterfaceMock) VerifyVersion(installation *v1alpha1.RHMI) bool {
 // Check the length with:
 //     len(mockedInterface.VerifyVersionCalls())
 func (mock *InterfaceMock) VerifyVersionCalls() []struct {
-	Installation *v1alpha1.RHMI
+	Installation *integreatlyv1alpha1.RHMI
 } {
 	var calls []struct {
-		Installation *v1alpha1.RHMI
+		Installation *integreatlyv1alpha1.RHMI
 	}
 	mock.lockVerifyVersion.RLock()
 	calls = mock.calls.VerifyVersion

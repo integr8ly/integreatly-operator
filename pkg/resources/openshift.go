@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -11,8 +12,7 @@ import (
 )
 
 var (
-	Scheme = scheme.Scheme
-	codecs = serializer.NewCodecFactory(Scheme)
+	codecs serializer.CodecFactory
 )
 
 func LoadKubernetesResource(jsonData []byte, namespace string) (runtime.Object, error) {
@@ -70,4 +70,12 @@ func setIntegreatlyLabel(u *unstructured.Unstructured) {
 	}
 	labels["integreatly"] = "true"
 	u.SetLabels(labels)
+}
+
+func init() {
+	codecsScheme := runtime.NewScheme()
+	scheme.AddToScheme(codecsScheme)
+	v1alpha1.AddToSchemes.AddToScheme(codecsScheme)
+
+	codecs = serializer.NewCodecFactory(codecsScheme)
 }

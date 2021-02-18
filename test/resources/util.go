@@ -1,7 +1,7 @@
 package resources
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 )
 
 func RunningInProw(inst *integreatlyv1alpha1.RHMI) bool {

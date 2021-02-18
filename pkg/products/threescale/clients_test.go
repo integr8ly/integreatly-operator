@@ -17,10 +17,8 @@ import (
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,17 +50,6 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 			}
 			installPlanFor3ScaleSubscription.Namespace = obj.Namespace
 			return sigsFakeClient.GetSigsClient().Create(ctx, installPlanFor3ScaleSubscription)
-		case *marketplacev2.CatalogSourceConfig:
-			cs := &coreosv1alpha1.CatalogSource{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-catalogsource",
-					Namespace: obj.GetTargetNamespace(),
-				},
-			}
-			err := sigsFakeClient.GetSigsClient().Create(ctx, cs)
-			if err != nil {
-				return err
-			}
 		}
 
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)

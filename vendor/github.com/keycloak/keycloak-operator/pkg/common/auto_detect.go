@@ -7,8 +7,8 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	"github.com/keycloak/keycloak-operator/pkg/k8sutil"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -80,12 +80,6 @@ func (b *Background) detectMonitoringResources() {
 	resourceExists, _ = k8sutil.ResourceExists(b.dc, monitoringv1.SchemeGroupVersion.String(), monitoringv1.ServiceMonitorsKind)
 	if resourceExists {
 		b.SubscriptionChannel <- monitoringv1.SchemeGroupVersion.WithKind(monitoringv1.ServiceMonitorsKind)
-	}
-
-	// detect the PodMonitor resource type exist on the cluster
-	resourceExists, _ = k8sutil.ResourceExists(b.dc, monitoringv1.SchemeGroupVersion.String(), monitoringv1.PodMonitorsKind)
-	if resourceExists {
-		b.SubscriptionChannel <- monitoringv1.SchemeGroupVersion.WithKind(monitoringv1.PodMonitorsKind)
 	}
 
 	// detect the GrafanaDashboard resource type resourceExists on the cluster

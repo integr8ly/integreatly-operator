@@ -1,8 +1,7 @@
 package common
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"testing"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 )
 
 var (
@@ -46,7 +45,7 @@ var (
 	}
 )
 
-func TestProductOperatorVersions(t *testing.T, ctx *TestingContext) {
+func TestProductOperatorVersions(t TestingTB, ctx *TestingContext) {
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {

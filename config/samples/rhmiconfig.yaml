@@ -1,0 +1,5 @@
+apiVersion: integreatly.org/v1alpha1
+kind: RHMIConfig
+metadata:
+  name: example-rhmiconfig
+spec: {}  
