@@ -31,8 +31,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
@@ -41,11 +44,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
+const (
+	deletionRHOAM = "managed-api-service"
+	deletionRHMI  = "rhmi"
+)
+
 var (
 	log           = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "namespacelabel_controller"})
 	configMapName = "cloud-resources-aws-strategies"
 	//configMap name derived from the addons metadata id
-	deletionConfigMap = "managed-api-service"
+	deletionConfigMap = deletionRHOAM
 )
 
 //  patchStringValue specifies a patch operation for a string.
@@ -91,8 +99,19 @@ var (
 
 func (r *NamespaceLabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1.Namespace{}).
-		For(&corev1.ConfigMap{}).
+		// Watches exclusively the operator namespace
+		For(&corev1.Namespace{}, builder.WithPredicates(namePredicate(r.operatorNamespace))).
+		// Watches ConfigMaps and enqueues requests to their namespace.
+		// Only watches ConfigMaps with the addon name and in the operator namespace
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &EnqueueNamespaceFromObject{}, builder.WithPredicates(
+			predicate.And(
+				namespacePredicate(r.operatorNamespace),
+				predicate.Or(
+					namePredicate(deletionRHOAM),
+					namePredicate(deletionRHMI),
+				),
+			),
+		)).
 		Complete(r)
 }
 
@@ -142,7 +161,7 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 
 		rhmiCr, err := resources.GetRhmiCr(r.Client, ctx, request.NamespacedName.Namespace, log)
 		if rhmiCr.Spec.Type == "managed" {
-			deletionConfigMap = "rhmi"
+			deletionConfigMap = deletionRHMI
 		}
 		err = r.CheckConfigMap(ns, request, deletionConfigMap)
 		if err != nil {
@@ -313,4 +332,20 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 		return err
 	}
 	return nil
+}
+
+// namespacePredicate is a reusable predicate to watch only resources on a given
+// namespace
+func namespacePredicate(namespace string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+		return m.GetNamespace() == namespace
+	})
+}
+
+// namePredicate is a reusable predicate to watch only resources on a given
+// name
+func namePredicate(name string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+		return m.GetName() == name
+	})
 }
