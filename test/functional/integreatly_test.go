@@ -42,7 +42,7 @@ var _ = Describe("integreatly", func() {
 			},
 		}
 
-		if os.Getenv("MULTIAZ") != "true" {
+		if os.Getenv("MULTIAZ") == "true" {
 			tests = append(tests, common.Tests{
 				Type:      fmt.Sprintf("%s Multi AZ", installType),
 				TestCases: MULTIAZ_TESTS,
