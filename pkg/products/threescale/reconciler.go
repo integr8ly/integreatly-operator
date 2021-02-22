@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-
 	marin3rv1alpha "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
@@ -276,6 +275,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	r.log.Info("Successfully deployed")
+
+	phase, err = r.reconcileOutgoingEmailAddress(ctx, serverClient)
+	r.log.Infof("reconcileOutgoingEmailAddress", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Error("Failed to reconcileOutgoingEmailAddress", err)
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcileOutgoingEmailAddress", err)
+		}
+		return phase, err
+	}
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
 	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
@@ -1371,6 +1380,27 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient)
+
+	if err != nil {
+		r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else {
+		accessToken, err := r.GetAdminToken(ctx, serverClient)
+		if err != nil {
+			r.log.Error("Failed to get admin token in reconcileOutgoingEmailAddresss", err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+		_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
+		if err != nil {
+			r.log.Error("Failed to set email from address:", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

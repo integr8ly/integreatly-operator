@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,6 +21,7 @@ type ThreeScaleInterface interface {
 	DeleteUser(userID int, accessToken string) (*http.Response, error)
 	SetUserAsAdmin(userID int, accessToken string) (*http.Response, error)
 	SetUserAsMember(userID int, accessToken string) (*http.Response, error)
+	SetFromEmailAddress(emailAddress string, accessToken string) (*http.Response, error)
 	UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error)
 }
 
@@ -127,6 +129,38 @@ func (tsc *threeScaleClient) GetUsers(accessToken string) (*Users, error) {
 	}
 
 	return users, nil
+}
+
+func (tsc *threeScaleClient) SetFromEmailAddress(emailAddress string, accessToken string) (*http.Response, error) {
+
+	//curl -v --header "Content-Type: application/json" -X PUT "https://3scale-admin.apps.bg.o7rx.s1.devshift.org/admin/api/provider.xml"
+	// --data '{"access_token":"05807975eb3cbec201d16fc54a327546960fc61bb278169e28eafdb99913bbbe","from_email":"test@test.com"}'
+
+	data, err := json.Marshal(map[string]string{
+		"access_token": accessToken,
+		"from_email":   emailAddress,
+	})
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/provider.xml", tsc.wildCardDomain)
+	req, err := http.NewRequest(
+		"PUT",
+		url,
+		bytes.NewBuffer(data),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	tsc.httpc.Timeout = time.Second * 10
+
+	res, err := tsc.httpc.Do(req)
+
+	if err == nil && res.StatusCode != 200 {
+
+		err = errors.New(fmt.Sprintf("StatusCode %v calling SetFromEmailAddress", res.StatusCode))
+	}
+
+	return res, err
 }
 
 func (tsc *threeScaleClient) AddUser(username string, email string, password string, accessToken string) (*http.Response, error) {

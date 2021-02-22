@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ghodss/yaml"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
 
@@ -83,10 +81,6 @@ type Reconciler struct {
 	monitoring    *monitoring.ApplicationMonitoring
 	*resources.Reconciler
 	recorder record.EventRecorder
-}
-
-type alertManagerConfig struct {
-	Global map[string]string `yaml:"global"`
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -485,7 +479,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 			continue
 		}
 
-		bytes, err := templateHelper.loadTemplate(job)
+		bytes, err := templateHelper.LoadTemplate(job)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error loading template: %w", err)
 		}
@@ -756,7 +750,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	var existingSMTPFromAddress = ""
 	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		existingSMTPFromAddress, err = r.getExistingSMTPFromAddress(ctx, serverClient)
+		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient)
 		if err != nil {
 			if !apiErrors.IsNotFound(err) {
 				r.Log.Error("Error getting application monitoring secret", err)
@@ -794,7 +788,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"DeadMansSnitchURL":     dmsSecret,
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
 	})
-	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
 	}
@@ -818,26 +812,6 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create or update alert manager secret: %w", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) getExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client) (string, error) {
-	amSecret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Name: alertManagerConfigSecretName,
-		Namespace: r.Config.GetOperatorNamespace()}, amSecret)
-
-	if err != nil {
-		return "", err
-	}
-
-	monitoring := amSecret.Data[alertManagerConfigSecretFileName]
-
-	var config alertManagerConfig
-	err = yaml.Unmarshal(monitoring, &config)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse alert monitoring yaml: %w", err)
-	}
-
-	return config.Global["smtp_from"], nil
 }
 
 func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) error {

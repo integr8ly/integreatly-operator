@@ -39,6 +39,9 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			GetUsersFunc: func(accessToken string) (*Users, error) {
 // 				panic("mock out the GetUsers method")
 // 			},
+// 			SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
+// 				panic("mock out the SetFromEmailAddress method")
+// 			},
 // 			SetNamespaceFunc: func(ns string)  {
 // 				panic("mock out the SetNamespace method")
 // 			},
@@ -78,6 +81,9 @@ type ThreeScaleInterfaceMock struct {
 
 	// GetUsersFunc mocks the GetUsers method.
 	GetUsersFunc func(accessToken string) (*Users, error)
+
+	// SetFromEmailAddressFunc mocks the SetFromEmailAddress method.
+	SetFromEmailAddressFunc func(emailAddress string, accessToken string) (*http.Response, error)
 
 	// SetNamespaceFunc mocks the SetNamespace method.
 	SetNamespaceFunc func(ns string)
@@ -142,6 +148,13 @@ type ThreeScaleInterfaceMock struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
+		// SetFromEmailAddress holds details about calls to the SetFromEmailAddress method.
+		SetFromEmailAddress []struct {
+			// EmailAddress is the emailAddress argument value.
+			EmailAddress string
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+		}
 		// SetNamespace holds details about calls to the SetNamespace method.
 		SetNamespace []struct {
 			// Ns is the ns argument value.
@@ -180,6 +193,7 @@ type ThreeScaleInterfaceMock struct {
 	lockGetAuthenticationProviders      sync.RWMutex
 	lockGetUser                         sync.RWMutex
 	lockGetUsers                        sync.RWMutex
+	lockSetFromEmailAddress             sync.RWMutex
 	lockSetNamespace                    sync.RWMutex
 	lockSetUserAsAdmin                  sync.RWMutex
 	lockSetUserAsMember                 sync.RWMutex
@@ -428,6 +442,41 @@ func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	mock.lockGetUsers.RLock()
 	calls = mock.calls.GetUsers
 	mock.lockGetUsers.RUnlock()
+	return calls
+}
+
+// SetFromEmailAddress calls SetFromEmailAddressFunc.
+func (mock *ThreeScaleInterfaceMock) SetFromEmailAddress(emailAddress string, accessToken string) (*http.Response, error) {
+	if mock.SetFromEmailAddressFunc == nil {
+		panic("ThreeScaleInterfaceMock.SetFromEmailAddressFunc: method is nil but ThreeScaleInterface.SetFromEmailAddress was just called")
+	}
+	callInfo := struct {
+		EmailAddress string
+		AccessToken  string
+	}{
+		EmailAddress: emailAddress,
+		AccessToken:  accessToken,
+	}
+	mock.lockSetFromEmailAddress.Lock()
+	mock.calls.SetFromEmailAddress = append(mock.calls.SetFromEmailAddress, callInfo)
+	mock.lockSetFromEmailAddress.Unlock()
+	return mock.SetFromEmailAddressFunc(emailAddress, accessToken)
+}
+
+// SetFromEmailAddressCalls gets all the calls that were made to SetFromEmailAddress.
+// Check the length with:
+//     len(mockedThreeScaleInterface.SetFromEmailAddressCalls())
+func (mock *ThreeScaleInterfaceMock) SetFromEmailAddressCalls() []struct {
+	EmailAddress string
+	AccessToken  string
+} {
+	var calls []struct {
+		EmailAddress string
+		AccessToken  string
+	}
+	mock.lockSetFromEmailAddress.RLock()
+	calls = mock.calls.SetFromEmailAddress
+	mock.lockSetFromEmailAddress.RUnlock()
 	return calls
 }
 

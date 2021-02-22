@@ -6,6 +6,10 @@ import (
 	"math/rand"
 	"net/http"
 
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -59,7 +63,39 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
 	}
 
+	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+		switch obj := obj.(type) {
+		case *corev1.Secret:
+			if key.Name == "alertmanager-application-monitoring" {
+				obj.Data = getMockAlertManagerSecret()
+				return nil
+			}
+		}
+		return sigsFakeClient.GetSigsClient().Get(ctx, key, obj)
+	}
+
 	return sigsFakeClient
+}
+
+func getMockAlertManagerSecret() map[string][]byte {
+	templateUtil := monitoring.NewTemplateHelper(map[string]string{
+		"SMTPHost":              "SMTPHost",
+		"SMTPPort":              "SMTPPort",
+		"SMTPFrom":              "test@test.com",
+		"SMTPUsername":          "SMTPUsername",
+		"SMTPPassword":          "SMTPPassword",
+		"SMTPToCustomerAddress": "SMTPToCustomerAddress",
+		"SMTPToSREAddress":      "SMTPToSREAddress",
+		"SMTPToBUAddress":       "SMTPToBUAddress",
+		"PagerDutyServiceKey":   "PagerDutyServiceKey",
+		"DeadMansSnitchURL":     "DeadMansSnitchURL",
+		"Subject":               "Subject",
+	})
+	configSecretData, _ := templateUtil.LoadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
+
+	return map[string][]byte{
+		"alertmanager.yaml": configSecretData,
+	}
 }
 
 func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Client.AppsV1Interface {
@@ -141,6 +177,9 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			}
 
 			return nil, fmt.Errorf("user %s not found", userName)
+		},
+		SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
+			return nil, nil
 		},
 		AddUserFunc: func(username string, email string, password string, accessToken string) (response *http.Response, e error) {
 			testUsers.Users = append(testUsers.Users, &User{
