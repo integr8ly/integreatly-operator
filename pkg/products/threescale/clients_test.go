@@ -43,6 +43,10 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 				Install: &coreosv1alpha1.InstallPlanReference{
 					Name: installPlanFor3ScaleSubscription.Name,
 				},
+				InstallPlanRef: &corev1.ObjectReference{
+					Name:      installPlanFor3ScaleSubscription.Name,
+					Namespace: obj.Namespace,
+				},
 			}
 			err := sigsFakeClient.GetSigsClient().Create(ctx, obj)
 			if err != nil {

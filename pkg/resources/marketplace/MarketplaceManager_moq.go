@@ -20,8 +20,8 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 // 		// make and configure a mocked MarketplaceInterface
 // 		mockedMarketplaceInterface := &MarketplaceInterfaceMock{
-// 			GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
-// 				panic("mock out the GetSubscriptionInstallPlans method")
+// 			GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+// 				panic("mock out the GetSubscriptionInstallPlan method")
 // 			},
 // 			InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 // 				panic("mock out the InstallOperator method")
@@ -33,16 +33,16 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 // 	}
 type MarketplaceInterfaceMock struct {
-	// GetSubscriptionInstallPlansFunc mocks the GetSubscriptionInstallPlans method.
-	GetSubscriptionInstallPlansFunc func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
+	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
+	GetSubscriptionInstallPlanFunc func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
 
 	// InstallOperatorFunc mocks the InstallOperator method.
 	InstallOperatorFunc func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetSubscriptionInstallPlans holds details about calls to the GetSubscriptionInstallPlans method.
-		GetSubscriptionInstallPlans []struct {
+		// GetSubscriptionInstallPlan holds details about calls to the GetSubscriptionInstallPlan method.
+		GetSubscriptionInstallPlan []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ServerClient is the serverClient argument value.
@@ -68,14 +68,14 @@ type MarketplaceInterfaceMock struct {
 			CatalogSourceReconciler CatalogSourceReconciler
 		}
 	}
-	lockGetSubscriptionInstallPlans sync.RWMutex
-	lockInstallOperator             sync.RWMutex
+	lockGetSubscriptionInstallPlan sync.RWMutex
+	lockInstallOperator            sync.RWMutex
 }
 
-// GetSubscriptionInstallPlans calls GetSubscriptionInstallPlansFunc.
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
-	if mock.GetSubscriptionInstallPlansFunc == nil {
-		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlansFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlans was just called")
+// GetSubscriptionInstallPlan calls GetSubscriptionInstallPlanFunc.
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+	if mock.GetSubscriptionInstallPlanFunc == nil {
+		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlanFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlan was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
@@ -88,16 +88,16 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Co
 		SubName:      subName,
 		Ns:           ns,
 	}
-	mock.lockGetSubscriptionInstallPlans.Lock()
-	mock.calls.GetSubscriptionInstallPlans = append(mock.calls.GetSubscriptionInstallPlans, callInfo)
-	mock.lockGetSubscriptionInstallPlans.Unlock()
-	return mock.GetSubscriptionInstallPlansFunc(ctx, serverClient, subName, ns)
+	mock.lockGetSubscriptionInstallPlan.Lock()
+	mock.calls.GetSubscriptionInstallPlan = append(mock.calls.GetSubscriptionInstallPlan, callInfo)
+	mock.lockGetSubscriptionInstallPlan.Unlock()
+	return mock.GetSubscriptionInstallPlanFunc(ctx, serverClient, subName, ns)
 }
 
-// GetSubscriptionInstallPlansCalls gets all the calls that were made to GetSubscriptionInstallPlans.
+// GetSubscriptionInstallPlanCalls gets all the calls that were made to GetSubscriptionInstallPlan.
 // Check the length with:
-//     len(mockedMarketplaceInterface.GetSubscriptionInstallPlansCalls())
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struct {
+//     len(mockedMarketplaceInterface.GetSubscriptionInstallPlanCalls())
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlanCalls() []struct {
 	Ctx          context.Context
 	ServerClient k8sclient.Client
 	SubName      string
@@ -109,9 +109,9 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struc
 		SubName      string
 		Ns           string
 	}
-	mock.lockGetSubscriptionInstallPlans.RLock()
-	calls = mock.calls.GetSubscriptionInstallPlans
-	mock.lockGetSubscriptionInstallPlans.RUnlock()
+	mock.lockGetSubscriptionInstallPlan.RLock()
+	calls = mock.calls.GetSubscriptionInstallPlan
+	mock.lockGetSubscriptionInstallPlan.RUnlock()
 	return calls
 }
 

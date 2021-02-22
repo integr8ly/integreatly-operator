@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -25,10 +26,12 @@ var log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "marketplace"})
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
 	InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
-	GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
+	GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
 }
 
 type Manager struct{}
+
+var _ MarketplaceInterface = &Manager{}
 
 func NewManager() *Manager {
 	return &Manager{}
@@ -107,22 +110,24 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 	return sub, nil
 }
 
-func (m *Manager) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
+func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
-	if sub.Status.Install == nil {
+	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
 	}
 
-	ip := &coreosv1alpha1.InstallPlanList{}
+	ip := &coreosv1alpha1.InstallPlan{}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      sub.Status.InstallPlanRef.Name,
+		Namespace: sub.Status.InstallPlanRef.Namespace,
+	}, ip); err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, nil, nil
+		}
 
-	ipListOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(ns),
-	}
-	err = serverClient.List(ctx, ip, ipListOpts...)
-	if err != nil {
 		return nil, nil, err
 	}
 

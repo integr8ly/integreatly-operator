@@ -5,9 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
-	"testing"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -421,23 +422,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlanList{
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ApplicationMonitoring",
 								APIVersion: monitoringv1.SchemeGroupVersion.String(),
 							},
-							Items: []operatorsv1alpha1.InstallPlan{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name: "monitoring-install-plan",
-									},
-									Status: operatorsv1alpha1.InstallPlanStatus{
-										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-									},
-								},
+							// Items: []operatorsv1alpha1.InstallPlan{
+							// 	{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "monitoring-install-plan",
 							},
-							ListMeta: metav1.ListMeta{},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+							// },
+							// },
+							// ListMeta: metav1.ListMeta{},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
@@ -553,8 +554,8 @@ func TestReconciler_testPhases(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
@@ -570,8 +571,8 @@ func TestReconciler_testPhases(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
-					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
+					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
@@ -587,20 +588,14 @@ func TestReconciler_testPhases(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, sub string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
-					return &operatorsv1alpha1.InstallPlanList{
-							TypeMeta: metav1.TypeMeta{
-								Kind:       "ApplicationMonitoring",
-								APIVersion: monitoringv1.SchemeGroupVersion.String(),
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, sub string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
+					return nil, &operatorsv1alpha1.Subscription{
+						Status: operatorsv1alpha1.SubscriptionStatus{
+							Install: &operatorsv1alpha1.InstallPlanReference{
+								Name: "monitoring-install-plan",
 							},
-							ListMeta: metav1.ListMeta{},
-						}, &operatorsv1alpha1.Subscription{
-							Status: operatorsv1alpha1.SubscriptionStatus{
-								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "monitoring-install-plan",
-								},
-							},
-						}, nil
+						},
+					}, nil
 				},
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
