@@ -141,6 +141,10 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 		}
 
 		rhmiCr, err := resources.GetRhmiCr(r.Client, ctx, request.NamespacedName.Namespace, log)
+		if err != nil || rhmiCr == nil {
+			return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
+		}
+
 		if rhmiCr.Spec.Type == "managed" {
 			deletionConfigMap = "rhmi"
 		}
