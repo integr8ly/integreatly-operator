@@ -28,19 +28,26 @@ else
   ORG="$ORG"
 fi
 
+# Optional environment variable to set a different Kustomize path. If this
+# variable is not set, it will use the one from the $PATH
+if [[ -z $KUSTOMIZE_PATH ]]; then
+  KUSTOMIZE=$(which kustomize)
+else
+  KUSTOMIZE=$KUSTOMIZE_PATH
+fi
+
 create_new_csv() {
 
   if [[ -z "$PREVIOUS_VERSION" ]]
     then
-      kustomize build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
     else
-      kustomize build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi --from-version $PREVIOUS_VERSION
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi --from-version $PREVIOUS_VERSION
   fi
 }
 
 update_csv() {
-  kustomize build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
-  # operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds
+  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
 }
 
 # The base CSV is used to generate the final CSV by combining it with the other operator
