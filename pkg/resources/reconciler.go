@@ -239,20 +239,13 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 
 	// Workaround to re-install product operator if install plan fails due to https://bugzilla.redhat.com/show_bug.cgi?id=1923111
 	if ip.Status.Phase == operatorsv1alpha1.InstallPlanPhaseFailed {
+		var csv *operatorsv1alpha1.ClusterServiceVersion
 		if sub.Status.InstalledCSV != "" {
-			log.Warningf("Deleting csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg, "csv": sub.Status.InstalledCSV})
-			csv := &operatorsv1alpha1.ClusterServiceVersion{
+			csv = &operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{Namespace: target.Namespace, Name: sub.Status.InstalledCSV},
 			}
-			if err := client.Delete(ctx, csv); err != nil && !k8serr.IsNotFound(err) {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete csv for re-intstall: %s", err)
-			}
 		}
-		log.Warningf("Deleting subscription for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
-		if err := client.Delete(ctx, sub); err != nil && !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete subscription for re-intstall: %s", err)
-		}
-		return integreatlyv1alpha1.PhaseAwaitingOperator, nil
+		return retryInstallation(ctx, client, log, target, csv, sub)
 	}
 
 	//if it's approved but not complete, then it's in progress
@@ -264,7 +257,51 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 		log.Infof("Upgrade installplan above the maximum allowed version", l.Fields{"install plan": target.Pkg})
 	}
 
+	for _, csvName := range ip.Spec.ClusterServiceVersionNames {
+		ipCSV := &operatorsv1alpha1.ClusterServiceVersion{}
+		if err := client.Get(ctx, k8sclient.ObjectKey{
+			Name:      csvName,
+			Namespace: target.Namespace,
+		}, ipCSV); err != nil {
+			if k8serr.IsNotFound(err) {
+				log.Infof("Waiting for CSV to be created in cluster after InstallPlan is complete: %s", l.Fields{
+					"install plan": target.Pkg,
+				})
+				return integreatlyv1alpha1.PhaseInProgress, nil
+			}
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error retrieving CSV: %v", err)
+		}
+
+		if err := validateCSV(ipCSV); err != nil {
+			log.Warningf("CSV failed validation. Retrying operator installation", l.Fields{"error": err, "install plan": target.Pkg})
+			return retryInstallation(ctx, client, log, target, ipCSV, sub)
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func validateCSV(csv *operatorsv1alpha1.ClusterServiceVersion) error {
+	if csv.Spec.InstallStrategy.StrategyName == operatorsv1alpha1.InstallStrategyNameDeployment && len(csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs) == 0 {
+		return errors.New("no Deployment found in install strategy")
+	}
+
+	return nil
+}
+
+func retryInstallation(ctx context.Context, client k8sclient.Client, log l.Logger, target marketplace.Target, csv *operatorsv1alpha1.ClusterServiceVersion, sub *operatorsv1alpha1.Subscription) (integreatlyv1alpha1.StatusPhase, error) {
+	if csv != nil {
+		log.Warningf("Deleting csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg, "csv": csv.Name})
+		if err := client.Delete(ctx, csv); err != nil && !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete csv for re-install: %s", err)
+		}
+	}
+
+	log.Warningf("Deleting subscription for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
+	if err := client.Delete(ctx, sub); err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete subscription for re-intstall: %s", err)
+	}
+	return integreatlyv1alpha1.PhaseAwaitingOperator, nil
 }
 
 func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI, addRHMIMonitoringLabels bool, addClusterMonitoringLabel bool) {
