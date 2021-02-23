@@ -41,6 +41,7 @@ var managedAPITemplateList = []string{
 	"resources-by-pod",
 	"cluster-resources",
 	"critical-slo-managed-api-alerts",
+	"cro-resources",
 }
 
 func NewMonitoring(config ProductConfig) *Monitoring {
