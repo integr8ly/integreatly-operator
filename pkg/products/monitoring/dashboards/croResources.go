@@ -1,6 +1,6 @@
 package monitoring
 
-const MonitoringCROResourcesJSON = `{
+const MonitoringGrafanaDBCROResourcesJSON = `{
   "annotations": {
     "list": [
       {
