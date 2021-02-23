@@ -30,7 +30,6 @@ require (
 	github.com/integr8ly/grafana-operator/v3 v3.6.0
 	github.com/integr8ly/keycloak-client v0.1.3-0.20210125112511-1972ece81982
 	github.com/keycloak/keycloak-operator v0.0.0-20210115090828-e5d4686bb8a4
-	github.com/matryer/moq v0.2.1 // indirect
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.2
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
@@ -70,6 +69,7 @@ replace (
 
 replace (
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
+	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.1.1
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 	github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
