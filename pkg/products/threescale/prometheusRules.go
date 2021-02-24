@@ -2,6 +2,7 @@ package threescale
 
 import (
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 
@@ -10,7 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconciler {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -29,7 +32,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='apicast-production'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleApicastStagingServiceEndpointDown",
@@ -39,7 +42,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='apicast-staging'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleBackendListenerServiceEndpointDown",
@@ -49,7 +52,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='backend-listener'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleSystemDeveloperServiceEndpointDown",
@@ -59,7 +62,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='system-developer'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleSystemMasterServiceEndpointDown",
@@ -69,7 +72,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='system-master'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleSystemMemcacheServiceEndpointDown",
@@ -79,7 +82,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='system-memcache'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleSystemProviderServiceEndpointDown",
@@ -89,7 +92,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='system-provider'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleSystemSphinxServiceEndpointDown",
@@ -99,7 +102,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='system-sphinx'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleZyncServiceEndpointDown",
@@ -109,7 +112,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='zync'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleZyncDatabaseServiceEndpointDown",
@@ -119,7 +122,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='zync-database'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},
@@ -137,7 +140,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace=`%s`} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIThreeScaleOperatorServiceEndpointDown",
@@ -147,7 +150,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='threescale-operator'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -188,7 +191,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%[1]v' })) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleApicastProductionPod",
@@ -198,7 +201,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleBackendWorkerPod",
@@ -208,7 +211,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='backend-worker',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='backend-worker',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleBackendListenerPod",
@@ -218,7 +221,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='backend-listener',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='backend-listener',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleSystemAppPod",
@@ -228,7 +231,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='system-app',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_deploymentconfig='system-app',namespace='%[1]v'}) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleAdminUIBBT",
@@ -238,7 +241,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("absent(probe_success{job='blackbox', service='3scale-admin-ui'} == 1)"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleDeveloperUIBBT",
@@ -248,7 +251,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("absent(probe_success{job='blackbox',service='3scale-developer-console-ui'} == 1)"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleSystemAdminUIBBT",
@@ -258,7 +261,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-system-admin-ui'} == 0 and up{job='blackbox', service='3scale-system-admin-ui'} ==1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleZyncPodAvailability",
@@ -268,7 +271,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='zync'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='zync'}) != %d", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
 						For:    "15m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleZyncDatabasePodAvailability",
@@ -278,7 +281,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='database'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='database'}) != 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleContainerHighMemory",
@@ -288,7 +291,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='', container!='system-provider', namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits_memory_bytes{namespace='%[1]v'}) * 100 > 90", r.Config.GetNamespace())),
 						For:    "15m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleContainerHighCPU",
@@ -298,7 +301,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace='%[1]v'}) by (container, pod) / sum(kube_pod_container_resource_limits_cpu_cores{namespace='%[1]v'}) by (container, pod) * 100 > 90", r.Config.GetNamespace())),
 						For:    "15m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreescaleApicastWorkerRestart",
@@ -310,7 +313,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						Expr: intstr.FromString(fmt.Sprintf(`changes(worker_process{kubernetes_namespace='%s', kubernetes_pod_name=~'apicast-production.*'}[5m]) > 0`, r.Config.GetNamespace())),
 						For:  "5m",
 						Labels: map[string]string{
-							"severity": "critical",
+							"severity": "critical", "product": installationName,
 						},
 					},
 				},

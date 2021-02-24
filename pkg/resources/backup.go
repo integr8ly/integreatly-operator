@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -44,7 +45,7 @@ var (
 	BackupRoleBindingName    = "rhmi-backupjob"
 )
 
-func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, configManager productsConfig.ConfigReadWriter, log l.Logger) error {
+func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, configManager productsConfig.ConfigReadWriter, log l.Logger, installType string) error {
 	log.Infof("reconciling backups", l.Fields{"configMap": config.Name})
 
 	err := reconcileBackendSecret(ctx, serverClient, config, configManager.GetBackupsSecretName(), configManager.GetOperatorNamespace())
@@ -72,7 +73,7 @@ func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config 
 		return err
 	}
 
-	err = reconcileCronjobAlerts(ctx, serverClient, config)
+	err = reconcileCronjobAlerts(ctx, serverClient, config, installType)
 	if err != nil {
 		return err
 	}
@@ -286,7 +287,9 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 	return err
 }
 
-func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, config BackupConfig) error {
+func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, installType string) error {
+	installationName := InstallationNames[installType]
+
 	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
 
 	rules := []monitoringv1.Rule{}
@@ -299,7 +302,7 @@ func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, 
 			},
 			Expr:   intstr.FromString("absent(kube_cronjob_info{cronjob=\"" + component.Name + "\", namespace=\"" + config.Namespace + "\"})"),
 			For:    "5m",
-			Labels: map[string]string{"severity": "warning"},
+			Labels: map[string]string{"severity": "warning", "product": installationName},
 		})
 	}
 

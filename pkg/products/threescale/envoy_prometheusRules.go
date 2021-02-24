@@ -2,13 +2,16 @@ package threescale
 
 import (
 	"fmt"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger) resources.AlertReconciler {
+func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -27,7 +30,7 @@ func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger) resources.AlertRec
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%v'})) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "Marin3rEnvoyApicastProductionContainerDown",
@@ -37,7 +40,7 @@ func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger) resources.AlertRec
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%v'})) < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},

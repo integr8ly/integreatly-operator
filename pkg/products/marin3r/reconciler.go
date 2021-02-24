@@ -220,7 +220,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler := r.newAlertReconciler(r.log)
+	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Marin3r alerts", err)
 		return phase, err
@@ -233,7 +233,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log)
+	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log, r.installation.Spec.Type)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to instantiate rejected requests alert reconciler", err)
 		return integreatlyv1alpha1.PhaseFailed, err

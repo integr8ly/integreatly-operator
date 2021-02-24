@@ -9,7 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconciler {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -28,7 +29,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%[1]v'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "GrafanaServiceEndpointDown",
@@ -38,7 +39,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='grafana-service'} * on(namespace) group_left() kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -55,7 +56,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_name='grafana-operator',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_name='grafana-operator',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "GrafanaServicePod",
@@ -65,7 +66,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconcil
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='grafana',namespace='%[1]v'})) or count(kube_pod_status_ready{condition='true',namespace=`%[1]v`} * on(pod, namespace) kube_pod_labels{label_app='grafana',namespace='%[1]v'}) < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},

@@ -5,13 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+
 	marin3rv1alpha "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
@@ -372,14 +375,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
 		}
 
-		alertsReconciler := r.newEnvoyAlertReconciler(r.log)
+		alertsReconciler := r.newEnvoyAlertReconciler(r.log, r.installation.Spec.Type)
 		if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 			return phase, err
 		}
 	}
 
-	alertsReconciler := r.newAlertReconciler(r.log)
+	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err

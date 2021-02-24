@@ -8,7 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
+
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "CodeReady",
 		Installation: r.installation,
@@ -27,7 +29,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='che-host'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMICodeReadyDevfileRegistryServiceEndpointDown",
@@ -37,7 +39,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='devfile-registry'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
 						Alert: "RHMICodeReadyPluginRegistryServiceEndpointDown",
@@ -47,7 +49,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='plugin-registry'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},
@@ -65,7 +67,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -83,7 +85,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%[1]v'})) or sum(kube_pod_status_ready{condition='true', namespace='%[1]v'}) < 2", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},

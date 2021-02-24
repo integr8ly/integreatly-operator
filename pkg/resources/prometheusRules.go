@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -12,6 +13,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+var (
+	InstallationNames = map[string]string{
+		string(integreatlyv1alpha1.InstallationTypeManaged):    "rhmi",
+		string(integreatlyv1alpha1.InstallationTypeManagedApi): "rhoam",
+	}
 )
 
 type AlertReconciler interface {

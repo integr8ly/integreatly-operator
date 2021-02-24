@@ -25,7 +25,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	if err != nil {
 		return nil, err
 	}
-	alerts, err := mapAlertsConfiguration(r.log, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
+	alerts, err := mapAlertsConfiguration(r.log, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -41,7 +41,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string, installationName string) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
@@ -54,7 +54,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),
 				"grafanaConsole": grafanaDashboardURL,
 			}
-			alert := mapSpikeAlert(alertConfig, alertName, namespace, expr, annotations)
+			alert := mapSpikeAlert(alertConfig, alertName, namespace, expr, annotations, installationName)
 			result = append(result, alert)
 		case marin3rconfig.AlertTypeThreshold:
 
@@ -90,7 +90,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 				),
 				"grafanaConsole": grafanaDashboardURL,
 			}
-			alert := mapThresholdAlert(alertConfig, alertName, namespace, expr, annotations)
+			alert := mapThresholdAlert(alertConfig, alertName, namespace, expr, annotations, installationName)
 
 			result = append(result, alert)
 		default:
@@ -101,7 +101,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 	return result, nil
 }
 
-func mapSpikeAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string) resources.AlertConfiguration {
+func mapSpikeAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string, installationName string) resources.AlertConfiguration {
 	return resources.AlertConfiguration{
 		AlertName: alertName,
 		GroupName: "ratelimit-spike.rules",
@@ -112,13 +112,13 @@ func mapSpikeAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, nam
 				Alert:       alertConfig.RuleName,
 				Annotations: annotations,
 				Expr:        intstr.FromString(expr),
-				Labels:      map[string]string{"severity": alertConfig.Level},
+				Labels:      map[string]string{"severity": alertConfig.Level, "product": installationName},
 			},
 		},
 	}
 }
 
-func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string) resources.AlertConfiguration {
+func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string, installationName string) resources.AlertConfiguration {
 	return resources.AlertConfiguration{
 		AlertName: alertName,
 		GroupName: "api-usage.rules",
@@ -128,7 +128,7 @@ func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string,
 				Alert:       alertConfig.RuleName,
 				Annotations: annotations,
 				Expr:        intstr.FromString(expr),
-				Labels:      map[string]string{"severity": alertConfig.Level},
+				Labels:      map[string]string{"severity": alertConfig.Level, "product": installationName},
 			},
 		},
 	}

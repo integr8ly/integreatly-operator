@@ -9,7 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+	installationName := resources.InstallationNames[installType]
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "rhsso",
 		Installation: r.Installation,
@@ -28,7 +29,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconci
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
@@ -38,7 +39,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconci
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak-discovery', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
@@ -56,7 +57,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconci
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
@@ -66,7 +67,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconci
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "warning"},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},
 			},
