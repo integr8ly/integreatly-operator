@@ -78,7 +78,7 @@ echo "Keycloak realm: $REALM"
 
 # If CLUSTER_ID is not passed, find out ID based on currently targeted server
 set +e # ignore errors in environments without ocm command
-CLUSTER_ID="${CLUSTER_ID:-$(ocm get /api/clusters_mgmt/v1/clusters/ --parameter "search=managed='true'" 2>/dev/null | jq -r ".items[] | select(.api.url == \"$(oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*')\") | .id ")}"
+CLUSTER_ID="${CLUSTER_ID:-$(ocm get clusters --parameter search="api.url like '$(oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*')'" 2>/dev/null | jq -r .items[0].id)}"
 set -e
 
 if [[ ${CLUSTER_ID} ]]; then
