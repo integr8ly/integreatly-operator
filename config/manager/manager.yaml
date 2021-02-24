@@ -3,18 +3,14 @@ kind: Deployment
 metadata:
   name: rhmi-operator
   namespace: system
-  labels:
-    control-plane: controller-manager
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
       name: rhmi-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: controller-manager
         name: rhmi-operator
     spec:
       serviceAccountName: "rhmi-operator"
