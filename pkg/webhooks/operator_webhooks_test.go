@@ -8,7 +8,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,7 +27,7 @@ func TestReconcile(t *testing.T) {
 	// Set up testing scheme
 	scheme := runtime.NewScheme()
 	corev1.AddToScheme(scheme)
-	v1beta1.AddToScheme(scheme)
+	admissionv1.AddToScheme(scheme)
 	schemeBuilder.AddToScheme(scheme)
 	v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	scheme.AddKnownTypes(schemeBuilder.GroupVersion, &mockValidator{})
@@ -298,8 +298,8 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 	}
 }
 
-func findValidatingWebhookConfig(client k8sclient.Client) (*v1beta1.ValidatingWebhookConfiguration, error) {
-	vwc := &v1beta1.ValidatingWebhookConfiguration{}
+func findValidatingWebhookConfig(client k8sclient.Client) (*admissionv1.ValidatingWebhookConfiguration, error) {
+	vwc := &admissionv1.ValidatingWebhookConfiguration{}
 	err := client.Get(
 		context.TODO(),
 		k8sclient.ObjectKey{Name: "test.integreatly.org"},
@@ -312,8 +312,8 @@ func findValidatingWebhookConfig(client k8sclient.Client) (*v1beta1.ValidatingWe
 	return vwc, nil
 }
 
-func findMutatingWebhookConfig(client k8sclient.Client, name string) (*v1beta1.MutatingWebhookConfiguration, error) {
-	mwc := &v1beta1.MutatingWebhookConfiguration{}
+func findMutatingWebhookConfig(client k8sclient.Client, name string) (*admissionv1.MutatingWebhookConfiguration, error) {
+	mwc := &admissionv1.MutatingWebhookConfiguration{}
 	err := client.Get(
 		context.TODO(),
 		k8sclient.ObjectKey{Name: fmt.Sprintf("%s.integreatly.org", name)},

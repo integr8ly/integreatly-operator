@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	pkgerr "github.com/pkg/errors"
 
-	"k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -61,10 +61,10 @@ type MutatingWebhookReconciler struct {
 
 func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error {
 	var (
-		sideEffects    = v1beta1.SideEffectClassNone
+		sideEffects    = admissionv1.SideEffectClassNone
 		port           = int32(servicePort)
-		matchPolicy    = v1beta1.Exact
-		failurePolicy  = v1beta1.Fail
+		matchPolicy    = admissionv1.Exact
+		failurePolicy  = admissionv1.Fail
 		timeoutSeconds = int32(30)
 	)
 	watchNS, err := resources.GetWatchNamespace()
@@ -73,30 +73,30 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 	}
 	namespaceSegments := strings.Split(watchNS, "-")
 	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
-	cr := &v1beta1.MutatingWebhookConfiguration{
+	cr := &admissionv1.MutatingWebhookConfiguration{
 		ObjectMeta: v1.ObjectMeta{
 			Name: fmt.Sprintf("%s.integreatly.org", reconciler.name),
 		},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
-		cr.Webhooks = []v1beta1.MutatingWebhook{
+		cr.Webhooks = []admissionv1.MutatingWebhook{
 			{
 				Name:        fmt.Sprintf("%s-mutating-config.integreatly.org", reconciler.name),
 				SideEffects: &sideEffects,
-				ClientConfig: v1beta1.WebhookClientConfig{
+				ClientConfig: admissionv1.WebhookClientConfig{
 					CABundle: caBundle,
-					Service: &v1beta1.ServiceReference{
+					Service: &admissionv1.ServiceReference{
 						Namespace: namespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,
 					},
 				},
-				Rules: []v1beta1.RuleWithOperations{
+				Rules: []admissionv1.RuleWithOperations{
 					{
 						Operations: reconciler.rule.Operations,
-						Rule: v1beta1.Rule{
+						Rule: admissionv1.Rule{
 							APIGroups:   reconciler.rule.APIGroups,
 							APIVersions: reconciler.rule.APIVersions,
 							Resources:   reconciler.rule.Resources,
@@ -117,10 +117,10 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 
 func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error {
 	var (
-		sideEffects    = v1beta1.SideEffectClassNone
+		sideEffects    = admissionv1.SideEffectClassNone
 		port           = int32(servicePort)
-		matchPolicy    = v1beta1.Exact
-		failurePolicy  = v1beta1.Fail
+		matchPolicy    = admissionv1.Exact
+		failurePolicy  = admissionv1.Fail
 		timeoutSeconds = int32(30)
 	)
 	watchNS, err := resources.GetWatchNamespace()
@@ -129,30 +129,30 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, cl
 	}
 	namespaceSegments := strings.Split(watchNS, "-")
 	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
-	cr := &v1beta1.ValidatingWebhookConfiguration{
+	cr := &admissionv1.ValidatingWebhookConfiguration{
 		ObjectMeta: v1.ObjectMeta{
 			Name: fmt.Sprintf("%s.integreatly.org", reconciler.name),
 		},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
-		cr.Webhooks = []v1beta1.ValidatingWebhook{
+		cr.Webhooks = []admissionv1.ValidatingWebhook{
 			{
 				Name:        fmt.Sprintf("%s-validating-config.integreatly.org", reconciler.name),
 				SideEffects: &sideEffects,
-				ClientConfig: v1beta1.WebhookClientConfig{
+				ClientConfig: admissionv1.WebhookClientConfig{
 					CABundle: caBundle,
-					Service: &v1beta1.ServiceReference{
+					Service: &admissionv1.ServiceReference{
 						Namespace: namespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,
 					},
 				},
-				Rules: []v1beta1.RuleWithOperations{
+				Rules: []admissionv1.RuleWithOperations{
 					{
 						Operations: reconciler.rule.Operations,
-						Rule: v1beta1.Rule{
+						Rule: admissionv1.Rule{
 							APIGroups:   reconciler.rule.APIGroups,
 							APIVersions: reconciler.rule.APIVersions,
 							Resources:   reconciler.rule.Resources,
