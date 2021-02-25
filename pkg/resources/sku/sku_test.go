@@ -25,6 +25,7 @@ func TestGetSKU(t *testing.T) {
 		SKUId     string
 		SKUConfig *corev1.ConfigMap
 		SKU       *SKU
+		isUpdated bool
 	}
 	tests := []struct {
 		name     string
@@ -49,6 +50,7 @@ func TestGetSKU(t *testing.T) {
 				SKUId:     DEVSKU,
 				SKUConfig: getSKUConfig(nil),
 				SKU:       pointerToSKU,
+				isUpdated: false,
 			},
 			want: &SKU{
 				name: DEVSKU,
@@ -105,6 +107,7 @@ func TestGetSKU(t *testing.T) {
 				SKUId:     TWENTYMILLIONSKU,
 				SKUConfig: getSKUConfig(nil),
 				SKU:       pointerToSKU,
+				isUpdated: false,
 			},
 			want: &SKU{
 				name: TWENTYMILLIONSKU,
@@ -159,7 +162,7 @@ func TestGetSKU(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetSKU(tt.args.SKUId, tt.args.SKUConfig, tt.args.SKU)
+			err := GetSKU(tt.args.SKUId, tt.args.SKUConfig, tt.args.SKU, tt.args.isUpdated)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetSKU() error = %v, wantErr %v", err, tt.wantErr)
 				return
