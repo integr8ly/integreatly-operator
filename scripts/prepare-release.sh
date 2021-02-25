@@ -29,9 +29,27 @@ else
 fi
 
 # Optional environment variable to set a different Kustomize path. If this
-# variable is not set, it will use the one from the $PATH
+# variable is not set, it will use the one from the $PATH or install Kustomize
 if [[ -z $KUSTOMIZE_PATH ]]; then
-  KUSTOMIZE=$(which kustomize)
+  if ! command -v kustomize &> /dev/null; then
+    if [[ $(go env GOBIN) ]]; then
+      GOBIN=$(go env GOBIN)
+    else
+      GOBIN=$(go env GOPATH)/bin
+    fi
+
+    KUSTOMIZE_GEN_TMP_DIR=$(mktemp -d)
+    wd=$(pwd)
+    cd $KUSTOMIZE_GEN_TMP_DIR
+    go mod init tmp
+    go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4
+    cd $wd
+    rm -rf $KUSTOMIZE_GEN_TMP_DIR
+    KUSTOMIZE=$GOBIN/kustomize
+    echo $KUSTOMIZE
+  else
+    KUSTOMIZE=$(which kustomize)
+  fi
 else
   KUSTOMIZE=$KUSTOMIZE_PATH
 fi
