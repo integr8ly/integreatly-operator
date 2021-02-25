@@ -31,6 +31,7 @@ var rhmiTemplateList = []string{
 	"resources-by-pod",
 	"cluster-resources",
 	"critical-slo-rhmi-alerts",
+	"cro-resources",
 }
 
 var managedAPITemplateList = []string{

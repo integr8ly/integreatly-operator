@@ -22,7 +22,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
   "links": [],
   "panels": [
     {
-      "datasource": null,
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -96,7 +96,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
       "type": "stat"
     },
     {
-      "datasource": null,
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -171,7 +171,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -299,7 +299,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -586,7 +586,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -867,7 +867,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -881,7 +881,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -974,7 +974,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1128,7 +1128,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -1220,7 +1220,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -1328,10 +1328,6 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
         "type": "adhoc"
       }
     ]
-  },
-  "time": {
-    "from": "2021-02-22T01:41:51.821Z",
-    "to": "2021-02-22T13:41:51.821Z"
   },
   "timepicker": {
     "refresh_intervals": [
