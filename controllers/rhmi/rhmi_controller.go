@@ -260,20 +260,23 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return retryRequeue, errors.Wrap(err, "Error getting sku config map")
 		}
-		err = sku.GetSKU(skuSecretName, cm, installationSKU)
-		if err != nil {
-			return retryRequeue, err
-		}
 
 		// if it's the first install and first reconcile there will be no value
-		// set it because we want to be able to compare the sku
-		if installation.Status.ToSKU == "" && installation.Status.SKU == "" {
-			installationSKU.SetUpdated(true)
+		// or if the secretName is not the same as the current SKU
+		// there has been a change to the SKU
+		// so
+		// set ToSKU to the new value
+		// set isUpdate to true
+		isSKUUpdated := false
+		if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
+			skuSecretName != installation.Status.SKU {
+			isSKUUpdated = true
 			installation.Status.ToSKU = skuSecretName
 		}
 
-		if skuSecretName != installation.Status.SKU {
-			installationSKU.SetUpdated(true)
+		err = sku.GetSKU(skuSecretName, cm, installationSKU, isSKUUpdated)
+		if err != nil {
+			return retryRequeue, err
 		}
 
 	}
@@ -421,6 +424,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		installation.Status.SKU = skuSecretName
+		installation.Status.ToSKU = ""
 		log.Info("installation completed successfully")
 	}
 
@@ -432,8 +437,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
-		installation.Status.SKU = skuSecretName
-		installation.Status.ToSKU = ""
 	}
 	metrics.SetRHMIStatus(installation)
 
