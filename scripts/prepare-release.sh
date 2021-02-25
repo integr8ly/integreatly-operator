@@ -32,21 +32,11 @@ fi
 # variable is not set, it will use the one from the $PATH or install Kustomize
 if [[ -z $KUSTOMIZE_PATH ]]; then
   if ! command -v kustomize &> /dev/null; then
-    if [[ $(go env GOBIN) ]]; then
-      GOBIN=$(go env GOBIN)
-    else
-      GOBIN=$(go env GOPATH)/bin
-    fi
+    KUSTOMIZE_TMP_DIR=$(mktemp -d)
+    curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s \
+      3.5.4 $KUSTOMIZE_TMP_DIR
 
-    KUSTOMIZE_GEN_TMP_DIR=$(mktemp -d)
-    wd=$(pwd)
-    cd $KUSTOMIZE_GEN_TMP_DIR
-    go mod init tmp
-    go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4
-    cd $wd
-    rm -rf $KUSTOMIZE_GEN_TMP_DIR
-    KUSTOMIZE=$GOBIN/kustomize
-    echo $KUSTOMIZE
+    KUSTOMIZE=$KUSTOMIZE_TMP_DIR/kustomize    
   else
     KUSTOMIZE=$(which kustomize)
   fi
