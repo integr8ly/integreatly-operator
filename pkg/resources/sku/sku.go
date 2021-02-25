@@ -41,14 +41,14 @@ type skuConfigReceiver struct {
 	Resources map[string]ResourceConfig `json:"resources,omitempty"`
 }
 
-func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU) error {
-	received := &[]skuConfigReceiver{}
-	err := json.Unmarshal([]byte(SKUConfig.Data["sku-configs"]), received)
+func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bool) error {
+	allSKUs := &[]skuConfigReceiver{}
+	err := json.Unmarshal([]byte(SKUConfig.Data["sku-configs"]), allSKUs)
 	if err != nil {
 		return err
 	}
 	skuReceiver := skuConfigReceiver{}
-	for _, sku := range *received {
+	for _, sku := range *allSKUs {
 		if sku.Name == SKUId {
 			skuReceiver = sku
 			break
@@ -74,6 +74,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU) error {
 	}
 	retSku.name = SKUId
 	retSku.productConfigs = map[v1alpha1.ProductName]ProductConfig{}
+	retSku.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
@@ -97,10 +98,6 @@ func (s *SKU) GetProduct(productName v1alpha1.ProductName) ProductConfig {
 
 func (s *SKU) IsUpdated() bool {
 	return s.isUpdated
-}
-
-func (s *SKU) SetUpdated(isUpdated bool) {
-	s.isUpdated = isUpdated
 }
 
 func (p *ProductConfig) GetResourceConfig(ddcssName string) corev1.ResourceRequirements {
