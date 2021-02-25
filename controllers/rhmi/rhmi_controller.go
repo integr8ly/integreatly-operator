@@ -238,6 +238,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
+	skuSecretName := ""
 	installationSKU := &sku.SKU{}
 	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 		skuSecretName, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, request.NamespacedName.Namespace, "sku")
@@ -263,6 +264,18 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return retryRequeue, err
 		}
+
+		// if it's the first install and first reconcile there will be no value
+		// set it because we want to be able to compare the sku
+		if installation.Status.ToSKU == "" && installation.Status.SKU == "" {
+			installationSKU.SetUpdated(true)
+			installation.Status.ToSKU = skuSecretName
+		}
+
+		if skuSecretName != installation.Status.SKU {
+			installationSKU.SetUpdated(true)
+		}
+
 	}
 
 	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
@@ -419,6 +432,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
+		installation.Status.SKU = skuSecretName
+		installation.Status.ToSKU = ""
 	}
 	metrics.SetRHMIStatus(installation)
 
