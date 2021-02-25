@@ -37,6 +37,9 @@ func getSpecDetailsForDashboard(dashboard, nsPrefix string, installType string) 
 	case "critical-slo-managed-api-alerts":
 		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix, product), "critical-slo-alerts.json", nil
 
+	case "cro-resources":
+		return monitoring.MonitoringGrafanaDBCROResourcesJSON, "cro-resources.json", nil
+
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")
 

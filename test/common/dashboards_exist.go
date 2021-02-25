@@ -44,6 +44,9 @@ var commonExpectedDashboards = []dashboardsTestRule{
 	{
 		Title: "Keycloak Metrics",
 	},
+	{
+		Title: "CRO Resources",
+	},
 }
 
 // Applicable to install types used in 2.X
