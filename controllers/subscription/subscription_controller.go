@@ -37,16 +37,20 @@ var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_
 
 const (
 	// IntegreatlyPackage - package name is used for Subsription name
-	IntegreatlyPackage          = "integreatly"
-	CSVNamePrefix               = "integreatly-operator"
-	RHMIAddonSubscription       = "addon-rhmi"
-	ManagedAPIAddonSubscription = "addon-managed-api-service"
+	IntegreatlyPackage              = "integreatly"
+	CSVNamePrefix                   = "integreatly-operator"
+	RHMIAddonSubscription           = "addon-rhmi"
+	RHMIAddonSubscriptionEdge       = "addon-rhmi-internal"
+	ManagedAPIAddonSubscription     = "addon-managed-api-service"
+	ManagedAPIAddonSubscriptionEdge = "addon-managed-api-service-internal"
 )
 
 var subscriptionsToReconcile []string = []string{
 	IntegreatlyPackage,
 	RHMIAddonSubscription,
 	ManagedAPIAddonSubscription,
+	RHMIAddonSubscriptionEdge,
+	ManagedAPIAddonSubscriptionEdge,
 }
 
 func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
