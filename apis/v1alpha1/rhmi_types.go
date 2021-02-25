@@ -214,6 +214,8 @@ type RHMIStatus struct {
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
 	Version            string                        `json:"version,omitempty"`
 	ToVersion          string                        `json:"toVersion,omitempty"`
+	SKU                string                        `json:"skuUpdated,omitempty"`
+	ToSKU              string                        `json:"toSKU,omitempty"`
 }
 
 type RHMIStageStatus struct {
