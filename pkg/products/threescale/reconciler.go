@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1492,7 +1493,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	for _, tsUser := range deleted {
 		if tsUser.UserDetails.Username != *systemAdminUsername {
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
-			metrics.SetThreeScaleUserAction(res.StatusCode, string(tsUser.UserDetails.Id), http.MethodDelete)
+			metrics.SetThreeScaleUserAction(res.StatusCode, strconv.Itoa(tsUser.UserDetails.Id), http.MethodDelete)
 			if err != nil {
 				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale", tsUser.UserDetails.Id), err)
 			}

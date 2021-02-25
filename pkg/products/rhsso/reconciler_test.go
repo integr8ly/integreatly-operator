@@ -5,9 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
-	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -566,17 +567,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlanList{
-							Items: []operatorsv1alpha1.InstallPlan{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name: "codeready-install-plan",
-									},
-									Status: operatorsv1alpha1.InstallPlanStatus{
-										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-									},
-								},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "codeready-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{

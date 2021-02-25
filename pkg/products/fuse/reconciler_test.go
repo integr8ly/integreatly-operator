@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
@@ -521,17 +522,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlanList{
-							Items: []operatorsv1alpha1.InstallPlan{
-								{
-									ObjectMeta: metav1.ObjectMeta{
-										Name: "fuse-install-plan",
-									},
-									Status: operatorsv1alpha1.InstallPlanStatus{
-										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-									},
-								},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "fuse-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{

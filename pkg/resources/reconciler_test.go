@@ -3,6 +3,7 @@ package resources
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -75,6 +76,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		Installation     *integreatlyv1alpha1.RHMI
 		Target           marketplace.Target
 		Validate         func(t *testing.T, mock *marketplace.MarketplaceInterfaceMock)
+		Assertion        func(k8sclient.Client) error
 	}{
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
@@ -83,8 +85,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{alpha1.InstallPlan{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete}}}}, &alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlan{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete}}, &alpha1.Subscription{}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -94,8 +96,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				if len(mock.InstallOperatorCalls()) != 1 {
 					t.Fatalf("expected create subscription to be called once but was called %v", len(mock.InstallOperatorCalls()))
 				}
-				if len(mock.GetSubscriptionInstallPlansCalls()) != 1 {
-					t.Fatalf("expected GetSubscriptionInstallPlansCalls to be called once but was called %v", len(mock.GetSubscriptionInstallPlansCalls()))
+				if len(mock.GetSubscriptionInstallPlanCalls()) != 1 {
+					t.Fatalf("expected GetSubscriptionInstallPlanCalls to be called once but was called %v", len(mock.GetSubscriptionInstallPlanCalls()))
 				}
 			},
 		},
@@ -107,7 +109,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
 					return nil, &alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{
 						// simulate the time has passed
 						CreationTimestamp: metav1.Time{Time: time.Now().AddDate(0, 0, -1)},
@@ -141,15 +143,13 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
-						{
-							Spec: alpha1.InstallPlanSpec{Approved: true},
-							Status: alpha1.InstallPlanStatus{
-								Phase: alpha1.InstallPlanPhaseInstalling,
-							},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlan{
+						Spec: alpha1.InstallPlanSpec{Approved: true},
+						Status: alpha1.InstallPlanStatus{
+							Phase: alpha1.InstallPlanPhaseInstalling,
 						},
-					}}, &alpha1.Subscription{}, nil
+					}, &alpha1.Subscription{}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -162,7 +162,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
 					return nil, nil, fmt.Errorf("simulate error gettiing install plans")
 				},
 			},
@@ -177,8 +177,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{}}, &alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return nil, &alpha1.Subscription{}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -194,10 +194,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
-						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
-					}}, &alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlan{
+						Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed},
+					}, &alpha1.Subscription{}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -214,10 +214,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
-						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
-					}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlan{
+						Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed},
+					}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -232,15 +232,79 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{
-						{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed}},
-					}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlan{
+						Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseFailed},
+					}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
 				},
 			},
 			SubscriptionName: "something",
 			ExpectedStatus:   integreatlyv1alpha1.PhaseAwaitingOperator,
 			Installation:     &integreatlyv1alpha1.RHMI{},
+		},
+		{
+			Name: "test reconcile subscription deletes CSV and subscription if the CSV doesn't have a deployment",
+			client: fakeclient.NewFakeClientWithScheme(scheme,
+				&alpha1.ClusterServiceVersion{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-csv",
+						Namespace: "test-ns",
+					},
+					Spec: alpha1.ClusterServiceVersionSpec{
+						InstallStrategy: alpha1.NamedInstallStrategy{
+							StrategyName: alpha1.InstallStrategyNameDeployment,
+							StrategySpec: alpha1.StrategyDetailsDeployment{
+								DeploymentSpecs: []alpha1.StrategyDeploymentSpec{},
+							},
+						},
+					},
+				},
+				&alpha1.Subscription{
+					Status: alpha1.SubscriptionStatus{
+						InstalledCSV: "test-csv",
+					},
+				},
+			),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*alpha1.InstallPlan, *alpha1.Subscription, error) {
+					return &alpha1.InstallPlan{
+						Spec: alpha1.InstallPlanSpec{
+							Approved: true,
+							ClusterServiceVersionNames: []string{
+								"test-csv",
+							},
+						},
+						Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete},
+					}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}, nil
+				},
+			},
+			SubscriptionName: "something",
+			ExpectedStatus:   integreatlyv1alpha1.PhaseAwaitingOperator,
+			Installation:     &integreatlyv1alpha1.RHMI{},
+			Assertion: func(client k8sclient.Client) error {
+				csv := &alpha1.ClusterServiceVersion{}
+				err := client.Get(context.TODO(), k8sclient.ObjectKey{
+					Name:      "test-csv",
+					Namespace: "test-ns",
+				}, csv)
+				if err == nil || !k8serr.IsNotFound(err) {
+					return errors.New("CSV was not deleted")
+				}
+
+				sub := &alpha1.Subscription{}
+				err = client.Get(context.TODO(), k8sclient.ObjectKey{
+					Name:      "something",
+					Namespace: "test-ns",
+				}, sub)
+				if err == nil || !k8serr.IsNotFound(err) {
+					return errors.New("Susbcription was not deleted")
+				}
+
+				return nil
+			},
 		},
 	}
 
@@ -266,7 +330,11 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			if tc.Validate != nil {
 				tc.Validate(t, tc.FakeMPM.(*marketplace.MarketplaceInterfaceMock))
 			}
-
+			if tc.Assertion != nil {
+				if err := tc.Assertion(tc.client); err != nil {
+					t.Errorf("failed assertion: %v", err)
+				}
+			}
 		})
 	}
 }
