@@ -31,15 +31,14 @@ fi
 # Optional environment variable to set a different Kustomize path. If this
 # variable is not set, it will use the one from the $PATH or install Kustomize
 if [[ -z $KUSTOMIZE_PATH ]]; then
-  if ! command -v kustomize &> /dev/null; then
-    KUSTOMIZE_TMP_DIR=$(mktemp -d)
-    curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s \
-      3.5.4 $KUSTOMIZE_TMP_DIR
+  echo "Using a docker container for Kustomize"
+  
+  # Create kustomize container
+  docker run -d --name kustomize --entrypoint=tail k8s.gcr.io/kustomize/kustomize:v3.8.7 -f /dev/null
+  # Copy config folder (cannot be passed as volume due to permission issues)
+  docker cp config kustomize:/app/config
 
-    KUSTOMIZE=$KUSTOMIZE_TMP_DIR/kustomize    
-  else
-    KUSTOMIZE=$(which kustomize)
-  fi
+  KUSTOMIZE=(docker exec kustomize ./kustomize)
 else
   KUSTOMIZE=$KUSTOMIZE_PATH
 fi
@@ -222,3 +221,9 @@ yq w -i PROJECT projectName $current_project_name
 # package name from the PROJECT file, so in the case of RHMI it will set it
 # incorrectly to `integreatly-operator`
 yq w -i packagemanifests/integreatly-operator/integreatly-operator.package.yaml packageName integreatly
+
+if [[ -z $KUSTOMIZE_PATH ]]; then
+  echo "Cleaning up Kustomize docker container"
+
+  docker rm -f kustomize
+fi
