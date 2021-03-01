@@ -2,19 +2,76 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMI",
+          "metadata": {
+            "name": "INSTALLATION_NAME"
+          },
+          "spec": {
+            "deadMansSnitchSecret": "INSTALLATION_PREFIX-deadmanssnitch",
+            "namespacePrefix": "INSTALLATION_PREFIX-",
+            "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
+            "pagerDutySecret": "INSTALLATION_PREFIX-pagerduty",
+            "priorityClassName": "INSTALLATION_SHORTHAND-pod-priority",
+            "selfSignedCerts": "SELF_SIGNED_CERTS",
+            "smtpSecret": "INSTALLATION_PREFIX-smtp",
+            "type": "INSTALLATION_TYPE",
+            "useClusterStorage": "USE_CLUSTER_STORAGE"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMI",
+          "metadata": {
+            "name": "example-rhmi"
+          },
+          "spec": {
+            "deadMansSnitchSecret": "redhat-rhmi-deadmanssnitch",
+            "namespacePrefix": "redhat-rhmi-",
+            "pagerDutySecret": "redhat-rhmi-pagerduty",
+            "priorityClassName": "rhoam-pod-priority",
+            "selfSignedCerts": true,
+            "smtpSecret": "redhat-rhmi-smtp",
+            "type": "managed",
+            "useClusterStorage": "true"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMIConfig",
+          "metadata": {
+            "name": "example-rhmiconfig"
+          },
+          "spec": {}
+        }
+      ]
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.1.0
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.3.0-rc1
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
+    serviceAffecting: "true"
   name: managed-api-service.v1.3.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: RHMIConfig
+      name: rhmiconfigs.integreatly.org
+      version: v1alpha1
+      description: RHOAMConfig is the Schema for the rhoamconfigs API
+      displayName: RHOAMConfig
+    - kind: RHMI
+      name: rhmis.integreatly.org
+      version: v1alpha1
+      description: RHOAM is the Schema for the RHOAM API
+      displayName: RHOAM installation
   description: RHOAM integration suite of tools
   displayName: RHOAM
   icon:
@@ -22,8 +79,525 @@ spec:
     mediatype: image/png
   install:
     spec:
-      deployments: null
-    strategy: ""
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - nodes
+          verbs:
+          - list
+        - apiGroups:
+          - ""
+          resourceNames:
+          - grafana-datasources
+          resources:
+          - secrets
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resourceNames:
+          - pull-secret
+          resources:
+          - secrets
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          - project.openshift.io
+          resources:
+          - projectrequests
+          verbs:
+          - create
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - mutatingwebhookconfigurations
+          - validatingwebhookconfigurations
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - delete
+          - get
+          - list
+        - apiGroups:
+          - applicationmonitoring.integreatly.org
+          - integreatly.org
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - statefulsets
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - infrastructures
+          - oauths
+          verbs:
+          - get
+          - list
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consolelinks
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - rhmiconfigs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - rhmiconfigs/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - rhmis
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - rhmis/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - marin3r.3scale.net
+          resources:
+          - envoyconfigs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - podmonitors
+          - prometheusrules
+          - servicemonitors
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+        - apiGroups:
+          - oauth.openshift.io
+          resources:
+          - oauthclients
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        - apiGroups:
+          - operator.marin3r.3scale.net
+          resources:
+          - discoveryservices
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - operators.coreos.com
+          resourceNames:
+          - rhoam-registry-cs
+          resources:
+          - catalogsources
+          verbs:
+          - update
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - catalogsources
+          - operatorgroups
+          verbs:
+          - create
+          - get
+          - list
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - installplans
+          verbs:
+          - update
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - get
+        - apiGroups:
+          - samples.operator.openshift.io
+          resourceNames:
+          - cluster
+          resources:
+          - configs
+          verbs:
+          - get
+          - update
+        - apiGroups:
+          - scheduling.k8s.io
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - template.openshift.io
+          resources:
+          - templates
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - groups
+          verbs:
+          - create
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - user.openshift.io
+          resourceNames:
+          - rhmi-developers
+          resources:
+          - groups
+          verbs:
+          - delete
+          - update
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - identities
+          verbs:
+          - get
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - users
+          verbs:
+          - get
+          - list
+          - watch
+        serviceAccountName: rhmi-operator
+      deployments:
+      - name: rhmi-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: rhmi-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: rhmi-operator
+            spec:
+              containers:
+              - args:
+                - --enable-leader-election
+                command:
+                - rhmi-operator
+                env:
+                - name: INSTALLATION_TYPE
+                  value: managed-api
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: rhmi-operator
+                - name: USE_CLUSTER_STORAGE
+                  value: "true"
+                - name: LOG_LEVEL
+                  value: info
+                - name: REBALANCE_PODS
+                  value: "true"
+                - name: ALERT_SMTP_FROM
+                  value: default@test.com
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.3.0-rc1
+                imagePullPolicy: Always
+                name: rhmi-operator
+                ports:
+                - containerPort: 8090
+                resources:
+                  limits:
+                    cpu: 150m
+                    memory: 1536Mi
+                  requests:
+                    cpu: 100m
+                    memory: 64Mi
+                volumeMounts:
+                - mountPath: /etc/ssl/certs/webhook
+                  name: webhook-certs
+              serviceAccountName: rhmi-operator
+              terminationGracePeriodSeconds: 10
+              volumes:
+              - emptyDir: {}
+                name: webhook-certs
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - events
+          - pods
+          - secrets
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - endpoints
+          - pods
+          - services
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          - services/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments/finalizers
+          - replicasets
+          - statefulsets
+          verbs:
+          - get
+          - update
+        - apiGroups:
+          - marin3r.3scale.net
+          resources:
+          - envoyconfigs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - create
+          - get
+        - apiGroups:
+          - operator.marin3r.3scale.net
+          resources:
+          - discoveryservices
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - clusterserviceversions
+          verbs:
+          - delete
+          - get
+          - list
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - installplans
+          verbs:
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - subscriptions
+          - subscriptions/status
+          verbs:
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        serviceAccountName: rhmi-operator
+    strategy: deployment
   installModes:
   - supported: true
     type: OwnNamespace
@@ -42,10 +616,10 @@ spec:
   maintainers:
   - email: rhoam-support@redhat.com
     name: rhoam
-  links: []
   maturity: alpha
   provider:
     name: rhoam
+  replaces: managed-api-service.v1.2.0
   selector:
     matchLabels:
       alm-owner-rhoam: rhoam-operator

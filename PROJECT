@@ -3,12 +3,12 @@ layout: go.kubebuilder.io/v2
 projectName: integreatly-operator
 repo: github.com/integr8ly/integreatly-operator
 resources:
-  - group: integreatly.org
-    kind: RHMI
-    version: v1alpha1
-  - group: integreatly.org
-    kind: RHMIConfig
-    version: v1alpha1
+- group: integreatly.org
+  kind: RHMI
+  version: v1alpha1
+- group: integreatly.org
+  kind: RHMIConfig
+  version: v1alpha1
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
