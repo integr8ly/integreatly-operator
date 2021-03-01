@@ -224,7 +224,7 @@ test/e2e: cluster/deploy
 .PHONY: test/e2e/single
 test/e2e/single: export WATCH_NAMESPACE := $(NAMESPACE)
 test/e2e/single: 
-	go clean -testcache && go test -v ./test/functional -run="//^$(TEST)" -timeout=80m
+	go clean -testcache && go test ./test/functional -ginkgo.focus="$(TEST).*" -test.v -ginkgo.v -ginkgo.progress -timeout=80m
 
 .PHONY: test/functional
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
