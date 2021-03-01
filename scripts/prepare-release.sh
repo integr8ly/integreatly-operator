@@ -31,17 +31,9 @@ fi
 # Optional environment variable to set a different Kustomize path. If this
 # variable is not set, it will use the one from the $PATH or install Kustomize
 if [[ -z $KUSTOMIZE_PATH ]]; then
-  if ! command -v kustomize &> /dev/null; then
-    KUSTOMIZE_TMP_DIR=$(mktemp -d)
-    curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash -s \
-      3.5.4 $KUSTOMIZE_TMP_DIR
-
-    KUSTOMIZE=$KUSTOMIZE_TMP_DIR/kustomize    
-  else
-    KUSTOMIZE=$(which kustomize)
-  fi
+  KUSTOMIZE="/usr/local/bin/kustomize"
 else
-  KUSTOMIZE=$KUSTOMIZE_PATH
+  KUSTOMIZE="/usr/local/bin/kustomize"
 fi
 
 create_new_csv() {
