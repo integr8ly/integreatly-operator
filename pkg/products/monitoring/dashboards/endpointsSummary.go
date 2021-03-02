@@ -1,6 +1,9 @@
 package monitoring
 
-const MonitoringGrafanaDBEndpointsSummaryJSON = `{
+// This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
+// The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
+func GetMonitoringGrafanaDBEndpointsSummaryJSON(installationName string) string {
+	return `{
 	"annotations": {
 		"list": [{
 				"builtIn": 1,
@@ -14,7 +17,7 @@ const MonitoringGrafanaDBEndpointsSummaryJSON = `{
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,version,to_version)(rhmi_version{to_version!=\"\"})",
+				"expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
@@ -388,3 +391,4 @@ const MonitoringGrafanaDBEndpointsSummaryJSON = `{
 	"uid": "hZJ_054Zk",
 	"version": 5
 }`
+}
