@@ -11,8 +11,11 @@
 
 RUN=$1
 hundred=100
+H1='Accept: application/json'
 
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/all/json | jq . > "Backup.json"
+echo 'Downloading data, this may take awhile...'
+curl -s -H "$H1" ${HYPERFOIL_URL}/run/${RUN}/stats/all | jq . > Backup.json 
+
 
 cat Backup.json | jq '.stats[].total.summary.invalid' > failed.txt
 cat Backup.json | jq '.stats[].total.summary.requestCount' > total.txt
