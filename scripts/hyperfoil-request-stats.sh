@@ -11,16 +11,19 @@
 
 RUN=$1
 hundred=100
+H1='Accept: application/json'
 
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.statistics[].summary.invalid' > failed.txt
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.statistics[].summary.requestCount' > total.txt
+echo 'Downloading data, this may take awhile...'
+curl -s -H "$H1" ${HYPERFOIL_URL}/run/${RUN}/stats/all | jq . > Backup.json 
 
+
+cat Backup.json | jq '.stats[].total.summary.invalid' > failed.txt
+cat Backup.json | jq '.stats[].total.summary.requestCount' > total.txt
 
 failed=$(awk '{s+=$1} END {print s}' failed.txt)
 echo 'failed = ' $failed
 total=$(awk '{s+=$1} END {print s}' total.txt)
 echo 'total = ' $total
-
 
 one_percent=$(expr $total / $hundred)
 echo 'one percent = '$one_percent
@@ -35,9 +38,9 @@ echo " "
 echo '==============================================================================================='
 echo '90% Percentile'
 echo " "
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("post.")) | .summary.percentileResponseTime."90.0"' > post-percentile
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("get.")) | .summary.percentileResponseTime."90.0"' > get-percentile
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("create.")) | .summary.percentileResponseTime."90.0"' > login-percentile
+cat Backup.json | jq '.stats[] | select(.phase | test("steady")) | select(.metric| test("post.")) | .total.summary.percentileResponseTime."90.0"' > post-percentile
+cat Backup.json | jq '.stats[] | select(.phase | test("steady")) | select(.metric| test("get.")) | .total.summary.percentileResponseTime."90.0"' > get-percentile
+cat Backup.json | jq '.stats[] | select(.phase | test("steady")) | select(.metric| test("create.")) | .total.summary.percentileResponseTime."90.0"' > login-percentile
 for percentile in post-percentile get-percentile login-percentile
 do
     NoOfEndpoints=$(wc -l ${percentile} | awk '{print $1}')
@@ -46,4 +49,4 @@ do
     max=$(grep -Eo '[0-9]+' ${percentile} | sort -rn | head -n 1)
     echo ${percentile}" Mean = "$mean"ns Max = "$max"ns"
 done
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.' > Backup.json
+
