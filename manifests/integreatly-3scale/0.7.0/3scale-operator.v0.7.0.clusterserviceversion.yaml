@@ -470,13 +470,13 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_94659073aa7631aaa56dd39f177a8348bcbca30130e6e0dc0783d2b32eb63c9f
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_89db379df399256998f0db737e40d6d67847c5ae8d0d4b8c7a0db946c5fedad3
                 - name: APICAST_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_3a538a26f3cf1003cd6e8edbf6e54cecb90d7c21e465110fc029f53c77a3a824
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_479b4fe71b59333733eb4e12e68724cf20d6fd16e1eb34214ace5cc43effb81c
                 - name: SYSTEM_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_dfcf435bf977e18886d34a50fb7b1564b575c777a2083ea2a9f9b9d5adbb751e
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_f14dae0d1e758273a5d9ea0ed88da6f9c7e4afec8092421f6c2952a7ceabffcb
                 - name: ZYNC_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_d2a85ab5e907d27a8d45242f9271afc65b167654f5d29599e481069540b5f9ce
                 - name: SYSTEM_MEMCACHED_IMAGE
                   value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
                 - name: BACKEND_REDIS_IMAGE
@@ -729,13 +729,13 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3a538a26f3cf1003cd6e8edbf6e54cecb90d7c21e465110fc029f53c77a3a824
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:479b4fe71b59333733eb4e12e68724cf20d6fd16e1eb34214ace5cc43effb81c
     name: apicast-gateway-rhel8
-  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:94659073aa7631aaa56dd39f177a8348bcbca30130e6e0dc0783d2b32eb63c9f
+  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:89db379df399256998f0db737e40d6d67847c5ae8d0d4b8c7a0db946c5fedad3
     name: backend-rhel7
-  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:dfcf435bf977e18886d34a50fb7b1564b575c777a2083ea2a9f9b9d5adbb751e
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:f14dae0d1e758273a5d9ea0ed88da6f9c7e4afec8092421f6c2952a7ceabffcb
     name: system-rhel7
-  - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
+  - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:d2a85ab5e907d27a8d45242f9271afc65b167654f5d29599e481069540b5f9ce
     name: zync-rhel7
   - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
     name: memcached-rhel7
