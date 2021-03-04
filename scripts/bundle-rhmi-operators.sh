@@ -71,8 +71,6 @@ check_upgrade_install() {
   file=`ls './'$OLDEST_VERSION | grep .clusterserviceversion.yaml`
 
   sed '/replaces/d' './'$OLDEST_VERSION'/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/'$file
-
-  sed '/replaces/d' $file > newfile ; mv newfile $file
 }
 
 # Generates a bundle for each of the version specified or, the latest version if no BUNDLE_VERSIONS  specified
