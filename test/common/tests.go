@@ -48,7 +48,7 @@ var (
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
 				{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
-				/*FLAKY on RHMI and RHOAM in PROW*/ {"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
+				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
