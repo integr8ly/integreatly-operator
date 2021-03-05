@@ -33,7 +33,7 @@ type alertManagerConfig struct {
 const (
 	threescaleOperatorDeploymentName          = "3scale-operator"
 	threescaleApicastProdDeploymentConfigName = "apicast-production"
-	monitoringTimeout                         = time.Minute * 40
+	monitoringTimeout                         = time.Minute * 25
 	monitoringRetryInterval                   = time.Minute
 	verifyOperatorDeploymentTimeout           = time.Minute * 5
 	verifyOperatorDeploymentRetryInterval     = time.Second * 15

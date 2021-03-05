@@ -19,23 +19,31 @@ import (
 
 var (
 	OSD_E2E_PRE_TESTS = []common.TestCase{
-		{Description: "Managed-API pre-test", Test: PreTest},
+		{Description: "Integreatly Operator pre-test", Test: PreTest},
 	}
 	pagerDutySecretName = "pagerduty"
 	deadMansSnitchName  = "deadmanssnitch"
 	smtpSecretName      = "smtp"
+	resourceName        string
 )
 
-//PreTest This tests if an installation of Managed-API was finished and is successful
+//PreTest This tests if an installation of Managed-API or RHMI was finished and is successful
 func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 	err := wait.Poll(time.Second*15, time.Minute*40, func() (done bool, err error) {
-
 		rhmi, err := getRHMI(ctx.Client)
 		if err != nil {
 			t.Fatalf("error getting RHMI CR: %v", err)
 		}
 
-		// Patch Managed-API CR with cluster storage
+		if resourceName == "" {
+			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+				resourceName = "rhoam"
+			} else {
+				resourceName = "rhmi"
+			}
+		}
+
+		// Patch RHMI CR CR with cluster storage
 		if rhmi.Spec.UseClusterStorage == "false" || rhmi.Spec.UseClusterStorage == "" {
 			rhmiCR := fmt.Sprintf(`{
 				"apiVersion": "integreatly.org/v1alpha1",
@@ -49,7 +57,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 
 			request := ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 				Resource("rhmis").
-				Name("rhoam").
+				Name(resourceName).
 				Namespace(common.RHMIOperatorNamespace).
 				RequestURI("/apis/integreatly.org/v1alpha1").Body(rhmiCRBytes).Do(context.TODO())
 			_, err := request.Raw()
