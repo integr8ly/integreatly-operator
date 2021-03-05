@@ -450,6 +450,10 @@ vendor/fix:
 manifest/prodsec:
 	@./scripts/prodsec-manifest-generator.sh ${TYPE_OF_MANIFEST}
 
+.PHONY: kubebuilder/check
+kubebuilder/check: code/gen
+	git diff --exit-code config/crd/bases
+	git diff --exit-code config/rbac/role.yaml
 
 # # Run tests
 # ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
