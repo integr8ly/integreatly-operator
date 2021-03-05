@@ -24,8 +24,44 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
 // 				panic("mock out the AddUser method")
 // 			},
+// 			CreateAccountFunc: func(accessToken string, orgName string, username string) (string, error) {
+// 				panic("mock out the CreateAccount method")
+// 			},
+// 			CreateApplicationFunc: func(accessToken string, accountID string, planID string, name string, description string) (string, error) {
+// 				panic("mock out the CreateApplication method")
+// 			},
+// 			CreateApplicationPlanFunc: func(accessToken string, serviceID string, name string) (string, error) {
+// 				panic("mock out the CreateApplicationPlan method")
+// 			},
+// 			CreateBackendFunc: func(accessToken string, name string, privateEndpoint string) (int, error) {
+// 				panic("mock out the CreateBackend method")
+// 			},
+// 			CreateBackendMappingRuleFunc: func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
+// 				panic("mock out the CreateBackendMappingRule method")
+// 			},
+// 			CreateBackendUsageFunc: func(accessToken string, serviceID string, backendID int, path string) error {
+// 				panic("mock out the CreateBackendUsage method")
+// 			},
+// 			CreateMetricFunc: func(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
+// 				panic("mock out the CreateMetric method")
+// 			},
+// 			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
+// 				panic("mock out the CreateService method")
+// 			},
+// 			DeleteAccountFunc: func(accessToken string, accountID string) error {
+// 				panic("mock out the DeleteAccount method")
+// 			},
+// 			DeleteBackendFunc: func(accessToken string, backendID int) error {
+// 				panic("mock out the DeleteBackend method")
+// 			},
+// 			DeleteServiceFunc: func(accessToken string, serviceID string) error {
+// 				panic("mock out the DeleteService method")
+// 			},
 // 			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 				panic("mock out the DeleteUser method")
+// 			},
+// 			DeployProxyFunc: func(accessToken string, serviceID string) error {
+// 				panic("mock out the DeployProxy method")
 // 			},
 // 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
 // 				panic("mock out the GetAuthenticationProviderByName method")
@@ -38,6 +74,9 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			},
 // 			GetUsersFunc: func(accessToken string) (*Users, error) {
 // 				panic("mock out the GetUsers method")
+// 			},
+// 			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
+// 				panic("mock out the PromoteProxy method")
 // 			},
 // 			SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
 // 				panic("mock out the SetFromEmailAddress method")
@@ -67,8 +106,44 @@ type ThreeScaleInterfaceMock struct {
 	// AddUserFunc mocks the AddUser method.
 	AddUserFunc func(username string, email string, password string, accessToken string) (*http.Response, error)
 
+	// CreateAccountFunc mocks the CreateAccount method.
+	CreateAccountFunc func(accessToken string, orgName string, username string) (string, error)
+
+	// CreateApplicationFunc mocks the CreateApplication method.
+	CreateApplicationFunc func(accessToken string, accountID string, planID string, name string, description string) (string, error)
+
+	// CreateApplicationPlanFunc mocks the CreateApplicationPlan method.
+	CreateApplicationPlanFunc func(accessToken string, serviceID string, name string) (string, error)
+
+	// CreateBackendFunc mocks the CreateBackend method.
+	CreateBackendFunc func(accessToken string, name string, privateEndpoint string) (int, error)
+
+	// CreateBackendMappingRuleFunc mocks the CreateBackendMappingRule method.
+	CreateBackendMappingRuleFunc func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error
+
+	// CreateBackendUsageFunc mocks the CreateBackendUsage method.
+	CreateBackendUsageFunc func(accessToken string, serviceID string, backendID int, path string) error
+
+	// CreateMetricFunc mocks the CreateMetric method.
+	CreateMetricFunc func(accessToken string, backendID int, friendlyName string, unit string) (int, error)
+
+	// CreateServiceFunc mocks the CreateService method.
+	CreateServiceFunc func(accessToken string, name string, systemName string) (string, error)
+
+	// DeleteAccountFunc mocks the DeleteAccount method.
+	DeleteAccountFunc func(accessToken string, accountID string) error
+
+	// DeleteBackendFunc mocks the DeleteBackend method.
+	DeleteBackendFunc func(accessToken string, backendID int) error
+
+	// DeleteServiceFunc mocks the DeleteService method.
+	DeleteServiceFunc func(accessToken string, serviceID string) error
+
 	// DeleteUserFunc mocks the DeleteUser method.
 	DeleteUserFunc func(userID int, accessToken string) (*http.Response, error)
+
+	// DeployProxyFunc mocks the DeployProxy method.
+	DeployProxyFunc func(accessToken string, serviceID string) error
 
 	// GetAuthenticationProviderByNameFunc mocks the GetAuthenticationProviderByName method.
 	GetAuthenticationProviderByNameFunc func(name string, accessToken string) (*AuthProvider, error)
@@ -81,6 +156,9 @@ type ThreeScaleInterfaceMock struct {
 
 	// GetUsersFunc mocks the GetUsers method.
 	GetUsersFunc func(accessToken string) (*Users, error)
+
+	// PromoteProxyFunc mocks the PromoteProxy method.
+	PromoteProxyFunc func(accessToken string, serviceID string, env string, to string) (string, error)
 
 	// SetFromEmailAddressFunc mocks the SetFromEmailAddress method.
 	SetFromEmailAddressFunc func(emailAddress string, accessToken string) (*http.Response, error)
@@ -117,12 +195,126 @@ type ThreeScaleInterfaceMock struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
+		// CreateAccount holds details about calls to the CreateAccount method.
+		CreateAccount []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// OrgName is the orgName argument value.
+			OrgName string
+			// Username is the username argument value.
+			Username string
+		}
+		// CreateApplication holds details about calls to the CreateApplication method.
+		CreateApplication []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// AccountID is the accountID argument value.
+			AccountID string
+			// PlanID is the planID argument value.
+			PlanID string
+			// Name is the name argument value.
+			Name string
+			// Description is the description argument value.
+			Description string
+		}
+		// CreateApplicationPlan holds details about calls to the CreateApplicationPlan method.
+		CreateApplicationPlan []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ServiceID is the serviceID argument value.
+			ServiceID string
+			// Name is the name argument value.
+			Name string
+		}
+		// CreateBackend holds details about calls to the CreateBackend method.
+		CreateBackend []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// Name is the name argument value.
+			Name string
+			// PrivateEndpoint is the privateEndpoint argument value.
+			PrivateEndpoint string
+		}
+		// CreateBackendMappingRule holds details about calls to the CreateBackendMappingRule method.
+		CreateBackendMappingRule []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// BackendID is the backendID argument value.
+			BackendID int
+			// MetricID is the metricID argument value.
+			MetricID int
+			// HttpMethod is the httpMethod argument value.
+			HttpMethod string
+			// Pattern is the pattern argument value.
+			Pattern string
+			// Delta is the delta argument value.
+			Delta int
+		}
+		// CreateBackendUsage holds details about calls to the CreateBackendUsage method.
+		CreateBackendUsage []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ServiceID is the serviceID argument value.
+			ServiceID string
+			// BackendID is the backendID argument value.
+			BackendID int
+			// Path is the path argument value.
+			Path string
+		}
+		// CreateMetric holds details about calls to the CreateMetric method.
+		CreateMetric []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// BackendID is the backendID argument value.
+			BackendID int
+			// FriendlyName is the friendlyName argument value.
+			FriendlyName string
+			// Unit is the unit argument value.
+			Unit string
+		}
+		// CreateService holds details about calls to the CreateService method.
+		CreateService []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// Name is the name argument value.
+			Name string
+			// SystemName is the systemName argument value.
+			SystemName string
+		}
+		// DeleteAccount holds details about calls to the DeleteAccount method.
+		DeleteAccount []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// AccountID is the accountID argument value.
+			AccountID string
+		}
+		// DeleteBackend holds details about calls to the DeleteBackend method.
+		DeleteBackend []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// BackendID is the backendID argument value.
+			BackendID int
+		}
+		// DeleteService holds details about calls to the DeleteService method.
+		DeleteService []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ServiceID is the serviceID argument value.
+			ServiceID string
+		}
 		// DeleteUser holds details about calls to the DeleteUser method.
 		DeleteUser []struct {
 			// UserID is the userID argument value.
 			UserID int
 			// AccessToken is the accessToken argument value.
 			AccessToken string
+		}
+		// DeployProxy holds details about calls to the DeployProxy method.
+		DeployProxy []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ServiceID is the serviceID argument value.
+			ServiceID string
 		}
 		// GetAuthenticationProviderByName holds details about calls to the GetAuthenticationProviderByName method.
 		GetAuthenticationProviderByName []struct {
@@ -147,6 +339,17 @@ type ThreeScaleInterfaceMock struct {
 		GetUsers []struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
+		}
+		// PromoteProxy holds details about calls to the PromoteProxy method.
+		PromoteProxy []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ServiceID is the serviceID argument value.
+			ServiceID string
+			// Env is the env argument value.
+			Env string
+			// To is the to argument value.
+			To string
 		}
 		// SetFromEmailAddress holds details about calls to the SetFromEmailAddress method.
 		SetFromEmailAddress []struct {
@@ -188,11 +391,24 @@ type ThreeScaleInterfaceMock struct {
 	}
 	lockAddAuthenticationProvider       sync.RWMutex
 	lockAddUser                         sync.RWMutex
+	lockCreateAccount                   sync.RWMutex
+	lockCreateApplication               sync.RWMutex
+	lockCreateApplicationPlan           sync.RWMutex
+	lockCreateBackend                   sync.RWMutex
+	lockCreateBackendMappingRule        sync.RWMutex
+	lockCreateBackendUsage              sync.RWMutex
+	lockCreateMetric                    sync.RWMutex
+	lockCreateService                   sync.RWMutex
+	lockDeleteAccount                   sync.RWMutex
+	lockDeleteBackend                   sync.RWMutex
+	lockDeleteService                   sync.RWMutex
 	lockDeleteUser                      sync.RWMutex
+	lockDeployProxy                     sync.RWMutex
 	lockGetAuthenticationProviderByName sync.RWMutex
 	lockGetAuthenticationProviders      sync.RWMutex
 	lockGetUser                         sync.RWMutex
 	lockGetUsers                        sync.RWMutex
+	lockPromoteProxy                    sync.RWMutex
 	lockSetFromEmailAddress             sync.RWMutex
 	lockSetNamespace                    sync.RWMutex
 	lockSetUserAsAdmin                  sync.RWMutex
@@ -278,6 +494,451 @@ func (mock *ThreeScaleInterfaceMock) AddUserCalls() []struct {
 	return calls
 }
 
+// CreateAccount calls CreateAccountFunc.
+func (mock *ThreeScaleInterfaceMock) CreateAccount(accessToken string, orgName string, username string) (string, error) {
+	if mock.CreateAccountFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateAccountFunc: method is nil but ThreeScaleInterface.CreateAccount was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		OrgName     string
+		Username    string
+	}{
+		AccessToken: accessToken,
+		OrgName:     orgName,
+		Username:    username,
+	}
+	mock.lockCreateAccount.Lock()
+	mock.calls.CreateAccount = append(mock.calls.CreateAccount, callInfo)
+	mock.lockCreateAccount.Unlock()
+	return mock.CreateAccountFunc(accessToken, orgName, username)
+}
+
+// CreateAccountCalls gets all the calls that were made to CreateAccount.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateAccountCalls())
+func (mock *ThreeScaleInterfaceMock) CreateAccountCalls() []struct {
+	AccessToken string
+	OrgName     string
+	Username    string
+} {
+	var calls []struct {
+		AccessToken string
+		OrgName     string
+		Username    string
+	}
+	mock.lockCreateAccount.RLock()
+	calls = mock.calls.CreateAccount
+	mock.lockCreateAccount.RUnlock()
+	return calls
+}
+
+// CreateApplication calls CreateApplicationFunc.
+func (mock *ThreeScaleInterfaceMock) CreateApplication(accessToken string, accountID string, planID string, name string, description string) (string, error) {
+	if mock.CreateApplicationFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateApplicationFunc: method is nil but ThreeScaleInterface.CreateApplication was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		AccountID   string
+		PlanID      string
+		Name        string
+		Description string
+	}{
+		AccessToken: accessToken,
+		AccountID:   accountID,
+		PlanID:      planID,
+		Name:        name,
+		Description: description,
+	}
+	mock.lockCreateApplication.Lock()
+	mock.calls.CreateApplication = append(mock.calls.CreateApplication, callInfo)
+	mock.lockCreateApplication.Unlock()
+	return mock.CreateApplicationFunc(accessToken, accountID, planID, name, description)
+}
+
+// CreateApplicationCalls gets all the calls that were made to CreateApplication.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateApplicationCalls())
+func (mock *ThreeScaleInterfaceMock) CreateApplicationCalls() []struct {
+	AccessToken string
+	AccountID   string
+	PlanID      string
+	Name        string
+	Description string
+} {
+	var calls []struct {
+		AccessToken string
+		AccountID   string
+		PlanID      string
+		Name        string
+		Description string
+	}
+	mock.lockCreateApplication.RLock()
+	calls = mock.calls.CreateApplication
+	mock.lockCreateApplication.RUnlock()
+	return calls
+}
+
+// CreateApplicationPlan calls CreateApplicationPlanFunc.
+func (mock *ThreeScaleInterfaceMock) CreateApplicationPlan(accessToken string, serviceID string, name string) (string, error) {
+	if mock.CreateApplicationPlanFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateApplicationPlanFunc: method is nil but ThreeScaleInterface.CreateApplicationPlan was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ServiceID   string
+		Name        string
+	}{
+		AccessToken: accessToken,
+		ServiceID:   serviceID,
+		Name:        name,
+	}
+	mock.lockCreateApplicationPlan.Lock()
+	mock.calls.CreateApplicationPlan = append(mock.calls.CreateApplicationPlan, callInfo)
+	mock.lockCreateApplicationPlan.Unlock()
+	return mock.CreateApplicationPlanFunc(accessToken, serviceID, name)
+}
+
+// CreateApplicationPlanCalls gets all the calls that were made to CreateApplicationPlan.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateApplicationPlanCalls())
+func (mock *ThreeScaleInterfaceMock) CreateApplicationPlanCalls() []struct {
+	AccessToken string
+	ServiceID   string
+	Name        string
+} {
+	var calls []struct {
+		AccessToken string
+		ServiceID   string
+		Name        string
+	}
+	mock.lockCreateApplicationPlan.RLock()
+	calls = mock.calls.CreateApplicationPlan
+	mock.lockCreateApplicationPlan.RUnlock()
+	return calls
+}
+
+// CreateBackend calls CreateBackendFunc.
+func (mock *ThreeScaleInterfaceMock) CreateBackend(accessToken string, name string, privateEndpoint string) (int, error) {
+	if mock.CreateBackendFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateBackendFunc: method is nil but ThreeScaleInterface.CreateBackend was just called")
+	}
+	callInfo := struct {
+		AccessToken     string
+		Name            string
+		PrivateEndpoint string
+	}{
+		AccessToken:     accessToken,
+		Name:            name,
+		PrivateEndpoint: privateEndpoint,
+	}
+	mock.lockCreateBackend.Lock()
+	mock.calls.CreateBackend = append(mock.calls.CreateBackend, callInfo)
+	mock.lockCreateBackend.Unlock()
+	return mock.CreateBackendFunc(accessToken, name, privateEndpoint)
+}
+
+// CreateBackendCalls gets all the calls that were made to CreateBackend.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateBackendCalls())
+func (mock *ThreeScaleInterfaceMock) CreateBackendCalls() []struct {
+	AccessToken     string
+	Name            string
+	PrivateEndpoint string
+} {
+	var calls []struct {
+		AccessToken     string
+		Name            string
+		PrivateEndpoint string
+	}
+	mock.lockCreateBackend.RLock()
+	calls = mock.calls.CreateBackend
+	mock.lockCreateBackend.RUnlock()
+	return calls
+}
+
+// CreateBackendMappingRule calls CreateBackendMappingRuleFunc.
+func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRule(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
+	if mock.CreateBackendMappingRuleFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateBackendMappingRuleFunc: method is nil but ThreeScaleInterface.CreateBackendMappingRule was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		BackendID   int
+		MetricID    int
+		HttpMethod  string
+		Pattern     string
+		Delta       int
+	}{
+		AccessToken: accessToken,
+		BackendID:   backendID,
+		MetricID:    metricID,
+		HttpMethod:  httpMethod,
+		Pattern:     pattern,
+		Delta:       delta,
+	}
+	mock.lockCreateBackendMappingRule.Lock()
+	mock.calls.CreateBackendMappingRule = append(mock.calls.CreateBackendMappingRule, callInfo)
+	mock.lockCreateBackendMappingRule.Unlock()
+	return mock.CreateBackendMappingRuleFunc(accessToken, backendID, metricID, httpMethod, pattern, delta)
+}
+
+// CreateBackendMappingRuleCalls gets all the calls that were made to CreateBackendMappingRule.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateBackendMappingRuleCalls())
+func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRuleCalls() []struct {
+	AccessToken string
+	BackendID   int
+	MetricID    int
+	HttpMethod  string
+	Pattern     string
+	Delta       int
+} {
+	var calls []struct {
+		AccessToken string
+		BackendID   int
+		MetricID    int
+		HttpMethod  string
+		Pattern     string
+		Delta       int
+	}
+	mock.lockCreateBackendMappingRule.RLock()
+	calls = mock.calls.CreateBackendMappingRule
+	mock.lockCreateBackendMappingRule.RUnlock()
+	return calls
+}
+
+// CreateBackendUsage calls CreateBackendUsageFunc.
+func (mock *ThreeScaleInterfaceMock) CreateBackendUsage(accessToken string, serviceID string, backendID int, path string) error {
+	if mock.CreateBackendUsageFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateBackendUsageFunc: method is nil but ThreeScaleInterface.CreateBackendUsage was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ServiceID   string
+		BackendID   int
+		Path        string
+	}{
+		AccessToken: accessToken,
+		ServiceID:   serviceID,
+		BackendID:   backendID,
+		Path:        path,
+	}
+	mock.lockCreateBackendUsage.Lock()
+	mock.calls.CreateBackendUsage = append(mock.calls.CreateBackendUsage, callInfo)
+	mock.lockCreateBackendUsage.Unlock()
+	return mock.CreateBackendUsageFunc(accessToken, serviceID, backendID, path)
+}
+
+// CreateBackendUsageCalls gets all the calls that were made to CreateBackendUsage.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateBackendUsageCalls())
+func (mock *ThreeScaleInterfaceMock) CreateBackendUsageCalls() []struct {
+	AccessToken string
+	ServiceID   string
+	BackendID   int
+	Path        string
+} {
+	var calls []struct {
+		AccessToken string
+		ServiceID   string
+		BackendID   int
+		Path        string
+	}
+	mock.lockCreateBackendUsage.RLock()
+	calls = mock.calls.CreateBackendUsage
+	mock.lockCreateBackendUsage.RUnlock()
+	return calls
+}
+
+// CreateMetric calls CreateMetricFunc.
+func (mock *ThreeScaleInterfaceMock) CreateMetric(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
+	if mock.CreateMetricFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateMetricFunc: method is nil but ThreeScaleInterface.CreateMetric was just called")
+	}
+	callInfo := struct {
+		AccessToken  string
+		BackendID    int
+		FriendlyName string
+		Unit         string
+	}{
+		AccessToken:  accessToken,
+		BackendID:    backendID,
+		FriendlyName: friendlyName,
+		Unit:         unit,
+	}
+	mock.lockCreateMetric.Lock()
+	mock.calls.CreateMetric = append(mock.calls.CreateMetric, callInfo)
+	mock.lockCreateMetric.Unlock()
+	return mock.CreateMetricFunc(accessToken, backendID, friendlyName, unit)
+}
+
+// CreateMetricCalls gets all the calls that were made to CreateMetric.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateMetricCalls())
+func (mock *ThreeScaleInterfaceMock) CreateMetricCalls() []struct {
+	AccessToken  string
+	BackendID    int
+	FriendlyName string
+	Unit         string
+} {
+	var calls []struct {
+		AccessToken  string
+		BackendID    int
+		FriendlyName string
+		Unit         string
+	}
+	mock.lockCreateMetric.RLock()
+	calls = mock.calls.CreateMetric
+	mock.lockCreateMetric.RUnlock()
+	return calls
+}
+
+// CreateService calls CreateServiceFunc.
+func (mock *ThreeScaleInterfaceMock) CreateService(accessToken string, name string, systemName string) (string, error) {
+	if mock.CreateServiceFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateServiceFunc: method is nil but ThreeScaleInterface.CreateService was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		Name        string
+		SystemName  string
+	}{
+		AccessToken: accessToken,
+		Name:        name,
+		SystemName:  systemName,
+	}
+	mock.lockCreateService.Lock()
+	mock.calls.CreateService = append(mock.calls.CreateService, callInfo)
+	mock.lockCreateService.Unlock()
+	return mock.CreateServiceFunc(accessToken, name, systemName)
+}
+
+// CreateServiceCalls gets all the calls that were made to CreateService.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateServiceCalls())
+func (mock *ThreeScaleInterfaceMock) CreateServiceCalls() []struct {
+	AccessToken string
+	Name        string
+	SystemName  string
+} {
+	var calls []struct {
+		AccessToken string
+		Name        string
+		SystemName  string
+	}
+	mock.lockCreateService.RLock()
+	calls = mock.calls.CreateService
+	mock.lockCreateService.RUnlock()
+	return calls
+}
+
+// DeleteAccount calls DeleteAccountFunc.
+func (mock *ThreeScaleInterfaceMock) DeleteAccount(accessToken string, accountID string) error {
+	if mock.DeleteAccountFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeleteAccountFunc: method is nil but ThreeScaleInterface.DeleteAccount was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		AccountID   string
+	}{
+		AccessToken: accessToken,
+		AccountID:   accountID,
+	}
+	mock.lockDeleteAccount.Lock()
+	mock.calls.DeleteAccount = append(mock.calls.DeleteAccount, callInfo)
+	mock.lockDeleteAccount.Unlock()
+	return mock.DeleteAccountFunc(accessToken, accountID)
+}
+
+// DeleteAccountCalls gets all the calls that were made to DeleteAccount.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeleteAccountCalls())
+func (mock *ThreeScaleInterfaceMock) DeleteAccountCalls() []struct {
+	AccessToken string
+	AccountID   string
+} {
+	var calls []struct {
+		AccessToken string
+		AccountID   string
+	}
+	mock.lockDeleteAccount.RLock()
+	calls = mock.calls.DeleteAccount
+	mock.lockDeleteAccount.RUnlock()
+	return calls
+}
+
+// DeleteBackend calls DeleteBackendFunc.
+func (mock *ThreeScaleInterfaceMock) DeleteBackend(accessToken string, backendID int) error {
+	if mock.DeleteBackendFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeleteBackendFunc: method is nil but ThreeScaleInterface.DeleteBackend was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		BackendID   int
+	}{
+		AccessToken: accessToken,
+		BackendID:   backendID,
+	}
+	mock.lockDeleteBackend.Lock()
+	mock.calls.DeleteBackend = append(mock.calls.DeleteBackend, callInfo)
+	mock.lockDeleteBackend.Unlock()
+	return mock.DeleteBackendFunc(accessToken, backendID)
+}
+
+// DeleteBackendCalls gets all the calls that were made to DeleteBackend.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeleteBackendCalls())
+func (mock *ThreeScaleInterfaceMock) DeleteBackendCalls() []struct {
+	AccessToken string
+	BackendID   int
+} {
+	var calls []struct {
+		AccessToken string
+		BackendID   int
+	}
+	mock.lockDeleteBackend.RLock()
+	calls = mock.calls.DeleteBackend
+	mock.lockDeleteBackend.RUnlock()
+	return calls
+}
+
+// DeleteService calls DeleteServiceFunc.
+func (mock *ThreeScaleInterfaceMock) DeleteService(accessToken string, serviceID string) error {
+	if mock.DeleteServiceFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeleteServiceFunc: method is nil but ThreeScaleInterface.DeleteService was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ServiceID   string
+	}{
+		AccessToken: accessToken,
+		ServiceID:   serviceID,
+	}
+	mock.lockDeleteService.Lock()
+	mock.calls.DeleteService = append(mock.calls.DeleteService, callInfo)
+	mock.lockDeleteService.Unlock()
+	return mock.DeleteServiceFunc(accessToken, serviceID)
+}
+
+// DeleteServiceCalls gets all the calls that were made to DeleteService.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeleteServiceCalls())
+func (mock *ThreeScaleInterfaceMock) DeleteServiceCalls() []struct {
+	AccessToken string
+	ServiceID   string
+} {
+	var calls []struct {
+		AccessToken string
+		ServiceID   string
+	}
+	mock.lockDeleteService.RLock()
+	calls = mock.calls.DeleteService
+	mock.lockDeleteService.RUnlock()
+	return calls
+}
+
 // DeleteUser calls DeleteUserFunc.
 func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) (*http.Response, error) {
 	if mock.DeleteUserFunc == nil {
@@ -310,6 +971,41 @@ func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
 	mock.lockDeleteUser.RLock()
 	calls = mock.calls.DeleteUser
 	mock.lockDeleteUser.RUnlock()
+	return calls
+}
+
+// DeployProxy calls DeployProxyFunc.
+func (mock *ThreeScaleInterfaceMock) DeployProxy(accessToken string, serviceID string) error {
+	if mock.DeployProxyFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeployProxyFunc: method is nil but ThreeScaleInterface.DeployProxy was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ServiceID   string
+	}{
+		AccessToken: accessToken,
+		ServiceID:   serviceID,
+	}
+	mock.lockDeployProxy.Lock()
+	mock.calls.DeployProxy = append(mock.calls.DeployProxy, callInfo)
+	mock.lockDeployProxy.Unlock()
+	return mock.DeployProxyFunc(accessToken, serviceID)
+}
+
+// DeployProxyCalls gets all the calls that were made to DeployProxy.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeployProxyCalls())
+func (mock *ThreeScaleInterfaceMock) DeployProxyCalls() []struct {
+	AccessToken string
+	ServiceID   string
+} {
+	var calls []struct {
+		AccessToken string
+		ServiceID   string
+	}
+	mock.lockDeployProxy.RLock()
+	calls = mock.calls.DeployProxy
+	mock.lockDeployProxy.RUnlock()
 	return calls
 }
 
@@ -442,6 +1138,49 @@ func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	mock.lockGetUsers.RLock()
 	calls = mock.calls.GetUsers
 	mock.lockGetUsers.RUnlock()
+	return calls
+}
+
+// PromoteProxy calls PromoteProxyFunc.
+func (mock *ThreeScaleInterfaceMock) PromoteProxy(accessToken string, serviceID string, env string, to string) (string, error) {
+	if mock.PromoteProxyFunc == nil {
+		panic("ThreeScaleInterfaceMock.PromoteProxyFunc: method is nil but ThreeScaleInterface.PromoteProxy was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ServiceID   string
+		Env         string
+		To          string
+	}{
+		AccessToken: accessToken,
+		ServiceID:   serviceID,
+		Env:         env,
+		To:          to,
+	}
+	mock.lockPromoteProxy.Lock()
+	mock.calls.PromoteProxy = append(mock.calls.PromoteProxy, callInfo)
+	mock.lockPromoteProxy.Unlock()
+	return mock.PromoteProxyFunc(accessToken, serviceID, env, to)
+}
+
+// PromoteProxyCalls gets all the calls that were made to PromoteProxy.
+// Check the length with:
+//     len(mockedThreeScaleInterface.PromoteProxyCalls())
+func (mock *ThreeScaleInterfaceMock) PromoteProxyCalls() []struct {
+	AccessToken string
+	ServiceID   string
+	Env         string
+	To          string
+} {
+	var calls []struct {
+		AccessToken string
+		ServiceID   string
+		Env         string
+		To          string
+	}
+	mock.lockPromoteProxy.RLock()
+	calls = mock.calls.PromoteProxy
+	mock.lockPromoteProxy.RUnlock()
 	return calls
 }
 
