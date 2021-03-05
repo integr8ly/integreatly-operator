@@ -20,6 +20,12 @@ var _ = Describe("integreatly", func() {
 		t = GinkgoT()
 	})
 
+	JustBeforeEach(func() {
+		if err := common.WaitForRHMIStageToComplete(t, restConfig); err != nil {
+			t.Error(err)
+		}
+	})
+
 	RunTests := func() {
 
 		tests := []common.Tests{
