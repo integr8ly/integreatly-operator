@@ -50,6 +50,10 @@ func TestAPIs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not get start test environment %s", err)
 	}
+	cfg.Impersonate = rest.ImpersonationConfig{
+		UserName: "system:admin",
+		Groups:   []string{"system:authenticated"},
+	}
 
 	// get install type
 	installType, err = common.GetInstallType(cfg)
