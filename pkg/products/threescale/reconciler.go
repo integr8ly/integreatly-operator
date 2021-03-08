@@ -1084,9 +1084,9 @@ func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Cli
 	}
 
 	if len(routes.Items) >= expectedRoutes {
-		r.log.Warningf("Required number of routes do not exist", l.Fields{"found": len(routes.Items), "required": expectedRoutes})
 		return true, nil
 	}
+	r.log.Warningf("Required number of routes do not exist", l.Fields{"found": len(routes.Items), "required": expectedRoutes})
 	return false, nil
 }
 
