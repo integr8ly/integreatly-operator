@@ -2,10 +2,9 @@ package functional
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo"
+	"os"
 )
 
 var _ = Describe("integreatly", func() {
@@ -18,6 +17,12 @@ var _ = Describe("integreatly", func() {
 	BeforeEach(func() {
 		restConfig = cfg
 		t = GinkgoT()
+	})
+
+	JustBeforeEach(func() {
+		if err := common.WaitForRHMIStageToComplete(t, restConfig); err != nil {
+			t.Error(err)
+		}
 	})
 
 	RunTests := func() {
@@ -39,6 +44,14 @@ var _ = Describe("integreatly", func() {
 			{
 				Type:      fmt.Sprintf("%s Functional", installType),
 				TestCases: FUNCTIONAL_TESTS,
+			},
+			{
+				Type:      "SCALABILITY TESTS",
+				TestCases: common.SCALABILITY_TESTS,
+			},
+			{
+				Type:      "FAILURE TESTS",
+				TestCases: common.FAILURE_TESTS,
 			},
 		}
 

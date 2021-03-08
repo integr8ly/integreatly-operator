@@ -56,12 +56,8 @@ var (
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
 				/*FLAKY on RHMI/RHOAM*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
-				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
-				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
-				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-				/*FLAKY*/ {"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
@@ -78,8 +74,8 @@ var (
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 				/*FLAKY*/ {"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
 				/*FLAKY*/ {"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
-				/*FLAKY*/ {"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
+				/*FLAKY*/ {"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},
@@ -90,6 +86,16 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
 		},
+	}
+
+	SCALABILITY_TESTS = []TestCase{
+		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
+		{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
+		{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
+	}
+
+	FAILURE_TESTS = []TestCase{
+		/*FLAKY*/ {"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
