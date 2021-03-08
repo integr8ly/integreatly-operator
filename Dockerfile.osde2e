@@ -18,4 +18,4 @@ FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/managed-api-test-harness.test managed-api-test-harness.test
 
-ENTRYPOINT [ "/managed-api-test-harness.test", "-test.v" ]
+ENTRYPOINT [ "/managed-api-test-harness.test", "-test.v", "-ginkgo.v", "-ginkgo.progress", "-ginkgo.noColor" ]

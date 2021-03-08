@@ -183,7 +183,7 @@ make test/functional
 
 To run a single E2E test against a running cluster run the command below where E03 is the start of the test description:
 ```
-go clean -testcache && go test -v ./test/functional -run="//^E03" -timeout=80m
+INSTALLATION_TYPE=<managed/managed-api> TEST=E03 make test/e2e/single
 ```
 ### Product tests
 
