@@ -6,6 +6,7 @@ products:
     targets:
       - 0.0.2
       - 1.0.0
+      - 1.3.0
 estimate: 2h
 tags:
   - manual-selection
@@ -52,6 +53,10 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
    ```
 
    > You should see the message saying the upgrade of the OpenShift cluster is triggered
+
+   - In case of upgrade between minor versions you might need to change the channel first
+     - `oc patch clusterversion/version -p '{"spec":{"channel":"stable-4.y"}}' --type=merge`
+     - see the [Knowledgebase article](https://access.redhat.com/solutions/4606811) for details
 
 5. Ask QE team to login to the ocm staging environment and get the ID of the cluster that is going to be upgraded:
 
