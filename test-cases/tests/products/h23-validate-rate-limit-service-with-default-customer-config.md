@@ -5,6 +5,7 @@ products:
       - osd-fresh-install
     targets:
       - 1.0.0
+      - 1.5.0
 estimate: 1h
 ---
 

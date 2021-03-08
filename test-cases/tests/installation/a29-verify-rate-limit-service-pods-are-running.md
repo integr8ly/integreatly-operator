@@ -8,9 +8,13 @@ products:
     targets:
       - 1.0.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # A29 - Verify Rate limit service pods are running
+
+https://github.com/integr8ly/integreatly-operator/blob/master/test/common/alerts_firing.go
 
 ## Prerequisites
 

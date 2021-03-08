@@ -9,6 +9,7 @@ products:
       - osd-private-post-upgrade
     targets:
       - 1.0.0
+      - 1.3.0
 estimate: 1h
 ---
 
