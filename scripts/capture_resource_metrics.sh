@@ -42,7 +42,7 @@ INSTANT_QUERIES=(\
   "sum(kube_node_status_allocatable_cpu_cores * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))))"\
   "sum(cluster:capacity_memory_bytes:sum)/1024/1024/1024"\
   "sum(cluster:capacity_memory_bytes:sum{label_node_role_kubernetes_io!~'master|infra'})/1024/1024/1024"\
-  "kube_node_status_allocatable_memory_bytes * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))) / 1024 / 1024 / 1024"\
+  "sum(kube_node_status_allocatable_memory_bytes * on (node) (kube_node_role{role='worker'} == on (node) group_left () (count by (node) (kube_node_role{}))) / 1024 / 1024 / 1024)"\
   "sum(kube_pod_container_resource_requests_cpu_cores{namespace=~'redhat-rhoam-.*',container!='lifecycle'} * on(namespace, pod) group_left() max by (namespace, pod) ( kube_pod_status_phase{phase='Running'} == 1 ))"\
   "sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'redhat-rhoam-.*', container!='lifecycle'} * on(namespace, pod) group_left() max by (namespace, pod) ( kube_pod_status_phase{phase='Running'} == 1 )) / 1024 /1024"\
 )
@@ -84,7 +84,7 @@ LOAD_QUERIES=(\
 #
 for query in "${INSTANT_QUERIES[@]}";
 do
-  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
+  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" --data-urlencode "time=$endTime" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
 done
 
 for query in "${IDLE_QUERIES[@]}";
