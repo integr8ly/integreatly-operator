@@ -114,7 +114,11 @@ var (
 	}
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for 3scale")
+	}
+
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	threescaleConfig, err := configManager.ReadThreeScale()
 	if err != nil {
@@ -141,7 +145,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
-		Reconciler:    resources.NewReconciler(mpm),
+		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 		log:           logger,
 	}, nil
@@ -2200,16 +2204,20 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
-		Pkg:       constants.ThreeScaleSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.ThreeScaleSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

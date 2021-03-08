@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
-	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -53,6 +54,7 @@ import (
 
 var (
 	defaultOperatorNamespace = "integreatly-operator"
+	localProductDeclaration  = marketplace.LocalProductDeclaration("integreatly-rhsso")
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -220,6 +222,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.APIURL,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -386,6 +389,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -607,6 +611,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

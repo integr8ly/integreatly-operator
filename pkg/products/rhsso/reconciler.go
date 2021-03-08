@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -60,9 +61,12 @@ type Reconciler struct {
 	*rhssocommon.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger) (*Reconciler, error) {
-	config, err := configManager.ReadRHSSO()
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for RHSSO")
+	}
 
+	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +76,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		Config:     config,
 		Log:        logger,
-		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, APIURL, keycloakClientFactory),
+		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, APIURL, keycloakClientFactory, *productDeclaration),
 	}, nil
 }
 

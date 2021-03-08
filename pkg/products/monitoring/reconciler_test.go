@@ -50,6 +50,8 @@ const (
 	mockAlertFromAddress             = "noreply-alert@devshift.org"
 )
 
+var localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-monitoring")
+
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,7 +192,7 @@ func TestReconciler_config(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -250,7 +252,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
 			}
@@ -456,7 +458,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -605,7 +607,7 @@ func TestReconciler_testPhases(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("unexpected error : '%v'", err)
 			}

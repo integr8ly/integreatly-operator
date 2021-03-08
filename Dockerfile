@@ -33,6 +33,8 @@ COPY templates /templates
 
 COPY manifests /manifests
 
+COPY products /products
+
 COPY build/bin /usr/local/bin
 RUN /usr/local/bin/user_setup
 

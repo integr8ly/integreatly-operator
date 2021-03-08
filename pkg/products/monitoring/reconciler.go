@@ -87,9 +87,12 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
-	config, err := configManager.ReadMonitoring()
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for monitoring")
+	}
 
+	config, err := configManager.ReadMonitoring()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +121,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Log:           logger,
 		installation:  installation,
 		mpm:           mpm,
-		Reconciler:    resources.NewReconciler(mpm),
+		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 	}, nil
 }
@@ -865,16 +868,20 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.Bl
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
-		Pkg:       constants.MonitoringSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.MonitoringSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.Log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

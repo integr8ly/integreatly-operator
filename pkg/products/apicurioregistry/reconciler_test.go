@@ -29,6 +29,10 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+var (
+	localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-apicurio-registry")
+)
+
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
@@ -139,6 +143,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -226,6 +231,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -345,6 +351,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
