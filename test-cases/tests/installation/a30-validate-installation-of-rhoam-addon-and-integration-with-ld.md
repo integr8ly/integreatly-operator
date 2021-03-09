@@ -40,7 +40,7 @@ We want to validate that customer is able to install RHOAM via OCM UI and can us
 ```
 Cluster name: test-ldap-idp
 Availability: Multizone
-Compute node count: 3
+Worker node count (per zone): 3
 Networking: Advanced
 
 Machine CIDR: 10.11.128.0/24
@@ -84,6 +84,8 @@ watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage"
 ```
 
 6. Once the status is "completed", the installation is finished and you can go to another step
+
+> Due to a known issue the OCM UI can display `Installed` despite installation still being in progress
 
 **Verify custom RHOAM CIDR range was applied correctly**
 
