@@ -19,6 +19,14 @@ var (
 	}
 )
 
+func getAddonName(installation *integreatlyv1alpha1.RHMI) string {
+	if installation.Spec.Type == "managed-api" {
+		return "managed-api-service"
+	} else {
+		return "integreatly-operator"
+	}
+}
+
 func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.RHMI) resources.AlertReconciler {
 	installationName := installationNames[installation.Spec.Type]
 
@@ -57,7 +65,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(`absent(%s_status{stage='complete'} == 1) and absent(%s_version{version=~".+"})`, installationName, installationName)),
 						For:    "120m",
-						Labels: map[string]string{"severity": "critical", "product": installationName, "addon": installation.Spec.Type, "namespace": "openshift-monitoring"},
+						Labels: map[string]string{"severity": "critical", "product": installationName, "addon": getAddonName(installation), "namespace": "openshift-monitoring"},
 					},
 				},
 			},
@@ -74,7 +82,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(`%s_version{to_version=~".+",version=~".+"} and (absent((%s_version * on(version) csv_succeeded{exported_namespace=~"%s"})) or %s_version)`, installationName, installationName, installation.Namespace, installationName)),
 						For:    "10m",
-						Labels: map[string]string{"severity": "critical", "product": installationName, "addon": installation.Spec.Type, "namespace": "openshift-monitoring"},
+						Labels: map[string]string{"severity": "critical", "product": installationName, "addon": getAddonName(installation), "namespace": "openshift-monitoring"},
 					},
 				},
 			},
