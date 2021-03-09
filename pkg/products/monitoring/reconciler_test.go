@@ -717,7 +717,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
 	})
 
-	testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+	testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 
 	tests := []struct {
 		name         string
@@ -885,7 +885,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
 				})
 
-				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+				testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 				if err != nil {
 					return err
 				}

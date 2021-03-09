@@ -62,7 +62,7 @@ func joinQuote(values []monitoring.BlackboxtargetData) string {
 
 // load a templates from a given resource name. The templates must be located
 // under ./templates and the filename must be <resource-name>.yaml
-func (h *TemplateHelper) loadTemplate(name string) ([]byte, error) {
+func (h *TemplateHelper) LoadTemplate(name string) ([]byte, error) {
 	path := fmt.Sprintf("%s/%s", h.TemplatePath, name)
 	tpl, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -89,7 +89,7 @@ func (h *TemplateHelper) loadTemplate(name string) ([]byte, error) {
 }
 
 func (h *TemplateHelper) CreateResource(template string) (runtime.Object, error) {
-	tpl, err := h.loadTemplate(template)
+	tpl, err := h.LoadTemplate(template)
 	if err != nil {
 		return nil, err
 	}
