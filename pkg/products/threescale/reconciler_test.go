@@ -2,7 +2,10 @@ package threescale
 
 import (
 	"context"
+	"fmt"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"testing"
 
@@ -33,6 +36,7 @@ import (
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
+	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -425,4 +429,212 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 
 func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.Product3Scale})
+}
+
+func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx              context.Context
+		serverClient     k8sclient.Client
+		productNamespace string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test - Unable to get deployment config - PhaseFailed",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					return fmt.Errorf("fetch error")
+				}},
+				productNamespace: defaultInstallationNamespace,
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - Deployment config has a 'False' condition - Rollout success - PhaseCreatingComponents",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				appsv1Client: getAppsV1Client(successfulTestAppsV1Objects),
+				log:          getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&openshiftappsv1.DeploymentConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: defaultInstallationNamespace,
+							Labels: map[string]string{
+								"app": "apicast-production",
+							},
+						},
+						Status: openshiftappsv1.DeploymentConfigStatus{
+							Conditions: []openshiftappsv1.DeploymentCondition{
+								{
+									Status: corev1.ConditionFalse,
+								},
+							},
+						},
+					},
+				),
+				productNamespace: defaultInstallationNamespace,
+			},
+			want: integreatlyv1alpha1.PhaseCreatingComponents,
+		},
+		{
+			name: "Test - Waiting for replicas to be rolled out - Condition Unknown - PhaseInProgress",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&openshiftappsv1.DeploymentConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: defaultInstallationNamespace,
+							Labels: map[string]string{
+								"app": "apicast-production",
+							},
+						},
+						Status: openshiftappsv1.DeploymentConfigStatus{
+							Conditions: []openshiftappsv1.DeploymentCondition{
+								{
+									Status: corev1.ConditionUnknown,
+								},
+							},
+						},
+					},
+				),
+				productNamespace: defaultInstallationNamespace,
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Waiting for replicas to be rolled out - Replicas != AvailableReplicas - PhaseInProgress",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&openshiftappsv1.DeploymentConfig{
+						TypeMeta: metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: defaultInstallationNamespace,
+							Labels: map[string]string{
+								"app": "apicast-production",
+							},
+						},
+						Status: openshiftappsv1.DeploymentConfigStatus{
+							Conditions: []openshiftappsv1.DeploymentCondition{
+								{
+									Status: corev1.ConditionTrue,
+								},
+							},
+							Replicas:      1,
+							ReadyReplicas: 0,
+						},
+					},
+				),
+				productNamespace: defaultInstallationNamespace,
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Waiting for replicas to be rolled out - ReadyReplicas != UpdatedReplicas - PhaseInProgress",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&openshiftappsv1.DeploymentConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: defaultInstallationNamespace,
+							Labels: map[string]string{
+								"app": "apicast-production",
+							},
+						},
+						Status: openshiftappsv1.DeploymentConfigStatus{
+							Conditions: []openshiftappsv1.DeploymentCondition{
+								{
+									Status: corev1.ConditionTrue,
+								},
+							},
+							ReadyReplicas:   1,
+							UpdatedReplicas: 0,
+						},
+					},
+				),
+				productNamespace: defaultInstallationNamespace,
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Replicas all rolled out - PhaseComplete",
+			args: args{
+				ctx:              context.TODO(),
+				serverClient:     fake.NewFakeClientWithScheme(scheme, getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)...),
+				productNamespace: defaultInstallationNamespace,
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.ensureDeploymentConfigsReady(tt.args.ctx, tt.args.serverClient, tt.args.productNamespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ensureDeploymentConfigsReady() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ensureDeploymentConfigsReady() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

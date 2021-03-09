@@ -2195,6 +2195,20 @@ func (r *Reconciler) ensureDeploymentConfigsReady(ctx context.Context, serverCli
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
+		// Rollout new dc if there is a failed condition
+		for _, condition := range deploymentConfig.Status.Conditions {
+			if condition.Status == corev1.ConditionFalse {
+				r.log.Warningf("3scale dc in a failed condition, rolling out new deployment", l.Fields{"dc": name})
+				err = r.RolloutDeployment(ctx, name)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, err
+				}
+
+				return integreatlyv1alpha1.PhaseCreatingComponents, nil
+			}
+		}
+
+		//  Check that replicas are fully rolled out
 		for _, condition := range deploymentConfig.Status.Conditions {
 			if condition.Status != corev1.ConditionTrue || (deploymentConfig.Status.Replicas != deploymentConfig.Status.AvailableReplicas ||
 				deploymentConfig.Status.ReadyReplicas != deploymentConfig.Status.UpdatedReplicas) {

@@ -172,8 +172,9 @@ var systemSidekiq = appsv1.DeploymentConfig{
 }
 
 var successfulTestAppsV1Objects = map[string]*appsv1.DeploymentConfig{
-	systemApp.Name:     &systemApp,
-	systemSidekiq.Name: &systemSidekiq,
+	systemApp.Name:         &systemApp,
+	systemSidekiq.Name:     &systemSidekiq,
+	apicastProduction.Name: apicastProduction,
 }
 
 var systemEnvConfigMap = &corev1.ConfigMap{
