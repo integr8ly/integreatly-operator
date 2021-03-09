@@ -1,6 +1,9 @@
 package monitoring
 
-const MonitoringGrafanaDBResourceByNSJSON = `{
+// This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
+// The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
+func GetMonitoringGrafanaDBResourceByNSJSON(installationName string) string {
+	return `{
 	"annotations": {
 		"list": [{
 				"builtIn": 1,
@@ -14,7 +17,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,version,to_version)(rhmi_version{to_version!=\"\"})",
+				"expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
@@ -775,3 +778,4 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 	"title": "Resource Usage By Namespace",
 	"version": 2
 }`
+}

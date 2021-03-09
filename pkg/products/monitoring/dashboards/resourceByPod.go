@@ -1,6 +1,9 @@
 package monitoring
 
-const MonitoringGrafanaDBResourceByPodJSON = `{
+// This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
+// The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
+func GetMonitoringGrafanaDBResourceByPodJSON(installationName string) string {
+	return `{
 	"annotations": {
 		"list": [{
 				"builtIn": 1,
@@ -14,7 +17,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,version,to_version)(rhmi_version{to_version!=\"\"})",
+				"expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
@@ -829,3 +832,4 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 	"uid": "c84ae905b9f54268be6be82c9a5b7dd6",
 	"version": 2
 }`
+}
