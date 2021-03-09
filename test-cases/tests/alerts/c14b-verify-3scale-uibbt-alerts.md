@@ -9,6 +9,7 @@ products:
       - 0.1.0
       - 0.2.0
       - 1.0.0
+      - 1.5.0
 ---
 
 # C14B - Verify 3scale UIBBT alerts
