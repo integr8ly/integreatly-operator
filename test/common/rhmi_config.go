@@ -10,7 +10,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
-	"k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -321,7 +321,7 @@ func RHMIConfigTemplate() *v1alpha1.RHMIConfig {
 
 func waitForValidatingWebhook(client dynclient.Client) error {
 	return wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
-		vwc := &v1beta1.ValidatingWebhookConfiguration{}
+		vwc := &admissionv1.ValidatingWebhookConfiguration{}
 		err := client.Get(goctx.TODO(),
 			dynclient.ObjectKey{Name: "rhmiconfig.integreatly.org"},
 			vwc,
