@@ -181,17 +181,17 @@ func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int3
 
 	quit1 := make(chan struct{})
 	go repeat(func() {
-		scaleDeployment(threescaleOperatorDeploymentName, 0, ctx.KubeClient)
+		scaleDeployment(t, threescaleOperatorDeploymentName, 0, ctx.KubeClient)
 	}, quit1)
 	defer close(quit1)
-	defer scaleDeployment(threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+	defer scaleDeployment(t, threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
 	quit2 := make(chan struct{})
 	go repeat(func() {
-		scaleDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, 0, ctx.Client)
+		scaleDeploymentConfig(t, threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, 0, ctx.Client)
 	}, quit2)
 	defer close(quit2)
-	defer scaleDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, originalUIReplicas, ctx.Client)
+	defer scaleDeploymentConfig(t, threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, originalUIReplicas, ctx.Client)
 
 	err = waitForThreescaleAlertState("pending", ctx, t)
 	if err != nil {
@@ -336,7 +336,7 @@ func getNumOfReplicasDeploymentConfig(name string, namespace string, client clie
 	return deploymentConfig.Spec.Replicas, nil
 }
 
-func scaleDeployment(name string, replicas int32, kubeClient kubernetes.Interface) error {
+func scaleDeployment(t TestingTB, name string, replicas int32, kubeClient kubernetes.Interface) {
 	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -350,13 +350,12 @@ func scaleDeployment(name string, replicas int32, kubeClient kubernetes.Interfac
 		return updateErr
 	})
 	if retryErr != nil {
-		return fmt.Errorf("update failed: %v", retryErr)
+		t.Logf("update failed: %v", retryErr)
 	}
 
-	return nil
 }
 
-func scaleDeploymentConfig(name string, namespace string, replicas int32, client client.Client) error {
+func scaleDeploymentConfig(t TestingTB, name string, namespace string, replicas int32, client client.Client) {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		deploymentConfig := &appsv1.DeploymentConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -374,10 +373,8 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 		return updateErr
 	})
 	if retryErr != nil {
-		return fmt.Errorf("update failed: %v", retryErr)
+		t.Logf("update failed: %v", retryErr)
 	}
-
-	return nil
 }
 
 func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, originalOperatorReplicas int32) error {
@@ -392,7 +389,7 @@ func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, o
 
 		if numberOfOperatorReplicas == 0 {
 			t.Log("Threescale operator deployment not yet scaled, waiting 15 seconds before retrying")
-			scaleDeployment(threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+			scaleDeployment(t, threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 			return false, nil
 		}
 
