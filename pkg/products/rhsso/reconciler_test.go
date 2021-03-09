@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"testing"
-
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -148,6 +148,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = configv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = grafanav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

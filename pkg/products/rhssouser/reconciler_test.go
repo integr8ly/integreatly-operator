@@ -10,6 +10,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -150,6 +151,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := consolev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	err = grafanav1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
 		return nil, err
 	}
 	return scheme, err
