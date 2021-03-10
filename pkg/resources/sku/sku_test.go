@@ -7,6 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v13 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"testing"
@@ -35,14 +36,106 @@ func TestGetSKU(t *testing.T) {
 		validate func(*SKU, *testing.T)
 	}{
 		{
-			name: "ensure error on no skuid found in config",
+			name: "ensure no error on no skuid found in config and default used",
 			args: args{
 				SKUId:     "SKU_NOT_PRESENT_SKU",
 				SKUConfig: getSKUConfig(nil),
 				SKU:       pointerToSKU,
 			},
-			want:    nil,
-			wantErr: true,
+			want: &SKU{
+				name: "default",
+				productConfigs: map[v1alpha1.ProductName]ProductConfig{
+					v1alpha1.Product3Scale: {
+						productName: v1alpha1.Product3Scale,
+						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[BackendListenerName] = ResourceConfig{
+								Replicas: 3,
+								Resources: v13.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.35"),
+										corev1.ResourceMemory: resource.MustParse("450"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.45"),
+										corev1.ResourceMemory: resource.MustParse("500"),
+									},
+								},
+							}
+							rcs[BackendWorkerName] = ResourceConfig{
+								Replicas: 3,
+								Resources: v13.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.15"),
+										corev1.ResourceMemory: resource.MustParse("100"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.2"),
+										corev1.ResourceMemory: resource.MustParse("100"),
+									},
+								},
+							}
+							rcs[ApicastProductionName] = ResourceConfig{
+								Replicas: 3,
+								Resources: v13.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.3"),
+										corev1.ResourceMemory: resource.MustParse("250"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.3"),
+										corev1.ResourceMemory: resource.MustParse("300"),
+									},
+								},
+							}
+							rcs[ApicastStagingName] = ResourceConfig{
+								Replicas: 3,
+								Resources: v13.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.3"),
+										corev1.ResourceMemory: resource.MustParse("250"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.3"),
+										corev1.ResourceMemory: resource.MustParse("300"),
+									},
+								},
+							}
+						}),
+						sku: pointerToSKU,
+					},
+					v1alpha1.ProductRHSSOUser: {
+						productName: v1alpha1.ProductRHSSOUser,
+						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[KeycloakName] = ResourceConfig{
+								Replicas: 3,
+								Resources: v13.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.75"),
+										corev1.ResourceMemory: resource.MustParse("1500"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("0.75"),
+										corev1.ResourceMemory: resource.MustParse("1500"),
+									},
+								},
+							}
+						}),
+						sku: pointerToSKU,
+					},
+					v1alpha1.ProductMarin3r: {
+						productName: v1alpha1.ProductMarin3r,
+						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[RateLimitName] = ResourceConfig{
+								Replicas:  3,
+								Resources: v13.ResourceRequirements{},
+							}
+
+						}),
+						sku: pointerToSKU,
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "test successful parsing of config map to sku object for DEV SKU",
@@ -58,7 +151,7 @@ func TestGetSKU(t *testing.T) {
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs["apicast_production"] = ResourceConfig{
+							rcs[ApicastProductionName] = ResourceConfig{
 								Replicas: int32(1),
 								Resources: v13.ResourceRequirements{
 									Requests: corev1.ResourceList{
@@ -71,20 +164,23 @@ func TestGetSKU(t *testing.T) {
 									},
 								},
 							}
+							rcs[ApicastStagingName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[BackendListenerName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
 						sku: pointerToSKU,
 					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
 						resourceConfigs: map[string]ResourceConfig{
-							"marin3r": {0, v13.ResourceRequirements{}},
+							RateLimitName: {0, v13.ResourceRequirements{}},
 						},
 						sku: pointerToSKU,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						productName: v1alpha1.ProductRHSSOUser,
 						resourceConfigs: map[string]ResourceConfig{
-							"keycloak": {0, v13.ResourceRequirements{}},
+							KeycloakName: {0, v13.ResourceRequirements{}},
 						},
 						sku: pointerToSKU,
 					},
@@ -93,12 +189,11 @@ func TestGetSKU(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(sku *SKU, t *testing.T) {
-				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas("apicast_production")
+				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
 				wantReplicas := int32(1)
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
 				}
-				// to do more interrogations
 			},
 		},
 		{
@@ -115,7 +210,7 @@ func TestGetSKU(t *testing.T) {
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs["backend_listener"] = ResourceConfig{
+							rcs[BackendListenerName] = ResourceConfig{
 								Replicas: int32(3),
 								Resources: v13.ResourceRequirements{
 									Requests: corev1.ResourceList{
@@ -128,20 +223,23 @@ func TestGetSKU(t *testing.T) {
 									},
 								},
 							}
+							rcs[ApicastStagingName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[ApicastProductionName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
 						sku: pointerToSKU,
 					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
 						resourceConfigs: map[string]ResourceConfig{
-							"marin3r": {0, v13.ResourceRequirements{}},
+							RateLimitName: {0, v13.ResourceRequirements{}},
 						},
 						sku: pointerToSKU,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						productName: v1alpha1.ProductRHSSOUser,
 						resourceConfigs: map[string]ResourceConfig{
-							"keycloak": {0, v13.ResourceRequirements{}},
+							KeycloakName: {0, v13.ResourceRequirements{}},
 						},
 						sku: pointerToSKU,
 					},
@@ -150,7 +248,7 @@ func TestGetSKU(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(sku *SKU, t *testing.T) {
-				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas("backend_listener")
+				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(BackendListenerName)
 				wantReplicas := int32(3)
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
@@ -186,13 +284,13 @@ func TestProductConfig_Configure(t *testing.T) {
 		sku             *SKU
 	}
 	type args struct {
-		obj interface{}
+		obj metav1.Object
 	}
 	tests := []struct {
 		name     string
 		fields   fields
 		args     args
-		validate func(obj interface{}, r map[string]ResourceConfig, t *testing.T)
+		validate func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T)
 		wantErr  bool
 	}{
 		{
@@ -200,7 +298,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-					rcs["backend_listener"] = ResourceConfig{
+					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -218,7 +316,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: true,
 				},
 			},
-			args: args{obj: getDeploymentConfig("backend_listener", func(dc *v1.DeploymentConfig) {
+			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
 				dc.Spec.Replicas = int32(2)
 				dc.Spec.Template.Spec.Containers = []v13.Container{
 					{
@@ -237,10 +335,10 @@ func TestProductConfig_Configure(t *testing.T) {
 			},
 			),
 			},
-			validate: func(obj interface{}, r map[string]ResourceConfig, t *testing.T) {
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				dcSpec := obj.(*v1.DeploymentConfig).Spec
 				dcLimits := dcSpec.Template.Spec.Containers[0].Resources.Limits
-				configLimits := r["backend_listener"].Resources.Limits
+				configLimits := r[BackendListenerName].Resources.Limits
 				if dcLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
 					t.Errorf("deploymentConfig cpu limits not as expected, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
@@ -248,7 +346,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					t.Errorf("deploymentConfig memory limits not as expected, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				dcRequests := dcSpec.Template.Spec.Containers[0].Resources.Requests
-				configRequests := r["backend_listener"].Resources.Requests
+				configRequests := r[BackendListenerName].Resources.Requests
 				if dcRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
 					t.Errorf("deploymentConfig cpu requests not as expected, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
@@ -256,7 +354,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					t.Errorf("deploymentConfig memory requests not as expected, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				dcReplicas := dcSpec.Replicas
-				configReplicas := r["backend_listener"].Replicas
+				configReplicas := r[BackendListenerName].Replicas
 				if dcReplicas != configReplicas {
 					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", dcReplicas, configReplicas)
 				}
@@ -268,7 +366,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-					rcs["backend_listener"] = ResourceConfig{
+					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -286,7 +384,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: false,
 				},
 			},
-			args: args{obj: getDeploymentConfig("backend_listener", func(dc *v1.DeploymentConfig) {
+			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
 				dc.Spec.Replicas = int32(2)
 				dc.Spec.Template.Spec.Containers = []v13.Container{
 					{
@@ -304,10 +402,10 @@ func TestProductConfig_Configure(t *testing.T) {
 				}
 			}),
 			},
-			validate: func(obj interface{}, r map[string]ResourceConfig, t *testing.T) {
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				dcSpec := obj.(*v1.DeploymentConfig).Spec
 				dcLimits := dcSpec.Template.Spec.Containers[0].Resources.Limits
-				configLimits := r["backend_listener"].Resources.Limits
+				configLimits := r[BackendListenerName].Resources.Limits
 				if dcLimits.Cpu().MilliValue() == configLimits.Cpu().MilliValue() {
 					t.Errorf("deployment config cpu limits not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
@@ -315,7 +413,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					t.Errorf("deployment config memory limits not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				dcRequests := dcSpec.Template.Spec.Containers[0].Resources.Requests
-				configRequests := r["backend_listener"].Resources.Requests
+				configRequests := r[BackendListenerName].Resources.Requests
 				if dcRequests.Cpu().MilliValue() == configRequests.Cpu().MilliValue() {
 					t.Errorf("deployment config cpu requests not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
@@ -323,7 +421,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					t.Errorf("deployment config memory requests not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				dcReplicas := dcSpec.Replicas
-				configReplicas := r["backend_listener"].Replicas
+				configReplicas := r[BackendListenerName].Replicas
 				if dcReplicas == configReplicas {
 					t.Errorf("deploymentConfig replicas not as expected, isupdated is false so should not update \n got = %v, \n want= %v ", dcReplicas, configReplicas)
 				}
@@ -331,11 +429,11 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validate that deploymentConfig backend-listener Resource Requests and Limits don't get updated if they are higher and isupdated is true",
+			name: "validate that deploymentConfig backend-listener Resource Requests and Limits do get updated if they are higher and isupdated is true",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-					rcs["backend_listener"] = ResourceConfig{
+					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -353,7 +451,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: true,
 				},
 			},
-			args: args{obj: getDeploymentConfig("backend_listener", func(dc *v1.DeploymentConfig) {
+			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
 				dc.Spec.Replicas = int32(2)
 				dc.Spec.Template.Spec.Containers = []v13.Container{
 					{
@@ -371,26 +469,26 @@ func TestProductConfig_Configure(t *testing.T) {
 				}
 			}),
 			},
-			validate: func(obj interface{}, r map[string]ResourceConfig, t *testing.T) {
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				dcSpec := obj.(*v1.DeploymentConfig).Spec
 				dcLimits := dcSpec.Template.Spec.Containers[0].Resources.Limits
-				configLimits := r["backend_listener"].Resources.Limits
-				if dcLimits.Cpu().MilliValue() == configLimits.Cpu().MilliValue() {
-					t.Errorf("deployment config cpu limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				configLimits := r[BackendListenerName].Resources.Limits
+				if dcLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("deployment config cpu limits not as expected, it should update when higher and isupdated is true, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
-				if dcLimits.Memory().MilliValue() == configLimits.Memory().MilliValue() {
-					t.Errorf("deployment config memory limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				if dcLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("deployment config memory limits not as expected, it should update when higher and isupdated is true, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				dcRequests := dcSpec.Template.Spec.Containers[0].Resources.Requests
-				configRequests := r["backend_listener"].Resources.Requests
-				if dcRequests.Cpu().MilliValue() == configRequests.Cpu().MilliValue() {
-					t.Errorf("deployment config cpu requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+				configRequests := r[BackendListenerName].Resources.Requests
+				if dcRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
+					t.Errorf("deployment config cpu requests not as expected, it should update when higher and isupdated is true, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
-				if dcRequests.Memory().MilliValue() == configRequests.Memory().MilliValue() {
-					t.Errorf("deployment config memory requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+				if dcRequests.Memory().MilliValue() != configRequests.Memory().MilliValue() {
+					t.Errorf("deployment config memory requests not as expected, it should update when higher and isupdated is true, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				dcReplicas := dcSpec.Replicas
-				configReplicas := r["backend_listener"].Replicas
+				configReplicas := r[BackendListenerName].Replicas
 				if dcReplicas != configReplicas {
 					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", dcReplicas, configReplicas)
 				}
@@ -398,11 +496,11 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validate that statefulset backend-listener Resource Requests and Limits don't get updated if they are higher and isupdated is true",
+			name: "validate that statefulset backend-listener Resource Requests and Limits do get updated if they are higher and isupdated is true",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-					rcs["backend_listener"] = ResourceConfig{
+					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -420,7 +518,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: true,
 				},
 			},
-			args: args{obj: getStatefulSet("backend_listener", func(ss *appsv1.StatefulSet) {
+			args: args{obj: getStatefulSet(BackendListenerName, func(ss *appsv1.StatefulSet) {
 				replica := int32(2)
 				ss.Spec.Replicas = &replica
 				ss.Spec.Template.Spec.Containers = []v13.Container{
@@ -439,26 +537,26 @@ func TestProductConfig_Configure(t *testing.T) {
 				}
 			}),
 			},
-			validate: func(obj interface{}, r map[string]ResourceConfig, t *testing.T) {
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				ssSpec := obj.(*appsv1.StatefulSet).Spec
 				ssLimits := ssSpec.Template.Spec.Containers[0].Resources.Limits
-				configLimits := r["backend_listener"].Resources.Limits
-				if ssLimits.Cpu().MilliValue() == configLimits.Cpu().MilliValue() {
-					t.Errorf("statefulset cpu limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", ssLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				configLimits := r[BackendListenerName].Resources.Limits
+				if ssLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("statefulset cpu limits not as expected, it should get update when lower, \n got = %v, \n want= %v ", ssLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
-				if ssLimits.Memory().MilliValue() == configLimits.Memory().MilliValue() {
-					t.Errorf("statefulset memory limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", ssLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				if ssLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("statefulset memory limits not as expected, it should get update when lower, \n got = %v, \n want= %v ", ssLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				ssRequests := ssSpec.Template.Spec.Containers[0].Resources.Requests
-				configRequests := r["backend_listener"].Resources.Requests
-				if ssRequests.Cpu().MilliValue() == configRequests.Cpu().MilliValue() {
-					t.Errorf("statefulset cpu requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", ssRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+				configRequests := r[BackendListenerName].Resources.Requests
+				if ssRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
+					t.Errorf("statefulset cpu requests not as expected, it should get update when lower, \n got = %v, \n want= %v ", ssRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
-				if ssRequests.Memory().MilliValue() == configRequests.Memory().MilliValue() {
-					t.Errorf("statefulset memory requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", ssRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+				if ssRequests.Memory().MilliValue() != configRequests.Memory().MilliValue() {
+					t.Errorf("statefulset memory requests not as expected, it should get update when lower, \n got = %v, \n want= %v ", ssRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				ssReplicas := ssSpec.Replicas
-				configReplicas := r["backend_listener"].Replicas
+				configReplicas := r[BackendListenerName].Replicas
 				if *ssReplicas != configReplicas {
 					t.Errorf("statefulset replicas not as expected, \n got = %v, \n want= %v ", *ssReplicas, configReplicas)
 				}
@@ -466,11 +564,11 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validate that deployment backend-listener Resource Requests and Limits don't get updated if they are higher and isupdated is true",
+			name: "validate that deployment backend-listener Resource Requests and Limits don't get updated if they are higher and isupdated is false",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-					rcs["backend_listener"] = ResourceConfig{
+					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -485,10 +583,10 @@ func TestProductConfig_Configure(t *testing.T) {
 					}
 				}),
 				sku: &SKU{
-					isUpdated: true,
+					isUpdated: false,
 				},
 			},
-			args: args{obj: getDeployment("backend_listener", func(d *appsv1.Deployment) {
+			args: args{obj: getDeployment(BackendListenerName, func(d *appsv1.Deployment) {
 				replica := int32(2)
 				d.Spec.Replicas = &replica
 				d.Spec.Template.Spec.Containers = []v13.Container{
@@ -507,34 +605,34 @@ func TestProductConfig_Configure(t *testing.T) {
 				}
 			}),
 			},
-			validate: func(obj interface{}, r map[string]ResourceConfig, t *testing.T) {
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				dSpec := obj.(*appsv1.Deployment).Spec
 				dLimits := dSpec.Template.Spec.Containers[0].Resources.Limits
-				configLimits := r["backend_listener"].Resources.Limits
+				configLimits := r[BackendListenerName].Resources.Limits
 				if dLimits.Cpu().MilliValue() == configLimits.Cpu().MilliValue() {
-					t.Errorf("deployment cpu limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", dLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+					t.Errorf("deployment cpu limits not as expected, it should not update when lower and isUpdate is false, \n got = %v, \n want= %v ", dLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
 				if dLimits.Memory().MilliValue() == configLimits.Memory().MilliValue() {
-					t.Errorf("deployment memory limits not as expected, it should not update when lower, \n got = %v, \n want= %v ", dLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+					t.Errorf("deployment memory limits not as expected, it should not update when lower and isUpdate is false, \n got = %v, \n want= %v ", dLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				dRequests := dSpec.Template.Spec.Containers[0].Resources.Requests
-				configRequests := r["backend_listener"].Resources.Requests
+				configRequests := r[BackendListenerName].Resources.Requests
 				if dRequests.Cpu().MilliValue() == configRequests.Cpu().MilliValue() {
-					t.Errorf("deployment cpu requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", dRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+					t.Errorf("deployment cpu requests not as expected, it should not update when lower and isUpdate is false, \n got = %v, \n want= %v ", dRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
 				if dRequests.Memory().MilliValue() == configRequests.Memory().MilliValue() {
-					t.Errorf("deployment memory requests not as expected, it should not update when lower, \n got = %v, \n want= %v ", dRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+					t.Errorf("deployment memory requests not as expected, it should not update when lower and isUpdate is false, \n got = %v, \n want= %v ", dRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				dReplicas := dSpec.Replicas
-				configReplicas := r["backend_listener"].Replicas
-				if *dReplicas != configReplicas {
+				configReplicas := r[BackendListenerName].Replicas
+				if *dReplicas == configReplicas {
 					t.Errorf("deployment replicas not as expected, \n got = %v, \n want= %v ", *dReplicas, configReplicas)
 				}
 			},
 		},
 		{
 			name:    "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
-			args:    args{obj: v13.ConfigMap{}},
+			args:    args{obj: &v13.ConfigMap{}},
 			wantErr: true,
 		},
 	}
@@ -559,11 +657,7 @@ func TestProductConfig_Configure(t *testing.T) {
 }
 
 func getResourceConfig(modifyFn func(rcs map[string]ResourceConfig)) map[string]ResourceConfig {
-	mock := map[string]ResourceConfig{
-		"apicast_production": {0, v13.ResourceRequirements{}},
-		"backend_listener":   {0, v13.ResourceRequirements{}},
-		"backend_worker":     {0, v13.ResourceRequirements{}},
-	}
+	mock := map[string]ResourceConfig{}
 	if modifyFn != nil {
 		modifyFn(mock)
 	}
@@ -625,9 +719,11 @@ func getDeployment(name string, modifyFn func(d *appsv1.Deployment)) *appsv1.Dep
 }
 
 func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
-	mock := &v13.ConfigMap{}
+	mock := &v13.ConfigMap{
+		ObjectMeta: v12.ObjectMeta{Name: ConfigMapName},
+	}
 	mock.Data = map[string]string{
-		"sku-configs": "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1389,\"alert_limits\": []},\"resources\": {\"apicast_production\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": 0.09,\"memory\": 250},\"limits\": {\"cpu\": 0.1,\"memory\": 270}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 1389,  \"alert_limits\": []},\"resources\": {\"backend_listener\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1389,\"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": 0.09,\"memory\": 250},\"limits\": {\"cpu\": 0.1,\"memory\": 270}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 1389,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)

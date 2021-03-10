@@ -238,25 +238,25 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
-	skuSecretName := ""
 	installationSKU := &sku.SKU{}
 	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		isSKUUpdated := false
 		skuSecretName, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, request.NamespacedName.Namespace, "sku")
 		if err != nil {
 			return retryRequeue, errors.Wrap(err, "Error checking for SKU secret")
 		}
 
+		//!found means the param wasn't found so we want to default rather than return
+		//but don't do it until the installation object is more than a minute old in case the secret is slow to create
 		if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
 			return retryRequeue, nil
 		}
-		//!found means the param wasn't found so we want to default rather than return
-		//but don't do it until the installation object is more than a minute old in case the secret is slow to create
-		if !found && installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
-			skuSecretName = "TWENTY_MILLION_SKU"
+		if !found {
+			skuSecretName = ""
 		}
 		// get a configmap from the cluster
 		cm := &corev1.ConfigMap{}
-		err = r.Get(context.TODO(), types.NamespacedName{Namespace: request.Namespace, Name: "sku-config"}, cm)
+		err = r.Get(context.TODO(), types.NamespacedName{Namespace: request.Namespace, Name: sku.ConfigMapName}, cm)
 		if err != nil {
 			return retryRequeue, errors.Wrap(err, "Error getting sku config map")
 		}
@@ -267,16 +267,26 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		// so
 		// set ToSKU to the new value
 		// set isUpdate to true
-		isSKUUpdated := false
-		if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
-			skuSecretName != installation.Status.SKU {
+
+		// if the secret is deifferent to what's currently set in SKU there has been an updated
+		if skuSecretName != installation.Status.SKU {
 			isSKUUpdated = true
-			installation.Status.ToSKU = skuSecretName
 		}
 
 		err = sku.GetSKU(skuSecretName, cm, installationSKU, isSKUUpdated)
 		if err != nil {
 			return retryRequeue, err
+		}
+
+		// if both are empty it's the first round of installation
+		// or if the secretname is not the same as what the SKU is marked there has been a change
+		// so set toSKU and update the status object
+		if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
+			skuSecretName != installation.Status.SKU {
+			installation.Status.ToSKU = installationSKU.GetName()
+			if err := r.Status().Update(context.TODO(), installation); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 
 	}
@@ -424,7 +434,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-		installation.Status.SKU = skuSecretName
+		installation.Status.SKU = installationSKU.GetName()
 		installation.Status.ToSKU = ""
 		log.Info("installation completed successfully")
 	}
@@ -436,6 +446,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		retryRequeue.RequeueAfter = 5 * time.Minute
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
+		}
+		if installationSKU.IsUpdated() {
+			installation.Status.SKU = installationSKU.GetName()
+			installation.Status.ToSKU = ""
 		}
 	}
 	metrics.SetRHMIStatus(installation)
@@ -536,7 +550,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
-		for product, _ := range stage.Products {
+		for product := range stage.Products {
 			productName := string(product)
 			log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
 			productStatus := installation.GetProductStatusObject(product)
