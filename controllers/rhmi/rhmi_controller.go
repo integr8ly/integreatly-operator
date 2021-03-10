@@ -238,59 +238,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
-	installationSKU := &sku.SKU{}
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-		isSKUUpdated := false
-		skuSecretName, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, request.NamespacedName.Namespace, "sku")
-		if err != nil {
-			return retryRequeue, errors.Wrap(err, "Error checking for SKU secret")
-		}
-
-		//!found means the param wasn't found so we want to default rather than return
-		//but don't do it until the installation object is more than a minute old in case the secret is slow to create
-		if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
-			return retryRequeue, nil
-		}
-		if !found {
-			skuSecretName = ""
-		}
-		// get a configmap from the cluster
-		cm := &corev1.ConfigMap{}
-		err = r.Get(context.TODO(), types.NamespacedName{Namespace: request.Namespace, Name: sku.ConfigMapName}, cm)
-		if err != nil {
-			return retryRequeue, errors.Wrap(err, "Error getting sku config map")
-		}
-
-		// if it's the first install and first reconcile there will be no value
-		// or if the secretName is not the same as the current SKU
-		// there has been a change to the SKU
-		// so
-		// set ToSKU to the new value
-		// set isUpdate to true
-
-		// if the secret is deifferent to what's currently set in SKU there has been an updated
-		if skuSecretName != installation.Status.SKU {
-			isSKUUpdated = true
-		}
-
-		err = sku.GetSKU(skuSecretName, cm, installationSKU, isSKUUpdated)
-		if err != nil {
-			return retryRequeue, err
-		}
-
-		// if both are empty it's the first round of installation
-		// or if the secretname is not the same as what the SKU is marked there has been a change
-		// so set toSKU and update the status object
-		if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
-			skuSecretName != installation.Status.SKU {
-			installation.Status.ToSKU = installationSKU.GetName()
-			if err := r.Status().Update(context.TODO(), installation); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-
-	}
-
 	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
 	if installation.Spec.AlertingEmailAddresses.CSSRE == "" && cssreAlertingEmailAddress != "" {
 		log.Info("Adding CS-SRE alerting email address to RHMI CR")
@@ -355,6 +302,18 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	if installation.Status.Stages == nil {
 		installation.Status.Stages = map[rhmiv1alpha1.StageName]rhmiv1alpha1.RHMIStageStatus{}
+	}
+
+	installationSKU := &sku.SKU{}
+	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if err = r.processSKU(installation, request.Namespace, installationSKU); err != nil {
+			// for now we don't want to error until the code is fully implemented
+			// see epic -> https://issues.redhat.com/browse/MGDAPI-1100
+			// return ctrl.Result{}, err
+		}
+		if err = r.Status().Update(context.TODO(), installation); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	// either not checked, or rechecking preflight checks
@@ -1117,4 +1076,52 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 		return check(value)
 	}
+}
+
+func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
+	isSKUUpdated := false
+	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "sku")
+	if err != nil {
+		return errors.Wrap(err, "Error checking for SKU secret")
+	}
+
+	//!found means the param wasn't found so we want to default rather than return
+	//but don't do it until the installation object is more than a minute old in case the secret is slow to create
+	if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
+		return nil
+	}
+
+	// get a configmap from the cluster
+	cm := &corev1.ConfigMap{}
+	err = r.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: sku.ConfigMapName}, cm)
+	if err != nil {
+		return errors.Wrap(err, "Error getting sku config map")
+	}
+
+	// if it's the first install and first reconcile there will be no value
+	// or if the secretName is not the same as the current SKU
+	// there has been a change to the SKU
+	// so
+	// set ToSKU to the new value
+	// set isUpdate to true
+
+	// if the secret is different to what's currently set in SKU there has been an updated
+	if skuParam != installation.Status.SKU {
+		isSKUUpdated = true
+	}
+
+	err = sku.GetSKU(skuParam, cm, installationSKU, isSKUUpdated)
+	if err != nil {
+		return err
+	}
+
+	// if both are empty it's the first round of installation
+	// or if the secretname is not the same as what the SKU is marked there has been a change
+	// so set toSKU and update the status object
+	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
+		skuParam != installation.Status.SKU {
+		installation.Status.ToSKU = installationSKU.GetName()
+	}
+
+	return nil
 }
