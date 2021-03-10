@@ -131,7 +131,17 @@ Prerequisites:
 - OC session with cluster admin permissions in a target cluster
 - OCM session (necessary only if using OSD cluster)
 
-Tip: set a `PASSWORD` env var to define a password for the users. A random password is generated when this env var is not set.
+| Variable                  | Format  | Type     | Default        | Details                                                                     |
+|---------------------------|---------|:--------:|----------------|-----------------------------------------------------------------------------|
+| PASSWORD                  | string  | Optional | _None_         | If empty, a random password is generated for the testing users.             |
+| DEDICATED_ADMIN_PASSWORD  | string  | Optional | _None_         | If empty, a random password is generated for the testing dedicated admins.  |
+| REALM                     | string  | Optional | testing-idp    | Set the name of the realm in side cluster sso                               |
+| REALM_DISPLAY_NAME        | string  | Optional | Testing IDP    | Realm display name in side cluster sso                                      |
+| INSTALLATION_PREFIX       | string  | Optional | _None_         | If empty, the value is gotten for the the cluster using `oc get RHMIs --all-namespaces -o (pipe) jq -r .items[0].spec.namespacePrefix` |
+| ADMIN_USERNAME            | string  | Optional | customer-admin | Username prefix for dedicated admins                                        |
+| NUM_ADMIN                 | int     | Optional | 3              | Number of dedicated admins to be set up                                     |
+| REGULAR_USERNAME          | string  | Optional | test-user      | Username prefix for regular test users                                      |
+| NUM_REGULAR_USER          | int     | Optional | 10             | Number of regular user to be used.                                          |
 
 ### Configuring Github OAuth
 
