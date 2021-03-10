@@ -9,7 +9,20 @@ import (
 	appsv12 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v13 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
+)
+
+const (
+	ConfigMapData         = "sku-configs"
+	ConfigMapName         = "sku-config"
+	RateLimitName         = "ratelimit"
+	BackendListenerName   = "backend_listener"
+	BackendWorkerName     = "backend_worker"
+	ApicastProductionName = "apicast_production"
+	ApicastStagingName    = "apicast_staging"
+	KeycloakName          = "keycloak"
 )
 
 type SKU struct {
@@ -43,36 +56,112 @@ type skuConfigReceiver struct {
 
 func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bool) error {
 	allSKUs := &[]skuConfigReceiver{}
-	err := json.Unmarshal([]byte(SKUConfig.Data["sku-configs"]), allSKUs)
+	err := json.Unmarshal([]byte(SKUConfig.Data[ConfigMapData]), allSKUs)
 	if err != nil {
 		return err
 	}
 	skuReceiver := skuConfigReceiver{}
+
 	for _, sku := range *allSKUs {
 		if sku.Name == SKUId {
 			skuReceiver = sku
 			break
 		}
 	}
+
+	//if the skuid is empty then build up a defaulting skureceiver
+	// for defaulting we can use the twenty million sku
 	if skuReceiver.Name == "" {
-		return errors.New(fmt.Sprintf("could not find sku config with name '%s'", SKUId))
+		skuReceiver.Name = "default"
+		skuReceiver.Resources = map[string]ResourceConfig{
+			BackendListenerName: {
+				Replicas: 3,
+				Resources: v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.35"),
+						corev1.ResourceMemory: resource.MustParse("450"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.45"),
+						corev1.ResourceMemory: resource.MustParse("500"),
+					},
+				},
+			},
+			BackendWorkerName: {
+				Replicas: 3,
+				Resources: v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.15"),
+						corev1.ResourceMemory: resource.MustParse("100"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.2"),
+						corev1.ResourceMemory: resource.MustParse("100"),
+					},
+				},
+			},
+			ApicastProductionName: {
+				Replicas: 3,
+				Resources: v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.3"),
+						corev1.ResourceMemory: resource.MustParse("250"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.3"),
+						corev1.ResourceMemory: resource.MustParse("300"),
+					},
+				},
+			},
+			ApicastStagingName: {
+				Replicas: 3,
+				Resources: v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.3"),
+						corev1.ResourceMemory: resource.MustParse("250"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.3"),
+						corev1.ResourceMemory: resource.MustParse("300"),
+					},
+				},
+			},
+			KeycloakName: {
+				Replicas: 3,
+				Resources: v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.75"),
+						corev1.ResourceMemory: resource.MustParse("1500"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.75"),
+						corev1.ResourceMemory: resource.MustParse("1500"),
+					},
+				},
+			},
+			RateLimitName: {
+				Replicas:  3,
+				Resources: v13.ResourceRequirements{},
+			},
+		}
 	}
 
 	// map of products iterate over that to build the return map
 	products := map[v1alpha1.ProductName][]string{
 		v1alpha1.Product3Scale: {
-			"backend_listener",
-			"backend_worker",
-			"apicast_production",
+			BackendListenerName,
+			BackendWorkerName,
+			ApicastProductionName,
+			ApicastStagingName,
 		},
 		v1alpha1.ProductRHSSOUser: {
-			"keycloak",
+			KeycloakName,
 		},
 		v1alpha1.ProductMarin3r: {
-			"marin3r",
+			RateLimitName,
 		},
 	}
-	retSku.name = SKUId
+	retSku.name = skuReceiver.Name
 	retSku.productConfigs = map[v1alpha1.ProductName]ProductConfig{}
 	retSku.isUpdated = isUpdated
 
@@ -96,6 +185,10 @@ func (s *SKU) GetProduct(productName v1alpha1.ProductName) ProductConfig {
 	return s.productConfigs[productName]
 }
 
+func (s *SKU) GetName() string {
+	return s.name
+}
+
 func (s *SKU) IsUpdated() bool {
 	return s.isUpdated
 }
@@ -108,31 +201,35 @@ func (p ProductConfig) GetReplicas(ddcssName string) int32 {
 	return p.resourceConfigs[ddcssName].Replicas
 }
 
-func (p *ProductConfig) Configure(obj interface{}) error {
+func (p *ProductConfig) Configure(obj metav1.Object) error {
+
+	var replicas *int32
+	var podTemplate *v13.PodTemplateSpec
+
 	switch t := obj.(type) {
 	case *appsv1.DeploymentConfig:
-		if p.sku.isUpdated && t.Spec.Replicas < p.resourceConfigs[t.ObjectMeta.Name].Replicas {
-			t.Spec.Replicas = p.resourceConfigs[t.ObjectMeta.Name].Replicas
-		}
-		p.mutate(t.Spec.Template, t.ObjectMeta.Name)
+		replicas = &t.Spec.Replicas
+		podTemplate = t.Spec.Template
 		break
 	case *appsv12.Deployment:
-		configReplicas := p.resourceConfigs[t.ObjectMeta.Name].Replicas
-		if p.sku.isUpdated && *t.Spec.Replicas < p.resourceConfigs[t.ObjectMeta.Name].Replicas {
-			t.Spec.Replicas = &configReplicas
-		}
-		p.mutate(&t.Spec.Template, t.ObjectMeta.Name)
+		replicas = t.Spec.Replicas
+		podTemplate = &t.Spec.Template
 		break
 	case *appsv12.StatefulSet:
-		configReplicas := p.resourceConfigs[t.ObjectMeta.Name].Replicas
-		if p.sku.isUpdated && *t.Spec.Replicas < p.resourceConfigs[t.ObjectMeta.Name].Replicas {
-			t.Spec.Replicas = &configReplicas
-		}
-		p.mutate(&t.Spec.Template, t.ObjectMeta.Name)
+		replicas = t.Spec.Replicas
+		podTemplate = &t.Spec.Template
 		break
+
 	default:
 		return errors.New(fmt.Sprintf("sku configuration can only be applied to Deployments, StatefulSets or Deployment Configs, found %s", reflect.TypeOf(obj)))
 	}
+
+	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
+	if p.sku.isUpdated && *replicas < configReplicas {
+		*replicas = configReplicas
+	}
+	p.mutate(podTemplate, obj.GetName())
+
 	return nil
 }
 
@@ -145,10 +242,10 @@ func (p *ProductConfig) mutate(temp *v13.PodTemplateSpec, name string) {
 }
 
 func (p *ProductConfig) mutateResources(pod, cfg v13.ResourceList) {
-	if p.sku.isUpdated && pod.Cpu().MilliValue() < cfg.Cpu().MilliValue() {
+	if p.sku.isUpdated {
 		pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
 	}
-	if p.sku.isUpdated && pod.Memory().MilliValue() < cfg.Memory().MilliValue() {
+	if p.sku.isUpdated {
 		pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
 	}
 }
