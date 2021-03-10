@@ -14,29 +14,26 @@ hundred=100
 H1='Accept: application/json'
 
 echo 'Downloading data, this may take awhile...'
-curl -s -H "$H1" ${HYPERFOIL_URL}/run/${RUN}/stats/all | jq . > Backup.json 
+curl -s -H "$H1" ${HYPERFOIL_URL}/run/${RUN}/stats/all | jq . > Backup.json
 
 
 cat Backup.json | jq '.stats[].total.summary.invalid' > failed.txt
 cat Backup.json | jq '.stats[].total.summary.requestCount' > total.txt
 
+
 failed=$(awk '{s+=$1} END {print s}' failed.txt)
-echo 'failed = ' $failed
+
+
 total=$(awk '{s+=$1} END {print s}' total.txt)
-echo 'total = ' $total
 
 one_percent=$(expr $total / $hundred)
-echo 'one percent = '$one_percent
 
-percent_failed=$(expr $failed / $one_percent)
-percent_passed=$(expr $hundred - $percent_failed)
-echo "==============================================================================================="
+awk "BEGIN {printf \"Percentage passed = %.4f\n\", ${hundred}-(${failed}/${one_percent}) }"
 echo " "
-echo 'Percentage failed = ' $percent_failed"%"
-echo 'Percentage passed = ' $percent_passed"%"
-echo " "
-echo '==============================================================================================='
-echo '90% Percentile'
+awk "BEGIN {printf \"Percentage failed = %.6f\n\", ${failed}/${one_percent} }"
+echo 'Total = ' $total
+echo 'Failed = ' $failed
+echo 'One percent = '$one_percent
 echo " "
 cat Backup.json | jq '.stats[] | select(.phase | test("steady")) | select(.metric| test("post.")) | .total.summary.percentileResponseTime."90.0"' > post-percentile
 cat Backup.json | jq '.stats[] | select(.phase | test("steady")) | select(.metric| test("get.")) | .total.summary.percentileResponseTime."90.0"' > get-percentile
@@ -50,3 +47,5 @@ do
     echo ${percentile}" Mean = "$mean"ns Max = "$max"ns"
 done
 
+# clean up file created as part of the run
+rm Backup.json failed.txt get-percentile login-percentile post-percentile total.txt
