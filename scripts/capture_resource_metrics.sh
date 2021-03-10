@@ -11,9 +11,10 @@
 START_TIME_FILENAME=${START_TIME_FILENAME:-perf-test-start-time.txt}
 END_TIME_FILENAME=${END_TIME_FILENAME:-perf-test-end-time.txt}
 TOKEN=$(oc whoami --show-token)
-#PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")
-PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-k8s -n openshift-monitoring -o=jsonpath='{.spec.host}')")
-PROM_QUERY_ROUTE="$PROMETHEUS_ROUTE/api/v1/query"
+RHOAM_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")
+CLUSTER_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-k8s -n openshift-monitoring -o=jsonpath='{.spec.host}')")
+PROM_QUERY_ROUTE="$CLUSTER_PROMETHEUS_ROUTE/api/v1/query"
+PROM_QUERY_ROUTE_RHOAM="$RHOAM_PROMETHEUS_ROUTE/api/v1/query"
 
 # Get timestamps and calculate test duration
 startTime=$(cat $START_TIME_FILENAME)
@@ -79,20 +80,32 @@ LOAD_QUERIES=(\
   "sum(max_over_time(namespace:container_cpu_usage:sum{namespace=~'redhat-rhoam-.*'} [${testDuration}s]))"\
 )
 
+_runQuery() {
+  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$1" --data-urlencode "time=$2" -H 'Accept: application/json' $3 | jq -r ".data.result[0].value[1]"
+}
+
+runQuery() {
+  result=$( _runQuery "$1" "$2" "$PROM_QUERY_ROUTE" )
+  if [[ "$result" == "null" ]]; then
+    result=$( _runQuery "$1" "$2" "$PROM_QUERY_ROUTE_RHOAM" )
+  fi
+  echo "$result"
+}
+
 #
 # Execute queries
 #
 for query in "${INSTANT_QUERIES[@]}";
 do
-  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" --data-urlencode "time=$endTime" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
+  runQuery "$query" "$endTime"
 done
 
 for query in "${IDLE_QUERIES[@]}";
 do
-  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" --data-urlencode "time=$startTime" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
+  runQuery "$query" "$startTime"
 done
 
 for query in "${LOAD_QUERIES[@]}";
 do
-  curl -s -G -H "Authorization: Bearer $TOKEN" --data-urlencode "query=$query" --data-urlencode "time=$endTime" -H 'Accept: application/json' $PROM_QUERY_ROUTE | jq -r ".data.result[0].value[1]"
+  runQuery "$query" "$endTime"
 done
