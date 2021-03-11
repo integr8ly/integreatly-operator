@@ -55,7 +55,6 @@ Ensure that the cluster satisfies minimal requirements:
 - RHOAM (managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
   under the "Resource Requirements" section
 
-Consider using IN_PROW [optional variable](#variables-table) in case of limited resources.  
 ### 1. Clone the integreatly-operator
 Only if you haven't already cloned. Otherwise, navigate to an existing copy. 
 ```sh
@@ -69,12 +68,31 @@ cd integreatly-operator
 
 If you are working against a fresh cluster it will need to be prepared using the following. 
 Ensure you are logged into a cluster by `oc whoami`.
-Include the `INSTALLATION_TYPE`. See [here](#variables-table) about this and other optional configuration variables.
+Include the `INSTALLATION_TYPE`. See [here](#3-configuration-optional) about this and other optional configuration variables.
 ```shell
 INSTALLATION_TYPE=<managed/managed-api> make cluster/prepare/local
 ```
 
-### 3. Run integreatly-operator
+
+### 3. Configuration (optional)
+
+If you are running RHOAM against a cluster which is smaller than the requirements listed above, you 
+should use the IN_PROW variable, otherwise the installation will not complete. 
+If you have a cluster which meets the requirements, this step can be skipped.
+Please see the table below for other configuration options.
+
+```shell script
+INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make deploy/integreatly-rhmi-cr.yml
+```
+
+| Variable | Options | Type | Default | Details |
+|----------|---------|:----:|---------|-------|
+| INSTALLATION_TYPE     | `managed` or `managed-api`| **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. |
+| IN_PROW               | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters |
+| USE_CLUSTER_STORAGE   | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift. |
+
+
+### 4. Run integreatly-operator
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
 The operator can now be run locally:
 ```shell
@@ -83,7 +101,7 @@ INSTALLATION_TYPE=<managed/managed-api> make code/run
 
 *Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhmi/rhoam`).
 
-### 4. Validate installation 
+### 5. Validate installation 
 
 Use following commands to validate that installation succeeded:
 
@@ -96,15 +114,6 @@ Once the installation completed the command wil result in following output:
 "complete"
 ```
 
-### Variables table 
-In case you desire to use optional variables, consider running the following command before `make code/run` to ensure that the variables change
-would be implemented: `<VARIABLE>=<value> make deploy/integreatly-rhmi-cr.yml`
-
-| Variable | Options | Type | Default | Details |
-|----------|---------|:----:|---------|-------|
-| INSTALLATION_TYPE     | `managed` or `managed-api`| **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. |
-| IN_PROW               | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters |
-| USE_CLUSTER_STORAGE   | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift. |
 
 ## Deploying to a Cluster with OLM and the Bundle Format
 
