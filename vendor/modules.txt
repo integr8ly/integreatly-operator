@@ -30,6 +30,10 @@ github.com/RHsyseng/operator-utils/pkg/olm
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/andybalholm/cascadia v1.1.0
 github.com/andybalholm/cascadia
+# github.com/antchfx/xmlquery v1.3.5
+github.com/antchfx/xmlquery
+# github.com/antchfx/xpath v1.1.10
+github.com/antchfx/xpath
 # github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1
 # github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535

@@ -202,8 +202,8 @@ func getTimeStampPrefix() string {
 		t.Hour(), t.Minute(), t.Second())
 }
 
-func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
-	req := ctx.KubeClient.CoreV1().RESTClient().Post().
+func ExecToPodArgs(client kubernetes.Interface, config *rest.Config, command []string, podName, namespace, container string) (string, error) {
+	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
 		Namespace(namespace).
@@ -216,14 +216,14 @@ func execToPod(command string, podName string, namespace string, container strin
 	parameterCodec := runtime.NewParameterCodec(scheme)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
-		Command:   strings.Fields(command),
+		Command:   command,
 		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(ctx.KubeConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
 		return "", fmt.Errorf("error while creating Executor: %v", err)
 	}
@@ -236,9 +236,17 @@ func execToPod(command string, podName string, namespace string, container strin
 		Tty:    false,
 	})
 	if err != nil {
-		return "", fmt.Errorf("error in Stream: %v", err)
+		return "", fmt.Errorf("error in Stream: %v (%s)", err, stderr.String())
 	}
 	return stdout.String(), nil
+}
+
+func ExecToPod(client kubernetes.Interface, config *rest.Config, command, podName, namespace, container string) (string, error) {
+	return ExecToPodArgs(client, config, strings.Fields(command), podName, namespace, container)
+}
+
+func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
+	return ExecToPod(ctx.KubeClient, ctx.KubeConfig, command, podName, namespace, container)
 }
 
 // Is the cluster using on cluster or external storage

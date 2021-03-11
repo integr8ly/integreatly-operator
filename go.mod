@@ -11,6 +11,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f
 	github.com/aerogear/unifiedpush-operator v0.5.0
+	github.com/antchfx/xmlquery v1.3.5
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.35.23
 	github.com/blang/semver v3.5.1+incompatible
@@ -30,6 +31,7 @@ require (
 	github.com/integr8ly/grafana-operator/v3 v3.6.0
 	github.com/integr8ly/keycloak-client v0.1.3-0.20210125112511-1972ece81982
 	github.com/keycloak/keycloak-operator v0.0.0-20210115090828-e5d4686bb8a4
+	github.com/matryer/moq v0.2.1 // indirect
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.2
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
