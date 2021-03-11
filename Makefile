@@ -85,7 +85,7 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	INSTALLATION_SHORTHAND ?= rhoam
 endif
 
-NAMESPACE ?= $(NAMESPACE_PREFIX)operator
+NAMESPACE=$(NAMESPACE_PREFIX)operator
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
