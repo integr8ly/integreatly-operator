@@ -1383,7 +1383,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 }
 
 func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient)
+	monitoringConfig, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, monitoringConfig.GetOperatorNamespace())
 
 	if err != nil {
 		r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)

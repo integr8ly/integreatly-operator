@@ -13,14 +13,13 @@ import (
 const (
 	alertManagerConfigSecretFileName = "alertmanager.yaml"
 	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
-	operatorNs                       = "redhat-rhoam-middleware-monitoring-operator"
 )
 
 type alertManagerConfig struct {
 	Global map[string]string `yaml:"global"`
 }
 
-func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client) (string, error) {
+func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, operatorNs string) (string, error) {
 	amSecret := &corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: alertManagerConfigSecretName,
 		Namespace: operatorNs}, amSecret)

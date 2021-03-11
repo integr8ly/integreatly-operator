@@ -749,7 +749,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	var existingSMTPFromAddress = ""
 	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient)
+		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, r.Config.GetOperatorNamespace())
 		if err != nil {
 			if !apiErrors.IsNotFound(err) {
 				r.Log.Error("Error getting application monitoring secret", err)
