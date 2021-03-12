@@ -113,7 +113,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.Log.Error("failed to reconcile finalizer:", err)
+			r.Log.Warning("failed to reconcile finalizer: " + err.Error())
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		}
 		return phase, err
@@ -123,7 +123,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.Log.Infof("Phase: createNamespace", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.Log.Error("failed to create namespace", err)
+			r.Log.Warning("failed to create namespace: " + err.Error())
 			events.HandleError(r.recorder, installation, phase, "Failed to create namespace", err)
 		}
 		return phase, err
@@ -133,7 +133,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.Log.Infof("Phase: reconcileMonitoring", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.Log.Error("failed to reconcile", err)
+			r.Log.Warning("failed to reconcile:" + err.Error())
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile:", err)
 		}
 		return phase, err

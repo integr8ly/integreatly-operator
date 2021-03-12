@@ -286,7 +286,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("reconcileOutgoingEmailAddress", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
-			r.log.Error("Failed to reconcileOutgoingEmailAddress", err)
+			r.log.Warning("Failed to reconcileOutgoingEmailAddress: " + err.Error())
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcileOutgoingEmailAddress", err)
 		}
 		return phase, err
@@ -958,7 +958,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
 	if err != nil {
-		r.log.Error("error when deciding if pod anti affinity is required. Defaulted to false", err)
+		r.log.Warning("Failure when deciding if pod anti affinity is required. Defaulted to false: " + err.Error())
 		antiAffinityRequired = false
 	}
 
@@ -1402,7 +1402,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 	} else {
 		accessToken, err := r.GetAdminToken(ctx, serverClient)
 		if err != nil {
-			r.log.Error("Failed to get admin token in reconcileOutgoingEmailAddresss", err)
+			r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 		_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
@@ -1459,12 +1459,12 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
-		r.log.Error("Failed to get admin token", err)
+		r.log.Info("Failed to get admin token: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
 	if err != nil && !tsIsNotFoundError(err) {
-		r.log.Error("Failed to get authentication provider:", err)
+		r.log.Info("Failed to get authentication provider:" + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	if tsIsNotFoundError(err) {
@@ -1479,7 +1479,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 			"published":                         "true",
 		}, *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
-			r.log.Error("Failed to add authentication provider", err)
+			r.log.Info("Failed to add authentication provider:" + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
@@ -1506,7 +1506,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	systemAdminUsername, _, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
 	if err != nil {
-		r.log.Error("Failed to retrieve admin name and password from secret", err)
+		r.log.Info("Failed to retrieve admin name and password from secret: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1517,7 +1517,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	tsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
-		r.log.Error("Failed to get users", err)
+		r.log.Info("Failed to get users:" + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1625,12 +1625,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	openshiftAdminGroup := &usersv1.Group{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
-		r.log.Error("Failed to retrieve dedicated admins", err)
+		r.log.Info("Failed to retrieve dedicated admins: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
-		r.log.Error("Failed to get users", err)
+		r.log.Info("Failed to get users: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1638,7 +1638,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
 	if err != nil {
-		r.log.Error("Failed to sync openshift admin membership", err)
+		r.log.Info("Failed to sync openshift admin membership: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1719,20 +1719,20 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	})
 
 	if err != nil {
-		r.log.Error("Failed to get oauth client secret", err)
+		r.log.Info("Failed to get oauth client secret:" + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
 	if status != controllerutil.OperationResultNone {
 		err = r.RolloutDeployment(ctx, "system-app")
 		if err != nil {
-			r.log.Error("Failed to rollout deployment (system-app)", err)
+			r.log.Info("Failed to rollout deployment (system-app):" + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 
 		err = r.RolloutDeployment(ctx, "system-sidekiq")
 		if err != nil {
-			r.log.Error("Failed to rollout deployment (system-sidekiq)", err)
+			r.log.Info("Failed to rollout deployment (system-sidekiq)" + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
@@ -1743,7 +1743,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error reading monitoring config: %w", err)
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
@@ -1752,7 +1752,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		r.log.Error("Error creating threescale blackbox target", err)
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
 
 	// Create a blackbox target for the developer console ui
@@ -1760,8 +1760,8 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return strings.HasPrefix(r.Spec.Host, "3scale.")
 	})
 	if err != nil {
-		r.log.Error("Error retrieving threescale threescaleRoute", err)
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer threescaleRoute: %w", err)
+		r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + threescaleRoute.Spec.Host,
@@ -1769,13 +1769,13 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		r.log.Error("Error creating blackbox target (system-developer)", err)
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
 
 	// Create a blackbox target for the master console ui
 	threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master threescaleRoute: %w", err)
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + threescaleRoute.Spec.Host,
@@ -1783,7 +1783,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		r.log.Error("Error creating blackbox target (system-master)", err)
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

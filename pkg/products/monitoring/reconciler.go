@@ -222,7 +222,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	isMultiAZCluster, err := resources.IsMultiAZCluster(ctx, serverClient)
 	if err != nil {
-		r.Log.Error("Error when deciding if the cluster is multi-az or not. Defaulted to false:", err)
+		r.Log.Warning("Failure when deciding if the cluster is multi-az or not. Defaulted to false: " + err.Error())
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.Log)
@@ -261,7 +261,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
-		r.Log.Error("failed to reconcile alert manager config secret", err)
+		r.Log.Warning("failed to reconcile alert manager config secret " + err.Error())
 		return phase, err
 	}
 
@@ -275,7 +275,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDashboards(ctx, serverClient)
 	r.Log.Infof("reconcileDashboards", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.Log.Error("Error reconciling dashboards", err)
+		r.Log.Warning("Failure reconciling dashboards " + err.Error())
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
 		return phase, err
 	}
@@ -586,7 +586,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
 	if err != nil {
-		r.Log.Error("Error when deciding if monitoring pod anti affinity is required. Defaulted to false:", err)
+		r.Log.Warning("Failure when deciding if monitoring pod anti affinity is required. Defaulted to false: " + err.Error())
 	}
 
 	owner.AddIntegreatlyOwnerAnnotations(m, r.installation)
