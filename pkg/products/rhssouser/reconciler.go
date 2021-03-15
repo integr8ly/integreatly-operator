@@ -294,8 +294,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("750m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1500m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
 		}
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
