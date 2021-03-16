@@ -93,6 +93,8 @@ const (
 	registrySecretName  = "threescale-registry-auth"
 
 	threeScaleIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+"
+
+	user3ScaleID = "3scale_user_id"
 )
 
 var (
@@ -1515,7 +1517,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
-	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
+	added, deleted, updated := r.getUserDiff(ctx, serverClient, kcu, tsUsers.Users)
 	// reset the user action metric before we re-reconcile
 	// in order to get up to date metrics on user creation
 	metrics.ResetThreeScaleUserAction()
@@ -1538,26 +1540,59 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 		}
 	}
 
-	for _, kcUser := range added {
-		res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
+	for _, tsUser := range updated {
+		if tsUser.UserDetails.Username != *systemAdminUsername {
+			genKcUser, err := getGeneratedKeycloakUser(ctx, serverClient, rhssoConfig.GetNamespace(), tsUser)
 
-		// when the failure of user happens we don't want to block the reconciler.
-		// failure to create a user can happen in the case of the username being too long
-		// the max allowed user length is 40 characters in 3scale.
-		// The reconciler will continue to allow the installation to happen and a metric
-		// will be exposed and alert fire to alert to the creation failure
-		metrics.SetThreeScaleUserAction(res.StatusCode, kcUser.UserName, http.MethodPost)
-		if err != nil {
-			r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
+			if err != nil {
+				r.log.Warning("Failed to get generate keycloak user: " + err.Error())
+				continue
+			}
+
+			_, err = r.tsClient.UpdateUser(tsUser.UserDetails.Id, genKcUser.Spec.User.UserName, tsUser.UserDetails.Email, *accessToken)
+			if err != nil {
+				r.log.Warning("Failed to updating 3scale user details: " + err.Error())
+			}
 		}
-		if res.StatusCode != http.StatusCreated {
-			r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale with status code %d", kcUser.UserName, res.StatusCode), errors.New("error on http request"))
+	}
+
+	for _, kcUser := range added {
+		user, _ := r.tsClient.GetUser(kcUser.UserName, *accessToken)
+		// recheck the user is new.
+		// 3scale user may being update during the update phase
+		if user == nil {
+			var statusCode int
+			res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
+
+			if err != nil {
+				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
+				statusCode = http.StatusServiceUnavailable
+			} else {
+				statusCode = res.StatusCode
+			}
+
+			// when the failure of user happens we don't want to block the reconciler.
+			// failure to create a user can happen in the case of the username being too long
+			// the max allowed user length is 40 characters in 3scale.
+			// The reconciler will continue to allow the installation to happen and a metric
+			// will be exposed and alert fire to alert to the creation failure
+			metrics.SetThreeScaleUserAction(statusCode, kcUser.UserName, http.MethodPost)
+
+			if statusCode != http.StatusCreated {
+				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale with status code %d", kcUser.UserName, statusCode), errors.New("error on http request"))
+			}
 		}
 	}
 
 	// update KeycloakUser attribute after user is created in 3scale
 	userCreated3ScaleName := "3scale_user_created"
 	for _, user := range kcu {
+		tsUser, err := r.tsClient.GetUser(user.UserName, *accessToken)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress,
+				fmt.Errorf("failed to get 3scale user with keycloak username %s, err: %s", user.UserName, err)
+		}
+
 		if user.Attributes == nil {
 			user.Attributes = map[string][]string{
 				userCreated3ScaleName: {"true"},
@@ -1571,8 +1606,9 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 			},
 		}
 
-		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 			user.Attributes[userCreated3ScaleName] = []string{"true"}
+			user.Attributes[user3ScaleID] = []string{fmt.Sprint(tsUser.UserDetails.Id)}
 			kcUser.Spec.User = user
 			return nil
 		})
@@ -1847,22 +1883,99 @@ func (r *Reconciler) RolloutDeployment(ctx context.Context, name string) error {
 	return err
 }
 
-func (r *Reconciler) getUserDiff(kcUsers []keycloak.KeycloakAPIUser, tsUsers []*User) ([]keycloak.KeycloakAPIUser, []*User) {
+func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Client, kcUsers []keycloak.KeycloakAPIUser, tsUsers []*User) ([]keycloak.KeycloakAPIUser, []*User, []*User) {
 	var added []keycloak.KeycloakAPIUser
+	var deleted []*User
+	var updated []*User
+
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		r.log.Warning("Failed to get rhsso config: " + err.Error())
+		return added, deleted, updated
+	}
+
 	for _, kcUser := range kcUsers {
 		if !tsContainsKc(tsUsers, kcUser) {
 			added = append(added, kcUser)
 		}
 	}
 
-	var deleted []*User
+	var expectedDeleted []*User
 	for _, tsUser := range tsUsers {
 		if !kcContainsTs(kcUsers, tsUser) {
-			deleted = append(deleted, tsUser)
+			expectedDeleted = append(expectedDeleted, tsUser)
 		}
 	}
 
-	return added, deleted
+	// compare the id fields in the generated user to that of the expected deleted user
+	for _, user := range expectedDeleted {
+		toDelete := true
+		for _, kuUser := range kcUsers {
+			genKcUser := &keycloak.KeycloakUser{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      userHelper.GetValidGeneratedUserName(kuUser),
+					Namespace: rhssoConfig.GetNamespace(),
+				},
+			}
+			objectKey, err := k8sclient.ObjectKeyFromObject(genKcUser)
+			if err != nil {
+				r.log.Warning("Failed to get object key from object: " + err.Error())
+				continue
+			}
+
+			err = serverClient.Get(ctx, objectKey, genKcUser)
+			if err != nil {
+				r.log.Warning("Failed get generated Keycloak User: " + err.Error())
+				continue
+			}
+
+			if tsUserIDInKc(user, genKcUser) {
+				updated = append(updated, user)
+				toDelete = false
+				break
+			}
+		}
+		if toDelete {
+			deleted = append(deleted, user)
+		}
+	}
+
+	return added, deleted, updated
+}
+
+// getGeneratedKeycloakUser returns a keycloakUser CR for a matching 3scale user ID
+func getGeneratedKeycloakUser(ctx context.Context, serverClient k8sclient.Client, ns string, tsUser *User) (*keycloak.KeycloakUser, error) {
+
+	var users keycloak.KeycloakUserList
+
+	listOptions := []k8sclient.ListOption{
+		k8sclient.MatchingLabels(rhsso.GetInstanceLabels()),
+		k8sclient.InNamespace(ns),
+	}
+	err := serverClient.List(ctx, &users, listOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users.Items {
+		if tsUserIDInKc(tsUser, &user) {
+			return &user, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Genrated Keycloak user was not found")
+}
+
+// tsUserIDInKc checks if a 3scale user ID is listed in the keycloak user attributes
+func tsUserIDInKc(tsUser *User, kcUser *keycloak.KeycloakUser) bool {
+	if len(kcUser.Spec.User.Attributes[user3ScaleID]) == 0 {
+		return false
+	}
+
+	if strings.EqualFold(fmt.Sprint(tsUser.UserDetails.Id), kcUser.Spec.User.Attributes[user3ScaleID][0]) {
+		return true
+	}
+	return false
 }
 
 func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
