@@ -42,6 +42,8 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
    make local/deploy
    ```
 
+   > Note: do not re-deploy if the workload-web-app is already present in the cluster.
+
    See step 9 and 10, you might want to do these pre-upgrade as well.
 
 4. In terminal window #2, run the following command to trigger the OpenShift upgrade

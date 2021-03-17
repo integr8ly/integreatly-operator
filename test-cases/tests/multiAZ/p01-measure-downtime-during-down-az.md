@@ -46,6 +46,8 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    make local/deploy
    ```
 
+   > Note: do not re-deploy if the workload-web-app is already present in the cluster.
+
 4. Record the pod distribution from 3scale, user-sso, rhsso, marin3r, and middleware-monitoring-operator namespaces using [podsAZ](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) script
 
    ```bash
