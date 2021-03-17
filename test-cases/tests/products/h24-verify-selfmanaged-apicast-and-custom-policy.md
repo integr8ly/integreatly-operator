@@ -3,7 +3,7 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
-estimate: 2h
+estimate: 1h
 tags:
   - manual-selection
 ---
@@ -15,28 +15,33 @@ tags:
 This test case should prove that it is possible for customers to deploy self-managed APIcast and use custom policies on it. The 3scale QE team will perform this test case in RHOAM each time there is an upgrade of 3scale. We (RHOAM QE) should only perform this if there are modifications on our end that might break the functionality - typically changes in permissions in RHOAM and/or OSD.
 Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse/MGDAPI-370)
 
+Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/guide/757a6ad2-8ca0-4150-b949-cbb1ee4e5969#_ca8e43cd-5336-4a9e-8d42-8cd5ceef1299) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
+
 ## Steps
 
-_1. This test case must be done using `customer-admin` user (or any other user from `dedicated-admin` group). Do not use `kubeadmin`!_
+_1. This test case must be done using `customer-admin` user (or any other user from `dedicated-admins` group). Do not use `kubeadmin`!_
+
 _2. Create a new namespace (e.g. selfmanaged-apicast) for self-managed APIcast_
 
-- `oc project selfmanaged-apicast`
+- `oc new-project selfmanaged-apicast`
 - be sure to use this project for the `oc` commands
+- if you use different namespace, you will need to change a few commands below accordingly
 
-_3. Create a secret with credentials to `registry.redhat.io`_
+_3. Import the image_
 
-- `oc create secret docker-registry redhatio --docker-server=registry.redhat.io --docker-username=<username> --docker-password=HIDDEN --docker-email=<email>`
-
-_4. Configure the pull secret_
-
-- `oc secrets link default redhatio --for=pull`
-
-_5. Import the image_
-
-- `oc import-image 3scale-amp2/apicast-gateway-rhel8:3scale<version> --from=registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:<tag> --confirm`
+- `oc import-image 3scale-amp2/apicast-gateway-rhel8:<tag> --from=registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:<tag> --confirm`
 - go to [catalog](https://catalog.redhat.com/software/containers/search), find the image and see the available tags
 - typical tag name is `3scale<version>`, use the one that corresponds with the 3scale version installed on the cluster
 - note the tag for later use (in step 7)
+- if experiencing authorization error, follow step 4. and 5. Proceed with step 6. otherwise.
+
+_4. (Skip if Step3 is ok) Create a secret with credentials to `registry.redhat.io`_
+
+- `oc create secret docker-registry redhatio --docker-server=registry.redhat.io --docker-username=<username> --docker-password=<password> --docker-email=<email>`
+
+_5. (Skip if Step3 is ok) Configure the pull secret_
+
+- `oc secrets link default redhatio --for=pull`
 
 _6. Clone the Example custom policy_
 
@@ -44,6 +49,8 @@ _6. Clone the Example custom policy_
 - `cd apicast-example-policy`
 
 _7. Edit the `openshift.yaml`_
+
+- use the appropriate `<tag>` and potentially change the `selfmanaged-apicast` if you use different namespace
 
 Replace
 
@@ -92,23 +99,6 @@ with
 Replace
 
 ```
-      dockerfile: |
-        FROM scratch
-        COPY . src
-```
-
-with
-
-```
-      dockerfile: |
-        FROM scratch
-        COPY . src
-        USER root
-```
-
-Replace
-
-```
     strategy:
       dockerStrategy:
         from:
@@ -130,13 +120,14 @@ with
 _8. Create a new app_
 
 - `oc new-app -f openshift.yml --param AMP_RELEASE=2.8`
-- param value does not matter at this point
+- param value does not matter at this point but needs to be used since it is required parameter
+- you can change make the parameter optional in `openshift.yaml` so you don't need to specify it at all
 
 _9. Start custom policy builds_
 
 - `oc start-build apicast-example-policy`
 - `oc start-build apicast-custom-policies`
-- once finished, the `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` should be available to be used as image for self-managed APIcast
+- once finished, the `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` should be available to be used as image for self-managed APIcast (this also depends on the namespace name used)
 
 _10. Install "Red Hat Integration - 3scale APIcast gateway" operator via Operator Hub in OSD web console for the namespace_
 
@@ -159,12 +150,12 @@ _13. Create a self-managed APIcast_
 - use `Edit Form`
 - change "Admin Portal Credentials Ref" secret name to `adminportal-credentials`
 - set "Configuration Load Mode" to lazy
-- set "Image" to `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example`
+- set "Image" to `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` (this also depends on the namespace name used)
 
 _14. Use self-managed APIcast instead of the builded one for API (echo service)_
 
 - navigate to 3scale Admin Portal (web console)
-- API -> Integration -> Settings -> tick APIcast Self Managed radiobox
+- API -> Integration -> Settings -> tick APIcast Self Managed radio-box
   - change "Staging Public Base URL" so that it is slightly different at the beginning, e.g. replace `api-3scale-apicast-` with `selfmanaged-`
 - API -> Configuration -> Promote to Staging and to Production
 
