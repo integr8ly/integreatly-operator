@@ -42,6 +42,8 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    make local/deploy
    ```
 
+   > Note: do not re-deploy if the workload-web-app is already present in the cluster
+
    There should be no errors in the command output and product (AMQ, 3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 
 3. Edit RHMIConfig in the `redhat-rhmi-operator` config to start the upgrade

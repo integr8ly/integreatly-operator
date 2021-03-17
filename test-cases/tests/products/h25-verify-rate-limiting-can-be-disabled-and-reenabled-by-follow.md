@@ -15,6 +15,8 @@ tags:
 
 ## Description
 
+> Note: double-check that workload webapp is not already deployed before attempting to deploy it.
+
 This test case should prove that it is possible for SRE to disable/enable rate limiting service without affecting the RHOAM services availability
 
 ## Prerequisites
