@@ -35,7 +35,7 @@ PRE_HOOK_POD=$(oc get pod -n redhat-rhoam-3scale -o name | grep "hook-pre" | tai
 oc delete $PRE_HOOK_POD -n redhat-rhoam-3scale
 ```
 
-3. Verify system-app-deploy pod is an error state
+3. Verify system-app-deploy pod is in an error state
 
 ```bash
 LAST_DEPLOY_POD=$(oc get pods -n redhat-rhoam-3scale -o name | grep "system-app.*-deploy" | tail -n1)
