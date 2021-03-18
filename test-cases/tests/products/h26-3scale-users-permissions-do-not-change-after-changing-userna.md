@@ -15,7 +15,7 @@ tags:
 
 ## Description
 
-When user modifies a username in 3scale UI, the new username gets deleted and original name recreated after integreatly-operator reconciles
+When user modifies a username in 3scale UI, the new username gets deleted and original name recreated after integreatly-operator reconciles.
 Verify that the original user permissions (admin) are not changed after the username gets recreated
 
 ## Prerequisites
