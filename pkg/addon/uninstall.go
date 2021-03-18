@@ -2,12 +2,14 @@ package addon
 
 import (
 	"context"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -66,15 +68,17 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 type deleteRHMIHandler struct {
 	decoder    *admission.Decoder
 	restConfig *rest.Config
+	scheme     *runtime.Scheme
 	client     k8sclient.Client
 }
 
 var _ admission.Handler = &deleteRHMIHandler{}
 var _ admission.DecoderInjector = &deleteRHMIHandler{}
 
-func NewDeleteRHMIHandler(config *rest.Config) admission.Handler {
+func NewDeleteRHMIHandler(config *rest.Config, scheme *runtime.Scheme) admission.Handler {
 	return &deleteRHMIHandler{
 		restConfig: config,
+		scheme:     scheme,
 	}
 }
 
@@ -107,7 +111,9 @@ func (h *deleteRHMIHandler) Handle(ctx context.Context, request admission.Reques
 
 func (h *deleteRHMIHandler) getClient() (k8sclient.Client, error) {
 	if h.client == nil {
-		c, err := k8sclient.New(h.restConfig, k8sclient.Options{})
+		c, err := k8sclient.New(h.restConfig, k8sclient.Options{
+			Scheme: h.scheme,
+		})
 		if err != nil {
 			return nil, err
 		}
