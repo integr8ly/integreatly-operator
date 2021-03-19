@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -15,8 +17,6 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	//k8serr "k8s.io/apimachinery/pkg/api/errors"
-	//"k8s.io/apimachinery/pkg/runtime/schema"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
@@ -24,7 +24,6 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
-	//"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
@@ -46,7 +45,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	//fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 // Were not tested before:
@@ -878,4 +876,102 @@ type mockClientContext struct {
 
 func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
+}
+
+func TestReconciler_CleanupKeycloakResources(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = apiextensionv1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatalf("Error setting up scheme: %s", err)
+	}
+
+	type fields struct {
+		ConfigManager         config.ConfigReadWriter
+		mpm                   *marketplace.MarketplaceInterfaceMock
+		Installation          *integreatlyv1alpha1.RHMI
+		Log                   l.Logger
+		Oauthv1Client         oauthClient.OauthV1Interface
+		APIURL                string
+		Reconciler            *resources.Reconciler
+		Recorder              record.EventRecorder
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+	}
+	type args struct {
+		ctx          context.Context
+		inst         *integreatlyv1alpha1.RHMI
+		serverClient k8sclient.Client
+		ns           string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test uninstallation: missing Keycloak CRD returns phaseCompleted",
+			fields: fields{
+				ConfigManager:         basicConfigMock(),
+				Log:                   getLogger(),
+				KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				inst: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: &metav1.Time{},
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Test uninstallation: missing v1 API returns phaseFailed",
+			fields: fields{
+				ConfigManager:         basicConfigMock(),
+				Log:                   getLogger(),
+				KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				inst: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: &metav1.Time{},
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(runtime.NewScheme()),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager:         tt.fields.ConfigManager,
+				mpm:                   tt.fields.mpm,
+				Installation:          tt.fields.Installation,
+				Log:                   tt.fields.Log,
+				Oauthv1Client:         tt.fields.Oauthv1Client,
+				APIURL:                tt.fields.APIURL,
+				Reconciler:            tt.fields.Reconciler,
+				Recorder:              tt.fields.Recorder,
+				KeycloakClientFactory: tt.fields.KeycloakClientFactory,
+			}
+			got, err := r.CleanupKeycloakResources(tt.args.ctx, tt.args.inst, tt.args.serverClient, tt.args.ns)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CleanupKeycloakResources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("CleanupKeycloakResources() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
