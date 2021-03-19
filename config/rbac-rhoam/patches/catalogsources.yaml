@@ -1,4 +1,0 @@
-# Set the resourceName to `rhoam-registry-cs` in the catalogsources rule
-- op: replace
-  path: /rules/22/resourceNames/0
-  value: rhoam-registry-cs
