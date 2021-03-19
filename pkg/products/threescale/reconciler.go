@@ -1561,7 +1561,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	for _, kcUser := range added {
-		user, _ := r.tsClient.GetUser(kcUser.UserName, *accessToken)
+		user, _ := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
 		// recheck the user is new.
 		// 3scale user may being update during the update phase
 		if user == nil {
@@ -1591,7 +1591,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	// update KeycloakUser attribute after user is created in 3scale
 	userCreated3ScaleName := "3scale_user_created"
 	for _, user := range kcu {
-		tsUser, err := r.tsClient.GetUser(user.UserName, *accessToken)
+		tsUser, err := r.tsClient.GetUser(strings.ToLower(user.UserName), *accessToken)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress,
 				fmt.Errorf("failed to get 3scale user with keycloak username %s, err: %s", user.UserName, err)
