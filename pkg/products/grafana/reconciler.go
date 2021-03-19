@@ -66,11 +66,15 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for grafana")
+	}
+
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	config, err := configManager.ReadGrafana()
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
+		return nil, fmt.Errorf("could not retrieve grafana config: %w", err)
 	}
 	if config.GetNamespace() == "" {
 		config.SetNamespace(ns)
@@ -90,7 +94,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		installation:  installation,
 		mpm:           mpm,
 		log:           logger,
-		Reconciler:    resources.NewReconciler(mpm),
+		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 	}, nil
 }
@@ -431,16 +435,20 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	r.log.Info("reconciling subscription")
 
 	target := marketplace.Target{
-		Pkg:       constants.GrafanaSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.GrafanaSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

@@ -90,6 +90,8 @@ type RHMIReconciler struct {
 	controller      controller.Controller
 	restConfig      *rest.Config
 	customInformers map[string]map[string]*cache.Informer
+
+	productsInstallationLoader marketplace.ProductsInstallationLoader
 }
 
 func New(mgr ctrl.Manager) *RHMIReconciler {
@@ -102,6 +104,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 		mgr:             mgr,
 		restConfig:      restconfig,
 		customInformers: make(map[string]map[string]*cache.Informer),
+
+		productsInstallationLoader: marketplace.NewFSProductInstallationLoader(
+			marketplace.GetProductsInstallationPath(),
+		),
 	}
 }
 
@@ -493,7 +499,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if !strings.Contains(productFinalizer, productName) {
 					continue
 				}
-				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log)
+				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
 				}
@@ -699,7 +705,7 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 	})
 	for _, stage := range installationType.InstallStages {
 		for _, product := range stage.Products {
-			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, log)
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
 			if err != nil {
 				return foundProducts, err
 			}
@@ -752,7 +758,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 	for _, product := range stage.Products {
 		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: product.Name})
 
-		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, productLog)
+		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
 
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)

@@ -85,7 +85,11 @@ type productInfo struct {
 	Version integreatlyv1alpha1.ProductVersion
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for solution explorer")
+	}
+
 	config, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
@@ -110,7 +114,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Config:        config,
 		mpm:           mpm,
 		log:           logger,
-		Reconciler:    resources.NewReconciler(mpm),
+		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		OauthResolver: resolver,
 		oauthv1Client: oauthv1Client,
 		installation:  installation,
@@ -488,16 +492,20 @@ func (r *Reconciler) getOAuthClientName() string {
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
-		Pkg:       constants.SolutionExplorerSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.SolutionExplorerSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

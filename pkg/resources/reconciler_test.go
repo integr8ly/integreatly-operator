@@ -317,7 +317,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			testNamespace := "test-ns"
 			manifestsDirectory := "fakemanifestsdirectory"
 			cfgMapCsReconciler := marketplace.NewConfigMapCatalogSourceReconciler(manifestsDirectory, tc.client, testNamespace, marketplace.CatalogSourceName)
-			status, err := reconciler.ReconcileSubscription(context.TODO(), marketplace.Target{Namespace: testNamespace, Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{testNamespace}, backup.NewNoopBackupExecutor(), tc.client, cfgMapCsReconciler, getLogger())
+			status, err := reconciler.ReconcileSubscription(context.TODO(), marketplace.Target{Namespace: testNamespace, Channel: "integreatly", SubscriptionName: tc.SubscriptionName, Package: tc.SubscriptionName}, []string{testNamespace}, backup.NewNoopBackupExecutor(), tc.client, cfgMapCsReconciler, getLogger())
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}

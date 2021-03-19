@@ -31,6 +31,7 @@ import (
 
 var (
 	defaultOperandNamespace = "apicurito"
+	localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-apicurito")
 )
 
 func TestReconciler_fullReconcile(t *testing.T) {
@@ -159,6 +160,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -234,6 +236,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

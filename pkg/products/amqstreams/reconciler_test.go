@@ -33,6 +33,10 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+var (
+	localProductDeclaration = *marketplace.LocalProductDeclaration("integreatly-amq-streams")
+)
+
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
@@ -129,6 +133,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				&localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -218,6 +223,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				&localProductDeclaration,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -374,6 +380,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				&localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -514,6 +521,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				&localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

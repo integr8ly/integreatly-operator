@@ -96,7 +96,11 @@ type Reconciler struct {
 	*rhssocommon.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for user SSO")
+	}
+
 	config, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
@@ -107,7 +111,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		Config:     config,
 		Log:        logger,
-		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, apiUrl, keycloakClientFactory),
+		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, apiUrl, keycloakClientFactory, *productDeclaration),
 	}, nil
 }
 

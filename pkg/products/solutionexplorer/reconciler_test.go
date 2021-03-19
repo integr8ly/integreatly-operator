@@ -26,6 +26,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+var (
+	localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-solution-explorer")
+)
+
 type SolutionExplorerScenario struct {
 	Name            string
 	ExpectErr       bool
@@ -108,7 +112,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			mockResolver := tc.OauthResolver()
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatal("unexpected err setting up reconciler ", err)
 			}
@@ -177,7 +181,7 @@ func TestSolutionExplorer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}

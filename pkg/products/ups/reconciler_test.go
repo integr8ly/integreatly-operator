@@ -3,8 +3,9 @@ package ups
 import (
 	"context"
 	"errors"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -29,6 +30,8 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+var localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-unifiedpush")
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
@@ -203,7 +206,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -270,7 +273,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}

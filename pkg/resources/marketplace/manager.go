@@ -12,6 +12,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -39,7 +40,8 @@ func NewManager() *Manager {
 
 type Target struct {
 	Namespace,
-	Pkg,
+	SubscriptionName,
+	Package,
 	Channel string
 }
 
@@ -47,14 +49,8 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
-			Name:      t.Pkg,
+			Name:      t.SubscriptionName,
 		},
-	}
-	sub.Spec = &coreosv1alpha1.SubscriptionSpec{
-		InstallPlanApproval:    approvalStrategy,
-		Channel:                t.Channel,
-		Package:                t.Pkg,
-		CatalogSourceNamespace: t.Namespace,
 	}
 
 	res, err := catalogSourceReconciler.Reconcile(ctx)
@@ -64,14 +60,24 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	if err != nil {
 		return err
 	}
-	sub.Spec.CatalogSource = catalogSourceReconciler.CatalogSourceName()
+
+	mutateSub := func() error {
+		sub.Spec = &coreosv1alpha1.SubscriptionSpec{
+			InstallPlanApproval:    approvalStrategy,
+			Channel:                t.Channel,
+			Package:                t.Package,
+			CatalogSource:          catalogSourceReconciler.CatalogSourceName(),
+			CatalogSourceNamespace: t.Namespace,
+		}
+		return nil
+	}
 
 	//catalog source is ready create the other stuff
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
 			Name:      OperatorGroupName,
-			Labels:    map[string]string{"integreatly": t.Pkg},
+			Labels:    map[string]string{"integreatly": t.SubscriptionName},
 		},
 		Spec: v1.OperatorGroupSpec{
 			TargetNamespaces: operatorGroupNamespaces,
@@ -84,7 +90,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
-	err = serverClient.Create(ctx, sub)
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		log.Error("error creating sub", err)
 		return err

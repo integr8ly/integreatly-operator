@@ -3,11 +3,12 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"testing"
+
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
-	"net/http"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	openshiftv1 "github.com/openshift/api/apps/v1"
@@ -48,6 +49,7 @@ import (
 
 var (
 	integreatlyOperatorNamespace = "integreatly-operator-ns"
+	localProductDeclaration      = marketplace.LocalProductDeclaration("integreatly-3scale")
 )
 
 func getBuildScheme() (*runtime.Scheme, error) {
@@ -176,7 +178,7 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("Error creating config manager")
 			}
 
-			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder, getLogger())
+			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}

@@ -64,7 +64,11 @@ type Reconciler struct {
 }
 
 // NewReconciler instantiates and returns a reference to a new Reconciler.
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, log l.Logger) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, log l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
+	if productDeclaration == nil {
+		return nil, fmt.Errorf("no product declaration found for fuse")
+	}
+
 	config, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
@@ -91,7 +95,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		installation:  installation,
 		mpm:           mpm,
 		log:           log,
-		Reconciler:    resources.NewReconciler(mpm),
+		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 	}, nil
 }
@@ -464,16 +468,20 @@ func preUpgradeBackupExecutor(rhmi *integreatlyv1alpha1.RHMI) backup.BackupExecu
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
-		Pkg:       constants.FuseSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.FuseSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

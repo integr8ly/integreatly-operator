@@ -13,6 +13,7 @@ COPY vendor ./vendor
 COPY test ./test
 COPY Makefile ./
 COPY manifests/ ./manifests
+COPY products ./products
 
 RUN make test/compile/functional
 

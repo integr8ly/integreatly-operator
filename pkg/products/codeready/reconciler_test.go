@@ -67,6 +67,8 @@ var testCheCluster = chev1.CheCluster{
 	},
 }
 
+var localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-codeready-workspaces")
+
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		GetOperatorNamespaceFunc: func() string {
@@ -187,6 +189,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.Logger,
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -276,6 +279,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 				scenario.FakeMPM,
 				scenario.Recorder,
 				scenario.Logger,
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
@@ -393,6 +397,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				scenario.FakeMPM,
 				scenario.Recorder,
 				scenario.Logger,
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedCreateError)
@@ -502,6 +507,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 				scenario.FakeMPM,
 				scenario.Recorder,
 				scenario.Logger,
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
@@ -696,6 +702,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				scenario.FakeMPM,
 				scenario.Recorder,
 				scenario.Logger,
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedCreateError)

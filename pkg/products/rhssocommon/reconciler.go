@@ -3,9 +3,10 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
-	"strings"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -54,7 +55,7 @@ type Reconciler struct {
 	KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, mpm marketplace.MarketplaceInterface, installation *integreatlyv1alpha1.RHMI, logger l.Logger, oauthv1Client oauthClient.OauthV1Interface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory) *Reconciler {
+func NewReconciler(configManager config.ConfigReadWriter, mpm marketplace.MarketplaceInterface, installation *integreatlyv1alpha1.RHMI, logger l.Logger, oauthv1Client oauthClient.OauthV1Interface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, productDeclaration marketplace.ProductDeclaration) *Reconciler {
 	return &Reconciler{
 		ConfigManager:         configManager,
 		mpm:                   mpm,
@@ -62,7 +63,7 @@ func NewReconciler(configManager config.ConfigReadWriter, mpm marketplace.Market
 		Log:                   logger,
 		Oauthv1Client:         oauthv1Client,
 		APIURL:                APIURL,
-		Reconciler:            resources.NewReconciler(mpm),
+		Reconciler:            resources.NewReconciler(mpm).WithProductDeclaration(productDeclaration),
 		Recorder:              recorder,
 		KeycloakClientFactory: keycloakClientFactory,
 	}
@@ -381,16 +382,20 @@ func (r *Reconciler) PreUpgradeBackupsExecutor(resourceName string) backup.Backu
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string, resourceName string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
-		Pkg:       constants.RHSSOSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
+		SubscriptionName: constants.RHSSOSubscriptionName,
+		Namespace:        operatorNamespace,
 	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
+
+	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
+		r.Log,
 		serverClient,
-		operatorNamespace,
 		marketplace.CatalogSourceName,
+		&target,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,

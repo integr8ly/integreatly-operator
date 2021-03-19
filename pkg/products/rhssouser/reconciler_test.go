@@ -52,6 +52,7 @@ import (
 
 var (
 	defaultOperatorNamespace = "integreatly-operator"
+	localProductDeclaration  = marketplace.LocalProductDeclaration("integreatly-rhsso")
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -211,6 +212,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -379,6 +381,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -602,6 +605,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -828,6 +832,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

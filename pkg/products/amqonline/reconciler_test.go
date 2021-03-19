@@ -68,6 +68,10 @@ const (
 	defaultNamespace = "amq-online"
 )
 
+var (
+	localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-amq-online")
+)
+
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -248,7 +252,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -303,7 +307,7 @@ func TestReconcile_reconcileInfraConfigs(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -351,7 +355,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -399,7 +403,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -445,7 +449,7 @@ func TestReconcile_reconcileServiceAdmin(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -588,7 +592,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 	}
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, nil, nil, s.Recorder, getLogger())
+			r, err := NewReconciler(s.FakeConfig, nil, nil, s.Recorder, getLogger(), localProductDeclaration)
 			if err != nil {
 				t.Fatal("could not create reconciler", err)
 			}
@@ -745,6 +749,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				getLogger(),
+				localProductDeclaration,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

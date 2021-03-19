@@ -374,6 +374,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.Recorder,
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
+				*marketplace.LocalProductDeclaration("integreatly-rhsso"),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

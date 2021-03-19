@@ -32,7 +32,8 @@ var (
 // This is the base reconciler that all the other reconcilers extend. It handles things like namespace creation, subscription creation etc
 
 type Reconciler struct {
-	mpm marketplace.MarketplaceInterface
+	mpm                marketplace.MarketplaceInterface
+	productDeclaration *marketplace.ProductDeclaration
 }
 
 func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
@@ -196,13 +197,13 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, destSecretNamespac
 }
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, catalogSourceReconciler marketplace.CatalogSourceReconciler, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
-	log.Infof("Reconciling subscription", l.Fields{"subscription": target.Pkg, "channel": marketplace.IntegreatlyChannel, "ns": target.Namespace})
+	log.Infof("Reconciling subscription", l.Fields{"subscription": target.SubscriptionName, "channel": marketplace.IntegreatlyChannel, "ns": target.Namespace})
 	err := r.mpm.InstallOperator(ctx, client, target, operandNS, operatorsv1alpha1.ApprovalManual, catalogSourceReconciler)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", target.Namespace, err)
 	}
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, target.Pkg, target.Namespace)
+	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, target.SubscriptionName, target.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(err) || k8serr.IsNotFound(errors.Unwrap(err)) {
@@ -234,7 +235,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 
 	err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, ip, log)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.Pkg, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.SubscriptionName, err)
 	}
 
 	// Workaround to re-install product operator if install plan fails due to https://bugzilla.redhat.com/show_bug.cgi?id=1923111
@@ -250,11 +251,11 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 
 	//if it's approved but not complete, then it's in progress
 	if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete && ip.Spec.Approved {
-		log.Infof("Install plan is not complete yet ", l.Fields{"install plan": target.Pkg})
+		log.Infof("Install plan is not complete yet ", l.Fields{"install plan": target.SubscriptionName})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 		//if it's not approved by now, then it will not be approved by this version of the integreatly-operator
 	} else if !ip.Spec.Approved {
-		log.Infof("Upgrade installplan above the maximum allowed version", l.Fields{"install plan": target.Pkg})
+		log.Infof("Upgrade installplan above the maximum allowed version", l.Fields{"install plan": target.SubscriptionName})
 	}
 
 	for _, csvName := range ip.Spec.ClusterServiceVersionNames {
@@ -265,7 +266,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 		}, ipCSV); err != nil {
 			if k8serr.IsNotFound(err) {
 				log.Infof("Waiting for CSV to be created in cluster after InstallPlan is complete: %s", l.Fields{
-					"install plan": target.Pkg,
+					"install plan": target.SubscriptionName,
 				})
 				return integreatlyv1alpha1.PhaseInProgress, nil
 			}
@@ -273,12 +274,21 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 		}
 
 		if err := validateCSV(ipCSV); err != nil {
-			log.Warningf("CSV failed validation. Retrying operator installation", l.Fields{"error": err, "install plan": target.Pkg})
+			log.Warningf("CSV failed validation. Retrying operator installation", l.Fields{"error": err, "install plan": target.SubscriptionName})
 			return retryInstallation(ctx, client, log, target, ipCSV, sub)
 		}
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) WithProductDeclaration(productDeclaration marketplace.ProductDeclaration) *Reconciler {
+	r.productDeclaration = &productDeclaration
+	return r
+}
+
+func (r *Reconciler) GetProductDeclaration() *marketplace.ProductDeclaration {
+	return r.productDeclaration
 }
 
 func validateCSV(csv *operatorsv1alpha1.ClusterServiceVersion) error {
@@ -291,13 +301,13 @@ func validateCSV(csv *operatorsv1alpha1.ClusterServiceVersion) error {
 
 func retryInstallation(ctx context.Context, client k8sclient.Client, log l.Logger, target marketplace.Target, csv *operatorsv1alpha1.ClusterServiceVersion, sub *operatorsv1alpha1.Subscription) (integreatlyv1alpha1.StatusPhase, error) {
 	if csv != nil {
-		log.Warningf("Deleting csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg, "csv": csv.Name})
+		log.Warningf("Deleting csv for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.SubscriptionName, "csv": csv.Name})
 		if err := client.Delete(ctx, csv); err != nil && !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete csv for re-install: %s", err)
 		}
 	}
 
-	log.Warningf("Deleting subscription for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.Pkg})
+	log.Warningf("Deleting subscription for re-install due to failed install plan", l.Fields{"ns": target.Namespace, "install plan": target.SubscriptionName})
 	if err := client.Delete(ctx, sub); err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete subscription for re-intstall: %s", err)
 	}
