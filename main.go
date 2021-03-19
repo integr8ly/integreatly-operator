@@ -187,7 +187,7 @@ func setupWebhooks(mgr ctrl.Manager) error {
 			Type: webhooks.ValidatingType,
 			Path: "/delete-rhmi",
 			Hook: &admission.Webhook{
-				Handler: addon.NewDeleteRHMIHandler(mgr.GetConfig()),
+				Handler: addon.NewDeleteRHMIHandler(mgr.GetConfig(), mgr.GetScheme()),
 			},
 		},
 	})
