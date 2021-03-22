@@ -9,7 +9,7 @@ tags:
   - manual-selection
 ---
 
-# I10 - Verify modifying custom parameters email
+# I11 - Verify modifying custom parameters email
 
 ## Description
 
