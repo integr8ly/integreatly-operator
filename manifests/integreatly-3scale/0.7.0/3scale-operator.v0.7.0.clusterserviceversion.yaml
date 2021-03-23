@@ -470,7 +470,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_fbd26fc232e848293a774f0d5bfbd06c1eccda4d04a040263250ea9e7fda8b06
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_b5975297fb2bc871e2010619308d4eb59744fde96176a5611303222c326576ac
                 - name: APICAST_IMAGE
                   value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_479b4fe71b59333733eb4e12e68724cf20d6fd16e1eb34214ace5cc43effb81c
                 - name: SYSTEM_IMAGE
@@ -731,7 +731,7 @@ spec:
   relatedImages:
   - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:479b4fe71b59333733eb4e12e68724cf20d6fd16e1eb34214ace5cc43effb81c
     name: apicast-gateway-rhel8
-  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:fbd26fc232e848293a774f0d5bfbd06c1eccda4d04a040263250ea9e7fda8b06
+  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:b5975297fb2bc871e2010619308d4eb59744fde96176a5611303222c326576ac
     name: backend-rhel7
   - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:242f45d836883d1bc228e720be5ed16c6ccfdb4e78e0e9179763ff57a3e006e4
     name: system-rhel7
