@@ -15,7 +15,7 @@ DATABASE_SECRET="rhsso-postgres-$RHMI_CR_NAME"
 
 # Perform the test
 
-if command -v gti > /dev/null
+if command -v aws > /dev/null
 then 
    test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID $AWS_REGION $NS_PREFIX
 else
