@@ -5,9 +5,11 @@ import (
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/products/monitoring/dashboards"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
 func getSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, string, error) {
+	installationName := resources.InstallationNames[rhmi.Spec.Type]
 
 	switch dashboard {
 
@@ -29,10 +31,10 @@ func getSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, 
 	case "cluster-resources":
 		return monitoring.GetMonitoringGrafanaDBClusterResourcesJSON(rhmi.ObjectMeta.Name), "cluster-resources-new.json", nil
 	case "critical-slo-rhmi-alerts":
-		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(rhmi.Spec.NamespacePrefix, rhmi.Spec.Type), "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(rhmi.Spec.NamespacePrefix, installationName), "critical-slo-alerts.json", nil
 
 	case "critical-slo-managed-api-alerts":
-		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(rhmi.Spec.NamespacePrefix, rhmi.Spec.Type), "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(rhmi.Spec.NamespacePrefix, installationName), "critical-slo-alerts.json", nil
 
 	case "cro-resources":
 		return monitoring.MonitoringGrafanaDBCROResourcesJSON, "cro-resources.json", nil
