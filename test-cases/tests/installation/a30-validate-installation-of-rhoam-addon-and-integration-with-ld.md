@@ -65,9 +65,10 @@ Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.c
 4. You should now login to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
 
 ```bash
-# Get your cluster ID from your browser's address bar and save it to the env var
-# (https://qaprodauth.cloud.redhat.com/beta/openshift/details/<THIS-IS-YOUR-CLUSTER-ID>#overview)
-CID=<your-CID>
+# Copy your cluster's name from OCM UI ("test-ldap-idp" by default) and assign it to the env var CLUSTER_NAME
+CLUSTER_NAME=<your-cluster-name>
+# Get cluster's CID
+CID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
 # Get your cluster API URL and kubeadmin password
 API_URL=$(ocm get cluster $CID | jq -r .api.url)
 KUBEADMIN_PASSWORD=$(ocm get cluster $CID/credentials | jq -r .admin.password)
