@@ -14,4 +14,11 @@ POSTGRES_CR_NAME="rhsso-postgres-$RHMI_CR_NAME"
 DATABASE_SECRET="rhsso-postgres-$RHMI_CR_NAME"
 
 # Perform the test
-test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID $AWS_REGION $NS_PREFIX
+
+if command -v gti > /dev/null
+then 
+   test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID $AWS_REGION $NS_PREFIX
+else
+    echo "AWS CLI is not installed, test will not be run, please install AWS CLI"
+    exit
+fi
