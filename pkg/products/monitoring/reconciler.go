@@ -9,6 +9,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	routev1 "github.com/openshift/api/route/v1"
 
 	"strings"
 
@@ -69,6 +70,13 @@ const (
 
 	// Cluster infrastructure
 	clusterInfraName = "cluster"
+
+	// For Cluster ID
+	clusterIDValue = "version"
+
+	// For OpenShift console
+	openShiftConsoleRoute     = "console"
+	openShiftConsoleNamespace = "openshift-console"
 )
 
 type Reconciler struct {
@@ -776,6 +784,16 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster infra details for alertmanager config: %w", err)
 	}
 
+	ClusterVersion := &configv1.ClusterVersion{}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterIDValue}, ClusterVersion); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster ID details for alertmanager config: %w", err)
+	}
+
+	clusterRoute := &routev1.Route{}
+	if err := serverClient.Get(context.TODO(), types.NamespacedName{Name: openShiftConsoleRoute, Namespace: openShiftConsoleNamespace}, clusterRoute); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch OpenShift console URL details for alertmanager config: %w", err)
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
@@ -789,6 +807,9 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
+		"clusterID":             string(ClusterVersion.Spec.ClusterID),
+		"clusterName":           clusterInfra.Status.InfrastructureName,
+		"clusterConsole":        clusterRoute.Spec.Host,
 	})
 	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
