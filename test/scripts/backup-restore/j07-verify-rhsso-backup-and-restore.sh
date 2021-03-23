@@ -20,5 +20,4 @@ then
    test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID $AWS_REGION $NS_PREFIX
 else
     echo "AWS CLI is not installed, test will not be run, please install AWS CLI"
-    exit
 fi
