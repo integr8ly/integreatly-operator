@@ -45,6 +45,10 @@ receivers:
   - name: critical
     pagerduty_configs:
       - service_key: {{ index .Params "PagerDutyServiceKey" }}
+        details:
+          cluster_name: {{ index .Params "clusterName" }}
+          cluster_ID: {{ index .Params "clusterID" }}
+          console: {{ index .Params "clusterConsole" }}      
     email_configs:
       - send_resolved: true
         to: {{ index .Params "SMTPToSREAddress" }}
