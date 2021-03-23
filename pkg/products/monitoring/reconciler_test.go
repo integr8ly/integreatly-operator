@@ -9,6 +9,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	routev1 "github.com/openshift/api/route/v1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -125,6 +126,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := configv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := routev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 
@@ -386,6 +390,25 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	clusterVersion := &configv1.ClusterVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterIDValue,
+		},
+		Spec: configv1.ClusterVersionSpec{
+			ClusterID: "cluster-id",
+		},
+	}
+
+	clusterRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      openShiftConsoleRoute,
+			Namespace: openShiftConsoleNamespace,
+		},
+		Spec: routev1.RouteSpec{
+			Host: "example-console.com",
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -403,7 +426,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs,
 				grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret,
-				dmsSecret, alertmanagerRoute, grafana, clusterInfra),
+				dmsSecret, alertmanagerRoute, grafana, clusterInfra, clusterVersion, clusterRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
@@ -705,6 +728,25 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		},
 	}
 
+	clusterVersion := &configv1.ClusterVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterIDValue,
+		},
+		Spec: configv1.ClusterVersionSpec{
+			ClusterID: "cluster-id",
+		},
+	}
+
+	clusterRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      openShiftConsoleRoute,
+			Namespace: openShiftConsoleNamespace,
+		},
+		Spec: routev1.RouteSpec{
+			Host: "example-console.com",
+		},
+	}
+
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
 		"SMTPPort":              string(smtpSecret.Data["port"]),
@@ -717,6 +759,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		"SMTPToSREAddress":      mockAlertingEmailAddress,
 		"SMTPToBUAddress":       mockBUAlertingEmailAddress,
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
+		"clusterID":             string(clusterVersion.Spec.ClusterID),
+		"clusterName":           clusterInfra.Status.InfrastructureName,
+		"clusterConsole":        clusterRoute.Spec.Host,
 	})
 
 	testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
@@ -816,7 +861,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "secret created successfully",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			reconciler: func() *Reconciler {
 				rec := basicReconciler()
@@ -838,7 +883,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "secret data is overridden if already exists",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
 			},
 			reconciler: func() *Reconciler {
 				rec := basicReconciler()
@@ -860,7 +905,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "alert address env override is successful",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			reconciler: func() *Reconciler {
 				reconciler := basicReconciler()
@@ -885,6 +930,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPToSREAddress":      mockAlertingEmailAddress,
 					"SMTPToBUAddress":       mockBUAlertingEmailAddress,
 					"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
+					"clusterID":             string(clusterVersion.Spec.ClusterID),
+					"clusterName":           clusterInfra.Status.InfrastructureName,
+					"clusterConsole":        clusterRoute.Spec.Host,
 				})
 
 				testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
