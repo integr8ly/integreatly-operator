@@ -298,11 +298,6 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		}, nil
 	}
 
-	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config, installation)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -311,7 +306,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		log.Info("WebApp instance not found yet, skipping upgrade addition")
 	}
 
-	if !isServiceAffecting || canUpgradeNow {
+	if !isServiceAffecting {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
 
 		if config.Status.UpgradeAvailable != nil && config.Status.UpgradeAvailable.TargetVersion == rhmiSubscription.Status.CurrentCSV {
