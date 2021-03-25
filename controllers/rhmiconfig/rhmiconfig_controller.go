@@ -88,7 +88,7 @@ func (r *RHMIConfigReconciler) Reconcile(request ctrl.Request) (ctrl.Result, err
 	}
 
 	// ensure values are as expected
-	if err := r.reconcileValues(rhmiConfig, reconcileBackupAndMaintenanceValues, reconcileUpgradeValues); err != nil {
+	if err := r.reconcileValues(rhmiConfig, reconcileBackupAndMaintenanceValues); err != nil {
 		log.Error("failed to reconcile rhmi config values", err)
 		return retryRequeue, err
 	}
