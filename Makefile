@@ -237,7 +237,7 @@ test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)
 test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/osde2e -timeout=120m
+	go clean -testcache && go test ./test/osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
 
 ############ E2E TEST COMMANDS ############
 

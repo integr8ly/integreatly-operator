@@ -60,6 +60,7 @@ var (
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
+				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},
@@ -95,9 +96,7 @@ var (
 		{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 	}
 
-	FAILURE_TESTS = []TestCase{
-		/*FLAKY*/ {"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
-	}
+	FAILURE_TESTS = []TestCase{}
 
 	DESTRUCTIVE_TESTS = []TestCase{
 		// Add all destructive tests here that should not be executed as part of the happy path tests

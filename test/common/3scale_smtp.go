@@ -11,8 +11,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
+	appsv1 "github.com/openshift/api/apps/v1"
 	k8sv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/retry"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -413,4 +415,26 @@ func createNamespace(ctx *TestingContext, t TestingTB) error {
 		return fmt.Errorf("Unable to create service : %v", err)
 	}
 	return nil
+}
+
+func scaleDeploymentConfig(t TestingTB, name string, namespace string, replicas int32, client k8sclient.Client) {
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		deploymentConfig := &appsv1.DeploymentConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
+		if getErr != nil {
+			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
+		}
+
+		deploymentConfig.Spec.Replicas = replicas
+		updateErr := client.Update(goctx.TODO(), deploymentConfig)
+		return updateErr
+	})
+	if retryErr != nil {
+		t.Logf("update failed: %v", retryErr)
+	}
 }

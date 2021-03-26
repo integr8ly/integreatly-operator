@@ -7,18 +7,13 @@ import (
 	"strings"
 	"time"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-type repeatFunc func()
 
 type alertManagerConfig struct {
 	Global struct {
@@ -31,73 +26,79 @@ type alertManagerConfig struct {
 }
 
 const (
-	threescaleOperatorDeploymentName          = "3scale-operator"
-	threescaleApicastProdDeploymentConfigName = "apicast-production"
-	monitoringTimeout                         = time.Minute * 25
-	monitoringRetryInterval                   = time.Minute
-	verifyOperatorDeploymentTimeout           = time.Minute * 5
-	verifyOperatorDeploymentRetryInterval     = time.Second * 15
+	keycloakOperatorDeploymentName        = "keycloak-operator"
+	monitoringTimeout                     = time.Minute * 20
+	monitoringRetryInterval               = time.Minute * 1
+	verifyOperatorDeploymentTimeout       = time.Minute * 5
+	verifyOperatorDeploymentRetryInterval = time.Second * 10
 )
 
-var threescaleAlertsToTest = map[string]string{
-	"RHMIThreeScaleApicastProductionServiceEndpointDown": "none",
-	"ThreeScaleApicastProductionPod":                     "none",
+var keycloakAlertsToTest = map[string]string{
+	"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
 }
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
 func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 
-	originalOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)
+	originalOperatorReplicas, err := getNumOfReplicasDeployment(keycloakOperatorDeploymentName, ctx.KubeClient)
 	if err != nil {
 		t.Errorf("failed to get number of replicas: %s", err)
 	}
 
 	// verify that alert to be tested is not firing before starting the test
-	err = getThreescaleAlertState(ctx)
+	err = getKeycloakAlertState(ctx)
 	if err != nil {
 		t.Fatal("failed to get threescale alert state", err)
 	}
 
-	threescaleAlertsFiring := false
+	keycloakAlertsFiring := false
 
-	for threescaleAlertName, threescaleAlertState := range threescaleAlertsToTest {
-		if threescaleAlertState != "none" {
-			threescaleAlertsFiring = true
-			t.Errorf("%s alert should not be firing", threescaleAlertName)
+	for keycloakAlertName, keycloakAlertState := range keycloakAlertsToTest {
+		if keycloakAlertState != "none" {
+			keycloakAlertsFiring = true
+			t.Errorf("%s alert should not be firing", keycloakAlertName)
 		}
 	}
 
-	if threescaleAlertsFiring {
-		t.Log("3Scale alerts firing unexpectedly")
+	if keycloakAlertsFiring {
+		t.Log("Keycloak alerts firing unexpectedly")
 		t.FailNow()
 	}
 
-	// scale down Threescale operator and product pods and verify that threescale alert is firing
+	t.Log("Scaling down keycloak operator deployment")
+	scaleDeployment(t, keycloakOperatorDeploymentName, 0, ctx.KubeClient)
+
+	t.Log("Keycloak alerts are not firing - performing tests")
 	err = performTest(t, ctx, originalOperatorReplicas)
 	if err != nil {
-		t.Log("Error During scale down 3Scale operator and product pods and verify that 3scale alert is firing")
+		t.Log("Error During scale down keycloak operator and product pods and verify that keycloak alert is firing")
 		t.Fatal(err)
 	}
+
+	t.Log("Scaling up keycloak operator deployment")
+	scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
 	// verify the operator has been scaled backup
-	err = checkThreescaleOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
+	err = checkKeycloakOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
 	if err != nil {
-		t.Log("Error During verify the operator has been scaled backup")
-		t.Fatal(err)
+		t.Fatalf("Error During verify the operator has been scaled backup with error: %s", err)
 	}
+	t.Log("Keycloak operator deployment scaled back up")
 
 	// verify that threescale alert is not firing
-	err = waitForThreescaleAlertState("none", ctx, t)
+	err = waitForKeycloakAlertState("none", ctx, t)
 	if err != nil {
-		// t.Fatal(err)
-		t.Skipf("flakey test error: %v jira https://issues.redhat.com/browse/MGDAPI-1020", err)
+		t.Fatal("Keycloak alerts failed to recover back to non-firing state with error: %s", err)
 	}
+	t.Log("Keycloak alerts are not firing")
 
 	// verify alertmanager-application-monitoring secret
 	err = verifySecrets(ctx.KubeClient)
 	if err != nil {
 		t.Fatal("failed to verify alertmanager-application-monitoring secret", err)
 	}
+
+	t.Log("Alert mechanism test successful")
 }
 
 func verifySecrets(kubeClient kubernetes.Interface) error {
@@ -174,35 +175,10 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 }
 
 func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32) error {
-	originalUIReplicas, err := getNumOfReplicasDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, ctx.Client)
-	if err != nil {
-		t.Errorf("failed to get number of replicas: %s", err)
-	}
-
-	quit1 := make(chan struct{})
-	go repeat(func() {
-		scaleDeployment(t, threescaleOperatorDeploymentName, 0, ctx.KubeClient)
-	}, quit1)
-	defer close(quit1)
-	defer scaleDeployment(t, threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
-
-	quit2 := make(chan struct{})
-	go repeat(func() {
-		scaleDeploymentConfig(t, threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, 0, ctx.Client)
-	}, quit2)
-	defer close(quit2)
-	defer scaleDeploymentConfig(t, threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, originalUIReplicas, ctx.Client)
-
-	err = waitForThreescaleAlertState("pending", ctx, t)
+	err := waitForKeycloakAlertState("firing", ctx, t)
 	if err != nil {
 		return err
 	}
-
-	err = waitForThreescaleAlertState("firing", ctx, t)
-	if err != nil {
-		return err
-	}
-
 	err = checkAlertManager(ctx, t)
 	return err
 }
@@ -218,10 +194,10 @@ func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	}
 
 	alertsNotFiringInAlertManager := false
-	for threescaleAlertName := range threescaleAlertsToTest {
-		if !strings.Contains(output, threescaleAlertName) {
+	for keycloakAlertName := range keycloakAlertsToTest {
+		if !strings.Contains(output, keycloakAlertName) {
 			alertsNotFiringInAlertManager = true
-			t.Errorf("%s alert not firing in alertmanager", threescaleAlertName)
+			t.Errorf("%s alert not firing in alertmanager", keycloakAlertName)
 		}
 	}
 
@@ -232,31 +208,20 @@ func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	return nil
 }
 
-func repeat(function repeatFunc, quit chan struct{}) {
-	for {
-		select {
-		case <-quit:
-			return
-		default:
-			function()
-		}
-	}
-}
-
-func waitForThreescaleAlertState(expectedState string, ctx *TestingContext, t TestingTB) error {
+func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t TestingTB) error {
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		err = getThreescaleAlertState(ctx)
+		err = getKeycloakAlertState(ctx)
 		if err != nil {
-			t.Log("failed to get threescale alert state:", err)
+			t.Log("failed to get keycloak alert state:", err)
 			t.Log("waiting 1 minute before retrying")
 			return false, nil
 		}
 
 		alertsInExpectedState := true
-		for threescaleAlertName, threescaleAlertState := range threescaleAlertsToTest {
-			if threescaleAlertState != expectedState {
+		for keycloakAlertName, keycloakAlertState := range keycloakAlertsToTest {
+			if keycloakAlertState != expectedState {
 				alertsInExpectedState = false
-				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", threescaleAlertName, expectedState, threescaleAlertState)
+				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", keycloakAlertName, expectedState, keycloakAlertState)
 				t.Log("waiting 1 minute before retrying")
 			}
 		}
@@ -271,7 +236,7 @@ func waitForThreescaleAlertState(expectedState string, ctx *TestingContext, t Te
 	return err
 }
 
-func getThreescaleAlertState(ctx *TestingContext) error {
+func getKeycloakAlertState(ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -293,16 +258,16 @@ func getThreescaleAlertState(ctx *TestingContext) error {
 		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	for threescaleAlertName := range threescaleAlertsToTest {
-		threescaleAlertsToTest[threescaleAlertName] = "none"
+	for keycloakAlertName := range keycloakAlertsToTest {
+		keycloakAlertsToTest[keycloakAlertName] = "none"
 	}
 
 	for _, alert := range alertsResult.Alerts {
 		alertName := string(alert.Labels["alertname"])
 
-		for threescaleAlertName := range threescaleAlertsToTest {
-			if alertName == threescaleAlertName {
-				threescaleAlertsToTest[threescaleAlertName] = string(alert.State)
+		for keycloakAlertName := range keycloakAlertsToTest {
+			if alertName == keycloakAlertName {
+				keycloakAlertsToTest[keycloakAlertName] = string(alert.State)
 			}
 		}
 	}
@@ -311,7 +276,7 @@ func getThreescaleAlertState(ctx *TestingContext) error {
 }
 
 func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (int32, error) {
-	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOUserOperatorNamespace)
 
 	result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})
 	if getErr != nil {
@@ -321,23 +286,8 @@ func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (i
 	return *result.Spec.Replicas, nil
 }
 
-func getNumOfReplicasDeploymentConfig(name string, namespace string, client client.Client) (int32, error) {
-	deploymentConfig := &appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
-	if getErr != nil {
-		return 0, fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
-	}
-
-	return deploymentConfig.Spec.Replicas, nil
-}
-
 func scaleDeployment(t TestingTB, name string, replicas int32, kubeClient kubernetes.Interface) {
-	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOUserOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})
@@ -355,41 +305,19 @@ func scaleDeployment(t TestingTB, name string, replicas int32, kubeClient kubern
 
 }
 
-func scaleDeploymentConfig(t TestingTB, name string, namespace string, replicas int32, client client.Client) {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deploymentConfig := &appsv1.DeploymentConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-		}
-		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
-		if getErr != nil {
-			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
-		}
-
-		deploymentConfig.Spec.Replicas = replicas
-		updateErr := client.Update(goctx.TODO(), deploymentConfig)
-		return updateErr
-	})
-	if retryErr != nil {
-		t.Logf("update failed: %v", retryErr)
-	}
-}
-
-func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, originalOperatorReplicas int32) error {
-	t.Logf("Checking correct number of threescale operator replicas (%d) are set", originalOperatorReplicas)
+func checkKeycloakOperatorReplicasAreReady(ctx *TestingContext, t TestingTB, originalOperatorReplicas int32) error {
+	t.Logf("Checking correct number of keycloak operator replicas (%d) are set", originalOperatorReplicas)
 	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
-		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)
+		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(keycloakOperatorDeploymentName, ctx.KubeClient)
 
 		if numberOfOperatorReplicas == originalOperatorReplicas {
-			t.Log("Threescale operator deployment ready")
+			t.Log("Keycloak operator deployment ready")
 			return true, nil
 		}
 
 		if numberOfOperatorReplicas == 0 {
-			t.Log("Threescale operator deployment not yet scaled, waiting 15 seconds before retrying")
-			scaleDeployment(t, threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+			t.Log("Keycloak operator deployment not yet scaled, waiting 15 seconds before retrying")
+			scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 			return false, nil
 		}
 
