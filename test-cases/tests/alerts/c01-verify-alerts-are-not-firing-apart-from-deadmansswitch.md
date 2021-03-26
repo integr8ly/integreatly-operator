@@ -1,4 +1,7 @@
 ---
+products:
+  - name: rhmi
+  - name: rhoam
 tags:
   - automated
 ---

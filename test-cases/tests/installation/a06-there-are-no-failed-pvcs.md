@@ -1,4 +1,7 @@
 ---
+products:
+  - name: rhmi
+  - name: rhoam
 estimate: 15m
 tags:
   - automated
