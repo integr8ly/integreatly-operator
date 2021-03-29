@@ -48,7 +48,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	// verify that alert to be tested is not firing before starting the test
 	err = getKeycloakAlertState(ctx)
 	if err != nil {
-		t.Fatal("failed to get threescale alert state", err)
+		t.Fatal("failed to get keycloak alert state", err)
 	}
 
 	keycloakAlertsFiring := false
@@ -61,31 +61,24 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	}
 
 	if keycloakAlertsFiring {
-		t.Log("Keycloak alerts firing unexpectedly")
+		t.Log("Keycloak alerts firing already, can not proceed with the test")
 		t.FailNow()
 	}
 
-	t.Log("Scaling down keycloak operator deployment")
-	scaleDeployment(t, keycloakOperatorDeploymentName, 0, ctx.KubeClient)
-
-	t.Log("Keycloak alerts are not firing - performing tests")
+	t.Log("Keycloak alerts are not firing - scaling down keycloak operator deployemnt and performing tests")
 	err = performTest(t, ctx, originalOperatorReplicas)
 	if err != nil {
-		t.Log("Error During scale down keycloak operator and product pods and verify that keycloak alert is firing")
-		t.Fatal(err)
+		t.Fatal("Error during testing keycloak operator alerts: %s", err)
 	}
-
-	t.Log("Scaling up keycloak operator deployment")
-	scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
 	// verify the operator has been scaled backup
 	err = checkKeycloakOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
 	if err != nil {
 		t.Fatalf("Error During verify the operator has been scaled backup with error: %s", err)
 	}
-	t.Log("Keycloak operator deployment scaled back up")
+	t.Log("Keycloak operator deployment scaled back up and ready")
 
-	// verify that threescale alert is not firing
+	// verify that keycloak alert is not firing
 	err = waitForKeycloakAlertState("none", ctx, t)
 	if err != nil {
 		t.Fatal("Keycloak alerts failed to recover back to non-firing state with error: %s", err)
@@ -175,6 +168,10 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 }
 
 func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32) error {
+	scaleDeployment(t, keycloakOperatorDeploymentName, 0, ctx.KubeClient)
+
+	defer scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+
 	err := waitForKeycloakAlertState("firing", ctx, t)
 	if err != nil {
 		return err
