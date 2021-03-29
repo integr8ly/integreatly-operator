@@ -23,7 +23,7 @@ function extractSprintId(sprintInfo: string[] | number): number {
     if (sprintInfo != null) {
         const found = /(id\=)(\d+)/.exec(sprintInfo[0]);
         if (found) {
-            return parseInt(found[2]);
+            return parseInt(found[2], 10);
         }
     }
     return null;
