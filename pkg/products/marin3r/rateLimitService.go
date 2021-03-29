@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,13 +67,13 @@ type yamlRoot struct {
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
 // It reconciles a ConfigMap to configure the service, a Deployment to run it, and
 // exposes it as a Service
-func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.reconcileDeployment(ctx, client)
+	phase, err = r.reconcileDeployment(ctx, client, productConfig)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -123,7 +123,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 		}
 
 		cm.Data["apicast-ratelimiting.yaml"] = string(stagingConfigYamlMarshalled)
-		cm.Labels["app"] = "ratelimit"
+		cm.Labels["app"] = sku.RateLimitName
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil
 	})
@@ -134,7 +134,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	redisSecret, err := r.getRedisSecret(ctx, client)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -146,7 +146,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "ratelimit",
+			Name:      sku.RateLimitName,
 			Namespace: r.Namespace,
 		},
 	}
@@ -156,18 +156,14 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			deployment.Labels = map[string]string{}
 		}
 
-		deployment.Labels["app"] = "ratelimit"
+		deployment.Labels["app"] = sku.RateLimitName
 		deployment.Spec.Selector = &v1.LabelSelector{
 			MatchLabels: map[string]string{
-				"app": "ratelimit",
+				"app": sku.RateLimitName,
 			},
 		}
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
-		}
-		// Default to 3 replicas, but allow this field to be tweaked
-		if deployment.Spec.Replicas == nil {
-			deployment.Spec.Replicas = &replicas
 		}
 
 		useStatsd := "false"
@@ -215,63 +211,63 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				Value: r.StatsdConfig.Host,
 			})
 		}
-
-		deployment.Spec.Template = corev1.PodTemplateSpec{
-			ObjectMeta: v1.ObjectMeta{
-				Labels: map[string]string{
-					"app": "ratelimit",
-				},
+		if &deployment.Spec.Template == nil {
+			deployment.Spec.Template = corev1.PodTemplateSpec{}
+		}
+		deployment.Spec.Template.ObjectMeta = v1.ObjectMeta{
+			Labels: map[string]string{
+				"app": sku.RateLimitName,
 			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:    "ratelimit",
-						Image:   "quay.io/integreatly/ratelimit:v1.4.0",
-						Command: []string{"ratelimit"},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								MountPath: "/srv/runtime_data/current/config",
-								Name:      "runtime-config",
-							},
+		}
+		if &deployment.Spec.Template.Spec == nil {
+			deployment.Spec.Template.Spec = corev1.PodSpec{}
+		}
+		deployment.Spec.Template.Spec.PriorityClassName = r.Installation.Spec.PriorityClassName
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "runtime-config",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "ratelimit-config",
 						},
-						Ports: []corev1.ContainerPort{
+						Items: []corev1.KeyToPath{
 							{
-								Name:          "http",
-								ContainerPort: 8080,
-							},
-							{
-								Name:          "grpc",
-								ContainerPort: 8081,
-							},
-							{
-								Name:          "debug",
-								ContainerPort: 6070,
-							},
-						},
-						Env: envs,
-					},
-				},
-				PriorityClassName: r.Installation.Spec.PriorityClassName,
-				Volumes: []corev1.Volume{
-					{
-						Name: "runtime-config",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: "ratelimit-config",
-								},
-								Items: []corev1.KeyToPath{
-									{
-										Key:  "apicast-ratelimiting.yaml",
-										Path: fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig)),
-									},
-								},
+								Key:  "apicast-ratelimiting.yaml",
+								Path: fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig)),
 							},
 						},
 					},
 				},
 			},
 		}
+		if deployment.Spec.Template.Spec.Containers == nil {
+			deployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
+		}
+		deployment.Spec.Template.Spec.Containers[0].Name = sku.RateLimitName
+		deployment.Spec.Template.Spec.Containers[0].Image = "quay.io/integreatly/ratelimit:v1.4.0"
+		deployment.Spec.Template.Spec.Containers[0].Command = []string{sku.RateLimitName}
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				MountPath: "/srv/runtime_data/current/config",
+				Name:      "runtime-config",
+			},
+		}
+		deployment.Spec.Template.Spec.Containers[0].Ports = []corev1.ContainerPort{
+			{
+				Name:          "http",
+				ContainerPort: 8080,
+			},
+			{
+				Name:          "grpc",
+				ContainerPort: 8081,
+			},
+			{
+				Name:          "debug",
+				ContainerPort: 6070,
+			},
+		}
+		deployment.Spec.Template.Spec.Containers[0].Env = envs
 
 		if err := resources.SetPodTemplate(
 			resources.SelectFromDeployment,
@@ -282,6 +278,11 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			deployment,
 		); err != nil {
 			return fmt.Errorf("failed to set zone topology spread constraints: %w", err)
+		}
+
+		err = productConfig.Configure(deployment)
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -297,7 +298,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	service := &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "ratelimit",
+			Name:      sku.RateLimitName,
 			Namespace: r.Namespace,
 		},
 	}
@@ -307,7 +308,7 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 			service.Labels = map[string]string{}
 		}
 
-		service.Labels["app"] = "ratelimit"
+		service.Labels["app"] = sku.RateLimitName
 		service.Spec.Ports = []corev1.ServicePort{
 			{
 				Name:       "http",
@@ -329,7 +330,7 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 			},
 		}
 		service.Spec.Selector = map[string]string{
-			"app": "ratelimit",
+			"app": sku.RateLimitName,
 		}
 
 		return nil
