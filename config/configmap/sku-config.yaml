@@ -64,6 +64,19 @@ data:
                               "memory": 1500
                           }
                       }
+                  },
+                "ratelimit": {
+                      "replicas": 3,
+                      "resources": {
+                          "requests": {
+                              "cpu": 0.10,
+                              "memory": 50
+                          },
+                          "limits": {
+                              "cpu": 0.20,
+                              "memory": 100
+                          }
+                      }
                   }
               }
           },
@@ -126,6 +139,19 @@ data:
                           "memory": 1500
                       }
                   }
+              },
+              "ratelimit": {
+                  "replicas": 3,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.05,
+                          "memory": 50
+                      },
+                      "limits": {
+                          "cpu": 0.15,
+                          "memory": 100
+                      }
+                  }
               }
           }
       },
@@ -186,6 +212,19 @@ data:
                       "limits": {
                           "cpu": 0.75,
                           "memory": 1500
+                      }
+                  }
+              },
+              "ratelimit": {
+                  "replicas": 1,
+                  "resources": {
+                      "requests": {
+                          "cpu": 0.05,
+                          "memory": 50
+                      },
+                      "limits": {
+                          "cpu": 0.15,
+                          "memory": 100
                       }
                   }
               }
