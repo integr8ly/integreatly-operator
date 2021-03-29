@@ -24,6 +24,8 @@ interface Issue {
         fixVersions: { id: string; name?: string }[];
         customfield_12312442?: { id: string; value?: string }; // fixBuild
         customfield_12311140: string;
+        customfield_12313240: string; // team
+        customfield_12310940: string[] | number; // sprint: type 'string[]' when listing, type 'number' when creating a new jira
         description: string;
         issuetype: { name: IssueTypeName };
         labels: string[];
