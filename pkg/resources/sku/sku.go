@@ -69,81 +69,10 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		}
 	}
 
-	//if the skuid is empty then build up a defaulting skureceiver
-	// for defaulting we can use the twenty million sku
+	// if the sku receiver is empty at this point we haven't found a sku which matches the config
+	// return in progress
 	if skuReceiver.Name == "" {
-		skuReceiver.Name = "default"
-		skuReceiver.Resources = map[string]ResourceConfig{
-			BackendListenerName: {
-				Replicas: 3,
-				Resources: v13.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.35"),
-						corev1.ResourceMemory: resource.MustParse("450"),
-					},
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.45"),
-						corev1.ResourceMemory: resource.MustParse("500"),
-					},
-				},
-			},
-			BackendWorkerName: {
-				Replicas: 3,
-				Resources: v13.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.15"),
-						corev1.ResourceMemory: resource.MustParse("100"),
-					},
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.2"),
-						corev1.ResourceMemory: resource.MustParse("100"),
-					},
-				},
-			},
-			ApicastProductionName: {
-				Replicas: 3,
-				Resources: v13.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.3"),
-						corev1.ResourceMemory: resource.MustParse("250"),
-					},
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.3"),
-						corev1.ResourceMemory: resource.MustParse("300"),
-					},
-				},
-			},
-			ApicastStagingName: {
-				Replicas: 3,
-				Resources: v13.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.3"),
-						corev1.ResourceMemory: resource.MustParse("250"),
-					},
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.3"),
-						corev1.ResourceMemory: resource.MustParse("300"),
-					},
-				},
-			},
-			KeycloakName: {
-				Replicas: 3,
-				Resources: v13.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.75"),
-						corev1.ResourceMemory: resource.MustParse("1500"),
-					},
-					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("0.75"),
-						corev1.ResourceMemory: resource.MustParse("1500"),
-					},
-				},
-			},
-			RateLimitName: {
-				Replicas:  3,
-				Resources: v13.ResourceRequirements{},
-			},
-		}
+		return errors.New("wasn't able to find a sku in the sku config which matches the SKUid")
 	}
 
 	// map of products iterate over that to build the return map
@@ -193,8 +122,11 @@ func (s *SKU) IsUpdated() bool {
 	return s.isUpdated
 }
 
-func (p *ProductConfig) GetResourceConfig(ddcssName string) corev1.ResourceRequirements {
-	return p.resourceConfigs[ddcssName].Resources
+func (p *ProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
+	if _, ok := p.resourceConfigs[ddcssName]; !ok {
+		return corev1.ResourceRequirements{}, false
+	}
+	return p.resourceConfigs[ddcssName].Resources, true
 }
 
 func (p ProductConfig) GetReplicas(ddcssName string) int32 {
@@ -202,6 +134,10 @@ func (p ProductConfig) GetReplicas(ddcssName string) int32 {
 }
 
 func (p *ProductConfig) Configure(obj metav1.Object) error {
+	// if isUpdated is false return as we don't need to do any updates
+	if p.sku.isUpdated == false {
+		return nil
+	}
 
 	var replicas *int32
 	var podTemplate *v13.PodTemplateSpec
@@ -225,27 +161,31 @@ func (p *ProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
-	if p.sku.isUpdated && *replicas < configReplicas {
+	if *replicas < configReplicas {
 		*replicas = configReplicas
 	}
 	p.mutate(podTemplate, obj.GetName())
-
 	return nil
 }
 
-func (p *ProductConfig) mutate(temp *v13.PodTemplateSpec, name string) {
+func (p *ProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
 	resources := p.resourceConfigs[name].Resources
-	templateResources := &temp.Spec.Containers[0].Resources
-
-	p.mutateResources(templateResources.Limits, resources.Limits)
-	p.mutateResources(templateResources.Requests, resources.Requests)
+	for i, container := range podTemplateSpec.Spec.Containers {
+		if &container.Resources == nil {
+			podTemplateSpec.Spec.Containers[i].Resources = v13.ResourceRequirements{}
+		}
+		if container.Resources.Limits == nil {
+			podTemplateSpec.Spec.Containers[i].Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
+		}
+		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
+		if container.Resources.Requests == nil {
+			podTemplateSpec.Spec.Containers[i].Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
+		}
+		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
+	}
 }
 
 func (p *ProductConfig) mutateResources(pod, cfg v13.ResourceList) {
-	if p.sku.isUpdated {
-		pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
-	}
-	if p.sku.isUpdated {
-		pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
-	}
+	pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
+	pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
 }

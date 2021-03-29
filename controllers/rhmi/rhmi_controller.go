@@ -307,9 +307,11 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	installationSKU := &sku.SKU{}
 	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 		if err = r.processSKU(installation, request.Namespace, installationSKU); err != nil {
-			// for now we don't want to error until the code is fully implemented
-			// see epic -> https://issues.redhat.com/browse/MGDAPI-1100
-			// return ctrl.Result{}, err
+			log.Error("Error while processing the SKU", err)
+			if err = r.Status().Update(context.TODO(), installation); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, err
 		}
 		if err = r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
@@ -1080,15 +1082,17 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
 	isSKUUpdated := false
-	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "sku")
+	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "add-managed-api-service")
 	if err != nil {
 		return errors.Wrap(err, "Error checking for SKU secret")
 	}
 
 	//!found means the param wasn't found so we want to default rather than return
-	//but don't do it until the installation object is more than a minute old in case the secret is slow to create
+	//if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
+	//a sku value is required for the installation to begin, the dev value is provided by the make cluster/prepare/sku for local installs
+	//or as a required value from an ocm add-on installation
 	if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
-		return nil
+		return errors.Wrap(err, "no sku value provided, sku is a required parameter for a managed-api install")
 	}
 
 	// get a configmap from the cluster
@@ -1098,15 +1102,10 @@ func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace s
 		return errors.Wrap(err, "Error getting sku config map")
 	}
 
-	// if it's the first install and first reconcile there will be no value
-	// or if the secretName is not the same as the current SKU
-	// there has been a change to the SKU
-	// so
-	// set ToSKU to the new value
-	// set isUpdate to true
-
-	// if the secret is different to what's currently set in SKU there has been an updated
-	if skuParam != installation.Status.SKU {
+	// if the secret is different to what's currently set in SKU there has been an update
+	// OR there is a TOSKU value in the cr, which can happen if a second sku change is made before the operator reaches
+	// the end of the reconcile on a first sku change where it resets the SKU and to sku values
+	if skuParam != installation.Status.SKU || installation.Status.ToSKU != "" {
 		isSKUUpdated = true
 	}
 

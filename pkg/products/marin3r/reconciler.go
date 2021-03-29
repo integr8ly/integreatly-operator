@@ -106,7 +106,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start marin3r reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
@@ -210,7 +210,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
 		WithStatsdConfig(statsdConfig).
-		ReconcileRateLimitService(ctx, client)
+		ReconcileRateLimitService(ctx, client, productConfig)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rate limit service", err)
 		return phase, err
@@ -298,7 +298,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 }
 
 func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.log.Info("Creating backend redis instance in marine3r reconcile")
+	r.log.Info("Creating backend redis instance in marin3r reconcile")
 
 	ns := r.installation.Namespace
 
