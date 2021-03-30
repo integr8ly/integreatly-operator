@@ -19,6 +19,16 @@ function appendLinkToGeneralGuidelines(content: string): string {
     return content.concat("\n", guidelines);
 }
 
+function extractSprintId(sprintInfo: string[] | number): number {
+    if (sprintInfo != null) {
+        const found = /(id\=)(\d+)/.exec(sprintInfo[0]);
+        if (found) {
+            return parseInt(found[2], 10);
+        }
+    }
+    return null;
+}
+
 function prependOriginLink(
     content: string,
     file: string,
@@ -50,6 +60,8 @@ function toIssue(
     projectKey: string,
     fixVersionId: string,
     fixBuildId: string,
+    team: string,
+    sprint: number,
     priority: string
 ): Issue {
     let content = prependOriginLink(test.content, test.file, test.url);
@@ -69,6 +81,8 @@ function toIssue(
             components: [{ name: "Testing" }],
             customfield_12311140: epicKey,
             customfield_12312442: { id: fixBuildId },
+            customfield_12313240: team,
+            customfield_12310940: sprint,
             description: markdown2confluence(content),
             fixVersions: [{ id: fixVersionId }],
             issuetype: { name: "Task" },
@@ -157,6 +171,10 @@ const jira: CommandModule<{}, Args> = {
             throw new Error(`the epic ${args.epic} does not have a Fix Build`);
         }
 
+        const team = epic.fields.customfield_12313240;
+
+        const sprintId = extractSprintId(epic.fields.customfield_12310940);
+
         let previousRuns: TestRun[] = [];
 
         if (args.previousEpic) {
@@ -183,6 +201,8 @@ const jira: CommandModule<{}, Args> = {
                 project,
                 fixVersion.id,
                 fixBuild.id,
+                team,
+                sprintId,
                 toPriority(previousRun)
             );
 
