@@ -98,6 +98,10 @@ The operator can now be run locally:
 ```shell
 INSTALLATION_TYPE=<managed/managed-api> make code/run
 ```
+If you want to run the operator from a specific image, you can specify the image and run `make cluster/deploy`
+```shell
+IMAGE_FORMAT=<image-registry-address> INSTALLATION_TYPE=managed-api  make cluster/deploy
+```
 
 *Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhmi/rhoam`).
 
@@ -113,7 +117,6 @@ Once the installation completed the command wil result in following output:
 ```yaml
 "complete"
 ```
-
 
 ## Deploying to a Cluster with OLM and the Bundle Format
 
