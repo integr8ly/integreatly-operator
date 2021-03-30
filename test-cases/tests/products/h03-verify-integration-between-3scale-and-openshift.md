@@ -1,4 +1,7 @@
 ---
+products:
+  - name: rhmi
+  - name: rhoam
 automation:
   - INTLY-5441
 tags:

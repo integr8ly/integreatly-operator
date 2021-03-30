@@ -1,4 +1,6 @@
 ---
+products:
+  - name: rhmi
 estimate: 15m
 tags:
   - automated
