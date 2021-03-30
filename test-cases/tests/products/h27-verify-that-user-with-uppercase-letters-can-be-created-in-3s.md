@@ -6,8 +6,6 @@ products:
     targets:
       - 1.4.0
 estimate: 30m
-tags:
-  - manual-selection
 ---
 
 # H27 - Verify that user with uppercase letters can be created in 3scale
