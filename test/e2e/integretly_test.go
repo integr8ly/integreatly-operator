@@ -37,6 +37,10 @@ var _ = Describe("integreatly", func() {
 				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
 				TestCases: common.GetHappyPathTestCases(installType),
 			},
+			{
+				Type:      "FAILURE TESTS",
+				TestCases: common.FAILURE_TESTS,
+			},
 		}
 
 		if os.Getenv("DESTRUCTIVE") == "true" {
