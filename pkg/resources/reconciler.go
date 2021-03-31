@@ -18,7 +18,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -215,7 +215,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 	//TODO: move this to a pre upgrade function that can run before and upgrade
 	// to excute any changes required by a product upgrade
 	if sub.Name == "rhmi-marin3r" && sub.Status.InstalledCSV == "marin3r.v0.5.1" {
-		discoveryservicescrd := &apiextensionv1beta1.CustomResourceDefinition{}
+		discoveryservicescrd := &apiextensionv1.CustomResourceDefinition{}
 		err := client.Get(ctx, k8sclient.ObjectKey{Name: "discoveryservices.operator.marin3r.3scale.net"}, discoveryservicescrd)
 		if err != nil && !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve marin3r CRD %s,  %w", discoveryservicescrd.Name, err)
