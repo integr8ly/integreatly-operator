@@ -3,7 +3,6 @@ package marketplace
 import (
 	"errors"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,9 +12,11 @@ import (
 	"strconv"
 	"strings"
 
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+
 	"github.com/Masterminds/semver"
 	"gopkg.in/yaml.v2"
-	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 const (
@@ -124,7 +125,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 					for _, f := range files {
 						// iterate through all fils in the folder
 						if libRegEx.MatchString(f.Name()) {
-							crdConfig := &apiextensionv1beta1.CustomResourceDefinition{}
+							crdConfig := &apiextensionv1.CustomResourceDefinition{}
 
 							GetCrdDetails(crdConfig, currentFolder, f)
 							found := CheckFoldersForMatch(dir, vs, currentFolder, crdConfig, libRegEx)
@@ -144,7 +145,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 }
 
 // CheckFoldersForMatch searchs other folders for a crd with the same APIVersion, group and kind
-func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder string, crdConfig *apiextensionv1beta1.CustomResourceDefinition, libRegEx *regexp.Regexp) bool {
+func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder string, crdConfig *apiextensionv1.CustomResourceDefinition, libRegEx *regexp.Regexp) bool {
 
 	found := false
 	for _, cfolder := range folders {
@@ -157,7 +158,7 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 			if err == nil {
 				for _, f := range files {
 					if libRegEx.MatchString(f.Name()) {
-						needleCrd := &apiextensionv1beta1.CustomResourceDefinition{}
+						needleCrd := &apiextensionv1.CustomResourceDefinition{}
 						GetCrdDetails(needleCrd, cfolder, f)
 
 						if crdConfig.APIVersion == needleCrd.APIVersion &&
@@ -175,7 +176,7 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 }
 
 // GetCrdDetails reads the crd file
-func GetCrdDetails(crdConfig *apiextensionv1beta1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
+func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
 	yamlFile, err := ioutil.ReadFile(currentFolder + string(os.PathSeparator) + f.Name())
 
 	err = yaml.Unmarshal(yamlFile, &crdConfig)
