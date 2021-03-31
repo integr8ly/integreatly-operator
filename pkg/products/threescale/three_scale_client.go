@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/antchfx/xmlquery"
@@ -126,7 +127,7 @@ func (tsc *threeScaleClient) GetUser(username, accessToken string) (*User, error
 	}
 
 	for _, u := range users.Users {
-		if u.UserDetails.Username == username {
+		if u.UserDetails.Username == strings.ToLower(username) {
 			return u, nil
 		}
 	}
@@ -186,7 +187,7 @@ func (tsc *threeScaleClient) SetFromEmailAddress(emailAddress string, accessToke
 func (tsc *threeScaleClient) AddUser(username string, email string, password string, accessToken string) (*http.Response, error) {
 	data := make(map[string]string)
 	data["access_token"] = accessToken
-	data["username"] = username
+	data["username"] = strings.ToLower(username)
 	data["email"] = email
 	data["password"] = password
 	reqData, err := json.Marshal(data)
@@ -268,7 +269,7 @@ func (tsc *threeScaleClient) SetUserAsMember(userID int, accessToken string) (*h
 func (tsc *threeScaleClient) UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error) {
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
-		"username":     username,
+		"username":     strings.ToLower(username),
 		"email":        email,
 	})
 	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID)
