@@ -1535,13 +1535,19 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	// can now be added.
 	for _, tsUser := range deleted {
 		if tsUser.UserDetails.Username != *systemAdminUsername {
+			statusCode := http.StatusServiceUnavailable
+
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
-			metrics.SetThreeScaleUserAction(res.StatusCode, strconv.Itoa(tsUser.UserDetails.Id), http.MethodDelete)
 			if err != nil {
 				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale", tsUser.UserDetails.Id), err)
+			} else {
+				statusCode = res.StatusCode
 			}
-			if res.StatusCode != http.StatusOK {
-				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale with status code %d", tsUser.UserDetails.Id, res.StatusCode), errors.New("error on http request"))
+
+			metrics.SetThreeScaleUserAction(statusCode, strconv.Itoa(tsUser.UserDetails.Id), http.MethodDelete)
+
+			if statusCode != http.StatusOK {
+				r.log.Error(fmt.Sprintf("Failed to delete keycloak user %d from 3scale with status code %d", tsUser.UserDetails.Id, statusCode), errors.New("error on http request"))
 			}
 		}
 	}
@@ -1563,16 +1569,15 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	for _, kcUser := range added {
-		user, _ := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
+		user, _ := r.tsClient.GetUser(kcUser.UserName, *accessToken)
 		// recheck the user is new.
 		// 3scale user may being update during the update phase
 		if user == nil {
-			var statusCode int
-			res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
+			statusCode := http.StatusServiceUnavailable
+			res, err := r.tsClient.AddUser(kcUser.UserName, strings.ToLower(kcUser.Email), "", *accessToken)
 
 			if err != nil {
 				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
-				statusCode = http.StatusServiceUnavailable
 			} else {
 				statusCode = res.StatusCode
 			}
@@ -1591,9 +1596,43 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	// update KeycloakUser attribute after user is created in 3scale
+	phase, err := r.updateKeycloakUsersAttributeWith3ScaleUserId(ctx, serverClient, kcu, accessToken)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	openshiftAdminGroup := &usersv1.Group{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	if err != nil && !k8serr.IsNotFound(err) {
+		r.log.Info("Failed to retrieve dedicated admins: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
+	if err != nil {
+		r.log.Info("Failed to get users: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	isWorkshop := installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)
+
+	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
+	if err != nil {
+		r.log.Info("Failed to sync openshift admin membership: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Context, serverClient k8sclient.Client, kcu []keycloak.KeycloakAPIUser, accessToken *string) (integreatlyv1alpha1.StatusPhase, error) {
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	userCreated3ScaleName := "3scale_user_created"
 	for _, user := range kcu {
-		tsUser, err := r.tsClient.GetUser(strings.ToLower(user.UserName), *accessToken)
+		tsUser, err := r.tsClient.GetUser(user.UserName, *accessToken)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress,
 				fmt.Errorf("failed to get 3scale user with keycloak username %s, err: %s", user.UserName, err)
@@ -1622,26 +1661,6 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 			return integreatlyv1alpha1.PhaseInProgress,
 				fmt.Errorf("failed to update KeycloakUser CR with %s attribute: %w", userCreated3ScaleName, err)
 		}
-	}
-
-	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
-	if err != nil && !k8serr.IsNotFound(err) {
-		r.log.Info("Failed to retrieve dedicated admins: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
-	if err != nil {
-		r.log.Info("Failed to get users: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-
-	isWorkshop := installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)
-
-	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
-	if err != nil {
-		r.log.Info("Failed to sync openshift admin membership: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

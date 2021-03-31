@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -636,6 +637,666 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ensureDeploymentConfigsReady() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		installation *integreatlyv1alpha1.RHMI
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test - Read RHSSO Config failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, fmt.Errorf("read error")
+				}},
+				log: getLogger(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - System seed secret failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("get error")
+					},
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - Get Keycloak users failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+						return fmt.Errorf("list error")
+					},
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - Get 3scale Users failed - PhaseInProgress",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+				tsClient: &ThreeScaleInterfaceMock{
+					GetUsersFunc: func(accessToken string) (*Users, error) {
+						return nil, fmt.Errorf("get error")
+					},
+				},
+			},
+			args: args{
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+						return nil
+					},
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Reconcile Successful - PhaseComplete",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+				tsClient: &ThreeScaleInterfaceMock{
+					GetUsersFunc: func(accessToken string) (*Users, error) {
+						return &Users{
+							Users: []*User{
+								{
+									UserDetails: UserDetails{
+										Username: "updated-3scale",
+										Id:       1,
+									},
+								},
+								{
+									UserDetails: UserDetails{
+										Username: "notInKeyCloak",
+									},
+								},
+							},
+						}, nil
+					},
+					AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+					DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+					UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+					GetUserFunc: func(username string, accessToken string) (*User, error) {
+						return &User{
+							UserDetails: UserDetails{
+								Username: defaultInstallationNamespace,
+								Id:       1,
+							},
+						}, nil
+					},
+				},
+			},
+			args: args{
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					append(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace),
+						&keycloak.KeycloakUser{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "generated-3scale",
+								Namespace: "rhsso",
+								Labels: map[string]string{
+									"sso": "integreatly",
+								},
+							},
+							Spec: keycloak.KeycloakUserSpec{
+								User: keycloak.KeycloakAPIUser{
+									UserName: defaultInstallationNamespace,
+									Attributes: map[string][]string{
+										user3ScaleID: {fmt.Sprint(1)},
+									},
+								},
+							},
+						},
+					)...),
+				installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+					},
+				},
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.reconcileOpenshiftUsers(tt.args.ctx, tt.args.installation, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileOpenshiftUsers() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileOpenshiftUsers() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
+	accessToken := "accessToken"
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+		kcu          []keycloak.KeycloakAPIUser
+		accessToken  *string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test - Read RHSSO Config failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, fmt.Errorf("read error")
+				}},
+				log: getLogger(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - Read RHSSO Config failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, fmt.Errorf("read error")
+				}},
+				log: getLogger(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Test - Get 3scale User failed - PhaseInProgress",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+				tsClient: &ThreeScaleInterfaceMock{
+					GetUserFunc: func(username string, accessToken string) (*User, error) {
+						return nil, fmt.Errorf("get error")
+					},
+				},
+			},
+			args: args{
+				kcu: []keycloak.KeycloakAPIUser{
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+				accessToken: &accessToken,
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Update Keycloak User failed - PhaseInProgress",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+				tsClient: &ThreeScaleInterfaceMock{
+					GetUserFunc: func(username string, accessToken string) (*User, error) {
+						return &User{UserDetails: UserDetails{Id: 1}}, nil
+					},
+				},
+			},
+			args: args{
+				kcu: []keycloak.KeycloakAPIUser{
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+				accessToken: &accessToken,
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("get error")
+					},
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "Test - Update Keycloak User successful - PhaseComplete",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+				tsClient: &ThreeScaleInterfaceMock{
+					GetUserFunc: func(username string, accessToken string) (*User, error) {
+						return &User{UserDetails: UserDetails{Id: 1}}, nil
+					},
+				},
+			},
+			args: args{
+				kcu: []keycloak.KeycloakAPIUser{
+					{
+						UserName: "test",
+					},
+				},
+				accessToken: &accessToken,
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+						return nil
+					},
+				},
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.updateKeycloakUsersAttributeWith3ScaleUserId(tt.args.ctx, tt.args.serverClient, tt.args.kcu, tt.args.accessToken)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("updateKeycloakUsersAttributeWith3ScaleUserId() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("updateKeycloakUsersAttributeWith3ScaleUserId() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_getUserDiff(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+		kcUsers      []keycloak.KeycloakAPIUser
+		tsUsers      []*User
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []keycloak.KeycloakAPIUser
+		want1  []*User
+		want2  []*User
+	}{
+		{
+			name: "Test - Read RHSSO Config failed - PhaseFailed",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, fmt.Errorf("read error")
+				}},
+				log: getLogger(),
+			},
+			want:  nil,
+			want1: nil,
+			want2: nil,
+		},
+		{
+			name: "Test - Keycloak User not in 3scale appended to added",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				log: getLogger(),
+			},
+			args: args{
+				tsUsers: []*User{
+					{
+						UserDetails: UserDetails{
+							Username: defaultInstallationNamespace,
+						},
+					},
+				},
+				kcUsers: []keycloak.KeycloakAPIUser{
+					{
+						UserName: "NotIn3scale",
+					},
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+			},
+			want: []keycloak.KeycloakAPIUser{
+				{
+					UserName: "NotIn3scale",
+				},
+			},
+			want1: nil,
+			want2: nil,
+		},
+		{
+			name: "Test - 3scale User not in Keycloak appended to deleted",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				log: getLogger(),
+			},
+			args: args{
+				tsUsers: []*User{
+					{
+						UserDetails: UserDetails{
+							Username: defaultInstallationNamespace,
+						},
+					},
+					{
+						UserDetails: UserDetails{
+							Username: "notInKeyCloak",
+						},
+					},
+				},
+				kcUsers: []keycloak.KeycloakAPIUser{
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "generated-3scale",
+						Namespace: "rhsso",
+					},
+				}),
+			},
+			want: nil,
+			want1: []*User{
+				{
+					UserDetails: UserDetails{
+						Username: "notInKeyCloak",
+					},
+				},
+			},
+			want2: nil,
+		},
+		{
+			name: "Test - Get keycloak user for deletion failed - appended to deleted",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				log: getLogger(),
+			},
+			args: args{
+				tsUsers: []*User{
+					{
+						UserDetails: UserDetails{
+							Username: defaultInstallationNamespace,
+						},
+					},
+					{
+						UserDetails: UserDetails{
+							Username: "notInKeyCloak",
+						},
+					},
+				},
+				kcUsers: []keycloak.KeycloakAPIUser{
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+				serverClient: fake.NewFakeClientWithScheme(scheme),
+			},
+			want: nil,
+			want1: []*User{
+				{
+					UserDetails: UserDetails{
+						Username: "notInKeyCloak",
+					},
+				},
+			},
+			want2: nil,
+		},
+		{
+			name: "Test - 3scale User updated appended to updated and to added",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				log: getLogger(),
+			},
+			args: args{
+				tsUsers: []*User{
+					{
+						UserDetails: UserDetails{
+							Username: fmt.Sprintf("Updated-%s", defaultInstallationNamespace),
+							Id:       1,
+						},
+					},
+				},
+				kcUsers: []keycloak.KeycloakAPIUser{
+					{
+						UserName: defaultInstallationNamespace,
+					},
+				},
+				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("generated-%s", defaultInstallationNamespace),
+						Namespace: "rhsso",
+					},
+					Spec: keycloak.KeycloakUserSpec{
+						User: keycloak.KeycloakAPIUser{
+							Attributes: map[string][]string{
+								user3ScaleID: {fmt.Sprint(1)},
+							},
+						},
+					},
+				}),
+			},
+			want: []keycloak.KeycloakAPIUser{
+				{
+					UserName: defaultInstallationNamespace,
+				},
+			},
+			want1: nil,
+			want2: []*User{
+				{
+					UserDetails: UserDetails{
+						Username: fmt.Sprintf("Updated-%s", defaultInstallationNamespace),
+						Id:       1,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, got1, got2 := r.getUserDiff(tt.args.ctx, tt.args.serverClient, tt.args.kcUsers, tt.args.tsUsers)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getUserDiff() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("getUserDiff() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("getUserDiff() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}
