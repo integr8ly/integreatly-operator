@@ -807,7 +807,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
-		"clusterID":             string(ClusterVersion.Spec.ClusterID),
+		"clusterID":             string(clusterVersion.Spec.ClusterID),
 		"clusterName":           clusterInfra.Status.InfrastructureName,
 		"clusterConsole":        clusterRoute.Spec.Host,
 	})
