@@ -516,12 +516,3 @@ packagemanifests: manifests kustomize
 .PHONY: bundle-build
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
-
-.PHONY: block-operator-pod
-block-operator-pod:
-	oc patch cm $(shell grep -e "LeaderElectionID" main.go | cut -d '"' -f2) -n $(NAMESPACE) -p '{"metadata":{"annotations": {"control-plane.alpha.kubernetes.io/leader": ""}}}'
-	@echo -e "To restart the operator running on the cluster run:\n\tmake unblock-operator-pod INSTALLATION_TYPE=${INSTALLATION_TYPE}"
-
-.PHONY: unblock-operator-pod
-unblock-operator-pod:
-	oc delete cm $(shell grep -e "LeaderElectionID" main.go | cut -d '"' -f2) -n $(NAMESPACE)
