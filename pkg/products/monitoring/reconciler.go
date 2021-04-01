@@ -785,7 +785,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	}
 
 	clusterVersion := &configv1.ClusterVersion{}
-	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterIDValue}, ClusterVersion); err != nil {
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterIDValue}, clusterVersion); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster ID details for alertmanager config: %w", err)
 	}
 
