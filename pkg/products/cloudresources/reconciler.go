@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"strings"
 	"time"
 
@@ -187,11 +186,24 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 
 	r.log.Info("Removing postgres and redis snapshots")
 
+	postgresSnapshotCRD := &apiextensionv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "postgressnapshots.integreatly.org",
+		},
+	}
+	crdExists, err := resources.Exists(ctx, client, postgresSnapshotCRD)
+	if err != nil {
+		r.log.Error("Error checking Postgres Snapshot CRD existence: ", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if !crdExists {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
 	pgSnaps := &crov1alpha1.PostgresSnapshotList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
-	err := client.List(ctx, pgSnaps, listOpts...)
+	err = client.List(ctx, pgSnaps, listOpts...)
 	if err != nil {
 		r.log.Error("Failed to list postgres snapshots", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres snapshots: %w", err)
@@ -273,12 +285,25 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 func (r *Reconciler) cleanupResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("ensuring cloud resources are cleaned up")
 
+	postgresInstancesCRD := &apiextensionv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "postgres.integreatly.org",
+		},
+	}
+	crdExists, err := resources.Exists(ctx, client, postgresInstancesCRD)
+	if err != nil {
+		r.log.Error("Error checking Postgres CRD existence: ", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if !crdExists {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
 	// ensure postgres instances are cleaned up
 	postgresInstances := &crov1alpha1.PostgresList{}
 	postgresInstanceOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
-	err := client.List(ctx, postgresInstances, postgresInstanceOpts...)
+	err = client.List(ctx, postgresInstances, postgresInstanceOpts...)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres instances: %w", err)
 	}
