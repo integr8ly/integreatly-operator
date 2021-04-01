@@ -8,11 +8,3 @@ patchesStrategicMerge:
   - patches/leader_election_role_binding.yaml
   # - patches/auth_proxy_role_binding.yaml
   - patches/role_binding.yaml
-
-patchesJSON6902:
-- target:
-    name: manager-role
-    group: rbac.authorization.k8s.io
-    version: v1
-    kind: ClusterRole
-  path: patches/catalogsources.yaml
