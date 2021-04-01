@@ -3,12 +3,12 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"strings"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
-
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -101,9 +101,22 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		Namespace: ns,
 	}
 
+	keycloakCRD := &apiextensionv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "keycloaks.keycloak.org",
+		},
+	}
+	crdExists, err := resources.Exists(ctx, serverClient, keycloakCRD)
+	if err != nil {
+		r.Log.Error("Error checking Keycloak CRD existence: ", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if !crdExists {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
 	// Delete all users
 	users := &keycloak.KeycloakUserList{}
-	err := serverClient.List(ctx, users, opts)
+	err = serverClient.List(ctx, users, opts)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
