@@ -110,7 +110,6 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 			productName:     product,
 			resourceConfigs: map[string]ResourceConfig{},
 		}
-		// if any are missing set sane defaults
 		for _, ddcssName := range ddcssNames {
 			pc.resourceConfigs[ddcssName] = skuReceiver.Resources[ddcssName]
 		}

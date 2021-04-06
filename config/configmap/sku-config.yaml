@@ -68,14 +68,14 @@ data:
                 "ratelimit": {
                       "replicas": 3,
                       "resources": {
-                          "resources": {
+                         "resources": {
                              "requests": {
-                                 "cpu": "100m",
-                                 "memory": "50Mi"
+                                 "cpu": 0.10,
+                                 "memory": 50
                              },
                              "limits": {
-                                 "cpu": "200m",
-                                 "memory": "100Mi"
+                                 "cpu": 0.20,
+                                 "memory": 100
                              }
                          }
                       }
@@ -145,15 +145,15 @@ data:
               "ratelimit": {
                   "replicas": 3,
                   "resources": {
-                      "requests": {
-                          "cpu": "50m",
-                          "memory": "50Mi"
-                      },
-                      "limits": {
-                          "cpu": "150m",
-                          "memory": "100Mi"
-                      }
-                  }
+                       "requests": {
+                           "cpu": 0.05,
+                           "memory": 50
+                       },
+                       "limits": {
+                           "cpu": 0.15,
+                           "memory": 100
+                       }
+                   }
               }
           }
       },
@@ -219,16 +219,16 @@ data:
               },
               "ratelimit": {
                   "replicas": 1,
-                  "resources": {
-                     "requests": {
-                         "cpu": "50m",
-                         "memory": "50Mi"
-                     },
-                     "limits": {
-                         "cpu": "150m",
-                         "memory": "100Mi"
-                     }
-                 }
+                "resources": {
+                    "requests": {
+                        "cpu": 0.05,
+                        "memory": 50
+                    },
+                    "limits": {
+                        "cpu": 0.15,
+                        "memory": 100
+                    }
+                }
               }
           }
       }]
