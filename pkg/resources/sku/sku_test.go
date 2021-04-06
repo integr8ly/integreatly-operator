@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	TWENTYMILLIONSKU = "TWENTY_MILLION_SKU"
-	DEVSKU           = "DEV_SKU"
+	TWENTYMILLIONSKU = "20"
+	DEVSKU           = "1"
 )
 
 func TestGetSKU(t *testing.T) {
@@ -62,12 +62,12 @@ func TestGetSKU(t *testing.T) {
 								Replicas: int32(1),
 								Resources: v13.ResourceRequirements{
 									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.09"),
-										corev1.ResourceMemory: resource.MustParse("250"),
+										corev1.ResourceCPU:    resource.MustParse("50m"),
+										corev1.ResourceMemory: resource.MustParse("50Mi"),
 									},
 									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.1"),
-										corev1.ResourceMemory: resource.MustParse("270"),
+										corev1.ResourceCPU:    resource.MustParse("150m"),
+										corev1.ResourceMemory: resource.MustParse("100Mi"),
 									},
 								},
 							}
@@ -268,7 +268,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validate that deploymentConfig backend-listener Resource Requests and Limits does not get updated on isUpdated false",
+			name: "validate that deploymentConfig backend-listener Resource Requests and Limits do get updated on isUpdated false when values are lower than config",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -312,24 +312,24 @@ func TestProductConfig_Configure(t *testing.T) {
 				dcSpec := obj.(*v1.DeploymentConfig).Spec
 				dcLimits := dcSpec.Template.Spec.Containers[0].Resources.Limits
 				configLimits := r[BackendListenerName].Resources.Limits
-				if dcLimits.Cpu().MilliValue() == configLimits.Cpu().MilliValue() {
-					t.Errorf("deployment config cpu limits not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				if dcLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("deployment config cpu limits not as expected, values are lower so should update even when isupdated is false, \n got = %v, \n want= %v ", dcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
 				}
-				if dcLimits.Memory().MilliValue() == configLimits.Memory().MilliValue() {
-					t.Errorf("deployment config memory limits not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				if dcLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("deployment config memory limits not as expected, values are lower so should update even when isupdated is false, \n got = %v, \n want= %v ", dcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
 				dcRequests := dcSpec.Template.Spec.Containers[0].Resources.Requests
 				configRequests := r[BackendListenerName].Resources.Requests
-				if dcRequests.Cpu().MilliValue() == configRequests.Cpu().MilliValue() {
-					t.Errorf("deployment config cpu requests not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+				if dcRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
+					t.Errorf("deployment config cpu requests not as expected, values are lower so should update even when isupdated is false, \n got = %v, \n want= %v ", dcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
 				}
-				if dcRequests.Memory().MilliValue() == configRequests.Memory().MilliValue() {
-					t.Errorf("deployment config memory requests not as expected, isupdated is false so should not update, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+				if dcRequests.Memory().MilliValue() != configRequests.Memory().MilliValue() {
+					t.Errorf("deployment config memory requests not as expected, values are lower so should update even when isupdated is false, \n got = %v, \n want= %v ", dcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
 				}
 				dcReplicas := dcSpec.Replicas
 				configReplicas := r[BackendListenerName].Replicas
-				if dcReplicas == configReplicas {
-					t.Errorf("deploymentConfig replicas not as expected, isupdated is false so should not update \n got = %v, \n want= %v ", dcReplicas, configReplicas)
+				if dcReplicas != configReplicas {
+					t.Errorf("deploymentConfig replicas not as expected, values are lower so should update even when isupdated is false \n got = %v, \n want= %v ", dcReplicas, configReplicas)
 				}
 			},
 			wantErr: false,
@@ -531,7 +531,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				}
 				dReplicas := dSpec.Replicas
 				configReplicas := r[BackendListenerName].Replicas
-				if *dReplicas == configReplicas {
+				if *dReplicas != configReplicas {
 					t.Errorf("deployment replicas not as expected, \n got = %v, \n want= %v ", *dReplicas, configReplicas)
 				}
 			},
@@ -634,7 +634,7 @@ func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
 		ObjectMeta: v12.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
-		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1389,\"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": 0.09,\"memory\": 250},\"limits\": {\"cpu\": 0.1,\"memory\": 270}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 1389,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1389,\"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 1389,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)
