@@ -39,8 +39,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	appsv1 "github.com/openshift/api/apps/v1"
 )
 
 var (
@@ -306,8 +304,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 		//Set keycloak Update Strategy to Rolling as default
 		//Keycloak operator should make decision based on the image, and can change update strategy
-		//kc.Spec.Migration.MigrationStrategy = "rolling"
-		kc.Spec.Migration.MigrationStrategy = keycloak.MigrationStrategy(strings.ToLower(string(appsv1.DeploymentStrategyTypeRolling)))
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
