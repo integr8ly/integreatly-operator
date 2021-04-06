@@ -3,9 +3,10 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	corev1 "k8s.io/api/core/v1"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 
 	"strings"
 
@@ -33,9 +34,8 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,7 +126,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
@@ -209,7 +209,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, installation, serverClient)
+	phase, err = r.reconcileComponents(ctx, installation, serverClient, productConfig)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
@@ -274,7 +274,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Log.Info("Reconciling Keycloak components")
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
@@ -282,6 +282,19 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
+
+	key, err := k8sclient.ObjectKeyFromObject(kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = serverClient.Get(ctx, key, kc)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
 		kc.Spec.Extensions = []string{
@@ -298,19 +311,28 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
-		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("750m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1500m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-		}
 
 		//Set keycloak Update Strategy to Rolling as default
 		//Keycloak operator should make decision based on the image, and can change update strategy
 		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 
-		//OSD has more resources than PROW, so adding an exception
-		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
-		if kc.Spec.Instances < numberOfReplicas {
-			kc.Spec.Instances = numberOfReplicas
+		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("750m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1500m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
+			}
+			//OSD has more resources than PROW, so adding an exception
+			numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
+			if kc.Spec.Instances < numberOfReplicas {
+				kc.Spec.Instances = numberOfReplicas
+			}
+		}
+
+		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			err = productConfig.Configure(kc)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
