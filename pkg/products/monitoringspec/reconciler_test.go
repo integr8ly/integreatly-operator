@@ -325,7 +325,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			ctx := context.TODO()
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -494,7 +494,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			}
 
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}

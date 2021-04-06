@@ -464,7 +464,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -613,7 +613,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				t.Fatalf("unexpected error : '%v'", err)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}

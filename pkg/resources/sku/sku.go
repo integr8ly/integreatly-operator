@@ -27,11 +27,20 @@ const (
 
 type SKU struct {
 	name           string
-	productConfigs map[v1alpha1.ProductName]ProductConfig
+	productConfigs map[v1alpha1.ProductName]AProductConfig
 	isUpdated      bool
 }
 
-type ProductConfig struct {
+//go:generate moq -out product_config_moq.go . ProductConfig
+type ProductConfig interface {
+	Configure(obj metav1.Object) error
+	GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool)
+	GetReplicas(ddcssName string) int32
+}
+
+var _ ProductConfig = AProductConfig{}
+
+type AProductConfig struct {
 	productName     v1alpha1.ProductName
 	resourceConfigs map[string]ResourceConfig
 	sku             *SKU
@@ -91,12 +100,12 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		},
 	}
 	retSku.name = skuReceiver.Name
-	retSku.productConfigs = map[v1alpha1.ProductName]ProductConfig{}
+	retSku.productConfigs = map[v1alpha1.ProductName]AProductConfig{}
 	retSku.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
-		pc := ProductConfig{
+		pc := AProductConfig{
 			sku:             retSku,
 			productName:     product,
 			resourceConfigs: map[string]ResourceConfig{},
@@ -110,7 +119,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 	return nil
 }
 
-func (s *SKU) GetProduct(productName v1alpha1.ProductName) ProductConfig {
+func (s *SKU) GetProduct(productName v1alpha1.ProductName) AProductConfig {
 	return s.productConfigs[productName]
 }
 
@@ -122,18 +131,18 @@ func (s *SKU) IsUpdated() bool {
 	return s.isUpdated
 }
 
-func (p *ProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
+func (p AProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
 	if _, ok := p.resourceConfigs[ddcssName]; !ok {
 		return corev1.ResourceRequirements{}, false
 	}
 	return p.resourceConfigs[ddcssName].Resources, true
 }
 
-func (p ProductConfig) GetReplicas(ddcssName string) int32 {
+func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 	return p.resourceConfigs[ddcssName].Replicas
 }
 
-func (p *ProductConfig) Configure(obj metav1.Object) error {
+func (p AProductConfig) Configure(obj metav1.Object) error {
 	// if isUpdated is false return as we don't need to do any updates
 	if p.sku.isUpdated == false {
 		return nil
@@ -168,7 +177,7 @@ func (p *ProductConfig) Configure(obj metav1.Object) error {
 	return nil
 }
 
-func (p *ProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
+func (p AProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
 	resources := p.resourceConfigs[name].Resources
 	for i, container := range podTemplateSpec.Spec.Containers {
 		if &container.Resources == nil {
@@ -177,15 +186,15 @@ func (p *ProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string
 		if container.Resources.Limits == nil {
 			podTemplateSpec.Spec.Containers[i].Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
+		mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
 		if container.Resources.Requests == nil {
 			podTemplateSpec.Spec.Containers[i].Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
+		mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
 	}
 }
 
-func (p *ProductConfig) mutateResources(pod, cfg v13.ResourceList) {
+func mutateResources(pod, cfg v13.ResourceList) {
 	pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
 	pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
 }

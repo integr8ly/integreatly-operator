@@ -163,7 +163,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			},
 		}
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
-			Type: appsv1.RecreateDeploymentStrategyType,
+			Type: appsv1.RollingUpdateDeploymentStrategyType,
 		}
 
 		useStatsd := "false"
