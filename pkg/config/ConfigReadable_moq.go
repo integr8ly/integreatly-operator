@@ -4,9 +4,19 @@
 package config
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sync"
+)
+
+var (
+	lockConfigReadableMockGetHost            sync.RWMutex
+	lockConfigReadableMockGetNamespace       sync.RWMutex
+	lockConfigReadableMockGetOperatorVersion sync.RWMutex
+	lockConfigReadableMockGetProductName     sync.RWMutex
+	lockConfigReadableMockGetProductVersion  sync.RWMutex
+	lockConfigReadableMockGetWatchableCRDs   sync.RWMutex
+	lockConfigReadableMockRead               sync.RWMutex
 )
 
 // Ensure, that ConfigReadableMock does implement ConfigReadable.
@@ -15,37 +25,37 @@ var _ ConfigReadable = &ConfigReadableMock{}
 
 // ConfigReadableMock is a mock implementation of ConfigReadable.
 //
-// 	func TestSomethingThatUsesConfigReadable(t *testing.T) {
+//     func TestSomethingThatUsesConfigReadable(t *testing.T) {
 //
-// 		// make and configure a mocked ConfigReadable
-// 		mockedConfigReadable := &ConfigReadableMock{
-// 			GetHostFunc: func() string {
-// 				panic("mock out the GetHost method")
-// 			},
-// 			GetNamespaceFunc: func() string {
-// 				panic("mock out the GetNamespace method")
-// 			},
-// 			GetOperatorVersionFunc: func() integreatlyv1alpha1.OperatorVersion {
-// 				panic("mock out the GetOperatorVersion method")
-// 			},
-// 			GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
-// 				panic("mock out the GetProductName method")
-// 			},
-// 			GetProductVersionFunc: func() integreatlyv1alpha1.ProductVersion {
-// 				panic("mock out the GetProductVersion method")
-// 			},
-// 			GetWatchableCRDsFunc: func() []runtime.Object {
-// 				panic("mock out the GetWatchableCRDs method")
-// 			},
-// 			ReadFunc: func() ProductConfig {
-// 				panic("mock out the Read method")
-// 			},
-// 		}
+//         // make and configure a mocked ConfigReadable
+//         mockedConfigReadable := &ConfigReadableMock{
+//             GetHostFunc: func() string {
+// 	               panic("mock out the GetHost method")
+//             },
+//             GetNamespaceFunc: func() string {
+// 	               panic("mock out the GetNamespace method")
+//             },
+//             GetOperatorVersionFunc: func() v1alpha1.OperatorVersion {
+// 	               panic("mock out the GetOperatorVersion method")
+//             },
+//             GetProductNameFunc: func() v1alpha1.ProductName {
+// 	               panic("mock out the GetProductName method")
+//             },
+//             GetProductVersionFunc: func() v1alpha1.ProductVersion {
+// 	               panic("mock out the GetProductVersion method")
+//             },
+//             GetWatchableCRDsFunc: func() []runtime.Object {
+// 	               panic("mock out the GetWatchableCRDs method")
+//             },
+//             ReadFunc: func() ProductConfig {
+// 	               panic("mock out the Read method")
+//             },
+//         }
 //
-// 		// use mockedConfigReadable in code that requires ConfigReadable
-// 		// and then make assertions.
+//         // use mockedConfigReadable in code that requires ConfigReadable
+//         // and then make assertions.
 //
-// 	}
+//     }
 type ConfigReadableMock struct {
 	// GetHostFunc mocks the GetHost method.
 	GetHostFunc func() string
@@ -54,13 +64,13 @@ type ConfigReadableMock struct {
 	GetNamespaceFunc func() string
 
 	// GetOperatorVersionFunc mocks the GetOperatorVersion method.
-	GetOperatorVersionFunc func() integreatlyv1alpha1.OperatorVersion
+	GetOperatorVersionFunc func() v1alpha1.OperatorVersion
 
 	// GetProductNameFunc mocks the GetProductName method.
-	GetProductNameFunc func() integreatlyv1alpha1.ProductName
+	GetProductNameFunc func() v1alpha1.ProductName
 
 	// GetProductVersionFunc mocks the GetProductVersion method.
-	GetProductVersionFunc func() integreatlyv1alpha1.ProductVersion
+	GetProductVersionFunc func() v1alpha1.ProductVersion
 
 	// GetWatchableCRDsFunc mocks the GetWatchableCRDs method.
 	GetWatchableCRDsFunc func() []runtime.Object
@@ -92,13 +102,6 @@ type ConfigReadableMock struct {
 		Read []struct {
 		}
 	}
-	lockGetHost            sync.RWMutex
-	lockGetNamespace       sync.RWMutex
-	lockGetOperatorVersion sync.RWMutex
-	lockGetProductName     sync.RWMutex
-	lockGetProductVersion  sync.RWMutex
-	lockGetWatchableCRDs   sync.RWMutex
-	lockRead               sync.RWMutex
 }
 
 // GetHost calls GetHostFunc.
@@ -108,9 +111,9 @@ func (mock *ConfigReadableMock) GetHost() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetHost.Lock()
+	lockConfigReadableMockGetHost.Lock()
 	mock.calls.GetHost = append(mock.calls.GetHost, callInfo)
-	mock.lockGetHost.Unlock()
+	lockConfigReadableMockGetHost.Unlock()
 	return mock.GetHostFunc()
 }
 
@@ -121,9 +124,9 @@ func (mock *ConfigReadableMock) GetHostCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetHost.RLock()
+	lockConfigReadableMockGetHost.RLock()
 	calls = mock.calls.GetHost
-	mock.lockGetHost.RUnlock()
+	lockConfigReadableMockGetHost.RUnlock()
 	return calls
 }
 
@@ -134,9 +137,9 @@ func (mock *ConfigReadableMock) GetNamespace() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetNamespace.Lock()
+	lockConfigReadableMockGetNamespace.Lock()
 	mock.calls.GetNamespace = append(mock.calls.GetNamespace, callInfo)
-	mock.lockGetNamespace.Unlock()
+	lockConfigReadableMockGetNamespace.Unlock()
 	return mock.GetNamespaceFunc()
 }
 
@@ -147,22 +150,22 @@ func (mock *ConfigReadableMock) GetNamespaceCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetNamespace.RLock()
+	lockConfigReadableMockGetNamespace.RLock()
 	calls = mock.calls.GetNamespace
-	mock.lockGetNamespace.RUnlock()
+	lockConfigReadableMockGetNamespace.RUnlock()
 	return calls
 }
 
 // GetOperatorVersion calls GetOperatorVersionFunc.
-func (mock *ConfigReadableMock) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+func (mock *ConfigReadableMock) GetOperatorVersion() v1alpha1.OperatorVersion {
 	if mock.GetOperatorVersionFunc == nil {
 		panic("ConfigReadableMock.GetOperatorVersionFunc: method is nil but ConfigReadable.GetOperatorVersion was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetOperatorVersion.Lock()
+	lockConfigReadableMockGetOperatorVersion.Lock()
 	mock.calls.GetOperatorVersion = append(mock.calls.GetOperatorVersion, callInfo)
-	mock.lockGetOperatorVersion.Unlock()
+	lockConfigReadableMockGetOperatorVersion.Unlock()
 	return mock.GetOperatorVersionFunc()
 }
 
@@ -173,22 +176,22 @@ func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetOperatorVersion.RLock()
+	lockConfigReadableMockGetOperatorVersion.RLock()
 	calls = mock.calls.GetOperatorVersion
-	mock.lockGetOperatorVersion.RUnlock()
+	lockConfigReadableMockGetOperatorVersion.RUnlock()
 	return calls
 }
 
 // GetProductName calls GetProductNameFunc.
-func (mock *ConfigReadableMock) GetProductName() integreatlyv1alpha1.ProductName {
+func (mock *ConfigReadableMock) GetProductName() v1alpha1.ProductName {
 	if mock.GetProductNameFunc == nil {
 		panic("ConfigReadableMock.GetProductNameFunc: method is nil but ConfigReadable.GetProductName was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetProductName.Lock()
+	lockConfigReadableMockGetProductName.Lock()
 	mock.calls.GetProductName = append(mock.calls.GetProductName, callInfo)
-	mock.lockGetProductName.Unlock()
+	lockConfigReadableMockGetProductName.Unlock()
 	return mock.GetProductNameFunc()
 }
 
@@ -199,22 +202,22 @@ func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetProductName.RLock()
+	lockConfigReadableMockGetProductName.RLock()
 	calls = mock.calls.GetProductName
-	mock.lockGetProductName.RUnlock()
+	lockConfigReadableMockGetProductName.RUnlock()
 	return calls
 }
 
 // GetProductVersion calls GetProductVersionFunc.
-func (mock *ConfigReadableMock) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+func (mock *ConfigReadableMock) GetProductVersion() v1alpha1.ProductVersion {
 	if mock.GetProductVersionFunc == nil {
 		panic("ConfigReadableMock.GetProductVersionFunc: method is nil but ConfigReadable.GetProductVersion was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetProductVersion.Lock()
+	lockConfigReadableMockGetProductVersion.Lock()
 	mock.calls.GetProductVersion = append(mock.calls.GetProductVersion, callInfo)
-	mock.lockGetProductVersion.Unlock()
+	lockConfigReadableMockGetProductVersion.Unlock()
 	return mock.GetProductVersionFunc()
 }
 
@@ -225,9 +228,9 @@ func (mock *ConfigReadableMock) GetProductVersionCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetProductVersion.RLock()
+	lockConfigReadableMockGetProductVersion.RLock()
 	calls = mock.calls.GetProductVersion
-	mock.lockGetProductVersion.RUnlock()
+	lockConfigReadableMockGetProductVersion.RUnlock()
 	return calls
 }
 
@@ -238,9 +241,9 @@ func (mock *ConfigReadableMock) GetWatchableCRDs() []runtime.Object {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetWatchableCRDs.Lock()
+	lockConfigReadableMockGetWatchableCRDs.Lock()
 	mock.calls.GetWatchableCRDs = append(mock.calls.GetWatchableCRDs, callInfo)
-	mock.lockGetWatchableCRDs.Unlock()
+	lockConfigReadableMockGetWatchableCRDs.Unlock()
 	return mock.GetWatchableCRDsFunc()
 }
 
@@ -251,9 +254,9 @@ func (mock *ConfigReadableMock) GetWatchableCRDsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetWatchableCRDs.RLock()
+	lockConfigReadableMockGetWatchableCRDs.RLock()
 	calls = mock.calls.GetWatchableCRDs
-	mock.lockGetWatchableCRDs.RUnlock()
+	lockConfigReadableMockGetWatchableCRDs.RUnlock()
 	return calls
 }
 
@@ -264,9 +267,9 @@ func (mock *ConfigReadableMock) Read() ProductConfig {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockRead.Lock()
+	lockConfigReadableMockRead.Lock()
 	mock.calls.Read = append(mock.calls.Read, callInfo)
-	mock.lockRead.Unlock()
+	lockConfigReadableMockRead.Unlock()
 	return mock.ReadFunc()
 }
 
@@ -277,8 +280,8 @@ func (mock *ConfigReadableMock) ReadCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockRead.RLock()
+	lockConfigReadableMockRead.RLock()
 	calls = mock.calls.Read
-	mock.lockRead.RUnlock()
+	lockConfigReadableMockRead.RUnlock()
 	return calls
 }

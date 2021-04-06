@@ -5,10 +5,16 @@ package products
 
 import (
 	"context"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
+)
+
+var (
+	lockInterfaceMockGetPreflightObject sync.RWMutex
+	lockInterfaceMockReconcile          sync.RWMutex
+	lockInterfaceMockVerifyVersion      sync.RWMutex
 )
 
 // Ensure, that InterfaceMock does implement Interface.
@@ -17,34 +23,34 @@ var _ Interface = &InterfaceMock{}
 
 // InterfaceMock is a mock implementation of Interface.
 //
-// 	func TestSomethingThatUsesInterface(t *testing.T) {
+//     func TestSomethingThatUsesInterface(t *testing.T) {
 //
-// 		// make and configure a mocked Interface
-// 		mockedInterface := &InterfaceMock{
-// 			GetPreflightObjectFunc: func(ns string) runtime.Object {
-// 				panic("mock out the GetPreflightObject method")
-// 			},
-// 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-// 				panic("mock out the Reconcile method")
-// 			},
-// 			VerifyVersionFunc: func(installation *integreatlyv1alpha1.RHMI) bool {
-// 				panic("mock out the VerifyVersion method")
-// 			},
-// 		}
+//         // make and configure a mocked Interface
+//         mockedInterface := &InterfaceMock{
+//             GetPreflightObjectFunc: func(ns string) runtime.Object {
+// 	               panic("mock out the GetPreflightObject method")
+//             },
+//             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+// 	               panic("mock out the Reconcile method")
+//             },
+//             VerifyVersionFunc: func(installation *v1alpha1.RHMI) bool {
+// 	               panic("mock out the VerifyVersion method")
+//             },
+//         }
 //
-// 		// use mockedInterface in code that requires Interface
-// 		// and then make assertions.
+//         // use mockedInterface in code that requires Interface
+//         // and then make assertions.
 //
-// 	}
+//     }
 type InterfaceMock struct {
 	// GetPreflightObjectFunc mocks the GetPreflightObject method.
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// VerifyVersionFunc mocks the VerifyVersion method.
-	VerifyVersionFunc func(installation *integreatlyv1alpha1.RHMI) bool
+	VerifyVersionFunc func(installation *v1alpha1.RHMI) bool
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -58,21 +64,18 @@ type InterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Installation is the installation argument value.
-			Installation *integreatlyv1alpha1.RHMI
+			Installation *v1alpha1.RHMI
 			// Product is the product argument value.
-			Product *integreatlyv1alpha1.RHMIProductStatus
+			Product *v1alpha1.RHMIProductStatus
 			// ServerClient is the serverClient argument value.
-			ServerClient k8sclient.Client
+			ServerClient client.Client
 		}
 		// VerifyVersion holds details about calls to the VerifyVersion method.
 		VerifyVersion []struct {
 			// Installation is the installation argument value.
-			Installation *integreatlyv1alpha1.RHMI
+			Installation *v1alpha1.RHMI
 		}
 	}
-	lockGetPreflightObject sync.RWMutex
-	lockReconcile          sync.RWMutex
-	lockVerifyVersion      sync.RWMutex
 }
 
 // GetPreflightObject calls GetPreflightObjectFunc.
@@ -85,9 +88,9 @@ func (mock *InterfaceMock) GetPreflightObject(ns string) runtime.Object {
 	}{
 		Ns: ns,
 	}
-	mock.lockGetPreflightObject.Lock()
+	lockInterfaceMockGetPreflightObject.Lock()
 	mock.calls.GetPreflightObject = append(mock.calls.GetPreflightObject, callInfo)
-	mock.lockGetPreflightObject.Unlock()
+	lockInterfaceMockGetPreflightObject.Unlock()
 	return mock.GetPreflightObjectFunc(ns)
 }
 
@@ -100,31 +103,31 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 	var calls []struct {
 		Ns string
 	}
-	mock.lockGetPreflightObject.RLock()
+	lockInterfaceMockGetPreflightObject.RLock()
 	calls = mock.calls.GetPreflightObject
-	mock.lockGetPreflightObject.RUnlock()
+	lockInterfaceMockGetPreflightObject.RUnlock()
 	return calls
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		Installation *integreatlyv1alpha1.RHMI
-		Product      *integreatlyv1alpha1.RHMIProductStatus
-		ServerClient k8sclient.Client
+		Installation *v1alpha1.RHMI
+		Product      *v1alpha1.RHMIProductStatus
+		ServerClient client.Client
 	}{
 		Ctx:          ctx,
 		Installation: installation,
 		Product:      product,
 		ServerClient: serverClient,
 	}
-	mock.lockReconcile.Lock()
+	lockInterfaceMockReconcile.Lock()
 	mock.calls.Reconcile = append(mock.calls.Reconcile, callInfo)
-	mock.lockReconcile.Unlock()
+	lockInterfaceMockReconcile.Unlock()
 	return mock.ReconcileFunc(ctx, installation, product, serverClient)
 }
 
@@ -133,35 +136,35 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integrea
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
-	Installation *integreatlyv1alpha1.RHMI
-	Product      *integreatlyv1alpha1.RHMIProductStatus
-	ServerClient k8sclient.Client
+	Installation *v1alpha1.RHMI
+	Product      *v1alpha1.RHMIProductStatus
+	ServerClient client.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
-		Installation *integreatlyv1alpha1.RHMI
-		Product      *integreatlyv1alpha1.RHMIProductStatus
-		ServerClient k8sclient.Client
+		Installation *v1alpha1.RHMI
+		Product      *v1alpha1.RHMIProductStatus
+		ServerClient client.Client
 	}
-	mock.lockReconcile.RLock()
+	lockInterfaceMockReconcile.RLock()
 	calls = mock.calls.Reconcile
-	mock.lockReconcile.RUnlock()
+	lockInterfaceMockReconcile.RUnlock()
 	return calls
 }
 
 // VerifyVersion calls VerifyVersionFunc.
-func (mock *InterfaceMock) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+func (mock *InterfaceMock) VerifyVersion(installation *v1alpha1.RHMI) bool {
 	if mock.VerifyVersionFunc == nil {
 		panic("InterfaceMock.VerifyVersionFunc: method is nil but Interface.VerifyVersion was just called")
 	}
 	callInfo := struct {
-		Installation *integreatlyv1alpha1.RHMI
+		Installation *v1alpha1.RHMI
 	}{
 		Installation: installation,
 	}
-	mock.lockVerifyVersion.Lock()
+	lockInterfaceMockVerifyVersion.Lock()
 	mock.calls.VerifyVersion = append(mock.calls.VerifyVersion, callInfo)
-	mock.lockVerifyVersion.Unlock()
+	lockInterfaceMockVerifyVersion.Unlock()
 	return mock.VerifyVersionFunc(installation)
 }
 
@@ -169,13 +172,13 @@ func (mock *InterfaceMock) VerifyVersion(installation *integreatlyv1alpha1.RHMI)
 // Check the length with:
 //     len(mockedInterface.VerifyVersionCalls())
 func (mock *InterfaceMock) VerifyVersionCalls() []struct {
-	Installation *integreatlyv1alpha1.RHMI
+	Installation *v1alpha1.RHMI
 } {
 	var calls []struct {
-		Installation *integreatlyv1alpha1.RHMI
+		Installation *v1alpha1.RHMI
 	}
-	mock.lockVerifyVersion.RLock()
+	lockInterfaceMockVerifyVersion.RLock()
 	calls = mock.calls.VerifyVersion
-	mock.lockVerifyVersion.RUnlock()
+	lockInterfaceMockVerifyVersion.RUnlock()
 	return calls
 }

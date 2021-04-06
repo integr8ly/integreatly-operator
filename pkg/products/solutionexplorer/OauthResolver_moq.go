@@ -8,25 +8,29 @@ import (
 	"sync"
 )
 
+var (
+	lockOauthResolverMockGetOauthEndPoint sync.RWMutex
+)
+
 // Ensure, that OauthResolverMock does implement OauthResolver.
 // If this is not the case, regenerate this file with moq.
 var _ OauthResolver = &OauthResolverMock{}
 
 // OauthResolverMock is a mock implementation of OauthResolver.
 //
-// 	func TestSomethingThatUsesOauthResolver(t *testing.T) {
+//     func TestSomethingThatUsesOauthResolver(t *testing.T) {
 //
-// 		// make and configure a mocked OauthResolver
-// 		mockedOauthResolver := &OauthResolverMock{
-// 			GetOauthEndPointFunc: func() (*resources.OauthServerConfig, error) {
-// 				panic("mock out the GetOauthEndPoint method")
-// 			},
-// 		}
+//         // make and configure a mocked OauthResolver
+//         mockedOauthResolver := &OauthResolverMock{
+//             GetOauthEndPointFunc: func() (*resources.OauthServerConfig, error) {
+// 	               panic("mock out the GetOauthEndPoint method")
+//             },
+//         }
 //
-// 		// use mockedOauthResolver in code that requires OauthResolver
-// 		// and then make assertions.
+//         // use mockedOauthResolver in code that requires OauthResolver
+//         // and then make assertions.
 //
-// 	}
+//     }
 type OauthResolverMock struct {
 	// GetOauthEndPointFunc mocks the GetOauthEndPoint method.
 	GetOauthEndPointFunc func() (*resources.OauthServerConfig, error)
@@ -37,7 +41,6 @@ type OauthResolverMock struct {
 		GetOauthEndPoint []struct {
 		}
 	}
-	lockGetOauthEndPoint sync.RWMutex
 }
 
 // GetOauthEndPoint calls GetOauthEndPointFunc.
@@ -47,9 +50,9 @@ func (mock *OauthResolverMock) GetOauthEndPoint() (*resources.OauthServerConfig,
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetOauthEndPoint.Lock()
+	lockOauthResolverMockGetOauthEndPoint.Lock()
 	mock.calls.GetOauthEndPoint = append(mock.calls.GetOauthEndPoint, callInfo)
-	mock.lockGetOauthEndPoint.Unlock()
+	lockOauthResolverMockGetOauthEndPoint.Unlock()
 	return mock.GetOauthEndPointFunc()
 }
 
@@ -60,8 +63,8 @@ func (mock *OauthResolverMock) GetOauthEndPointCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetOauthEndPoint.RLock()
+	lockOauthResolverMockGetOauthEndPoint.RLock()
 	calls = mock.calls.GetOauthEndPoint
-	mock.lockGetOauthEndPoint.RUnlock()
+	lockOauthResolverMockGetOauthEndPoint.RUnlock()
 	return calls
 }

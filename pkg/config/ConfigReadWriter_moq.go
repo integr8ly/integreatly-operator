@@ -4,8 +4,36 @@
 package config
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"sync"
+)
+
+var (
+	lockConfigReadWriterMockGetBackupsSecretName        sync.RWMutex
+	lockConfigReadWriterMockGetGHOauthClientsSecretName sync.RWMutex
+	lockConfigReadWriterMockGetOauthClientsSecretName   sync.RWMutex
+	lockConfigReadWriterMockGetOperatorNamespace        sync.RWMutex
+	lockConfigReadWriterMockReadAMQOnline               sync.RWMutex
+	lockConfigReadWriterMockReadAMQStreams              sync.RWMutex
+	lockConfigReadWriterMockReadApicurioRegistry        sync.RWMutex
+	lockConfigReadWriterMockReadApicurito               sync.RWMutex
+	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
+	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
+	lockConfigReadWriterMockReadDataSync                sync.RWMutex
+	lockConfigReadWriterMockReadFuse                    sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
+	lockConfigReadWriterMockReadGrafana                 sync.RWMutex
+	lockConfigReadWriterMockReadMarin3r                 sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
+	lockConfigReadWriterMockReadMonitoringSpec          sync.RWMutex
+	lockConfigReadWriterMockReadProduct                 sync.RWMutex
+	lockConfigReadWriterMockReadRHSSO                   sync.RWMutex
+	lockConfigReadWriterMockReadRHSSOUser               sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer        sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale              sync.RWMutex
+	lockConfigReadWriterMockReadUps                     sync.RWMutex
+	lockConfigReadWriterMockWriteConfig                 sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct        sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -14,91 +42,91 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 
 // ConfigReadWriterMock is a mock implementation of ConfigReadWriter.
 //
-// 	func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
+//     func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
 //
-// 		// make and configure a mocked ConfigReadWriter
-// 		mockedConfigReadWriter := &ConfigReadWriterMock{
-// 			GetBackupsSecretNameFunc: func() string {
-// 				panic("mock out the GetBackupsSecretName method")
-// 			},
-// 			GetGHOauthClientsSecretNameFunc: func() string {
-// 				panic("mock out the GetGHOauthClientsSecretName method")
-// 			},
-// 			GetOauthClientsSecretNameFunc: func() string {
-// 				panic("mock out the GetOauthClientsSecretName method")
-// 			},
-// 			GetOperatorNamespaceFunc: func() string {
-// 				panic("mock out the GetOperatorNamespace method")
-// 			},
-// 			ReadAMQOnlineFunc: func() (*AMQOnline, error) {
-// 				panic("mock out the ReadAMQOnline method")
-// 			},
-// 			ReadAMQStreamsFunc: func() (*AMQStreams, error) {
-// 				panic("mock out the ReadAMQStreams method")
-// 			},
-// 			ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
-// 				panic("mock out the ReadApicurioRegistry method")
-// 			},
-// 			ReadApicuritoFunc: func() (*Apicurito, error) {
-// 				panic("mock out the ReadApicurito method")
-// 			},
-// 			ReadCloudResourcesFunc: func() (*CloudResources, error) {
-// 				panic("mock out the ReadCloudResources method")
-// 			},
-// 			ReadCodeReadyFunc: func() (*CodeReady, error) {
-// 				panic("mock out the ReadCodeReady method")
-// 			},
-// 			ReadDataSyncFunc: func() (*DataSync, error) {
-// 				panic("mock out the ReadDataSync method")
-// 			},
-// 			ReadFuseFunc: func() (*Fuse, error) {
-// 				panic("mock out the ReadFuse method")
-// 			},
-// 			ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
-// 				panic("mock out the ReadFuseOnOpenshift method")
-// 			},
-// 			ReadGrafanaFunc: func() (*Grafana, error) {
-// 				panic("mock out the ReadGrafana method")
-// 			},
-// 			ReadMarin3rFunc: func() (*Marin3r, error) {
-// 				panic("mock out the ReadMarin3r method")
-// 			},
-// 			ReadMonitoringFunc: func() (*Monitoring, error) {
-// 				panic("mock out the ReadMonitoring method")
-// 			},
-// 			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
-// 				panic("mock out the ReadMonitoringSpec method")
-// 			},
-// 			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
-// 				panic("mock out the ReadProduct method")
-// 			},
-// 			ReadRHSSOFunc: func() (*RHSSO, error) {
-// 				panic("mock out the ReadRHSSO method")
-// 			},
-// 			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
-// 				panic("mock out the ReadRHSSOUser method")
-// 			},
-// 			ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
-// 				panic("mock out the ReadSolutionExplorer method")
-// 			},
-// 			ReadThreeScaleFunc: func() (*ThreeScale, error) {
-// 				panic("mock out the ReadThreeScale method")
-// 			},
-// 			ReadUpsFunc: func() (*Ups, error) {
-// 				panic("mock out the ReadUps method")
-// 			},
-// 			WriteConfigFunc: func(config ConfigReadable) error {
-// 				panic("mock out the WriteConfig method")
-// 			},
-// 			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
-// 				panic("mock out the readConfigForProduct method")
-// 			},
-// 		}
+//         // make and configure a mocked ConfigReadWriter
+//         mockedConfigReadWriter := &ConfigReadWriterMock{
+//             GetBackupsSecretNameFunc: func() string {
+// 	               panic("mock out the GetBackupsSecretName method")
+//             },
+//             GetGHOauthClientsSecretNameFunc: func() string {
+// 	               panic("mock out the GetGHOauthClientsSecretName method")
+//             },
+//             GetOauthClientsSecretNameFunc: func() string {
+// 	               panic("mock out the GetOauthClientsSecretName method")
+//             },
+//             GetOperatorNamespaceFunc: func() string {
+// 	               panic("mock out the GetOperatorNamespace method")
+//             },
+//             ReadAMQOnlineFunc: func() (*AMQOnline, error) {
+// 	               panic("mock out the ReadAMQOnline method")
+//             },
+//             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
+// 	               panic("mock out the ReadAMQStreams method")
+//             },
+//             ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
+// 	               panic("mock out the ReadApicurioRegistry method")
+//             },
+//             ReadApicuritoFunc: func() (*Apicurito, error) {
+// 	               panic("mock out the ReadApicurito method")
+//             },
+//             ReadCloudResourcesFunc: func() (*CloudResources, error) {
+// 	               panic("mock out the ReadCloudResources method")
+//             },
+//             ReadCodeReadyFunc: func() (*CodeReady, error) {
+// 	               panic("mock out the ReadCodeReady method")
+//             },
+//             ReadDataSyncFunc: func() (*DataSync, error) {
+// 	               panic("mock out the ReadDataSync method")
+//             },
+//             ReadFuseFunc: func() (*Fuse, error) {
+// 	               panic("mock out the ReadFuse method")
+//             },
+//             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
+// 	               panic("mock out the ReadFuseOnOpenshift method")
+//             },
+//             ReadGrafanaFunc: func() (*Grafana, error) {
+// 	               panic("mock out the ReadGrafana method")
+//             },
+//             ReadMarin3rFunc: func() (*Marin3r, error) {
+// 	               panic("mock out the ReadMarin3r method")
+//             },
+//             ReadMonitoringFunc: func() (*Monitoring, error) {
+// 	               panic("mock out the ReadMonitoring method")
+//             },
+//             ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
+// 	               panic("mock out the ReadMonitoringSpec method")
+//             },
+//             ReadProductFunc: func(product v1alpha1.ProductName) (ConfigReadable, error) {
+// 	               panic("mock out the ReadProduct method")
+//             },
+//             ReadRHSSOFunc: func() (*RHSSO, error) {
+// 	               panic("mock out the ReadRHSSO method")
+//             },
+//             ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
+// 	               panic("mock out the ReadRHSSOUser method")
+//             },
+//             ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
+// 	               panic("mock out the ReadSolutionExplorer method")
+//             },
+//             ReadThreeScaleFunc: func() (*ThreeScale, error) {
+// 	               panic("mock out the ReadThreeScale method")
+//             },
+//             ReadUpsFunc: func() (*Ups, error) {
+// 	               panic("mock out the ReadUps method")
+//             },
+//             WriteConfigFunc: func(config ConfigReadable) error {
+// 	               panic("mock out the WriteConfig method")
+//             },
+//             readConfigForProductFunc: func(product v1alpha1.ProductName) (ProductConfig, error) {
+// 	               panic("mock out the readConfigForProduct method")
+//             },
+//         }
 //
-// 		// use mockedConfigReadWriter in code that requires ConfigReadWriter
-// 		// and then make assertions.
+//         // use mockedConfigReadWriter in code that requires ConfigReadWriter
+//         // and then make assertions.
 //
-// 	}
+//     }
 type ConfigReadWriterMock struct {
 	// GetBackupsSecretNameFunc mocks the GetBackupsSecretName method.
 	GetBackupsSecretNameFunc func() string
@@ -152,7 +180,7 @@ type ConfigReadWriterMock struct {
 	ReadMonitoringSpecFunc func() (*MonitoringSpec, error)
 
 	// ReadProductFunc mocks the ReadProduct method.
-	ReadProductFunc func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
+	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
 
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
@@ -173,7 +201,7 @@ type ConfigReadWriterMock struct {
 	WriteConfigFunc func(config ConfigReadable) error
 
 	// readConfigForProductFunc mocks the readConfigForProduct method.
-	readConfigForProductFunc func(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
+	readConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -231,7 +259,7 @@ type ConfigReadWriterMock struct {
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
 			// Product is the product argument value.
-			Product integreatlyv1alpha1.ProductName
+			Product v1alpha1.ProductName
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -256,34 +284,9 @@ type ConfigReadWriterMock struct {
 		// readConfigForProduct holds details about calls to the readConfigForProduct method.
 		readConfigForProduct []struct {
 			// Product is the product argument value.
-			Product integreatlyv1alpha1.ProductName
+			Product v1alpha1.ProductName
 		}
 	}
-	lockGetBackupsSecretName        sync.RWMutex
-	lockGetGHOauthClientsSecretName sync.RWMutex
-	lockGetOauthClientsSecretName   sync.RWMutex
-	lockGetOperatorNamespace        sync.RWMutex
-	lockReadAMQOnline               sync.RWMutex
-	lockReadAMQStreams              sync.RWMutex
-	lockReadApicurioRegistry        sync.RWMutex
-	lockReadApicurito               sync.RWMutex
-	lockReadCloudResources          sync.RWMutex
-	lockReadCodeReady               sync.RWMutex
-	lockReadDataSync                sync.RWMutex
-	lockReadFuse                    sync.RWMutex
-	lockReadFuseOnOpenshift         sync.RWMutex
-	lockReadGrafana                 sync.RWMutex
-	lockReadMarin3r                 sync.RWMutex
-	lockReadMonitoring              sync.RWMutex
-	lockReadMonitoringSpec          sync.RWMutex
-	lockReadProduct                 sync.RWMutex
-	lockReadRHSSO                   sync.RWMutex
-	lockReadRHSSOUser               sync.RWMutex
-	lockReadSolutionExplorer        sync.RWMutex
-	lockReadThreeScale              sync.RWMutex
-	lockReadUps                     sync.RWMutex
-	lockWriteConfig                 sync.RWMutex
-	lockreadConfigForProduct        sync.RWMutex
 }
 
 // GetBackupsSecretName calls GetBackupsSecretNameFunc.
@@ -293,9 +296,9 @@ func (mock *ConfigReadWriterMock) GetBackupsSecretName() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetBackupsSecretName.Lock()
+	lockConfigReadWriterMockGetBackupsSecretName.Lock()
 	mock.calls.GetBackupsSecretName = append(mock.calls.GetBackupsSecretName, callInfo)
-	mock.lockGetBackupsSecretName.Unlock()
+	lockConfigReadWriterMockGetBackupsSecretName.Unlock()
 	return mock.GetBackupsSecretNameFunc()
 }
 
@@ -306,9 +309,9 @@ func (mock *ConfigReadWriterMock) GetBackupsSecretNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetBackupsSecretName.RLock()
+	lockConfigReadWriterMockGetBackupsSecretName.RLock()
 	calls = mock.calls.GetBackupsSecretName
-	mock.lockGetBackupsSecretName.RUnlock()
+	lockConfigReadWriterMockGetBackupsSecretName.RUnlock()
 	return calls
 }
 
@@ -319,9 +322,9 @@ func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretName() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetGHOauthClientsSecretName.Lock()
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.Lock()
 	mock.calls.GetGHOauthClientsSecretName = append(mock.calls.GetGHOauthClientsSecretName, callInfo)
-	mock.lockGetGHOauthClientsSecretName.Unlock()
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.Unlock()
 	return mock.GetGHOauthClientsSecretNameFunc()
 }
 
@@ -332,9 +335,9 @@ func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetGHOauthClientsSecretName.RLock()
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.RLock()
 	calls = mock.calls.GetGHOauthClientsSecretName
-	mock.lockGetGHOauthClientsSecretName.RUnlock()
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.RUnlock()
 	return calls
 }
 
@@ -345,9 +348,9 @@ func (mock *ConfigReadWriterMock) GetOauthClientsSecretName() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetOauthClientsSecretName.Lock()
+	lockConfigReadWriterMockGetOauthClientsSecretName.Lock()
 	mock.calls.GetOauthClientsSecretName = append(mock.calls.GetOauthClientsSecretName, callInfo)
-	mock.lockGetOauthClientsSecretName.Unlock()
+	lockConfigReadWriterMockGetOauthClientsSecretName.Unlock()
 	return mock.GetOauthClientsSecretNameFunc()
 }
 
@@ -358,9 +361,9 @@ func (mock *ConfigReadWriterMock) GetOauthClientsSecretNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetOauthClientsSecretName.RLock()
+	lockConfigReadWriterMockGetOauthClientsSecretName.RLock()
 	calls = mock.calls.GetOauthClientsSecretName
-	mock.lockGetOauthClientsSecretName.RUnlock()
+	lockConfigReadWriterMockGetOauthClientsSecretName.RUnlock()
 	return calls
 }
 
@@ -371,9 +374,9 @@ func (mock *ConfigReadWriterMock) GetOperatorNamespace() string {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGetOperatorNamespace.Lock()
+	lockConfigReadWriterMockGetOperatorNamespace.Lock()
 	mock.calls.GetOperatorNamespace = append(mock.calls.GetOperatorNamespace, callInfo)
-	mock.lockGetOperatorNamespace.Unlock()
+	lockConfigReadWriterMockGetOperatorNamespace.Unlock()
 	return mock.GetOperatorNamespaceFunc()
 }
 
@@ -384,9 +387,9 @@ func (mock *ConfigReadWriterMock) GetOperatorNamespaceCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGetOperatorNamespace.RLock()
+	lockConfigReadWriterMockGetOperatorNamespace.RLock()
 	calls = mock.calls.GetOperatorNamespace
-	mock.lockGetOperatorNamespace.RUnlock()
+	lockConfigReadWriterMockGetOperatorNamespace.RUnlock()
 	return calls
 }
 
@@ -397,9 +400,9 @@ func (mock *ConfigReadWriterMock) ReadAMQOnline() (*AMQOnline, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadAMQOnline.Lock()
+	lockConfigReadWriterMockReadAMQOnline.Lock()
 	mock.calls.ReadAMQOnline = append(mock.calls.ReadAMQOnline, callInfo)
-	mock.lockReadAMQOnline.Unlock()
+	lockConfigReadWriterMockReadAMQOnline.Unlock()
 	return mock.ReadAMQOnlineFunc()
 }
 
@@ -410,9 +413,9 @@ func (mock *ConfigReadWriterMock) ReadAMQOnlineCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadAMQOnline.RLock()
+	lockConfigReadWriterMockReadAMQOnline.RLock()
 	calls = mock.calls.ReadAMQOnline
-	mock.lockReadAMQOnline.RUnlock()
+	lockConfigReadWriterMockReadAMQOnline.RUnlock()
 	return calls
 }
 
@@ -423,9 +426,9 @@ func (mock *ConfigReadWriterMock) ReadAMQStreams() (*AMQStreams, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadAMQStreams.Lock()
+	lockConfigReadWriterMockReadAMQStreams.Lock()
 	mock.calls.ReadAMQStreams = append(mock.calls.ReadAMQStreams, callInfo)
-	mock.lockReadAMQStreams.Unlock()
+	lockConfigReadWriterMockReadAMQStreams.Unlock()
 	return mock.ReadAMQStreamsFunc()
 }
 
@@ -436,9 +439,9 @@ func (mock *ConfigReadWriterMock) ReadAMQStreamsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadAMQStreams.RLock()
+	lockConfigReadWriterMockReadAMQStreams.RLock()
 	calls = mock.calls.ReadAMQStreams
-	mock.lockReadAMQStreams.RUnlock()
+	lockConfigReadWriterMockReadAMQStreams.RUnlock()
 	return calls
 }
 
@@ -449,9 +452,9 @@ func (mock *ConfigReadWriterMock) ReadApicurioRegistry() (*ApicurioRegistry, err
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadApicurioRegistry.Lock()
+	lockConfigReadWriterMockReadApicurioRegistry.Lock()
 	mock.calls.ReadApicurioRegistry = append(mock.calls.ReadApicurioRegistry, callInfo)
-	mock.lockReadApicurioRegistry.Unlock()
+	lockConfigReadWriterMockReadApicurioRegistry.Unlock()
 	return mock.ReadApicurioRegistryFunc()
 }
 
@@ -462,9 +465,9 @@ func (mock *ConfigReadWriterMock) ReadApicurioRegistryCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadApicurioRegistry.RLock()
+	lockConfigReadWriterMockReadApicurioRegistry.RLock()
 	calls = mock.calls.ReadApicurioRegistry
-	mock.lockReadApicurioRegistry.RUnlock()
+	lockConfigReadWriterMockReadApicurioRegistry.RUnlock()
 	return calls
 }
 
@@ -475,9 +478,9 @@ func (mock *ConfigReadWriterMock) ReadApicurito() (*Apicurito, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadApicurito.Lock()
+	lockConfigReadWriterMockReadApicurito.Lock()
 	mock.calls.ReadApicurito = append(mock.calls.ReadApicurito, callInfo)
-	mock.lockReadApicurito.Unlock()
+	lockConfigReadWriterMockReadApicurito.Unlock()
 	return mock.ReadApicuritoFunc()
 }
 
@@ -488,9 +491,9 @@ func (mock *ConfigReadWriterMock) ReadApicuritoCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadApicurito.RLock()
+	lockConfigReadWriterMockReadApicurito.RLock()
 	calls = mock.calls.ReadApicurito
-	mock.lockReadApicurito.RUnlock()
+	lockConfigReadWriterMockReadApicurito.RUnlock()
 	return calls
 }
 
@@ -501,9 +504,9 @@ func (mock *ConfigReadWriterMock) ReadCloudResources() (*CloudResources, error) 
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadCloudResources.Lock()
+	lockConfigReadWriterMockReadCloudResources.Lock()
 	mock.calls.ReadCloudResources = append(mock.calls.ReadCloudResources, callInfo)
-	mock.lockReadCloudResources.Unlock()
+	lockConfigReadWriterMockReadCloudResources.Unlock()
 	return mock.ReadCloudResourcesFunc()
 }
 
@@ -514,9 +517,9 @@ func (mock *ConfigReadWriterMock) ReadCloudResourcesCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadCloudResources.RLock()
+	lockConfigReadWriterMockReadCloudResources.RLock()
 	calls = mock.calls.ReadCloudResources
-	mock.lockReadCloudResources.RUnlock()
+	lockConfigReadWriterMockReadCloudResources.RUnlock()
 	return calls
 }
 
@@ -527,9 +530,9 @@ func (mock *ConfigReadWriterMock) ReadCodeReady() (*CodeReady, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadCodeReady.Lock()
+	lockConfigReadWriterMockReadCodeReady.Lock()
 	mock.calls.ReadCodeReady = append(mock.calls.ReadCodeReady, callInfo)
-	mock.lockReadCodeReady.Unlock()
+	lockConfigReadWriterMockReadCodeReady.Unlock()
 	return mock.ReadCodeReadyFunc()
 }
 
@@ -540,9 +543,9 @@ func (mock *ConfigReadWriterMock) ReadCodeReadyCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadCodeReady.RLock()
+	lockConfigReadWriterMockReadCodeReady.RLock()
 	calls = mock.calls.ReadCodeReady
-	mock.lockReadCodeReady.RUnlock()
+	lockConfigReadWriterMockReadCodeReady.RUnlock()
 	return calls
 }
 
@@ -553,9 +556,9 @@ func (mock *ConfigReadWriterMock) ReadDataSync() (*DataSync, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadDataSync.Lock()
+	lockConfigReadWriterMockReadDataSync.Lock()
 	mock.calls.ReadDataSync = append(mock.calls.ReadDataSync, callInfo)
-	mock.lockReadDataSync.Unlock()
+	lockConfigReadWriterMockReadDataSync.Unlock()
 	return mock.ReadDataSyncFunc()
 }
 
@@ -566,9 +569,9 @@ func (mock *ConfigReadWriterMock) ReadDataSyncCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadDataSync.RLock()
+	lockConfigReadWriterMockReadDataSync.RLock()
 	calls = mock.calls.ReadDataSync
-	mock.lockReadDataSync.RUnlock()
+	lockConfigReadWriterMockReadDataSync.RUnlock()
 	return calls
 }
 
@@ -579,9 +582,9 @@ func (mock *ConfigReadWriterMock) ReadFuse() (*Fuse, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadFuse.Lock()
+	lockConfigReadWriterMockReadFuse.Lock()
 	mock.calls.ReadFuse = append(mock.calls.ReadFuse, callInfo)
-	mock.lockReadFuse.Unlock()
+	lockConfigReadWriterMockReadFuse.Unlock()
 	return mock.ReadFuseFunc()
 }
 
@@ -592,9 +595,9 @@ func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadFuse.RLock()
+	lockConfigReadWriterMockReadFuse.RLock()
 	calls = mock.calls.ReadFuse
-	mock.lockReadFuse.RUnlock()
+	lockConfigReadWriterMockReadFuse.RUnlock()
 	return calls
 }
 
@@ -605,9 +608,9 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshift() (*FuseOnOpenshift, error
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadFuseOnOpenshift.Lock()
+	lockConfigReadWriterMockReadFuseOnOpenshift.Lock()
 	mock.calls.ReadFuseOnOpenshift = append(mock.calls.ReadFuseOnOpenshift, callInfo)
-	mock.lockReadFuseOnOpenshift.Unlock()
+	lockConfigReadWriterMockReadFuseOnOpenshift.Unlock()
 	return mock.ReadFuseOnOpenshiftFunc()
 }
 
@@ -618,9 +621,9 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadFuseOnOpenshift.RLock()
+	lockConfigReadWriterMockReadFuseOnOpenshift.RLock()
 	calls = mock.calls.ReadFuseOnOpenshift
-	mock.lockReadFuseOnOpenshift.RUnlock()
+	lockConfigReadWriterMockReadFuseOnOpenshift.RUnlock()
 	return calls
 }
 
@@ -631,9 +634,9 @@ func (mock *ConfigReadWriterMock) ReadGrafana() (*Grafana, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadGrafana.Lock()
+	lockConfigReadWriterMockReadGrafana.Lock()
 	mock.calls.ReadGrafana = append(mock.calls.ReadGrafana, callInfo)
-	mock.lockReadGrafana.Unlock()
+	lockConfigReadWriterMockReadGrafana.Unlock()
 	return mock.ReadGrafanaFunc()
 }
 
@@ -644,9 +647,9 @@ func (mock *ConfigReadWriterMock) ReadGrafanaCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadGrafana.RLock()
+	lockConfigReadWriterMockReadGrafana.RLock()
 	calls = mock.calls.ReadGrafana
-	mock.lockReadGrafana.RUnlock()
+	lockConfigReadWriterMockReadGrafana.RUnlock()
 	return calls
 }
 
@@ -657,9 +660,9 @@ func (mock *ConfigReadWriterMock) ReadMarin3r() (*Marin3r, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadMarin3r.Lock()
+	lockConfigReadWriterMockReadMarin3r.Lock()
 	mock.calls.ReadMarin3r = append(mock.calls.ReadMarin3r, callInfo)
-	mock.lockReadMarin3r.Unlock()
+	lockConfigReadWriterMockReadMarin3r.Unlock()
 	return mock.ReadMarin3rFunc()
 }
 
@@ -670,9 +673,9 @@ func (mock *ConfigReadWriterMock) ReadMarin3rCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadMarin3r.RLock()
+	lockConfigReadWriterMockReadMarin3r.RLock()
 	calls = mock.calls.ReadMarin3r
-	mock.lockReadMarin3r.RUnlock()
+	lockConfigReadWriterMockReadMarin3r.RUnlock()
 	return calls
 }
 
@@ -683,9 +686,9 @@ func (mock *ConfigReadWriterMock) ReadMonitoring() (*Monitoring, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadMonitoring.Lock()
+	lockConfigReadWriterMockReadMonitoring.Lock()
 	mock.calls.ReadMonitoring = append(mock.calls.ReadMonitoring, callInfo)
-	mock.lockReadMonitoring.Unlock()
+	lockConfigReadWriterMockReadMonitoring.Unlock()
 	return mock.ReadMonitoringFunc()
 }
 
@@ -696,9 +699,9 @@ func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadMonitoring.RLock()
+	lockConfigReadWriterMockReadMonitoring.RLock()
 	calls = mock.calls.ReadMonitoring
-	mock.lockReadMonitoring.RUnlock()
+	lockConfigReadWriterMockReadMonitoring.RUnlock()
 	return calls
 }
 
@@ -709,9 +712,9 @@ func (mock *ConfigReadWriterMock) ReadMonitoringSpec() (*MonitoringSpec, error) 
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadMonitoringSpec.Lock()
+	lockConfigReadWriterMockReadMonitoringSpec.Lock()
 	mock.calls.ReadMonitoringSpec = append(mock.calls.ReadMonitoringSpec, callInfo)
-	mock.lockReadMonitoringSpec.Unlock()
+	lockConfigReadWriterMockReadMonitoringSpec.Unlock()
 	return mock.ReadMonitoringSpecFunc()
 }
 
@@ -722,25 +725,25 @@ func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadMonitoringSpec.RLock()
+	lockConfigReadWriterMockReadMonitoringSpec.RLock()
 	calls = mock.calls.ReadMonitoringSpec
-	mock.lockReadMonitoringSpec.RUnlock()
+	lockConfigReadWriterMockReadMonitoringSpec.RUnlock()
 	return calls
 }
 
 // ReadProduct calls ReadProductFunc.
-func (mock *ConfigReadWriterMock) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
+func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
 	if mock.ReadProductFunc == nil {
 		panic("ConfigReadWriterMock.ReadProductFunc: method is nil but ConfigReadWriter.ReadProduct was just called")
 	}
 	callInfo := struct {
-		Product integreatlyv1alpha1.ProductName
+		Product v1alpha1.ProductName
 	}{
 		Product: product,
 	}
-	mock.lockReadProduct.Lock()
+	lockConfigReadWriterMockReadProduct.Lock()
 	mock.calls.ReadProduct = append(mock.calls.ReadProduct, callInfo)
-	mock.lockReadProduct.Unlock()
+	lockConfigReadWriterMockReadProduct.Unlock()
 	return mock.ReadProductFunc(product)
 }
 
@@ -748,14 +751,14 @@ func (mock *ConfigReadWriterMock) ReadProduct(product integreatlyv1alpha1.Produc
 // Check the length with:
 //     len(mockedConfigReadWriter.ReadProductCalls())
 func (mock *ConfigReadWriterMock) ReadProductCalls() []struct {
-	Product integreatlyv1alpha1.ProductName
+	Product v1alpha1.ProductName
 } {
 	var calls []struct {
-		Product integreatlyv1alpha1.ProductName
+		Product v1alpha1.ProductName
 	}
-	mock.lockReadProduct.RLock()
+	lockConfigReadWriterMockReadProduct.RLock()
 	calls = mock.calls.ReadProduct
-	mock.lockReadProduct.RUnlock()
+	lockConfigReadWriterMockReadProduct.RUnlock()
 	return calls
 }
 
@@ -766,9 +769,9 @@ func (mock *ConfigReadWriterMock) ReadRHSSO() (*RHSSO, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadRHSSO.Lock()
+	lockConfigReadWriterMockReadRHSSO.Lock()
 	mock.calls.ReadRHSSO = append(mock.calls.ReadRHSSO, callInfo)
-	mock.lockReadRHSSO.Unlock()
+	lockConfigReadWriterMockReadRHSSO.Unlock()
 	return mock.ReadRHSSOFunc()
 }
 
@@ -779,9 +782,9 @@ func (mock *ConfigReadWriterMock) ReadRHSSOCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadRHSSO.RLock()
+	lockConfigReadWriterMockReadRHSSO.RLock()
 	calls = mock.calls.ReadRHSSO
-	mock.lockReadRHSSO.RUnlock()
+	lockConfigReadWriterMockReadRHSSO.RUnlock()
 	return calls
 }
 
@@ -792,9 +795,9 @@ func (mock *ConfigReadWriterMock) ReadRHSSOUser() (*RHSSOUser, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadRHSSOUser.Lock()
+	lockConfigReadWriterMockReadRHSSOUser.Lock()
 	mock.calls.ReadRHSSOUser = append(mock.calls.ReadRHSSOUser, callInfo)
-	mock.lockReadRHSSOUser.Unlock()
+	lockConfigReadWriterMockReadRHSSOUser.Unlock()
 	return mock.ReadRHSSOUserFunc()
 }
 
@@ -805,9 +808,9 @@ func (mock *ConfigReadWriterMock) ReadRHSSOUserCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadRHSSOUser.RLock()
+	lockConfigReadWriterMockReadRHSSOUser.RLock()
 	calls = mock.calls.ReadRHSSOUser
-	mock.lockReadRHSSOUser.RUnlock()
+	lockConfigReadWriterMockReadRHSSOUser.RUnlock()
 	return calls
 }
 
@@ -818,9 +821,9 @@ func (mock *ConfigReadWriterMock) ReadSolutionExplorer() (*SolutionExplorer, err
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadSolutionExplorer.Lock()
+	lockConfigReadWriterMockReadSolutionExplorer.Lock()
 	mock.calls.ReadSolutionExplorer = append(mock.calls.ReadSolutionExplorer, callInfo)
-	mock.lockReadSolutionExplorer.Unlock()
+	lockConfigReadWriterMockReadSolutionExplorer.Unlock()
 	return mock.ReadSolutionExplorerFunc()
 }
 
@@ -831,9 +834,9 @@ func (mock *ConfigReadWriterMock) ReadSolutionExplorerCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadSolutionExplorer.RLock()
+	lockConfigReadWriterMockReadSolutionExplorer.RLock()
 	calls = mock.calls.ReadSolutionExplorer
-	mock.lockReadSolutionExplorer.RUnlock()
+	lockConfigReadWriterMockReadSolutionExplorer.RUnlock()
 	return calls
 }
 
@@ -844,9 +847,9 @@ func (mock *ConfigReadWriterMock) ReadThreeScale() (*ThreeScale, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadThreeScale.Lock()
+	lockConfigReadWriterMockReadThreeScale.Lock()
 	mock.calls.ReadThreeScale = append(mock.calls.ReadThreeScale, callInfo)
-	mock.lockReadThreeScale.Unlock()
+	lockConfigReadWriterMockReadThreeScale.Unlock()
 	return mock.ReadThreeScaleFunc()
 }
 
@@ -857,9 +860,9 @@ func (mock *ConfigReadWriterMock) ReadThreeScaleCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadThreeScale.RLock()
+	lockConfigReadWriterMockReadThreeScale.RLock()
 	calls = mock.calls.ReadThreeScale
-	mock.lockReadThreeScale.RUnlock()
+	lockConfigReadWriterMockReadThreeScale.RUnlock()
 	return calls
 }
 
@@ -870,9 +873,9 @@ func (mock *ConfigReadWriterMock) ReadUps() (*Ups, error) {
 	}
 	callInfo := struct {
 	}{}
-	mock.lockReadUps.Lock()
+	lockConfigReadWriterMockReadUps.Lock()
 	mock.calls.ReadUps = append(mock.calls.ReadUps, callInfo)
-	mock.lockReadUps.Unlock()
+	lockConfigReadWriterMockReadUps.Unlock()
 	return mock.ReadUpsFunc()
 }
 
@@ -883,9 +886,9 @@ func (mock *ConfigReadWriterMock) ReadUpsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockReadUps.RLock()
+	lockConfigReadWriterMockReadUps.RLock()
 	calls = mock.calls.ReadUps
-	mock.lockReadUps.RUnlock()
+	lockConfigReadWriterMockReadUps.RUnlock()
 	return calls
 }
 
@@ -899,9 +902,9 @@ func (mock *ConfigReadWriterMock) WriteConfig(config ConfigReadable) error {
 	}{
 		Config: config,
 	}
-	mock.lockWriteConfig.Lock()
+	lockConfigReadWriterMockWriteConfig.Lock()
 	mock.calls.WriteConfig = append(mock.calls.WriteConfig, callInfo)
-	mock.lockWriteConfig.Unlock()
+	lockConfigReadWriterMockWriteConfig.Unlock()
 	return mock.WriteConfigFunc(config)
 }
 
@@ -914,25 +917,25 @@ func (mock *ConfigReadWriterMock) WriteConfigCalls() []struct {
 	var calls []struct {
 		Config ConfigReadable
 	}
-	mock.lockWriteConfig.RLock()
+	lockConfigReadWriterMockWriteConfig.RLock()
 	calls = mock.calls.WriteConfig
-	mock.lockWriteConfig.RUnlock()
+	lockConfigReadWriterMockWriteConfig.RUnlock()
 	return calls
 }
 
 // readConfigForProduct calls readConfigForProductFunc.
-func (mock *ConfigReadWriterMock) readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
+func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
 	if mock.readConfigForProductFunc == nil {
 		panic("ConfigReadWriterMock.readConfigForProductFunc: method is nil but ConfigReadWriter.readConfigForProduct was just called")
 	}
 	callInfo := struct {
-		Product integreatlyv1alpha1.ProductName
+		Product v1alpha1.ProductName
 	}{
 		Product: product,
 	}
-	mock.lockreadConfigForProduct.Lock()
+	lockConfigReadWriterMockreadConfigForProduct.Lock()
 	mock.calls.readConfigForProduct = append(mock.calls.readConfigForProduct, callInfo)
-	mock.lockreadConfigForProduct.Unlock()
+	lockConfigReadWriterMockreadConfigForProduct.Unlock()
 	return mock.readConfigForProductFunc(product)
 }
 
@@ -940,13 +943,13 @@ func (mock *ConfigReadWriterMock) readConfigForProduct(product integreatlyv1alph
 // Check the length with:
 //     len(mockedConfigReadWriter.readConfigForProductCalls())
 func (mock *ConfigReadWriterMock) readConfigForProductCalls() []struct {
-	Product integreatlyv1alpha1.ProductName
+	Product v1alpha1.ProductName
 } {
 	var calls []struct {
-		Product integreatlyv1alpha1.ProductName
+		Product v1alpha1.ProductName
 	}
-	mock.lockreadConfigForProduct.RLock()
+	lockConfigReadWriterMockreadConfigForProduct.RLock()
 	calls = mock.calls.readConfigForProduct
-	mock.lockreadConfigForProduct.RUnlock()
+	lockConfigReadWriterMockreadConfigForProduct.RUnlock()
 	return calls
 }
