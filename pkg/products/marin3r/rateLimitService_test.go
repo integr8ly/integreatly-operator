@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -11,11 +12,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 )
+
+
 
 func TestRateLimitService(t *testing.T) {
 	scheme := newScheme()
@@ -23,9 +27,10 @@ func TestRateLimitService(t *testing.T) {
 	scenarios := []struct {
 		Name       string
 		Reconciler *RateLimitServiceReconciler
+		ProductConfig sku.ProductConfig
 		InitObjs   []runtime.Object
 		Assert     func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
-	}{
+		}{
 		{
 			Name: "Service deployed without metrics",
 			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
@@ -33,9 +38,14 @@ func TestRateLimitService(t *testing.T) {
 				RequestsPerUnit: 1,
 			},
 				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
+			ProductConfig: &sku.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "ratelimit-redis",
 						Namespace: "redhat-test-marin3r",
 					},
@@ -96,7 +106,7 @@ func TestRateLimitService(t *testing.T) {
 			Name: "Service deployed with metrics",
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "ratelimit-redis",
 						Namespace: "redhat-test-marin3r",
 					},
@@ -118,6 +128,11 @@ func TestRateLimitService(t *testing.T) {
 					Host: "test-host",
 					Port: "9092",
 				}),
+			ProductConfig: &sku.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
@@ -155,6 +170,11 @@ func TestRateLimitService(t *testing.T) {
 				RequestsPerUnit: 1,
 			},
 				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
+			ProductConfig: &sku.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseAwaitingComponents),
@@ -171,7 +191,7 @@ func TestRateLimitService(t *testing.T) {
 			Name: "Pod priority set",
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "ratelimit-redis",
 						Namespace: "redhat-test-marin3r",
 					},
@@ -197,6 +217,11 @@ func TestRateLimitService(t *testing.T) {
 					Host: "test-host",
 					Port: "9092",
 				}),
+			ProductConfig: &sku.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
@@ -213,7 +238,7 @@ func TestRateLimitService(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(scheme, scenario.InitObjs...)
-			phase, err := scenario.Reconciler.ReconcileRateLimitService(context.TODO(), client)
+			phase, err := scenario.Reconciler.ReconcileRateLimitService(context.TODO(), client, scenario.ProductConfig)
 
 			if err := scenario.Assert(client, phase, err); err != nil {
 				t.Error(err)
