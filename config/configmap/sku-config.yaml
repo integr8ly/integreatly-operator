@@ -52,16 +52,16 @@ data:
                           }
                       }
                   },
-                  "keycloak": {
+                  "rhssouser": {
                       "replicas": 3,
                       "resources": {
                           "requests": {
-                              "cpu": 0.75,
-                              "memory": 1500
+                              "cpu": 0.70,
+                              "memory": 1000
                           },
                           "limits": {
-                              "cpu": 0.75,
-                              "memory": 1500
+                              "cpu": 0.70,
+                              "memory": 1000
                           }
                       }
                   },
@@ -129,16 +129,16 @@ data:
                       }
                   }
               },
-              "keycloak": {
+              "rhssouser": {
                   "replicas": 3,
                   "resources": {
                       "requests": {
                           "cpu": 0.75,
-                          "memory": 1500
+                          "memory": "1500Mi"
                       },
                       "limits": {
                           "cpu": 0.75,
-                          "memory": 1500
+                          "memory": "1500Mi"
                       }
                   }
               },
@@ -204,7 +204,7 @@ data:
                       }
                   }
               },
-              "keycloak": {
+              "rhssouser": {
                   "replicas": 1,
                   "resources": {
                       "requests": {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsv12 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +23,7 @@ const (
 	BackendWorkerName     = "backend_worker"
 	ApicastProductionName = "apicast_production"
 	ApicastStagingName    = "apicast_staging"
-	KeycloakName          = "keycloak"
+	KeycloakName          = "rhssouser"
 )
 
 type SKU struct {
@@ -145,6 +146,7 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 
 	var replicas *int32
 	var podTemplate *v13.PodTemplateSpec
+	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
 
 	switch t := obj.(type) {
 	case *appsv1.DeploymentConfig:
@@ -159,12 +161,18 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 		replicas = t.Spec.Replicas
 		podTemplate = &t.Spec.Template
 		break
-
+	case *keycloak.Keycloak:
+		if p.sku.isUpdated || t.Spec.Instances < int(configReplicas) {
+			t.Spec.Instances = int(configReplicas)
+		}
+		resources := p.resourceConfigs[KeycloakName].Resources
+		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Requests, resources.Requests)
+		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Limits, resources.Limits)
+		return nil
 	default:
 		return errors.New(fmt.Sprintf("sku configuration can only be applied to Deployments, StatefulSets or Deployment Configs, found %s", reflect.TypeOf(obj)))
 	}
 
-	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
 	if p.sku.isUpdated || *replicas < configReplicas {
 		*replicas = configReplicas
 	}
@@ -190,15 +198,16 @@ func (p AProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string
 }
 
 func (p AProductConfig) mutateResources(pod, cfg v13.ResourceList) {
-
 	podcpu := pod[v13.ResourceCPU]
 	//Cmp returns -1 if the quantity is less than y (passed value) so if podcpu is less than cfg cpu
 	if p.sku.isUpdated || podcpu.Cmp(cfg[v13.ResourceCPU]) == -1 || podcpu.IsZero() {
-		pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
+		quantity := cfg[v13.ResourceCPU]
+		pod[v13.ResourceCPU] = resource.MustParse(quantity.String())
 	}
 	podmem := pod[v13.ResourceMemory]
 	//Cmp returns -1 if the quantity is less than y (passed value) so if podmem is less than cfg memory
 	if p.sku.isUpdated || podmem.Cmp(cfg[v13.ResourceMemory]) == -1 || podmem.IsZero() {
-		pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
+		quantity := cfg[v13.ResourceMemory]
+		pod[v13.ResourceMemory] = resource.MustParse(quantity.String())
 	}
 }
