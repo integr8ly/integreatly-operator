@@ -6,7 +6,7 @@ data:
   sku-configs: |-
     [
     {
-              "name": "TWENTY_MILLION_SKU",
+              "name": "20",
               "rate-limiting": {
                   "unit": "minute",
                   "requests_per_unit": 1389,
@@ -81,7 +81,7 @@ data:
               }
           },
        {
-          "name": "FIVE_MILLION_SKU",
+          "name": "5",
           "rate-limiting": {
               "unit": "minute",
               "requests_per_unit": 347,
@@ -156,7 +156,7 @@ data:
           }
       },
       {
-          "name": "DEV_SKU",
+          "name": "1",
           "rate-limiting": {
               "unit": "minute",
               "requests_per_unit": 20,
