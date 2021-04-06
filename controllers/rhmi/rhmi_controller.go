@@ -1082,7 +1082,7 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
 	isSKUUpdated := false
-	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "add-managed-api-service")
+	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "addon-managed-api-service")
 	if err != nil {
 		return errors.Wrap(err, "Error checking for SKU secret")
 	}

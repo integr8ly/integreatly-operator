@@ -13,7 +13,7 @@ OPERATOR_SDK_VERSION=1.2.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
-SKU ?= "DEV_SKU"
+QUOTA ?= "1"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -364,7 +364,7 @@ cluster/prepare/ratelimits:
 cluster/prepare/sku:
 	@-oc apply -n $(NAMESPACE) -f config/configmap/sku-config.yaml
 	@-oc delete  -n $(NAMESPACE) secret addon-managed-api-service-parameters
-	@-oc process -n $(NAMESPACE) SKU=$(SKU) -f config/secrets/sku-secret.yaml | oc apply -f -
+	@-oc process -n $(NAMESPACE) QUOTA=$(QUOTA) -f config/secrets/sku-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/delorean
 cluster/prepare/delorean: cluster/prepare/delorean/pullsecret

@@ -143,10 +143,6 @@ func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 }
 
 func (p AProductConfig) Configure(obj metav1.Object) error {
-	// if isUpdated is false return as we don't need to do any updates
-	if p.sku.isUpdated == false {
-		return nil
-	}
 
 	var replicas *int32
 	var podTemplate *v13.PodTemplateSpec
@@ -170,7 +166,7 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
-	if *replicas < configReplicas {
+	if p.sku.isUpdated || *replicas < configReplicas {
 		*replicas = configReplicas
 	}
 	p.mutate(podTemplate, obj.GetName())
@@ -186,15 +182,24 @@ func (p AProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string
 		if container.Resources.Limits == nil {
 			podTemplateSpec.Spec.Containers[i].Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
+		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
 		if container.Resources.Requests == nil {
 			podTemplateSpec.Spec.Containers[i].Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
 		}
-		mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
+		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
 	}
 }
 
-func mutateResources(pod, cfg v13.ResourceList) {
-	pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
-	pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
+func (p AProductConfig) mutateResources(pod, cfg v13.ResourceList) {
+
+	podcpu := pod[v13.ResourceCPU]
+	//Cmp returns -1 if the quantity is less than y (passed value) so if podcpu is less than cfg cpu
+	if p.sku.isUpdated || podcpu.Cmp(cfg[v13.ResourceCPU]) == -1 || podcpu.IsZero() {
+		pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
+	}
+	podmem := pod[v13.ResourceMemory]
+	//Cmp returns -1 if the quantity is less than y (passed value) so if podmem is less than cfg memory
+	if p.sku.isUpdated || podmem.Cmp(cfg[v13.ResourceMemory]) == -1 || podmem.IsZero() {
+		pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
+	}
 }
