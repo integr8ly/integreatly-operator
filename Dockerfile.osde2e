@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.13 AS builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.13 AS builder
 
 ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
 WORKDIR ${PKG}
@@ -14,7 +14,7 @@ COPY test ./test
 COPY Makefile ./
 RUN make test/compile/osde2e
 
-FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/managed-api-test-harness.test managed-api-test-harness.test
 
