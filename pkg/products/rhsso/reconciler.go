@@ -265,7 +265,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	host := r.Config.GetHost()
 	if host == "" {
 		r.Log.Info("URL for Keycloak not yet available")
-		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Host for Keycloak not yet available")
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
 	r.Log.Infof("Operation result", l.Fields{"keycloak": kc.Name, "result": or})
