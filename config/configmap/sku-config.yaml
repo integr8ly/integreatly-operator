@@ -6,7 +6,7 @@ data:
   sku-configs: |-
     [
     {
-              "name": "TWENTY_MILLION_SKU",
+              "name": "20",
               "rate-limiting": {
                   "unit": "minute",
                   "requests_per_unit": 1389,
@@ -68,20 +68,22 @@ data:
                 "ratelimit": {
                       "replicas": 3,
                       "resources": {
-                          "requests": {
-                              "cpu": 0.10,
-                              "memory": 50
-                          },
-                          "limits": {
-                              "cpu": 0.20,
-                              "memory": 100
-                          }
+                         "resources": {
+                             "requests": {
+                                 "cpu": 0.10,
+                                 "memory": 50
+                             },
+                             "limits": {
+                                 "cpu": 0.20,
+                                 "memory": 100
+                             }
+                         }
                       }
                   }
               }
           },
        {
-          "name": "FIVE_MILLION_SKU",
+          "name": "5",
           "rate-limiting": {
               "unit": "minute",
               "requests_per_unit": 347,
@@ -143,20 +145,20 @@ data:
               "ratelimit": {
                   "replicas": 3,
                   "resources": {
-                      "requests": {
-                          "cpu": 0.05,
-                          "memory": 50
-                      },
-                      "limits": {
-                          "cpu": 0.15,
-                          "memory": 100
-                      }
-                  }
+                       "requests": {
+                           "cpu": 0.05,
+                           "memory": 50
+                       },
+                       "limits": {
+                           "cpu": 0.15,
+                           "memory": 100
+                       }
+                   }
               }
           }
       },
       {
-          "name": "DEV_SKU",
+          "name": "1",
           "rate-limiting": {
               "unit": "minute",
               "requests_per_unit": 20,
@@ -217,16 +219,16 @@ data:
               },
               "ratelimit": {
                   "replicas": 1,
-                  "resources": {
-                      "requests": {
-                          "cpu": 0.05,
-                          "memory": 50
-                      },
-                      "limits": {
-                          "cpu": 0.15,
-                          "memory": 100
-                      }
-                  }
+                "resources": {
+                    "requests": {
+                        "cpu": 0.05,
+                        "memory": 50
+                    },
+                    "limits": {
+                        "cpu": 0.15,
+                        "memory": 100
+                    }
+                }
               }
           }
       }]

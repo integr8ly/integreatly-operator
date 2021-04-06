@@ -27,11 +27,20 @@ const (
 
 type SKU struct {
 	name           string
-	productConfigs map[v1alpha1.ProductName]ProductConfig
+	productConfigs map[v1alpha1.ProductName]AProductConfig
 	isUpdated      bool
 }
 
-type ProductConfig struct {
+//go:generate moq -out product_config_moq.go . ProductConfig
+type ProductConfig interface {
+	Configure(obj metav1.Object) error
+	GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool)
+	GetReplicas(ddcssName string) int32
+}
+
+var _ ProductConfig = AProductConfig{}
+
+type AProductConfig struct {
 	productName     v1alpha1.ProductName
 	resourceConfigs map[string]ResourceConfig
 	sku             *SKU
@@ -91,17 +100,16 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		},
 	}
 	retSku.name = skuReceiver.Name
-	retSku.productConfigs = map[v1alpha1.ProductName]ProductConfig{}
+	retSku.productConfigs = map[v1alpha1.ProductName]AProductConfig{}
 	retSku.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
-		pc := ProductConfig{
+		pc := AProductConfig{
 			sku:             retSku,
 			productName:     product,
 			resourceConfigs: map[string]ResourceConfig{},
 		}
-		// if any are missing set sane defaults
 		for _, ddcssName := range ddcssNames {
 			pc.resourceConfigs[ddcssName] = skuReceiver.Resources[ddcssName]
 		}
@@ -110,7 +118,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 	return nil
 }
 
-func (s *SKU) GetProduct(productName v1alpha1.ProductName) ProductConfig {
+func (s *SKU) GetProduct(productName v1alpha1.ProductName) AProductConfig {
 	return s.productConfigs[productName]
 }
 
@@ -122,22 +130,18 @@ func (s *SKU) IsUpdated() bool {
 	return s.isUpdated
 }
 
-func (p *ProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
+func (p AProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
 	if _, ok := p.resourceConfigs[ddcssName]; !ok {
 		return corev1.ResourceRequirements{}, false
 	}
 	return p.resourceConfigs[ddcssName].Resources, true
 }
 
-func (p ProductConfig) GetReplicas(ddcssName string) int32 {
+func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 	return p.resourceConfigs[ddcssName].Replicas
 }
 
-func (p *ProductConfig) Configure(obj metav1.Object) error {
-	// if isUpdated is false return as we don't need to do any updates
-	if p.sku.isUpdated == false {
-		return nil
-	}
+func (p AProductConfig) Configure(obj metav1.Object) error {
 
 	var replicas *int32
 	var podTemplate *v13.PodTemplateSpec
@@ -161,14 +165,14 @@ func (p *ProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
-	if *replicas < configReplicas {
+	if p.sku.isUpdated || *replicas < configReplicas {
 		*replicas = configReplicas
 	}
 	p.mutate(podTemplate, obj.GetName())
 	return nil
 }
 
-func (p *ProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
+func (p AProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
 	resources := p.resourceConfigs[name].Resources
 	for i, container := range podTemplateSpec.Spec.Containers {
 		if &container.Resources == nil {
@@ -185,7 +189,16 @@ func (p *ProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string
 	}
 }
 
-func (p *ProductConfig) mutateResources(pod, cfg v13.ResourceList) {
-	pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
-	pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
+func (p AProductConfig) mutateResources(pod, cfg v13.ResourceList) {
+
+	podcpu := pod[v13.ResourceCPU]
+	//Cmp returns -1 if the quantity is less than y (passed value) so if podcpu is less than cfg cpu
+	if p.sku.isUpdated || podcpu.Cmp(cfg[v13.ResourceCPU]) == -1 || podcpu.IsZero() {
+		pod[v13.ResourceCPU] = cfg[v13.ResourceCPU]
+	}
+	podmem := pod[v13.ResourceMemory]
+	//Cmp returns -1 if the quantity is less than y (passed value) so if podmem is less than cfg memory
+	if p.sku.isUpdated || podmem.Cmp(cfg[v13.ResourceMemory]) == -1 || podmem.IsZero() {
+		pod[v13.ResourceMemory] = cfg[v13.ResourceMemory]
+	}
 }

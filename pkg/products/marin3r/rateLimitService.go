@@ -18,10 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var (
-	replicas int32 = 3
-)
-
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
@@ -149,6 +145,18 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			Name:      sku.RateLimitName,
 			Namespace: r.Namespace,
 		},
+	}
+
+	key, err := k8sclient.ObjectKeyFromObject(deployment)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = client.Get(ctx, key, deployment)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
@@ -291,7 +299,6 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

@@ -530,7 +530,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
 				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.ProductConfig{})
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.AProductConfig{})
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
 				}
@@ -1082,7 +1082,7 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
 	isSKUUpdated := false
-	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "add-managed-api-service")
+	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, "addon-managed-api-service")
 	if err != nil {
 		return errors.Wrap(err, "Error checking for SKU secret")
 	}
