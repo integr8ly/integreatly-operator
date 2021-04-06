@@ -16,21 +16,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
 )
-
-
 
 func TestRateLimitService(t *testing.T) {
 	scheme := newScheme()
 
 	scenarios := []struct {
-		Name       string
-		Reconciler *RateLimitServiceReconciler
+		Name          string
+		Reconciler    *RateLimitServiceReconciler
 		ProductConfig sku.ProductConfig
-		InitObjs   []runtime.Object
-		Assert     func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
-		}{
+		InitObjs      []runtime.Object
+		Assert        func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
+	}{
 		{
 			Name: "Service deployed without metrics",
 			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{

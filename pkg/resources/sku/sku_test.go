@@ -82,7 +82,7 @@ func TestGetSKU(t *testing.T) {
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[RateLimitName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						 pointerToSKU,
+						pointerToSKU,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						v1alpha1.ProductRHSSOUser,
@@ -537,15 +537,14 @@ func TestProductConfig_Configure(t *testing.T) {
 			},
 		},
 		{
-			name:    "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
-			args:    args{obj: &v13.ConfigMap{}},
+			name: "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
+			args: args{obj: &v13.ConfigMap{}},
 			fields: fields{
 				sku: &SKU{
 					isUpdated: true,
 				},
 			},
 			wantErr: true,
-
 		},
 	}
 	for _, tt := range tests {
@@ -642,5 +641,3 @@ func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
 	}
 	return mock
 }
-
-
