@@ -8,97 +8,125 @@ import (
 	"sync"
 )
 
+var (
+	lockThreeScaleInterfaceMockAddAuthenticationProvider       sync.RWMutex
+	lockThreeScaleInterfaceMockAddUser                         sync.RWMutex
+	lockThreeScaleInterfaceMockCreateAccount                   sync.RWMutex
+	lockThreeScaleInterfaceMockCreateApplication               sync.RWMutex
+	lockThreeScaleInterfaceMockCreateApplicationPlan           sync.RWMutex
+	lockThreeScaleInterfaceMockCreateBackend                   sync.RWMutex
+	lockThreeScaleInterfaceMockCreateBackendMappingRule        sync.RWMutex
+	lockThreeScaleInterfaceMockCreateBackendUsage              sync.RWMutex
+	lockThreeScaleInterfaceMockCreateMetric                    sync.RWMutex
+	lockThreeScaleInterfaceMockCreateService                   sync.RWMutex
+	lockThreeScaleInterfaceMockDeleteAccount                   sync.RWMutex
+	lockThreeScaleInterfaceMockDeleteBackend                   sync.RWMutex
+	lockThreeScaleInterfaceMockDeleteService                   sync.RWMutex
+	lockThreeScaleInterfaceMockDeleteUser                      sync.RWMutex
+	lockThreeScaleInterfaceMockDeployProxy                     sync.RWMutex
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName sync.RWMutex
+	lockThreeScaleInterfaceMockGetAuthenticationProviders      sync.RWMutex
+	lockThreeScaleInterfaceMockGetUser                         sync.RWMutex
+	lockThreeScaleInterfaceMockGetUsers                        sync.RWMutex
+	lockThreeScaleInterfaceMockPromoteProxy                    sync.RWMutex
+	lockThreeScaleInterfaceMockSetFromEmailAddress             sync.RWMutex
+	lockThreeScaleInterfaceMockSetNamespace                    sync.RWMutex
+	lockThreeScaleInterfaceMockSetUserAsAdmin                  sync.RWMutex
+	lockThreeScaleInterfaceMockSetUserAsMember                 sync.RWMutex
+	lockThreeScaleInterfaceMockUpdateUser                      sync.RWMutex
+)
+
 // Ensure, that ThreeScaleInterfaceMock does implement ThreeScaleInterface.
 // If this is not the case, regenerate this file with moq.
 var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 
 // ThreeScaleInterfaceMock is a mock implementation of ThreeScaleInterface.
 //
-// 	func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
+//     func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
 //
-// 		// make and configure a mocked ThreeScaleInterface
-// 		mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
-// 			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the AddAuthenticationProvider method")
-// 			},
-// 			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the AddUser method")
-// 			},
-// 			CreateAccountFunc: func(accessToken string, orgName string, username string) (string, error) {
-// 				panic("mock out the CreateAccount method")
-// 			},
-// 			CreateApplicationFunc: func(accessToken string, accountID string, planID string, name string, description string) (string, error) {
-// 				panic("mock out the CreateApplication method")
-// 			},
-// 			CreateApplicationPlanFunc: func(accessToken string, serviceID string, name string) (string, error) {
-// 				panic("mock out the CreateApplicationPlan method")
-// 			},
-// 			CreateBackendFunc: func(accessToken string, name string, privateEndpoint string) (int, error) {
-// 				panic("mock out the CreateBackend method")
-// 			},
-// 			CreateBackendMappingRuleFunc: func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
-// 				panic("mock out the CreateBackendMappingRule method")
-// 			},
-// 			CreateBackendUsageFunc: func(accessToken string, serviceID string, backendID int, path string) error {
-// 				panic("mock out the CreateBackendUsage method")
-// 			},
-// 			CreateMetricFunc: func(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
-// 				panic("mock out the CreateMetric method")
-// 			},
-// 			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
-// 				panic("mock out the CreateService method")
-// 			},
-// 			DeleteAccountFunc: func(accessToken string, accountID string) error {
-// 				panic("mock out the DeleteAccount method")
-// 			},
-// 			DeleteBackendFunc: func(accessToken string, backendID int) error {
-// 				panic("mock out the DeleteBackend method")
-// 			},
-// 			DeleteServiceFunc: func(accessToken string, serviceID string) error {
-// 				panic("mock out the DeleteService method")
-// 			},
-// 			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the DeleteUser method")
-// 			},
-// 			DeployProxyFunc: func(accessToken string, serviceID string) error {
-// 				panic("mock out the DeployProxy method")
-// 			},
-// 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
-// 				panic("mock out the GetAuthenticationProviderByName method")
-// 			},
-// 			GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
-// 				panic("mock out the GetAuthenticationProviders method")
-// 			},
-// 			GetUserFunc: func(username string, accessToken string) (*User, error) {
-// 				panic("mock out the GetUser method")
-// 			},
-// 			GetUsersFunc: func(accessToken string) (*Users, error) {
-// 				panic("mock out the GetUsers method")
-// 			},
-// 			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
-// 				panic("mock out the PromoteProxy method")
-// 			},
-// 			SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetFromEmailAddress method")
-// 			},
-// 			SetNamespaceFunc: func(ns string)  {
-// 				panic("mock out the SetNamespace method")
-// 			},
-// 			SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetUserAsAdmin method")
-// 			},
-// 			SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetUserAsMember method")
-// 			},
-// 			UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the UpdateUser method")
-// 			},
-// 		}
+//         // make and configure a mocked ThreeScaleInterface
+//         mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
+//             AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the AddAuthenticationProvider method")
+//             },
+//             AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the AddUser method")
+//             },
+//             CreateAccountFunc: func(accessToken string, orgName string, username string) (string, error) {
+// 	               panic("mock out the CreateAccount method")
+//             },
+//             CreateApplicationFunc: func(accessToken string, accountID string, planID string, name string, description string) (string, error) {
+// 	               panic("mock out the CreateApplication method")
+//             },
+//             CreateApplicationPlanFunc: func(accessToken string, serviceID string, name string) (string, error) {
+// 	               panic("mock out the CreateApplicationPlan method")
+//             },
+//             CreateBackendFunc: func(accessToken string, name string, privateEndpoint string) (int, error) {
+// 	               panic("mock out the CreateBackend method")
+//             },
+//             CreateBackendMappingRuleFunc: func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
+// 	               panic("mock out the CreateBackendMappingRule method")
+//             },
+//             CreateBackendUsageFunc: func(accessToken string, serviceID string, backendID int, path string) error {
+// 	               panic("mock out the CreateBackendUsage method")
+//             },
+//             CreateMetricFunc: func(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
+// 	               panic("mock out the CreateMetric method")
+//             },
+//             CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
+// 	               panic("mock out the CreateService method")
+//             },
+//             DeleteAccountFunc: func(accessToken string, accountID string) error {
+// 	               panic("mock out the DeleteAccount method")
+//             },
+//             DeleteBackendFunc: func(accessToken string, backendID int) error {
+// 	               panic("mock out the DeleteBackend method")
+//             },
+//             DeleteServiceFunc: func(accessToken string, serviceID string) error {
+// 	               panic("mock out the DeleteService method")
+//             },
+//             DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the DeleteUser method")
+//             },
+//             DeployProxyFunc: func(accessToken string, serviceID string) error {
+// 	               panic("mock out the DeployProxy method")
+//             },
+//             GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
+// 	               panic("mock out the GetAuthenticationProviderByName method")
+//             },
+//             GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
+// 	               panic("mock out the GetAuthenticationProviders method")
+//             },
+//             GetUserFunc: func(username string, accessToken string) (*User, error) {
+// 	               panic("mock out the GetUser method")
+//             },
+//             GetUsersFunc: func(accessToken string) (*Users, error) {
+// 	               panic("mock out the GetUsers method")
+//             },
+//             PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
+// 	               panic("mock out the PromoteProxy method")
+//             },
+//             SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the SetFromEmailAddress method")
+//             },
+//             SetNamespaceFunc: func(ns string)  {
+// 	               panic("mock out the SetNamespace method")
+//             },
+//             SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the SetUserAsAdmin method")
+//             },
+//             SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the SetUserAsMember method")
+//             },
+//             UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the UpdateUser method")
+//             },
+//         }
 //
-// 		// use mockedThreeScaleInterface in code that requires ThreeScaleInterface
-// 		// and then make assertions.
+//         // use mockedThreeScaleInterface in code that requires ThreeScaleInterface
+//         // and then make assertions.
 //
-// 	}
+//     }
 type ThreeScaleInterfaceMock struct {
 	// AddAuthenticationProviderFunc mocks the AddAuthenticationProvider method.
 	AddAuthenticationProviderFunc func(data map[string]string, accessToken string) (*http.Response, error)
@@ -389,31 +417,6 @@ type ThreeScaleInterfaceMock struct {
 			AccessToken string
 		}
 	}
-	lockAddAuthenticationProvider       sync.RWMutex
-	lockAddUser                         sync.RWMutex
-	lockCreateAccount                   sync.RWMutex
-	lockCreateApplication               sync.RWMutex
-	lockCreateApplicationPlan           sync.RWMutex
-	lockCreateBackend                   sync.RWMutex
-	lockCreateBackendMappingRule        sync.RWMutex
-	lockCreateBackendUsage              sync.RWMutex
-	lockCreateMetric                    sync.RWMutex
-	lockCreateService                   sync.RWMutex
-	lockDeleteAccount                   sync.RWMutex
-	lockDeleteBackend                   sync.RWMutex
-	lockDeleteService                   sync.RWMutex
-	lockDeleteUser                      sync.RWMutex
-	lockDeployProxy                     sync.RWMutex
-	lockGetAuthenticationProviderByName sync.RWMutex
-	lockGetAuthenticationProviders      sync.RWMutex
-	lockGetUser                         sync.RWMutex
-	lockGetUsers                        sync.RWMutex
-	lockPromoteProxy                    sync.RWMutex
-	lockSetFromEmailAddress             sync.RWMutex
-	lockSetNamespace                    sync.RWMutex
-	lockSetUserAsAdmin                  sync.RWMutex
-	lockSetUserAsMember                 sync.RWMutex
-	lockUpdateUser                      sync.RWMutex
 }
 
 // AddAuthenticationProvider calls AddAuthenticationProviderFunc.
@@ -428,9 +431,9 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]s
 		Data:        data,
 		AccessToken: accessToken,
 	}
-	mock.lockAddAuthenticationProvider.Lock()
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.Lock()
 	mock.calls.AddAuthenticationProvider = append(mock.calls.AddAuthenticationProvider, callInfo)
-	mock.lockAddAuthenticationProvider.Unlock()
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.Unlock()
 	return mock.AddAuthenticationProviderFunc(data, accessToken)
 }
 
@@ -445,9 +448,9 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProviderCalls() []struct {
 		Data        map[string]string
 		AccessToken string
 	}
-	mock.lockAddAuthenticationProvider.RLock()
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.RLock()
 	calls = mock.calls.AddAuthenticationProvider
-	mock.lockAddAuthenticationProvider.RUnlock()
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.RUnlock()
 	return calls
 }
 
@@ -467,9 +470,9 @@ func (mock *ThreeScaleInterfaceMock) AddUser(username string, email string, pass
 		Password:    password,
 		AccessToken: accessToken,
 	}
-	mock.lockAddUser.Lock()
+	lockThreeScaleInterfaceMockAddUser.Lock()
 	mock.calls.AddUser = append(mock.calls.AddUser, callInfo)
-	mock.lockAddUser.Unlock()
+	lockThreeScaleInterfaceMockAddUser.Unlock()
 	return mock.AddUserFunc(username, email, password, accessToken)
 }
 
@@ -488,9 +491,9 @@ func (mock *ThreeScaleInterfaceMock) AddUserCalls() []struct {
 		Password    string
 		AccessToken string
 	}
-	mock.lockAddUser.RLock()
+	lockThreeScaleInterfaceMockAddUser.RLock()
 	calls = mock.calls.AddUser
-	mock.lockAddUser.RUnlock()
+	lockThreeScaleInterfaceMockAddUser.RUnlock()
 	return calls
 }
 
@@ -508,9 +511,9 @@ func (mock *ThreeScaleInterfaceMock) CreateAccount(accessToken string, orgName s
 		OrgName:     orgName,
 		Username:    username,
 	}
-	mock.lockCreateAccount.Lock()
+	lockThreeScaleInterfaceMockCreateAccount.Lock()
 	mock.calls.CreateAccount = append(mock.calls.CreateAccount, callInfo)
-	mock.lockCreateAccount.Unlock()
+	lockThreeScaleInterfaceMockCreateAccount.Unlock()
 	return mock.CreateAccountFunc(accessToken, orgName, username)
 }
 
@@ -527,9 +530,9 @@ func (mock *ThreeScaleInterfaceMock) CreateAccountCalls() []struct {
 		OrgName     string
 		Username    string
 	}
-	mock.lockCreateAccount.RLock()
+	lockThreeScaleInterfaceMockCreateAccount.RLock()
 	calls = mock.calls.CreateAccount
-	mock.lockCreateAccount.RUnlock()
+	lockThreeScaleInterfaceMockCreateAccount.RUnlock()
 	return calls
 }
 
@@ -551,9 +554,9 @@ func (mock *ThreeScaleInterfaceMock) CreateApplication(accessToken string, accou
 		Name:        name,
 		Description: description,
 	}
-	mock.lockCreateApplication.Lock()
+	lockThreeScaleInterfaceMockCreateApplication.Lock()
 	mock.calls.CreateApplication = append(mock.calls.CreateApplication, callInfo)
-	mock.lockCreateApplication.Unlock()
+	lockThreeScaleInterfaceMockCreateApplication.Unlock()
 	return mock.CreateApplicationFunc(accessToken, accountID, planID, name, description)
 }
 
@@ -574,9 +577,9 @@ func (mock *ThreeScaleInterfaceMock) CreateApplicationCalls() []struct {
 		Name        string
 		Description string
 	}
-	mock.lockCreateApplication.RLock()
+	lockThreeScaleInterfaceMockCreateApplication.RLock()
 	calls = mock.calls.CreateApplication
-	mock.lockCreateApplication.RUnlock()
+	lockThreeScaleInterfaceMockCreateApplication.RUnlock()
 	return calls
 }
 
@@ -594,9 +597,9 @@ func (mock *ThreeScaleInterfaceMock) CreateApplicationPlan(accessToken string, s
 		ServiceID:   serviceID,
 		Name:        name,
 	}
-	mock.lockCreateApplicationPlan.Lock()
+	lockThreeScaleInterfaceMockCreateApplicationPlan.Lock()
 	mock.calls.CreateApplicationPlan = append(mock.calls.CreateApplicationPlan, callInfo)
-	mock.lockCreateApplicationPlan.Unlock()
+	lockThreeScaleInterfaceMockCreateApplicationPlan.Unlock()
 	return mock.CreateApplicationPlanFunc(accessToken, serviceID, name)
 }
 
@@ -613,9 +616,9 @@ func (mock *ThreeScaleInterfaceMock) CreateApplicationPlanCalls() []struct {
 		ServiceID   string
 		Name        string
 	}
-	mock.lockCreateApplicationPlan.RLock()
+	lockThreeScaleInterfaceMockCreateApplicationPlan.RLock()
 	calls = mock.calls.CreateApplicationPlan
-	mock.lockCreateApplicationPlan.RUnlock()
+	lockThreeScaleInterfaceMockCreateApplicationPlan.RUnlock()
 	return calls
 }
 
@@ -633,9 +636,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackend(accessToken string, name stri
 		Name:            name,
 		PrivateEndpoint: privateEndpoint,
 	}
-	mock.lockCreateBackend.Lock()
+	lockThreeScaleInterfaceMockCreateBackend.Lock()
 	mock.calls.CreateBackend = append(mock.calls.CreateBackend, callInfo)
-	mock.lockCreateBackend.Unlock()
+	lockThreeScaleInterfaceMockCreateBackend.Unlock()
 	return mock.CreateBackendFunc(accessToken, name, privateEndpoint)
 }
 
@@ -652,9 +655,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendCalls() []struct {
 		Name            string
 		PrivateEndpoint string
 	}
-	mock.lockCreateBackend.RLock()
+	lockThreeScaleInterfaceMockCreateBackend.RLock()
 	calls = mock.calls.CreateBackend
-	mock.lockCreateBackend.RUnlock()
+	lockThreeScaleInterfaceMockCreateBackend.RUnlock()
 	return calls
 }
 
@@ -678,9 +681,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRule(accessToken string
 		Pattern:     pattern,
 		Delta:       delta,
 	}
-	mock.lockCreateBackendMappingRule.Lock()
+	lockThreeScaleInterfaceMockCreateBackendMappingRule.Lock()
 	mock.calls.CreateBackendMappingRule = append(mock.calls.CreateBackendMappingRule, callInfo)
-	mock.lockCreateBackendMappingRule.Unlock()
+	lockThreeScaleInterfaceMockCreateBackendMappingRule.Unlock()
 	return mock.CreateBackendMappingRuleFunc(accessToken, backendID, metricID, httpMethod, pattern, delta)
 }
 
@@ -703,9 +706,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRuleCalls() []struct {
 		Pattern     string
 		Delta       int
 	}
-	mock.lockCreateBackendMappingRule.RLock()
+	lockThreeScaleInterfaceMockCreateBackendMappingRule.RLock()
 	calls = mock.calls.CreateBackendMappingRule
-	mock.lockCreateBackendMappingRule.RUnlock()
+	lockThreeScaleInterfaceMockCreateBackendMappingRule.RUnlock()
 	return calls
 }
 
@@ -725,9 +728,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendUsage(accessToken string, serv
 		BackendID:   backendID,
 		Path:        path,
 	}
-	mock.lockCreateBackendUsage.Lock()
+	lockThreeScaleInterfaceMockCreateBackendUsage.Lock()
 	mock.calls.CreateBackendUsage = append(mock.calls.CreateBackendUsage, callInfo)
-	mock.lockCreateBackendUsage.Unlock()
+	lockThreeScaleInterfaceMockCreateBackendUsage.Unlock()
 	return mock.CreateBackendUsageFunc(accessToken, serviceID, backendID, path)
 }
 
@@ -746,9 +749,9 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendUsageCalls() []struct {
 		BackendID   int
 		Path        string
 	}
-	mock.lockCreateBackendUsage.RLock()
+	lockThreeScaleInterfaceMockCreateBackendUsage.RLock()
 	calls = mock.calls.CreateBackendUsage
-	mock.lockCreateBackendUsage.RUnlock()
+	lockThreeScaleInterfaceMockCreateBackendUsage.RUnlock()
 	return calls
 }
 
@@ -768,9 +771,9 @@ func (mock *ThreeScaleInterfaceMock) CreateMetric(accessToken string, backendID 
 		FriendlyName: friendlyName,
 		Unit:         unit,
 	}
-	mock.lockCreateMetric.Lock()
+	lockThreeScaleInterfaceMockCreateMetric.Lock()
 	mock.calls.CreateMetric = append(mock.calls.CreateMetric, callInfo)
-	mock.lockCreateMetric.Unlock()
+	lockThreeScaleInterfaceMockCreateMetric.Unlock()
 	return mock.CreateMetricFunc(accessToken, backendID, friendlyName, unit)
 }
 
@@ -789,9 +792,9 @@ func (mock *ThreeScaleInterfaceMock) CreateMetricCalls() []struct {
 		FriendlyName string
 		Unit         string
 	}
-	mock.lockCreateMetric.RLock()
+	lockThreeScaleInterfaceMockCreateMetric.RLock()
 	calls = mock.calls.CreateMetric
-	mock.lockCreateMetric.RUnlock()
+	lockThreeScaleInterfaceMockCreateMetric.RUnlock()
 	return calls
 }
 
@@ -809,9 +812,9 @@ func (mock *ThreeScaleInterfaceMock) CreateService(accessToken string, name stri
 		Name:        name,
 		SystemName:  systemName,
 	}
-	mock.lockCreateService.Lock()
+	lockThreeScaleInterfaceMockCreateService.Lock()
 	mock.calls.CreateService = append(mock.calls.CreateService, callInfo)
-	mock.lockCreateService.Unlock()
+	lockThreeScaleInterfaceMockCreateService.Unlock()
 	return mock.CreateServiceFunc(accessToken, name, systemName)
 }
 
@@ -828,9 +831,9 @@ func (mock *ThreeScaleInterfaceMock) CreateServiceCalls() []struct {
 		Name        string
 		SystemName  string
 	}
-	mock.lockCreateService.RLock()
+	lockThreeScaleInterfaceMockCreateService.RLock()
 	calls = mock.calls.CreateService
-	mock.lockCreateService.RUnlock()
+	lockThreeScaleInterfaceMockCreateService.RUnlock()
 	return calls
 }
 
@@ -846,9 +849,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteAccount(accessToken string, accountID
 		AccessToken: accessToken,
 		AccountID:   accountID,
 	}
-	mock.lockDeleteAccount.Lock()
+	lockThreeScaleInterfaceMockDeleteAccount.Lock()
 	mock.calls.DeleteAccount = append(mock.calls.DeleteAccount, callInfo)
-	mock.lockDeleteAccount.Unlock()
+	lockThreeScaleInterfaceMockDeleteAccount.Unlock()
 	return mock.DeleteAccountFunc(accessToken, accountID)
 }
 
@@ -863,9 +866,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteAccountCalls() []struct {
 		AccessToken string
 		AccountID   string
 	}
-	mock.lockDeleteAccount.RLock()
+	lockThreeScaleInterfaceMockDeleteAccount.RLock()
 	calls = mock.calls.DeleteAccount
-	mock.lockDeleteAccount.RUnlock()
+	lockThreeScaleInterfaceMockDeleteAccount.RUnlock()
 	return calls
 }
 
@@ -881,9 +884,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteBackend(accessToken string, backendID
 		AccessToken: accessToken,
 		BackendID:   backendID,
 	}
-	mock.lockDeleteBackend.Lock()
+	lockThreeScaleInterfaceMockDeleteBackend.Lock()
 	mock.calls.DeleteBackend = append(mock.calls.DeleteBackend, callInfo)
-	mock.lockDeleteBackend.Unlock()
+	lockThreeScaleInterfaceMockDeleteBackend.Unlock()
 	return mock.DeleteBackendFunc(accessToken, backendID)
 }
 
@@ -898,9 +901,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteBackendCalls() []struct {
 		AccessToken string
 		BackendID   int
 	}
-	mock.lockDeleteBackend.RLock()
+	lockThreeScaleInterfaceMockDeleteBackend.RLock()
 	calls = mock.calls.DeleteBackend
-	mock.lockDeleteBackend.RUnlock()
+	lockThreeScaleInterfaceMockDeleteBackend.RUnlock()
 	return calls
 }
 
@@ -916,9 +919,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteService(accessToken string, serviceID
 		AccessToken: accessToken,
 		ServiceID:   serviceID,
 	}
-	mock.lockDeleteService.Lock()
+	lockThreeScaleInterfaceMockDeleteService.Lock()
 	mock.calls.DeleteService = append(mock.calls.DeleteService, callInfo)
-	mock.lockDeleteService.Unlock()
+	lockThreeScaleInterfaceMockDeleteService.Unlock()
 	return mock.DeleteServiceFunc(accessToken, serviceID)
 }
 
@@ -933,9 +936,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteServiceCalls() []struct {
 		AccessToken string
 		ServiceID   string
 	}
-	mock.lockDeleteService.RLock()
+	lockThreeScaleInterfaceMockDeleteService.RLock()
 	calls = mock.calls.DeleteService
-	mock.lockDeleteService.RUnlock()
+	lockThreeScaleInterfaceMockDeleteService.RUnlock()
 	return calls
 }
 
@@ -951,9 +954,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) 
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	mock.lockDeleteUser.Lock()
+	lockThreeScaleInterfaceMockDeleteUser.Lock()
 	mock.calls.DeleteUser = append(mock.calls.DeleteUser, callInfo)
-	mock.lockDeleteUser.Unlock()
+	lockThreeScaleInterfaceMockDeleteUser.Unlock()
 	return mock.DeleteUserFunc(userID, accessToken)
 }
 
@@ -968,9 +971,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	mock.lockDeleteUser.RLock()
+	lockThreeScaleInterfaceMockDeleteUser.RLock()
 	calls = mock.calls.DeleteUser
-	mock.lockDeleteUser.RUnlock()
+	lockThreeScaleInterfaceMockDeleteUser.RUnlock()
 	return calls
 }
 
@@ -986,9 +989,9 @@ func (mock *ThreeScaleInterfaceMock) DeployProxy(accessToken string, serviceID s
 		AccessToken: accessToken,
 		ServiceID:   serviceID,
 	}
-	mock.lockDeployProxy.Lock()
+	lockThreeScaleInterfaceMockDeployProxy.Lock()
 	mock.calls.DeployProxy = append(mock.calls.DeployProxy, callInfo)
-	mock.lockDeployProxy.Unlock()
+	lockThreeScaleInterfaceMockDeployProxy.Unlock()
 	return mock.DeployProxyFunc(accessToken, serviceID)
 }
 
@@ -1003,9 +1006,9 @@ func (mock *ThreeScaleInterfaceMock) DeployProxyCalls() []struct {
 		AccessToken string
 		ServiceID   string
 	}
-	mock.lockDeployProxy.RLock()
+	lockThreeScaleInterfaceMockDeployProxy.RLock()
 	calls = mock.calls.DeployProxy
-	mock.lockDeployProxy.RUnlock()
+	lockThreeScaleInterfaceMockDeployProxy.RUnlock()
 	return calls
 }
 
@@ -1021,9 +1024,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string
 		Name:        name,
 		AccessToken: accessToken,
 	}
-	mock.lockGetAuthenticationProviderByName.Lock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Lock()
 	mock.calls.GetAuthenticationProviderByName = append(mock.calls.GetAuthenticationProviderByName, callInfo)
-	mock.lockGetAuthenticationProviderByName.Unlock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Unlock()
 	return mock.GetAuthenticationProviderByNameFunc(name, accessToken)
 }
 
@@ -1038,9 +1041,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []st
 		Name        string
 		AccessToken string
 	}
-	mock.lockGetAuthenticationProviderByName.RLock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RLock()
 	calls = mock.calls.GetAuthenticationProviderByName
-	mock.lockGetAuthenticationProviderByName.RUnlock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RUnlock()
 	return calls
 }
 
@@ -1054,9 +1057,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken stri
 	}{
 		AccessToken: accessToken,
 	}
-	mock.lockGetAuthenticationProviders.Lock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.Lock()
 	mock.calls.GetAuthenticationProviders = append(mock.calls.GetAuthenticationProviders, callInfo)
-	mock.lockGetAuthenticationProviders.Unlock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.Unlock()
 	return mock.GetAuthenticationProvidersFunc(accessToken)
 }
 
@@ -1069,9 +1072,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProvidersCalls() []struct 
 	var calls []struct {
 		AccessToken string
 	}
-	mock.lockGetAuthenticationProviders.RLock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.RLock()
 	calls = mock.calls.GetAuthenticationProviders
-	mock.lockGetAuthenticationProviders.RUnlock()
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.RUnlock()
 	return calls
 }
 
@@ -1087,9 +1090,9 @@ func (mock *ThreeScaleInterfaceMock) GetUser(username string, accessToken string
 		Username:    username,
 		AccessToken: accessToken,
 	}
-	mock.lockGetUser.Lock()
+	lockThreeScaleInterfaceMockGetUser.Lock()
 	mock.calls.GetUser = append(mock.calls.GetUser, callInfo)
-	mock.lockGetUser.Unlock()
+	lockThreeScaleInterfaceMockGetUser.Unlock()
 	return mock.GetUserFunc(username, accessToken)
 }
 
@@ -1104,9 +1107,9 @@ func (mock *ThreeScaleInterfaceMock) GetUserCalls() []struct {
 		Username    string
 		AccessToken string
 	}
-	mock.lockGetUser.RLock()
+	lockThreeScaleInterfaceMockGetUser.RLock()
 	calls = mock.calls.GetUser
-	mock.lockGetUser.RUnlock()
+	lockThreeScaleInterfaceMockGetUser.RUnlock()
 	return calls
 }
 
@@ -1120,9 +1123,9 @@ func (mock *ThreeScaleInterfaceMock) GetUsers(accessToken string) (*Users, error
 	}{
 		AccessToken: accessToken,
 	}
-	mock.lockGetUsers.Lock()
+	lockThreeScaleInterfaceMockGetUsers.Lock()
 	mock.calls.GetUsers = append(mock.calls.GetUsers, callInfo)
-	mock.lockGetUsers.Unlock()
+	lockThreeScaleInterfaceMockGetUsers.Unlock()
 	return mock.GetUsersFunc(accessToken)
 }
 
@@ -1135,9 +1138,9 @@ func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	var calls []struct {
 		AccessToken string
 	}
-	mock.lockGetUsers.RLock()
+	lockThreeScaleInterfaceMockGetUsers.RLock()
 	calls = mock.calls.GetUsers
-	mock.lockGetUsers.RUnlock()
+	lockThreeScaleInterfaceMockGetUsers.RUnlock()
 	return calls
 }
 
@@ -1157,9 +1160,9 @@ func (mock *ThreeScaleInterfaceMock) PromoteProxy(accessToken string, serviceID 
 		Env:         env,
 		To:          to,
 	}
-	mock.lockPromoteProxy.Lock()
+	lockThreeScaleInterfaceMockPromoteProxy.Lock()
 	mock.calls.PromoteProxy = append(mock.calls.PromoteProxy, callInfo)
-	mock.lockPromoteProxy.Unlock()
+	lockThreeScaleInterfaceMockPromoteProxy.Unlock()
 	return mock.PromoteProxyFunc(accessToken, serviceID, env, to)
 }
 
@@ -1178,9 +1181,9 @@ func (mock *ThreeScaleInterfaceMock) PromoteProxyCalls() []struct {
 		Env         string
 		To          string
 	}
-	mock.lockPromoteProxy.RLock()
+	lockThreeScaleInterfaceMockPromoteProxy.RLock()
 	calls = mock.calls.PromoteProxy
-	mock.lockPromoteProxy.RUnlock()
+	lockThreeScaleInterfaceMockPromoteProxy.RUnlock()
 	return calls
 }
 
@@ -1196,9 +1199,9 @@ func (mock *ThreeScaleInterfaceMock) SetFromEmailAddress(emailAddress string, ac
 		EmailAddress: emailAddress,
 		AccessToken:  accessToken,
 	}
-	mock.lockSetFromEmailAddress.Lock()
+	lockThreeScaleInterfaceMockSetFromEmailAddress.Lock()
 	mock.calls.SetFromEmailAddress = append(mock.calls.SetFromEmailAddress, callInfo)
-	mock.lockSetFromEmailAddress.Unlock()
+	lockThreeScaleInterfaceMockSetFromEmailAddress.Unlock()
 	return mock.SetFromEmailAddressFunc(emailAddress, accessToken)
 }
 
@@ -1213,9 +1216,9 @@ func (mock *ThreeScaleInterfaceMock) SetFromEmailAddressCalls() []struct {
 		EmailAddress string
 		AccessToken  string
 	}
-	mock.lockSetFromEmailAddress.RLock()
+	lockThreeScaleInterfaceMockSetFromEmailAddress.RLock()
 	calls = mock.calls.SetFromEmailAddress
-	mock.lockSetFromEmailAddress.RUnlock()
+	lockThreeScaleInterfaceMockSetFromEmailAddress.RUnlock()
 	return calls
 }
 
@@ -1229,9 +1232,9 @@ func (mock *ThreeScaleInterfaceMock) SetNamespace(ns string) {
 	}{
 		Ns: ns,
 	}
-	mock.lockSetNamespace.Lock()
+	lockThreeScaleInterfaceMockSetNamespace.Lock()
 	mock.calls.SetNamespace = append(mock.calls.SetNamespace, callInfo)
-	mock.lockSetNamespace.Unlock()
+	lockThreeScaleInterfaceMockSetNamespace.Unlock()
 	mock.SetNamespaceFunc(ns)
 }
 
@@ -1244,9 +1247,9 @@ func (mock *ThreeScaleInterfaceMock) SetNamespaceCalls() []struct {
 	var calls []struct {
 		Ns string
 	}
-	mock.lockSetNamespace.RLock()
+	lockThreeScaleInterfaceMockSetNamespace.RLock()
 	calls = mock.calls.SetNamespace
-	mock.lockSetNamespace.RUnlock()
+	lockThreeScaleInterfaceMockSetNamespace.RUnlock()
 	return calls
 }
 
@@ -1262,9 +1265,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdmin(userID int, accessToken stri
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	mock.lockSetUserAsAdmin.Lock()
+	lockThreeScaleInterfaceMockSetUserAsAdmin.Lock()
 	mock.calls.SetUserAsAdmin = append(mock.calls.SetUserAsAdmin, callInfo)
-	mock.lockSetUserAsAdmin.Unlock()
+	lockThreeScaleInterfaceMockSetUserAsAdmin.Unlock()
 	return mock.SetUserAsAdminFunc(userID, accessToken)
 }
 
@@ -1279,9 +1282,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdminCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	mock.lockSetUserAsAdmin.RLock()
+	lockThreeScaleInterfaceMockSetUserAsAdmin.RLock()
 	calls = mock.calls.SetUserAsAdmin
-	mock.lockSetUserAsAdmin.RUnlock()
+	lockThreeScaleInterfaceMockSetUserAsAdmin.RUnlock()
 	return calls
 }
 
@@ -1297,9 +1300,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMember(userID int, accessToken str
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	mock.lockSetUserAsMember.Lock()
+	lockThreeScaleInterfaceMockSetUserAsMember.Lock()
 	mock.calls.SetUserAsMember = append(mock.calls.SetUserAsMember, callInfo)
-	mock.lockSetUserAsMember.Unlock()
+	lockThreeScaleInterfaceMockSetUserAsMember.Unlock()
 	return mock.SetUserAsMemberFunc(userID, accessToken)
 }
 
@@ -1314,9 +1317,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	mock.lockSetUserAsMember.RLock()
+	lockThreeScaleInterfaceMockSetUserAsMember.RLock()
 	calls = mock.calls.SetUserAsMember
-	mock.lockSetUserAsMember.RUnlock()
+	lockThreeScaleInterfaceMockSetUserAsMember.RUnlock()
 	return calls
 }
 
@@ -1336,9 +1339,9 @@ func (mock *ThreeScaleInterfaceMock) UpdateUser(userID int, username string, ema
 		Email:       email,
 		AccessToken: accessToken,
 	}
-	mock.lockUpdateUser.Lock()
+	lockThreeScaleInterfaceMockUpdateUser.Lock()
 	mock.calls.UpdateUser = append(mock.calls.UpdateUser, callInfo)
-	mock.lockUpdateUser.Unlock()
+	lockThreeScaleInterfaceMockUpdateUser.Unlock()
 	return mock.UpdateUserFunc(userID, username, email, accessToken)
 }
 
@@ -1357,8 +1360,8 @@ func (mock *ThreeScaleInterfaceMock) UpdateUserCalls() []struct {
 		Email       string
 		AccessToken string
 	}
-	mock.lockUpdateUser.RLock()
+	lockThreeScaleInterfaceMockUpdateUser.RLock()
 	calls = mock.calls.UpdateUser
-	mock.lockUpdateUser.RUnlock()
+	lockThreeScaleInterfaceMockUpdateUser.RUnlock()
 	return calls
 }
