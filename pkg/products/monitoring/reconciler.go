@@ -260,8 +260,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.Log.Warning("failed to reconcile alert manager config secret " + err.Error())
+		}
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
-		r.Log.Warning("failed to reconcile alert manager config secret " + err.Error())
 		return phase, err
 	}
 
@@ -275,7 +277,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDashboards(ctx, serverClient)
 	r.Log.Infof("reconcileDashboards", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.Log.Warning("Failure reconciling dashboards " + err.Error())
+		if err != nil {
+			r.Log.Warning("Failure reconciling dashboards " + err.Error())
+		}
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
 		return phase, err
 	}

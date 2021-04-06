@@ -1479,7 +1479,9 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 			"published":                         "true",
 		}, *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
-			r.log.Info("Failed to add authentication provider:" + err.Error())
+			if err != nil {
+				r.log.Info("Failed to add authentication provider:" + err.Error())
+			}
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
