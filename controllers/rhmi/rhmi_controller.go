@@ -530,7 +530,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
 				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.ProductConfig{})
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.AProductConfig{})
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
 				}

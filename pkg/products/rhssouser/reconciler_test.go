@@ -229,7 +229,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -613,7 +613,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)
@@ -840,7 +840,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, sku.ProductConfig{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)

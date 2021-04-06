@@ -36,106 +36,13 @@ func TestGetSKU(t *testing.T) {
 		validate func(*SKU, *testing.T)
 	}{
 		{
-			name: "ensure no error on no skuid found in config and default used",
+			name: "ensure error on no skuid found in config",
 			args: args{
 				SKUId:     "SKU_NOT_PRESENT_SKU",
 				SKUConfig: getSKUConfig(nil),
 				SKU:       pointerToSKU,
 			},
-			want: &SKU{
-				name: "default",
-				productConfigs: map[v1alpha1.ProductName]ProductConfig{
-					v1alpha1.Product3Scale: {
-						productName: v1alpha1.Product3Scale,
-						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[BackendListenerName] = ResourceConfig{
-								Replicas: 3,
-								Resources: v13.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.35"),
-										corev1.ResourceMemory: resource.MustParse("450"),
-									},
-									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.45"),
-										corev1.ResourceMemory: resource.MustParse("500"),
-									},
-								},
-							}
-							rcs[BackendWorkerName] = ResourceConfig{
-								Replicas: 3,
-								Resources: v13.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.15"),
-										corev1.ResourceMemory: resource.MustParse("100"),
-									},
-									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.2"),
-										corev1.ResourceMemory: resource.MustParse("100"),
-									},
-								},
-							}
-							rcs[ApicastProductionName] = ResourceConfig{
-								Replicas: 3,
-								Resources: v13.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.3"),
-										corev1.ResourceMemory: resource.MustParse("250"),
-									},
-									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.3"),
-										corev1.ResourceMemory: resource.MustParse("300"),
-									},
-								},
-							}
-							rcs[ApicastStagingName] = ResourceConfig{
-								Replicas: 3,
-								Resources: v13.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.3"),
-										corev1.ResourceMemory: resource.MustParse("250"),
-									},
-									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.3"),
-										corev1.ResourceMemory: resource.MustParse("300"),
-									},
-								},
-							}
-						}),
-						sku: pointerToSKU,
-					},
-					v1alpha1.ProductRHSSOUser: {
-						productName: v1alpha1.ProductRHSSOUser,
-						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[KeycloakName] = ResourceConfig{
-								Replicas: 3,
-								Resources: v13.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.75"),
-										corev1.ResourceMemory: resource.MustParse("1500"),
-									},
-									Limits: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("0.75"),
-										corev1.ResourceMemory: resource.MustParse("1500"),
-									},
-								},
-							}
-						}),
-						sku: pointerToSKU,
-					},
-					v1alpha1.ProductMarin3r: {
-						productName: v1alpha1.ProductMarin3r,
-						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[RateLimitName] = ResourceConfig{
-								Replicas:  3,
-								Resources: v13.ResourceRequirements{},
-							}
-
-						}),
-						sku: pointerToSKU,
-					},
-				},
-			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "test successful parsing of config map to sku object for DEV SKU",
@@ -147,7 +54,7 @@ func TestGetSKU(t *testing.T) {
 			},
 			want: &SKU{
 				name: DEVSKU,
-				productConfigs: map[v1alpha1.ProductName]ProductConfig{
+				productConfigs: map[v1alpha1.ProductName]AProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -171,23 +78,22 @@ func TestGetSKU(t *testing.T) {
 						sku: pointerToSKU,
 					},
 					v1alpha1.ProductMarin3r: {
-						productName: v1alpha1.ProductMarin3r,
-						resourceConfigs: map[string]ResourceConfig{
-							RateLimitName: {0, v13.ResourceRequirements{}},
-						},
-						sku: pointerToSKU,
+						v1alpha1.ProductMarin3r,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[RateLimitName] = ResourceConfig{0, v13.ResourceRequirements{}}
+						}),
+						 pointerToSKU,
 					},
 					v1alpha1.ProductRHSSOUser: {
-						productName: v1alpha1.ProductRHSSOUser,
-						resourceConfigs: map[string]ResourceConfig{
-							KeycloakName: {0, v13.ResourceRequirements{}},
-						},
-						sku: pointerToSKU,
+						v1alpha1.ProductRHSSOUser,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[KeycloakName] = ResourceConfig{0, v13.ResourceRequirements{}}
+						}),
+						pointerToSKU,
 					},
 				},
 				isUpdated: false,
 			},
-			wantErr: false,
 			validate: func(sku *SKU, t *testing.T) {
 				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
 				wantReplicas := int32(1)
@@ -206,7 +112,7 @@ func TestGetSKU(t *testing.T) {
 			},
 			want: &SKU{
 				name: TWENTYMILLIONSKU,
-				productConfigs: map[v1alpha1.ProductName]ProductConfig{
+				productConfigs: map[v1alpha1.ProductName]AProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -633,12 +539,18 @@ func TestProductConfig_Configure(t *testing.T) {
 		{
 			name:    "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
 			args:    args{obj: &v13.ConfigMap{}},
+			fields: fields{
+				sku: &SKU{
+					isUpdated: true,
+				},
+			},
 			wantErr: true,
+
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &ProductConfig{
+			p := &AProductConfig{
 				productName:     tt.fields.productName,
 				resourceConfigs: tt.fields.resourceConfigs,
 				sku:             tt.fields.sku,
@@ -730,3 +642,5 @@ func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
 	}
 	return mock
 }
+
+
