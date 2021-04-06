@@ -147,15 +147,23 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		},
 	}
 
+	key, err := k8sclient.ObjectKeyFromObject(deployment)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = client.Get(ctx, key, deployment)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	_, err = controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
 		if deployment.Labels == nil {
 			deployment.Labels = map[string]string{}
 		}
 
-		var replicas int32 = 1
-		if deployment.Spec.Replicas == nil {
-			deployment.Spec.Replicas = &replicas
-		}
 		deployment.Labels["app"] = sku.RateLimitName
 		deployment.Spec.Selector = &v1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -291,7 +299,6 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
