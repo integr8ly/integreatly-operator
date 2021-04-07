@@ -2,6 +2,7 @@ package sku
 
 import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -199,6 +200,69 @@ func TestProductConfig_Configure(t *testing.T) {
 		validate func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T)
 		wantErr  bool
 	}{
+		{
+			name: "validate that keycloak rhssouser Resource Requests and Limits get updated",
+			fields: fields{
+				productName: v1alpha1.ProductRHSSOUser,
+				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+					rcs[KeycloakName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+				}),
+				sku: &SKU{
+					isUpdated: true,
+				},
+			},
+			args: args{obj: getKeycloak(KeycloakName, func(kc *keycloak.Keycloak) {
+				kc.Spec.Instances = 2
+				kc.Spec.KeycloakDeploymentSpec.Resources = v13.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.111"),
+						corev1.ResourceMemory: resource.MustParse("100"),
+					},
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("0.111"),
+						corev1.ResourceMemory: resource.MustParse("100"),
+					},
+				}
+			}),
+			},
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
+				kcSpec := obj.(*keycloak.Keycloak).Spec
+				kcLimits := kcSpec.KeycloakDeploymentSpec.Resources.Limits
+				configLimits := r[KeycloakName].Resources.Limits
+				if kcLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("keycloak cpu limits not as expected, \n got = %v, \n want= %v ", kcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if kcLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("keycloak memory limits not as expected, \n got = %v, \n want= %v ", kcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				kcRequests := kcSpec.KeycloakDeploymentSpec.Resources.Requests
+				configRequests := r[KeycloakName].Resources.Requests
+				if kcRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
+					t.Errorf("keycloak cpu requests not as expected, \n got = %v, \n want= %v ", kcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+				}
+				if kcRequests.Memory().MilliValue() != configRequests.Memory().MilliValue() {
+					t.Errorf("keycloak memory requests not as expected, \n got = %v, \n want= %v ", kcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+				}
+				kcReplicas := kcSpec.Instances
+				configReplicas := r[KeycloakName].Replicas
+				if int32(kcReplicas) != configReplicas {
+					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", kcReplicas, configReplicas)
+				}
+			},
+			wantErr: false,
+		},
 		{
 			name: "validate that deploymentConfig backend-listener Resource Requests and Limits get updated",
 			fields: fields{
@@ -569,6 +633,18 @@ func TestProductConfig_Configure(t *testing.T) {
 
 func getResourceConfig(modifyFn func(rcs map[string]ResourceConfig)) map[string]ResourceConfig {
 	mock := map[string]ResourceConfig{}
+	if modifyFn != nil {
+		modifyFn(mock)
+	}
+	return mock
+}
+
+func getKeycloak(name string, modifyFn func(kc *keycloak.Keycloak)) *keycloak.Keycloak {
+	mock := &keycloak.Keycloak{
+		ObjectMeta: v12.ObjectMeta{
+			Name: name,
+		},
+	}
 	if modifyFn != nil {
 		modifyFn(mock)
 	}
