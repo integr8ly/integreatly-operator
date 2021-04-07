@@ -7,7 +7,7 @@ package grafana
 //
 // Each of the hard limit and soft limits are calculated to a perMinute amount.
 
-func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVariables string, requestsPerUnit string) string {
+func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit string) string {
 	return `{
   "annotations": {
     "list": [
@@ -361,7 +361,6 @@ func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVar
           "legendFormat": "Hard Limit - ` + requestsPerUnit + ` per minute",
           "refId": "B"
         }
-        ` + graphQueries + `
       ],
       "thresholds": [],
       "timeFrom": null,
@@ -689,7 +688,6 @@ func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVar
         "skipUrlSync": false,
         "type": "constant"
       }
-		` + dashboardVariables + `
 	]
   },
   "time": {
