@@ -5,10 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
-	"sort"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	consolev1 "github.com/openshift/api/console/v1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -100,7 +98,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Grafana reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
@@ -157,14 +155,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile host", err)
 		return phase, err
 	}
+	rateLimit := productConfig.GetRateLimitConfig()
 
-	rateLimitConfig, err := marin3rconfig.GetRateLimitConfig(ctx, client, r.installation.Namespace)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit config", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimitConfig)
+	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimit)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana dashboard", err)
 		return phase, err
@@ -231,14 +224,8 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 			"monitoring-key": "customer",
 		}
 
-		// sorting the array from smallest to largest
-		// this array is loaded from a config map which can be edited by human
-		// the order of the queries on the graph are important for the visualisation
-		softLimits := limitConfig.SoftDailyLimits
-		sort.Slice(softLimits, func(i, j int) bool { return softLimits[i] < softLimits[j] })
-		graphQueries, dashboardVariables := buildGrafanaDashboardStrings(softLimits)
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
-			Json: getCustomerMonitoringGrafanaRateLimitJSON(graphQueries, dashboardVariables, fmt.Sprintf("%d", limitConfig.RequestsPerUnit)),
+			Json: getCustomerMonitoringGrafanaRateLimitJSON(fmt.Sprintf("%d", limitConfig.RequestsPerUnit)),
 			Name: rateLimitDashBoardName,
 		}
 		return nil
@@ -518,51 +505,6 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 	}
 
 	return "https://" + grafanaRoute.Spec.Host, nil
-}
-
-func buildGrafanaDashboardStrings(softLimits []uint32) (string, string) {
-	//todo improve this line
-	refID := []string{"C", "D", "E", "F", "G", "H", "I", "J", "K", "L"}
-	graphQueries := ""
-	dashboardVariables := ""
-	for i, limit := range softLimits {
-		limitVariableName := fmt.Sprintf("SoftLimit%d", i+1)
-		graphQuery := fmt.Sprintf(`,
-                    {
-                     "expr": "$%s",
-                     "legendFormat": "%d Daily Requests",
-                     "refId": "%s"
-                    }`, limitVariableName, limit, refID[i])
-		graphQueries = fmt.Sprintf("%s%s", graphQueries, graphQuery)
-		// calculating the per minute value of each of the soft limits
-		// the values shown in the dashboard are based on the per minute limits
-		perMinuteValue := limit / 24 / 60
-		dashboardVariable := fmt.Sprintf(`,
-							{
-								"current": {
-								"selected": false,
-									"text": "%d",
-									"value": "%d"
-							},
-								"hide": 2,
-								"label": null,
-								"name": "%s",
-								"options": [
-							{
-								"selected": true,
-								"text": "%d",
-								"value": "%d"
-							}
-						],
-							"query": "%d",
-							"skipUrlSync": false,
-							"type": "constant"
-						}
-				`, perMinuteValue, perMinuteValue, limitVariableName, perMinuteValue, perMinuteValue, perMinuteValue)
-		dashboardVariables = fmt.Sprintf("%s%s", dashboardVariables, dashboardVariable)
-	}
-
-	return graphQueries, dashboardVariables
 }
 
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
