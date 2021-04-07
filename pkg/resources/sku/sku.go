@@ -120,6 +120,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 }
 
 func (s *SKU) GetProduct(productName v1alpha1.ProductName) AProductConfig {
+	// handle product not found e.g. return nil?
 	return s.productConfigs[productName]
 }
 

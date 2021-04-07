@@ -395,8 +395,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-		installation.Status.SKU = installationSKU.GetName()
-		installation.Status.ToSKU = ""
+		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+			installation.Status.SKU = installationSKU.GetName()
+			installation.Status.ToSKU = ""
+		}
 		log.Info("installation completed successfully")
 	}
 
@@ -408,9 +410,11 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
-		if installationSKU.IsUpdated() {
-			installation.Status.SKU = installationSKU.GetName()
-			installation.Status.ToSKU = ""
+		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+			if installationSKU.IsUpdated() {
+				installation.Status.SKU = installationSKU.GetName()
+				installation.Status.ToSKU = ""
+			}
 		}
 	}
 	metrics.SetRHMIStatus(installation)
@@ -1102,6 +1106,14 @@ func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace s
 		return errors.Wrap(err, "Error getting sku config map")
 	}
 
+	// if both are empty it's the first round of installation
+	// or if the secretname is not the same as what the SKU is marked there has been a change
+	// so set toSKU and update the status object
+	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
+		skuParam != installation.Status.SKU {
+		installation.Status.ToSKU = installationSKU.GetName()
+	}
+
 	// if the secret is different to what's currently set in SKU there has been an update
 	// OR there is a TOSKU value in the cr, which can happen if a second sku change is made before the operator reaches
 	// the end of the reconcile on a first sku change where it resets the SKU and to sku values
@@ -1112,14 +1124,6 @@ func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace s
 	err = sku.GetSKU(skuParam, cm, installationSKU, isSKUUpdated)
 	if err != nil {
 		return err
-	}
-
-	// if both are empty it's the first round of installation
-	// or if the secretname is not the same as what the SKU is marked there has been a change
-	// so set toSKU and update the status object
-	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
-		skuParam != installation.Status.SKU {
-		installation.Status.ToSKU = installationSKU.GetName()
 	}
 
 	return nil
