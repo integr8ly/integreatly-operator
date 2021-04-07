@@ -251,6 +251,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("650m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("650m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
+
+		//Set keycloak Update Strategy to Rolling as default
+		//Keycloak operator should make decision based on the image, and can change update strategy
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
 
