@@ -34,7 +34,6 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
@@ -290,7 +289,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	err = serverClient.Get(ctx, key, kc)
 	if err != nil {
-		if !errors.IsNotFound(err) {
+		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}

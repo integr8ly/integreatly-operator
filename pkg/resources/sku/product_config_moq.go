@@ -4,7 +4,7 @@
 package sku
 
 import (
-	v13 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 )
@@ -25,7 +25,7 @@ var _ ProductConfig = &ProductConfigMock{}
 // 			GetReplicasFunc: func(ddcssName string) int32 {
 // 				panic("mock out the GetReplicas method")
 // 			},
-// 			GetResourceConfigFunc: func(ddcssName string) (v13.ResourceRequirements, bool) {
+// 			GetResourceConfigFunc: func(ddcssName string) (corev1.ResourceRequirements, bool) {
 // 				panic("mock out the GetResourceConfig method")
 // 			},
 // 		}
@@ -42,7 +42,7 @@ type ProductConfigMock struct {
 	GetReplicasFunc func(ddcssName string) int32
 
 	// GetResourceConfigFunc mocks the GetResourceConfig method.
-	GetResourceConfigFunc func(ddcssName string) (v13.ResourceRequirements, bool)
+	GetResourceConfigFunc func(ddcssName string) (corev1.ResourceRequirements, bool)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -130,7 +130,7 @@ func (mock *ProductConfigMock) GetReplicasCalls() []struct {
 }
 
 // GetResourceConfig calls GetResourceConfigFunc.
-func (mock *ProductConfigMock) GetResourceConfig(ddcssName string) (v13.ResourceRequirements, bool) {
+func (mock *ProductConfigMock) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
 	if mock.GetResourceConfigFunc == nil {
 		panic("ProductConfigMock.GetResourceConfigFunc: method is nil but ProductConfig.GetResourceConfig was just called")
 	}

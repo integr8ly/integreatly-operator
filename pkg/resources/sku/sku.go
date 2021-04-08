@@ -9,7 +9,6 @@ import (
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsv12 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v13 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
@@ -145,7 +144,7 @@ func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 func (p AProductConfig) Configure(obj metav1.Object) error {
 
 	var replicas *int32
-	var podTemplate *v13.PodTemplateSpec
+	var podTemplate *corev1.PodTemplateSpec
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
 
 	switch t := obj.(type) {
@@ -166,6 +165,10 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 			t.Spec.Instances = int(configReplicas)
 		}
 		resources := p.resourceConfigs[KeycloakName].Resources
+		if &t.Spec.KeycloakDeploymentSpec.Resources == nil {
+			t.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{}
+		}
+		checkResourceBlock(&t.Spec.KeycloakDeploymentSpec.Resources)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Requests, resources.Requests)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Limits, resources.Limits)
 		return nil
@@ -174,40 +177,44 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	if p.sku.isUpdated || *replicas < configReplicas {
-		*replicas = configReplicas
+		replicas = &configReplicas
 	}
 	p.mutate(podTemplate, obj.GetName())
 	return nil
 }
 
-func (p AProductConfig) mutate(podTemplateSpec *v13.PodTemplateSpec, name string) {
+func (p AProductConfig) mutate(podTemplateSpec *corev1.PodTemplateSpec, name string) {
 	resources := p.resourceConfigs[name].Resources
 	for i, container := range podTemplateSpec.Spec.Containers {
 		if &container.Resources == nil {
-			podTemplateSpec.Spec.Containers[i].Resources = v13.ResourceRequirements{}
+			podTemplateSpec.Spec.Containers[i].Resources = corev1.ResourceRequirements{}
 		}
-		if container.Resources.Limits == nil {
-			podTemplateSpec.Spec.Containers[i].Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
-		}
+		checkResourceBlock(&podTemplateSpec.Spec.Containers[i].Resources)
 		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
-		if container.Resources.Requests == nil {
-			podTemplateSpec.Spec.Containers[i].Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
-		}
 		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
 	}
 }
 
-func (p AProductConfig) mutateResources(pod, cfg v13.ResourceList) {
-	podcpu := pod[v13.ResourceCPU]
+func (p AProductConfig) mutateResources(pod, cfg corev1.ResourceList) {
+	podcpu := pod[corev1.ResourceCPU]
 	//Cmp returns -1 if the quantity is less than y (passed value) so if podcpu is less than cfg cpu
-	if p.sku.isUpdated || podcpu.Cmp(cfg[v13.ResourceCPU]) == -1 || podcpu.IsZero() {
-		quantity := cfg[v13.ResourceCPU]
-		pod[v13.ResourceCPU] = resource.MustParse(quantity.String())
+	if p.sku.isUpdated || podcpu.Cmp(cfg[corev1.ResourceCPU]) == -1 || podcpu.IsZero() {
+		quantity := cfg[corev1.ResourceCPU]
+		pod[corev1.ResourceCPU] = resource.MustParse(quantity.String())
 	}
-	podmem := pod[v13.ResourceMemory]
+	podmem := pod[corev1.ResourceMemory]
 	//Cmp returns -1 if the quantity is less than y (passed value) so if podmem is less than cfg memory
-	if p.sku.isUpdated || podmem.Cmp(cfg[v13.ResourceMemory]) == -1 || podmem.IsZero() {
-		quantity := cfg[v13.ResourceMemory]
-		pod[v13.ResourceMemory] = resource.MustParse(quantity.String())
+	if p.sku.isUpdated || podmem.Cmp(cfg[corev1.ResourceMemory]) == -1 || podmem.IsZero() {
+		quantity := cfg[corev1.ResourceMemory]
+		pod[corev1.ResourceMemory] = resource.MustParse(quantity.String())
+	}
+}
+
+func checkResourceBlock(resourceRequirement *corev1.ResourceRequirements) {
+	if resourceRequirement.Requests == nil {
+		resourceRequirement.Requests = make(map[corev1.ResourceName]resource.Quantity)
+	}
+	if resourceRequirement.Limits == nil {
+		resourceRequirement.Limits = make(map[corev1.ResourceName]resource.Quantity)
 	}
 }
