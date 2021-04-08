@@ -185,7 +185,7 @@ data:
           "name": "1",
           "rate-limiting": {
               "unit": "minute",
-              "requests_per_unit": 20
+              "requests_per_unit": 12
           },
           "resources": {
               "backend_listener": {

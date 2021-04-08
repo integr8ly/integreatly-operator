@@ -53,7 +53,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	ConfigManager   config.ConfigReadWriter
 	Config          *config.Marin3r
-	RateLimitConfig *marin3rconfig.RateLimitConfig
+	RateLimitConfig marin3rconfig.RateLimitConfig
 	AlertsConfig    map[string]*marin3rconfig.AlertConfig
 	installation    *integreatlyv1alpha1.RHMI
 	mpm             marketplace.MarketplaceInterface

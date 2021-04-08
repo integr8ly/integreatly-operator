@@ -4,9 +4,8 @@
 package sku
 
 import (
-
-	corev1 "k8s.io/api/core/v1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 )
@@ -24,7 +23,7 @@ var _ ProductConfig = &ProductConfigMock{}
 // 			ConfigureFunc: func(obj metav1.Object) error {
 // 				panic("mock out the Configure method")
 // 			},
-// 			GetRateLimitConfigFunc: func() *marin3rconfig.RateLimitConfig {
+// 			GetRateLimitConfigFunc: func() marin3rconfig.RateLimitConfig {
 // 				panic("mock out the GetRateLimitConfig method")
 // 			},
 // 			GetReplicasFunc: func(ddcssName string) int32 {
@@ -44,7 +43,7 @@ type ProductConfigMock struct {
 	ConfigureFunc func(obj metav1.Object) error
 
 	// GetRateLimitConfigFunc mocks the GetRateLimitConfig method.
-	GetRateLimitConfigFunc func() *marin3rconfig.RateLimitConfig
+	GetRateLimitConfigFunc func() marin3rconfig.RateLimitConfig
 
 	// GetReplicasFunc mocks the GetReplicas method.
 	GetReplicasFunc func(ddcssName string) int32
@@ -111,7 +110,7 @@ func (mock *ProductConfigMock) ConfigureCalls() []struct {
 }
 
 // GetRateLimitConfig calls GetRateLimitConfigFunc.
-func (mock *ProductConfigMock) GetRateLimitConfig() *marin3rconfig.RateLimitConfig {
+func (mock *ProductConfigMock) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	if mock.GetRateLimitConfigFunc == nil {
 		panic("ProductConfigMock.GetRateLimitConfigFunc: method is nil but ProductConfig.GetRateLimitConfig was just called")
 	}

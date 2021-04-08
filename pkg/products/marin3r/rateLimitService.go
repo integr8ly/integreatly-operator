@@ -23,7 +23,7 @@ type RateLimitServiceReconciler struct {
 	RedisSecretName string
 	Installation    *integreatlyv1alpha1.RHMI
 	StatsdConfig    *StatsdConfig
-	RateLimitConfig *marin3rconfig.RateLimitConfig
+	RateLimitConfig marin3rconfig.RateLimitConfig
 }
 
 type StatsdConfig struct {
@@ -31,7 +31,7 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
 		Installation:    installation,
@@ -362,7 +362,7 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 
 // uniqueKey generates a unique string for each possible rate limit configuration
 // combination
-func uniqueKey(r *marin3rconfig.RateLimitConfig) string {
+func uniqueKey(r marin3rconfig.RateLimitConfig) string {
 	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
