@@ -25,6 +25,10 @@ const (
 	KeycloakName          = "keycloak"
 )
 
+var (
+	defaultReplicas int32 = 1
+)
+
 type SKU struct {
 	name           string
 	productConfigs map[v1alpha1.ProductName]AProductConfig
@@ -164,6 +168,9 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 		return errors.New(fmt.Sprintf("sku configuration can only be applied to Deployments, StatefulSets or Deployment Configs, found %s", reflect.TypeOf(obj)))
 	}
 
+	if replicas == nil {
+		*replicas = defaultReplicas
+	}
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
 	if p.sku.isUpdated || *replicas < configReplicas {
 		*replicas = configReplicas
