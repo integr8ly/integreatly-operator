@@ -210,7 +210,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, limitConfig *marin3rconfig.RateLimitConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, limitConfig marin3rconfig.RateLimitConfig) (integreatlyv1alpha1.StatusPhase, error) {
 
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{

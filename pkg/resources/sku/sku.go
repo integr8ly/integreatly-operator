@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsv12 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +24,7 @@ const (
 	ApicastProductionName = "apicast_production"
 	ApicastStagingName    = "apicast_staging"
 	KeycloakName          = "rhssouser"
+	GrafanaName           = "grafana"
 )
 
 var (
@@ -34,7 +35,7 @@ type SKU struct {
 	name            string
 	productConfigs  map[v1alpha1.ProductName]AProductConfig
 	isUpdated       bool
-	rateLimitConfig *marin3rconfig.RateLimitConfig
+	rateLimitConfig marin3rconfig.RateLimitConfig
 }
 
 //go:generate moq -out product_config_moq.go . ProductConfig
@@ -42,7 +43,7 @@ type ProductConfig interface {
 	Configure(obj metav1.Object) error
 	GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool)
 	GetReplicas(ddcssName string) int32
-	GetRateLimitConfig() *marin3rconfig.RateLimitConfig
+	GetRateLimitConfig() marin3rconfig.RateLimitConfig
 }
 
 var _ ProductConfig = AProductConfig{}
@@ -100,7 +101,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 			RateLimitName,
 		},
 		v1alpha1.ProductGrafana: {
-			"grafana",
+			GrafanaName,
 		},
 	}
 	retSku.name = skuReceiver.Name
@@ -121,7 +122,7 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 	}
 
 	//populate rate limit configuration
-	retSku.rateLimitConfig = &skuReceiver.RateLimit
+	retSku.rateLimitConfig = skuReceiver.RateLimit
 	return nil
 }
 
@@ -145,7 +146,7 @@ func (p AProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequ
 	return p.resourceConfigs[ddcssName].Resources, true
 }
 
-func (p AProductConfig) GetRateLimitConfig() *marin3rconfig.RateLimitConfig {
+func (p AProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	return p.sku.rateLimitConfig
 }
 
