@@ -264,6 +264,57 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validate that keycloak rhssouser Resource Requests and Limits get updated on install where keycloak resource block is empty",
+			fields: fields{
+				productName: v1alpha1.ProductRHSSOUser,
+				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+					rcs[KeycloakName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+				}),
+				sku: &SKU{
+					isUpdated: true,
+				},
+			},
+			args: args{obj: getKeycloak(KeycloakName, func(kc *keycloak.Keycloak) {}),
+			},
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
+				kcSpec := obj.(*keycloak.Keycloak).Spec
+				kcLimits := kcSpec.KeycloakDeploymentSpec.Resources.Limits
+				configLimits := r[KeycloakName].Resources.Limits
+				if kcLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("keycloak cpu limits not as expected, \n got = %v, \n want= %v ", kcLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if kcLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("keycloak memory limits not as expected, \n got = %v, \n want= %v ", kcLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				kcRequests := kcSpec.KeycloakDeploymentSpec.Resources.Requests
+				configRequests := r[KeycloakName].Resources.Requests
+				if kcRequests.Cpu().MilliValue() != configRequests.Cpu().MilliValue() {
+					t.Errorf("keycloak cpu requests not as expected, \n got = %v, \n want= %v ", kcRequests.Cpu().MilliValue(), configRequests.Cpu().MilliValue())
+				}
+				if kcRequests.Memory().MilliValue() != configRequests.Memory().MilliValue() {
+					t.Errorf("keycloak memory requests not as expected, \n got = %v, \n want= %v ", kcRequests.Memory().MilliValue(), configRequests.Memory().MilliValue())
+				}
+				kcReplicas := kcSpec.Instances
+				configReplicas := r[KeycloakName].Replicas
+				if int32(kcReplicas) != configReplicas {
+					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", kcReplicas, configReplicas)
+				}
+			},
+			wantErr: false,
+		},
+		{
 			name: "validate that deploymentConfig backend-listener Resource Requests and Limits get updated",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
