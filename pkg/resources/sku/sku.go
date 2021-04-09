@@ -169,7 +169,7 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	if replicas == nil {
-		*replicas = defaultReplicas
+		replicas = &defaultReplicas
 	}
 	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
 	if p.sku.isUpdated || *replicas < configReplicas {
