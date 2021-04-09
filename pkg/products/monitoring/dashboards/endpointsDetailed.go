@@ -29,6 +29,22 @@ func GetMonitoringGrafanaDBEndpointsDetailedJSON(installationName string) string
 				"titleFormat": "Upgrade",
 				"type": "tags",
 				"useValueForTime": false
+			},
+			{
+				"datasource": "Prometheus",
+				"enable": true,
+				"expr": "count by (stage,sku,toSKU)(active_sku{toSKU!=\"\"})",
+				"hide": false,
+				"iconColor": "#FADE2A",
+				"limit": 100,
+				"name": "Active SKU",
+				"showIn": 0,
+				"step": "",
+				"tagKeys": "stage,sku,toSKU",
+				"tags": "",
+				"titleFormat": "Active SKU",
+				"type": "tags",
+				"useValueForTime": false
 			}
 		]
 	},
