@@ -37,12 +37,12 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(installationName string) string 
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
-				"name": "Active SKU",
+				"name": "SKU",
 				"showIn": 0,
 				"step": "",
 				"tagKeys": "stage,sku,toSKU",
 				"tags": "",
-				"titleFormat": "Active SKU",
+				"titleFormat": "SKU Change (million per day)",
 				"type": "tags",
 				"useValueForTime": false
 			}
