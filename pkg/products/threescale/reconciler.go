@@ -186,7 +186,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Reconciling")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
@@ -277,7 +277,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileComponents(ctx, serverClient)
+	phase, err = r.reconcileComponents(ctx, serverClient, productConfig)
 	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -913,7 +913,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 
 	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	if err != nil {
@@ -966,6 +966,16 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		antiAffinityRequired = false
 	}
 
+	key, err := k8sclient.ObjectKeyFromObject(apim)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = serverClient.Get(ctx, key, apim)
+	if err != nil && !k8serr.IsNotFound(err){
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
 
 		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
@@ -982,18 +992,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		}
 		if *apim.Spec.System.SidekiqSpec.Replicas < replicas["systemSidekiq"] {
 			*apim.Spec.System.SidekiqSpec.Replicas = replicas["systemSidekiq"]
-		}
-		if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
-			*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
-		}
-		if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
-			*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
-		}
-		if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
-			*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
-		}
-		if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
-			*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
 			*apim.Spec.Backend.CronSpec.Replicas = replicas["backendCron"]
@@ -1063,6 +1061,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
+		err = productConfig.Configure(apim)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 

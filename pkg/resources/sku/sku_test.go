@@ -1,6 +1,8 @@
 package sku
 
 import (
+	"fmt"
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -346,11 +348,11 @@ func TestProductConfig_Configure(t *testing.T) {
 						Resources: v13.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
-								corev1.ResourceMemory: resource.MustParse("450"),
+								corev1.ResourceMemory: resource.MustParse("450Mi"),
 							},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.3"),
-								corev1.ResourceMemory: resource.MustParse("500"),
+								corev1.ResourceMemory: resource.MustParse("500Mi"),
 							},
 						},
 					}
@@ -401,6 +403,39 @@ func TestProductConfig_Configure(t *testing.T) {
 				if dcReplicas != configReplicas {
 					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", dcReplicas, configReplicas)
 				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "validate APIManager case works as expected",
+			fields: fields{
+				productName: v1alpha1.Product3Scale,
+				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+					rcs[ApicastProductionName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450Mi"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500Mi"),
+							},
+						},
+					}
+				}),
+				sku: &SKU{
+					isUpdated: true,
+				},
+			},
+			args: args{obj: &threescalev1.APIManager{
+
+				},
+			},
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
+				dcSpec := obj.(*threescalev1.APIManager).Spec
+				fmt.Print("BOOP ",dcSpec)
 			},
 			wantErr: false,
 		},

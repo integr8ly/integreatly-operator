@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -155,31 +156,23 @@ func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 }
 
 func (p AProductConfig) Configure(obj metav1.Object) error {
-
-	var replicas *int32
-	var podTemplate *corev1.PodTemplateSpec
-	configReplicas := p.resourceConfigs[obj.GetName()].Replicas
+	name := obj.GetName()
 
 	switch t := obj.(type) {
 	case *appsv1.DeploymentConfig:
-		replicas = &t.Spec.Replicas
-		podTemplate = t.Spec.Template
+		p.mutateReplicas(&t.Spec.Replicas, name)
+		p.mutatePodTemplate(t.Spec.Template, name)
 		break
 	case *appsv12.Deployment:
-		if t.Spec.Replicas == nil {
-			t.Spec.Replicas = &defaultReplicas
-		}
-		replicas = t.Spec.Replicas
-		podTemplate = &t.Spec.Template
+		p.mutateReplicas(t.Spec.Replicas, name)
+		p.mutatePodTemplate(&t.Spec.Template, name)
 		break
 	case *appsv12.StatefulSet:
-		if t.Spec.Replicas == nil {
-			t.Spec.Replicas = &defaultReplicas
-		}
-		replicas = t.Spec.Replicas
-		podTemplate = &t.Spec.Template
+		p.mutateReplicas(t.Spec.Replicas, name)
+		p.mutatePodTemplate(&t.Spec.Template, name)
 		break
 	case *keycloak.Keycloak:
+		configReplicas := p.resourceConfigs[name].Replicas
 		if p.sku.isUpdated || t.Spec.Instances < int(configReplicas) {
 			t.Spec.Instances = int(configReplicas)
 		}
@@ -190,28 +183,60 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 		checkResourceBlock(&t.Spec.KeycloakDeploymentSpec.Resources)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Requests, resources.Requests)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Limits, resources.Limits)
-		return nil
+		break
+	case *threescalev1.APIManager:
+		p.mutateAPIManagerReplicas(t.Spec.Apicast.ProductionSpec.Replicas, ApicastProductionName)
+		p.mutateResourcesRequirement(t.Spec.Apicast.ProductionSpec.Resources, ApicastProductionName)
+
+		p.mutateAPIManagerReplicas(t.Spec.Apicast.StagingSpec.Replicas, ApicastProductionName)
+		p.mutateResourcesRequirement(t.Spec.Apicast.StagingSpec.Resources, ApicastProductionName)
+
+		p.mutateAPIManagerReplicas(t.Spec.Backend.ListenerSpec.Replicas, BackendListenerName)
+		p.mutateResourcesRequirement(t.Spec.Backend.ListenerSpec.Resources, BackendListenerName)
+
+		p.mutateAPIManagerReplicas(t.Spec.Backend.WorkerSpec.Replicas, BackendWorkerName)
+		p.mutateResourcesRequirement(t.Spec.Backend.WorkerSpec.Resources, BackendWorkerName)
+
 	default:
 		return errors.New(fmt.Sprintf("sku configuration can only be applied to Deployments, StatefulSets or Deployment Configs, found %s", reflect.TypeOf(obj)))
 	}
 
-	if p.sku.isUpdated || *replicas < configReplicas {
-		*replicas = configReplicas
-	}
-	p.mutate(podTemplate, obj.GetName())
 	return nil
 }
 
-func (p AProductConfig) mutate(podTemplateSpec *corev1.PodTemplateSpec, name string) {
-	resources := p.resourceConfigs[name].Resources
-	for i, container := range podTemplateSpec.Spec.Containers {
-		if &container.Resources == nil {
-			podTemplateSpec.Spec.Containers[i].Resources = corev1.ResourceRequirements{}
-		}
-		checkResourceBlock(&podTemplateSpec.Spec.Containers[i].Resources)
-		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Limits, resources.Limits)
-		p.mutateResources(podTemplateSpec.Spec.Containers[i].Resources.Requests, resources.Requests)
+func (p AProductConfig) mutateAPIManagerReplicas(replicas *int64, name string){
+	productionReplicas := int32(*replicas)
+	p.mutateReplicas(&productionReplicas, name)
+	tmp := int64(productionReplicas)
+	replicas = &tmp
+}
+
+func (p AProductConfig) mutatePodTemplate (template *corev1.PodTemplateSpec, name string){
+	for i, _ := range template.Spec.Containers{
+		p.mutateResourcesRequirement(&template.Spec.Containers[i].Resources, name)
 	}
+}
+
+func (p AProductConfig) mutateReplicas(replicas *int32, name string)  {
+	if replicas == nil {
+		replicas = &defaultReplicas
+	}
+	configReplicas := p.resourceConfigs[name].Replicas
+	if p.sku.isUpdated || *replicas < configReplicas  || *replicas == 0{
+		*replicas = configReplicas
+	}
+}
+
+func (p AProductConfig) mutateResourcesRequirement(resourceRequirements *corev1.ResourceRequirements, name string) {
+	resources := p.resourceConfigs[name].Resources
+
+	if resourceRequirements == nil {
+		resourceRequirements = &corev1.ResourceRequirements{}
+	}
+	checkResourceBlock(resourceRequirements)
+
+	p.mutateResources(resourceRequirements.Limits, resources.Limits)
+	p.mutateResources(resourceRequirements.Requests, resources.Requests)
 }
 
 func (p AProductConfig) mutateResources(pod, cfg corev1.ResourceList) {
