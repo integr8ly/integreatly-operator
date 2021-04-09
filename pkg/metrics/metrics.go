@@ -101,6 +101,18 @@ var (
 			"action",
 		},
 	)
+
+	ActiveSKU = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "active_sku",
+			Help: "Status of the current sku config",
+		},
+		[]string{
+			"stage",
+			"sku",
+			"toSKU",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -144,4 +156,9 @@ func SetThreeScaleUserAction(httpStatus int, username, action string) {
 
 func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
+}
+
+func SetActiveSKU(stage string, sku string, toSKU string) {
+	ActiveSKU.Reset()
+	ActiveSKU.WithLabelValues(stage, sku, toSKU).Set(float64(1))
 }

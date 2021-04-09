@@ -342,6 +342,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+
+		metrics.SetActiveSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 	}
 
 	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
@@ -410,10 +412,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
+
 		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 			if installationSKU.IsUpdated() {
 				installation.Status.SKU = installationSKU.GetName()
 				installation.Status.ToSKU = ""
+				metrics.SetActiveSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 			}
 		}
 	}
