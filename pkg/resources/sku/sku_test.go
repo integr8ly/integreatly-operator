@@ -286,8 +286,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: true,
 				},
 			},
-			args: args{obj: getKeycloak(KeycloakName, func(kc *keycloak.Keycloak) {}),
-			},
+			args: args{obj: getKeycloak(KeycloakName, func(kc *keycloak.Keycloak) {})},
 			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
 				kcSpec := obj.(*keycloak.Keycloak).Spec
 				kcLimits := kcSpec.KeycloakDeploymentSpec.Resources.Limits
