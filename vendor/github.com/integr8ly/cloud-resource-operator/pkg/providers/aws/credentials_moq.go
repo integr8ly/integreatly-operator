@@ -5,15 +5,8 @@ package aws
 
 import (
 	"context"
-	"github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1"
+	v1 "github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1"
 	"sync"
-)
-
-var (
-	lockCredentialManagerMockReconcileCredentials           sync.RWMutex
-	lockCredentialManagerMockReconcileProviderCredentials   sync.RWMutex
-	lockCredentialManagerMockReconcileSESCredentials        sync.RWMutex
-	lockCredentialManagerMockReoncileBucketOwnerCredentials sync.RWMutex
 )
 
 // Ensure, that CredentialManagerMock does implement CredentialManager.
@@ -22,28 +15,28 @@ var _ CredentialManager = &CredentialManagerMock{}
 
 // CredentialManagerMock is a mock implementation of CredentialManager.
 //
-//     func TestSomethingThatUsesCredentialManager(t *testing.T) {
+// 	func TestSomethingThatUsesCredentialManager(t *testing.T) {
 //
-//         // make and configure a mocked CredentialManager
-//         mockedCredentialManager := &CredentialManagerMock{
-//             ReconcileCredentialsFunc: func(ctx context.Context, name string, ns string, entries []v1.StatementEntry) (*v1.CredentialsRequest, *Credentials, error) {
-// 	               panic("mock out the ReconcileCredentials method")
-//             },
-//             ReconcileProviderCredentialsFunc: func(ctx context.Context, ns string) (*Credentials, error) {
-// 	               panic("mock out the ReconcileProviderCredentials method")
-//             },
-//             ReconcileSESCredentialsFunc: func(ctx context.Context, name string, ns string) (*Credentials, error) {
-// 	               panic("mock out the ReconcileSESCredentials method")
-//             },
-//             ReoncileBucketOwnerCredentialsFunc: func(ctx context.Context, name string, ns string, bucket string) (*Credentials, *v1.CredentialsRequest, error) {
-// 	               panic("mock out the ReoncileBucketOwnerCredentials method")
-//             },
-//         }
+// 		// make and configure a mocked CredentialManager
+// 		mockedCredentialManager := &CredentialManagerMock{
+// 			ReconcileCredentialsFunc: func(ctx context.Context, name string, ns string, entries []v1.StatementEntry) (*v1.CredentialsRequest, *Credentials, error) {
+// 				panic("mock out the ReconcileCredentials method")
+// 			},
+// 			ReconcileProviderCredentialsFunc: func(ctx context.Context, ns string) (*Credentials, error) {
+// 				panic("mock out the ReconcileProviderCredentials method")
+// 			},
+// 			ReconcileSESCredentialsFunc: func(ctx context.Context, name string, ns string) (*Credentials, error) {
+// 				panic("mock out the ReconcileSESCredentials method")
+// 			},
+// 			ReoncileBucketOwnerCredentialsFunc: func(ctx context.Context, name string, ns string, bucket string) (*Credentials, *v1.CredentialsRequest, error) {
+// 				panic("mock out the ReoncileBucketOwnerCredentials method")
+// 			},
+// 		}
 //
-//         // use mockedCredentialManager in code that requires CredentialManager
-//         // and then make assertions.
+// 		// use mockedCredentialManager in code that requires CredentialManager
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type CredentialManagerMock struct {
 	// ReconcileCredentialsFunc mocks the ReconcileCredentials method.
 	ReconcileCredentialsFunc func(ctx context.Context, name string, ns string, entries []v1.StatementEntry) (*v1.CredentialsRequest, *Credentials, error)
@@ -98,6 +91,10 @@ type CredentialManagerMock struct {
 			Bucket string
 		}
 	}
+	lockReconcileCredentials           sync.RWMutex
+	lockReconcileProviderCredentials   sync.RWMutex
+	lockReconcileSESCredentials        sync.RWMutex
+	lockReoncileBucketOwnerCredentials sync.RWMutex
 }
 
 // ReconcileCredentials calls ReconcileCredentialsFunc.
@@ -116,9 +113,9 @@ func (mock *CredentialManagerMock) ReconcileCredentials(ctx context.Context, nam
 		Ns:      ns,
 		Entries: entries,
 	}
-	lockCredentialManagerMockReconcileCredentials.Lock()
+	mock.lockReconcileCredentials.Lock()
 	mock.calls.ReconcileCredentials = append(mock.calls.ReconcileCredentials, callInfo)
-	lockCredentialManagerMockReconcileCredentials.Unlock()
+	mock.lockReconcileCredentials.Unlock()
 	return mock.ReconcileCredentialsFunc(ctx, name, ns, entries)
 }
 
@@ -137,9 +134,9 @@ func (mock *CredentialManagerMock) ReconcileCredentialsCalls() []struct {
 		Ns      string
 		Entries []v1.StatementEntry
 	}
-	lockCredentialManagerMockReconcileCredentials.RLock()
+	mock.lockReconcileCredentials.RLock()
 	calls = mock.calls.ReconcileCredentials
-	lockCredentialManagerMockReconcileCredentials.RUnlock()
+	mock.lockReconcileCredentials.RUnlock()
 	return calls
 }
 
@@ -155,9 +152,9 @@ func (mock *CredentialManagerMock) ReconcileProviderCredentials(ctx context.Cont
 		Ctx: ctx,
 		Ns:  ns,
 	}
-	lockCredentialManagerMockReconcileProviderCredentials.Lock()
+	mock.lockReconcileProviderCredentials.Lock()
 	mock.calls.ReconcileProviderCredentials = append(mock.calls.ReconcileProviderCredentials, callInfo)
-	lockCredentialManagerMockReconcileProviderCredentials.Unlock()
+	mock.lockReconcileProviderCredentials.Unlock()
 	return mock.ReconcileProviderCredentialsFunc(ctx, ns)
 }
 
@@ -172,9 +169,9 @@ func (mock *CredentialManagerMock) ReconcileProviderCredentialsCalls() []struct 
 		Ctx context.Context
 		Ns  string
 	}
-	lockCredentialManagerMockReconcileProviderCredentials.RLock()
+	mock.lockReconcileProviderCredentials.RLock()
 	calls = mock.calls.ReconcileProviderCredentials
-	lockCredentialManagerMockReconcileProviderCredentials.RUnlock()
+	mock.lockReconcileProviderCredentials.RUnlock()
 	return calls
 }
 
@@ -192,9 +189,9 @@ func (mock *CredentialManagerMock) ReconcileSESCredentials(ctx context.Context, 
 		Name: name,
 		Ns:   ns,
 	}
-	lockCredentialManagerMockReconcileSESCredentials.Lock()
+	mock.lockReconcileSESCredentials.Lock()
 	mock.calls.ReconcileSESCredentials = append(mock.calls.ReconcileSESCredentials, callInfo)
-	lockCredentialManagerMockReconcileSESCredentials.Unlock()
+	mock.lockReconcileSESCredentials.Unlock()
 	return mock.ReconcileSESCredentialsFunc(ctx, name, ns)
 }
 
@@ -211,9 +208,9 @@ func (mock *CredentialManagerMock) ReconcileSESCredentialsCalls() []struct {
 		Name string
 		Ns   string
 	}
-	lockCredentialManagerMockReconcileSESCredentials.RLock()
+	mock.lockReconcileSESCredentials.RLock()
 	calls = mock.calls.ReconcileSESCredentials
-	lockCredentialManagerMockReconcileSESCredentials.RUnlock()
+	mock.lockReconcileSESCredentials.RUnlock()
 	return calls
 }
 
@@ -233,9 +230,9 @@ func (mock *CredentialManagerMock) ReoncileBucketOwnerCredentials(ctx context.Co
 		Ns:     ns,
 		Bucket: bucket,
 	}
-	lockCredentialManagerMockReoncileBucketOwnerCredentials.Lock()
+	mock.lockReoncileBucketOwnerCredentials.Lock()
 	mock.calls.ReoncileBucketOwnerCredentials = append(mock.calls.ReoncileBucketOwnerCredentials, callInfo)
-	lockCredentialManagerMockReoncileBucketOwnerCredentials.Unlock()
+	mock.lockReoncileBucketOwnerCredentials.Unlock()
 	return mock.ReoncileBucketOwnerCredentialsFunc(ctx, name, ns, bucket)
 }
 
@@ -254,8 +251,8 @@ func (mock *CredentialManagerMock) ReoncileBucketOwnerCredentialsCalls() []struc
 		Ns     string
 		Bucket string
 	}
-	lockCredentialManagerMockReoncileBucketOwnerCredentials.RLock()
+	mock.lockReoncileBucketOwnerCredentials.RLock()
 	calls = mock.calls.ReoncileBucketOwnerCredentials
-	lockCredentialManagerMockReoncileBucketOwnerCredentials.RUnlock()
+	mock.lockReoncileBucketOwnerCredentials.RUnlock()
 	return calls
 }

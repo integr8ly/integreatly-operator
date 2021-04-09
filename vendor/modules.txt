@@ -392,12 +392,12 @@ github.com/headzoo/surf/util
 github.com/imdario/mergo
 # github.com/integr8ly/application-monitoring-operator v1.4.0
 github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1
-# github.com/integr8ly/cloud-resource-operator v0.23.1-0.20210118104111-b5c5799f313c
+# github.com/integr8ly/cloud-resource-operator v0.24.0
+github.com/integr8ly/cloud-resource-operator/apis/config/v1
+github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
+github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types
 github.com/integr8ly/cloud-resource-operator/internal/k8sutil
 github.com/integr8ly/cloud-resource-operator/pkg/annotations
-github.com/integr8ly/cloud-resource-operator/pkg/apis/config/v1
-github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1
-github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types
 github.com/integr8ly/cloud-resource-operator/pkg/client
 github.com/integr8ly/cloud-resource-operator/pkg/providers
 github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
@@ -598,7 +598,7 @@ golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20210112080510-489259a85091
+# golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows

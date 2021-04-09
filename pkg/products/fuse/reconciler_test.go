@@ -12,8 +12,8 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
@@ -486,7 +486,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:      postgresName,
 			Namespace: installation.Namespace,
 		},
-		Status: crov1alpha1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      postgresName,

@@ -41,12 +41,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/rds/rdsiface"
+	v12 "github.com/integr8ly/cloud-resource-operator/apis/config/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	errorUtil "github.com/pkg/errors"
 )
 
 const (
@@ -1553,6 +1553,7 @@ func (n *NetworkProvider) getNonOverlappingDefaultCIDR(ctx context.Context) (*ne
 	}
 	//parse the cidr to an ipnet cidr in order to manipulate the ip
 	_, clusterNet, err := net.ParseCIDR(aws.StringValue(clusterVpc.CidrBlock))
+
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error parsing cluster cidr block")
 	}
@@ -1563,25 +1564,41 @@ func (n *NetworkProvider) getNonOverlappingDefaultCIDR(ctx context.Context) (*ne
 		"10.255.255.255/8":  fmt.Sprintf("10.0.0.0/%s", defaultCIDRMask),
 		"172.31.255.255/12": fmt.Sprintf("172.16.0.0/%s", defaultCIDRMask),
 	}
+	//getting the network cr called from the cluster
+	networkConf := &v12.Network{}
+	err = n.Client.Get(ctx, client.ObjectKey{Name: "cluster"}, networkConf)
+	if err != nil {
+		return nil, errorUtil.Wrap(err, "failed to get network kind")
+	}
+
+	podCIDR, foundPodNet, err := getPodCIDR(networkConf)
+	if err != nil {
+		return nil, errorUtil.Wrap(err, "failed to get pod CIDR")
+	}
+
+	serviceCIDR, foundServiceNet, err := getServiceCIDR(networkConf)
+	if err != nil {
+		return nil, errorUtil.Wrap(err, "failed to get service CIDR")
+	}
 
 	// in this loop we loop through the available cidr ranges for vpcs in aws
 	// in each range the ip of the cidr block is incremented only in the A and B range
 	// the reason for this is that cro allows a maximum mask size of /16
 	// the default cidr mask is set by defaultCIDRMask env and is currently 26
 	//
-	// the current logic checks that the cidr block does not overlap with the cluster machine cidr range
-	// there is a follow on JIRA to check overlap with pod and service cidr blocks -> https://issues.redhat.com/MDGAPI-1000
+	// the current logic checks that the cidr block does not overlap with the cluster machine,
+	//  pod and service cidr range
 	for cidrRange, potentialDefault := range cidrRanges {
 		_, cidrRangeNet, err := net.ParseCIDR(cidrRange)
 		if err != nil {
 			fmt.Println("error parsing cidr range for default cidr block", err)
 		}
-
 		// our potential default
 		potentialDefaultIP, _, err := net.ParseCIDR(potentialDefault)
 		if err != nil {
 			fmt.Println("error parsing potential default cidr range for default cidr block", err)
 		}
+
 		// loop for as long as potential default is a valid CIDR in range
 		for cidrRangeNet.Contains(potentialDefaultIP) {
 
@@ -1593,18 +1610,70 @@ func (n *NetworkProvider) getNonOverlappingDefaultCIDR(ctx context.Context) (*ne
 			// increment potential IP
 			potentialDefaultIP = incrementIPForDefaultCIDR(potentialDefaultIP)
 
-			// check for overlap
-			// if it overlaps continue with the loop
 			if clusterNet.Contains(defaultNet.IP) || defaultNet.Contains(clusterNet.IP) {
 				continue
 			}
+
+			if foundPodNet {
+				if podCIDR.Contains(defaultNet.IP) || defaultNet.Contains(podCIDR.IP) {
+					continue
+				}
+
+			}
+
+			if foundServiceNet {
+				if serviceCIDR.Contains(defaultNet.IP) || defaultNet.Contains(serviceCIDR.IP) {
+					continue
+				}
+
+			}
+
 			// return the first available option that does not overlap
 			return defaultNet, nil
 		}
 	}
+
 	// if the loop finishes, it means that we have gone through all available cidr blocks in the available ranges in aws
 	// return an error that cro was unable to find an option
 	return nil, errorUtil.New("could not find a default cidr block")
+}
+
+// Makes a call to the cluster to get the pod cidr from the network CR, parses it into a ip notation
+//then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
+func getPodCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
+	var podNet *net.IPNet
+	var err error
+
+	for _, entry := range networkConf.Spec.ClusterNetwork {
+		_, podNet, err = net.ParseCIDR(entry.CIDR)
+		if err != nil {
+			return nil, false, errorUtil.Wrap(err, "error parsing pod cidr")
+		}
+	}
+	if podNet == nil {
+		return nil, false, err
+	}
+	return podNet, true, nil
+}
+
+// Makes a call to the cluster to get the service cidr from the network CR, parses it into a ip notation
+//then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
+func getServiceCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
+	var err error
+	var serviceNet *net.IPNet
+
+	for _, entry := range networkConf.Spec.ServiceNetwork {
+
+		_, serviceNet, err = net.ParseCIDR(entry)
+		if err != nil {
+			return nil, false, errorUtil.Wrap(err, "error parsing service cidr")
+		}
+	}
+	if serviceNet == nil {
+		return nil, false, err
+	}
+
+	return serviceNet, true, nil
 }
 
 //subnetExists is a helper function for checking if a subnet exists with a specific cidr block

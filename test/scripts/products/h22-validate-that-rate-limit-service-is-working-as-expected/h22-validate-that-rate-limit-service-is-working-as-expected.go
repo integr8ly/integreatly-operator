@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -146,7 +146,7 @@ func createRedis(ctx context.Context, client k8sclient.Client, namespace string)
 			Name:      "throw-away-redis-pod",
 			Namespace: namespace,
 		},
-		Spec: crov1alpha1.RedisSpec{
+		Spec: types.ResourceTypeSpec{
 			SecretRef: &types.SecretRef{
 				Name: "throw-away-redis-ref",
 			},
