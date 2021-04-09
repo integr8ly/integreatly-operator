@@ -1041,10 +1041,22 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		})
 
 		apicastProdResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("250M")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("250M")},
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
 		}
 		apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
+
+		backendWorkerResources := corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("150m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+		}
+		apim.Spec.Backend.WorkerSpec.Resources = &backendWorkerResources
+
+		backendListenerResources := corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("450Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("500Mi")},
+		}
+		apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
