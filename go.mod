@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
-	github.com/3scale/3scale-operator v0.2.1-0.20201120164439-360b1f382716
+	github.com/3scale/3scale-operator v0.2.1-0.20201218152710-770fa292607c
 	github.com/3scale/marin3r v0.7.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
