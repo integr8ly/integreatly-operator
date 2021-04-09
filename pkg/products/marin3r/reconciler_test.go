@@ -94,7 +94,7 @@ func getBasicReconciler() *Reconciler {
 				Period:   "30m",
 			},
 		},
-		RateLimitConfig: &marin3rconfig.RateLimitConfig{
+		RateLimitConfig: marin3rconfig.RateLimitConfig{
 			Unit:            "minute",
 			RequestsPerUnit: 1,
 		},

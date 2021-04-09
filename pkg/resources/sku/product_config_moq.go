@@ -4,6 +4,7 @@
 package sku
 
 import (
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
@@ -22,6 +23,9 @@ var _ ProductConfig = &ProductConfigMock{}
 // 			ConfigureFunc: func(obj metav1.Object) error {
 // 				panic("mock out the Configure method")
 // 			},
+// 			GetRateLimitConfigFunc: func() marin3rconfig.RateLimitConfig {
+// 				panic("mock out the GetRateLimitConfig method")
+// 			},
 // 			GetReplicasFunc: func(ddcssName string) int32 {
 // 				panic("mock out the GetReplicas method")
 // 			},
@@ -38,6 +42,9 @@ type ProductConfigMock struct {
 	// ConfigureFunc mocks the Configure method.
 	ConfigureFunc func(obj metav1.Object) error
 
+	// GetRateLimitConfigFunc mocks the GetRateLimitConfig method.
+	GetRateLimitConfigFunc func() marin3rconfig.RateLimitConfig
+
 	// GetReplicasFunc mocks the GetReplicas method.
 	GetReplicasFunc func(ddcssName string) int32
 
@@ -51,6 +58,9 @@ type ProductConfigMock struct {
 			// Obj is the obj argument value.
 			Obj metav1.Object
 		}
+		// GetRateLimitConfig holds details about calls to the GetRateLimitConfig method.
+		GetRateLimitConfig []struct {
+		}
 		// GetReplicas holds details about calls to the GetReplicas method.
 		GetReplicas []struct {
 			// DdcssName is the ddcssName argument value.
@@ -62,9 +72,10 @@ type ProductConfigMock struct {
 			DdcssName string
 		}
 	}
-	lockConfigure         sync.RWMutex
-	lockGetReplicas       sync.RWMutex
-	lockGetResourceConfig sync.RWMutex
+	lockConfigure          sync.RWMutex
+	lockGetRateLimitConfig sync.RWMutex
+	lockGetReplicas        sync.RWMutex
+	lockGetResourceConfig  sync.RWMutex
 }
 
 // Configure calls ConfigureFunc.
@@ -95,6 +106,32 @@ func (mock *ProductConfigMock) ConfigureCalls() []struct {
 	mock.lockConfigure.RLock()
 	calls = mock.calls.Configure
 	mock.lockConfigure.RUnlock()
+	return calls
+}
+
+// GetRateLimitConfig calls GetRateLimitConfigFunc.
+func (mock *ProductConfigMock) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
+	if mock.GetRateLimitConfigFunc == nil {
+		panic("ProductConfigMock.GetRateLimitConfigFunc: method is nil but ProductConfig.GetRateLimitConfig was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetRateLimitConfig.Lock()
+	mock.calls.GetRateLimitConfig = append(mock.calls.GetRateLimitConfig, callInfo)
+	mock.lockGetRateLimitConfig.Unlock()
+	return mock.GetRateLimitConfigFunc()
+}
+
+// GetRateLimitConfigCalls gets all the calls that were made to GetRateLimitConfig.
+// Check the length with:
+//     len(mockedProductConfig.GetRateLimitConfigCalls())
+func (mock *ProductConfigMock) GetRateLimitConfigCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetRateLimitConfig.RLock()
+	calls = mock.calls.GetRateLimitConfig
+	mock.lockGetRateLimitConfig.RUnlock()
 	return calls
 }
 

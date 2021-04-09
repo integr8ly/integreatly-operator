@@ -102,12 +102,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to check cloud resources config settings")
 	}
 
-	phase, err = r.checkRateLimitsConfig(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to check rate limits config settings", err)
-		return phase, errors.Wrap(err, "failed to check rate limits config settings")
-	}
-
 	phase, err = r.reconcilePriorityClass(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile priority class", err)
@@ -179,50 +173,6 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) checkRateLimitsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	rlConfig := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      marin3rconfig.RateLimitConfigMapName,
-			Namespace: r.installation.Namespace,
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rlConfig, func() error {
-		if rlConfig.Data == nil {
-			rlConfig.Data = map[string]string{}
-		}
-
-		if _, ok := rlConfig.Data["rate_limit"]; ok {
-			return nil
-		}
-
-		defaultConfig := map[string]*marin3rconfig.RateLimitConfig{
-			marin3rconfig.ManagedApiServiceSKU: {
-				Unit:            marin3rconfig.DefaultRateLimitUnit,
-				RequestsPerUnit: uint32(marin3rconfig.DefaultRateLimitRequests),
-				SoftDailyLimits: []uint32{
-					marin3rconfig.DailySoftLimitTier1,
-					marin3rconfig.DailySoftLimitTier2,
-					marin3rconfig.DailySoftLimitTier3,
-				},
-			},
-		}
-
-		defaultConfigJSON, err := json.Marshal(defaultConfig)
-		if err != nil {
-			return fmt.Errorf("failed to marshal default config: %w", err)
-		}
-
-		rlConfig.Data["rate_limit"] = string(defaultConfigJSON)
-
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

@@ -9,8 +9,7 @@ data:
               "name": "20",
               "rate-limiting": {
                   "unit": "minute",
-                  "requests_per_unit": 1389,
-                  "alert_limits": []
+                  "requests_per_unit": 1389
               },
               "resources": {
                   "backend_listener": {
@@ -79,15 +78,27 @@ data:
                              }
                          }
                       }
-                  }
+                  },
+                 "grafana": {
+                       "replicas": 1,
+                     "resources": {
+                         "requests": {
+                             "cpu": 0.05,
+                             "memory": 50
+                         },
+                         "limits": {
+                             "cpu": 0.15,
+                             "memory": 100
+                         }
+                     }
+                   }
               }
           },
        {
           "name": "5",
           "rate-limiting": {
               "unit": "minute",
-              "requests_per_unit": 347,
-              "alert_limits": []
+              "requests_per_unit": 347
           },
           "resources": {
               "backend_listener": {
@@ -154,6 +165,19 @@ data:
                            "memory": 100
                        }
                    }
+              },
+             "grafana": {
+                       "replicas": 1,
+                     "resources": {
+                         "requests": {
+                             "cpu": 0.05,
+                             "memory": 50
+                         },
+                         "limits": {
+                             "cpu": 0.15,
+                             "memory": 100
+                         }
+                     }
               }
           }
       },
@@ -161,8 +185,7 @@ data:
           "name": "1",
           "rate-limiting": {
               "unit": "minute",
-              "requests_per_unit": 20,
-              "alert_limits": []
+              "requests_per_unit": 12
           },
           "resources": {
               "backend_listener": {
@@ -229,6 +252,19 @@ data:
                         "memory": 100
                     }
                 }
-              }
+              },
+               "grafana": {
+                     "replicas": 1,
+                   "resources": {
+                       "requests": {
+                           "cpu": 0.05,
+                           "memory": 50
+                       },
+                       "limits": {
+                           "cpu": 0.15,
+                           "memory": 100
+                       }
+                   }
+                }
           }
       }]
