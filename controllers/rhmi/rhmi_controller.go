@@ -412,12 +412,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
-    
+
 		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 			if installationSKU.IsUpdated() {
 				installation.Status.SKU = installationSKU.GetName()
 				installation.Status.ToSKU = ""
-        metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+				metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 			}
 		}
 	}
