@@ -1,6 +1,6 @@
 products:
   - name: 3scale-operator
-    version: 3scale-2.10.0-CR2
+    version: 3scale-2.10.0-GA
     url: "https://github.com/3scale/3scale-operator"
     installType: "rhmi/rhoam"
   - name: apicurito-registry-operator

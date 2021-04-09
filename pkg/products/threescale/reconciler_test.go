@@ -327,7 +327,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						"credentialKeyID":     []byte("test"),
 						"credentialSecretKey": []byte("test"),
 					},
-				}),
+				},
+					&threescalev1.APIManager{
+						TypeMeta: metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "3scale",
+							Namespace: "test",
+						},
+						Spec:   threescalev1.APIManagerSpec{},
+						Status: threescalev1.APIManagerStatus{},
+					}),
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -346,7 +355,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, &sku.ProductConfigMock{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return

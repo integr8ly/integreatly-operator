@@ -1,6 +1,6 @@
 # cloud.google.com/go v0.56.0
 cloud.google.com/go/compute/metadata
-# github.com/3scale/3scale-operator v0.2.1-0.20201218152710-770fa292607c
+# github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
 github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
@@ -577,7 +577,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20201021035429-f5854403a974
+# golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
