@@ -9,8 +9,8 @@ import (
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -96,7 +96,7 @@ func getTestPostgres() *crov1.Postgres {
 			Name:      "ups-postgres-test",
 			Namespace: "ups",
 		},
-		Status: crov1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      "test-postgres",

@@ -5,14 +5,10 @@ package providers
 
 import (
 	"context"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"sync"
 	"time"
-)
-
-var (
-	lockDeploymentDetailsMockData sync.RWMutex
 )
 
 // Ensure, that DeploymentDetailsMock does implement DeploymentDetails.
@@ -21,19 +17,19 @@ var _ DeploymentDetails = &DeploymentDetailsMock{}
 
 // DeploymentDetailsMock is a mock implementation of DeploymentDetails.
 //
-//     func TestSomethingThatUsesDeploymentDetails(t *testing.T) {
+// 	func TestSomethingThatUsesDeploymentDetails(t *testing.T) {
 //
-//         // make and configure a mocked DeploymentDetails
-//         mockedDeploymentDetails := &DeploymentDetailsMock{
-//             DataFunc: func() map[string][]byte {
-// 	               panic("mock out the Data method")
-//             },
-//         }
+// 		// make and configure a mocked DeploymentDetails
+// 		mockedDeploymentDetails := &DeploymentDetailsMock{
+// 			DataFunc: func() map[string][]byte {
+// 				panic("mock out the Data method")
+// 			},
+// 		}
 //
-//         // use mockedDeploymentDetails in code that requires DeploymentDetails
-//         // and then make assertions.
+// 		// use mockedDeploymentDetails in code that requires DeploymentDetails
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type DeploymentDetailsMock struct {
 	// DataFunc mocks the Data method.
 	DataFunc func() map[string][]byte
@@ -44,6 +40,7 @@ type DeploymentDetailsMock struct {
 		Data []struct {
 		}
 	}
+	lockData sync.RWMutex
 }
 
 // Data calls DataFunc.
@@ -53,9 +50,9 @@ func (mock *DeploymentDetailsMock) Data() map[string][]byte {
 	}
 	callInfo := struct {
 	}{}
-	lockDeploymentDetailsMockData.Lock()
+	mock.lockData.Lock()
 	mock.calls.Data = append(mock.calls.Data, callInfo)
-	lockDeploymentDetailsMockData.Unlock()
+	mock.lockData.Unlock()
 	return mock.DataFunc()
 }
 
@@ -66,19 +63,11 @@ func (mock *DeploymentDetailsMock) DataCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockDeploymentDetailsMockData.RLock()
+	mock.lockData.RLock()
 	calls = mock.calls.Data
-	lockDeploymentDetailsMockData.RUnlock()
+	mock.lockData.RUnlock()
 	return calls
 }
-
-var (
-	lockBlobStorageProviderMockCreateStorage    sync.RWMutex
-	lockBlobStorageProviderMockDeleteStorage    sync.RWMutex
-	lockBlobStorageProviderMockGetName          sync.RWMutex
-	lockBlobStorageProviderMockGetReconcileTime sync.RWMutex
-	lockBlobStorageProviderMockSupportsStrategy sync.RWMutex
-)
 
 // Ensure, that BlobStorageProviderMock does implement BlobStorageProvider.
 // If this is not the case, regenerate this file with moq.
@@ -86,37 +75,37 @@ var _ BlobStorageProvider = &BlobStorageProviderMock{}
 
 // BlobStorageProviderMock is a mock implementation of BlobStorageProvider.
 //
-//     func TestSomethingThatUsesBlobStorageProvider(t *testing.T) {
+// 	func TestSomethingThatUsesBlobStorageProvider(t *testing.T) {
 //
-//         // make and configure a mocked BlobStorageProvider
-//         mockedBlobStorageProvider := &BlobStorageProviderMock{
-//             CreateStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, types.StatusMessage, error) {
-// 	               panic("mock out the CreateStorage method")
-//             },
-//             DeleteStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (types.StatusMessage, error) {
-// 	               panic("mock out the DeleteStorage method")
-//             },
-//             GetNameFunc: func() string {
-// 	               panic("mock out the GetName method")
-//             },
-//             GetReconcileTimeFunc: func(bs *v1alpha1.BlobStorage) time.Duration {
-// 	               panic("mock out the GetReconcileTime method")
-//             },
-//             SupportsStrategyFunc: func(s string) bool {
-// 	               panic("mock out the SupportsStrategy method")
-//             },
-//         }
+// 		// make and configure a mocked BlobStorageProvider
+// 		mockedBlobStorageProvider := &BlobStorageProviderMock{
+// 			CreateStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error) {
+// 				panic("mock out the CreateStorage method")
+// 			},
+// 			DeleteStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (croType.StatusMessage, error) {
+// 				panic("mock out the DeleteStorage method")
+// 			},
+// 			GetNameFunc: func() string {
+// 				panic("mock out the GetName method")
+// 			},
+// 			GetReconcileTimeFunc: func(bs *v1alpha1.BlobStorage) time.Duration {
+// 				panic("mock out the GetReconcileTime method")
+// 			},
+// 			SupportsStrategyFunc: func(s string) bool {
+// 				panic("mock out the SupportsStrategy method")
+// 			},
+// 		}
 //
-//         // use mockedBlobStorageProvider in code that requires BlobStorageProvider
-//         // and then make assertions.
+// 		// use mockedBlobStorageProvider in code that requires BlobStorageProvider
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type BlobStorageProviderMock struct {
 	// CreateStorageFunc mocks the CreateStorage method.
-	CreateStorageFunc func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, types.StatusMessage, error)
+	CreateStorageFunc func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error)
 
 	// DeleteStorageFunc mocks the DeleteStorage method.
-	DeleteStorageFunc func(ctx context.Context, bs *v1alpha1.BlobStorage) (types.StatusMessage, error)
+	DeleteStorageFunc func(ctx context.Context, bs *v1alpha1.BlobStorage) (croType.StatusMessage, error)
 
 	// GetNameFunc mocks the GetName method.
 	GetNameFunc func() string
@@ -157,10 +146,15 @@ type BlobStorageProviderMock struct {
 			S string
 		}
 	}
+	lockCreateStorage    sync.RWMutex
+	lockDeleteStorage    sync.RWMutex
+	lockGetName          sync.RWMutex
+	lockGetReconcileTime sync.RWMutex
+	lockSupportsStrategy sync.RWMutex
 }
 
 // CreateStorage calls CreateStorageFunc.
-func (mock *BlobStorageProviderMock) CreateStorage(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, types.StatusMessage, error) {
+func (mock *BlobStorageProviderMock) CreateStorage(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error) {
 	if mock.CreateStorageFunc == nil {
 		panic("BlobStorageProviderMock.CreateStorageFunc: method is nil but BlobStorageProvider.CreateStorage was just called")
 	}
@@ -171,9 +165,9 @@ func (mock *BlobStorageProviderMock) CreateStorage(ctx context.Context, bs *v1al
 		Ctx: ctx,
 		Bs:  bs,
 	}
-	lockBlobStorageProviderMockCreateStorage.Lock()
+	mock.lockCreateStorage.Lock()
 	mock.calls.CreateStorage = append(mock.calls.CreateStorage, callInfo)
-	lockBlobStorageProviderMockCreateStorage.Unlock()
+	mock.lockCreateStorage.Unlock()
 	return mock.CreateStorageFunc(ctx, bs)
 }
 
@@ -188,14 +182,14 @@ func (mock *BlobStorageProviderMock) CreateStorageCalls() []struct {
 		Ctx context.Context
 		Bs  *v1alpha1.BlobStorage
 	}
-	lockBlobStorageProviderMockCreateStorage.RLock()
+	mock.lockCreateStorage.RLock()
 	calls = mock.calls.CreateStorage
-	lockBlobStorageProviderMockCreateStorage.RUnlock()
+	mock.lockCreateStorage.RUnlock()
 	return calls
 }
 
 // DeleteStorage calls DeleteStorageFunc.
-func (mock *BlobStorageProviderMock) DeleteStorage(ctx context.Context, bs *v1alpha1.BlobStorage) (types.StatusMessage, error) {
+func (mock *BlobStorageProviderMock) DeleteStorage(ctx context.Context, bs *v1alpha1.BlobStorage) (croType.StatusMessage, error) {
 	if mock.DeleteStorageFunc == nil {
 		panic("BlobStorageProviderMock.DeleteStorageFunc: method is nil but BlobStorageProvider.DeleteStorage was just called")
 	}
@@ -206,9 +200,9 @@ func (mock *BlobStorageProviderMock) DeleteStorage(ctx context.Context, bs *v1al
 		Ctx: ctx,
 		Bs:  bs,
 	}
-	lockBlobStorageProviderMockDeleteStorage.Lock()
+	mock.lockDeleteStorage.Lock()
 	mock.calls.DeleteStorage = append(mock.calls.DeleteStorage, callInfo)
-	lockBlobStorageProviderMockDeleteStorage.Unlock()
+	mock.lockDeleteStorage.Unlock()
 	return mock.DeleteStorageFunc(ctx, bs)
 }
 
@@ -223,9 +217,9 @@ func (mock *BlobStorageProviderMock) DeleteStorageCalls() []struct {
 		Ctx context.Context
 		Bs  *v1alpha1.BlobStorage
 	}
-	lockBlobStorageProviderMockDeleteStorage.RLock()
+	mock.lockDeleteStorage.RLock()
 	calls = mock.calls.DeleteStorage
-	lockBlobStorageProviderMockDeleteStorage.RUnlock()
+	mock.lockDeleteStorage.RUnlock()
 	return calls
 }
 
@@ -236,9 +230,9 @@ func (mock *BlobStorageProviderMock) GetName() string {
 	}
 	callInfo := struct {
 	}{}
-	lockBlobStorageProviderMockGetName.Lock()
+	mock.lockGetName.Lock()
 	mock.calls.GetName = append(mock.calls.GetName, callInfo)
-	lockBlobStorageProviderMockGetName.Unlock()
+	mock.lockGetName.Unlock()
 	return mock.GetNameFunc()
 }
 
@@ -249,9 +243,9 @@ func (mock *BlobStorageProviderMock) GetNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockBlobStorageProviderMockGetName.RLock()
+	mock.lockGetName.RLock()
 	calls = mock.calls.GetName
-	lockBlobStorageProviderMockGetName.RUnlock()
+	mock.lockGetName.RUnlock()
 	return calls
 }
 
@@ -265,9 +259,9 @@ func (mock *BlobStorageProviderMock) GetReconcileTime(bs *v1alpha1.BlobStorage) 
 	}{
 		Bs: bs,
 	}
-	lockBlobStorageProviderMockGetReconcileTime.Lock()
+	mock.lockGetReconcileTime.Lock()
 	mock.calls.GetReconcileTime = append(mock.calls.GetReconcileTime, callInfo)
-	lockBlobStorageProviderMockGetReconcileTime.Unlock()
+	mock.lockGetReconcileTime.Unlock()
 	return mock.GetReconcileTimeFunc(bs)
 }
 
@@ -280,9 +274,9 @@ func (mock *BlobStorageProviderMock) GetReconcileTimeCalls() []struct {
 	var calls []struct {
 		Bs *v1alpha1.BlobStorage
 	}
-	lockBlobStorageProviderMockGetReconcileTime.RLock()
+	mock.lockGetReconcileTime.RLock()
 	calls = mock.calls.GetReconcileTime
-	lockBlobStorageProviderMockGetReconcileTime.RUnlock()
+	mock.lockGetReconcileTime.RUnlock()
 	return calls
 }
 
@@ -296,9 +290,9 @@ func (mock *BlobStorageProviderMock) SupportsStrategy(s string) bool {
 	}{
 		S: s,
 	}
-	lockBlobStorageProviderMockSupportsStrategy.Lock()
+	mock.lockSupportsStrategy.Lock()
 	mock.calls.SupportsStrategy = append(mock.calls.SupportsStrategy, callInfo)
-	lockBlobStorageProviderMockSupportsStrategy.Unlock()
+	mock.lockSupportsStrategy.Unlock()
 	return mock.SupportsStrategyFunc(s)
 }
 
@@ -311,8 +305,8 @@ func (mock *BlobStorageProviderMock) SupportsStrategyCalls() []struct {
 	var calls []struct {
 		S string
 	}
-	lockBlobStorageProviderMockSupportsStrategy.RLock()
+	mock.lockSupportsStrategy.RLock()
 	calls = mock.calls.SupportsStrategy
-	lockBlobStorageProviderMockSupportsStrategy.RUnlock()
+	mock.lockSupportsStrategy.RUnlock()
 	return calls
 }

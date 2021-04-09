@@ -39,8 +39,8 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -290,7 +290,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Name:      "rhssouser-postgres-",
 			Namespace: defaultOperatorNamespace,
 		},
-		Status: crov1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      "test",
@@ -514,7 +514,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 			Name:      fmt.Sprintf("rhssouser-postgres-%s", installation.Name),
 			Namespace: defaultNamespace,
 		},
-		Status: crov1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      "test",
@@ -741,7 +741,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 			Name:      fmt.Sprintf("rhssouser-postgres-%s", installation.Name),
 			Namespace: defaultNamespace,
 		},
-		Status: crov1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      "test",

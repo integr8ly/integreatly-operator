@@ -14,8 +14,8 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	crotypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	enmassev1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta2"
@@ -30,7 +30,7 @@ import (
 
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -195,8 +195,8 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			Name:      "standard-authservice-postgresql",
 			Namespace: "test-namespace",
 		},
-		Spec: crov1.PostgresSpec{},
-		Status: crov1.PostgresStatus{
+		Spec: crotypes.ResourceTypeSpec{},
+		Status: crotypes.ResourceTypeStatus{
 			Phase: crotypes.PhaseComplete,
 			SecretRef: &crotypes.SecretRef{
 				Name:      "enmasse-postgres-secret",
@@ -625,8 +625,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:      "standard-authservice-postgresql",
 			Namespace: defaultInstallationNamespace,
 		},
-		Spec: crov1.PostgresSpec{},
-		Status: crov1.PostgresStatus{
+		Spec: crotypes.ResourceTypeSpec{},
+		Status: crotypes.ResourceTypeStatus{
 			Phase: crotypes.PhaseComplete,
 			SecretRef: &crotypes.SecretRef{
 				Name:      "enmasse-postgres-secret",

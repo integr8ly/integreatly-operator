@@ -24,7 +24,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	cro1types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +33,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"

@@ -7,29 +7,25 @@ import (
 	"sync"
 )
 
-var (
-	lockConnectionTesterMockTCPConnection sync.RWMutex
-)
-
 // Ensure, that ConnectionTesterMock does implement ConnectionTester.
 // If this is not the case, regenerate this file with moq.
 var _ ConnectionTester = &ConnectionTesterMock{}
 
 // ConnectionTesterMock is a mock implementation of ConnectionTester.
 //
-//     func TestSomethingThatUsesConnectionTester(t *testing.T) {
+// 	func TestSomethingThatUsesConnectionTester(t *testing.T) {
 //
-//         // make and configure a mocked ConnectionTester
-//         mockedConnectionTester := &ConnectionTesterMock{
-//             TCPConnectionFunc: func(host string, port int) bool {
-// 	               panic("mock out the TCPConnection method")
-//             },
-//         }
+// 		// make and configure a mocked ConnectionTester
+// 		mockedConnectionTester := &ConnectionTesterMock{
+// 			TCPConnectionFunc: func(host string, port int) bool {
+// 				panic("mock out the TCPConnection method")
+// 			},
+// 		}
 //
-//         // use mockedConnectionTester in code that requires ConnectionTester
-//         // and then make assertions.
+// 		// use mockedConnectionTester in code that requires ConnectionTester
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type ConnectionTesterMock struct {
 	// TCPConnectionFunc mocks the TCPConnection method.
 	TCPConnectionFunc func(host string, port int) bool
@@ -44,6 +40,7 @@ type ConnectionTesterMock struct {
 			Port int
 		}
 	}
+	lockTCPConnection sync.RWMutex
 }
 
 // TCPConnection calls TCPConnectionFunc.
@@ -58,9 +55,9 @@ func (mock *ConnectionTesterMock) TCPConnection(host string, port int) bool {
 		Host: host,
 		Port: port,
 	}
-	lockConnectionTesterMockTCPConnection.Lock()
+	mock.lockTCPConnection.Lock()
 	mock.calls.TCPConnection = append(mock.calls.TCPConnection, callInfo)
-	lockConnectionTesterMockTCPConnection.Unlock()
+	mock.lockTCPConnection.Unlock()
 	return mock.TCPConnectionFunc(host, port)
 }
 
@@ -75,8 +72,8 @@ func (mock *ConnectionTesterMock) TCPConnectionCalls() []struct {
 		Host string
 		Port int
 	}
-	lockConnectionTesterMockTCPConnection.RLock()
+	mock.lockTCPConnection.RLock()
 	calls = mock.calls.TCPConnection
-	lockConnectionTesterMockTCPConnection.RUnlock()
+	mock.lockTCPConnection.RUnlock()
 	return calls
 }

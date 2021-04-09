@@ -63,8 +63,9 @@ products:
     manifestsDir: "integreatly-apicurito"
   cloud-resources:
     channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-cloud-resources"
+    installFrom: "index"
+    package: "rhmi-cloud-resources"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.24.0"
   codeready-workspaces:
     channel: "rhmi"
     installFrom: "local"

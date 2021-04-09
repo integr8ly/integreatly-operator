@@ -15,192 +15,166 @@ var _ NetworkManager = &NetworkManagerMock{}
 
 // NetworkManagerMock is a mock implementation of NetworkManager.
 //
-//     func TestSomethingThatUsesNetworkManager(t *testing.T) {
+// 	func TestSomethingThatUsesNetworkManager(t *testing.T) {
 //
-//         // make and configure a mocked NetworkManager
-//         mockedNetworkManager := &NetworkManagerMock{
-//             CreateNetworkFunc: func(in1 context.Context, in2 *net.IPNet) (*Network, error) {
-// 	               panic("mock out the CreateNetwork method")
-//             },
-//             CreateNetworkConnectionFunc: func(in1 context.Context, in2 *Network) (*NetworkConnection, error) {
-// 	               panic("mock out the CreateNetworkConnection method")
-//             },
-//             CreateNetworkPeeringFunc: func(in1 context.Context, in2 *Network) (*NetworkPeering, error) {
-// 	               panic("mock out the CreateNetworkPeering method")
-//             },
-//             DeleteBundledCloudResourcesFunc: func(in1 context.Context) error {
-// 	               panic("mock out the DeleteBundledCloudResources method")
-//             },
-//             DeleteNetworkFunc: func(in1 context.Context) error {
-// 	               panic("mock out the DeleteNetwork method")
-//             },
-//             DeleteNetworkConnectionFunc: func(in1 context.Context, in2 *NetworkPeering) error {
-// 	               panic("mock out the DeleteNetworkConnection method")
-//             },
-//             DeleteNetworkPeeringFunc: func(in1 *NetworkPeering) error {
-// 	               panic("mock out the DeleteNetworkPeering method")
-//             },
-//             GetClusterNetworkPeeringFunc: func(in1 context.Context) (*NetworkPeering, error) {
-// 	               panic("mock out the GetClusterNetworkPeering method")
-//             },
-//             IsEnabledFunc: func(in1 context.Context) (bool, error) {
-// 	               panic("mock out the IsEnabled method")
-//             },
-//             getNonOverlappingDefaultCIDRFunc: func(in1 context.Context) (*net.IPNet, error) {
-// 	               panic("mock out the getNonOverlappingDefaultCIDR method")
-//             },
-//             validateStandaloneCidrBlockFunc: func(in1 context.Context, in2 *net.IPNet) error {
-// 	               panic("mock out the validateStandaloneCidrBlock method")
-//             },
-//         }
+// 		// make and configure a mocked NetworkManager
+// 		mockedNetworkManager := &NetworkManagerMock{
+// 			CreateNetworkFunc: func(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error) {
+// 				panic("mock out the CreateNetwork method")
+// 			},
+// 			CreateNetworkConnectionFunc: func(contextMoqParam context.Context, network *Network) (*NetworkConnection, error) {
+// 				panic("mock out the CreateNetworkConnection method")
+// 			},
+// 			CreateNetworkPeeringFunc: func(contextMoqParam context.Context, network *Network) (*NetworkPeering, error) {
+// 				panic("mock out the CreateNetworkPeering method")
+// 			},
+// 			DeleteBundledCloudResourcesFunc: func(contextMoqParam context.Context) error {
+// 				panic("mock out the DeleteBundledCloudResources method")
+// 			},
+// 			DeleteNetworkFunc: func(contextMoqParam context.Context) error {
+// 				panic("mock out the DeleteNetwork method")
+// 			},
+// 			DeleteNetworkConnectionFunc: func(contextMoqParam context.Context, networkPeering *NetworkPeering) error {
+// 				panic("mock out the DeleteNetworkConnection method")
+// 			},
+// 			DeleteNetworkPeeringFunc: func(networkPeering *NetworkPeering) error {
+// 				panic("mock out the DeleteNetworkPeering method")
+// 			},
+// 			GetClusterNetworkPeeringFunc: func(contextMoqParam context.Context) (*NetworkPeering, error) {
+// 				panic("mock out the GetClusterNetworkPeering method")
+// 			},
+// 			IsEnabledFunc: func(contextMoqParam context.Context) (bool, error) {
+// 				panic("mock out the IsEnabled method")
+// 			},
+// 		}
 //
-//         // use mockedNetworkManager in code that requires NetworkManager
-//         // and then make assertions.
+// 		// use mockedNetworkManager in code that requires NetworkManager
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type NetworkManagerMock struct {
 	// CreateNetworkFunc mocks the CreateNetwork method.
-	CreateNetworkFunc func(in1 context.Context, in2 *net.IPNet) (*Network, error)
+	CreateNetworkFunc func(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error)
 
 	// CreateNetworkConnectionFunc mocks the CreateNetworkConnection method.
-	CreateNetworkConnectionFunc func(in1 context.Context, in2 *Network) (*NetworkConnection, error)
+	CreateNetworkConnectionFunc func(contextMoqParam context.Context, network *Network) (*NetworkConnection, error)
 
 	// CreateNetworkPeeringFunc mocks the CreateNetworkPeering method.
-	CreateNetworkPeeringFunc func(in1 context.Context, in2 *Network) (*NetworkPeering, error)
+	CreateNetworkPeeringFunc func(contextMoqParam context.Context, network *Network) (*NetworkPeering, error)
 
 	// DeleteBundledCloudResourcesFunc mocks the DeleteBundledCloudResources method.
-	DeleteBundledCloudResourcesFunc func(in1 context.Context) error
+	DeleteBundledCloudResourcesFunc func(contextMoqParam context.Context) error
 
 	// DeleteNetworkFunc mocks the DeleteNetwork method.
-	DeleteNetworkFunc func(in1 context.Context) error
+	DeleteNetworkFunc func(contextMoqParam context.Context) error
 
 	// DeleteNetworkConnectionFunc mocks the DeleteNetworkConnection method.
-	DeleteNetworkConnectionFunc func(in1 context.Context, in2 *NetworkPeering) error
+	DeleteNetworkConnectionFunc func(contextMoqParam context.Context, networkPeering *NetworkPeering) error
 
 	// DeleteNetworkPeeringFunc mocks the DeleteNetworkPeering method.
-	DeleteNetworkPeeringFunc func(in1 *NetworkPeering) error
+	DeleteNetworkPeeringFunc func(networkPeering *NetworkPeering) error
 
 	// GetClusterNetworkPeeringFunc mocks the GetClusterNetworkPeering method.
-	GetClusterNetworkPeeringFunc func(in1 context.Context) (*NetworkPeering, error)
+	GetClusterNetworkPeeringFunc func(contextMoqParam context.Context) (*NetworkPeering, error)
 
 	// IsEnabledFunc mocks the IsEnabled method.
-	IsEnabledFunc func(in1 context.Context) (bool, error)
-
-	// getNonOverlappingDefaultCIDRFunc mocks the getNonOverlappingDefaultCIDR method.
-	getNonOverlappingDefaultCIDRFunc func(in1 context.Context) (*net.IPNet, error)
-
-	// validateStandaloneCidrBlockFunc mocks the validateStandaloneCidrBlock method.
-	validateStandaloneCidrBlockFunc func(in1 context.Context, in2 *net.IPNet) error
+	IsEnabledFunc func(contextMoqParam context.Context) (bool, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// CreateNetwork holds details about calls to the CreateNetwork method.
 		CreateNetwork []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-			// In2 is the in2 argument value.
-			In2 *net.IPNet
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// IPNet is the iPNet argument value.
+			IPNet *net.IPNet
 		}
 		// CreateNetworkConnection holds details about calls to the CreateNetworkConnection method.
 		CreateNetworkConnection []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-			// In2 is the in2 argument value.
-			In2 *Network
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Network is the network argument value.
+			Network *Network
 		}
 		// CreateNetworkPeering holds details about calls to the CreateNetworkPeering method.
 		CreateNetworkPeering []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-			// In2 is the in2 argument value.
-			In2 *Network
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Network is the network argument value.
+			Network *Network
 		}
 		// DeleteBundledCloudResources holds details about calls to the DeleteBundledCloudResources method.
 		DeleteBundledCloudResources []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 		// DeleteNetwork holds details about calls to the DeleteNetwork method.
 		DeleteNetwork []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 		// DeleteNetworkConnection holds details about calls to the DeleteNetworkConnection method.
 		DeleteNetworkConnection []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-			// In2 is the in2 argument value.
-			In2 *NetworkPeering
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// NetworkPeering is the networkPeering argument value.
+			NetworkPeering *NetworkPeering
 		}
 		// DeleteNetworkPeering holds details about calls to the DeleteNetworkPeering method.
 		DeleteNetworkPeering []struct {
-			// In1 is the in1 argument value.
-			In1 *NetworkPeering
+			// NetworkPeering is the networkPeering argument value.
+			NetworkPeering *NetworkPeering
 		}
 		// GetClusterNetworkPeering holds details about calls to the GetClusterNetworkPeering method.
 		GetClusterNetworkPeering []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 		// IsEnabled holds details about calls to the IsEnabled method.
 		IsEnabled []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-		}
-		// getNonOverlappingDefaultCIDR holds details about calls to the getNonOverlappingDefaultCIDR method.
-		getNonOverlappingDefaultCIDR []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-		}
-		// validateStandaloneCidrBlock holds details about calls to the validateStandaloneCidrBlock method.
-		validateStandaloneCidrBlock []struct {
-			// In1 is the in1 argument value.
-			In1 context.Context
-			// In2 is the in2 argument value.
-			In2 *net.IPNet
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
 		}
 	}
-	lockCreateNetwork                sync.RWMutex
-	lockCreateNetworkConnection      sync.RWMutex
-	lockCreateNetworkPeering         sync.RWMutex
-	lockDeleteBundledCloudResources  sync.RWMutex
-	lockDeleteNetwork                sync.RWMutex
-	lockDeleteNetworkConnection      sync.RWMutex
-	lockDeleteNetworkPeering         sync.RWMutex
-	lockGetClusterNetworkPeering     sync.RWMutex
-	lockIsEnabled                    sync.RWMutex
-	lockgetNonOverlappingDefaultCIDR sync.RWMutex
-	lockvalidateStandaloneCidrBlock  sync.RWMutex
+	lockCreateNetwork               sync.RWMutex
+	lockCreateNetworkConnection     sync.RWMutex
+	lockCreateNetworkPeering        sync.RWMutex
+	lockDeleteBundledCloudResources sync.RWMutex
+	lockDeleteNetwork               sync.RWMutex
+	lockDeleteNetworkConnection     sync.RWMutex
+	lockDeleteNetworkPeering        sync.RWMutex
+	lockGetClusterNetworkPeering    sync.RWMutex
+	lockIsEnabled                   sync.RWMutex
 }
 
 // CreateNetwork calls CreateNetworkFunc.
-func (mock *NetworkManagerMock) CreateNetwork(in1 context.Context, in2 *net.IPNet) (*Network, error) {
+func (mock *NetworkManagerMock) CreateNetwork(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error) {
 	if mock.CreateNetworkFunc == nil {
 		panic("NetworkManagerMock.CreateNetworkFunc: method is nil but NetworkManager.CreateNetwork was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
-		In2 *net.IPNet
+		ContextMoqParam context.Context
+		IPNet           *net.IPNet
 	}{
-		In1: in1,
-		In2: in2,
+		ContextMoqParam: contextMoqParam,
+		IPNet:           iPNet,
 	}
 	mock.lockCreateNetwork.Lock()
 	mock.calls.CreateNetwork = append(mock.calls.CreateNetwork, callInfo)
 	mock.lockCreateNetwork.Unlock()
-	return mock.CreateNetworkFunc(in1, in2)
+	return mock.CreateNetworkFunc(contextMoqParam, iPNet)
 }
 
 // CreateNetworkCalls gets all the calls that were made to CreateNetwork.
 // Check the length with:
 //     len(mockedNetworkManager.CreateNetworkCalls())
 func (mock *NetworkManagerMock) CreateNetworkCalls() []struct {
-	In1 context.Context
-	In2 *net.IPNet
+	ContextMoqParam context.Context
+	IPNet           *net.IPNet
 } {
 	var calls []struct {
-		In1 context.Context
-		In2 *net.IPNet
+		ContextMoqParam context.Context
+		IPNet           *net.IPNet
 	}
 	mock.lockCreateNetwork.RLock()
 	calls = mock.calls.CreateNetwork
@@ -209,33 +183,33 @@ func (mock *NetworkManagerMock) CreateNetworkCalls() []struct {
 }
 
 // CreateNetworkConnection calls CreateNetworkConnectionFunc.
-func (mock *NetworkManagerMock) CreateNetworkConnection(in1 context.Context, in2 *Network) (*NetworkConnection, error) {
+func (mock *NetworkManagerMock) CreateNetworkConnection(contextMoqParam context.Context, network *Network) (*NetworkConnection, error) {
 	if mock.CreateNetworkConnectionFunc == nil {
 		panic("NetworkManagerMock.CreateNetworkConnectionFunc: method is nil but NetworkManager.CreateNetworkConnection was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
-		In2 *Network
+		ContextMoqParam context.Context
+		Network         *Network
 	}{
-		In1: in1,
-		In2: in2,
+		ContextMoqParam: contextMoqParam,
+		Network:         network,
 	}
 	mock.lockCreateNetworkConnection.Lock()
 	mock.calls.CreateNetworkConnection = append(mock.calls.CreateNetworkConnection, callInfo)
 	mock.lockCreateNetworkConnection.Unlock()
-	return mock.CreateNetworkConnectionFunc(in1, in2)
+	return mock.CreateNetworkConnectionFunc(contextMoqParam, network)
 }
 
 // CreateNetworkConnectionCalls gets all the calls that were made to CreateNetworkConnection.
 // Check the length with:
 //     len(mockedNetworkManager.CreateNetworkConnectionCalls())
 func (mock *NetworkManagerMock) CreateNetworkConnectionCalls() []struct {
-	In1 context.Context
-	In2 *Network
+	ContextMoqParam context.Context
+	Network         *Network
 } {
 	var calls []struct {
-		In1 context.Context
-		In2 *Network
+		ContextMoqParam context.Context
+		Network         *Network
 	}
 	mock.lockCreateNetworkConnection.RLock()
 	calls = mock.calls.CreateNetworkConnection
@@ -244,33 +218,33 @@ func (mock *NetworkManagerMock) CreateNetworkConnectionCalls() []struct {
 }
 
 // CreateNetworkPeering calls CreateNetworkPeeringFunc.
-func (mock *NetworkManagerMock) CreateNetworkPeering(in1 context.Context, in2 *Network) (*NetworkPeering, error) {
+func (mock *NetworkManagerMock) CreateNetworkPeering(contextMoqParam context.Context, network *Network) (*NetworkPeering, error) {
 	if mock.CreateNetworkPeeringFunc == nil {
 		panic("NetworkManagerMock.CreateNetworkPeeringFunc: method is nil but NetworkManager.CreateNetworkPeering was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
-		In2 *Network
+		ContextMoqParam context.Context
+		Network         *Network
 	}{
-		In1: in1,
-		In2: in2,
+		ContextMoqParam: contextMoqParam,
+		Network:         network,
 	}
 	mock.lockCreateNetworkPeering.Lock()
 	mock.calls.CreateNetworkPeering = append(mock.calls.CreateNetworkPeering, callInfo)
 	mock.lockCreateNetworkPeering.Unlock()
-	return mock.CreateNetworkPeeringFunc(in1, in2)
+	return mock.CreateNetworkPeeringFunc(contextMoqParam, network)
 }
 
 // CreateNetworkPeeringCalls gets all the calls that were made to CreateNetworkPeering.
 // Check the length with:
 //     len(mockedNetworkManager.CreateNetworkPeeringCalls())
 func (mock *NetworkManagerMock) CreateNetworkPeeringCalls() []struct {
-	In1 context.Context
-	In2 *Network
+	ContextMoqParam context.Context
+	Network         *Network
 } {
 	var calls []struct {
-		In1 context.Context
-		In2 *Network
+		ContextMoqParam context.Context
+		Network         *Network
 	}
 	mock.lockCreateNetworkPeering.RLock()
 	calls = mock.calls.CreateNetworkPeering
@@ -279,29 +253,29 @@ func (mock *NetworkManagerMock) CreateNetworkPeeringCalls() []struct {
 }
 
 // DeleteBundledCloudResources calls DeleteBundledCloudResourcesFunc.
-func (mock *NetworkManagerMock) DeleteBundledCloudResources(in1 context.Context) error {
+func (mock *NetworkManagerMock) DeleteBundledCloudResources(contextMoqParam context.Context) error {
 	if mock.DeleteBundledCloudResourcesFunc == nil {
 		panic("NetworkManagerMock.DeleteBundledCloudResourcesFunc: method is nil but NetworkManager.DeleteBundledCloudResources was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}{
-		In1: in1,
+		ContextMoqParam: contextMoqParam,
 	}
 	mock.lockDeleteBundledCloudResources.Lock()
 	mock.calls.DeleteBundledCloudResources = append(mock.calls.DeleteBundledCloudResources, callInfo)
 	mock.lockDeleteBundledCloudResources.Unlock()
-	return mock.DeleteBundledCloudResourcesFunc(in1)
+	return mock.DeleteBundledCloudResourcesFunc(contextMoqParam)
 }
 
 // DeleteBundledCloudResourcesCalls gets all the calls that were made to DeleteBundledCloudResources.
 // Check the length with:
 //     len(mockedNetworkManager.DeleteBundledCloudResourcesCalls())
 func (mock *NetworkManagerMock) DeleteBundledCloudResourcesCalls() []struct {
-	In1 context.Context
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}
 	mock.lockDeleteBundledCloudResources.RLock()
 	calls = mock.calls.DeleteBundledCloudResources
@@ -310,29 +284,29 @@ func (mock *NetworkManagerMock) DeleteBundledCloudResourcesCalls() []struct {
 }
 
 // DeleteNetwork calls DeleteNetworkFunc.
-func (mock *NetworkManagerMock) DeleteNetwork(in1 context.Context) error {
+func (mock *NetworkManagerMock) DeleteNetwork(contextMoqParam context.Context) error {
 	if mock.DeleteNetworkFunc == nil {
 		panic("NetworkManagerMock.DeleteNetworkFunc: method is nil but NetworkManager.DeleteNetwork was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}{
-		In1: in1,
+		ContextMoqParam: contextMoqParam,
 	}
 	mock.lockDeleteNetwork.Lock()
 	mock.calls.DeleteNetwork = append(mock.calls.DeleteNetwork, callInfo)
 	mock.lockDeleteNetwork.Unlock()
-	return mock.DeleteNetworkFunc(in1)
+	return mock.DeleteNetworkFunc(contextMoqParam)
 }
 
 // DeleteNetworkCalls gets all the calls that were made to DeleteNetwork.
 // Check the length with:
 //     len(mockedNetworkManager.DeleteNetworkCalls())
 func (mock *NetworkManagerMock) DeleteNetworkCalls() []struct {
-	In1 context.Context
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}
 	mock.lockDeleteNetwork.RLock()
 	calls = mock.calls.DeleteNetwork
@@ -341,33 +315,33 @@ func (mock *NetworkManagerMock) DeleteNetworkCalls() []struct {
 }
 
 // DeleteNetworkConnection calls DeleteNetworkConnectionFunc.
-func (mock *NetworkManagerMock) DeleteNetworkConnection(in1 context.Context, in2 *NetworkPeering) error {
+func (mock *NetworkManagerMock) DeleteNetworkConnection(contextMoqParam context.Context, networkPeering *NetworkPeering) error {
 	if mock.DeleteNetworkConnectionFunc == nil {
 		panic("NetworkManagerMock.DeleteNetworkConnectionFunc: method is nil but NetworkManager.DeleteNetworkConnection was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
-		In2 *NetworkPeering
+		ContextMoqParam context.Context
+		NetworkPeering  *NetworkPeering
 	}{
-		In1: in1,
-		In2: in2,
+		ContextMoqParam: contextMoqParam,
+		NetworkPeering:  networkPeering,
 	}
 	mock.lockDeleteNetworkConnection.Lock()
 	mock.calls.DeleteNetworkConnection = append(mock.calls.DeleteNetworkConnection, callInfo)
 	mock.lockDeleteNetworkConnection.Unlock()
-	return mock.DeleteNetworkConnectionFunc(in1, in2)
+	return mock.DeleteNetworkConnectionFunc(contextMoqParam, networkPeering)
 }
 
 // DeleteNetworkConnectionCalls gets all the calls that were made to DeleteNetworkConnection.
 // Check the length with:
 //     len(mockedNetworkManager.DeleteNetworkConnectionCalls())
 func (mock *NetworkManagerMock) DeleteNetworkConnectionCalls() []struct {
-	In1 context.Context
-	In2 *NetworkPeering
+	ContextMoqParam context.Context
+	NetworkPeering  *NetworkPeering
 } {
 	var calls []struct {
-		In1 context.Context
-		In2 *NetworkPeering
+		ContextMoqParam context.Context
+		NetworkPeering  *NetworkPeering
 	}
 	mock.lockDeleteNetworkConnection.RLock()
 	calls = mock.calls.DeleteNetworkConnection
@@ -376,29 +350,29 @@ func (mock *NetworkManagerMock) DeleteNetworkConnectionCalls() []struct {
 }
 
 // DeleteNetworkPeering calls DeleteNetworkPeeringFunc.
-func (mock *NetworkManagerMock) DeleteNetworkPeering(in1 *NetworkPeering) error {
+func (mock *NetworkManagerMock) DeleteNetworkPeering(networkPeering *NetworkPeering) error {
 	if mock.DeleteNetworkPeeringFunc == nil {
 		panic("NetworkManagerMock.DeleteNetworkPeeringFunc: method is nil but NetworkManager.DeleteNetworkPeering was just called")
 	}
 	callInfo := struct {
-		In1 *NetworkPeering
+		NetworkPeering *NetworkPeering
 	}{
-		In1: in1,
+		NetworkPeering: networkPeering,
 	}
 	mock.lockDeleteNetworkPeering.Lock()
 	mock.calls.DeleteNetworkPeering = append(mock.calls.DeleteNetworkPeering, callInfo)
 	mock.lockDeleteNetworkPeering.Unlock()
-	return mock.DeleteNetworkPeeringFunc(in1)
+	return mock.DeleteNetworkPeeringFunc(networkPeering)
 }
 
 // DeleteNetworkPeeringCalls gets all the calls that were made to DeleteNetworkPeering.
 // Check the length with:
 //     len(mockedNetworkManager.DeleteNetworkPeeringCalls())
 func (mock *NetworkManagerMock) DeleteNetworkPeeringCalls() []struct {
-	In1 *NetworkPeering
+	NetworkPeering *NetworkPeering
 } {
 	var calls []struct {
-		In1 *NetworkPeering
+		NetworkPeering *NetworkPeering
 	}
 	mock.lockDeleteNetworkPeering.RLock()
 	calls = mock.calls.DeleteNetworkPeering
@@ -407,29 +381,29 @@ func (mock *NetworkManagerMock) DeleteNetworkPeeringCalls() []struct {
 }
 
 // GetClusterNetworkPeering calls GetClusterNetworkPeeringFunc.
-func (mock *NetworkManagerMock) GetClusterNetworkPeering(in1 context.Context) (*NetworkPeering, error) {
+func (mock *NetworkManagerMock) GetClusterNetworkPeering(contextMoqParam context.Context) (*NetworkPeering, error) {
 	if mock.GetClusterNetworkPeeringFunc == nil {
 		panic("NetworkManagerMock.GetClusterNetworkPeeringFunc: method is nil but NetworkManager.GetClusterNetworkPeering was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}{
-		In1: in1,
+		ContextMoqParam: contextMoqParam,
 	}
 	mock.lockGetClusterNetworkPeering.Lock()
 	mock.calls.GetClusterNetworkPeering = append(mock.calls.GetClusterNetworkPeering, callInfo)
 	mock.lockGetClusterNetworkPeering.Unlock()
-	return mock.GetClusterNetworkPeeringFunc(in1)
+	return mock.GetClusterNetworkPeeringFunc(contextMoqParam)
 }
 
 // GetClusterNetworkPeeringCalls gets all the calls that were made to GetClusterNetworkPeering.
 // Check the length with:
 //     len(mockedNetworkManager.GetClusterNetworkPeeringCalls())
 func (mock *NetworkManagerMock) GetClusterNetworkPeeringCalls() []struct {
-	In1 context.Context
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}
 	mock.lockGetClusterNetworkPeering.RLock()
 	calls = mock.calls.GetClusterNetworkPeering
@@ -438,98 +412,32 @@ func (mock *NetworkManagerMock) GetClusterNetworkPeeringCalls() []struct {
 }
 
 // IsEnabled calls IsEnabledFunc.
-func (mock *NetworkManagerMock) IsEnabled(in1 context.Context) (bool, error) {
+func (mock *NetworkManagerMock) IsEnabled(contextMoqParam context.Context) (bool, error) {
 	if mock.IsEnabledFunc == nil {
 		panic("NetworkManagerMock.IsEnabledFunc: method is nil but NetworkManager.IsEnabled was just called")
 	}
 	callInfo := struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}{
-		In1: in1,
+		ContextMoqParam: contextMoqParam,
 	}
 	mock.lockIsEnabled.Lock()
 	mock.calls.IsEnabled = append(mock.calls.IsEnabled, callInfo)
 	mock.lockIsEnabled.Unlock()
-	return mock.IsEnabledFunc(in1)
+	return mock.IsEnabledFunc(contextMoqParam)
 }
 
 // IsEnabledCalls gets all the calls that were made to IsEnabled.
 // Check the length with:
 //     len(mockedNetworkManager.IsEnabledCalls())
 func (mock *NetworkManagerMock) IsEnabledCalls() []struct {
-	In1 context.Context
+	ContextMoqParam context.Context
 } {
 	var calls []struct {
-		In1 context.Context
+		ContextMoqParam context.Context
 	}
 	mock.lockIsEnabled.RLock()
 	calls = mock.calls.IsEnabled
 	mock.lockIsEnabled.RUnlock()
-	return calls
-}
-
-// getNonOverlappingDefaultCIDR calls getNonOverlappingDefaultCIDRFunc.
-func (mock *NetworkManagerMock) getNonOverlappingDefaultCIDR(in1 context.Context) (*net.IPNet, error) {
-	if mock.getNonOverlappingDefaultCIDRFunc == nil {
-		panic("NetworkManagerMock.getNonOverlappingDefaultCIDRFunc: method is nil but NetworkManager.getNonOverlappingDefaultCIDR was just called")
-	}
-	callInfo := struct {
-		In1 context.Context
-	}{
-		In1: in1,
-	}
-	mock.lockgetNonOverlappingDefaultCIDR.Lock()
-	mock.calls.getNonOverlappingDefaultCIDR = append(mock.calls.getNonOverlappingDefaultCIDR, callInfo)
-	mock.lockgetNonOverlappingDefaultCIDR.Unlock()
-	return mock.getNonOverlappingDefaultCIDRFunc(in1)
-}
-
-// getNonOverlappingDefaultCIDRCalls gets all the calls that were made to getNonOverlappingDefaultCIDR.
-// Check the length with:
-//     len(mockedNetworkManager.getNonOverlappingDefaultCIDRCalls())
-func (mock *NetworkManagerMock) getNonOverlappingDefaultCIDRCalls() []struct {
-	In1 context.Context
-} {
-	var calls []struct {
-		In1 context.Context
-	}
-	mock.lockgetNonOverlappingDefaultCIDR.RLock()
-	calls = mock.calls.getNonOverlappingDefaultCIDR
-	mock.lockgetNonOverlappingDefaultCIDR.RUnlock()
-	return calls
-}
-
-// validateStandaloneCidrBlock calls validateStandaloneCidrBlockFunc.
-func (mock *NetworkManagerMock) validateStandaloneCidrBlock(in1 context.Context, in2 *net.IPNet) error {
-	if mock.validateStandaloneCidrBlockFunc == nil {
-		panic("NetworkManagerMock.validateStandaloneCidrBlockFunc: method is nil but NetworkManager.validateStandaloneCidrBlock was just called")
-	}
-	callInfo := struct {
-		In1 context.Context
-		In2 *net.IPNet
-	}{
-		In1: in1,
-		In2: in2,
-	}
-	mock.lockvalidateStandaloneCidrBlock.Lock()
-	mock.calls.validateStandaloneCidrBlock = append(mock.calls.validateStandaloneCidrBlock, callInfo)
-	mock.lockvalidateStandaloneCidrBlock.Unlock()
-	return mock.validateStandaloneCidrBlockFunc(in1, in2)
-}
-
-// validateStandaloneCidrBlockCalls gets all the calls that were made to validateStandaloneCidrBlock.
-// Check the length with:
-//     len(mockedNetworkManager.validateStandaloneCidrBlockCalls())
-func (mock *NetworkManagerMock) validateStandaloneCidrBlockCalls() []struct {
-	In1 context.Context
-	In2 *net.IPNet
-} {
-	var calls []struct {
-		In1 context.Context
-		In2 *net.IPNet
-	}
-	mock.lockvalidateStandaloneCidrBlock.RLock()
-	calls = mock.calls.validateStandaloneCidrBlock
-	mock.lockvalidateStandaloneCidrBlock.RUnlock()
 	return calls
 }

@@ -4,12 +4,8 @@
 package resources
 
 import (
-	"k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"sync"
-)
-
-var (
-	lockPodCommanderMockExecIntoPod sync.RWMutex
 )
 
 // Ensure, that PodCommanderMock does implement PodCommander.
@@ -18,50 +14,51 @@ var _ PodCommander = &PodCommanderMock{}
 
 // PodCommanderMock is a mock implementation of PodCommander.
 //
-//     func TestSomethingThatUsesPodCommander(t *testing.T) {
+// 	func TestSomethingThatUsesPodCommander(t *testing.T) {
 //
-//         // make and configure a mocked PodCommander
-//         mockedPodCommander := &PodCommanderMock{
-//             ExecIntoPodFunc: func(dpl *v1.Deployment, cmd string) error {
-// 	               panic("mock out the ExecIntoPod method")
-//             },
-//         }
+// 		// make and configure a mocked PodCommander
+// 		mockedPodCommander := &PodCommanderMock{
+// 			ExecIntoPodFunc: func(dpl *appsv1.Deployment, cmd string) error {
+// 				panic("mock out the ExecIntoPod method")
+// 			},
+// 		}
 //
-//         // use mockedPodCommander in code that requires PodCommander
-//         // and then make assertions.
+// 		// use mockedPodCommander in code that requires PodCommander
+// 		// and then make assertions.
 //
-//     }
+// 	}
 type PodCommanderMock struct {
 	// ExecIntoPodFunc mocks the ExecIntoPod method.
-	ExecIntoPodFunc func(dpl *v1.Deployment, cmd string) error
+	ExecIntoPodFunc func(dpl *appsv1.Deployment, cmd string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// ExecIntoPod holds details about calls to the ExecIntoPod method.
 		ExecIntoPod []struct {
 			// Dpl is the dpl argument value.
-			Dpl *v1.Deployment
+			Dpl *appsv1.Deployment
 			// Cmd is the cmd argument value.
 			Cmd string
 		}
 	}
+	lockExecIntoPod sync.RWMutex
 }
 
 // ExecIntoPod calls ExecIntoPodFunc.
-func (mock *PodCommanderMock) ExecIntoPod(dpl *v1.Deployment, cmd string) error {
+func (mock *PodCommanderMock) ExecIntoPod(dpl *appsv1.Deployment, cmd string) error {
 	if mock.ExecIntoPodFunc == nil {
 		panic("PodCommanderMock.ExecIntoPodFunc: method is nil but PodCommander.ExecIntoPod was just called")
 	}
 	callInfo := struct {
-		Dpl *v1.Deployment
+		Dpl *appsv1.Deployment
 		Cmd string
 	}{
 		Dpl: dpl,
 		Cmd: cmd,
 	}
-	lockPodCommanderMockExecIntoPod.Lock()
+	mock.lockExecIntoPod.Lock()
 	mock.calls.ExecIntoPod = append(mock.calls.ExecIntoPod, callInfo)
-	lockPodCommanderMockExecIntoPod.Unlock()
+	mock.lockExecIntoPod.Unlock()
 	return mock.ExecIntoPodFunc(dpl, cmd)
 }
 
@@ -69,15 +66,15 @@ func (mock *PodCommanderMock) ExecIntoPod(dpl *v1.Deployment, cmd string) error 
 // Check the length with:
 //     len(mockedPodCommander.ExecIntoPodCalls())
 func (mock *PodCommanderMock) ExecIntoPodCalls() []struct {
-	Dpl *v1.Deployment
+	Dpl *appsv1.Deployment
 	Cmd string
 } {
 	var calls []struct {
-		Dpl *v1.Deployment
+		Dpl *appsv1.Deployment
 		Cmd string
 	}
-	lockPodCommanderMockExecIntoPod.RLock()
+	mock.lockExecIntoPod.RLock()
 	calls = mock.calls.ExecIntoPod
-	lockPodCommanderMockExecIntoPod.RUnlock()
+	mock.lockExecIntoPod.RUnlock()
 	return calls
 }
