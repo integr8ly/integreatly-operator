@@ -52,19 +52,19 @@ data:
                           }
                       }
                   },
-                  "rhssouser": {
-                      "replicas": 3,
-                      "resources": {
-                          "requests": {
-                              "cpu": 0.70,
-                              "memory": 1000
-                          },
-                          "limits": {
-                              "cpu": 0.70,
-                              "memory": 1000
-                          }
-                      }
-                  },
+               "rhssouser": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.75,
+                            "memory": "1500Mi"
+                        },
+                        "limits": {
+                            "cpu": 1.5,
+                            "memory": "1500Mi"
+                        }
+                    }
+                },
                 "ratelimit": {
                       "replicas": 3,
                       "resources": {
@@ -204,19 +204,19 @@ data:
                       }
                   }
               },
-              "rhssouser": {
-                  "replicas": 1,
-                  "resources": {
-                      "requests": {
-                          "cpu": 0.75,
-                          "memory": 1500
-                      },
-                      "limits": {
-                          "cpu": 0.75,
-                          "memory": 1500
-                      }
-                  }
-              },
+            "rhssouser": {
+                 "replicas": 1,
+                 "resources": {
+                     "requests": {
+                         "cpu": 0.75,
+                         "memory": "1500Mi"
+                     },
+                     "limits": {
+                         "cpu": 0.75,
+                         "memory": "1500Mi"
+                     }
+                 }
+             },
               "ratelimit": {
                   "replicas": 1,
                 "resources": {
