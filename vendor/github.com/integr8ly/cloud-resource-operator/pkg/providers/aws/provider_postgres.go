@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 
+	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/annotations"
-	croType "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -29,7 +29,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"

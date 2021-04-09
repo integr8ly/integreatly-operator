@@ -10,8 +10,8 @@ import (
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	types2 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	types2 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
@@ -227,8 +227,8 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 			Name:      "codeready-postgres-",
 			Namespace: "codeready-workspaces",
 		},
-		Spec: crov1.PostgresSpec{},
-		Status: crov1.PostgresStatus{
+		Spec: types2.ResourceTypeSpec{},
+		Status: types2.ResourceTypeStatus{
 			Phase: types2.PhaseComplete,
 			SecretRef: &types2.SecretRef{
 				Name: "codeready-postgres-",
@@ -612,8 +612,8 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:      "codeready-postgres-installation",
 			Namespace: "codeready-workspaces",
 		},
-		Spec: crov1.PostgresSpec{},
-		Status: crov1.PostgresStatus{
+		Spec: types2.ResourceTypeSpec{},
+		Status: types2.ResourceTypeStatus{
 			Phase: types2.PhaseComplete,
 			SecretRef: &types2.SecretRef{
 				Name:      "test",

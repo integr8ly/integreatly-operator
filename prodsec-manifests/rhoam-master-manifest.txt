@@ -310,6 +310,7 @@ services-rhoam:master/github.com/evanphx/json-patch-v4.9.0+incompatible
 services-rhoam:master/github.com/exponent-io/jsonpath-v0.0.0-20151013193312-d6023ce2651d
 services-rhoam:master/github.com/facette/natsort-v0.0.0-20181210072756-2cd4dd1e2dcb
 services-rhoam:master/github.com/fatih/camelcase-v1.0.0
+services-rhoam:master/github.com/fatih/color-v1.10.0
 services-rhoam:master/github.com/fatih/color-v1.7.0
 services-rhoam:master/github.com/fatih/color-v1.9.0
 services-rhoam:master/github.com/fatih/set-v0.2.1
@@ -656,7 +657,7 @@ services-rhoam:master/github.com/influxdata/roaring-v0.4.13-0.20180809181101-fc5
 services-rhoam:master/github.com/influxdata/tdigest-v0.0.0-20181121200506-bf2b5ad3c0a9
 services-rhoam:master/github.com/influxdata/usage-client-v0.0.0-20160829180054-6d3895376368
 services-rhoam:master/github.com/integr8ly/application-monitoring-operator-v1.4.0
-services-rhoam:master/github.com/integr8ly/cloud-resource-operator-v0.23.1-0.20210118104111-b5c5799f313c
+services-rhoam:master/github.com/integr8ly/cloud-resource-operator-v0.24.0
 services-rhoam:master/github.com/integr8ly/grafana-operator-v2.0.0+incompatible
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.0.2-0.20200103111057-03d7fa884db4
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.5.0
@@ -735,7 +736,6 @@ services-rhoam:master/github.com/leanovate/gopter-v0.2.4
 services-rhoam:master/github.com/leodido/go-urn-v1.2.0
 services-rhoam:master/github.com/lib/pq-v1.0.0
 services-rhoam:master/github.com/lib/pq-v1.2.0
-services-rhoam:master/github.com/lib/pq-v1.3.0
 services-rhoam:master/github.com/lib/pq-v1.7.0
 services-rhoam:master/github.com/lib/pq-v1.8.0
 services-rhoam:master/github.com/liggitt/tabwriter-v0.0.0-20181228230101-89fcab3d43de
@@ -776,7 +776,7 @@ services-rhoam:master/github.com/mattn/go-colorable-v0.0.9
 services-rhoam:master/github.com/mattn/go-colorable-v0.1.2
 services-rhoam:master/github.com/mattn/go-colorable-v0.1.4
 services-rhoam:master/github.com/mattn/go-colorable-v0.1.6
-services-rhoam:master/github.com/mattn/go-colorable-v0.1.7
+services-rhoam:master/github.com/mattn/go-colorable-v0.1.8
 services-rhoam:master/github.com/mattn/go-ieproxy-v0.0.0-20190610004146-91bb50d98149
 services-rhoam:master/github.com/mattn/go-ieproxy-v0.0.0-20190702010315-6dee0af9227d
 services-rhoam:master/github.com/mattn/go-ieproxy-v0.0.0-20191113090002-7c0f6868bffe
@@ -959,7 +959,7 @@ services-rhoam:master/github.com/operator-framework/operator-sdk-v0.15.2
 services-rhoam:master/github.com/operator-framework/operator-sdk-v0.16.0
 services-rhoam:master/github.com/operator-framework/operator-sdk-v0.17.0
 services-rhoam:master/github.com/operator-framework/operator-sdk-v0.18.2
-services-rhoam:master/github.com/operator-framework/operator-sdk-v0.19.0
+services-rhoam:master/github.com/operator-framework/operator-sdk-v1.2.0
 services-rhoam:master/github.com/op/go-logging-v0.0.0-20160315200505-970db520ece7
 services-rhoam:master/github.com/otiai10/copy-v1.0.2
 services-rhoam:master/github.com/otiai10/curr-v0.0.0-20150429015615-9b4961190c95
@@ -1454,10 +1454,10 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20200420163511-1957bb5e6d1f
 services-rhoam:master/golang.org/x/sys-v0.0.0-20200519105757-fe76b779f299
 services-rhoam:master/golang.org/x/sys-v0.0.0-20200615200032-f1bc736245b1
 services-rhoam:master/golang.org/x/sys-v0.0.0-20200622214017-ed371f2e16b4
-services-rhoam:master/golang.org/x/sys-v0.0.0-20200625212154-ddb9806d33ae
 services-rhoam:master/golang.org/x/sys-v0.0.0-20200930185726-fdedc70b468f
 services-rhoam:master/golang.org/x/sys-v0.0.0-20201201145000-ef89a241ccb3
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210112080510-489259a85091
+services-rhoam:master/golang.org/x/sys-v0.0.0-20210330210617-4fbd30eecc44
 services-rhoam:master/golang.org/x/text-v0.0.0-20170915032832-14c0d48ead0c
 services-rhoam:master/golang.org/x/text-v0.3.0
 services-rhoam:master/golang.org/x/text-v0.3.1-0.20180805044716-cb6730876b98
