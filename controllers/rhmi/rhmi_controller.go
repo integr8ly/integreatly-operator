@@ -343,7 +343,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 
-		metrics.SetActiveSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+		metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 	}
 
 	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
@@ -417,7 +417,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			if installationSKU.IsUpdated() {
 				installation.Status.SKU = installationSKU.GetName()
 				installation.Status.ToSKU = ""
-        metrics.SetActiveSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+        metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 			}
 		}
 	}

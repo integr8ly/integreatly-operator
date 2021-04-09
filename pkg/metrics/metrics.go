@@ -102,7 +102,7 @@ var (
 		},
 	)
 
-	ActiveSKU = prometheus.NewGaugeVec(
+	SKU = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "active_sku",
 			Help: "Status of the current sku config",
@@ -158,7 +158,7 @@ func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
 }
 
-func SetActiveSKU(stage string, sku string, toSKU string) {
-	ActiveSKU.Reset()
-	ActiveSKU.WithLabelValues(stage, sku, toSKU).Set(float64(1))
+func SetSKU(stage string, sku string, toSKU string) {
+	SKU.Reset()
+	SKU.WithLabelValues(stage, sku, toSKU).Set(float64(1))
 }
