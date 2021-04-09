@@ -25,6 +25,10 @@ const (
 	KeycloakName          = "rhssouser"
 )
 
+var (
+	defaultReplicas int32 = 1
+)
+
 type SKU struct {
 	name           string
 	productConfigs map[v1alpha1.ProductName]AProductConfig
@@ -154,10 +158,16 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 		podTemplate = t.Spec.Template
 		break
 	case *appsv12.Deployment:
+		if t.Spec.Replicas == nil {
+			t.Spec.Replicas = &defaultReplicas
+		}
 		replicas = t.Spec.Replicas
 		podTemplate = &t.Spec.Template
 		break
 	case *appsv12.StatefulSet:
+		if t.Spec.Replicas == nil {
+			t.Spec.Replicas = &defaultReplicas
+		}
 		replicas = t.Spec.Replicas
 		podTemplate = &t.Spec.Template
 		break
@@ -178,7 +188,7 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	if p.sku.isUpdated || *replicas < configReplicas {
-		replicas = &configReplicas
+		*replicas = configReplicas
 	}
 	p.mutate(podTemplate, obj.GetName())
 	return nil
