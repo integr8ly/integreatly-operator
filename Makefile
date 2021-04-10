@@ -366,7 +366,7 @@ cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
 ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	$(MAKE) setup/service_account
-	@./scripts/setup-delorean-pullsecret.sh
+	./scripts/setup-delorean-pullsecret.sh
 	$(MAKE) cluster/cleanup/serviceaccount
 endif
 
