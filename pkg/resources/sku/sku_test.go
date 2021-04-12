@@ -1,7 +1,6 @@
 package sku
 
 import (
-	"fmt"
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -333,7 +332,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				kcReplicas := kcSpec.Instances
 				configReplicas := r[KeycloakName].Replicas
 				if int32(kcReplicas) != configReplicas {
-					t.Errorf("deploymentConfig replicas not as expected, \n got = %v, \n want= %v ", kcReplicas, configReplicas)
+					t.Errorf("keycloak replicas not as expected, \n got = %v, \n want= %v ", kcReplicas, configReplicas)
 				}
 			},
 			wantErr: false,
@@ -407,7 +406,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "validate APIManager case works as expected",
+			name: "validate APIManager case works when resources are nil in apimanager",
 			fields: fields{
 				productName: v1alpha1.Product3Scale,
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -429,15 +428,168 @@ func TestProductConfig_Configure(t *testing.T) {
 					isUpdated: true,
 				},
 			},
-			args: args{obj: &threescalev1.APIManager{
-
-				},
-			},
+			args: args{obj: &threescalev1.APIManager{}},
 			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
-				dcSpec := obj.(*threescalev1.APIManager).Spec
-				fmt.Print("BOOP ",dcSpec)
+				apimSpec := obj.(*threescalev1.APIManager).Spec
+				resourcesLimits := apimSpec.Backend.ListenerSpec.Resources.Limits
+				configLimits := r[BackendListenerName].Resources.Limits
+				if resourcesLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("backend listener limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("backend listener limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				resourcesRequests := apimSpec.Backend.ListenerSpec.Resources.Requests
+				if resourcesRequests.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("backend listener requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("backend listener requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+
+				//apimSpec.Backend.WorkerSpec.Resources
+				resourcesLimits = apimSpec.Backend.WorkerSpec.Resources.Limits
+				configLimits = r[BackendWorkerName].Resources.Limits
+				if resourcesLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("backend worker limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("backend worker limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				resourcesRequests = apimSpec.Backend.WorkerSpec.Resources.Requests
+				if resourcesRequests.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("backend worker requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("backend worker requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				//apimSpec.Apicast.StagingSpec.Resources
+				resourcesLimits = apimSpec.Apicast.StagingSpec.Resources.Limits
+				configLimits = r[ApicastProductionName].Resources.Limits
+				if resourcesLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("apicast staging limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("apicast staging limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				resourcesRequests = apimSpec.Apicast.StagingSpec.Resources.Requests
+				configLimits = r[ApicastProductionName].Resources.Requests
+				if resourcesRequests.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("apicast staging requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("apicast staging requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				//apimSpec.Apicast.ProductionSpec.Resources
+				resourcesLimits = apimSpec.Apicast.ProductionSpec.Resources.Limits
+				configLimits = r[ApicastProductionName].Resources.Limits
+				if resourcesLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("apicast production limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("apicast production limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
+				resourcesRequests = apimSpec.Apicast.ProductionSpec.Resources.Requests
+				configLimits = r[ApicastProductionName].Resources.Requests
+				if resourcesRequests.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
+					t.Errorf("apicast production requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
+				}
+				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
+					t.Errorf("apicast production requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
+				}
 			},
 			wantErr: false,
+		},
+		{
+			name: "validate that 3scale apimanager Resource Requests and Limits do get updated",
+			fields: fields{
+				productName: v1alpha1.Product3Scale,
+				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+					rcs[BackendListenerName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+					rcs[BackendWorkerName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+					rcs[ApicastStagingName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+					rcs[ApicastProductionName] = ResourceConfig{
+						Replicas: int32(3),
+						Resources: v13.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					}
+				}),
+				sku: &SKU{
+					isUpdated: true,
+				},
+			},
+			args: args{obj: &threescalev1.APIManager{
+				Spec: threescalev1.APIManagerSpec{
+					Apicast: &threescalev1.ApicastSpec{
+						ProductionSpec: &threescalev1.ApicastProductionSpec{
+							Replicas:  nil,
+							Resources: nil,
+						},
+						StagingSpec: &threescalev1.ApicastStagingSpec{
+							Replicas:  nil,
+							Resources: nil,
+						},
+					},
+					Backend: &threescalev1.BackendSpec{
+						ListenerSpec: &threescalev1.BackendListenerSpec{
+							Replicas:  nil,
+							Resources: nil,
+						},
+						WorkerSpec: &threescalev1.BackendWorkerSpec{
+							Replicas:  nil,
+							Resources: nil,
+						},
+					},
+				},
+			},
+			},
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
+				_ = obj.(*threescalev1.APIManager).Spec
+			},
 		},
 		{
 			name: "validate that deploymentConfig backend-listener Resource Requests and Limits do get updated on isUpdated false when values are lower than config",

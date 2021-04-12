@@ -972,7 +972,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 
 	err = serverClient.Get(ctx, key, apim)
-	if err != nil && !k8serr.IsNotFound(err){
+	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -992,6 +992,20 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		}
 		if *apim.Spec.System.SidekiqSpec.Replicas < replicas["systemSidekiq"] {
 			*apim.Spec.System.SidekiqSpec.Replicas = replicas["systemSidekiq"]
+		}
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+			if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
+				*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
+			}
+			if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
+				*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
+			}
+			if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
+				*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
+			}
+			if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
+				*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
+			}
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
 			*apim.Spec.Backend.CronSpec.Replicas = replicas["backendCron"]
@@ -1041,27 +1055,32 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			"threescale_component_element": "zync-que",
 		})
 
-		apicastProdResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
-		}
-		apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+			apicastProdResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
+			}
+			apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
 
-		backendWorkerResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("150m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
-		}
-		apim.Spec.Backend.WorkerSpec.Resources = &backendWorkerResources
+			backendWorkerResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("150m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+			}
+			apim.Spec.Backend.WorkerSpec.Resources = &backendWorkerResources
 
-		backendListenerResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("450Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("500Mi")},
+			backendListenerResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("450Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("500Mi")},
+			}
+			apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
 		}
-		apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
+
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			err = productConfig.Configure(apim)
+		}
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
-		err = productConfig.Configure(apim)
 		if err != nil {
 			return err
 		}
