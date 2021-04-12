@@ -72,6 +72,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = monitoringv1.AddToScheme(scheme)
 	err = consolev1.AddToScheme(scheme)
 	err = openshiftv1.AddToScheme(scheme)
+	err = threescalev1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -346,7 +347,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, &sku.ProductConfigMock{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
