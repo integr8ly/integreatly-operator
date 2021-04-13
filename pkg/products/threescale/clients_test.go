@@ -10,9 +10,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/RHsyseng/operator-utils/pkg/olm"
-
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -34,13 +31,6 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 		switch obj := obj.(type) {
 		case *corev1.Namespace:
 			obj.Status.Phase = corev1.NamespaceActive
-			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-		case *threescalev1.APIManager:
-			obj.Status.Deployments = olm.DeploymentStatus{
-				Ready:    []string{"Ready status is when there is at least one ready and none starting or stopped"},
-				Starting: []string{},
-				Stopped:  []string{},
-			}
 			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
 		case *coreosv1alpha1.Subscription:
 			obj.Status = coreosv1alpha1.SubscriptionStatus{

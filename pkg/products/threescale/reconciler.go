@@ -1119,7 +1119,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			// If the system-provider route does not exist at this point (i.e. when Deployments are ready)
 			// we can force a resync of routes. see below for more details on why this is required:
 			// https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.7/html/operating_3scale/backup-restore#creating_equivalent_zync_routes
-			// This scenario will manifest during a backup and restore and also if the product ns was accidentially deleted.
+			// This scenario will manifest during a backup and restore and also if the product ns was accidentally deleted.
 			return r.resyncRoutes(ctx, serverClient)
 		}
 	}

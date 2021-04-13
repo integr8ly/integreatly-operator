@@ -328,7 +328,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						"credentialKeyID":     []byte("test"),
 						"credentialSecretKey": []byte("test"),
 					},
-				}),
+				},
+					&threescalev1.APIManager{
+						TypeMeta: metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "3scale",
+							Namespace: "test",
+						},
+						Spec:   threescalev1.APIManagerSpec{},
+						Status: threescalev1.APIManagerStatus{},
+					}),
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,

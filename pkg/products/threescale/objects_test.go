@@ -3,7 +3,8 @@ package threescale
 import (
 	"bytes"
 	"fmt"
-
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	"github.com/RHsyseng/operator-utils/pkg/olm"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
@@ -686,30 +687,47 @@ var zyncQue = &appsv1.DeploymentConfig{
 	Status: appsv1.DeploymentConfigStatus{},
 }
 
-func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
+var threescale = &threescalev1.APIManager{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+	},
+	Spec: threescalev1.APIManagerSpec{},
+	Status: threescalev1.APIManagerStatus{
+		Deployments: olm.DeploymentStatus{
+			Ready:    []string{"Ready status is when there is at least one ready and none starting or stopped"},
+			Starting: []string{},
+			Stopped:  []string{},
+		},
+	},
+}
+
+func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
-	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
-	threeScaleApiCastSecret.Namespace = threeScaleInstallationNamepsace
-	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
-	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
+	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamespace
+	threeScaleApiCastSecret.Namespace = threeScaleInstallationNamespace
+	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamespace
+	systemEnvConfigMap.Namespace = threeScaleInstallationNamespace
 	oauthClientSecrets.Namespace = integreatlyOperatorNamespace
 	installation.Namespace = integreatlyOperatorNamespace
-	apicastProduction.Namespace = threeScaleInstallationNamepsace
-	apicastStaging.Namespace = threeScaleInstallationNamepsace
-	backendCron.Namespace = threeScaleInstallationNamepsace
-	backendListener.Namespace = threeScaleInstallationNamepsace
-	backendWorker.Namespace = threeScaleInstallationNamepsace
-	systemApp.Namespace = threeScaleInstallationNamepsace
-	systemAppDep.Namespace = threeScaleInstallationNamepsace
-	systemMemcache.Namespace = threeScaleInstallationNamepsace
-	systemSidekiq.Namespace = threeScaleInstallationNamepsace
-	systemSidekiqDep.Namespace = threeScaleInstallationNamepsace
-	systemSphinx.Namespace = threeScaleInstallationNamepsace
-	zync.Namespace = threeScaleInstallationNamepsace
-	zyncDatabase.Namespace = threeScaleInstallationNamepsace
-	zyncQue.Namespace = threeScaleInstallationNamepsace
+	apicastProduction.Namespace = threeScaleInstallationNamespace
+	apicastStaging.Namespace = threeScaleInstallationNamespace
+	backendCron.Namespace = threeScaleInstallationNamespace
+	backendListener.Namespace = threeScaleInstallationNamespace
+	backendWorker.Namespace = threeScaleInstallationNamespace
+	systemApp.Namespace = threeScaleInstallationNamespace
+	systemAppDep.Namespace = threeScaleInstallationNamespace
+	systemMemcache.Namespace = threeScaleInstallationNamespace
+	systemSidekiq.Namespace = threeScaleInstallationNamespace
+	systemSidekiqDep.Namespace = threeScaleInstallationNamespace
+	systemSphinx.Namespace = threeScaleInstallationNamespace
+	zync.Namespace = threeScaleInstallationNamespace
+	zyncDatabase.Namespace = threeScaleInstallationNamespace
+	zyncQue.Namespace = threeScaleInstallationNamespace
+	threescale.Namespace = threeScaleInstallationNamespace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -754,5 +772,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		zync,
 		zyncDatabase,
 		zyncQue,
+		threescale,
 	}
 }
