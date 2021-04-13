@@ -1113,16 +1113,10 @@ func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace s
 
 	// if both are empty it's the first round of installation
 	// or if the secretname is not the same as what the SKU is marked there has been a change
-	// so set toSKU and update the status object
+	// so set toSKU and update the status object and set isSKUpdated to true
 	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
 		skuParam != installation.Status.SKU {
-		installation.Status.ToSKU = installationSKU.GetName()
-	}
-
-	// if the secret is different to what's currently set in SKU there has been an update
-	// OR there is a TOSKU value in the cr, which can happen if a second sku change is made before the operator reaches
-	// the end of the reconcile on a first sku change where it resets the SKU and to sku values
-	if skuParam != installation.Status.SKU || installation.Status.ToSKU != "" {
+		installation.Status.ToSKU = skuParam
 		isSKUUpdated = true
 	}
 
