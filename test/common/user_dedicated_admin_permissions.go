@@ -103,9 +103,6 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 	// Verify Dedicated admins permissions around secrets
 	verifyDedicatedAdminSecretPermissions(t, openshiftClient, rhmi.Spec.Type)
 
-	// Verify Dedicated admin permissions around RHMI Config
-	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
-
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
 	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
@@ -127,6 +124,9 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 
 		// Verify dedicated admin Role / Role binding for AMQ Online resources
 		verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
+
+		// Verify Dedicated admin permissions around RHMI Config
+		verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 	}
 }
 
@@ -224,6 +224,9 @@ func getProductNamespaces(installType string) []string {
 // Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
 func verifyDedicatedAdminRHMIConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
+	t.Log("verifying Dedicated admin permissions for RHMIConfig Resource has being seen as flaky on addon installs." +
+		"RHMIConfig feature will be deprecated in the future. " +
+		"See https://issues.redhat.com/browse/INTLY-10524 for more information")
 
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 403,
