@@ -104,7 +104,7 @@ var (
 
 	SKU = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "active_sku",
+			Name: "rhoam_sku",
 			Help: "Status of the current sku config",
 		},
 		[]string{

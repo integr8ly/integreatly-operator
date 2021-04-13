@@ -33,7 +33,7 @@ func GetMonitoringGrafanaDBEndpointsDetailedJSON(installationName string) string
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,sku,toSKU)(active_sku{toSKU!=\"\"})",
+				"expr": "count by (stage,sku,toSKU)(rhoam_sku{toSKU!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
