@@ -316,6 +316,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err = r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
+		metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
 	}
 
 	// either not checked, or rechecking preflight checks
