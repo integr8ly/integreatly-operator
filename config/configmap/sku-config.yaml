@@ -4,89 +4,243 @@ metadata:
   name: sku-config
 data:
   sku-configs: |-
-    [
-    {
-              "name": "20",
-              "rate-limiting": {
-                  "unit": "minute",
-                  "requests_per_unit": 1389,
-                  "alert_limits": []
-              },
-              "resources": {
-                  "backend_listener": {
-                      "replicas": 3,
-                      "resources": {
-                          "requests": {
-                              "cpu": 0.25,
-                              "memory": 450
-                          },
-                          "limits": {
-                              "cpu": 0.3,
-                              "memory": 500
-                          }
-                      }
-                  },
-                  "backend_worker": {
-                      "replicas": 3,
-                      "resources": {
-                          "requests": {
-                              "cpu": 0.15,
-                              "memory": 100
-                          },
-                          "limits": {
-                              "cpu": 0.2,
-                              "memory": 100
-                          }
-                      }
-                  },
-                  "apicast_production": {
-                      "replicas": 3,
-                      "resources": {
-                          "requests": {
-                              "cpu": 0.3,
-                              "memory": 250
-                          },
-                          "limits": {
-                              "cpu": 0.3,
-                              "memory": 300
-                          }
-                      }
-                  },
-               "rhssouser": {
-                    "replicas": 3,
+    [        
+        {
+            "name": "50",
+            "rate-limiting": {
+                "unit": "minute",
+                "requests_per_unit": 34722,
+                "alert_limits": []
+            },
+            "resources": {
+                "backend_listener": {
+                    "replicas": 5,
                     "resources": {
                         "requests": {
-                            "cpu": 0.75,
-                            "memory": "1500Mi"
+                            "cpu": 0.5,
+                            "memory": "470Mi"
                         },
                         "limits": {
-                            "cpu": 1.5,
-                            "memory": "1500Mi"
+                            "cpu": 1,
+                            "memory": "520Mi"
                         }
                     }
                 },
-                "ratelimit": {
-                      "replicas": 3,
-                      "resources": {
-                         "resources": {
-                             "requests": {
-                                 "cpu": 0.10,
-                                 "memory": 50
-                             },
-                             "limits": {
-                                 "cpu": 0.20,
-                                 "memory": 100
-                             }
-                         }
-                      }
-                  }
-              }
-          },
+                "backend_worker": {
+                    "replicas": 4,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.4,
+                            "memory": "100Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.6,
+                            "memory": "100Mi"
+                        }
+                    }
+                },
+                "apicast_production": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.6,
+                            "memory": "275Mi"
+                        },
+                        "limits": {
+                            "cpu": 1,
+                            "memory": "300Mi"
+                        }
+                    }
+                },
+            "rhssouser": {
+                "replicas": 3,
+                "resources": {
+                    "requests": {
+                        "cpu": 1,
+                        "memory": "2000Mi"
+                    },
+                    "limits": {
+                        "cpu": 2,
+                        "memory": "2000Mi"
+                    }
+                }
+            },
+            "ratelimit": {
+                    "replicas": 3,
+                    "resources": {
+                        "resources": {
+                            "requests": {
+                                "cpu": 0.15,
+                                "memory": "50Mi"
+                            },
+                            "limits": {
+                                "cpu": 0.3,
+                                "memory": "100Mi"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "20",
+            "rate-limiting": {
+                "unit": "minute",
+                "requests_per_unit": 13889,
+                "alert_limits": []
+            },
+            "resources": {
+                "backend_listener": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.25,
+                            "memory": "450Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.6,
+                            "memory": "500Mi"
+                        }
+                    }
+                },
+                "backend_worker": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.15,
+                            "memory": "100Mi
+                        },
+                        "limits": {
+                            "cpu": 0.3,
+                            "memory": "100Mi"
+                        }
+                    }
+                },
+                "apicast_production": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.3,
+                            "memory": "250Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.6,
+                            "memory": "300Mi"
+                        }
+                    }
+                },
+            "rhssouser": {
+                "replicas": 3,
+                "resources": {
+                    "requests": {
+                        "cpu": 0.75,
+                        "memory": "1500Mi"
+                    },
+                    "limits": {
+                        "cpu": 1.5,
+                        "memory": "1500Mi"
+                    }
+                }
+            },
+            "ratelimit": {
+                    "replicas": 3,
+                    "resources": {
+                        "resources": {
+                            "requests": {
+                                "cpu": 0.10,
+                                "memory": "50Mi"
+                            },
+                            "limits": {
+                                "cpu": 0.20,
+                                "memory": "100Mi"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+             {
+            "name": "10",
+            "rate-limiting": {
+                "unit": "minute",
+                "requests_per_unit": 6944,
+                "alert_limits": []
+            },
+            "resources": {
+                "backend_listener": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.15,
+                            "memory": "450Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.5,
+                            "memory": "500Mi"
+                        }
+                    }
+                },
+                "backend_worker": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.1,
+                            "memory": "100Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.25,
+                            "memory": "100Mi"
+                        }
+                    }
+                },
+                "apicast_production": {
+                    "replicas": 3,
+                    "resources": {
+                        "requests": {
+                            "cpu": 0.2,
+                            "memory": "250Mi"
+                        },
+                        "limits": {
+                            "cpu": 0.5,
+                            "memory": "300Mi"
+                        }
+                    }
+                },
+            "rhssouser": {
+                "replicas": 3,
+                "resources": {
+                    "requests": {
+                        "cpu": 0.75,
+                        "memory": "1500Mi"
+                    },
+                    "limits": {
+                        "cpu": 1.5,
+                        "memory": "1500Mi"
+                    }
+                }
+            },
+            "ratelimit": {
+                    "replicas": 3,
+                    "resources": {
+                        "resources": {
+                            "requests": {
+                                "cpu": 0.05,
+                                "memory": "50Mi"
+                            },
+                            "limits": {
+                                "cpu": 0.15,
+                                "memory": "100Mi"
+                            }
+                        }
+                    }
+                }
+            }
+        },
        {
           "name": "5",
           "rate-limiting": {
               "unit": "minute",
-              "requests_per_unit": 347,
+              "requests_per_unit": 3472,
               "alert_limits": []
           },
           "resources": {
@@ -95,11 +249,11 @@ data:
                   "resources": {
                       "requests": {
                           "cpu": 0.1,
-                          "memory": 450
+                          "memory": "450Mi"
                       },
                       "limits": {
-                          "cpu": 0.11,
-                          "memory": 500
+                          "cpu": 0.3,
+                          "memory": "500Mi"
                       }
                   }
               },
@@ -107,12 +261,12 @@ data:
                   "replicas": 3,
                   "resources": {
                       "requests": {
-                          "cpu": 0.03,
-                          "memory": 55
+                          "cpu": 0.05,
+                          "memory": "100Mi"
                       },
                       "limits": {
-                          "cpu": 0.04,
-                          "memory": 60
+                          "cpu": 0.15,
+                          "memory": "100Mi"
                       }
                   }
               },
@@ -120,12 +274,12 @@ data:
                   "replicas": 3,
                   "resources": {
                       "requests": {
-                          "cpu": 0.09,
-                          "memory": 250
+                          "cpu": 0.1,
+                          "memory": "250Mi"
                       },
                       "limits": {
-                          "cpu": 0.1,
-                          "memory": 270
+                          "cpu": 0.3,
+                          "memory": "300Mi"
                       }
                   }
               },
@@ -137,7 +291,7 @@ data:
                           "memory": "1500Mi"
                       },
                       "limits": {
-                          "cpu": 0.75,
+                          "cpu": 1.5,
                           "memory": "1500Mi"
                       }
                   }
@@ -147,11 +301,11 @@ data:
                   "resources": {
                        "requests": {
                            "cpu": 0.05,
-                           "memory": 50
+                           "memory": "50Mi"
                        },
                        "limits": {
                            "cpu": 0.15,
-                           "memory": 100
+                           "memory": "100Mi"
                        }
                    }
               }
@@ -161,7 +315,7 @@ data:
           "name": "1",
           "rate-limiting": {
               "unit": "minute",
-              "requests_per_unit": 20,
+              "requests_per_unit": 694,
               "alert_limits": []
           },
           "resources": {
@@ -170,11 +324,11 @@ data:
                   "resources": {
                       "requests": {
                           "cpu": 0.1,
-                          "memory": 450
+                          "memory": "450Mi"
                       },
                       "limits": {
                           "cpu": 0.11,
-                          "memory": 500
+                          "memory": "500Mi"
                       }
                   }
               },
@@ -183,11 +337,11 @@ data:
                   "resources": {
                       "requests": {
                           "cpu": 0.03,
-                          "memory": 55
+                          "memory": "55Mi"
                       },
                       "limits": {
                           "cpu": 0.04,
-                          "memory": 60
+                          "memory": "60Mi"
                       }
                   }
               },
@@ -196,11 +350,11 @@ data:
                   "resources": {
                       "requests": {
                           "cpu": 0.09,
-                          "memory": 250
+                          "memory": "250Mi"
                       },
                       "limits": {
                           "cpu": 0.1,
-                          "memory": 270
+                          "memory": "270Mi"
                       }
                   }
               },
@@ -222,11 +376,11 @@ data:
                 "resources": {
                     "requests": {
                         "cpu": 0.05,
-                        "memory": 50
+                        "memory": "50Mi"
                     },
                     "limits": {
                         "cpu": 0.15,
-                        "memory": 100
+                        "memory": "100Mi"
                     }
                 }
               }
