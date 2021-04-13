@@ -33,7 +33,7 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 1. Login via `oc` as **kubeadmin**
 
-2. Confirm the e-mail address where the alert notifications are sent, it should be `cloud-services-qe-reporting+<CLUSTER_NAME+RECIPIENT>@redhat.com`.
+2. Confirm the e-mail address where the alert notifications are sent, it should be `cloud-services-qe-reporting@redhat.com`.
 
    ```bash
    oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .spec.alertingEmailAddress
