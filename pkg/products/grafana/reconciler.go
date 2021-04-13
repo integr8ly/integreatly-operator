@@ -71,7 +71,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("no product declaration found for grafana")
 	}
 
-	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace + "-operator"
 	config, err := configManager.ReadGrafana()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve grafana config: %w", err)
@@ -81,11 +81,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		configManager.WriteConfig(config)
 	}
 	if config.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
-		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
-		}
+		config.SetOperatorNamespace(config.GetNamespace())
 	}
 
 	return &Reconciler{
