@@ -296,7 +296,7 @@ ifeq ($(INSTALLATION_TYPE), managed)
 endif
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/sku
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -324,7 +324,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/sku cluster/prepare/delorean cluster/prepare/croaws
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/sku cluster/prepare/delorean cluster/prepare/croaws
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -355,10 +355,6 @@ cluster/prepare/pagerduty:
 cluster/prepare/dms:
 	@-oc create secret generic $(NAMESPACE_PREFIX)deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
-
-.PHONY: cluster/prepare/ratelimits
-cluster/prepare/ratelimits:
-	@-oc create -n $(NAMESPACE) -f config/configmap/sku-limits-configmap.yaml
 
 .PHONY: cluster/prepare/sku
 cluster/prepare/sku:

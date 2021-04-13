@@ -2,6 +2,7 @@ package sku
 
 import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -46,7 +47,7 @@ func TestGetSKU(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "test successful parsing of config map to sku object for DEV SKU",
+			name: "test successful parsing of config map to sku object for 1 million sku",
 			args: args{
 				SKUId:     DEVSKU,
 				SKUConfig: getSKUConfig(nil),
@@ -78,6 +79,13 @@ func TestGetSKU(t *testing.T) {
 						}),
 						sku: pointerToSKU,
 					},
+					v1alpha1.ProductGrafana: {
+						v1alpha1.ProductGrafana,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
+						}),
+						pointerToSKU,
+					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -94,6 +102,10 @@ func TestGetSKU(t *testing.T) {
 					},
 				},
 				isUpdated: false,
+				rateLimitConfig: marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 1,
+				},
 			},
 			validate: func(sku *SKU, t *testing.T) {
 				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
@@ -136,6 +148,13 @@ func TestGetSKU(t *testing.T) {
 						}),
 						sku: pointerToSKU,
 					},
+					v1alpha1.ProductGrafana: {
+						v1alpha1.ProductGrafana,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
+						}),
+						pointerToSKU,
+					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
 						resourceConfigs: map[string]ResourceConfig{
@@ -152,6 +171,10 @@ func TestGetSKU(t *testing.T) {
 					},
 				},
 				isUpdated: false,
+				rateLimitConfig: marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 347,
+				},
 			},
 			wantErr: false,
 			validate: func(sku *SKU, t *testing.T) {
@@ -760,7 +783,7 @@ func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
 		ObjectMeta: v12.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
-		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1389,\"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 1389,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)

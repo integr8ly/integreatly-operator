@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsv12 "k8s.io/api/apps/v1"
@@ -23,6 +24,7 @@ const (
 	ApicastProductionName = "apicast_production"
 	ApicastStagingName    = "apicast_staging"
 	KeycloakName          = "rhssouser"
+	GrafanaName           = "grafana"
 )
 
 var (
@@ -30,9 +32,10 @@ var (
 )
 
 type SKU struct {
-	name           string
-	productConfigs map[v1alpha1.ProductName]AProductConfig
-	isUpdated      bool
+	name            string
+	productConfigs  map[v1alpha1.ProductName]AProductConfig
+	isUpdated       bool
+	rateLimitConfig marin3rconfig.RateLimitConfig
 }
 
 //go:generate moq -out product_config_moq.go . ProductConfig
@@ -40,6 +43,7 @@ type ProductConfig interface {
 	Configure(obj metav1.Object) error
 	GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool)
 	GetReplicas(ddcssName string) int32
+	GetRateLimitConfig() marin3rconfig.RateLimitConfig
 }
 
 var _ ProductConfig = AProductConfig{}
@@ -55,16 +59,10 @@ type ResourceConfig struct {
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
-type RateLimit struct {
-	Unit            string  `json:"unit,omitempty"`
-	RequestsPerUnit int64   `json:"requests_per_unit,omitempty"`
-	AlertLimits     []int64 `json:"alert_limits,omitempty"`
-}
-
 type skuConfigReceiver struct {
-	Name      string                    `json:"name,omitempty"`
-	RateLimit RateLimit                 `json:"rate-limiting,omitempty"`
-	Resources map[string]ResourceConfig `json:"resources,omitempty"`
+	Name      string                        `json:"name,omitempty"`
+	RateLimit marin3rconfig.RateLimitConfig `json:"rate-limiting,omitempty"`
+	Resources map[string]ResourceConfig     `json:"resources,omitempty"`
 }
 
 func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bool) error {
@@ -102,6 +100,9 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		v1alpha1.ProductMarin3r: {
 			RateLimitName,
 		},
+		v1alpha1.ProductGrafana: {
+			GrafanaName,
+		},
 	}
 	retSku.name = skuReceiver.Name
 	retSku.productConfigs = map[v1alpha1.ProductName]AProductConfig{}
@@ -119,6 +120,9 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		}
 		retSku.productConfigs[product] = pc
 	}
+
+	//populate rate limit configuration
+	retSku.rateLimitConfig = skuReceiver.RateLimit
 	return nil
 }
 
@@ -140,6 +144,10 @@ func (p AProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequ
 		return corev1.ResourceRequirements{}, false
 	}
 	return p.resourceConfigs[ddcssName].Resources, true
+}
+
+func (p AProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
+	return p.sku.rateLimitConfig
 }
 
 func (p AProductConfig) GetReplicas(ddcssName string) int32 {

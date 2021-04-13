@@ -53,7 +53,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	ConfigManager   config.ConfigReadWriter
 	Config          *config.Marin3r
-	RateLimitConfig *marin3rconfig.RateLimitConfig
+	RateLimitConfig marin3rconfig.RateLimitConfig
 	AlertsConfig    map[string]*marin3rconfig.AlertConfig
 	installation    *integreatlyv1alpha1.RHMI
 	mpm             marketplace.MarketplaceInterface
@@ -144,13 +144,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
-
-	rateLimitConfig, err := marin3rconfig.GetRateLimitConfig(ctx, client, r.installation.Namespace)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit config", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	r.RateLimitConfig = rateLimitConfig
+	r.RateLimitConfig = productConfig.GetRateLimitConfig()
 
 	alertsConfig, err := marin3rconfig.GetAlertConfig(ctx, client, r.installation.Namespace)
 	if err != nil {
@@ -245,11 +239,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	if phase, err := rejectedRequestsAlertReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rejected requests alert", err)
-		return phase, err
-	}
-
-	if phase, err := r.newSoftLimitAlertsReconciler(r.log).ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile soft limit alerts", err)
 		return phase, err
 	}
 

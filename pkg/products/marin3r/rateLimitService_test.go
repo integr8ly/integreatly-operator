@@ -30,7 +30,7 @@ func TestRateLimitService(t *testing.T) {
 	}{
 		{
 			Name: "Service deployed without metrics",
-			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
+			Reconciler: NewRateLimitServiceReconciler(marin3rconfig.RateLimitConfig{
 				Unit:            "minute",
 				RequestsPerUnit: 1,
 			},
@@ -113,7 +113,7 @@ func TestRateLimitService(t *testing.T) {
 				},
 			},
 			Reconciler: NewRateLimitServiceReconciler(
-				&marin3rconfig.RateLimitConfig{
+				marin3rconfig.RateLimitConfig{
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
@@ -162,7 +162,7 @@ func TestRateLimitService(t *testing.T) {
 		{
 			Name:     "Wait for redis",
 			InitObjs: []runtime.Object{},
-			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
+			Reconciler: NewRateLimitServiceReconciler(marin3rconfig.RateLimitConfig{
 				Unit:            "minute",
 				RequestsPerUnit: 1,
 			},
@@ -198,7 +198,7 @@ func TestRateLimitService(t *testing.T) {
 				},
 			},
 			Reconciler: NewRateLimitServiceReconciler(
-				&marin3rconfig.RateLimitConfig{
+				marin3rconfig.RateLimitConfig{
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
