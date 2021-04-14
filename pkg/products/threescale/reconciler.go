@@ -993,19 +993,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		if *apim.Spec.System.SidekiqSpec.Replicas < replicas["systemSidekiq"] {
 			*apim.Spec.System.SidekiqSpec.Replicas = replicas["systemSidekiq"]
 		}
-		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-			if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
-				*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
-			}
-			if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
-				*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
-			}
-			if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
-				*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
-			}
-			if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
-				*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
-			}
+		if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
+			*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
 			*apim.Spec.Backend.CronSpec.Replicas = replicas["backendCron"]
@@ -1056,6 +1045,15 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		})
 
 		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+			if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
+				*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
+			}
+			if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
+				*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
+			}
+			if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
+				*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
+			}
 			apicastProdResources := corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
 				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
@@ -1077,13 +1075,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 			err = productConfig.Configure(apim)
+
+			if err != nil {
+				return err
+			}
 		}
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 

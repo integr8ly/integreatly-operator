@@ -29,6 +29,7 @@ const (
 )
 
 var (
+	// map of products iterate over that to build the return map
 	products = map[v1alpha1.ProductName][]string{
 		v1alpha1.Product3Scale: {
 			BackendListenerName,
@@ -41,6 +42,9 @@ var (
 		},
 		v1alpha1.ProductMarin3r: {
 			RateLimitName,
+		},
+		v1alpha1.ProductGrafana: {
+			GrafanaName,
 		},
 	}
 )
@@ -100,24 +104,6 @@ func GetSKU(SKUId string, SKUConfig *corev1.ConfigMap, retSku *SKU, isUpdated bo
 		return errors.New("wasn't able to find a sku in the sku config which matches the SKUid")
 	}
 
-	// map of products iterate over that to build the return map
-	products := map[v1alpha1.ProductName][]string{
-		v1alpha1.Product3Scale: {
-			BackendListenerName,
-			BackendWorkerName,
-			ApicastProductionName,
-			ApicastStagingName,
-		},
-		v1alpha1.ProductRHSSOUser: {
-			KeycloakName,
-		},
-		v1alpha1.ProductMarin3r: {
-			RateLimitName,
-		},
-		v1alpha1.ProductGrafana: {
-			GrafanaName,
-		},
-	}
 	retSku.name = skuReceiver.Name
 	retSku.productConfigs = map[v1alpha1.ProductName]AProductConfig{}
 	retSku.isUpdated = isUpdated
@@ -173,14 +159,17 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 
 	switch t := obj.(type) {
 	case *appsv1.DeploymentConfig:
+		checkDeploymentConfigReplicas(t)
 		p.mutateReplicas(&t.Spec.Replicas, name)
 		p.mutatePodTemplate(t.Spec.Template, name)
 		break
 	case *appsv12.Deployment:
+		checkDeploymentReplicas(t)
 		p.mutateReplicas(t.Spec.Replicas, name)
 		p.mutatePodTemplate(&t.Spec.Template, name)
 		break
 	case *appsv12.StatefulSet:
+		checkStatefulSetReplicas(t)
 		p.mutateReplicas(t.Spec.Replicas, name)
 		p.mutatePodTemplate(&t.Spec.Template, name)
 		break
@@ -203,9 +192,6 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 		p.mutateAPIManagerReplicas(t.Spec.Apicast.ProductionSpec.Replicas, ApicastProductionName)
 		p.mutateResourcesRequirement(t.Spec.Apicast.ProductionSpec.Resources, ApicastProductionName)
 
-		p.mutateAPIManagerReplicas(t.Spec.Apicast.StagingSpec.Replicas, ApicastProductionName)
-		p.mutateResourcesRequirement(t.Spec.Apicast.StagingSpec.Resources, ApicastProductionName)
-
 		p.mutateAPIManagerReplicas(t.Spec.Backend.ListenerSpec.Replicas, BackendListenerName)
 		p.mutateResourcesRequirement(t.Spec.Backend.ListenerSpec.Resources, BackendListenerName)
 
@@ -217,6 +203,27 @@ func (p AProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	return nil
+}
+
+func checkDeploymentConfigReplicas(deployment *appsv1.DeploymentConfig) {
+	if &deployment.Spec.Replicas == nil {
+		temp := int32(0)
+		deployment.Spec.Replicas = temp
+	}
+}
+
+func checkDeploymentReplicas(deployment *appsv12.Deployment) {
+	if deployment.Spec.Replicas == nil {
+		temp := int32(0)
+		deployment.Spec.Replicas = &temp
+	}
+}
+
+func checkStatefulSetReplicas(deployment *appsv12.StatefulSet) {
+	if deployment.Spec.Replicas == nil {
+		temp := int32(0)
+		deployment.Spec.Replicas = &temp
+	}
 }
 
 func (p AProductConfig) mutateAPIManagerReplicas(replicas *int64, name string) {
@@ -234,9 +241,6 @@ func (p AProductConfig) mutatePodTemplate(template *corev1.PodTemplateSpec, name
 }
 
 func (p AProductConfig) mutateReplicas(replicas *int32, name string) {
-	if replicas == nil {
-		replicas = &[]int32{0}[0]
-	}
 	configReplicas := p.resourceConfigs[name].Replicas
 	if p.sku.isUpdated || *replicas < configReplicas || *replicas == 0 {
 		*replicas = configReplicas
@@ -301,17 +305,22 @@ func checkApiManager(t *threescalev1.APIManager) {
 	if t.Spec.Backend.WorkerSpec == nil {
 		t.Spec.Backend.WorkerSpec = &threescalev1.BackendWorkerSpec{}
 	}
+
 	if t.Spec.Apicast.ProductionSpec.Replicas == nil {
-		t.Spec.Apicast.ProductionSpec.Replicas = &[]int64{0}[0]
+		temp := int64(0)
+		t.Spec.Apicast.ProductionSpec.Replicas = &temp
 	}
 	if t.Spec.Apicast.StagingSpec.Replicas == nil {
-		t.Spec.Apicast.StagingSpec.Replicas = &[]int64{0}[0]
+		temp := int64(0)
+		t.Spec.Apicast.StagingSpec.Replicas = &temp
 	}
 	if t.Spec.Backend.ListenerSpec.Replicas == nil {
-		t.Spec.Backend.ListenerSpec.Replicas = &[]int64{0}[0]
+		temp := int64(0)
+		t.Spec.Backend.ListenerSpec.Replicas = &temp
 	}
 	if t.Spec.Backend.WorkerSpec.Replicas == nil {
-		t.Spec.Backend.WorkerSpec.Replicas = &[]int64{0}[0]
+		temp := int64(0)
+		t.Spec.Backend.WorkerSpec.Replicas = &temp
 	}
 
 	if t.Spec.Apicast.ProductionSpec.Resources == nil {
