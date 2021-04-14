@@ -72,7 +72,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = monitoringv1.AddToScheme(scheme)
 	err = consolev1.AddToScheme(scheme)
 	err = openshiftv1.AddToScheme(scheme)
-	err = threescalev1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 

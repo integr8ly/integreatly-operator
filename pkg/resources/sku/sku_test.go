@@ -361,7 +361,6 @@ func TestProductConfig_Configure(t *testing.T) {
 				},
 			},
 			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
-				dc.Spec.Replicas = int32(2)
 				dc.Spec.Template.Spec.Containers = []v13.Container{
 					{
 						Resources: v13.ResourceRequirements{
@@ -463,23 +462,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
 					t.Errorf("backend worker requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
 				}
-				//apimSpec.Apicast.StagingSpec.Resources
-				resourcesLimits = apimSpec.Apicast.StagingSpec.Resources.Limits
-				configLimits = r[ApicastProductionName].Resources.Limits
-				if resourcesLimits.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
-					t.Errorf("apicast staging limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
-				}
-				if resourcesLimits.Memory().MilliValue() != configLimits.Memory().MilliValue() {
-					t.Errorf("apicast staging limits not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesLimits.Memory().MilliValue(), configLimits.Memory().MilliValue())
-				}
-				resourcesRequests = apimSpec.Apicast.StagingSpec.Resources.Requests
-				configLimits = r[ApicastProductionName].Resources.Requests
-				if resourcesRequests.Cpu().MilliValue() != configLimits.Cpu().MilliValue() {
-					t.Errorf("apicast staging requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Cpu().MilliValue(), configLimits.Cpu().MilliValue())
-				}
-				if resourcesRequests.Memory().MilliValue() != configLimits.Memory().MilliValue() {
-					t.Errorf("apicast staging requests not as expected, values are lower so should update, \n got = %v, \n want= %v ", resourcesRequests.Memory().MilliValue(), configLimits.Memory().MilliValue())
-				}
+
 				//apimSpec.Apicast.ProductionSpec.Resources
 				resourcesLimits = apimSpec.Apicast.ProductionSpec.Resources.Limits
 				configLimits = r[ApicastProductionName].Resources.Limits
@@ -566,22 +549,22 @@ func TestProductConfig_Configure(t *testing.T) {
 				Spec: threescalev1.APIManagerSpec{
 					Apicast: &threescalev1.ApicastSpec{
 						ProductionSpec: &threescalev1.ApicastProductionSpec{
-							Replicas:  nil,
 							Resources: nil,
+							Replicas:  nil,
 						},
 						StagingSpec: &threescalev1.ApicastStagingSpec{
-							Replicas:  nil,
 							Resources: nil,
+							Replicas:  nil,
 						},
 					},
 					Backend: &threescalev1.BackendSpec{
 						ListenerSpec: &threescalev1.BackendListenerSpec{
-							Replicas:  nil,
 							Resources: nil,
+							Replicas:  nil,
 						},
 						WorkerSpec: &threescalev1.BackendWorkerSpec{
-							Replicas:  nil,
 							Resources: nil,
+							Replicas:  nil,
 						},
 					},
 				},
@@ -817,8 +800,6 @@ func TestProductConfig_Configure(t *testing.T) {
 				},
 			},
 			args: args{obj: getDeployment(BackendListenerName, func(d *appsv1.Deployment) {
-				replica := int32(2)
-				d.Spec.Replicas = &replica
 				d.Spec.Template.Spec.Containers = []v13.Container{
 					{
 						Resources: v13.ResourceRequirements{
