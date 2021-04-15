@@ -57,7 +57,7 @@ func TestRateLimitService(t *testing.T) {
 				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
 					configMap := &corev1.ConfigMap{}
 					if err := client.Get(context.TODO(), k8sclient.ObjectKey{
-						Name:      "ratelimit-config",
+						Name:      RateLimitingConfigMapName,
 						Namespace: "redhat-test-marin3r",
 					}, configMap); err != nil {
 						return fmt.Errorf("failed to obtain expected ConfigMap: %v", err)
