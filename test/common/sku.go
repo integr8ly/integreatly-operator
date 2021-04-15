@@ -3,28 +3,35 @@ package common
 import (
 	"context"
 	"fmt"
+	//v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestSKUValues(t TestingTB, ctx *TestingContext) {
 
-	//verify the config map is in place
-	_, err := getSKUConfigMap(ctx.Client)
+	// verify the config map is in place and can be parsed
+	skuConfigMap, err := getConfigMap(t, ctx.Client, sku.ConfigMapName, RHMIOperatorNamespace)
 	if err != nil {
-		t.Log("failed to get sku config map, skipping test for now until fully implemented", err)
-		// for now if the skuconfig map is not found we can return as we don't want to exercise the full test
+		t.Fatal(err)
+	}
+
+	quotaName, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
+	if !found {
+		t.Fatal(fmt.Sprintf("failed to sku parameter '%s' from the parameter secret", addon.QuotaParamName), err)
 		return
 	}
 
-	// if no skuparam is found then set isdefault to true.
-	defaultSKU := false
-	skuName, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, "sku")
-	if !found {
-		defaultSKU = true
+
+	skuConfig := &sku.SKU{}
+	err = sku.GetSKU(quotaName, skuConfigMap, skuConfig,false)
+	if err != nil {
+		t.Fatal("failed to get sku config map, skipping test for now until fully implemented", err)
 	}
 
 	installation, err := GetRHMI(ctx.Client, true)
@@ -41,19 +48,63 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 		t.Fatal("toSKU status set after installation")
 	}
 
-	//verify the sku value is as expected depending on whether there is a default used or not.
-	if !defaultSKU {
-		if installation.Status.SKU != skuName {
-			t.Fatal(fmt.Sprintf("sku value set as '%s' but doesn't match the expected value: '%s'", installation.Status.SKU, skuName))
-		}
+	if installation.Status.SKU != quotaName {
+		t.Fatal(fmt.Sprintf("sku value set as '%s' but doesn't match the expected value: '%s'", installation.Status.SKU, quotaName))
 	}
+
+	verifyConfiguration(t, ctx.Client, skuConfig)
+
+	// TODO update the sku to a higher configuration
+	// verifyConfiguration again
+
+	// TODO verify that the user can update their configuration manually but it does not get set back
+
+	// TODO update to a lower sku
+	// verifyConfiguration again
+
 
 }
 
-func getSKUConfigMap(c k8sclient.Client) (*v1.ConfigMap, error) {
-	skuConfigMap := &v1.ConfigMap{}
-	if err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: sku.ConfigMapName, Namespace: RHMIOperatorNamespace}, skuConfigMap); err != nil {
-		return nil, fmt.Errorf("failed to get SKU config map: '%w'", err)
+func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.ConfigMap, error) {
+	configMap := &v1.ConfigMap{}
+	if err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, configMap); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to get '%s' config map in the '%s' namespace", name, namespace))
 	}
-	return skuConfigMap, nil
+
+	return configMap, nil
+}
+
+func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
+
+	// TODO verify that the sku configuration is as expected
+	// get it from the marin3r namespace
+	config, err := getConfigMap(t, c, marin3r.RateLimitingConfigMapName, Marin3rProductNamespace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ratelimit, err := marin3r.GetRateLimitFromConfig(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ratelimit.RequestsPerUnit != skuConfig.GetRateLimitConfig().RequestsPerUnit {
+		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the sku config requests per unit '%v'", ratelimit.RequestsPerUnit, skuConfig.GetRateLimitConfig().RequestsPerUnit))
+	}
+
+	if ratelimit.Unit != skuConfig.GetRateLimitConfig().Unit {
+		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the sku config unit value '%s'", ratelimit.Unit, skuConfig.GetRateLimitConfig().Unit))
+	}
+
+
+	// TODO verify that promethues rules for alerting get update with rate limiting configuration
+
+	// TODO verify that grafana dashboard(s) has the expected rate limiting configuration
+
+	// TODO verify ratelimit replicas and resource configuration is as expected
+
+	// TODO verify rhusersso replicas and resource configuration is as expected
+
+	// verify 3scale replicas and resource configuraiton is as expected
+	// TODO when 3scale work is merged
+
 }

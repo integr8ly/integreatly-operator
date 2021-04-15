@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
@@ -35,10 +36,10 @@ descriptors:
 
 	return &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "ratelimit-config",
+			Name:      RateLimitingConfigMapName,
 			Namespace: "marin3r",
 			Labels: map[string]string{
-				"app":     "ratelimit",
+				"app":     sku.RateLimitName,
 				"part-of": "3scale-saas",
 			},
 		},

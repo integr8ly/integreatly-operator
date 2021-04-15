@@ -150,6 +150,10 @@ func (p AProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	return p.sku.rateLimitConfig
 }
 
+func (s *SKU) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
+	return s.rateLimitConfig
+}
+
 func (p AProductConfig) GetReplicas(ddcssName string) int32 {
 	return p.resourceConfigs[ddcssName].Replicas
 }
