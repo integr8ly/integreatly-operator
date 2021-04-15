@@ -33,8 +33,9 @@ Test that all namespace will be automatically recreated by the integreatly-opera
 ```
 export DESTRUCTIVE=true; export WATCH_NAMESPACE=redhat-rhoam-operator;  go clean -testcache && go test -v ./test/functional -run="//^J03" -timeout=80m | tee test-results.log
 ```
-3. Check the namespaces in Rhoam except the `redhat-rhoam-operator` are recreated during the test run, the Active for 
-namespaces from the command below should be recent.
+
+3. Check the namespaces in Rhoam except the `redhat-rhoam-operator` are recreated during the test run, the Active for
+   namespaces from the command below should be recent.
 
 ```
 oc get ns | grep rhoam
