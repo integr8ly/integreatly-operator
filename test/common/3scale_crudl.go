@@ -2,7 +2,13 @@ package common
 
 import (
 	goctx "context"
+	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
+	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"math/rand"
 	"time"
 
@@ -14,8 +20,7 @@ var (
 	threescaleLoginUser = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 )
 
-// Tests that a user in group rhmi-developers can log into fuse and
-// create an integration
+// Tests that a user in group dedicated-admins can create an integration
 func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
@@ -41,9 +46,10 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	// Login to 3Scale
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
-		// t.Fatalf("[%s] error occurred: %v", getTimeStampPrefix(), err)
-		t.Skipf("flakey test [%s] error ocurred: %v jira https://issues.redhat.com/browse/MGDAPI-557 ", getTimeStampPrefix(), err)
+		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
+
+	waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
 
 	// Make sure 3Scale is available
 	err = tsClient.Ping()
@@ -67,5 +73,53 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Log("Error during deleting the product")
 		t.Fatal(err)
+	}
+}
+
+func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, userName string) {
+	err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+		systemSeedSecret := &corev1.Secret{}
+
+		err = ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "system-seed", Namespace: ThreeScaleProductNamespace}, systemSeedSecret)
+		if err != nil {
+			t.Logf("unable to get system seed secret")
+			return false, nil
+		}
+
+		adminAccessToken := string(systemSeedSecret.Data["ADMIN_ACCESS_TOKEN"])
+
+		resp, err := ctx.HttpClient.Get(fmt.Sprintf("%s/admin/api/users.json?access_token=%s", host, adminAccessToken))
+		if err != nil {
+			t.Logf("unable to get list of users via api: %s", err)
+			return false, nil
+		}
+		defer resp.Body.Close()
+
+		bytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Logf("unable to read api response: %s", err)
+			return false, nil
+		}
+
+		users := threescale.Users{}
+		err = json.Unmarshal(bytes, &users)
+		if err != nil {
+			t.Logf("unable to marshal json response to struct: %s", err)
+			return false, nil
+		}
+
+		for _, user := range users.Users {
+			if user.UserDetails.Username == userName && user.UserDetails.Role == "member" {
+				t.Logf("user, %s, is not an admin in 3scale", userName)
+				return false, nil
+			}
+
+		}
+
+		return true, nil
+	})
+
+	if err != nil {
+		t.Fatalf("timout asserting 3scale user, %s, is admin for performing test: %s", userName, err)
 	}
 }

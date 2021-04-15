@@ -11,6 +11,8 @@ COPY controllers/ controllers/
 COPY pkg ./pkg
 COPY vendor ./vendor
 COPY test ./test
+COPY manifests ./manifests
+COPY version ./version
 COPY Makefile ./
 RUN make test/compile/osde2e
 
