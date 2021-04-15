@@ -12,6 +12,10 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	QuotaParamName = "addon-managed-api-service"
+)
+
 // GetParameter retrieves the value for an addon parameter by finding the RHMI
 // CR and selecting the addon name for its installation type.
 func GetParameter(ctx context.Context, client k8sclient.Client, namespace, parameter string) ([]byte, bool, error) {

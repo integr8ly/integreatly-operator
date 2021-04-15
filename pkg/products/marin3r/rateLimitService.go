@@ -8,10 +8,11 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +32,11 @@ type StatsdConfig struct {
 	Port string
 }
 
+const (
+	RateLimitingConfigMapName     = "ratelimit-config"
+	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
+)
+
 func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
@@ -45,19 +51,19 @@ func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, install
 
 type yamlRateLimit struct {
 	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
-	Unit            string
+	Unit            string `yaml:"unit"`
 }
 
 type yamlDescriptor struct {
-	Key         string
-	Value       string
-	RateLimit   *yamlRateLimit `yaml:"rate_limit"`
-	Descriptors []yamlDescriptor
+	Key         string           `yaml:"key"`
+	Value       string           `yaml:"value"`
+	RateLimit   *yamlRateLimit   `yaml:"rate_limit"`
+	Descriptors []yamlDescriptor `yaml:"descriptors"`
 }
 
 type yamlRoot struct {
-	Domain      string
-	Descriptors []yamlDescriptor
+	Domain      string           `yaml:"domain"`
+	Descriptors []yamlDescriptor `yaml:"descriptors"`
 }
 
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
@@ -86,7 +92,7 @@ func (r *RateLimitServiceReconciler) WithStatsdConfig(config StatsdConfig) *Rate
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "ratelimit-config",
+			Name:      RateLimitingConfigMapName,
 			Namespace: r.Namespace,
 		},
 	}
@@ -118,7 +124,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 			cm.Labels = map[string]string{}
 		}
 
-		cm.Data["apicast-ratelimiting.yaml"] = string(stagingConfigYamlMarshalled)
+		cm.Data[RateLimitingConfigMapDataName] = string(stagingConfigYamlMarshalled)
 		cm.Labels["app"] = sku.RateLimitName
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil
@@ -133,7 +139,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	redisSecret, err := r.getRedisSecret(ctx, client)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8sError.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 		} else {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -154,7 +160,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 
 	err = client.Get(ctx, key, deployment)
 	if err != nil {
-		if !errors.IsNotFound(err) {
+		if !k8sError.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
@@ -237,7 +243,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "ratelimit-config",
+							Name: RateLimitingConfigMapName,
 						},
 						Items: []corev1.KeyToPath{
 							{
@@ -365,4 +371,13 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 func uniqueKey(r marin3rconfig.RateLimitConfig) string {
 	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
+}
+
+func GetRateLimitFromConfig(c *corev1.ConfigMap) (*yamlRateLimit, error) {
+	ratelimitconfig := yamlRoot{}
+	err := yaml.Unmarshal([]byte(c.Data[RateLimitingConfigMapDataName]), &ratelimitconfig)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name))
+	}
+	return ratelimitconfig.Descriptors[0].RateLimit, nil
 }
