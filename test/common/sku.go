@@ -17,6 +17,14 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	prometheusRule1 = "api-usage-alert-level1"
+	prometheusRule1Desc = "per minute over 4 hours"
+	prometheusRule2 = "api-usage-alert-level2"
+	prometheusRule2Desc = "per minute over 2 hours"
+	prometheusRule3 = "api-usage-alert-level3"
+	prometheusRule3Desc = "per minute over 30 minutes"
+)
 func TestSKUValues(t TestingTB, ctx *TestingContext) {
 
 	// verify the config map is in place and can be parsed
@@ -113,18 +121,18 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 
 
 	for _, prometheusRule := range prometheusRuleList.Items {
-		if strings.Contains(prometheusRule.Name, "api-usage-alert-level") {
-			var rateLimitCheck uint32
-			if strings.Contains(prometheusRule.Name , "1") {
-				rateLimitCheck = configRateLimitRequestPerUnit * 60 * 4
-			} else if strings.Contains(prometheusRule.Name , "2") {
-				rateLimitCheck = configRateLimitRequestPerUnit * 60 * 2
-			} else if strings.Contains(prometheusRule.Name , "3") {
-				rateLimitCheck = configRateLimitRequestPerUnit * 30
-			}
-			if !strings.Contains(prometheusRule.Spec.Groups[0].Rules[0].Expr.StrVal, strconv.Itoa(int(rateLimitCheck))) {
-				t.Fatal(fmt.Sprintf("the expected value '%v' which is a calculation of ratelimit per minute over 4 hours %v*60*4 is not contained in the prometheus rule expression for rule '%s'", rateLimitCheck, ratelimit.RequestsPerUnit, prometheusRule.Name))
-			}
+		expr := prometheusRule.Spec.Groups[0].Rules[0].Expr.StrVal
+		rateLimitCheck := strconv.Itoa(int(configRateLimitRequestPerUnit * 60 * 4))
+		if strings.Contains(prometheusRule.Name, prometheusRule1) != strings.Contains(expr, rateLimitCheck){
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule1, prometheusRule1Desc, ratelimit.RequestsPerUnit))
+		}
+		rateLimitCheck = strconv.Itoa(int(configRateLimitRequestPerUnit * 60 * 2))
+		if strings.Contains(prometheusRule.Name, prometheusRule2) != strings.Contains(expr, rateLimitCheck){
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule2, prometheusRule2Desc, ratelimit.RequestsPerUnit))
+		}
+		rateLimitCheck = strconv.Itoa(int(configRateLimitRequestPerUnit * 30))
+		if strings.Contains(prometheusRule.Name, prometheusRule3) != strings.Contains(expr, rateLimitCheck){
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule3, prometheusRule3Desc, ratelimit.RequestsPerUnit))
 		}
 	}
 
@@ -137,4 +145,8 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 	// verify 3scale replicas and resource configuration is as expected
 	// TODO when 3scale work is merged
 
+}
+
+func prometheusRateLimitError(rateLimitCheck, rule, ruseDesc string, requestsPerUnit uint32) string{
+	return fmt.Sprintf("the expected value '%v' which is a calculation of ratelimit %v %v is not contained in the prometheus rule expression for rule '%s'", rateLimitCheck, ruseDesc, requestsPerUnit, rule)
 }
