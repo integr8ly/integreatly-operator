@@ -8,7 +8,7 @@
 # - jq
 # - oc (logged in at the cmd line in order to get the bearer token)
 # VARIABLES
-NAMESPACE_PREFIX=redhat-rhmi-
+NAMESPACE_PREFIX=redhat-rhoam-
 RHSSO="rhsso"
 USER_SSO="user-sso"
 THREESCALE="3scale"
@@ -23,6 +23,16 @@ function CHECK_NO_ALERTS(){
     if [[ $(curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE | jq -r '.data.alerts[]| select(.state=="firing") | [.labels.alertname, .state, .activeAt ] | @csv' | wc -l  | xargs ) == 1 ]] ; then
       echo Only alert firing is DeadMansSwitch
       date
+    else
+      echo "============================================================================"
+      echo Following alerts are Firing at :
+      date
+      cat alert-firing-during-perf-testing-report.csv
+      echo "============================================================================"
+      echo Following alerts are Pending :
+      date
+      cat alert-pending-during-perf-testing-report.csv
+      echo "============================================================================"
     fi
 }
 
