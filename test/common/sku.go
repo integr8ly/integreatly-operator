@@ -3,6 +3,10 @@ package common
 import (
 	"context"
 	"fmt"
+	v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"strconv"
+	"strings"
+
 	//v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
@@ -87,16 +91,42 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 		t.Fatal(err)
 	}
 
-	if ratelimit.RequestsPerUnit != skuConfig.GetRateLimitConfig().RequestsPerUnit {
-		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the sku config requests per unit '%v'", ratelimit.RequestsPerUnit, skuConfig.GetRateLimitConfig().RequestsPerUnit))
+	configRateLimitRequestPerUnit := skuConfig.GetRateLimitConfig().RequestsPerUnit
+	configRateLimitUnit := skuConfig.GetRateLimitConfig().Unit
+
+	if ratelimit.RequestsPerUnit != configRateLimitRequestPerUnit {
+		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the sku config requests per unit '%v'", ratelimit.RequestsPerUnit, configRateLimitRequestPerUnit))
 	}
 
-	if ratelimit.Unit != skuConfig.GetRateLimitConfig().Unit {
-		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the sku config unit value '%s'", ratelimit.Unit, skuConfig.GetRateLimitConfig().Unit))
+	if ratelimit.Unit != configRateLimitUnit {
+		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the sku config unit value '%s'", ratelimit.Unit, configRateLimitUnit))
 	}
 
 
 	// TODO verify that promethues rules for alerting get update with rate limiting configuration
+	prometheusRuleList := &v12.PrometheusRuleList{}
+	if err := c.List(context.TODO(), prometheusRuleList, &k8sclient.ListOptions{
+		Namespace: Marin3rProductNamespace,
+	}); err != nil {
+		t.Fatal(fmt.Sprintf("unable to list prometheus rules in namespace '%s'", Marin3rProductNamespace))
+	}
+
+
+	for _, prometheusRule := range prometheusRuleList.Items {
+		if strings.Contains(prometheusRule.Name, "api-usage-alert-level") {
+			var rateLimitCheck uint32
+			if strings.Contains(prometheusRule.Name , "1") {
+				rateLimitCheck = configRateLimitRequestPerUnit * 60 * 4
+			} else if strings.Contains(prometheusRule.Name , "2") {
+				rateLimitCheck = configRateLimitRequestPerUnit * 60 * 2
+			} else if strings.Contains(prometheusRule.Name , "3") {
+				rateLimitCheck = configRateLimitRequestPerUnit * 30
+			}
+			if !strings.Contains(prometheusRule.Spec.Groups[0].Rules[0].Expr.StrVal, strconv.Itoa(int(rateLimitCheck))) {
+				t.Fatal(fmt.Sprintf("the expected value '%v' which is a calculation of ratelimit per minute over 4 hours %v*60*4 is not contained in the prometheus rule expression for rule '%s'", rateLimitCheck, ratelimit.RequestsPerUnit, prometheusRule.Name))
+			}
+		}
+	}
 
 	// TODO verify that grafana dashboard(s) has the expected rate limiting configuration
 
@@ -104,7 +134,7 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 
 	// TODO verify rhusersso replicas and resource configuration is as expected
 
-	// verify 3scale replicas and resource configuraiton is as expected
+	// verify 3scale replicas and resource configuration is as expected
 	// TODO when 3scale work is merged
 
 }
