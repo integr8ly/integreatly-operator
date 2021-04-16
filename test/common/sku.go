@@ -5,6 +5,7 @@ import (
 	"fmt"
 	v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
@@ -113,7 +114,7 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 	}
 
 
-	// TODO verify that promethues rules for alerting get update with rate limiting configuration
+	// verify that promethues rules for alerting get update with rate limiting configuration
 	prometheusRuleList := &v12.PrometheusRuleList{}
 	if err := c.List(context.TODO(), prometheusRuleList, &k8sclient.ListOptions{
 		Namespace: Marin3rProductNamespace,
@@ -140,13 +141,33 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 
 	// TODO verify that grafana dashboard(s) has the expected rate limiting configuration
 
-	// TODO verify ratelimit replicas and resource configuration is as expected
-
-	// TODO verify rhusersso replicas and resource configuration is as expected
-	configReplicas := skuConfig.GetProduct(sku.KeycloakName).GetReplicas(sku.KeycloakName)
-	resourceConfig, ok := skuConfig.GetProduct(sku.KeycloakName).GetResourceConfig(sku.KeycloakName)
+	// verify ratelimit replicas and resource configuration is as expected
+	configReplicas := skuConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetReplicas(sku.RateLimitName)
+	resourceConfig, ok := skuConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetResourceConfig(sku.RateLimitName)
 	if !ok {
-		t.Fatal("Error obtaining resource config")
+		t.Fatal("Error obtaining rateLimit resource config")
+	}
+
+	ratelimitDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sku.RateLimitName,
+		},
+	}
+	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: ratelimitDeployment.Name, Namespace: NamespacePrefix + "marin3r"}, ratelimitDeployment)
+	if err != nil {
+		t.Fatalf("Couldn't get RateLimit deployment config %v", err)
+	}
+
+	crReplicas := *ratelimitDeployment.Spec.Replicas
+	crResources := ratelimitDeployment.Spec.Template.Spec.Containers[0].Resources
+	checkResources(t, ratelimitDeployment.Name, configReplicas, crReplicas, resourceConfig, crResources)
+
+
+	// verify rhusersso replicas and resource configuration is as expected
+	configReplicas = skuConfig.GetProduct(sku.KeycloakName).GetReplicas(sku.KeycloakName)
+	resourceConfig, ok = skuConfig.GetProduct(sku.KeycloakName).GetResourceConfig(sku.KeycloakName)
+	if !ok {
+		t.Fatal("Error obtaining userrhsso resource config")
 	}
 
 	// Validate CPU value requested by SSO
@@ -160,24 +181,9 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 		t.Fatalf("Couldn't get Keycloak CR: %v", err)
 	}
 
-	crReplicas := int32(keycloak.Spec.Instances)
-	crResources := keycloak.Spec.KeycloakDeploymentSpec.Resources
-
-	if configReplicas != crReplicas{
-		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak replicas: expected %v but got %v ", configReplicas, crReplicas))
-	}
-	if resourceConfig.Requests.Cpu().Cmp(*crResources.Requests.Cpu()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak requested cpu: expected %v but got %v ", resourceConfig.Requests.Cpu(), crResources.Requests.Cpu()))
-	}
-	if resourceConfig.Requests.Memory().Cmp(*crResources.Requests.Memory()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak requested memory: expected %v but got %v ", resourceConfig.Requests.Memory(), resourceConfig.Requests.Memory()))
-	}
-	if resourceConfig.Limits.Cpu().Cmp(*crResources.Limits.Cpu()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak cpu limits: expected %v but got %v ", resourceConfig.Limits.Cpu(), crResources.Limits.Cpu()))
-	}
-	if resourceConfig.Limits.Memory().Cmp(*crResources.Limits.Memory()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak limits: expected %v but got %v ", resourceConfig.Limits.Memory(), resourceConfig.Limits.Memory()))
-	}
+	crReplicas = int32(keycloak.Spec.Instances)
+	crResources = keycloak.Spec.KeycloakDeploymentSpec.Resources
+	checkResources(t, keycloak.Name, configReplicas, crReplicas, resourceConfig, crResources)
 
 	// verify 3scale replicas and resource configuration is as expected
 	// TODO when 3scale work is merged
@@ -186,4 +192,22 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 
 func prometheusRateLimitError(rateLimitCheck, rule, ruseDesc string, requestsPerUnit uint32) string{
 	return fmt.Sprintf("the expected value '%v' which is a calculation of ratelimit %v %v is not contained in the prometheus rule expression for rule '%s'", rateLimitCheck, ruseDesc, requestsPerUnit, rule)
+}
+
+func checkResources(t TestingTB, productName string, configReplicas, crReplicas int32, resourceConfig, crResources v1.ResourceRequirements){
+	if configReplicas != crReplicas{
+		t.Fatalf(fmt.Sprintf("Failed verifying %v replicas: expected %v but got %v ",productName, configReplicas, crReplicas))
+	}
+	if resourceConfig.Requests.Cpu().Cmp(*crResources.Requests.Cpu()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying %v requested cpu: expected %v but got %v ",productName, resourceConfig.Requests.Cpu(), crResources.Requests.Cpu()))
+	}
+	if resourceConfig.Requests.Memory().Cmp(*crResources.Requests.Memory()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying %v requested memory: expected %v but got %v ",productName, resourceConfig.Requests.Memory(), resourceConfig.Requests.Memory()))
+	}
+	if resourceConfig.Limits.Cpu().Cmp(*crResources.Limits.Cpu()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying %v cpu limits: expected %v but got %v ",productName, resourceConfig.Limits.Cpu(), crResources.Limits.Cpu()))
+	}
+	if resourceConfig.Limits.Memory().Cmp(*crResources.Limits.Memory()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying %v limits: expected %v but got %v ",productName, resourceConfig.Limits.Memory(), resourceConfig.Limits.Memory()))
+	}
 }
