@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
 
@@ -141,6 +143,41 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 	// TODO verify ratelimit replicas and resource configuration is as expected
 
 	// TODO verify rhusersso replicas and resource configuration is as expected
+	configReplicas := skuConfig.GetProduct(sku.KeycloakName).GetReplicas(sku.KeycloakName)
+	resourceConfig, ok := skuConfig.GetProduct(sku.KeycloakName).GetResourceConfig(sku.KeycloakName)
+	if !ok {
+		t.Fatal("Error obtaining resource config")
+	}
+
+	// Validate CPU value requested by SSO
+	keycloak := &v1alpha1.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: string(rhmiv1alpha1.ProductRHSSOUser),
+		},
+	}
+	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: NamespacePrefix + "user-sso"}, keycloak)
+	if err != nil {
+		t.Fatalf("Couldn't get Keycloak CR: %v", err)
+	}
+
+	crReplicas := int32(keycloak.Spec.Instances)
+	crResources := keycloak.Spec.KeycloakDeploymentSpec.Resources
+
+	if configReplicas != crReplicas{
+		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak replicas: expected %v but got %v ", configReplicas, crReplicas))
+	}
+	if resourceConfig.Requests.Cpu().Cmp(*crResources.Requests.Cpu()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak requested cpu: expected %v but got %v ", resourceConfig.Requests.Cpu(), crResources.Requests.Cpu()))
+	}
+	if resourceConfig.Requests.Memory().Cmp(*crResources.Requests.Memory()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak requested memory: expected %v but got %v ", resourceConfig.Requests.Memory(), resourceConfig.Requests.Memory()))
+	}
+	if resourceConfig.Limits.Cpu().Cmp(*crResources.Limits.Cpu()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak cpu limits: expected %v but got %v ", resourceConfig.Limits.Cpu(), crResources.Limits.Cpu()))
+	}
+	if resourceConfig.Limits.Memory().Cmp(*crResources.Limits.Memory()) != 0 {
+		t.Fatalf(fmt.Sprintf("Failed verifying Keycloak limits: expected %v but got %v ", resourceConfig.Limits.Memory(), resourceConfig.Limits.Memory()))
+	}
 
 	// verify 3scale replicas and resource configuration is as expected
 	// TODO when 3scale work is merged
