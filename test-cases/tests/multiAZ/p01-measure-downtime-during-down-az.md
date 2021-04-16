@@ -46,7 +46,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    export RHOAM=true
    make local/deploy
    oc project workload-web-app
-   oc scale dc workload-web-app --replicas=3 
+   oc scale dc workload-web-app --replicas=3
    ```
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster.
@@ -84,6 +84,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    If you haven't run the performance test suite before, see the comments in [MGDAPI-238](https://issues.redhat.com/browse/MGDAPI-238). And [Austin's doc](https://docs.google.com/document/d/1NJBUsieRkBLnN2PMAF5cpaH7uXq9mZCx1JQaT9Ruytk/edit?usp=sharing) in particular.
 
 7. In a terminal window #2, run the following script [alerts-during-perf-testing.sh](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh) to continuously check alerts during the AZ downtime. The script creates two files which can be uploaded to the jira when the test completes.
+
    - `alerts-firing-during-perf-testing-report.csv`
    - `alerts-pending-during-perf-testing-report.csv`
 
@@ -103,15 +104,17 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
    When you created the customer-like application via performance test suite, connect to the machine where Hyperfoil controller is running and see the `/tmp/hyperfoil/run/<run-number>/20M_5pLogin.data/rhsso_auth.csv` to get PRODUCTION-APICAST-URL. The `/tmp/hyperfoil` is a default value. It might be located elsewhere. If the Hyperfoil controller has been deployed in OpenShift, the path is `/var/hyperfoil` instead.
    The csv will also provide you with everything you need to generate a TOKEN
-      - KEYCLOAK_BASE_URL e.g. keycloak-redhat-rhoam-user-sso.apps.r-upgr-46172830.kq1c.s1.devshift.org:443
+
+   - KEYCLOAK_BASE_URL e.g. keycloak-redhat-rhoam-user-sso.apps.r-upgr-46172830.kq1c.s1.devshift.org:443
    - KEYCLOAK_AUTH_REALMS_ENDPOINT e.g. /auth/realms/realm-austincu-rhom-4qx1/protocol/openid-connect/token
    - client_id
    - client_secret
    - username
    - password
-   e.g.
+     e.g.
+
    ```bash
-   cat rhsso_auth.csv 
+   cat rhsso_auth.csv
    "perf-1bk-austincu-rhom-qhnq-3scale-apicast-production.apps.r-upgr-46172830.kq1c.s1.devshift.org:443","keycloak-redhat-rhoam-user-sso.apps.r-upgr-46172830.kq1c.s1.devshift.org:443","/auth/realms/realm-austincu-rhom-4qx1/protocol/openid-connect/token","grant_type=password&client_id=aaaab871&client_secret=aaaadc472bafb91cac686f1a4950dd2&username=testUser&password=testUser"
    ```
 
