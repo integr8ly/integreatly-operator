@@ -1,7 +1,7 @@
 package config
 
 import (
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,19 +20,19 @@ func (c *CloudResources) GetWatchableCRDs() []runtime.Object {
 		&crov1alpha1.Postgres{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Postgres",
-				APIVersion: crov1alpha1.SchemeGroupVersion.String(),
+				APIVersion: crov1alpha1.GroupVersion.String(),
 			},
 		},
 		&crov1alpha1.Redis{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Redis",
-				APIVersion: crov1alpha1.SchemeGroupVersion.String(),
+				APIVersion: crov1alpha1.GroupVersion.String(),
 			},
 		},
 		&crov1alpha1.BlobStorage{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "BlobStorage",
-				APIVersion: crov1alpha1.SchemeGroupVersion.String(),
+				APIVersion: crov1alpha1.GroupVersion.String(),
 			},
 		},
 	}

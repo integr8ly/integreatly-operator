@@ -12,8 +12,8 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -48,7 +48,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 			Name:      "test",
 			Namespace: defaultOperatorNamespace,
 		},
-		Status: crov1.PostgresStatus{
+		Status: croTypes.ResourceTypeStatus{
 			Phase:     croTypes.PhaseComplete,
 			SecretRef: secretRef,
 		},
@@ -133,11 +133,11 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 					Name:      "test",
 					Namespace: defaultOperatorNamespace,
 				},
-				Spec: crov1.PostgresSpec{
+				Spec: croTypes.ResourceTypeSpec{
 					Tier:      "production",
 					SecretRef: secretRef,
 				},
-				Status: crov1.PostgresStatus{
+				Status: croTypes.ResourceTypeStatus{
 					Phase:     croTypes.PhaseComplete,
 					SecretRef: secretRef,
 				},

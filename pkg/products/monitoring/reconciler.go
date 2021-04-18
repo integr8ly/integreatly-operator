@@ -9,6 +9,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	routev1 "github.com/openshift/api/route/v1"
 
 	"strings"
 
@@ -69,6 +70,13 @@ const (
 
 	// Cluster infrastructure
 	clusterInfraName = "cluster"
+
+	// For Cluster ID
+	clusterIDValue = "version"
+
+	// For OpenShift console
+	openShiftConsoleRoute     = "console"
+	openShiftConsoleNamespace = "openshift-console"
 )
 
 type Reconciler struct {
@@ -214,7 +222,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	isMultiAZCluster, err := resources.IsMultiAZCluster(ctx, serverClient)
 	if err != nil {
-		r.Log.Error("Error when deciding if the cluster is multi-az or not. Defaulted to false:", err)
+		r.Log.Warning("Failure when deciding if the cluster is multi-az or not. Defaulted to false: " + err.Error())
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.Log)
@@ -252,8 +260,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.Log.Warning("failed to reconcile alert manager config secret " + err.Error())
+		}
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
-		r.Log.Error("failed to reconcile alert manager config secret", err)
 		return phase, err
 	}
 
@@ -267,7 +277,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDashboards(ctx, serverClient)
 	r.Log.Infof("reconcileDashboards", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.Log.Error("Error reconciling dashboards", err)
+		if err != nil {
+			r.Log.Warning("Failure reconciling dashboards " + err.Error())
+		}
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
 		return phase, err
 	}
@@ -578,7 +590,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
 	if err != nil {
-		r.Log.Error("Error when deciding if monitoring pod anti affinity is required. Defaulted to false:", err)
+		r.Log.Warning("Failure when deciding if monitoring pod anti affinity is required. Defaulted to false: " + err.Error())
 	}
 
 	owner.AddIntegreatlyOwnerAnnotations(m, r.installation)
@@ -776,6 +788,16 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster infra details for alertmanager config: %w", err)
 	}
 
+	clusterVersion := &configv1.ClusterVersion{}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterIDValue}, clusterVersion); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster ID details for alertmanager config: %w", err)
+	}
+
+	clusterRoute := &routev1.Route{}
+	if err := serverClient.Get(context.TODO(), types.NamespacedName{Name: openShiftConsoleRoute, Namespace: openShiftConsoleNamespace}, clusterRoute); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch OpenShift console URL details for alertmanager config: %w", err)
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
@@ -789,6 +811,9 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
 		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
+		"clusterID":             string(clusterVersion.Spec.ClusterID),
+		"clusterName":           clusterInfra.Status.InfrastructureName,
+		"clusterConsole":        clusterRoute.Spec.Host,
 	})
 	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {

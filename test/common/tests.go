@@ -96,7 +96,7 @@ var (
 	}
 
 	FAILURE_TESTS = []TestCase{
-		/*FLAKY*/ {"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
+		{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{

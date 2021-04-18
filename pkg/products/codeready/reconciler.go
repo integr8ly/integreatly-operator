@@ -16,7 +16,7 @@ import (
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"

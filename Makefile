@@ -21,7 +21,7 @@ TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.8.0
-RHOAM_TAG ?= 1.4.0
+RHOAM_TAG ?= 1.5.0
 
 export SKIP_FLAKES := true
 
@@ -237,7 +237,7 @@ test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)
 test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/osde2e -timeout=120m
+	go clean -testcache && go test ./test/osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
 
 ############ E2E TEST COMMANDS ############
 
@@ -366,7 +366,7 @@ cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
 ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	$(MAKE) setup/service_account
-	@./scripts/setup-delorean-pullsecret.sh
+	./scripts/setup-delorean-pullsecret.sh
 	$(MAKE) cluster/cleanup/serviceaccount
 endif
 
@@ -516,12 +516,3 @@ packagemanifests: manifests kustomize
 .PHONY: bundle-build
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
-
-.PHONY: block-operator-pod
-block-operator-pod:
-	oc patch cm $(shell grep -e "LeaderElectionID" main.go | cut -d '"' -f2) -n $(NAMESPACE) -p '{"metadata":{"annotations": {"control-plane.alpha.kubernetes.io/leader": ""}}}'
-	@echo -e "To restart the operator running on the cluster run:\n\tmake unblock-operator-pod INSTALLATION_TYPE=${INSTALLATION_TYPE}"
-
-.PHONY: unblock-operator-pod
-unblock-operator-pod:
-	oc delete cm $(shell grep -e "LeaderElectionID" main.go | cut -d '"' -f2) -n $(NAMESPACE)

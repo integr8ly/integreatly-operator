@@ -377,7 +377,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("waiting for prometheus service for grafana datasource to become available, %w", err)
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
 	var upstreamPort int32

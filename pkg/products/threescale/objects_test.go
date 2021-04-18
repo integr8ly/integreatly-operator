@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -228,14 +228,14 @@ var blobStorage = &crov1.BlobStorage{
 		Name:      "threescale-blobstorage-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: crov1.BlobStorageStatus{
+	Status: types.ResourceTypeStatus{
 		Phase: types.PhaseComplete,
 		SecretRef: &types.SecretRef{
 			Name:      "threescale-blobstorage-test",
 			Namespace: "integreatly-operator-ns",
 		},
 	},
-	Spec: crov1.BlobStorageSpec{
+	Spec: types.ResourceTypeSpec{
 		SecretRef: &types.SecretRef{
 			Name:      "threescale-blobstorage-test",
 			Namespace: "integreatly-operator-ns",
@@ -341,7 +341,7 @@ var postgres = &crov1.Postgres{
 		Name:      "threescale-postgres-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: crov1.PostgresStatus{
+	Status: types.ResourceTypeStatus{
 		Message:  "reconcile complete",
 		Phase:    types.PhaseComplete,
 		Provider: "openshift-postgres",
@@ -372,7 +372,7 @@ var redis = &crov1.Redis{
 		Name:      "threescale-redis-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: crov1.RedisStatus{
+	Status: types.ResourceTypeStatus{
 		Message:  "reconcile complete",
 		Phase:    types.PhaseComplete,
 		Provider: "openshift-redis",
@@ -400,7 +400,7 @@ var backendRedis = &crov1.Redis{
 		Name:      "threescale-backend-redis-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: crov1.RedisStatus{
+	Status: types.ResourceTypeStatus{
 		Message: "reconcile complete",
 		Phase:   types.PhaseComplete,
 		SecretRef: &types.SecretRef{

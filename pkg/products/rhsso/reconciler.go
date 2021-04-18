@@ -251,6 +251,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("650m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("650m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
+
+		//Set keycloak Update Strategy to Rolling as default
+		//Keycloak operator should make decision based on the image, and can change update strategy
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
 
@@ -265,7 +270,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	host := r.Config.GetHost()
 	if host == "" {
 		r.Log.Info("URL for Keycloak not yet available")
-		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Host for Keycloak not yet available")
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
 	r.Log.Infof("Operation result", l.Fields{"keycloak": kc.Name, "result": or})
