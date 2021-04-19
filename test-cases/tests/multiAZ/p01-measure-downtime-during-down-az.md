@@ -45,8 +45,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    export GRAFANA_DASHBOARD=true
    export RHOAM=true
    make local/deploy
-   oc project workload-web-app
-   oc scale dc workload-web-app --replicas=3
+   oc scale dc workload-web-app --replicas=3 -n workload-web-app
    ```
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster.

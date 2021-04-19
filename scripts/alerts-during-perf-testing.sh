@@ -8,7 +8,7 @@
 # - jq
 # - oc (logged in at the cmd line in order to get the bearer token)
 # VARIABLES
-NAMESPACE_PREFIX=redhat-rhoam-
+NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-$(oc get RHMIs --all-namespaces -o json | jq -r .items[0].spec.namespacePrefix)}"
 RHSSO="rhsso"
 USER_SSO="user-sso"
 THREESCALE="3scale"
