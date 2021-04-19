@@ -43,8 +43,7 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 4. Check there are no currently firing alerts.
 
-   - Go to the middleware-monitoring prometheus namespace `oc project redhat-rhoam-middleware-monitoring-operator`
-   - Get the prometheus route `oc get routes | grep prometheus-route`
+   - Get the prometheus route `oc get routes -n redhat-rhoam-middleware-monitoring-operator | grep prometheus-route`
    - Login to Prometheus using kubeadmin credentials
    - Allow permissions
    - In the alerts tab in the prometheus ui confirm that only one alert DeadMansSwitch is firing
