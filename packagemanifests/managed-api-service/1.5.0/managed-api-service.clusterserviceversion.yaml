@@ -54,7 +54,7 @@ metadata:
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.5.0-rc1
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.5.0
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
@@ -417,7 +417,7 @@ spec:
                   value: "true"
                 - name: ALERT_SMTP_FROM
                   value: default@test.com
-                image: quay.io/integreatly/managed-api-service:rhoam-v1.5.0-rc1
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.5.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
@@ -623,7 +623,6 @@ spec:
   maturity: alpha
   provider:
     name: rhoam
-  replaces: managed-api-service.v1.4.0
   selector:
     matchLabels:
       alm-owner-rhoam: rhoam-operator
