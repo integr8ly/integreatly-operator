@@ -160,6 +160,18 @@ set_csv_service_affecting_field() {
   yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.serviceAffecting "$value"
 }
 
+# Due to a quirk in operator-sdk v1.2.0, the `replaces` field in the generated CSV is taken from the current version in
+# the base CSV (config/manifests-(rhoam|rhmi)/bases). When generating the CSV from a new version (e.g. from 1.5.0
+# to 1.6.0), this script updates the version in the base CSV to the new version, so the next time the script runs it
+# uses it as the `replaces` field value. However, when cutting an RC from the same version (1.5.0-rc1 to 1.5.0-rc2), the
+# version in the base CSV is the same as the new version, so operator-sdk generates a CSV without the `replaces` field.
+# This function addresses that by adding the `replaces` field if it was removed.
+check_csv_replaces_field() {
+  if [[ -z $(yq r "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" spec.replaces) ]]; then
+    yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" spec.replaces "${PREVIOUS_REPLACES_VALUE}"
+  fi
+}
+
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
  exit 1
@@ -194,6 +206,8 @@ if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   create_new_csv
   set_version
 else
+  # Save the previous value of the `replaces` field. Needed to repopulate the `replaces` field later if removed.
+  PREVIOUS_REPLACES_VALUE=$(yq r "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" spec.replaces)
   update_csv
 fi
 set_installation_type
@@ -206,6 +220,7 @@ if [[ -n "$SERVICE_AFFECTING" ]]; then
 fi
 
 update_base_csv
+check_csv_replaces_field
 
 # Reset the project name
 yq w -i PROJECT projectName $current_project_name
