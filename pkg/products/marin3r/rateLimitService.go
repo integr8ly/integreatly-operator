@@ -8,6 +8,7 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,8 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"github.com/pkg/errors"
-
 )
 
 type RateLimitServiceReconciler struct {
@@ -32,8 +31,9 @@ type StatsdConfig struct {
 	Host string
 	Port string
 }
+
 const (
-	RateLimitingConfigMapName = "ratelimit-config"
+	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
 )
 
@@ -55,14 +55,14 @@ type yamlRateLimit struct {
 }
 
 type yamlDescriptor struct {
-	Key         string `yaml:"key"`
-	Value       string `yaml:"value"`
-	RateLimit   *yamlRateLimit `yaml:"rate_limit"`
+	Key         string           `yaml:"key"`
+	Value       string           `yaml:"value"`
+	RateLimit   *yamlRateLimit   `yaml:"rate_limit"`
 	Descriptors []yamlDescriptor `yaml:"descriptors"`
 }
 
 type yamlRoot struct {
-	Domain      string `yaml:"domain"`
+	Domain      string           `yaml:"domain"`
 	Descriptors []yamlDescriptor `yaml:"descriptors"`
 }
 
@@ -375,10 +375,9 @@ func uniqueKey(r marin3rconfig.RateLimitConfig) string {
 
 func GetRateLimitFromConfig(c *corev1.ConfigMap) (*yamlRateLimit, error) {
 	ratelimitconfig := yamlRoot{}
-	fmt.Printf("%s", c)
 	err := yaml.Unmarshal([]byte(c.Data[RateLimitingConfigMapDataName]), &ratelimitconfig)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'",c.Name))
+		return nil, errors.Wrap(err, fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name))
 	}
 	return ratelimitconfig.Descriptors[0].RateLimit, nil
 }

@@ -51,6 +51,7 @@ var (
 	MonitoringStage              StageName = "monitoring"
 	AuthenticationStage          StageName = "authentication"
 	ProductsStage                StageName = "products"
+	CompleteStage                StageName = "complete"
 	SolutionExplorerStage        StageName = "solution-explorer"
 	UninstallProductsStage       StageName = "uninstall - products"
 	UninstallMonitoringStage     StageName = "uninstall - monitoring"
