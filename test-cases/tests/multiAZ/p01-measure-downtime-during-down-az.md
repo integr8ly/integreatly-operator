@@ -22,6 +22,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 - [oc CLI v4.3](https://docs.openshift.com/container-platform/3.6/cli_reference/get_started_cli.html#installing-the-cli)
 - [ocm CLI](https://github.com/openshift-online/ocm-cli/releases) installed locally
 - [jq v1.6](https://github.com/stedolan/jq/releases) installed locally
+- aws key and secret check with QE trepel or pstruc
 - cluster with Multi AZ RHOAM installed on it
   - all the alerts should be green
   - all the tests should pass (especially [Pod Distribution test](https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/multiaz_pod_distribution.go))
@@ -44,6 +45,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    export GRAFANA_DASHBOARD=true
    export RHOAM=true
    make local/deploy
+   oc scale dc workload-web-app --replicas=3 -n workload-web-app
    ```
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster.
@@ -51,6 +53,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 4. Record the pod distribution from 3scale, user-sso, rhsso, marin3r, and middleware-monitoring-operator namespaces using [podsAZ](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) script
 
    ```bash
+   # ./script/podsAZ.sh without arg will return all namespaces
    # e.g.
    ./scripts/podsAz.sh redhat-rhoam-user-sso
    Pods distribution for 'redhat-rhoam-user-sso'
@@ -71,19 +74,20 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
 6. Manage the customer-like app by 3scale and secure it by user SSO
 
-   Probably the simplest way to do it is to run the performance test suite. The [branch](https://gitlab.cee.redhat.com/trepel/3scale-py-testsuite/-/tree/customer-like-app) has been created to simplify this as much as possible. If you have ran the performance test suite before, you "just" have to clone the branch, update [settings.local.yaml](https://gitlab.cee.redhat.com/trepel/3scale-py-testsuite/-/blob/customer-like-app/config/settings.local.yaml) and execute the test suite
+   Probably the simplest way to do it is to run the performance test suite. Here is the [repo](https://gitlab.cee.redhat.com/3scale-qe/3scale-py-testsuite.git) for the test suite. If you have ran the performance test suite before, you "just" have to clone the branch, update [settings.yaml](https://gitlab.cee.redhat.com/3scale-qe/3scale-py-testsuite/-/blob/master/config/settings.yaml) and execute the test suite.
 
    ```bash
-   pipenv run python -m pytest --performance_smoke testsuite/tests/performance/apicast/smoke/test_smoke_oidc.py
+   pipenv run python -m pytest --performance testsuite/tests/performance/rhoam/test_rhoam_rhsso_tokens.py
    ```
 
    If you haven't run the performance test suite before, see the comments in [MGDAPI-238](https://issues.redhat.com/browse/MGDAPI-238). And [Austin's doc](https://docs.google.com/document/d/1NJBUsieRkBLnN2PMAF5cpaH7uXq9mZCx1JQaT9Ruytk/edit?usp=sharing) in particular.
 
-   If you wish to do it manually, see the comments in [MGDAPI-198](https://issues.redhat.com/browse/MGDAPI-198).
+7. In a terminal window #2, run the following script [alerts-during-perf-testing.sh](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh) to continuously check alerts during the AZ downtime. The script creates two files which can be uploaded to the jira when the test completes.
 
-7. In terminal window #2, run the following [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh)
+   - `alerts-firing-during-perf-testing-report.csv`
+   - `alerts-pending-during-perf-testing-report.csv`
 
-8. In terminal window #3, run a script to monitor the customer-like application
+8. In a terminal window #3, create and run a curl script to monitor the customer-like application
 
    ```bash
    #!/usr/bin/env bash
@@ -91,29 +95,43 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    #run this like ./nameOfThisFile.sh 2>&1 | tee nameOfThisFileOutput.txt
    while true; do
      echo `date`
-     curl -isS -H 'Accept: application/json' -H "Authorization: Bearer <TOKEN>" https://<PRODUCTION-APICAST-URL> | grep HTTP | head -1
+     curl -isS -H 'Accept: application/json' -H "Authorization: Bearer <TOKEN>" https://<PRODUCTION-APICAST-URL>/0/nothing/1 | grep HTTP | head -1
      echo "----"
      sleep 5;
    done
    ```
 
-   If you created the customer-like application via performance test suite, connect to the machine where Hyperfoil controller is running and see the `/tmp/hyperfoil/runs/<run-number/managed_services_base_line.data/auth_oidc.csv` to get TOKEN and PRODUCTION-APICAST-URL. The `/tmp/hyperfoil` is a default value. It might be located elsewhere. If the Hyperfoil controller is deployed in OpenShift, the path is `/var/hyperfoil` instead.
+   When you created the customer-like application via performance test suite, connect to the machine where Hyperfoil controller is running and see the `/tmp/hyperfoil/run/<run-number>/20M_5pLogin.data/rhsso_auth.csv` to get PRODUCTION-APICAST-URL. The `/tmp/hyperfoil` is a default value. It might be located elsewhere. If the Hyperfoil controller has been deployed in OpenShift, the path is `/var/hyperfoil` instead.
+   The csv will also provide you with everything you need to generate a TOKEN
 
-   If you did it manually then you need to generate a token:
+   - KEYCLOAK_BASE_URL e.g. keycloak-redhat-rhoam-user-sso.apps.r-upgr-46172830.kq1c.s1.devshift.org:443
+   - KEYCLOAK_AUTH_REALMS_ENDPOINT e.g. /auth/realms/realm-austincu-rhom-4qx1/protocol/openid-connect/token
+   - client_id
+   - client_secret
+   - username
+   - password
+     e.g.
 
    ```bash
-   curl -X POST 'https://keycloak-redhat-rhoam-user-sso.apps.<YOUR-CLUSTER>.s1.devshift.org:443/auth/realms/<YOUR-REALM>/protocol/openid-connect/token' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
+   cat rhsso_auth.csv
+   "perf-1bk-austincu-rhom-qhnq-3scale-apicast-production.apps.r-upgr-46172830.kq1c.s1.devshift.org:443","keycloak-redhat-rhoam-user-sso.apps.r-upgr-46172830.kq1c.s1.devshift.org:443","/auth/realms/realm-austincu-rhom-4qx1/protocol/openid-connect/token","grant_type=password&client_id=aaaab871&client_secret=aaaadc472bafb91cac686f1a4950dd2&username=testUser&password=testUser"
+   ```
+
+   To generate a bearer TOKEN:
+
+   ```bash
+   curl -X POST 'https://<KEYCLOAK_BASE_URL><KEYCLOAK_AUTH_REALMS_ENDPOINT>' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
    ```
 
    All the required values for the command above are available in your user SSO instance.
 
-9. In terminal window #4, run the following [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh) to fail an AZ
+9. In a terminal window #4, run the following script [disableAz.sh](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh) to fail an AZ
 
 - AZ should not host RHOAM monitoring stack (unless it spans multiple zones)
 - AZ should not host customer app (unless it spans multiple zones)
 - AZ should not host workload-web-app (unless it spans multiple zones)
 - AZ should not host any Redis Primary node
-  - typically there are three Redis instances there
+  - Typically there are three Redis instances there
   - `aws elasticache describe-replication-groups` and see where the Primaries are hosted
 - AZ should host Production APIcast (one of the APIcast's pods)
 
@@ -181,7 +199,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
     ./scripts/disableAz.sh false eu-west-1a
     ```
 
-17. Wait until the AZ is restored and OpenShift starts using it
+17. Wait until the AZ has been restored and OpenShift starts using it
 
 ```bash
 # You should see a similar output to the one below when running the following oc command:
