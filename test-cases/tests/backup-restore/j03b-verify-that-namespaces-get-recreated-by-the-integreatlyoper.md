@@ -34,6 +34,27 @@ Test that all namespace will be automatically recreated by the integreatly-opera
 export DESTRUCTIVE=true; export WATCH_NAMESPACE=redhat-rhoam-operator;  go clean -testcache && go test -v ./test/functional -run="//^J03" -timeout=80m | tee test-results.log
 ```
 
+3. Check the namespaces in Rhoam except the `redhat-rhoam-operator` are recreated during the test run, the Active for
+   namespaces from the command below should be recent.
+
+```
+oc get ns | grep rhoam
+redhat-rhoam-3scale                                Active   1h
+redhat-rhoam-3scale-operator                       Active   1h
+redhat-rhoam-cloud-resources-operator              Active   1h
+redhat-rhoam-customer-monitoring-operator          Active   1h
+redhat-rhoam-marin3r                               Active   1h
+redhat-rhoam-marin3r-operator                      Active   1h
+redhat-rhoam-middleware-monitoring-federate        Active   1h
+redhat-rhoam-middleware-monitoring-operator        Active   1h
+redhat-rhoam-monitoring                            Active   1h
+redhat-rhoam-operator                              Active   5d13h
+redhat-rhoam-rhsso                                 Active   1h
+redhat-rhoam-rhsso-operator                        Active   1h
+redhat-rhoam-user-sso                              Active   1h
+redhat-rhoam-user-sso-operator                     Active   1h
+```
+
 **Note finalizers:**
 
 If a namespace stuck in 'Terminating' state, it's needed to remove finalizers to proceed. To find resources with finalizers:
