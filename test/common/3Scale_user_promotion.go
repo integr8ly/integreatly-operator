@@ -49,8 +49,10 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 
 	err = loginToThreeScale(t, host, dedicatedAdminUser, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior error, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/MGDAPI-936", err)
+		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
+
+	waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, httpClient, ctx.Client, t)
 
@@ -99,7 +101,6 @@ func loginTo3ScaleAsDeveloper(t TestingTB, user string, host string, ctx *Testin
 
 	err = loginToThreeScale(t, host, user, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
-		// t.Fatalf("Failed to log into 3Scale: %v", err)
-		t.Skip("Skipping due to known flaky behavior error, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/MGDAPI-936", err)
+		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
 }

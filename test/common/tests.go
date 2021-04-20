@@ -68,15 +68,14 @@ var (
 	IDP_BASED_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				/*FLAKY*/ {"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
+				{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
 				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
-				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
-				/*FLAKY*/ {"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
-				/*FLAKY*/ {"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
-				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
-				/*FLAKY*/ {"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
-				// Test that causes H03 and H07 to fail - being investigated in https://issues.redhat.com/browse/MGDAPI-557
 				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
+				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
+				{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
+				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
+				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
+				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},

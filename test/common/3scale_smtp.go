@@ -234,8 +234,7 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	// Login to 3Scale
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA:  https://issues.redhat.com/browse/MGDAPI-558")
-		// t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
+		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
 
 	// Make sure 3Scale is available
