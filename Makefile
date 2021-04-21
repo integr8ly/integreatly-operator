@@ -296,7 +296,7 @@ ifeq ($(INSTALLATION_TYPE), managed)
 endif
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/sku
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/quota
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -324,7 +324,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/sku cluster/prepare/delorean cluster/prepare/croaws
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -356,11 +356,11 @@ cluster/prepare/dms:
 	@-oc create secret generic $(NAMESPACE_PREFIX)deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
 
-.PHONY: cluster/prepare/sku
-cluster/prepare/sku:
-	@-oc apply -n $(NAMESPACE) -f config/configmap/sku-config.yaml
+.PHONY: cluster/prepare/quota
+cluster/prepare/quota:
+	@-oc apply -n $(NAMESPACE) -f config/configmap/quota-config.yaml
 	@-oc delete  -n $(NAMESPACE) secret addon-managed-api-service-parameters
-	@-oc process -n $(NAMESPACE) QUOTA=$(QUOTA) -f config/secrets/sku-secret.yaml | oc apply -f -
+	@-oc process -n $(NAMESPACE) QUOTA=$(QUOTA) -f config/secrets/quota-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/delorean
 cluster/prepare/delorean: cluster/prepare/delorean/pullsecret

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sku-config
+  name: quota-config
 data:
-  sku-configs: |-
+  quota-configs: |-
     [        
         {
             "name": "50",

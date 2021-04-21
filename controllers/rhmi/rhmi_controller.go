@@ -19,7 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"os"
 	"reflect"
 	"strconv"
@@ -304,10 +304,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Stages = map[rhmiv1alpha1.StageName]rhmiv1alpha1.RHMIStageStatus{}
 	}
 
-	installationSKU := &sku.SKU{}
+	installationQuota := &quota.Quota{}
 	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-		if err = r.processSKU(installation, request.Namespace, installationSKU); err != nil {
-			log.Error("Error while processing the SKU", err)
+		if err = r.processQuota(installation, request.Namespace, installationQuota); err != nil {
+			log.Error("Error while processing the Quota", err)
 			if err = r.Status().Update(context.TODO(), installation); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -316,7 +316,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err = r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
-		metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
 	}
 
 	// either not checked, or rechecking preflight checks
@@ -344,7 +344,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 
-		metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
 	}
 
 	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
@@ -367,7 +367,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if stage.Name == rhmiv1alpha1.BootstrapStage {
 			stagePhase, err = r.bootstrapStage(installation, configManager, stageLog)
 		} else {
-			stagePhase, err = r.processStage(installation, &stage, configManager, installationSKU, stageLog)
+			stagePhase, err = r.processStage(installation, &stage, configManager, installationQuota, stageLog)
 		}
 
 		if installation.Status.Stages == nil {
@@ -399,8 +399,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-			installation.Status.SKU = installationSKU.GetName()
-			installation.Status.ToSKU = ""
+			installation.Status.Quota = installationQuota.GetName()
+			installation.Status.ToQuota = ""
 		}
 		log.Info("installation completed successfully")
 	}
@@ -415,10 +415,11 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		}
 
 		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-			if installationSKU.IsUpdated() {
-				installation.Status.SKU = installationSKU.GetName()
-				installation.Status.ToSKU = ""
-				metrics.SetSKU(string(installation.Status.Stage), installation.Status.SKU, installation.Status.ToSKU)
+			if installationQuota.IsUpdated() {
+				installation.Status.Quota = installationQuota.GetName()
+				installation.Status.ToQuota = ""
+				metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota,
+					installation.Status.ToQuota)
 			}
 		}
 	}
@@ -539,7 +540,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
 				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, sku.AProductConfig{})
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, quota.AProductConfig{})
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
 				}
@@ -777,7 +778,8 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	return phase, nil
 }
 
-func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, skuconfig *sku.SKU, _ l.Logger) (rhmiv1alpha1.StatusPhase, error) {
+func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *Stage,
+	configManager config.ConfigReadWriter, quotaconfig *quota.Quota, _ l.Logger) (rhmiv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	productVersionMismatchFound = false
 
@@ -804,7 +806,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient, skuconfig.GetProduct(productName))
+		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient, quotaconfig.GetProduct(productName))
 
 		if err != nil {
 			if mErr == nil {
@@ -1089,38 +1091,39 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 	}
 }
 
-func (r *RHMIReconciler) processSKU(installation *rhmiv1alpha1.RHMI, namespace string, installationSKU *sku.SKU) error {
-	isSKUUpdated := false
-	skuParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
+func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace string,
+	installationQuota *quota.Quota) error {
+	isQuotaUpdated := false
+	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
 	if err != nil {
-		return errors.Wrap(err, "Error checking for SKU secret")
+		return errors.Wrap(err, "Error checking for Quota secret")
 	}
 
 	//!found means the param wasn't found so we want to default rather than return
 	//if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
-	//a sku value is required for the installation to begin, the dev value is provided by the make cluster/prepare/sku for local installs
+	//a quota value is required for the installation to begin, the dev value is provided by the make cluster/prepare/quota for local installs
 	//or as a required value from an ocm add-on installation
 	if !found && !installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
-		return errors.Wrap(err, "no sku value provided, sku is a required parameter for a managed-api install")
+		return errors.Wrap(err, "no quota value provided, quota is a required parameter for a managed-api install")
 	}
 
 	// get a configmap from the cluster
 	cm := &corev1.ConfigMap{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: sku.ConfigMapName}, cm)
+	err = r.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: quota.ConfigMapName}, cm)
 	if err != nil {
-		return errors.Wrap(err, "Error getting sku config map")
+		return errors.Wrap(err, "Error getting quota config map")
 	}
 
 	// if both are empty it's the first round of installation
-	// or if the secretname is not the same as what the SKU is marked there has been a change
-	// so set toSKU and update the status object and set isSKUpdated to true
-	if (installation.Status.ToSKU == "" && installation.Status.SKU == "") ||
-		skuParam != installation.Status.SKU {
-		installation.Status.ToSKU = skuParam
-		isSKUUpdated = true
+	// or if the secretname is not the same as what the Quota is marked there has been a change
+	// so set toQuota and update the status object and set isQuotapdated to true
+	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
+		quotaParam != installation.Status.Quota {
+		installation.Status.ToQuota = quotaParam
+		isQuotaUpdated = true
 	}
 
-	err = sku.GetSKU(skuParam, cm, installationSKU, isSKUUpdated)
+	err = quota.GetQuota(quotaParam, cm, installationQuota, isQuotaUpdated)
 	if err != nil {
 		return err
 	}
