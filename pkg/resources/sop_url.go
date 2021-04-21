@@ -35,5 +35,6 @@ const (
 	SopUrlThreeScaleDeveloperUIBBT                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleDeveloperUIBBT.asciidoc"
 	SopUrlThreeScaleSystemAdminUIBBT                          = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/ThreeScaleSystemAdminUIBBT.asciidoc"
 	SopUrlPodDistributionIncorrect                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/multi-az/pod_distribution.md"
-	SopUrlRHOAMRhssoAvailabilityAlert                         = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMRhssoAvailabilityAlert.md" //TODO
+	SopUrlRHOAMRhssoAvailabilityAlert                         = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMRhssoAvailabilityAlert.md"   //TODO
+	SopUrlRHOAMUserSsoAvailabilityAlert                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMUserSsoAvailabilityAlert.md" //TODO
 )

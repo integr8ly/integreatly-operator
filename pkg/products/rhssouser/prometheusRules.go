@@ -72,6 +72,77 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					},
 				},
 			},
+
+			//SLO-availability-alerts:
+			//https://sre.google/workbook/alerting-on-slos/
+			//https://promtools.dev/alerts/errors
+			{
+				AlertName: "rhoam-user-sso-slo-availability-alerts",
+				Namespace: r.Config.GetOperatorNamespace(),
+				GroupName: "rhoam-user-sso-slo-availability.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "RHOAMUserSsoAvailability5mto1hErrorBudgetBurn",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMUserSsoAvailabilityAlert,
+							"message": "High 5m and 1h error budget burn for RHOAM SSO User",
+						},
+						Expr: intstr.FromString(`
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[5m]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[5m])) > (14.40 * (1-0.99000)))
+							and
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[1h]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[1h])) > (14.40 * (1-0.99000)))`),
+						For:    "2m",
+						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+					},
+					{
+						Alert: "RHOAMUserSsoAvailability30mto6hErrorBudgetBurn",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMUserSsoAvailabilityAlert,
+							"message": "High 30m and 6h error budget burn for RHOAM SSO User",
+						},
+						Expr: intstr.FromString(`
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[30m]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[30m])) > (6.00 * (1-0.99000)))
+							and 
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[6h]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[6h])) > (6.00 * (1-0.99000)))`),
+						For:    "15m",
+						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+					},
+					{
+						Alert: "RHOAMUserSsoAvailability2hto1dErrorBudgetBurn",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMUserSsoAvailabilityAlert,
+							"message": "High 2h and 1d error budget burn for RHOAM SSO User",
+						},
+						Expr: intstr.FromString(`
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[2h]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[2h])) > (3.00 * (1-0.99000)))
+							and
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[1d]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[1d])) > (3.00 * (1-0.99000)))`),
+						For:    "1h",
+						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+					},
+					{
+						Alert: "RHOAMUserSsoAvailability6hto3dErrorBudgetBurn",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMUserSsoAvailabilityAlert,
+							"message": "High 6h and 3d error budget burn for RHOAM SSO User",
+						},
+						Expr: intstr.FromString(`
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[6h]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[6h])) > (6.00 * (1-0.99000)))
+							and 
+							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso", code="5xx"}[3d]))
+								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-user-sso"}[3d])) > (6.00 * (1-0.99000)))`),
+						For:    "3h",
+						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+					},
+				},
+			},
 		},
 	}
 }
