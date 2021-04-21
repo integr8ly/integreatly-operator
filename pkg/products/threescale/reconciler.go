@@ -186,7 +186,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Reconciling")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
@@ -277,7 +277,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileComponents(ctx, serverClient)
+	phase, err = r.reconcileComponents(ctx, serverClient, productConfig)
 	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -913,7 +913,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 
 	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	if err != nil {
@@ -966,6 +966,16 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		antiAffinityRequired = false
 	}
 
+	key, err := k8sclient.ObjectKeyFromObject(apim)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	err = serverClient.Get(ctx, key, apim)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
 
 		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
@@ -983,17 +993,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		if *apim.Spec.System.SidekiqSpec.Replicas < replicas["systemSidekiq"] {
 			*apim.Spec.System.SidekiqSpec.Replicas = replicas["systemSidekiq"]
 		}
-		if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
-			*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
-		}
 		if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
 			*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
-		}
-		if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
-			*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
-		}
-		if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
-			*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
 			*apim.Spec.Backend.CronSpec.Replicas = replicas["backendCron"]
@@ -1043,23 +1044,42 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			"threescale_component_element": "zync-que",
 		})
 
-		apicastProdResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
-		}
-		apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+			if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
+				*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
+			}
+			if *apim.Spec.Backend.ListenerSpec.Replicas < replicas["backendListener"] {
+				*apim.Spec.Backend.ListenerSpec.Replicas = replicas["backendListener"]
+			}
+			if *apim.Spec.Backend.WorkerSpec.Replicas < replicas["backendWorker"] {
+				*apim.Spec.Backend.WorkerSpec.Replicas = replicas["backendWorker"]
+			}
+			apicastProdResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
+			}
+			apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
 
-		backendWorkerResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("150m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
-		}
-		apim.Spec.Backend.WorkerSpec.Resources = &backendWorkerResources
+			backendWorkerResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("150m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("100Mi")},
+			}
+			apim.Spec.Backend.WorkerSpec.Resources = &backendWorkerResources
 
-		backendListenerResources := corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("450Mi")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("500Mi")},
+			backendListenerResources := corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("450Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("600m"), corev1.ResourceMemory: k8sresource.MustParse("500Mi")},
+			}
+			apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
 		}
-		apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
+
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			err = productConfig.Configure(apim)
+
+			if err != nil {
+				return err
+			}
+		}
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
@@ -1098,7 +1118,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			// If the system-provider route does not exist at this point (i.e. when Deployments are ready)
 			// we can force a resync of routes. see below for more details on why this is required:
 			// https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.7/html/operating_3scale/backup-restore#creating_equivalent_zync_routes
-			// This scenario will manifest during a backup and restore and also if the product ns was accidentially deleted.
+			// This scenario will manifest during a backup and restore and also if the product ns was accidentally deleted.
 			return r.resyncRoutes(ctx, serverClient)
 		}
 	}
