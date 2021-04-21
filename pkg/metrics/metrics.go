@@ -102,15 +102,15 @@ var (
 		},
 	)
 
-	SKU = prometheus.NewGaugeVec(
+	Quota = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "rhoam_sku",
-			Help: "Status of the current sku config",
+			Name: "rhoam_quota",
+			Help: "Status of the current quota config",
 		},
 		[]string{
 			"stage",
-			"sku",
-			"toSKU",
+			"quota",
+			"toQuota",
 		},
 	)
 )
@@ -158,7 +158,7 @@ func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
 }
 
-func SetSKU(stage string, sku string, toSKU string) {
-	SKU.Reset()
-	SKU.WithLabelValues(stage, sku, toSKU).Set(float64(1))
+func SetQuota(stage string, quota string, toQuota string) {
+	Quota.Reset()
+	Quota.WithLabelValues(stage, quota, toQuota).Set(float64(1))
 }

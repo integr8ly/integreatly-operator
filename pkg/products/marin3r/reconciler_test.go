@@ -3,7 +3,7 @@ package marin3r
 import (
 	"context"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -41,7 +41,7 @@ descriptors:
 			Name:      RateLimitingConfigMapName,
 			Namespace: "marin3r",
 			Labels: map[string]string{
-				"app":     sku.RateLimitName,
+				"app":     quota.RateLimitName,
 				"part-of": "3scale-saas",
 			},
 		},

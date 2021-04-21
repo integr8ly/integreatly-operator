@@ -11,7 +11,7 @@ import (
 const (
 	RateLimitConfigMapName = "sku-limits-managed-api-service"
 	AlertConfigMapName     = "rate-limit-alerts"
-	ManagedApiServiceSKU   = "RHOAM SERVICE SKU"
+	ManagedApiServiceQuota = "RHOAM SERVICE SKU"
 
 	AlertTypeThreshold = "Threshold"
 	AlertTypeSpike     = "Spike"
@@ -49,8 +49,8 @@ func GetAlertConfig(ctx context.Context, client k8sclient.Client, namespace stri
 	return alertsConfig, err
 }
 
-func GetSKU(_ context.Context, _ k8sclient.Client) (string, error) {
-	return ManagedApiServiceSKU, nil
+func GetQuota(_ context.Context, _ k8sclient.Client) (string, error) {
+	return ManagedApiServiceQuota, nil
 }
 
 func getFromJSONConfigMap(ctx context.Context, client k8sclient.Client, cmName, namespace, configkey string, v interface{}) error {

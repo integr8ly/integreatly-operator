@@ -3,7 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -24,7 +24,7 @@ func TestRateLimitService(t *testing.T) {
 	scenarios := []struct {
 		Name          string
 		Reconciler    *RateLimitServiceReconciler
-		ProductConfig sku.ProductConfig
+		ProductConfig quota.ProductConfig
 		InitObjs      []runtime.Object
 		Assert        func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
 	}{
@@ -35,7 +35,7 @@ func TestRateLimitService(t *testing.T) {
 				RequestsPerUnit: 1,
 			},
 				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -125,7 +125,7 @@ func TestRateLimitService(t *testing.T) {
 					Host: "test-host",
 					Port: "9092",
 				}),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -167,7 +167,7 @@ func TestRateLimitService(t *testing.T) {
 				RequestsPerUnit: 1,
 			},
 				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -214,7 +214,7 @@ func TestRateLimitService(t *testing.T) {
 					Host: "test-host",
 					Port: "9092",
 				}),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
