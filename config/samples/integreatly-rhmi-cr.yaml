@@ -2,8 +2,6 @@ apiVersion: integreatly.org/v1alpha1
 kind: RHMI
 metadata:
   name: INSTALLATION_NAME
-  annotations:
-    in_prow: IN_PROW
 spec:
   type: INSTALLATION_TYPE
   namespacePrefix: INSTALLATION_PREFIX-

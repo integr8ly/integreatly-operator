@@ -410,7 +410,6 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/INSTALLATION_SHORTHAND/$(INSTALLATION_SHORTHAND)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
-	sed "s/IN_PROW/'$(IN_PROW)'/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > config/samples/integreatly-rhmi-cr.yml
 	@-oc create -f config/samples/integreatly-rhmi-cr.yml
