@@ -30,8 +30,8 @@ var _ = Describe("integreatly", func() {
 
 		tests := []common.Tests{
 			{
-				Type:      "ALL TESTS",
-				TestCases: common.ALL_TESTS,
+				Type:      fmt.Sprintf("%s ALL TESTS", installType),
+				TestCases: common.GetAllTestCases(installType),
 			},
 			{
 				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
