@@ -93,7 +93,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso", code="5xx"}[1h]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso"}[1h])) > (14.40 * (1-0.99000)))`),
 						For:    "2m",
-						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
 						Alert: "RHOAMRhssoAvailability30mto6hErrorBudgetBurn",
@@ -108,7 +108,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso", code="5xx"}[6h]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso"}[6h])) > (6.00 * (1-0.99000)))`),
 						For:    "15m",
-						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
 						Alert: "RHOAMRhssoAvailability2hto1dErrorBudgetBurn",
@@ -123,7 +123,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso", code="5xx"}[1d]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso"}[1d])) > (3.00 * (1-0.99000)))`),
 						For:    "1h",
-						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 					{
 						Alert: "RHOAMRhssoAvailability6hto3dErrorBudgetBurn",
@@ -138,7 +138,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							sum( sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso", code="5xx"}[3d]))
 								/sum(rate(haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace="redhat-rhoam-rhsso"}[3d])) > (6.00 * (1-0.99000)))`),
 						For:    "3h",
-						Labels: map[string]string{"severity": "info", "route": "keycloak", "service": "keycloak", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 				},
 			},
