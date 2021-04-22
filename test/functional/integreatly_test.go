@@ -30,8 +30,8 @@ var _ = Describe("integreatly", func() {
 		// get all automated tests
 		tests := []common.Tests{
 			{
-				Type:      "ALL TESTS",
-				TestCases: common.ALL_TESTS,
+				Type:      fmt.Sprintf("%s ALL TESTS", installType),
+				TestCases: common.GetAllTestCases(installType),
 			},
 			{
 				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
@@ -46,8 +46,8 @@ var _ = Describe("integreatly", func() {
 				TestCases: FUNCTIONAL_TESTS,
 			},
 			{
-				Type:      "SCALABILITY TESTS",
-				TestCases: common.SCALABILITY_TESTS,
+				Type:      fmt.Sprintf("%s SCALABILITY TESTS", installType),
+				TestCases: common.GetScalabilityTestCases(installType),
 			},
 			{
 				Type:      "FAILURE TESTS",
