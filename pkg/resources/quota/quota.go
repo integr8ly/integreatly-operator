@@ -52,7 +52,7 @@ var (
 
 type Quota struct {
 	name            string
-	productConfigs  map[v1alpha1.ProductName]AProductConfig
+	productConfigs  map[v1alpha1.ProductName]QuotaProductConfig
 	isUpdated       bool
 	rateLimitConfig marin3rconfig.RateLimitConfig
 }
@@ -65,9 +65,9 @@ type ProductConfig interface {
 	GetRateLimitConfig() marin3rconfig.RateLimitConfig
 }
 
-var _ ProductConfig = AProductConfig{}
+var _ ProductConfig = QuotaProductConfig{}
 
-type AProductConfig struct {
+type QuotaProductConfig struct {
 	productName     v1alpha1.ProductName
 	resourceConfigs map[string]ResourceConfig
 	quota           *Quota
@@ -106,12 +106,12 @@ func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, is
 	}
 
 	retQuota.name = quotaReceiver.Name
-	retQuota.productConfigs = map[v1alpha1.ProductName]AProductConfig{}
+	retQuota.productConfigs = map[v1alpha1.ProductName]QuotaProductConfig{}
 	retQuota.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
-		pc := AProductConfig{
+		pc := QuotaProductConfig{
 			quota:           retQuota,
 			productName:     product,
 			resourceConfigs: map[string]ResourceConfig{},
@@ -127,7 +127,7 @@ func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, is
 	return nil
 }
 
-func (s *Quota) GetProduct(productName v1alpha1.ProductName) AProductConfig {
+func (s *Quota) GetProduct(productName v1alpha1.ProductName) QuotaProductConfig {
 	// handle product not found e.g. return nil?
 	return s.productConfigs[productName]
 }
@@ -140,14 +140,14 @@ func (s *Quota) IsUpdated() bool {
 	return s.isUpdated
 }
 
-func (p AProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
+func (p QuotaProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
 	if _, ok := p.resourceConfigs[ddcssName]; !ok {
 		return corev1.ResourceRequirements{}, false
 	}
 	return p.resourceConfigs[ddcssName].Resources, true
 }
 
-func (p AProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
+func (p QuotaProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	return p.quota.rateLimitConfig
 }
 
@@ -155,11 +155,11 @@ func (s *Quota) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	return s.rateLimitConfig
 }
 
-func (p AProductConfig) GetReplicas(ddcssName string) int32 {
+func (p QuotaProductConfig) GetReplicas(ddcssName string) int32 {
 	return p.resourceConfigs[ddcssName].Replicas
 }
 
-func (p AProductConfig) Configure(obj metav1.Object) error {
+func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 	name := obj.GetName()
 
 	switch t := obj.(type) {
@@ -231,7 +231,7 @@ func checkStatefulSetReplicas(deployment *appsv12.StatefulSet) {
 	}
 }
 
-func (p AProductConfig) mutateAPIManagerReplicas(replicas *int64, name string) {
+func (p QuotaProductConfig) mutateAPIManagerReplicas(replicas *int64, name string) {
 	configReplicas := p.resourceConfigs[name].Replicas
 	value := int64(configReplicas)
 	if p.quota.isUpdated || *replicas < value || *replicas == 0 {
@@ -239,20 +239,20 @@ func (p AProductConfig) mutateAPIManagerReplicas(replicas *int64, name string) {
 	}
 }
 
-func (p AProductConfig) mutatePodTemplate(template *corev1.PodTemplateSpec, name string) {
+func (p QuotaProductConfig) mutatePodTemplate(template *corev1.PodTemplateSpec, name string) {
 	for i, _ := range template.Spec.Containers {
 		p.mutateResourcesRequirement(&template.Spec.Containers[i].Resources, name)
 	}
 }
 
-func (p AProductConfig) mutateReplicas(replicas *int32, name string) {
+func (p QuotaProductConfig) mutateReplicas(replicas *int32, name string) {
 	configReplicas := p.resourceConfigs[name].Replicas
 	if p.quota.isUpdated || *replicas < configReplicas || *replicas == 0 {
 		*replicas = configReplicas
 	}
 }
 
-func (p AProductConfig) mutateResourcesRequirement(resourceRequirements *corev1.ResourceRequirements, name string) {
+func (p QuotaProductConfig) mutateResourcesRequirement(resourceRequirements *corev1.ResourceRequirements, name string) {
 	resources := p.resourceConfigs[name].Resources
 
 	if resourceRequirements == nil {
@@ -264,7 +264,7 @@ func (p AProductConfig) mutateResourcesRequirement(resourceRequirements *corev1.
 	p.mutateResources(resourceRequirements.Requests, resources.Requests)
 }
 
-func (p AProductConfig) mutateResources(pod, cfg corev1.ResourceList) {
+func (p QuotaProductConfig) mutateResources(pod, cfg corev1.ResourceList) {
 	podcpu := pod[corev1.ResourceCPU]
 	//Cmp returns -1 if the quantity is less than y (passed value) so if podcpu is less than cfg cpu
 	if p.quota.isUpdated || podcpu.Cmp(cfg[corev1.ResourceCPU]) == -1 || podcpu.IsZero() {

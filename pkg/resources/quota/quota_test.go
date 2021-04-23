@@ -57,7 +57,7 @@ func TestGetQuota(t *testing.T) {
 			},
 			want: &Quota{
 				name: DEVQUOTA,
-				productConfigs: map[v1alpha1.ProductName]AProductConfig{
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -126,7 +126,7 @@ func TestGetQuota(t *testing.T) {
 			},
 			want: &Quota{
 				name: TWENTYMILLIONQUOTA,
-				productConfigs: map[v1alpha1.ProductName]AProductConfig{
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -854,7 +854,7 @@ func TestProductConfig_Configure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &AProductConfig{
+			p := &QuotaProductConfig{
 				productName:     tt.fields.productName,
 				resourceConfigs: tt.fields.resourceConfigs,
 				quota:           tt.fields.quota,
