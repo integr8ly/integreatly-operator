@@ -12,6 +12,8 @@ COPY pkg ./pkg
 COPY vendor ./vendor
 COPY test ./test
 COPY Makefile ./
+COPY version ./version
+
 RUN make test/compile/osde2e
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
