@@ -33,6 +33,14 @@ EMAIL_LOCAL_PART=<yourRedHatId> //eg trdoyle
 EMAIL_CLUSTER_NAME=test-rate-limit
 ```
 
+Note the original email addresses first. As a last step these need to be reverted back.
+
+```bash
+oc get rhmi rhoam -n redhat-rhoam-operator -o=jsonpath='{.spec.alertingEmailAddress}'
+oc get rhmi rhoam -n redhat-rhoam-operator -o=jsonpath='{.spec.alertingEmailAddresses.businessUnit}'
+oc get rhmi rhoam -n redhat-rhoam-operator -o=jsonpath='{.spec.alertingEmailAddresses.cssre}'
+```
+
 Run the following command to patch the CR:
 
 ```bash
@@ -211,8 +219,10 @@ We would expect the result to be (close to) ≈ 14,000
 (Threshold is 1 in every 24 hours).
 Email alerts for rate limiting should be in your inbox. (as configured in step 2).
 The relevant alerts for Rate Limiting are:
-**RHOAMApiUsageLevel3ThresholdExceeded**
 
-&
+- _RHOAMApiUsageLevel3ThresholdExceeded_
+- _RHOAMApiUsageOverLimit_
 
-**RHOAMApiUsageOverLimit**
+**12. Revert the email addresses back**
+
+Use the command from Step #1, just use the original email addresses.
