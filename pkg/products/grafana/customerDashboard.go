@@ -358,7 +358,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit string) string {
           "expr": "$perMinuteRequestsPerUnit",
           "instant": false,
           "interval": "30s",
-          "legendFormat": "Hard Limit - ` + requestsPerUnit + ` per minute",
+          "legendFormat": "Limit - ` + requestsPerUnit + ` per minute",
           "refId": "B"
         }
       ],
