@@ -282,7 +282,7 @@ Verify the integration with the LDAP server for a regular user
 2. Go to OpenShift console and select `redhat-rhoam-operator` namespace
 3. Go to Workloads -> Secrets
    > Verify that `redhat-rhoam-deadmanssnitch`, `redhat-rhoam-pagerduty` and `redhat-rhoam-smtp` are present
-4. Note your cluster ID, view it by running `ocm cluster list`
+4. Note your cluster ID, view it by running `ocm get clusters --parameter search="display_name like 'test-ldap-idp'" | jq -r '.items[0].id'`
 5. Delete the addon via ocm CLI
 
 ```bash
