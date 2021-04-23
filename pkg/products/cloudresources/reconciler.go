@@ -253,7 +253,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 			forceBucketDeletion := true
 			skipFinalSnapshot := true
 			finalSnapshotIdentifier := ""
-			tier := "production"
+
 			resources := map[string]interface{}{
 				"blobstorage": aws.S3DeleteStrat{
 					ForceBucketDeletion: &forceBucketDeletion,
@@ -266,7 +266,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 				},
 			}
 			for resource, deleteStrategy := range resources {
-				err := overrideStrategyConfig(resource, tier, croStrategyConfig, deleteStrategy)
+				err := overrideStrategyConfig(resource, croStrategyConfig, deleteStrategy)
 				if err != nil {
 					return err
 				}
@@ -410,24 +410,26 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	)
 }
 
-func overrideStrategyConfig(resourceType string, tier string, croStrategyConfig *corev1.ConfigMap, deleteStrategy interface{}) error {
+func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.ConfigMap, deleteStrategy interface{}) error {
 	resource := croStrategyConfig.Data[resourceType]
 	strategyConfig := map[string]*aws.StrategyConfig{}
 	if err := json.Unmarshal([]byte(resource), &strategyConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
 	}
 
-	deleteStrategyJSON, err := json.Marshal(deleteStrategy)
-	if err != nil {
-		return err
+	for tier, _ := range strategyConfig {
+		deleteStrategyJSON, err := json.Marshal(deleteStrategy)
+		if err != nil {
+			return err
+		}
+		strategyConfig[tier].DeleteStrategy = json.RawMessage(deleteStrategyJSON)
 	}
-
-	strategyConfig[tier].DeleteStrategy = json.RawMessage(deleteStrategyJSON)
 
 	strategyConfigJSON, err := json.Marshal(strategyConfig)
 	if err != nil {
 		return err
 	}
+
 	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
 
 	return nil
@@ -458,13 +460,13 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		return err
 	}
 
-	var network struct {
-		Production struct {
-			CreateStrategy struct {
-				CidrBlock string `json:"CidrBlock"`
-			} `json:"createStrategy"`
-		} `json:"production"`
+	type TierCreateStrategy struct {
+		CreateStrategy struct {
+			CidrBlock string `json:"CidrBlock"`
+		} `json:"createStrategy"`
 	}
+
+	network := map[string]*TierCreateStrategy{}
 
 	data, ok := cfgMap.Data["_network"]
 	if ok {
@@ -472,12 +474,26 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 			return err
 		}
 
-		if network.Production.CreateStrategy.CidrBlock != "" {
+		// If its already set do not override
+		if network != nil && network["production"] != nil && network["production"].CreateStrategy.CidrBlock != "" {
 			return nil
 		}
 	}
 
-	network.Production.CreateStrategy.CidrBlock = cidrValue
+	if network == nil {
+		network = map[string]*TierCreateStrategy{}
+	}
+
+	if network["production"] == nil {
+		r.log.Info("Add production network aws strategy")
+		network["production"] = &TierCreateStrategy{}
+		network["production"].CreateStrategy.CidrBlock = ""
+	}
+
+	for key, _ := range network {
+		network[key].CreateStrategy.CidrBlock = cidrValue
+	}
+
 	networkJSON, err := json.Marshal(network)
 	if err != nil {
 		return err

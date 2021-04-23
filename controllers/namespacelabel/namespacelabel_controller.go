@@ -63,12 +63,10 @@ type patchStringValue struct {
 	Value string `json:"value"`
 }
 
-type network struct {
-	Production struct {
-		CreateStrategy struct {
-			CidrBlock string `json:"CidrBlock"`
-		} `json:"createStrategy"`
-	} `json:"production"`
+type TierCreateStrategy struct {
+	CreateStrategy struct {
+		CidrBlock string `json:"CidrBlock"`
+	} `json:"createStrategy"`
 }
 
 var (
@@ -280,7 +278,7 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 	}
 	data := []byte(cfgMap.Data["_network"])
 
-	var cfgMapData network
+	var cfgMapData map[string]*TierCreateStrategy
 
 	// Unmarshal or Decode the JSON to the interface.
 	err = json.Unmarshal([]byte(data), &cfgMapData)
@@ -288,7 +286,11 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 		r.log.Error("Failed to unmarshal cfgMapData", err)
 	}
 
-	cidr := cfgMapData.Production.CreateStrategy.CidrBlock
+	if cfgMapData == nil || cfgMapData["production"] == nil {
+		return nil
+	}
+
+	cidr := cfgMapData["production"].CreateStrategy.CidrBlock
 
 	if cidr != "" {
 		r.log.Infof("Cidr value is already set, not updating", l.Fields{"value": cidr})
@@ -313,7 +315,8 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 		return err
 	}
 
-	cfgMapData.Production.CreateStrategy.CidrBlock = newCidr
+	cfgMapData["production"].CreateStrategy.CidrBlock = newCidr
+
 	dataValue, err := json.Marshal(cfgMapData)
 
 	if err != nil {
