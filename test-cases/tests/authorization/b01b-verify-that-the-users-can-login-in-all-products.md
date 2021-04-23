@@ -21,6 +21,8 @@ Products:
 - 3Scale (redhat-rhoam-3scale), route name: zync-3scale-provider, URL starting with "https://3scale-admin"
 - User SSO (redhat-rhoam-user-sso), route name: keycloak
 
+Note: **developer** user should not be allowed to see what the route to Cluster SSO is. Use **dedicated-admin** to get it.
+
 ## Steps
 
 1. Login to all Products listed in the Description using a **developer** user

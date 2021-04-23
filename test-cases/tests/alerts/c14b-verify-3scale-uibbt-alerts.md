@@ -1,5 +1,4 @@
 ---
-estimate: 15m
 products:
   - name: rhoam
     environments:
@@ -10,6 +9,9 @@ products:
       - 0.2.0
       - 1.0.0
       - 1.5.0
+estimate: 15m
+tags:
+  - destructive
 ---
 
 # C14B - Verify 3scale UIBBT alerts

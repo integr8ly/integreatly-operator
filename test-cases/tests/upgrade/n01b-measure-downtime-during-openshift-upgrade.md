@@ -7,6 +7,7 @@ products:
       - 0.0.2
       - 1.0.0
       - 1.3.0
+      - 1.5.0
 estimate: 2h
 tags:
   - manual-selection
@@ -87,7 +88,7 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
    ```
    cd delorean
    make build/cli
-   ./delorean pipeline query-report --namespace redhat-rhoam-middleware-monitoring-operator --config-file ./configurations/downtime-report-config.yaml -o <output_dir>
+   ./delorean pipeline query-report --namespace redhat-rhoam-middleware-monitoring-operator --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
    ```
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)

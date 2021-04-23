@@ -5,9 +5,10 @@ products:
       - osd-fresh-install
     targets:
       - 1.0.0
+      - 1.5.0
 estimate: 4h
 tags:
-  - manual-selection
+  - destructive
 ---
 
 # K04 - Run performance test against RHOAM (3scale + user SSO)
@@ -41,7 +42,6 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
    ```bash
    oc new-project httpbin
    oc new-app jsmadis/httpbin
-   oc expose svc/httpbin
    ```
 
 4. In terminal window #2, run the [alerts-during-perf-testing](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh) script to capture alerts pending/firing during performance test run.

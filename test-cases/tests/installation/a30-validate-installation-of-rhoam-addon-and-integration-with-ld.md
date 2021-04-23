@@ -282,9 +282,8 @@ Verify the integration with the LDAP server for a regular user
 2. Go to OpenShift console and select `redhat-rhoam-operator` namespace
 3. Go to Workloads -> Secrets
    > Verify that `redhat-rhoam-deadmanssnitch`, `redhat-rhoam-pagerduty` and `redhat-rhoam-smtp` are present
-4. Go to OCM UI, select your cluster
-5. Note your cluster's ID from the address bar (https://qaprodauth.cloud.redhat.com/beta/openshift/details/<cluster_id>#overview)
-6. Delete the addon via ocm CLI
+4. Note your cluster ID, view it by running `ocm cluster list`
+5. Delete the addon via ocm CLI
 
 ```bash
 ocm delete /api/clusters_mgmt/v1/clusters/<CLUSTER-ID>/addons/managed-api-service

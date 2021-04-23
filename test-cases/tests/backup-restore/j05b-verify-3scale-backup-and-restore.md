@@ -77,6 +77,12 @@ NS_PREFIX=redhat-rhoam ./j05-verify-3scale-postgres-backup-and-restore.sh | tee 
 
 ### Redis
 
+Note: certain parts of the SOPs might not be fully updated to RHOAM, so you might need to do simple replacements of RHMI namespaces with RHOAM namespaces.
+
+Note: some AWS CLI commands do not specify region, either specify the region where your cluster is hosted per command via `--region <region-name>` or do it globally via `aws configure`.
+
+Note: make sure you have proper AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY set for AWS CLI
+
 #### Backend Redis
 
 1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#backend-redis)
