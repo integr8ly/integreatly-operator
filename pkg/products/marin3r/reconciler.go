@@ -253,7 +253,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 
-	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
+	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
 		if productsStage, ok := installation.Status.Stages[integreatlyv1alpha1.ProductsStage]; ok {
 			if productsStage.Products != nil {
@@ -272,7 +272,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", granafaConsoleURL)
+	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", grafanaConsoleURL)
 	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err

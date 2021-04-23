@@ -6,8 +6,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/test/common"
-
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -22,6 +20,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+)
+
+const (
+	testNSPrefix = "redhat-rhoam-"
 )
 
 func getRateLimitConfigMap() *corev1.ConfigMap {
@@ -114,7 +116,7 @@ func getBasicInstallation() *integreatlyv1alpha1.RHMI {
 			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
-			NamespacePrefix: common.NamespacePrefix,
+			NamespacePrefix: testNSPrefix,
 		},
 		Status: integreatlyv1alpha1.RHMIStatus{
 			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
@@ -137,7 +139,7 @@ func getGrafanaRoute() *routev1.Route {
 	return &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "grafana-route",
-			Namespace: common.NamespacePrefix + "customer-monitoring",
+			Namespace: testNSPrefix + "customer-monitoring",
 		},
 		Spec: routev1.RouteSpec{
 			Host: "sampleHost",
@@ -229,5 +231,5 @@ func strPtr(str string) *string {
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductMarin3r})
 }
