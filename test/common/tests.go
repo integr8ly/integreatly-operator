@@ -27,6 +27,7 @@ var (
 				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 				/*FLAKY on RHOAM*/ {"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
 				{"A34 - Verify SKU values", TestSKUValues},
+				{"A32 - Validate SSO config", TestSSOconfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
