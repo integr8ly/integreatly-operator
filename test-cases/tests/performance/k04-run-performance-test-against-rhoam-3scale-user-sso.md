@@ -55,7 +55,8 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
 
   - should be done automatically in a few minutes
 
-    Note: This not possible for installations via addon-flow since Hive would revert your modifications to whatever is set in Managed Tenants repository in [sku-limits.yaml.j2](https://gitlab.cee.redhat.com/service/managed-tenants/-/blob/master/addons/managed-api-service/metadata/stage/sku-limits.yaml.j2) file.
+    Note: This not possible for installations via addon-flow since Hive would revert your modifications to whatever
+    is set in Managed Tenants repository in [sku-limits.yaml.j2](https://gitlab.cee.redhat.com/service/managed-tenants/-/blob/master/addons/managed-api-service/metadata/stage/sku-limits.yaml.j2) file.
 
 6. In terminal window #2, run the following [script for alert watching](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh)
 

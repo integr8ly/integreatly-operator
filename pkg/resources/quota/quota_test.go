@@ -1,4 +1,4 @@
-package sku
+package quota
 
 import (
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -17,47 +17,47 @@ import (
 )
 
 const (
-	TWENTYMILLIONSKU = "20"
-	DEVSKU           = "1"
+	TWENTYMILLIONQUOTA = "20"
+	DEVQUOTA           = "1"
 )
 
-func TestGetSKU(t *testing.T) {
+func TestGetQuota(t *testing.T) {
 
-	pointerToSKU := &SKU{}
+	pointerToQuota := &Quota{}
 
 	type args struct {
-		SKUId     string
-		SKUConfig *corev1.ConfigMap
-		SKU       *SKU
-		isUpdated bool
+		QuotaId     string
+		QuotaConfig *corev1.ConfigMap
+		Quota       *Quota
+		isUpdated   bool
 	}
 	tests := []struct {
 		name     string
 		args     args
-		want     *SKU
+		want     *Quota
 		wantErr  bool
-		validate func(*SKU, *testing.T)
+		validate func(*Quota, *testing.T)
 	}{
 		{
-			name: "ensure error on no skuid found in config",
+			name: "ensure error on no quotaid found in config",
 			args: args{
-				SKUId:     "SKU_NOT_PRESENT_SKU",
-				SKUConfig: getSKUConfig(nil),
-				SKU:       pointerToSKU,
+				QuotaId:     "QUOTA_NOT_PRESENT_QUOTA",
+				QuotaConfig: getQuotaConfig(nil),
+				Quota:       pointerToQuota,
 			},
 			wantErr: true,
 		},
 		{
-			name: "test successful parsing of config map to sku object for 1 million sku",
+			name: "test successful parsing of config map to quota object for 1 million quota",
 			args: args{
-				SKUId:     DEVSKU,
-				SKUConfig: getSKUConfig(nil),
-				SKU:       pointerToSKU,
-				isUpdated: false,
+				QuotaId:     DEVQUOTA,
+				QuotaConfig: getQuotaConfig(nil),
+				Quota:       pointerToQuota,
+				isUpdated:   false,
 			},
-			want: &SKU{
-				name: DEVSKU,
-				productConfigs: map[v1alpha1.ProductName]AProductConfig{
+			want: &Quota{
+				name: DEVQUOTA,
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -78,28 +78,28 @@ func TestGetSKU(t *testing.T) {
 							rcs[BackendListenerName] = ResourceConfig{0, v13.ResourceRequirements{}}
 							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						sku: pointerToSKU,
+						quota: pointerToQuota,
 					},
 					v1alpha1.ProductGrafana: {
 						v1alpha1.ProductGrafana,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						pointerToSKU,
+						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[RateLimitName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						pointerToSKU,
+						pointerToQuota,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						v1alpha1.ProductRHSSOUser,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[KeycloakName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						pointerToSKU,
+						pointerToQuota,
 					},
 				},
 				isUpdated: false,
@@ -108,8 +108,8 @@ func TestGetSKU(t *testing.T) {
 					RequestsPerUnit: 1,
 				},
 			},
-			validate: func(sku *SKU, t *testing.T) {
-				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
+			validate: func(quota *Quota, t *testing.T) {
+				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
 				wantReplicas := int32(1)
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
@@ -117,16 +117,16 @@ func TestGetSKU(t *testing.T) {
 			},
 		},
 		{
-			name: "test successful parsing of config map to sku object for TWENTY million SKU",
+			name: "test successful parsing of config map to quota object for TWENTY million Quota",
 			args: args{
-				SKUId:     TWENTYMILLIONSKU,
-				SKUConfig: getSKUConfig(nil),
-				SKU:       pointerToSKU,
-				isUpdated: false,
+				QuotaId:     TWENTYMILLIONQUOTA,
+				QuotaConfig: getQuotaConfig(nil),
+				Quota:       pointerToQuota,
+				isUpdated:   false,
 			},
-			want: &SKU{
-				name: TWENTYMILLIONSKU,
-				productConfigs: map[v1alpha1.ProductName]AProductConfig{
+			want: &Quota{
+				name: TWENTYMILLIONQUOTA,
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -147,28 +147,28 @@ func TestGetSKU(t *testing.T) {
 							rcs[ApicastProductionName] = ResourceConfig{0, v13.ResourceRequirements{}}
 							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						sku: pointerToSKU,
+						quota: pointerToQuota,
 					},
 					v1alpha1.ProductGrafana: {
 						v1alpha1.ProductGrafana,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
 						}),
-						pointerToSKU,
+						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
 						resourceConfigs: map[string]ResourceConfig{
 							RateLimitName: {0, v13.ResourceRequirements{}},
 						},
-						sku: pointerToSKU,
+						quota: pointerToQuota,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						productName: v1alpha1.ProductRHSSOUser,
 						resourceConfigs: map[string]ResourceConfig{
 							KeycloakName: {0, v13.ResourceRequirements{}},
 						},
-						sku: pointerToSKU,
+						quota: pointerToQuota,
 					},
 				},
 				isUpdated: false,
@@ -178,8 +178,8 @@ func TestGetSKU(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			validate: func(sku *SKU, t *testing.T) {
-				gotReplicas := sku.GetProduct(v1alpha1.Product3Scale).GetReplicas(BackendListenerName)
+			validate: func(quota *Quota, t *testing.T) {
+				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(BackendListenerName)
 				wantReplicas := int32(3)
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
@@ -191,18 +191,18 @@ func TestGetSKU(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetSKU(tt.args.SKUId, tt.args.SKUConfig, tt.args.SKU, tt.args.isUpdated)
+			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, tt.args.isUpdated)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetSKU() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if tt.want != nil && !reflect.DeepEqual(tt.want, tt.args.SKU) {
-				t.Errorf("they don't match, \n got = %v, \n want= %v ", tt.args.SKU, tt.want)
+			if tt.want != nil && !reflect.DeepEqual(tt.want, tt.args.Quota) {
+				t.Errorf("they don't match, \n got = %v, \n want= %v ", tt.args.Quota, tt.want)
 			}
 
 			if tt.validate != nil {
-				tt.validate(tt.args.SKU, t)
+				tt.validate(tt.args.Quota, t)
 			}
 		})
 	}
@@ -212,7 +212,7 @@ func TestProductConfig_Configure(t *testing.T) {
 	type fields struct {
 		productName     v1alpha1.ProductName
 		resourceConfigs map[string]ResourceConfig
-		sku             *SKU
+		quota           *Quota
 	}
 	type args struct {
 		obj metav1.Object
@@ -243,7 +243,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -306,7 +306,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -356,7 +356,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -423,7 +423,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -541,7 +541,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -593,7 +593,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: false,
 				},
 			},
@@ -660,7 +660,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -727,7 +727,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -795,7 +795,7 @@ func TestProductConfig_Configure(t *testing.T) {
 						},
 					}
 				}),
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: false,
 				},
 			},
@@ -845,7 +845,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			name: "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
 			args: args{obj: &v13.ConfigMap{}},
 			fields: fields{
-				sku: &SKU{
+				quota: &Quota{
 					isUpdated: true,
 				},
 			},
@@ -854,10 +854,10 @@ func TestProductConfig_Configure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &AProductConfig{
+			p := &QuotaProductConfig{
 				productName:     tt.fields.productName,
 				resourceConfigs: tt.fields.resourceConfigs,
-				sku:             tt.fields.sku,
+				quota:           tt.fields.quota,
 			}
 			err := p.Configure(tt.args.obj)
 			if (err != nil) != tt.wantErr {
@@ -946,12 +946,12 @@ func getDeployment(name string, modifyFn func(d *appsv1.Deployment)) *appsv1.Dep
 	return mock
 }
 
-func getSKUConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
+func getQuotaConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
 	mock := &v13.ConfigMap{
 		ObjectMeta: v12.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
-		ConfigMapData: "[{\"name\": \"" + DEVSKU + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONSKU + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVQUOTA + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTA + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)

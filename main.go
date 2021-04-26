@@ -58,7 +58,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.ThreeScaleUserAction)
-	customMetrics.Registry.MustRegister(integreatlymetrics.SKU)
+	customMetrics.Registry.MustRegister(integreatlymetrics.Quota)
 	integreatlymetrics.OperatorVersion.Add(1)
 
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))

@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -98,7 +98,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Grafana reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()

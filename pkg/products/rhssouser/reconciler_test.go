@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -229,7 +229,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -324,7 +324,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
-		ProductConfig         *sku.ProductConfigMock
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
@@ -344,7 +344,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -376,7 +376,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -570,7 +570,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
-		ProductConfig         *sku.ProductConfigMock
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -605,7 +605,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},
@@ -803,7 +803,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
-		ProductConfig         *sku.ProductConfigMock
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "RHOAM - test successful reconcile",
@@ -838,7 +838,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &sku.ProductConfigMock{
+			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
 				},

@@ -1,6 +1,6 @@
 package grafana
 
-// This dashboard json is dynamically configured based on soft limits and perUnitRequests provided in the sku-limits-managed-api-servic config map
+// This dashboard json is dynamically configured based on soft limits and perUnitRequests provided in the quota-configs-managed-api-service config map
 // present in the operator namespace for RHOAM installations
 // For example if there are softLimits provided of [500000,10000000,15000000] Five, Ten and Fifteen Million per day
 // Each of these soft limits are then dynamically added as queries to the Rate Limit Graph.

@@ -7,7 +7,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -69,7 +69,7 @@ type yamlRoot struct {
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
 // It reconciles a ConfigMap to configure the service, a Deployment to run it, and
 // exposes it as a Service
-func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -125,7 +125,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 		}
 
 		cm.Data[RateLimitingConfigMapDataName] = string(stagingConfigYamlMarshalled)
-		cm.Labels["app"] = sku.RateLimitName
+		cm.Labels["app"] = quota.RateLimitName
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil
 	})
@@ -136,7 +136,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	redisSecret, err := r.getRedisSecret(ctx, client)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
@@ -148,7 +148,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      sku.RateLimitName,
+			Name:      quota.RateLimitName,
 			Namespace: r.Namespace,
 		},
 	}
@@ -170,10 +170,10 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			deployment.Labels = map[string]string{}
 		}
 
-		deployment.Labels["app"] = sku.RateLimitName
+		deployment.Labels["app"] = quota.RateLimitName
 		deployment.Spec.Selector = &v1.LabelSelector{
 			MatchLabels: map[string]string{
-				"app": sku.RateLimitName,
+				"app": quota.RateLimitName,
 			},
 		}
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
@@ -230,7 +230,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		}
 		deployment.Spec.Template.ObjectMeta = v1.ObjectMeta{
 			Labels: map[string]string{
-				"app": sku.RateLimitName,
+				"app": quota.RateLimitName,
 			},
 		}
 		if &deployment.Spec.Template.Spec == nil {
@@ -258,9 +258,9 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		if deployment.Spec.Template.Spec.Containers == nil {
 			deployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
 		}
-		deployment.Spec.Template.Spec.Containers[0].Name = sku.RateLimitName
+		deployment.Spec.Template.Spec.Containers[0].Name = quota.RateLimitName
 		deployment.Spec.Template.Spec.Containers[0].Image = "quay.io/integreatly/ratelimit:v1.4.0"
-		deployment.Spec.Template.Spec.Containers[0].Command = []string{sku.RateLimitName}
+		deployment.Spec.Template.Spec.Containers[0].Command = []string{quota.RateLimitName}
 		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/srv/runtime_data/current/config",
@@ -311,7 +311,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	service := &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      sku.RateLimitName,
+			Name:      quota.RateLimitName,
 			Namespace: r.Namespace,
 		},
 	}
@@ -321,7 +321,7 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 			service.Labels = map[string]string{}
 		}
 
-		service.Labels["app"] = sku.RateLimitName
+		service.Labels["app"] = quota.RateLimitName
 		service.Spec.Ports = []corev1.ServicePort{
 			{
 				Name:       "http",
@@ -343,7 +343,7 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 			},
 		}
 		service.Spec.Selector = map[string]string{
-			"app": sku.RateLimitName,
+			"app": quota.RateLimitName,
 		}
 
 		return nil

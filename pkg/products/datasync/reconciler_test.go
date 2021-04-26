@@ -3,7 +3,7 @@ package datasync
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -131,7 +131,7 @@ func TestDataSync(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &sku.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}

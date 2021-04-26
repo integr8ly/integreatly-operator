@@ -55,7 +55,9 @@ estimate: 90m
     Run
 
     ```shell script
-    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n  \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\": [\n      5000000,\n      10000000,\n      15000000\n    ]\n }\n}"    }'
+    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n
+     \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\":
+    [\n      5000000,\n      10000000,\n      15000000\n    ]\n }\n}"    }'
     ```
 
 4.  Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis:
@@ -191,7 +193,9 @@ estimate: 90m
     for i in {1..1000}; do curl -i https://<DUMMY_URL>//?user_key=<DUMMY_KEY>& done
     ```
 
-    _NOTE:_ The above command should eventually result in failing `429 Too Many Requests` status codes. This is to be expected. If no requests have been rejected make sure to check the current Rate Limit configuration in the `sku-limits-managed-api-service` configmap of the `redhat-rhoam-operator` namespace
+    _NOTE:_ The above command should eventually result in failing `429 Too Many Requests` status codes. This is to
+    be expected. If no requests have been rejected make sure to check the current Rate Limit configuration in the
+    `sku-limits-managed-api-service` configmap of the `redhat-rhoam-operator` namespace
 
     Please note the time of receiving the first 429 response in order to later verify the `RHOAMApiUsageOverLimit` Alert.
 
@@ -219,12 +223,15 @@ estimate: 90m
         | RHOAMApiUsageSoftLimitReachedTier2   | 1e+07         | soft daily limit of requests reached (10000000)  |
         | RHOAMApiUsageSoftLimitReachedTier3   | 1.5e+07       | soft daily limit of requests reached (15000000)  |
 
-17. Verify Updating the soft_limits entry in the `sku-limits-managed-api-service` gets reflected in the Prometheus Alerts and Grafana Dashboard configuration
+17. Verify Updating the soft_limits entry in the `sku-limits-managed-api-service` gets reflected in the Prometheus
+    Alerts and Grafana Dashboard configuration
 
     Patch the config map with alternative soft limits to verify that the alerts and grafana dashboards get update with the new values.
 
     ```shell script
-    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n  \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\": [\n      15000000,\n      10000000,\n      5000000,\n      8500000\n,      18000000\n    ]\n }\n}"    }'
+    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n
+     \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\":
+    [\n      15000000,\n      10000000,\n      5000000,\n      8500000\n,      18000000\n    ]\n }\n}"    }'
     ```
 
     Verify the alerts are present and in order according to the table below:

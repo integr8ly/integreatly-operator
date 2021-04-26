@@ -33,16 +33,16 @@ func GetMonitoringGrafanaDBEndpointsDetailedJSON(installationName string) string
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,sku,toSKU)(rhoam_sku{toSKU!=\"\"})",
+				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
-				"name": "SKU",
+				"name": "Quota",
 				"showIn": 0,
 				"step": "",
-				"tagKeys": "stage,sku,toSKU",
+				"tagKeys": "stage,quota,toQuota",
 				"tags": "",
-				"titleFormat": "SKU Change (million per day)",
+				"titleFormat": "Quota Change (million per day)",
 				"type": "tags",
 				"useValueForTime": false
 			}

@@ -6,7 +6,7 @@ package products
 import (
 	"context"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
@@ -25,7 +25,7 @@ var _ Interface = &InterfaceMock{}
 // 			GetPreflightObjectFunc: func(ns string) runtime.Object {
 // 				panic("mock out the GetPreflightObject method")
 // 			},
-// 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+// 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 // 				panic("mock out the Reconcile method")
 // 			},
 // 			VerifyVersionFunc: func(installation *integreatlyv1alpha1.RHMI) bool {
@@ -42,7 +42,7 @@ type InterfaceMock struct {
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error)
 
 	// VerifyVersionFunc mocks the VerifyVersion method.
 	VerifyVersionFunc func(installation *integreatlyv1alpha1.RHMI) bool
@@ -65,7 +65,7 @@ type InterfaceMock struct {
 			// ServerClient is the serverClient argument value.
 			ServerClient k8sclient.Client
 			// ProductConfig is the productConfig argument value.
-			ProductConfig sku.ProductConfig
+			ProductConfig quota.ProductConfig
 		}
 		// VerifyVersion holds details about calls to the VerifyVersion method.
 		VerifyVersion []struct {
@@ -110,7 +110,7 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig sku.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
@@ -119,7 +119,7 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integrea
 		Installation  *integreatlyv1alpha1.RHMI
 		Product       *integreatlyv1alpha1.RHMIProductStatus
 		ServerClient  k8sclient.Client
-		ProductConfig sku.ProductConfig
+		ProductConfig quota.ProductConfig
 	}{
 		Ctx:           ctx,
 		Installation:  installation,
@@ -141,14 +141,14 @@ func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Installation  *integreatlyv1alpha1.RHMI
 	Product       *integreatlyv1alpha1.RHMIProductStatus
 	ServerClient  k8sclient.Client
-	ProductConfig sku.ProductConfig
+	ProductConfig quota.ProductConfig
 } {
 	var calls []struct {
 		Ctx           context.Context
 		Installation  *integreatlyv1alpha1.RHMI
 		Product       *integreatlyv1alpha1.RHMIProductStatus
 		ServerClient  k8sclient.Client
-		ProductConfig sku.ProductConfig
+		ProductConfig quota.ProductConfig
 	}
 	mock.lockReconcile.RLock()
 	calls = mock.calls.Reconcile

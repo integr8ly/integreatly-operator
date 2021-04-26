@@ -3,6 +3,10 @@ package common
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -12,44 +16,41 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
-	"strings"
-	"time"
 
 	//v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sku"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	prometheusRule1         = "api-usage-alert-level1"
-	prometheusRule1Desc     = "per minute over 4 hours"
-	prometheusRule2         = "api-usage-alert-level2"
-	prometheusRule2Desc     = "per minute over 2 hours"
-	prometheusRule3         = "api-usage-alert-level3"
-	prometheusRule3Desc     = "per minute over 30 minutes"
-	higherSKUname           = "20"
-	lowerSKUname            = "1"
-	timeoutWaitingSKUchange = 10
-	new3scaleLimits         = "501Mi"
-	newKeycloakLimits       = "1501Mi"
-	newRatelimitLimits      = "101Mi"
+	prometheusRule1           = "api-usage-alert-level1"
+	prometheusRule1Desc       = "per minute over 4 hours"
+	prometheusRule2           = "api-usage-alert-level2"
+	prometheusRule2Desc       = "per minute over 2 hours"
+	prometheusRule3           = "api-usage-alert-level3"
+	prometheusRule3Desc       = "per minute over 30 minutes"
+	higherQuotaname           = "20"
+	lowerQuotaname            = "1"
+	timeoutWaitingQuotachange = 10
+	new3scaleLimits           = "501Mi"
+	newKeycloakLimits         = "1501Mi"
+	newRatelimitLimits        = "101Mi"
 )
 
-func TestSKUValues(t TestingTB, ctx *TestingContext) {
-	skuConfig, quotaName, err := getSKUconfig(t, ctx.Client)
+func TestQuotaValues(t TestingTB, ctx *TestingContext) {
+	quotaConfig, quotaName, err := getQuotaconfig(t, ctx.Client)
 	if err != nil {
-		t.Fatalf("Error retrieving SKU: %v", err)
+		t.Fatalf("Error retrieving Quota: %v", err)
 	}
 
 	installation, err := GetRHMI(ctx.Client, true)
 	if err != nil {
-		t.Fatal("couldn't get RHMI cr for sku test")
+		t.Fatal("couldn't get RHMI cr for quota test")
 	}
 	if installation == nil {
 		t.Fatalf("Got invalid rhmi CR: %v", installation)
@@ -57,7 +58,7 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 
 	// wait if stage no complete
 	startTime := time.Now()
-	endTime := startTime.Add(time.Minute * time.Duration(timeoutWaitingSKUchange))
+	endTime := startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
 
 	for startTime.Before(endTime) {
 		startTime = time.Now()
@@ -66,33 +67,34 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 		}
 	}
 
-	//verify that the TOSKU value is set and that SKU is not set
+	//verify that the TOQuota value is set and that Quota is not set
 	//assuming this is run after installation
-	if installation.Status.SKU == "" {
-		t.Fatal("SKU status not set after installation")
+	if installation.Status.Quota == "" {
+		t.Fatal("Quota status not set after installation")
 	}
-	if installation.Status.ToSKU != "" {
-		t.Fatal("toSKU status set after installation")
+	if installation.Status.ToQuota != "" {
+		t.Fatal("toQuota status set after installation")
 	}
 
-	if installation.Status.SKU != quotaName {
-		t.Fatal(fmt.Sprintf("sku value set as '%s' but doesn't match the expected value: '%s'", installation.Status.SKU, quotaName))
+	if installation.Status.Quota != quotaName {
+		t.Fatal(fmt.Sprintf("quota value set as '%s' but doesn't match the expected value: '%s'",
+			installation.Status.Quota, quotaName))
 	}
-	verifyConfiguration(t, ctx.Client, skuConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig)
 
-	// update the sku to a higher configuration
+	// update the quota to a higher configuration
 
-	t.Logf("Changing SKU to %v million", higherSKUname)
-	installation, err = changeSKU(t, ctx.Client, installation, higherSKUname)
+	t.Logf("Changing Quota to %v million", higherQuotaname)
+	installation, err = changeQuota(t, ctx.Client, installation, higherQuotaname)
 	if err != nil {
-		t.Fatalf("Error changing SKU: %v", err)
+		t.Fatalf("Error changing Quota: %v", err)
 	}
 
-	skuConfig, _, err = getSKUconfig(t, ctx.Client)
+	quotaConfig, _, err = getQuotaconfig(t, ctx.Client)
 	if err != nil {
-		t.Fatalf("Error retrieving SKU config: %v", err)
+		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
-	verifyConfiguration(t, ctx.Client, skuConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig)
 
 	// verify that the user can update their configuration manually but it does not get set back
 	// get all crs
@@ -116,7 +118,7 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 	// Keycloak
 	keycloakCR := &v1alpha1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sku.KeycloakName,
+			Name:      quota.KeycloakName,
 			Namespace: NamespacePrefix + "user-sso",
 		},
 	}
@@ -135,7 +137,7 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 	// Ratelimit
 	ratelimitCR := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sku.RateLimitName,
+			Name:      quota.RateLimitName,
 			Namespace: NamespacePrefix + "marin3r",
 		},
 	}
@@ -181,7 +183,7 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 
 	// wait for 5 minutes and verify that pods have correct values
 	startTime = time.Now()
-	endTime = startTime.Add(time.Minute * time.Duration(timeoutWaitingSKUchange))
+	endTime = startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
 
 	threescalePods := &v1.PodList{}
 	selector, _ := labels.Parse("deploymentConfig=backend-listener")
@@ -247,18 +249,18 @@ func TestSKUValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("ratelimit pod does not have expected memory limits. Expected: %v Got: %v", newRatelimitLimit.String(), ratelimitPods.Items[0].Spec.Containers[0].Resources.Limits.Memory())
 	}
 
-	t.Logf("Changing SKU to %v million", lowerSKUname)
-	// update to a lower sku
-	installation, err = changeSKU(t, ctx.Client, installation, lowerSKUname)
+	t.Logf("Changing Quota to %v million", lowerQuotaname)
+	// update to a lower quota
+	installation, err = changeQuota(t, ctx.Client, installation, lowerQuotaname)
 	if err != nil {
-		t.Fatalf("Error changing SKU: %v", err)
+		t.Fatalf("Error changing Quota: %v", err)
 	}
 
-	skuConfig, _, err = getSKUconfig(t, ctx.Client)
+	quotaConfig, _, err = getQuotaconfig(t, ctx.Client)
 	if err != nil {
-		t.Fatalf("Error retrieving SKU config: %v", err)
+		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
-	verifyConfiguration(t, ctx.Client, skuConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig)
 
 	t.Log("Yest A34 succeeded")
 }
@@ -272,7 +274,7 @@ func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.
 	return configMap, nil
 }
 
-func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
+func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quota) {
 	// get it from the marin3r namespace
 	config, err := getConfigMap(t, c, marin3r.RateLimitingConfigMapName, Marin3rProductNamespace)
 	if err != nil {
@@ -284,16 +286,18 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 		t.Fatal(err)
 	}
 
-	configRateLimitRequestPerUnit := skuConfig.GetRateLimitConfig().RequestsPerUnit
+	configRateLimitRequestPerUnit := quotaConfig.GetRateLimitConfig().RequestsPerUnit
 
-	configRateLimitUnit := skuConfig.GetRateLimitConfig().Unit
+	configRateLimitUnit := quotaConfig.GetRateLimitConfig().Unit
 
 	if ratelimit.RequestsPerUnit != configRateLimitRequestPerUnit {
-		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the sku config requests per unit '%v'", ratelimit.RequestsPerUnit, configRateLimitRequestPerUnit))
+		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the quota config requests per unit '%v'",
+			ratelimit.RequestsPerUnit, configRateLimitRequestPerUnit))
 	}
 
 	if ratelimit.Unit != configRateLimitUnit {
-		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the sku config unit value '%s'", ratelimit.Unit, configRateLimitUnit))
+		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the quota config unit value '%s'",
+			ratelimit.Unit, configRateLimitUnit))
 	}
 
 	// verify that promethues rules for alerting get update with rate limiting configuration
@@ -321,15 +325,15 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 	}
 
 	// verify ratelimit replicas and resource configuration is as expected
-	configReplicas := skuConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetReplicas(sku.RateLimitName)
-	resourceConfig, ok := skuConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetResourceConfig(sku.RateLimitName)
+	configReplicas := quotaConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetReplicas(quota.RateLimitName)
+	resourceConfig, ok := quotaConfig.GetProduct(rhmiv1alpha1.ProductMarin3r).GetResourceConfig(quota.RateLimitName)
 	if !ok {
 		t.Fatal("Error obtaining rateLimit resource config")
 	}
 
 	ratelimitDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sku.RateLimitName,
+			Name: quota.RateLimitName,
 		},
 	}
 	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: ratelimitDeployment.Name, Namespace: NamespacePrefix + "marin3r"}, ratelimitDeployment)
@@ -342,8 +346,8 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, skuConfig *sku.SKU) {
 	checkResources(t, ratelimitDeployment.Name, configReplicas, crReplicas, resourceConfig, crResources)
 
 	// verify rhusersso replicas and resource configuration is as expected
-	configReplicas = skuConfig.GetProduct(sku.KeycloakName).GetReplicas(sku.KeycloakName)
-	resourceConfig, ok = skuConfig.GetProduct(sku.KeycloakName).GetResourceConfig(sku.KeycloakName)
+	configReplicas = quotaConfig.GetProduct(quota.KeycloakName).GetReplicas(quota.KeycloakName)
+	resourceConfig, ok = quotaConfig.GetProduct(quota.KeycloakName).GetResourceConfig(quota.KeycloakName)
 	if !ok {
 		t.Fatal("Error obtaining userrhsso resource config")
 	}
@@ -386,9 +390,9 @@ func checkResources(t TestingTB, productName string, configReplicas, crReplicas 
 	}
 }
 
-func getSKUconfig(t TestingTB, c k8sclient.Client) (*sku.SKU, string, error) {
+func getQuotaconfig(t TestingTB, c k8sclient.Client) (*quota.Quota, string, error) {
 	// verify the config map is in place and can be parsed
-	skuConfigMap, err := getConfigMap(t, c, sku.ConfigMapName, RHMIOperatorNamespace)
+	quotaConfigMap, err := getConfigMap(t, c, quota.ConfigMapName, RHMIOperatorNamespace)
 	if err != nil {
 		t.Fatal(err)
 		return nil, "", err
@@ -396,21 +400,23 @@ func getSKUconfig(t TestingTB, c k8sclient.Client) (*sku.SKU, string, error) {
 
 	quotaName, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
 	if !found {
-		t.Fatal(fmt.Sprintf("failed to sku parameter '%s' from the parameter secret", addon.QuotaParamName), err)
+		t.Fatal(fmt.Sprintf("failed to quota parameter '%s' from the parameter secret", addon.QuotaParamName), err)
 		return nil, "", err
 	}
 
-	skuConfig := &sku.SKU{}
-	err = sku.GetSKU(quotaName, skuConfigMap, skuConfig, false)
+	quotaConfig := &quota.Quota{}
+	err = quota.GetQuota(quotaName, quotaConfigMap, quotaConfig, false)
 	if err != nil {
-		t.Fatal("failed to get sku config map, skipping test for now until fully implemented", err)
+		t.Fatal("failed to get quota config map, skipping test for now until fully implemented", err)
 		return nil, "", err
 	}
 
-	return skuConfig, quotaName, nil
+	return quotaConfig, quotaName, nil
 }
 
-func changeSKU(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHMI, newSKU string) (*rhmiv1alpha1.RHMI, error) {
+func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHMI,
+	newQuota string) (*rhmiv1alpha1.RHMI,
+	error) {
 	newSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "addon-managed-api-service-parameters",
@@ -422,27 +428,27 @@ func changeSKU(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHMI,
 			newSecret.Data = make(map[string][]byte, 1)
 		}
 
-		newSecret.Data[addon.QuotaParamName] = []byte(newSKU)
+		newSecret.Data[addon.QuotaParamName] = []byte(newQuota)
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("failed updating addon secret with new sku: %v", err)
+		t.Fatalf("failed updating addon secret with new quota: %v", err)
 		return nil, err
 	}
 	// verifyConfiguration again
 	startTime := time.Now()
-	endTime := startTime.Add(time.Minute * time.Duration(timeoutWaitingSKUchange))
+	endTime := startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
 
-	t.Log("Waiting for reconciler to apply SKU")
-	// break before the timeout if sku was changed
+	t.Log("Waiting for reconciler to apply Quota")
+	// break before the timeout if quota was changed
 	for startTime.Before(endTime) {
 		startTime = time.Now()
 		installation, err = GetRHMI(c, true)
-		if err == nil && installation.Status.ToSKU == "" && installation.Status.SKU == newSKU {
+		if err == nil && installation.Status.ToQuota == "" && installation.Status.Quota == newQuota {
 			break
 		}
 		if endTime.Before(startTime) {
-			t.Log("Timeout waiting for SKU to be changed")
+			t.Log("Timeout waiting for Quota to be changed")
 		}
 	}
 	return installation, nil

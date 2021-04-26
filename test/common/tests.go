@@ -106,7 +106,7 @@ var (
 
 		{
 			[]TestCase{
-				{"A34 - Verify SKU values", TestSKUValues},
+				{"A34 - Verify SKU values", TestQuotaValues},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
