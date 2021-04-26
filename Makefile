@@ -358,7 +358,6 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/quota
 cluster/prepare/quota:
-	@-oc delete  -n $(NAMESPACE) secret addon-managed-api-service-parameters
 	@-oc process -n $(NAMESPACE) QUOTA=$(QUOTA) -f config/secrets/quota-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/delorean
