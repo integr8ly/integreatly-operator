@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: quota-config
+  name: quota-config-managed-api-service
 data:
   quota-configs: |-
     [        

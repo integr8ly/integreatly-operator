@@ -358,7 +358,7 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/quota
 cluster/prepare/quota:
-	@-oc apply -n $(NAMESPACE) -f config/configmap/quota-config.yaml
+	@-oc apply -n $(NAMESPACE) -f config/configmap/quota-config-managed-api-service.yaml
 	@-oc delete  -n $(NAMESPACE) secret addon-managed-api-service-parameters
 	@-oc process -n $(NAMESPACE) QUOTA=$(QUOTA) -f config/secrets/quota-secret.yaml | oc apply -f -
 
