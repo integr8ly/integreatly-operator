@@ -71,7 +71,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 
 	// Scale down system-app and system-sidekiq in order to load new smtp config
 	for _, dc := range []string{"system-app", "system-sidekiq"} {
-		t.Logf("Scalind down dc '%s' to 0 replicas in '%s' namespace", dc, threescaleNamespace)
+		t.Logf("Scaling down dc '%s' to 0 replicas in '%s' namespace", dc, threescaleNamespace)
 		scaleDeploymentConfig(t, dc, threescaleNamespace, 0, ctx.Client)
 	}
 
