@@ -18,9 +18,5 @@ manifest/check/registries:
 manifest/check/graph:
 	delorean ews check-olm-graph -d ./manifests
 
-.PHONY: manifest/check/rhoam/master
-manifest/check/rhoam/master:
-	TYPE_OF_MANIFEST=compare make manifest/prodsec
-
 .PHONY: manifest/check
-manifest/check: manifest/check/image_mirror_mapping manifest/check/registries manifest/check/graph manifest/check/rhoam/master
+manifest/check: manifest/check/image_mirror_mapping manifest/check/registries manifest/check/graph

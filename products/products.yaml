@@ -1,0 +1,37 @@
+products:
+  - name: 3scale-operator
+    version: 3scale-2.10.0-CR2
+    url: "https://github.com/3scale/3scale-operator"
+    installType: "rhmi/rhoam"
+  - name: apicurito-registry-operator
+    version: 0.0.3
+    url: "https://github.com/Apicurio/apicurio-registry-operator"
+    installType: "rhmi"
+  - name: cloud-resource-operator
+    version: v0.23.0
+    url: "https://github.com/integr8ly/cloud-resource-operator"
+    installType: "rhoam/rhmi"
+  - name: grafana-operator
+    version: v3.8.1
+    url: "https://github.com/integr8ly/grafana-operator"
+    installType: "rhoam/rhmi"
+  - name: marin3r
+    version: v0.7.0
+    url: "https://github.com/3scale/marin3r"
+    installType: "rhoam"
+  - name: application-monitoring-operator
+    version: v1.5.0
+    url: "https://github.com/integr8ly/application-monitoring-operator"
+    installType: "rhmi/rhoam"
+  - name: keycloak-operator
+    version: 12.0.3
+    url: "https://github.com/keycloak/keycloak-operator"
+    installType: "rhmi/rhoam"
+  - name: tutorial-web-app-operator
+    version: v0.0.62
+    url: "https://github.com/integr8ly/tutorial-web-app-operator"
+    installType: "rhmi"
+  - name: unifiedpush-operator
+    version: v0.5.0
+    url: "https://github.com/aerogear/unifiedpush-operator"
+    installType: "rhmi"
