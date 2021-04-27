@@ -5,7 +5,7 @@ products:
       - osd-fresh-install
       - osd-post-upgrade
     targets:
-      - 1.4.0
+      - 1.6.0
 estimate: 15m
 tags:
   - automated
@@ -33,5 +33,10 @@ oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.toQuota'
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
 ```
 
-> The output should be "default" for RHOAM 1.4.0, then FIVE_MILLION_Quota, TWENTY_MILLION_Quota, etc. for next RHOAM
-> releases, based on the Quota type selected in OCM
+3. Get the parameter value
+
+```bash
+oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o yaml | yq r - 'data.addon-managed-api-service' | base64 --decode
+```
+
+Validate that the value of the status.quota matches the parameter from the secret.

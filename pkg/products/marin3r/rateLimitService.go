@@ -8,7 +8,6 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -377,7 +376,7 @@ func GetRateLimitFromConfig(c *corev1.ConfigMap) (*yamlRateLimit, error) {
 	ratelimitconfig := yamlRoot{}
 	err := yaml.Unmarshal([]byte(c.Data[RateLimitingConfigMapDataName]), &ratelimitconfig)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name))
+		return nil, fmt.Errorf(fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name), err)
 	}
 	return ratelimitconfig.Descriptors[0].RateLimit, nil
 }

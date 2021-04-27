@@ -74,7 +74,7 @@ var (
 				CodeReadyOperatorNamespace,
 				FuseProductNamespace,
 				FuseOperatorNamespace,
-				RHSSOUserProductOperatorNamespace,
+				RHSSOUserProductNamespace,
 				RHSSOUserOperatorNamespace,
 				ThreeScaleProductNamespace,
 				ThreeScaleOperatorNamespace,
@@ -82,7 +82,7 @@ var (
 				UPSOperatorNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
-				return removeKeyCloakFinalizers(ctx, RHSSOUserProductOperatorNamespace)
+				return removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace)
 			},
 		},
 		{
@@ -104,13 +104,13 @@ var (
 				CustomerGrafanaNamespace,
 				Marin3rOperatorNamespace,
 				Marin3rProductNamespace,
-				RHSSOUserProductOperatorNamespace,
+				RHSSOUserProductNamespace,
 				RHSSOUserOperatorNamespace,
 				ThreeScaleProductNamespace,
 				ThreeScaleOperatorNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
-				return removeKeyCloakFinalizers(ctx, RHSSOUserProductOperatorNamespace)
+				return removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace)
 			},
 		},
 	}
