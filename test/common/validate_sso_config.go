@@ -26,7 +26,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 			Name: string(integreatlyv1alpha1.ProductRHSSOUser),
 		},
 	}
-	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: NamespacePrefix + "user-sso"}, keycloak)
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
 	if err != nil {
 		t.Fatalf("Couldn't get RHSSO config: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 	keycloakPods := &v1.PodList{}
 	selector, _ := labels.Parse("component=keycloak")
 	keycloakListOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(NamespacePrefix + "user-sso"),
+		k8sclient.InNamespace(RHSSOUserProductNamespace),
 		k8sclient.MatchingLabelsSelector{
 			Selector: selector,
 		},
@@ -66,7 +66,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 
 	// Validate RHSSO URL from RHOAM CR
 
-	adminRoute := rhmi.Status.Stages["authentication"].Products["rhsso"].Host
+	adminRoute := rhmi.Status.Stages[integreatlyv1alpha1.AuthenticationStage].Products[integreatlyv1alpha1.ProductRHSSO].Host
 	browser := surf.NewBrowser()
 	browser.SetCookieJar(ctx.HttpClient.Jar)
 	browser.SetTransport(ctx.HttpClient.Transport)
@@ -80,7 +80,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 	}
 	// Validate USER-SSO URL from RHOAM CR
 
-	customerAdminRoute := fmt.Sprintf("%s/auth/", rhmi.Status.Stages["products"].Products["rhssouser"].Host)
+	customerAdminRoute := fmt.Sprintf("%s/auth/", rhmi.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser].Host)
 
 	t.Log("Checking the link for dedicated admin is available")
 	// open User SSO route

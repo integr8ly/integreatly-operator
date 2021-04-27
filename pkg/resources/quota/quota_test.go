@@ -8,10 +8,8 @@ import (
 	v1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v13 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"testing"
 )
@@ -63,7 +61,7 @@ func TestGetQuota(t *testing.T) {
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[ApicastProductionName] = ResourceConfig{
 								Replicas: int32(1),
-								Resources: v13.ResourceRequirements{
+								Resources: corev1.ResourceRequirements{
 									Requests: corev1.ResourceList{
 										corev1.ResourceCPU:    resource.MustParse("50m"),
 										corev1.ResourceMemory: resource.MustParse("50Mi"),
@@ -74,30 +72,30 @@ func TestGetQuota(t *testing.T) {
 									},
 								},
 							}
-							rcs[ApicastStagingName] = ResourceConfig{0, v13.ResourceRequirements{}}
-							rcs[BackendListenerName] = ResourceConfig{0, v13.ResourceRequirements{}}
-							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[ApicastStagingName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendListenerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						quota: pointerToQuota,
 					},
 					v1alpha1.ProductGrafana: {
 						v1alpha1.ProductGrafana,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[RateLimitName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[RateLimitName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						pointerToQuota,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						v1alpha1.ProductRHSSOUser,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[KeycloakName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[KeycloakName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						pointerToQuota,
 					},
@@ -132,7 +130,7 @@ func TestGetQuota(t *testing.T) {
 						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[BackendListenerName] = ResourceConfig{
 								Replicas: int32(3),
-								Resources: v13.ResourceRequirements{
+								Resources: corev1.ResourceRequirements{
 									Requests: corev1.ResourceList{
 										corev1.ResourceCPU:    resource.MustParse("0.25"),
 										corev1.ResourceMemory: resource.MustParse("450"),
@@ -143,30 +141,30 @@ func TestGetQuota(t *testing.T) {
 									},
 								},
 							}
-							rcs[ApicastStagingName] = ResourceConfig{0, v13.ResourceRequirements{}}
-							rcs[ApicastProductionName] = ResourceConfig{0, v13.ResourceRequirements{}}
-							rcs[BackendWorkerName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[ApicastStagingName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[ApicastProductionName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						quota: pointerToQuota,
 					},
 					v1alpha1.ProductGrafana: {
 						v1alpha1.ProductGrafana,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[GrafanaName] = ResourceConfig{0, v13.ResourceRequirements{}}
+							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
 						resourceConfigs: map[string]ResourceConfig{
-							RateLimitName: {0, v13.ResourceRequirements{}},
+							RateLimitName: {0, corev1.ResourceRequirements{}},
 						},
 						quota: pointerToQuota,
 					},
 					v1alpha1.ProductRHSSOUser: {
 						productName: v1alpha1.ProductRHSSOUser,
 						resourceConfigs: map[string]ResourceConfig{
-							KeycloakName: {0, v13.ResourceRequirements{}},
+							KeycloakName: {0, corev1.ResourceRequirements{}},
 						},
 						quota: pointerToQuota,
 					},
@@ -231,7 +229,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[KeycloakName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -249,7 +247,7 @@ func TestProductConfig_Configure(t *testing.T) {
 			},
 			args: args{obj: getKeycloak(KeycloakName, func(kc *keycloak.Keycloak) {
 				kc.Spec.Instances = 2
-				kc.Spec.KeycloakDeploymentSpec.Resources = v13.ResourceRequirements{
+				kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("0.111"),
 						corev1.ResourceMemory: resource.MustParse("100"),
@@ -294,7 +292,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[KeycloakName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -344,7 +342,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450Mi"),
@@ -361,9 +359,9 @@ func TestProductConfig_Configure(t *testing.T) {
 				},
 			},
 			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
-				dc.Spec.Template.Spec.Containers = []v13.Container{
+				dc.Spec.Template.Spec.Containers = []corev1.Container{
 					{
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.111"),
 								corev1.ResourceMemory: resource.MustParse("100"),
@@ -411,7 +409,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[ApicastProductionName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450Mi"),
@@ -490,7 +488,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -503,7 +501,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					}
 					rcs[BackendWorkerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -516,7 +514,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					}
 					rcs[ApicastStagingName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -529,7 +527,7 @@ func TestProductConfig_Configure(t *testing.T) {
 					}
 					rcs[ApicastProductionName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -581,7 +579,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -599,9 +597,9 @@ func TestProductConfig_Configure(t *testing.T) {
 			},
 			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
 				dc.Spec.Replicas = int32(2)
-				dc.Spec.Template.Spec.Containers = []v13.Container{
+				dc.Spec.Template.Spec.Containers = []corev1.Container{
 					{
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.111"),
 								corev1.ResourceMemory: resource.MustParse("100"),
@@ -648,7 +646,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.24"),
 								corev1.ResourceMemory: resource.MustParse("449"),
@@ -666,9 +664,9 @@ func TestProductConfig_Configure(t *testing.T) {
 			},
 			args: args{obj: getDeploymentConfig(BackendListenerName, func(dc *v1.DeploymentConfig) {
 				dc.Spec.Replicas = int32(2)
-				dc.Spec.Template.Spec.Containers = []v13.Container{
+				dc.Spec.Template.Spec.Containers = []corev1.Container{
 					{
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -715,7 +713,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.24"),
 								corev1.ResourceMemory: resource.MustParse("449"),
@@ -734,9 +732,9 @@ func TestProductConfig_Configure(t *testing.T) {
 			args: args{obj: getStatefulSet(BackendListenerName, func(ss *appsv1.StatefulSet) {
 				replica := int32(2)
 				ss.Spec.Replicas = &replica
-				ss.Spec.Template.Spec.Containers = []v13.Container{
+				ss.Spec.Template.Spec.Containers = []corev1.Container{
 					{
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -783,7 +781,7 @@ func TestProductConfig_Configure(t *testing.T) {
 				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
 					rcs[BackendListenerName] = ResourceConfig{
 						Replicas: int32(3),
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.24"),
 								corev1.ResourceMemory: resource.MustParse("449"),
@@ -800,9 +798,9 @@ func TestProductConfig_Configure(t *testing.T) {
 				},
 			},
 			args: args{obj: getDeployment(BackendListenerName, func(d *appsv1.Deployment) {
-				d.Spec.Template.Spec.Containers = []v13.Container{
+				d.Spec.Template.Spec.Containers = []corev1.Container{
 					{
-						Resources: v13.ResourceRequirements{
+						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("0.25"),
 								corev1.ResourceMemory: resource.MustParse("450"),
@@ -843,7 +841,7 @@ func TestProductConfig_Configure(t *testing.T) {
 		},
 		{
 			name: "validate error returned on non deployment deploymentConfig or StatefulSet Object passed",
-			args: args{obj: &v13.ConfigMap{}},
+			args: args{obj: &corev1.ConfigMap{}},
 			fields: fields{
 				quota: &Quota{
 					isUpdated: true,
@@ -882,7 +880,7 @@ func getResourceConfig(modifyFn func(rcs map[string]ResourceConfig)) map[string]
 
 func getKeycloak(name string, modifyFn func(kc *keycloak.Keycloak)) *keycloak.Keycloak {
 	mock := &keycloak.Keycloak{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
@@ -894,13 +892,13 @@ func getKeycloak(name string, modifyFn func(kc *keycloak.Keycloak)) *keycloak.Ke
 
 func getDeploymentConfig(name string, modifyFn func(dc *v1.DeploymentConfig)) *v1.DeploymentConfig {
 	mock := &v1.DeploymentConfig{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1.DeploymentConfigSpec{
-			Template: &v13.PodTemplateSpec{
-				Spec: v13.PodSpec{
-					Containers: []v13.Container{},
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{},
 				},
 			},
 		}}
@@ -912,13 +910,13 @@ func getDeploymentConfig(name string, modifyFn func(dc *v1.DeploymentConfig)) *v
 
 func getStatefulSet(name string, modifyFn func(ss *appsv1.StatefulSet)) *appsv1.StatefulSet {
 	mock := &appsv1.StatefulSet{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: appsv1.StatefulSetSpec{
-			Template: v13.PodTemplateSpec{
-				Spec: v13.PodSpec{
-					Containers: []v13.Container{},
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{},
 				},
 			},
 		}}
@@ -930,13 +928,13 @@ func getStatefulSet(name string, modifyFn func(ss *appsv1.StatefulSet)) *appsv1.
 
 func getDeployment(name string, modifyFn func(d *appsv1.Deployment)) *appsv1.Deployment {
 	mock := &appsv1.Deployment{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Template: v13.PodTemplateSpec{
-				Spec: v13.PodSpec{
-					Containers: []v13.Container{},
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{},
 				},
 			},
 		}}
@@ -946,9 +944,9 @@ func getDeployment(name string, modifyFn func(d *appsv1.Deployment)) *appsv1.Dep
 	return mock
 }
 
-func getQuotaConfig(modifyFn func(*v13.ConfigMap)) *v13.ConfigMap {
-	mock := &v13.ConfigMap{
-		ObjectMeta: v12.ObjectMeta{Name: ConfigMapName},
+func getQuotaConfig(modifyFn func(*corev1.ConfigMap)) *corev1.ConfigMap {
+	mock := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
 		ConfigMapData: "[{\"name\": \"" + DEVQUOTA + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTA + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",

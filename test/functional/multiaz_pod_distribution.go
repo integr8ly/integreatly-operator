@@ -14,7 +14,7 @@ import (
 
 var (
 	namespacesToCheck = []string{
-		common.RHSSOUserProductOperatorNamespace,
+		common.RHSSOUserProductNamespace,
 		common.RHSSOProductNamespace,
 		common.ThreeScaleProductNamespace,
 	}

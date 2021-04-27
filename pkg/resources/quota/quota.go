@@ -204,7 +204,7 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 		p.mutateResourcesRequirement(t.Spec.Backend.WorkerSpec.Resources, BackendWorkerName)
 
 	default:
-		return errors.New(fmt.Sprintf("quota configuration can only be applied to Deployments, StatefulSets or Deployment Configs, found %s", reflect.TypeOf(obj)))
+		return errors.New(fmt.Sprintf("quota configuration can only be applied to Deployments, StatefulSets, Deployment Configs, ApiManager, Keycloak found %s", reflect.TypeOf(obj)))
 	}
 
 	return nil

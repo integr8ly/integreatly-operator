@@ -1115,9 +1115,11 @@ func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace
 		return errors.Wrap(err, "Error getting quota config map")
 	}
 
-	// if both are empty it's the first round of installation
-	// or if the secretname is not the same as what the Quota is marked there has been a change
-	// so set toQuota and update the status object and set isQuotapdated to true
+	// if both are toQuota and Quota are empty this indicates that it's either
+	// the first reconcile of an installation or it's the first reconcile of an upgrade to 1.6.0
+	// if the secretname is not the same as status.Quota this indicates there has been a quota change
+	// to an installation which is already using the Quota functionality.
+	// if either case is true set toQuota in the rhmi cr and update the status object and set isQuotaUpdated to true
 	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
 		quotaParam != installation.Status.Quota {
 		installation.Status.ToQuota = quotaParam
