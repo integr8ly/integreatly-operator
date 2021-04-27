@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	//v12 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
@@ -101,7 +100,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	threescaleCR := &threescalev1.APIManager{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      string(rhmiv1alpha1.Product3Scale),
-			Namespace: NamespacePrefix + "3scale",
+			Namespace: ThreeScaleProductNamespace,
 		},
 	}
 	key, err := k8sclient.ObjectKeyFromObject(threescaleCR)
@@ -119,7 +118,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	keycloakCR := &v1alpha1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      quota.KeycloakName,
-			Namespace: NamespacePrefix + "user-sso",
+			Namespace: RHSSOUserProductNamespace,
 		},
 	}
 	newKeycloakLimit := resource.MustParse(newKeycloakLimits)
@@ -138,7 +137,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	ratelimitCR := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      quota.RateLimitName,
-			Namespace: NamespacePrefix + "marin3r",
+			Namespace: Marin3rProductNamespace,
 		},
 	}
 	newRatelimitLimit := resource.MustParse(newRatelimitLimits)
@@ -188,7 +187,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	threescalePods := &v1.PodList{}
 	selector, _ := labels.Parse("deploymentConfig=backend-listener")
 	threescaleListOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(NamespacePrefix + "3scale"),
+		k8sclient.InNamespace(ThreeScaleProductNamespace),
 		k8sclient.MatchingLabelsSelector{
 			Selector: selector,
 		},
@@ -196,7 +195,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	keycloakPods := &v1.PodList{}
 	selector, _ = labels.Parse("component=keycloak")
 	keycloakListOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(NamespacePrefix + "user-sso"),
+		k8sclient.InNamespace(RHSSOUserProductNamespace),
 		k8sclient.MatchingLabelsSelector{
 			Selector: selector,
 		},
@@ -204,7 +203,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	ratelimitPods := &v1.PodList{}
 	selector, _ = labels.Parse("app=ratelimit")
 	ratelimitListOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(NamespacePrefix + "marin3r"),
+		k8sclient.InNamespace(Marin3rProductNamespace),
 		k8sclient.MatchingLabelsSelector{
 			Selector: selector,
 		},
@@ -262,7 +261,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	}
 	verifyConfiguration(t, ctx.Client, quotaConfig)
 
-	t.Log("Yest A34 succeeded")
+	t.Log("test A34 succeeded")
 }
 
 func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.ConfigMap, error) {
@@ -336,7 +335,7 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 			Name: quota.RateLimitName,
 		},
 	}
-	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: ratelimitDeployment.Name, Namespace: NamespacePrefix + "marin3r"}, ratelimitDeployment)
+	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: ratelimitDeployment.Name, Namespace: Marin3rProductNamespace}, ratelimitDeployment)
 	if err != nil {
 		t.Fatalf("Couldn't get RateLimit deployment config %v", err)
 	}
@@ -358,7 +357,7 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 			Name: string(rhmiv1alpha1.ProductRHSSOUser),
 		},
 	}
-	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: NamespacePrefix + "user-sso"}, keycloak)
+	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
 	if err != nil {
 		t.Fatalf("Couldn't get Keycloak CR: %v", err)
 	}
