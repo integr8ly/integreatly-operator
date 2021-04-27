@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
@@ -121,6 +120,31 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 		setDefaultNumberOfReplicas(1, threeScaleComponents)
 	} else if inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		setDefaultNumberOfReplicas(2, threeScaleComponents)
+	}
+
+	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		switch inst.Status.Quota {
+		case "1":
+			threeScaleComponents["apicastProd"] = 1
+			threeScaleComponents["backendListener"] = 1
+			threeScaleComponents["backendWorker"] = 1
+		case "5":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "10":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "20":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "50":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendWorker"] = 4
+			threeScaleComponents["backendListener"] = 5
+		}
 	}
 
 	return threeScaleComponents
