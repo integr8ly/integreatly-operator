@@ -13,7 +13,7 @@
     - 'kubelet_volume_stats_used_bytes{endpoint="https-metrics",namespace=~"{{ index .Params "namespace-prefix" }}.*"}'
     - 'kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"{{ index .Params "namespace-prefix" }}.*"}'
     - 'kubelet_volume_stats_capacity_bytes{endpoint="https-metrics",namespace=~"{{ index .Params "namespace-prefix" }}.*"}'
-    - 'haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace=~"redhat-rhoam.*sso"}'
+    - 'haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace=~"redhat-.*sso$"}'
     - '{{ "{" }} service="kube-state-metrics" {{ "}" }}'
     - '{{ "{" }} service="node-exporter" {{ "}" }}'
     - '{{ "{" }} __name__=~"node_namespace_pod_container:.*" {{ "}" }}'
