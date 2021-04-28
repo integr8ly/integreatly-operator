@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"fmt"
+
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/products/monitoring/dashboards"
@@ -38,6 +39,9 @@ func getSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, 
 
 	case "cro-resources":
 		return monitoring.MonitoringGrafanaDBCROResourcesJSON, "cro-resources.json", nil
+
+	case "rhoam-rhsso-availability-slo":
+		return monitoring.GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(), "rhoam-rhsso-availability-slo.json", nil
 
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")
