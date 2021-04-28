@@ -29,6 +29,22 @@ func GetMonitoringGrafanaDBResourceByPodJSON(installationName string) string {
 				"titleFormat": "Upgrade",
 				"type": "tags",
 				"useValueForTime": false
+			},
+			{
+				"datasource": "Prometheus",
+				"enable": true,
+				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
+				"hide": false,
+				"iconColor": "#FADE2A",
+				"limit": 100,
+				"name": "Quota",
+				"showIn": 0,
+				"step": "",
+				"tagKeys": "stage,quota,toQuota",
+				"tags": "",
+				"titleFormat": "Quota Change (million per day)",
+				"type": "tags",
+				"useValueForTime": false
 			}
 		]
 	},

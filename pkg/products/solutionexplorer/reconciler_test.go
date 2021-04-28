@@ -2,6 +2,7 @@ package solutionexplorer
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -173,7 +174,7 @@ func TestSolutionExplorer(t *testing.T) {
 			},
 			Installation: installation,
 			FakeConfig:   basicConfigMock(),
-			client:       fake.NewFakeClient(webappNS, operatorNS, webappCR, installation, webappRoute),
+			client:       fake.NewFakeClientWithScheme(scheme, webappNS, operatorNS, webappCR, installation, webappRoute),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 		},
@@ -195,7 +196,7 @@ func TestSolutionExplorer(t *testing.T) {
 				return
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client)
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client, &quota.ProductConfigMock{})
 			if err != nil && !tc.ExpectErr {
 				t.Fatalf("expected error but got one: %v", err)
 			}

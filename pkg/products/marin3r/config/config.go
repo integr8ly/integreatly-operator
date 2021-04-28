@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -13,23 +11,18 @@ import (
 const (
 	RateLimitConfigMapName = "sku-limits-managed-api-service"
 	AlertConfigMapName     = "rate-limit-alerts"
-	ManagedApiServiceSKU   = "RHOAM SERVICE SKU"
+	ManagedApiServiceQuota = "RHOAM SERVICE SKU"
 
 	AlertTypeThreshold = "Threshold"
 	AlertTypeSpike     = "Spike"
 
 	DefaultRateLimitUnit     = "minute"
 	DefaultRateLimitRequests = 13860
-
-	DailySoftLimitTier1 = 5_000_000
-	DailySoftLimitTier2 = 10_000_000
-	DailySoftLimitTier3 = 15_000_000
 )
 
 type RateLimitConfig struct {
-	Unit            string   `json:"unit"`
-	RequestsPerUnit uint32   `json:"requests_per_unit"`
-	SoftDailyLimits []uint32 `json:"soft_daily_limits,omitempty"`
+	Unit            string `json:"unit"`
+	RequestsPerUnit uint32 `json:"requests_per_unit"`
 }
 
 type AlertConfig struct {
@@ -45,31 +38,6 @@ type AlertThresholdConfig struct {
 	MaxRate *string `json:"maxRate,omitempty"`
 }
 
-// GetRateLimitConfig retrieves the configuration for the rate limit service,
-// taken from a ConfigMap that is expected to exist in the managed api operator
-// namespace.
-func GetRateLimitConfig(ctx context.Context, client k8sclient.Client, namespace string) (*RateLimitConfig, error) {
-	skuConfigs := map[string]*RateLimitConfig{}
-	if err := getFromJSONConfigMap(
-		ctx, client,
-		RateLimitConfigMapName, namespace, "rate_limit",
-		&skuConfigs,
-	); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("could not read rate_limit config from %s config map", RateLimitConfigMapName))
-	}
-
-	sku, err := GetSKU(ctx, client)
-	if err != nil {
-		return nil, err
-	}
-
-	if result, ok := skuConfigs[sku]; ok {
-		return result, nil
-	}
-
-	return nil, fmt.Errorf("SKU %s not found in ConfigMap", sku)
-}
-
 func GetAlertConfig(ctx context.Context, client k8sclient.Client, namespace string) (map[string]*AlertConfig, error) {
 	alertsConfig := map[string]*AlertConfig{}
 	err := getFromJSONConfigMap(
@@ -81,8 +49,8 @@ func GetAlertConfig(ctx context.Context, client k8sclient.Client, namespace stri
 	return alertsConfig, err
 }
 
-func GetSKU(_ context.Context, _ k8sclient.Client) (string, error) {
-	return ManagedApiServiceSKU, nil
+func GetQuota(_ context.Context, _ k8sclient.Client) (string, error) {
+	return ManagedApiServiceQuota, nil
 }
 
 func getFromJSONConfigMap(ctx context.Context, client k8sclient.Client, cmName, namespace, configkey string, v interface{}) error {

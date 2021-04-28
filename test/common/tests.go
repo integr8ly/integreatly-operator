@@ -8,10 +8,15 @@ import (
 // 1. https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases#how-to-automate-a-test-case-and-link-it-back
 // 2. https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases
 var (
-	ALL_TESTS = []TestCase{
-		// Add all tests that can be executed prior to a completed installation here
-		{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
-		{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
+	ALL_TESTS = []TestSuite{
+		{
+			[]TestCase{
+				// Add all tests that can be executed prior to a completed installation here
+				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
+				{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+		},
 	}
 
 	HAPPY_PATH_TESTS = []TestSuite{
@@ -26,6 +31,7 @@ var (
 			[]TestCase{
 				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 				/*FLAKY on RHOAM*/ {"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
+				{"A32 - Validate SSO config", TestSSOconfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
@@ -88,10 +94,22 @@ var (
 		},
 	}
 
-	SCALABILITY_TESTS = []TestCase{
-		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
-		{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
-		{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
+	SCALABILITY_TESTS = []TestSuite{
+		{
+			[]TestCase{
+				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
+				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
+				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+		},
+
+		{
+			[]TestCase{
+				{"A34 - Verify QUOTA values", TestQuotaValues},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
 	}
 
 	FAILURE_TESTS = []TestCase{

@@ -51,6 +51,7 @@ var (
 	MonitoringStage              StageName = "monitoring"
 	AuthenticationStage          StageName = "authentication"
 	ProductsStage                StageName = "products"
+	CompleteStage                StageName = "complete"
 	SolutionExplorerStage        StageName = "solution-explorer"
 	UninstallProductsStage       StageName = "uninstall - products"
 	UninstallMonitoringStage     StageName = "uninstall - monitoring"
@@ -214,6 +215,8 @@ type RHMIStatus struct {
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
 	Version            string                        `json:"version,omitempty"`
 	ToVersion          string                        `json:"toVersion,omitempty"`
+	Quota              string                        `json:"quota,omitempty"`
+	ToQuota            string                        `json:"toQuota,omitempty"`
 }
 
 type RHMIStageStatus struct {

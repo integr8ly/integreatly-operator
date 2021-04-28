@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -227,7 +229,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -322,6 +324,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
@@ -341,6 +344,11 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -368,6 +376,11 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -386,7 +399,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			if err != nil {
 				t.Fatal("unexpected err ", err)
 			}
-			phase, err := reconciler.reconcileComponents(context.TODO(), tc.Installation, tc.FakeClient)
+			phase, err := reconciler.reconcileComponents(context.TODO(), tc.Installation, tc.FakeClient, tc.ProductConfig)
 			if tc.ExpectError && err == nil {
 				t.Fatal("expected an error but got none")
 			}
@@ -557,6 +570,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -591,6 +605,11 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 		},
 	}
 
@@ -611,7 +630,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)
@@ -784,6 +803,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		ProductConfig         *quota.ProductConfigMock
 	}{
 		{
 			Name:            "RHOAM - test successful reconcile",
@@ -818,6 +838,11 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
 		},
 	}
 
@@ -838,7 +863,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)

@@ -46,7 +46,7 @@ var (
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
 		CloudResourceOperatorNamespace,
-		RHSSOUserProductOperatorNamespace,
+		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,
 		RHSSOProductNamespace,
 		RHSSOOperatorNamespace,

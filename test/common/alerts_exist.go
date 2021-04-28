@@ -321,14 +321,6 @@ func managedApiSpecificRules() []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-rate-limit-soft-limits.yaml",
-			Rules: []string{
-				"RHOAMApiUsageSoftLimitReachedTier1",
-				"RHOAMApiUsageSoftLimitReachedTier2",
-				"RHOAMApiUsageSoftLimitReachedTier3",
-			},
-		},
-		{
 			File: NamespacePrefix + "marin3r-rate-limit-spike.yaml",
 			Rules: []string{
 				"RHOAMApiUsageOverLimit",

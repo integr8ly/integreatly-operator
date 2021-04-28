@@ -101,6 +101,18 @@ var (
 			"action",
 		},
 	)
+
+	Quota = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_quota",
+			Help: "Status of the current quota config",
+		},
+		[]string{
+			"stage",
+			"quota",
+			"toQuota",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -144,4 +156,9 @@ func SetThreeScaleUserAction(httpStatus int, username, action string) {
 
 func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
+}
+
+func SetQuota(stage string, quota string, toQuota string) {
+	Quota.Reset()
+	Quota.WithLabelValues(stage, quota, toQuota).Set(float64(1))
 }

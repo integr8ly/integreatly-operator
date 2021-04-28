@@ -3,6 +3,7 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"net/http"
 	"reflect"
 	"testing"
@@ -183,7 +184,7 @@ func TestThreeScale(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
-			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient)
+			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient, &quota.ProductConfigMock{})
 			if err != nil {
 				t.Fatalf("Error reconciling %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
@@ -326,7 +327,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						"credentialKeyID":     []byte("test"),
 						"credentialSecretKey": []byte("test"),
 					},
-				}),
+				},
+					&threescalev1.APIManager{
+						TypeMeta: metav1.TypeMeta{},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "3scale",
+							Namespace: "test",
+						},
+						Spec:   threescalev1.APIManagerSpec{},
+						Status: threescalev1.APIManagerStatus{},
+					}),
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -345,7 +355,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, &quota.ProductConfigMock{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return

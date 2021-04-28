@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
-	github.com/3scale/3scale-operator v0.2.1-0.20201218152710-770fa292607c
+	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
 	github.com/3scale/marin3r v0.7.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
@@ -20,6 +20,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.12
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-cmp v0.4.0
 	github.com/google/go-querystring v1.0.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/headzoo/surf v1.0.0
@@ -42,7 +43,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/protobuf v1.24.0
 	gopkg.in/yaml.v2 v2.3.0

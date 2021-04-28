@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"strconv"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -52,7 +53,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	ConfigManager   config.ConfigReadWriter
 	Config          *config.Marin3r
-	RateLimitConfig *marin3rconfig.RateLimitConfig
+	RateLimitConfig marin3rconfig.RateLimitConfig
 	AlertsConfig    map[string]*marin3rconfig.AlertConfig
 	installation    *integreatlyv1alpha1.RHMI
 	mpm             marketplace.MarketplaceInterface
@@ -105,7 +106,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start marin3r reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
@@ -143,13 +144,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
-
-	rateLimitConfig, err := marin3rconfig.GetRateLimitConfig(ctx, client, r.installation.Namespace)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit config", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	r.RateLimitConfig = rateLimitConfig
+	r.RateLimitConfig = productConfig.GetRateLimitConfig()
 
 	alertsConfig, err := marin3rconfig.GetAlertConfig(ctx, client, r.installation.Namespace)
 	if err != nil {
@@ -209,7 +204,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
 		WithStatsdConfig(statsdConfig).
-		ReconcileRateLimitService(ctx, client)
+		ReconcileRateLimitService(ctx, client, productConfig)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rate limit service", err)
 		return phase, err
@@ -247,11 +242,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if phase, err := r.newSoftLimitAlertsReconciler(r.log).ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile soft limit alerts", err)
-		return phase, err
-	}
-
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -263,7 +253,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 
-	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
+	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
 		if productsStage, ok := installation.Status.Stages[integreatlyv1alpha1.ProductsStage]; ok {
 			if productsStage.Products != nil {
@@ -282,7 +272,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", granafaConsoleURL)
+	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", grafanaConsoleURL)
 	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -297,7 +287,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 }
 
 func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.log.Info("Creating backend redis instance in marine3r reconcile")
+	r.log.Info("Creating backend redis instance in marin3r reconcile")
 
 	ns := r.installation.Namespace
 

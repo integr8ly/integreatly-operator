@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -99,7 +100,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {

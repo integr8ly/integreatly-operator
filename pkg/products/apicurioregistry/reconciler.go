@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
@@ -99,7 +100,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 // Reconcile changes the current state to match the desired state.
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
