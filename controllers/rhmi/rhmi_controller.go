@@ -47,6 +47,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -888,8 +889,12 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	client, err := k8sclient.New(kubeConfig, k8sclient.Options{
 		Scheme: mgr.GetScheme(),
 	})
-	err = r.createInstallationCR(context.Background(), client)
+	installation, err := r.createInstallationCR(context.Background(), client)
 	if err != nil {
+		return err
+	}
+
+	if err := reconcileQuotaConfig(context.TODO(), client, installation); err != nil {
 		return err
 	}
 
@@ -917,10 +922,10 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
+func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
 	namespace, err := resources.GetWatchNamespace()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logrus.Infof("Looking for rhmi CR in %s namespace", namespace)
@@ -931,7 +936,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
-		return fmt.Errorf("Could not get a list of rhmi CR: %w", err)
+		return nil, fmt.Errorf("Could not get a list of rhmi CR: %w", err)
 	}
 
 	installation := &rhmiv1alpha1.RHMI{}
@@ -963,7 +968,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 			"notification-email",
 		)
 		if err != nil {
-			return fmt.Errorf("failed while retrieving addon parameter: %w", err)
+			return nil, fmt.Errorf("failed while retrieving addon parameter: %w", err)
 		}
 
 		namespaceSegments := strings.Split(namespace, "-")
@@ -995,16 +1000,41 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 		err = serverClient.Create(ctx, installation)
 		if err != nil {
-			return fmt.Errorf("Could not create rhmi CR in %s namespace: %w", namespace, err)
+			return nil, fmt.Errorf("Could not create rhmi CR in %s namespace: %w", namespace, err)
 		}
 	} else if len(installationList.Items) == 1 {
 		installation = &installationList.Items[0]
 	} else {
-		return fmt.Errorf("too many rhmi resources found. Expecting 1, found %d rhmi resources in %s namespace", len(installationList.Items), namespace)
+		return nil, fmt.Errorf("too many rhmi resources found. Expecting 1, found %d rhmi resources in %s namespace", len(installationList.Items), namespace)
 	}
 
-	return nil
+	return installation, nil
 }
+
+func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
+	if installation.Spec.Type != string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		return nil
+	}
+
+	quotaConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      quota.ConfigMapName,
+			Namespace: installation.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, quotaConfigMap, func() error {
+		if quotaConfigMap.Data == nil {
+			quotaConfigMap.Data = map[string]string{}
+		}
+
+		quotaConfigMap.Data[quota.ConfigMapData] = addon.GetQuotaConfig()
+		return nil
+	})
+
+	return err
+}
+
 func getRebalancePods() bool {
 	rebalance, exists := os.LookupEnv("REBALANCE_PODS")
 	if !exists || rebalance == "true" {
