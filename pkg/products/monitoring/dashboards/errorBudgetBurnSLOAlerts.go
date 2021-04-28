@@ -18,8 +18,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 		"editable": true,
 		"gnetId": null,
 		"graphTooltip": 0,
-		"id": 10,
-		"iteration": 1619516241127,
+		"id": 12,
+		"iteration": 1619613992303,
 		"links": [],
 		"panels": [
 		  {
@@ -48,7 +48,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "thresholdMarkers": true
 			},
 			"gridPos": {
-			  "h": 4,
+			  "h": 2,
 			  "w": 6,
 			  "x": 0,
 			  "y": 0
@@ -90,7 +90,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "sum(ALERTS {alertname=~\"RHOAMRhsso.*ErrorBudgetBurn\", severity='warning', alertstate='firing', product='rhoam', service=\"keycloak\"})",
+				"expr": "sum(ALERTS {alertname=~\"RH.*Rhsso.*ErrorBudgetBurn\", severity='warning', alertstate='firing', product=~'rhoam|rhmi', service=\"keycloak\"})",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -141,7 +141,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "thresholdMarkers": true
 			},
 			"gridPos": {
-			  "h": 4,
+			  "h": 2,
 			  "w": 6,
 			  "x": 6,
 			  "y": 0
@@ -184,7 +184,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RHOAMRhsso.*ErrorBudgetBurn\", alertstate=\"firing\", product=\"rhoam\", service=\"keycloak\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", alertstate=\"firing\", product=~\"rhoam|rhmi\", service=\"keycloak\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -235,7 +235,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "thresholdMarkers": true
 			},
 			"gridPos": {
-			  "h": 4,
+			  "h": 2,
 			  "w": 6,
 			  "x": 12,
 			  "y": 0
@@ -278,7 +278,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RHOAMRhsso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam|rhmi\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -329,7 +329,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "thresholdMarkers": true
 			},
 			"gridPos": {
-			  "h": 4,
+			  "h": 2,
 			  "w": 6,
 			  "x": 18,
 			  "y": 0
@@ -373,7 +373,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RHOAMRhsso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam|rhmi\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -429,7 +429,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 0,
-			  "y": 4
+			  "y": 2
 			},
 			"hiddenSeries": false,
 			"id": 2,
@@ -461,7 +461,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[5m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[5m])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[5m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[5m])))",
 				"format": "time_series",
 				"instant": false,
 				"interval": "",
@@ -470,7 +470,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[5m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[5m])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[5m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[5m])))",
 				"format": "time_series",
 				"instant": false,
 				"interval": "",
@@ -538,7 +538,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 8,
-			  "y": 4
+			  "y": 2
 			},
 			"hiddenSeries": false,
 			"id": 7,
@@ -568,7 +568,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[30m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[30m])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[30m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[30m])))",
 				"format": "time_series",
 				"instant": false,
 				"interval": "",
@@ -577,7 +577,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[30m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[30m])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[30m]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[30m])))",
 				"format": "time_series",
 				"instant": false,
 				"interval": "",
@@ -645,7 +645,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 16,
-			  "y": 4
+			  "y": 2
 			},
 			"hiddenSeries": false,
 			"id": 5,
@@ -675,13 +675,13 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[1h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[1h])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[1h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[1h])))",
 				"interval": "",
 				"legendFormat": "rhsso",
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[1h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[1h])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[1h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[1h])))",
 				"interval": "",
 				"legendFormat": "user-sso",
 				"refId": "B"
@@ -746,7 +746,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 0,
-			  "y": 11
+			  "y": 9
 			},
 			"hiddenSeries": false,
 			"id": 4,
@@ -776,13 +776,13 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[6h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[6h])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[6h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[6h])))",
 				"interval": "",
 				"legendFormat": "rhsso",
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[6h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[6h])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[6h]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[6h])))",
 				"interval": "",
 				"legendFormat": "user-sso",
 				"refId": "B"
@@ -847,7 +847,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 8,
-			  "y": 11
+			  "y": 9
 			},
 			"hiddenSeries": false,
 			"id": 6,
@@ -877,13 +877,13 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[1d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[1d])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[1d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[1d])))",
 				"interval": "",
 				"legendFormat": "rhsso",
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[1d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[1d])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[1d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[1d])))",
 				"interval": "",
 				"legendFormat": "user-sso",
 				"refId": "B"
@@ -948,7 +948,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "h": 7,
 			  "w": 8,
 			  "x": 16,
-			  "y": 11
+			  "y": 9
 			},
 			"hiddenSeries": false,
 			"id": 3,
@@ -978,13 +978,13 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			"steppedLine": false,
 			"targets": [
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\", code=\"5xx\"}[3d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-rhsso\"}[3d])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\", code=\"5xx\"}[3d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-rhsso\"}[3d])))",
 				"interval": "",
 				"legendFormat": "rhsso",
 				"refId": "A"
 			  },
 			  {
-				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\", code=\"5xx\"}[3d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=\"redhat-rhoam-user-sso\"}[3d])))",
+				"expr": "sum( sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\", code=\"5xx\"}[3d]))\n    /sum(rate(haproxy_backend_http_responses_total{route=~\"^keycloak.*\", exported_namespace=~\"redhat-.*-user-sso\"}[3d])))",
 				"interval": "",
 				"legendFormat": "user-sso",
 				"refId": "B"
@@ -1032,7 +1032,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			}
 		  }
 		],
-		"refresh": "1d",
+		"refresh": "10s",
 		"schemaVersion": 26,
 		"style": "dark",
 		"tags": [],
@@ -1130,8 +1130,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 		},
 		"timepicker": {},
 		"timezone": "",
-		"title": "RHOAM SSO SLO Availability 5xx Errors Dashboard",
+		"title": "SLO SSO Availability for 5xx Errors",
 		"uid": "AAqDgdrMk",
-		"version": 8
+		"version": 11
 	  }`
 }
