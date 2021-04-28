@@ -138,6 +138,7 @@ var (
 	DefaultOriginPullSecretNamespace = "openshift-config"
 
 	EnvKeyAlertSMTPFrom = "ALERT_SMTP_FROM"
+	EnvKeyQuota         = "QUOTA"
 )
 
 // RHMISpec defines the desired state of RHMI
