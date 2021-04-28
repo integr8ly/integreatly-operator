@@ -24,11 +24,20 @@ func GetParameter(ctx context.Context, client k8sclient.Client, namespace, param
 		return nil, false, err
 	}
 
+	return GetParameterByInstallation(
+		ctx,
+		client,
+		rhmi,
+		parameter,
+	)
+}
+
+func GetParameterByInstallation(ctx context.Context, client k8sclient.Client, install *integreatlyv1alpha1.RHMI, parameter string) ([]byte, bool, error) {
 	return GetParameterByInstallType(
 		ctx,
 		client,
-		integreatlyv1alpha1.InstallationType(rhmi.Spec.Type),
-		namespace,
+		integreatlyv1alpha1.InstallationType(install.Spec.Type),
+		install.Namespace,
 		parameter,
 	)
 }
@@ -96,4 +105,9 @@ func GetBoolParameter(ctx context.Context, client k8sclient.Client, namespace, p
 
 	valueBool, err := strconv.ParseBool(value)
 	return valueBool, ok, err
+}
+
+func ExistsParameterByInstallation(ctx context.Context, client k8sclient.Client, install *integreatlyv1alpha1.RHMI, parameter string) (bool, error) {
+	_, found, err := GetParameterByInstallation(ctx, client, install, parameter)
+	return found, err
 }

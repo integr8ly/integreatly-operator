@@ -19,13 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -306,6 +307,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Stages = map[rhmiv1alpha1.StageName]rhmiv1alpha1.RHMIStageStatus{}
 	}
 
+	// either not checked, or rechecking preflight checks
+	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
+		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
+		return r.preflightChecks(installation, installType, configManager)
+	}
+
 	installationQuota := &quota.Quota{}
 	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
 		if err = r.processQuota(installation, request.Namespace, installationQuota); err != nil {
@@ -321,12 +328,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
-	}
-
-	// either not checked, or rechecking preflight checks
-	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
-		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
-		return r.preflightChecks(installation, installType, configManager)
 	}
 
 	// If the CR is being deleted, handle uninstall and return
@@ -689,6 +690,52 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			log.Infof("found required secret", l.Fields{"secret": secretName})
 			eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
 				"found required secret: %s", secretName)
+		}
+	}
+
+	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		// Check if the quota parameter is found from the add-on
+		okParam, err := addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.QuotaParamName)
+		if err != nil {
+			preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.QuotaParamName, err)
+			log.Warning(preflightMessage)
+			return result, err
+		}
+
+		// Check if the quota parameter is found from the environment variable
+		quotaEnv, envOk := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
+
+		// If the quota parameter is not found:
+		if !okParam {
+			preflightMessage := ""
+
+			// * While the installation is less than 1 minute old, fail the
+			// preflight check in case it's taking time to be reconciled from the
+			// add-on
+			if !isInstallationOlderThan1Minute(installation) {
+				preflightMessage = "quota parameter not found, waiting 1 minute before defaulting to env var"
+
+				// * If the installation is older than a minute and the env var is
+				// not set, fail the preflight check
+			} else if !envOk || quotaEnv == "" {
+				preflightMessage = "quota parameter not found from add-on or env var"
+			}
+			// Informative `else`
+			// } else {
+			// Otherwise, the parameter was not found, but the env var was set,
+			// it'll be defaulted from there so the preflight check can pass
+			// }
+
+			if preflightMessage != "" {
+				log.Warning(preflightMessage)
+				eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
+
+				installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+				installation.Status.PreflightMessage = preflightMessage
+				_ = r.Status().Update(context.TODO(), installation)
+
+				return result, nil
+			}
 		}
 	}
 
@@ -1135,14 +1182,14 @@ func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace
 
 	// if !found or the param is found but empty and installation is less than one minute old, return an error
 	// to stop the installation until either the installation is older than 1 minute or a paramater is found
-	if (!found || quotaParam == "") && installation.ObjectMeta.CreationTimestamp.Time.After(time.Now().Add(-(1 * time.Minute))) {
+	if (!found || quotaParam == "") && !isInstallationOlderThan1Minute(installation) {
 		return fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
 	}
 
 	// if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
 	// in this case check for an Environment Variable QUOTA
 	// if neither are found then return an error as there is no QUOTA value for the installation to use and it's required by the reconcilers.
-	if (!found || quotaParam == "") && installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1 * time.Minute))) {
+	if (!found || quotaParam == "") && isInstallationOlderThan1Minute(installation) {
 		log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", rhmiv1alpha1.EnvKeyQuota))
 		quotaValue, exists := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
 		if !exists || quotaValue == "" {
@@ -1174,4 +1221,9 @@ func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace
 		return err
 	}
 	return nil
+}
+
+func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
+	aMinuteAgo := time.Now().Add(-time.Minute)
+	return aMinuteAgo.After(installation.CreationTimestamp.Time)
 }
