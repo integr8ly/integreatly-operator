@@ -59,4 +59,6 @@ spec:
           # this should be set for production and development via MT repo
           - name: ALERT_SMTP_FROM
             value: "default@test.com"
+          - name: QUOTA
+            value: "20"
       terminationGracePeriodSeconds: 10

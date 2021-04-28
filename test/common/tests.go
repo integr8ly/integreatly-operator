@@ -106,7 +106,7 @@ var (
 
 		{
 			[]TestCase{
-				{"A34 - Verify QUOTA values", TestQuotaValues},
+				{"A34 - Verify Quota values", TestQuotaValues},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},

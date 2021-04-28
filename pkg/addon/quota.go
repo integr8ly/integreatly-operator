@@ -66,15 +66,13 @@ var quotaConfig string = `
 	"ratelimit": {
 			"replicas": 3,
 			"resources": {
-				"resources": {
-					"requests": {
-						"cpu": 0.15,
-						"memory": "50Mi"
-					},
-					"limits": {
-						"cpu": 0.3,
-						"memory": "100Mi"
-					}
+				"requests": {
+					"cpu": 0.15,
+					"memory": "50Mi"
+				},
+				"limits": {
+					"cpu": 0.3,
+					"memory": "100Mi"
 				}
 			}
 		}
@@ -143,15 +141,13 @@ var quotaConfig string = `
 	"ratelimit": {
 			"replicas": 3,
 			"resources": {
-				"resources": {
-					"requests": {
-						"cpu": 0.10,
-						"memory": "50Mi"
-					},
-					"limits": {
-						"cpu": 0.20,
-						"memory": "100Mi"
-					}
+				"requests": {
+					"cpu": 0.10,
+					"memory": "50Mi"
+				},
+				"limits": {
+					"cpu": 0.20,
+					"memory": "100Mi"
 				}
 			}
 		}
@@ -220,15 +216,13 @@ var quotaConfig string = `
 	"ratelimit": {
 			"replicas": 3,
 			"resources": {
-				"resources": {
-					"requests": {
-						"cpu": 0.05,
-						"memory": "50Mi"
-					},
-					"limits": {
-						"cpu": 0.15,
-						"memory": "100Mi"
-					}
+				"requests": {
+					"cpu": 0.05,
+					"memory": "50Mi"
+				},
+				"limits": {
+					"cpu": 0.15,
+					"memory": "100Mi"
 				}
 			}
 		}
@@ -371,7 +365,7 @@ var quotaConfig string = `
 	   },
 		"ratelimit": {
 			"replicas": 2,
-		  "resources": {
+            "resources": {
 			  "requests": {
 				  "cpu": 0.02,
 				  "memory": "40Mi"
