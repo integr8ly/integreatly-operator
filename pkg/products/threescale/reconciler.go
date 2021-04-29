@@ -514,7 +514,7 @@ func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient
 	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
 	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = apicastRatelimiting
 	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8443"
-	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0"
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0.3-3"
 
 	if err := client.Update(ctx, deploymentConfig); err != nil {
 		return fmt.Errorf("failed to update deployment config: %v", err)
