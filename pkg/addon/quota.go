@@ -310,79 +310,79 @@ var quotaConfig string = `
   }
 },
 {
-  "name": "1",
-  "rate-limiting": {
-	  "unit": "minute",
-	  "requests_per_unit": 694,
-	  "alert_limits": []
-  },
-  "resources": {
-	  "backend_listener": {
-		  "replicas": 1,
-		  "resources": {
-			  "requests": {
-				  "cpu": 0.1,
-				  "memory": "450Mi"
-			  },
-			  "limits": {
-				  "cpu": 0.11,
-				  "memory": "500Mi"
-			  }
-		  }
-	  },
-	  "backend_worker": {
-		  "replicas": 1,
-		  "resources": {
-			  "requests": {
-				  "cpu": 0.03,
-				  "memory": "55Mi"
-			  },
-			  "limits": {
-				  "cpu": 0.04,
-				  "memory": "60Mi"
-			  }
-		  }
-	  },
-	  "apicast_production": {
-		  "replicas": 1,
-		  "resources": {
-			  "requests": {
-				  "cpu": 0.09,
-				  "memory": "250Mi"
-			  },
-			  "limits": {
-				  "cpu": 0.1,
-				  "memory": "270Mi"
-			  }
-		  }
-	  },
-	"rhssouser": {
-		 "replicas": 1,
-		 "resources": {
-			 "requests": {
-				 "cpu": 0.75,
-				 "memory": "1500Mi"
-			 },
-			 "limits": {
-				 "cpu": 0.75,
-				 "memory": "1500Mi"
-			 }
-		 }
-	 },
-	  "ratelimit": {
-		  "replicas": 1,
-		"resources": {
-			"requests": {
-				"cpu": 0.05,
-				"memory": "50Mi"
-			},
-			"limits": {
-				"cpu": 0.15,
-				"memory": "100Mi"
+	"name": "1",
+	"rate-limiting": {
+		"unit": "minute",
+		"requests_per_unit": 694,
+		"alert_limits": []
+	},
+	"resources": {
+		"backend_listener": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "450Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "500Mi"
+				}
 			}
+		},
+		"backend_worker": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.03,
+					"memory": "60Mi"
+				},
+				"limits": {
+					"cpu": 0.09,
+					"memory": "100Mi"
+				}
+			}
+		},
+		"apicast_production": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "250Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "300Mi"
+				}
+			}
+		},
+	  "rhssouser": {
+		   "replicas": 2,
+		   "resources": {
+			   "requests": {
+				   "cpu": 0.75,
+				   "memory": "1500Mi"
+			   },
+			   "limits": {
+				   "cpu": 1.5,
+				   "memory": "1500Mi"
+			   }
+		   }
+	   },
+		"ratelimit": {
+			"replicas": 2,
+		  "resources": {
+			  "requests": {
+				  "cpu": 0.02,
+				  "memory": "40Mi"
+			  },
+			  "limits": {
+				  "cpu": 0.06,
+				  "memory": "80Mi"
+			  }
+		  }
 		}
-	  }
-  }
+	}
 }]
 `
 
