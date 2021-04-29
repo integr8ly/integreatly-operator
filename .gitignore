@@ -103,3 +103,5 @@ test/*.json
 # Kubernetes Generated files - skip generated files, except for vendored files
 
 !vendor/**/zz_generated.*
+
+test-cases/package-lock.json
