@@ -209,7 +209,7 @@ INSTALLATION_TYPE=<managed/managed-api> TEST=E03 make test/e2e/single
 ```
 ### Product tests
 
-To run products tests against an existing RHMI cluster:
+To run products tests against an existing RHMI or RHOAM cluster:
 ```
 make test/products/local
 ```
