@@ -114,7 +114,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	go install github.com/matryer/moq
+	GO111MODULE=off go get github.com/matryer/moq
 
 .PHONY: setup/service_account
 setup/service_account: kustomize
@@ -177,7 +177,7 @@ code/fix:
 	@gofmt -w `find . -type f -name '*.go' -not -path "./vendor/*"`
 
 .PHONY: image/build
-image/build: code/compile
+image/build: code/gen
 	echo "build image $(OPERATOR_IMAGE)"
 	docker build . -t ${OPERATOR_IMAGE}
 

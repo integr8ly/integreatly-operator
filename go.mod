@@ -1,6 +1,6 @@
 module github.com/integr8ly/integreatly-operator
 
-go 1.13
+go 1.16
 
 require (
 	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
