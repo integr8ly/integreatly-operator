@@ -130,7 +130,7 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
-	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) go run ./main.go
+	@KUBECONFIG=TMP_SA_KUBECONFIG WATCH_NAMESPACE=$(NAMESPACE) QUOTA=$(DEV_QUOTA) go run ./main.go
 
 .PHONY: code/rerun
 code/rerun: setup/service_account
