@@ -442,6 +442,7 @@ gen/namespaces:
 
 .PHONY: vendor/check
 vendor/check: vendor/fix
+	go version
 	git diff --exit-code vendor/
 
 .PHONY: vendor/fix
