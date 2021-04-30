@@ -23,6 +23,9 @@ var _ ProductConfig = &ProductConfigMock{}
 // 			ConfigureFunc: func(obj metav1.Object) error {
 // 				panic("mock out the Configure method")
 // 			},
+// 			GetActiveQuotaFunc: func() string {
+// 				panic("mock out the GetActiveQuota method")
+// 			},
 // 			GetRateLimitConfigFunc: func() marin3rconfig.RateLimitConfig {
 // 				panic("mock out the GetRateLimitConfig method")
 // 			},
@@ -42,6 +45,9 @@ type ProductConfigMock struct {
 	// ConfigureFunc mocks the Configure method.
 	ConfigureFunc func(obj metav1.Object) error
 
+	// GetActiveQuotaFunc mocks the GetActiveQuota method.
+	GetActiveQuotaFunc func() string
+
 	// GetRateLimitConfigFunc mocks the GetRateLimitConfig method.
 	GetRateLimitConfigFunc func() marin3rconfig.RateLimitConfig
 
@@ -58,6 +64,9 @@ type ProductConfigMock struct {
 			// Obj is the obj argument value.
 			Obj metav1.Object
 		}
+		// GetActiveQuota holds details about calls to the GetActiveQuota method.
+		GetActiveQuota []struct {
+		}
 		// GetRateLimitConfig holds details about calls to the GetRateLimitConfig method.
 		GetRateLimitConfig []struct {
 		}
@@ -73,6 +82,7 @@ type ProductConfigMock struct {
 		}
 	}
 	lockConfigure          sync.RWMutex
+	lockGetActiveQuota     sync.RWMutex
 	lockGetRateLimitConfig sync.RWMutex
 	lockGetReplicas        sync.RWMutex
 	lockGetResourceConfig  sync.RWMutex
@@ -106,6 +116,32 @@ func (mock *ProductConfigMock) ConfigureCalls() []struct {
 	mock.lockConfigure.RLock()
 	calls = mock.calls.Configure
 	mock.lockConfigure.RUnlock()
+	return calls
+}
+
+// GetActiveQuota calls GetActiveQuotaFunc.
+func (mock *ProductConfigMock) GetActiveQuota() string {
+	if mock.GetActiveQuotaFunc == nil {
+		panic("ProductConfigMock.GetActiveQuotaFunc: method is nil but ProductConfig.GetActiveQuota was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetActiveQuota.Lock()
+	mock.calls.GetActiveQuota = append(mock.calls.GetActiveQuota, callInfo)
+	mock.lockGetActiveQuota.Unlock()
+	return mock.GetActiveQuotaFunc()
+}
+
+// GetActiveQuotaCalls gets all the calls that were made to GetActiveQuota.
+// Check the length with:
+//     len(mockedProductConfig.GetActiveQuotaCalls())
+func (mock *ProductConfigMock) GetActiveQuotaCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetActiveQuota.RLock()
+	calls = mock.calls.GetActiveQuota
+	mock.lockGetActiveQuota.RUnlock()
 	return calls
 }
 

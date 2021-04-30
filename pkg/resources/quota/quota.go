@@ -63,6 +63,7 @@ type ProductConfig interface {
 	GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool)
 	GetReplicas(ddcssName string) int32
 	GetRateLimitConfig() marin3rconfig.RateLimitConfig
+	GetActiveQuota() string
 }
 
 var _ ProductConfig = QuotaProductConfig{}
@@ -153,6 +154,10 @@ func (p QuotaProductConfig) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 
 func (s *Quota) GetRateLimitConfig() marin3rconfig.RateLimitConfig {
 	return s.rateLimitConfig
+}
+
+func (p QuotaProductConfig) GetActiveQuota() string {
+	return p.quota.name
 }
 
 func (p QuotaProductConfig) GetReplicas(ddcssName string) int32 {
