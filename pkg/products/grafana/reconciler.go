@@ -152,8 +152,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 	rateLimit := productConfig.GetRateLimitConfig()
+	activeQuota := productConfig.GetActiveQuota()
 
-	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimit)
+	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimit, activeQuota)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana dashboard", err)
 		return phase, err
@@ -206,7 +207,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, limitConfig marin3rconfig.RateLimitConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, limitConfig marin3rconfig.RateLimitConfig, activeQuota string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -221,7 +222,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		}
 
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
-			Json: getCustomerMonitoringGrafanaRateLimitJSON(fmt.Sprintf("%d", limitConfig.RequestsPerUnit)),
+			Json: getCustomerMonitoringGrafanaRateLimitJSON(fmt.Sprintf("%d", limitConfig.RequestsPerUnit), activeQuota),
 			Name: rateLimitDashBoardName,
 		}
 		return nil
