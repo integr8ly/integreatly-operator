@@ -6,6 +6,7 @@ products:
     targets:
       - 1.0.0
       - 1.3.0
+      - 1.6.0
 estimate: 90m
 ---
 
@@ -37,6 +38,8 @@ estimate: 90m
 
    Details on how to create a valid smtp secret can be found in this [SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/install/create_cluster_smtp_configuration.md). The verification section of this SOP regarding DMS and PagerDuty configs can be skipped. Also make sure to specify the `redhat-rhoam-operator` namespace rather than `redhat-rhmi-operator`.
 
+4. k6 installed -> https://github.com/k6io/k6#install
+
 ## Steps
 
 1.  Validate that rate-limiting alerts ConfigMap has been created
@@ -51,21 +54,25 @@ estimate: 90m
     oc get prometheusrules -n redhat-rhoam-marin3r
     ```
 
-3.  Modify the `sku-limits-managed-api-service` configmap to set the rate limit to 100 requests per minute.
+3.  Ensure the installation is on 1 million quota to test
     Run
 
     ```shell script
-    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n
-     \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\":
-    [\n      5000000,\n      10000000,\n      15000000\n    ]\n }\n}"    }'
+    oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
     ```
+
+    If the quota is not set to "1", then update it using:
+
+    ```shell script
+    make cluster/prepare/quota DEV_QUOTA="1"
+    ```
+
+    This updates the per minute rate limit to 694
 
 4.  Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis:
 
     ```shell script
-    oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": {
-    "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"30m\"\n  }\n}"
-    }'
+    oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": { "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"30m\"\n  }\n}"}'
     ```
 
 5.  Patch the `rhoam` CR to specify BU, SRE and Customer email addresses:
@@ -94,7 +101,7 @@ estimate: 90m
 
     Go to `Status -> Config` and check that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
 
-7.  From the Openshift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
+7.  From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
 
 8.  Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password
 
@@ -106,7 +113,7 @@ estimate: 90m
 
 10. Once on your API overview page, click on `Integration` on the left, then on `Configuration`
 
-11. Take note of the `example curl for testing` for `Staging-APIcast`
+11. Take note of the `example curl for testing` and replace the placeholder in `test-cases/tests/alerts/rate-limit.js` with the route from the curl example including the user_key param
 
 12. Verify RHOAMApiUsageOverLimit alert is present
 
@@ -119,27 +126,17 @@ estimate: 90m
     open "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o jsonpath='{.spec.host}')/alerts"
     ```
 
-    Verify that the RHOAMApiUsageOverLimit alert contains `2 > 100` at the end of its query. For example:
+    Verify that the RHOAMApiUsageOverLimit alert contains `694` at the end of its query. For example:
 
-    `max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[30m:]) / 2 > 100`
+    `max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[30m:]) / 694`
 
 13. Trigger API Usage alerts
 
         | Alert to fire                        | `numRequests` | `recipients`          |
         | ------------------------------------ | ------------- | --------------------- |
-        | RHOAMApiUsageLevel1ThresholdExceeded | 43            | BU and Customers      |
-        | RHOAMApiUsageLevel2ThresholdExceeded | 46            | BU and Customers      |
-        | RHOAMApiUsageLevel3ThresholdExceeded | 51            | BU, Customers and SRE |
-
-    Due to the timing of the Prometheus scrape interval, getting alerts to fire on a per 1 minute basis can be challenging. To cater for this timing issue, perform the following steps:
-
-    Prepare the API request command below, replacing `$numrequests` with the count set in the table above. Also make sure to replace `DUMMY_URL` and `DUMMY_KEY` with the values retrieved from the 3Scale console previously
-
-    _NOTE:_ Do not run the command yet!
-
-    ```shell script
-    for i in {1..$numRequests}; do curl -i https://<DUMMY_URL>//?user_key=<DUMMY_KEY>& done
-    ```
+        | RHOAMApiUsageLevel1ThresholdExceeded | 310            | BU and Customers      |
+        | RHOAMApiUsageLevel2ThresholdExceeded | 320            | BU and Customers      |
+        | RHOAMApiUsageLevel3ThresholdExceeded | 335            | BU, Customers and SRE |
 
     Open the Prometheus console:
 
@@ -155,27 +152,13 @@ estimate: 90m
 
     Click the `Execute` button. A `0` count should be returned.
 
-    _NOTE:_ The next steps require preparation and need to be run quickly, please read ahead before running each step
-
-    Next, send a request to the 3Scale, making sure to replace `DUMMY_URL` and `DUMMY_KEY` with the values retrieved from the 3Scale console earlier.
-
-    ```shell script
-    curl -i https://<DUMMY_URL>//?user_key=<DUMMY_KEY>
-    ```
-
-    Click the `Execute` button in the Prometheus console again until a count other than `0` is returned
-
-    Now, every few seconds click the `Execute` button. As soon as the count goes back to `0` run the command prepared earlier in this section. This ensures that we send our requests in alignment with the Prometheus metrics scrape interval:
-
-    ```shell script
-    for i in {1..$numRequests}; do curl -i https://<DUMMY_URL>//?user_key=<DUMMY_KEY>& done
-    ```
-
     Navigate back to the prometheus console, go to `Alerts` and search for the corresponding alert name in the table above e.g. `RHOAMApiUsageLevel1ThresholdExceeded`
+
+    Run the command `k6 run --iterations $numRequests --duration 1m --vus 5 test-cases/tests/alerts/rate-limit.js`
 
     After a minute or so the alert should be triggered and displayed in RED
 
-    Repeat the above steps again for each remaining alert listed in the table above
+    Wait 1 minute and repeat the above steps again for each remaining alert listed in the table above
 
 14. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent. Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
 
@@ -190,12 +173,12 @@ estimate: 90m
     Run the following command:
 
     ```shell script
-    for i in {1..1000}; do curl -i https://<DUMMY_URL>//?user_key=<DUMMY_KEY>& done
+    k6 run --iterations 400 --duration 1m --vus 5 test-cases/tests/alerts/rate-limit.js
     ```
 
     _NOTE:_ The above command should eventually result in failing `429 Too Many Requests` status codes. This is to
     be expected. If no requests have been rejected make sure to check the current Rate Limit configuration in the
-    `sku-limits-managed-api-service` configmap of the `redhat-rhoam-operator` namespace
+    `ratelimit-config` configmap of the `redhat-rhoam-marin3r` namespace
 
     Please note the time of receiving the first 429 response in order to later verify the `RHOAMApiUsageOverLimit` Alert.
 
@@ -203,72 +186,17 @@ estimate: 90m
 
     See [this example](https://user-images.githubusercontent.com/4881144/99288530-07dced00-283c-11eb-9cba-906151dd7dfb.png)
 
-16. Verify Tier Usage Alerts
+16. Verify Tier Usage Alerts are not present
 
-    The Tier Usage alerts are created based on the soft-limits entry in the `sku-limits-managed-api-service`
+    The Tier Usage alerts have been removed as of the 1.6.0 release.
 
-    The config map should contain `soft_daily_limits` values of 5000000, 10000000 and 15000000 after a previous patch.
-
-    Navigate to prometheus and verify that there are 3 RHOAMApiUsageSoftLimitReachedTier Alerts present.
+    Navigate to prometheus and verify that there are 3 RHOAMApiUsageSoftLimitReachedTier Alerts NOT present.
 
     ```shell script
     open "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o jsonpath='{.spec.host}')/alerts"
     ```
 
-    Verify the 3 alerts present are configured with the following values:
-
-        | AlertName                            | `query value` | `annotations.meesage value`                      |
-        | ------------------------------------ | ------------- | ------------------------------------------------ |
-        | RHOAMApiUsageSoftLimitReachedTier1   | 5e+06         | soft daily limit of requests reached (5000000)   |
-        | RHOAMApiUsageSoftLimitReachedTier2   | 1e+07         | soft daily limit of requests reached (10000000)  |
-        | RHOAMApiUsageSoftLimitReachedTier3   | 1.5e+07       | soft daily limit of requests reached (15000000)  |
-
-17. Verify Updating the soft_limits entry in the `sku-limits-managed-api-service` gets reflected in the Prometheus
-    Alerts and Grafana Dashboard configuration
-
-    Patch the config map with alternative soft limits to verify that the alerts and grafana dashboards get update with the new values.
-
-    ```shell script
-    oc patch configmap sku-limits-managed-api-service -n redhat-rhoam-operator -p '"data": {        "rate_limit": "{\n
-     \"RHOAM SERVICE SKU\": {\n    \"unit\": \"minute\",\n    \"requests_per_unit\": 100,\n   \"soft_daily_limits\":
-    [\n      15000000,\n      10000000,\n      5000000,\n      8500000\n,      18000000\n    ]\n }\n}"    }'
-    ```
-
-    Verify the alerts are present and in order according to the table below:
-
-    Note: They will not be in order until this JIRA is completed: https://issues.redhat.com/browse/MGDAPI-681 but until it is resolved, please verify they are present.
-
-        | AlertName                            | `query value` | `annotations.meesage value`                      |
-        | ------------------------------------ | ------------- | ------------------------------------------------ |
-        | RHOAMApiUsageSoftLimitReachedTier1   | 5e+06         | soft daily limit of requests reached (5000000)   |
-        | RHOAMApiUsageSoftLimitReachedTier2   | 8.5e+06       | soft daily limit of requests reached (8500000)  |
-        | RHOAMApiUsageSoftLimitReachedTier3   | 1e+07         | soft daily limit of requests reached (10000000)  |
-        | RHOAMApiUsageSoftLimitReachedTier4   | 1.5e+07       | soft daily limit of requests reached (15000000)  |
-        | RHOAMApiUsageSoftLimitReachedTier5   | 1.8e+07       | soft daily limit of requests reached (18000000)  |
-
-    Navigate again to Grafana and verify that the dashboard queries and the variables are present and in the expected order.
-
-    ```shell script
-    open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring-operator -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
-    ```
-
-    Log in using the credentials found in the `grafana-admin-credentials` secret in the `redhat-rhoam-customer-monitoring-operator` namespace.
-
-    Navigate to the Rate Limiting dashboard
-    Navigate to Dashboard Settings (top right - cog)
-    Navigate to Variables
-    They should appear as below:
-
-    | Variable               | Definition |
-    | ---------------------- | ---------- |
-    | perMinuteTwentyMillion | 13889      |
-    | SoftLimit1             | 3472       |
-    | SoftLimit2             | 5903       |
-    | SoftLimit3             | 6944       |
-    | SoftLimit4             | 10417      |
-    | SoftLimit5             | 12500      |
-
-18. Verify RHOAMApiUsageOverLimit alert triggered.
+17. Verify RHOAMApiUsageOverLimit alert triggered.
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.
