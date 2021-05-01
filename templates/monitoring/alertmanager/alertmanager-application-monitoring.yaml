@@ -4,6 +4,10 @@ global:
   smtp_from: {{ index .Params "SMTPFrom" }}
   smtp_auth_username: {{ index .Params "SMTPUsername" }}
   smtp_auth_password: {{ index .Params "SMTPPassword"}}
+
+templates:
+  - /etc/alertmanager/config/alertmanager-email-config.tmpl
+
 route:
   group_wait: 30s
   group_interval: 5m
@@ -42,18 +46,21 @@ receivers:
         to: {{ index .Params "SMTPToSREAddress" }}
         headers:
           Subject: '{{ index .Params "Subject" }}'
+        html: '{{ index .Params "html" }}'
   - name: critical
     pagerduty_configs:
       - service_key: {{ index .Params "PagerDutyServiceKey" }}
+        description: '{{ index .Params "Subject" }}'
         details:
           cluster_name: {{ index .Params "clusterName" }}
           cluster_ID: {{ index .Params "clusterID" }}
-          console: {{ index .Params "clusterConsole" }}      
+          console: {{ index .Params "clusterConsole" }}
     email_configs:
       - send_resolved: true
         to: {{ index .Params "SMTPToSREAddress" }}
         headers:
           Subject: '{{ index .Params "Subject" }}'
+        html: '{{ index .Params "html" }}'
   - name: deadmansswitch
     webhook_configs:
       - url: {{ index .Params "DeadMansSnitchURL" }}
@@ -63,18 +70,21 @@ receivers:
         to: '{{ index .Params "SMTPToBUAddress" }}'
         headers:
           Subject: '{{ index .Params "Subject" }}'
+        html: '{{ index .Params "html" }}'
   - name: BUandCustomer
     email_configs:
       - send_resolved: True
         to: '{{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
         headers:
           Subject: '{{ index .Params "Subject" }}'
+        html: '{{ index .Params "html" }}'
   - name: SRECustomerBU
     email_configs:
       - send_resolved: True
         to: '{{ index .Params "SMTPToSREAddress" }}, {{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
         headers:
           Subject: '{{ index .Params "Subject" }}'
+        html: '{{ index .Params "html" }}'
 inhibit_rules:
   - source_match:
       alertname: 'JobRunningTimeExceeded'

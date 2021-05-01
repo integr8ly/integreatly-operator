@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -748,6 +750,10 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		},
 	}
 
+	clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
+	clusterName := clusterInfra.Status.InfrastructureName
+	clusterID := string(clusterVersion.Spec.ClusterID)
+
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
 		"SMTPPort":              string(smtpSecret.Data["port"]),
@@ -759,11 +765,29 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
 		"SMTPToSREAddress":      mockAlertingEmailAddress,
 		"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
-		"clusterID":             string(clusterVersion.Spec.ClusterID),
-		"clusterName":           clusterInfra.Status.InfrastructureName,
-		"clusterConsole":        clusterRoute.Spec.Host,
+		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+		"clusterID":             clusterID,
+		"clusterName":           clusterName,
+		"clusterConsole":        clusterConsoleRoute,
+		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
 	})
+
+	templatePath := GetTemplatePath()
+	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+
+	// generate alertmanager custom email template
+	testEmailConfigContents, err := ioutil.ReadFile(path)
+
+	testEmailConfigContentsStr := string(testEmailConfigContents)
+	cluster_vars := map[string]string{
+		"${CLUSTER_NAME}":    clusterName,
+		"${CLUSTER_ID}":      clusterID,
+		"${CLUSTER_CONSOLE}": clusterConsoleRoute,
+	}
+
+	for name, val := range cluster_vars {
+		testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
+	}
 
 	testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 
@@ -878,6 +902,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
 					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
 				}
+				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				}
 				return nil
 			},
 		},
@@ -900,6 +927,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
 					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
 				}
+				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				}
 				return nil
 			},
 		},
@@ -919,6 +949,11 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
 					return err
 				}
+
+				clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
+				clusterName := clusterInfra.Status.InfrastructureName
+				clusterID := string(clusterVersion.Spec.ClusterID)
+
 				templateUtil := NewTemplateHelper(map[string]string{
 					"SMTPHost":              string(smtpSecret.Data["host"]),
 					"SMTPPort":              string(smtpSecret.Data["port"]),
@@ -930,11 +965,29 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
 					"SMTPToSREAddress":      mockAlertingEmailAddress,
 					"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-					"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
-					"clusterID":             string(clusterVersion.Spec.ClusterID),
-					"clusterName":           clusterInfra.Status.InfrastructureName,
-					"clusterConsole":        clusterRoute.Spec.Host,
+					"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+					"clusterID":             clusterID,
+					"clusterName":           clusterName,
+					"clusterConsole":        clusterConsoleRoute,
+					"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
 				})
+
+				templatePath := GetTemplatePath()
+				path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+
+				// generate alertmanager custom email template
+				testEmailConfigContents, err := ioutil.ReadFile(path)
+
+				testEmailConfigContentsStr := string(testEmailConfigContents)
+				cluster_vars := map[string]string{
+					"${CLUSTER_NAME}":    clusterName,
+					"${CLUSTER_ID}":      clusterID,
+					"${CLUSTER_CONSOLE}": clusterConsoleRoute,
+				}
+
+				for name, val := range cluster_vars {
+					testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
+				}
 
 				testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 				if err != nil {
@@ -943,6 +996,10 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
 					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
 				}
+				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				}
+
 				return nil
 			},
 		},

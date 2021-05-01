@@ -33,6 +33,18 @@ func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 		Params: extraParams,
 	}
 
+	templatePath := GetTemplatePath()
+
+	return &TemplateHelper{
+		Parameters:   param,
+		TemplatePath: templatePath,
+	}
+}
+
+// Validate if the "templates/monitoring" directory exists in the
+// filesystem & if yes, returns the same as a string
+func GetTemplatePath() string {
+
 	templatePath := "./templates/monitoring"
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		templatePath = "../../../templates/monitoring"
@@ -43,11 +55,7 @@ func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 			}
 		}
 	}
-
-	return &TemplateHelper{
-		Parameters:   param,
-		TemplatePath: templatePath,
-	}
+	return templatePath
 }
 
 // Takes a list of strings, wraps each string in double quotes and joins them

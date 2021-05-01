@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"io/ioutil"
 	"os"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
@@ -58,10 +60,12 @@ const (
 	manifestPackage              = "integreatly-monitoring"
 
 	// alert manager configuration
-	alertManagerRouteName            = "alertmanager-route"
-	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
-	alertManagerConfigSecretFileName = "alertmanager.yaml"
-	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"
+	alertManagerRouteName                   = "alertmanager-route"
+	alertManagerConfigSecretName            = "alertmanager-application-monitoring"
+	alertManagerConfigSecretFileName        = "alertmanager.yaml"
+	alertManagerEmailTemplateSecretFileName = "alertmanager-email-config.tmpl"
+	alertManagerConfigTemplatePath          = "alertmanager/alertmanager-application-monitoring.yaml"
+	alertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
 
 	// cluster monitoring federation
 	federationServiceMonitorName              = "rhmi-alerts-federate"
@@ -799,6 +803,10 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch OpenShift console URL details for alertmanager config: %w", err)
 	}
 
+	clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
+	clusterName := clusterInfra.Status.InfrastructureName
+	clusterID := string(clusterVersion.Spec.ClusterID)
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
@@ -811,11 +819,33 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"SMTPToBUAddress":       smtpToBUAddress,
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
-		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
-		"clusterID":             string(clusterVersion.Spec.ClusterID),
-		"clusterName":           clusterInfra.Status.InfrastructureName,
-		"clusterConsole":        clusterRoute.Spec.Host,
+		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+		"clusterID":             clusterID,
+		"clusterName":           clusterName,
+		"clusterConsole":        clusterConsoleRoute,
+		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
 	})
+
+	templatePath := GetTemplatePath()
+	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+
+	// generate alertmanager custom email template
+	emailConfigContents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read alertmanager custom email template file: %w", err)
+	}
+
+	emailConfigContentsStr := string(emailConfigContents)
+	cluster_vars := map[string]string{
+		"${CLUSTER_NAME}":    clusterName,
+		"${CLUSTER_ID}":      clusterID,
+		"${CLUSTER_CONSOLE}": clusterConsoleRoute,
+	}
+
+	for name, val := range cluster_vars {
+		emailConfigContentsStr = strings.ReplaceAll(emailConfigContentsStr, name, val)
+	}
+
 	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
@@ -832,7 +862,8 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, configSecret, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(configSecret, r.installation)
 		configSecret.Data = map[string][]byte{
-			alertManagerConfigSecretFileName: configSecretData,
+			alertManagerConfigSecretFileName:        configSecretData,
+			alertManagerEmailTemplateSecretFileName: []byte(emailConfigContentsStr),
 		}
 		return nil
 	})
