@@ -7,7 +7,7 @@ products:
       - 0.0.2
       - 1.0.0
       - 1.3.0
-      - 1.5.0
+      - 1.6.0
 estimate: 2h
 tags:
   - manual-selection

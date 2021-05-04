@@ -4,6 +4,7 @@ products:
     targets:
       - 0.1.0
       - 1.2.0
+      - 1.6.0
     environments:
       - osd-post-upgrade
 tags:

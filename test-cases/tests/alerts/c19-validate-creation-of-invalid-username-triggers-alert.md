@@ -8,6 +8,7 @@ products:
       - osd-post-upgrade
     targets:
       - 1.2.0
+      - 1.6.0
 tags:
   - destructive
 estimate: 15m

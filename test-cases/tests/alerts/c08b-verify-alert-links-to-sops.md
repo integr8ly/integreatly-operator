@@ -10,6 +10,7 @@ products:
       - 0.2.0
       - 1.0.0
       - 1.3.0
+      - 1.6.0
 ---
 
 # C08B - Verify alert links to SOPs
