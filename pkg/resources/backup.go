@@ -229,7 +229,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 								{
 									Name:            "backup-cronjob",
 									Image:           "quay.io/integreatly/backup-container:1.0.16",
-									ImagePullPolicy: "Always",
+									ImagePullPolicy: "IfNotPresent",
 									Command: []string{
 										"/opt/intly/tools/entrypoint.sh",
 										"-c",
