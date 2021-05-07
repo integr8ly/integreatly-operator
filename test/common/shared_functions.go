@@ -8,13 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/onsi/ginkgo"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/onsi/ginkgo"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -152,13 +154,25 @@ func GetInstallType(config *rest.Config) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi, err := GetRHMI(context.Client, true)
 
+	// Get the RHMI CR
+	rhmi, err := GetRHMI(context.Client, false)
 	if err != nil {
 		return "", err
 	}
 
-	return rhmi.Spec.Type, nil
+	// If the CR is found, return the type from the spec
+	if rhmi != nil {
+		return rhmi.Spec.Type, nil
+	}
+
+	// If it's not found, attempt to retrieve it from the env var
+	fromEnv, ok := os.LookupEnv("INSTALLATION_TYPE")
+	if !ok {
+		return "", errors.New("no rhmi found or INSTALLATION_TYPE env var set")
+	}
+
+	return fromEnv, nil
 }
 
 func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, error) {

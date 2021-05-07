@@ -306,7 +306,20 @@ func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
 
 // getVpcCidrBlock returns a cidr block using a key/value tag pairing
 func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
-	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
+	// only one vpc is expected
+	vpcs, err := getVpcs(session, clusterTagName, clusterTagValue)
+	if err != nil {
+		return "", fmt.Errorf("could not find vpc: %v", err)
+	}
+	if len(vpcs) != 1 {
+		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
+	}
+
+	return aws.StringValue(vpcs[0].CidrBlock), nil
+}
+
+func getVpcs(session *ec2.EC2, clusterTagName, clusterTagValue string) ([]*ec2.Vpc, error) {
+	vpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String(clusterTagName),
@@ -315,14 +328,8 @@ func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("could not find vpc: %v", err)
+		return nil, err
 	}
 
-	// only one vpc is expected
-	vpcs := describeVpcs.Vpcs
-	if len(vpcs) != 1 {
-		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
-	}
-
-	return aws.StringValue(vpcs[0].CidrBlock), nil
+	return vpcs.Vpcs, nil
 }
