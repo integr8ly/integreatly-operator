@@ -117,7 +117,7 @@ The scenario with **default CIDR range**, when user doesn't specify any CIDR, so
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.quota
 ```
 
-  > The output should be 1
+> The output should be 1
 
 **Verify that LDAP IDP can be configured**
 
