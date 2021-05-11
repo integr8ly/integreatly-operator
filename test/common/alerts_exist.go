@@ -530,6 +530,24 @@ func commonExpectedRules() []alertsTestRule {
 				"MultiAZPodDistribution",
 			},
 		},
+		{
+			File: NamespacePrefix + "rhsso-operator-rhsso-slo-availability-alerts.yaml",
+			Rules: []string{
+				"RHOAMRhssoAvailability5mto1hErrorBudgetBurn",
+				"RHOAMRhssoAvailability30mto6hErrorBudgetBurn",
+				"RHOAMRhssoAvailability2hto1dErrorBudgetBurn",
+				"RHOAMRhssoAvailability6hto3dErrorBudgetBurn",
+			},
+		},
+		{
+			File: NamespacePrefix + "user-sso-operator-user-sso-slo-availability-alerts.yaml",
+			Rules: []string{
+				"RHOAMUserSsoAvailability5mto1hErrorBudgetBurn",
+				"RHOAMUserSsoAvailability30mto6hErrorBudgetBurn",
+				"RHOAMUserSsoAvailability2hto1dErrorBudgetBurn",
+				"RHOAMUserSsoAvailability6hto3dErrorBudgetBurn",
+			},
+		},
 	}
 }
 
