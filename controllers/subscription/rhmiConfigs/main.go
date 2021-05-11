@@ -3,10 +3,6 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
-
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/tools/record"
 
@@ -66,46 +62,6 @@ func CreateInstallPlan(ctx context.Context, rhmiSubscription *olmv1alpha1.Subscr
 		return fmt.Errorf("error updating the subscripion status block %w", err)
 	}
 	return nil
-}
-
-func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI) (bool, error) {
-	//Another upgrade in progress - don't proceed with upgrade
-	if (string(installation.Status.Stage) != string(integreatlyv1alpha1.PhaseCompleted)) && installation.Status.ToVersion != "" {
-		return false, nil
-	}
-
-	// If the upgrade schedule hasn't been calculated
-	if config.Status.Upgrade.Scheduled == nil {
-		return false, nil
-	}
-
-	var duration int
-	// Upgrade window taken either from the maintenance window or, by default
-	// from the WINDOW constant
-	waitForMaintenance := *config.Spec.Upgrade.WaitForMaintenance
-	if waitForMaintenance {
-		var err error
-		duration, err = strconv.Atoi(strings.Replace(config.Status.Maintenance.Duration, "hrs", "", -1))
-		if err != nil {
-			return false, err
-		}
-	} else {
-		duration = WINDOW
-	}
-
-	//don't approve upgrades in the last hour of the window
-	window := time.Hour * time.Duration(duration-WINDOW_MARGIN)
-	upgradeTime, err := time.Parse(integreatlyv1alpha1.DateFormat, config.Status.Upgrade.Scheduled.For)
-	if err != nil {
-		return false, err
-	}
-
-	return inWindow(upgradeTime, upgradeTime.Add(window)), nil
-}
-
-func inWindow(windowStart time.Time, windowEnd time.Time) bool {
-	now := time.Now().UTC()
-	return windowStart.Before(now) && windowEnd.After(now)
 }
 
 func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
