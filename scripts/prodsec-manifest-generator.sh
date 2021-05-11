@@ -50,7 +50,7 @@ manifest_generate() {
     # Dependencies used
     go mod graph | cut -d " " -f 2 | tr @ - | while read x; do echo "${SERVICE_NAME}:${VERSION}/$x" >> "$GENERATION_FILE"; done
 
-    cat "$GENERATION_FILE" > "$FILE_NAME"
+    sort "$GENERATION_FILE" > "$FILE_NAME"
 
     echo "Manifest generated successfully, deleting temporary files"
     rm -f "$GENERATION_FILE"
