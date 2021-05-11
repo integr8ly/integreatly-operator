@@ -81,10 +81,10 @@ case $TYPE_OF_MANIFEST in
     manifest_generate
     ;;
 "compare")
-      VERSION="master"
-      FILE_NAME="${CURRENT_DIR}/prodsec-manifests/master-from-branch-manifest.txt"
-      SORTED_FROM_BRANCH="${CURRENT_DIR}/prodsec-manifests/sorted-master-from-branch-manifest.txt"
-        case $OLM_TYPE in
+    VERSION="master"
+    FILE_NAME="${CURRENT_DIR}/prodsec-manifests/master-from-branch-manifest.txt"
+    SORTED_FROM_BRANCH="${CURRENT_DIR}/prodsec-manifests/sorted-master-from-branch-manifest.txt"
+    case $OLM_TYPE in
       "integreatly-operator")
         OLM_TYPE="rhmi"
         SERVICE_NAME="services-rhmi"
