@@ -35,6 +35,12 @@ type KeycloakAPIRealm struct {
 	// Realm display name.
 	// +optional
 	DisplayName string `json:"displayName"`
+	// Realm HTML display name.
+	// +optional
+	DisplayNameHTML string `json:"displayNameHtml,omitempty"`
+	// Realm Password Policy
+	// +optional
+	PasswordPolicy string `json:"passwordPolicy,omitempty"`
 	// A set of Keycloak Users.
 	// +optional
 	Users []*KeycloakAPIUser `json:"users,omitempty"`
@@ -109,6 +115,154 @@ type KeycloakAPIRealm struct {
 	// Require SSL
 	// +optional
 	SslRequired string `json:"sslRequired,omitempty"`
+
+	// Brute Force Detection
+	// +optional
+	BruteForceProtected *bool `json:"bruteForceProtected,omitempty"`
+	// Permanent Lockout
+	// +optional
+	PermanentLockout *bool `json:"permanentLockout,omitempty"`
+	// Max Login Failures
+	// +optional
+	FailureFactor *int32 `json:"failureFactor,omitempty"`
+	// Wait Increment
+	// +optional
+	WaitIncrementSeconds *int32 `json:"waitIncrementSeconds,omitempty"`
+	// Quick Login Check Milli Seconds
+	// +optional
+	QuickLoginCheckMilliSeconds *int64 `json:"quickLoginCheckMilliSeconds,omitempty"`
+	// Minimum Quick Login Wait
+	// +optional
+	MinimumQuickLoginWaitSeconds *int32 `json:"minimumQuickLoginWaitSeconds,omitempty"`
+	// Max Wait
+	// +optional
+	MaxFailureWaitSeconds *int32 `json:"maxFailureWaitSeconds,omitempty"`
+	// Failure Reset Time
+	// +optional
+	MaxDeltaTimeSeconds *int32 `json:"maxDeltaTimeSeconds,omitempty"`
+
+	// Email
+	// +optional
+	SMTPServer map[string]string `json:"smtpServer,omitempty"`
+
+	// Login Theme
+	// +optional
+	LoginTheme string `json:"loginTheme,omitempty"`
+	// Account Theme
+	// +optional
+	AccountTheme string `json:"accountTheme,omitempty"`
+	// Admin Console Theme
+	// +optional
+	AdminTheme string `json:"adminTheme,omitempty"`
+	// Email Theme
+	// +optional
+	EmailTheme string `json:"emailTheme,omitempty"`
+	// Internationalization Enabled
+	// +optional
+	InternationalizationEnabled *bool `json:"internationalizationEnabled,omitempty"`
+	// Supported Locales
+	// +optional
+	SupportedLocales []string `json:"supportedLocales,omitempty"`
+	// Default Locale
+	// +optional
+	DefaultLocale string `json:"defaultLocale,omitempty"`
+
+	// Roles
+	// +optional
+	Roles *RolesRepresentation `json:"roles,omitempty"`
+
+	// Scope Mappings
+	// +optional
+	ScopeMappings []ScopeMappingRepresentation `json:"scopeMappings,omitempty"`
+	// Client Scope Mappings
+	// +optional
+	ClientScopeMappings map[string]ScopeMappingRepresentationArray `json:"clientScopeMappings,omitempty"`
+
+	// Access Token Lifespan For Implicit Flow
+	// +optional
+	AccessTokenLifespanForImplicitFlow *int32 `json:"accessTokenLifespanForImplicitFlow,omitempty"`
+	// Access Token Lifespan
+	// +optional
+	AccessTokenLifespan *int32 `json:"accessTokenLifespan,omitempty"`
+}
+
+type RoleRepresentationArray []RoleRepresentation
+
+// https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_rolesrepresentation
+type RolesRepresentation struct {
+	// Client Roles
+	// +optional
+	Client map[string]RoleRepresentationArray `json:"client,omitempty"`
+
+	// Realm Roles
+	// +optional
+	Realm []RoleRepresentation `json:"realm,omitempty"`
+}
+
+// https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_rolerepresentation
+type RoleRepresentation struct {
+	// Role Attributes
+	// +optional
+	Attributes map[string][]string `json:"attributes,omitempty"`
+
+	// Client Role
+	// +optional
+	ClientRole *bool `json:"clientRole,omitempty"`
+
+	// Composite
+	// +optional
+	Composite *bool `json:"composite,omitempty"`
+
+	// Composites
+	// +optional
+	Composites *RoleRepresentationComposites `json:"composites,omitempty"`
+
+	// Container Id
+	// +optional
+	ContainerID string `json:"containerId,omitempty"`
+
+	// Description
+	// +optional
+	Description string `json:"description,omitempty"`
+
+	// Id
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// Name
+	Name string `json:"name"`
+}
+
+type ScopeMappingRepresentationArray []ScopeMappingRepresentation
+
+// https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_scopemappingrepresentation
+type ScopeMappingRepresentation struct {
+	// Client
+	// +optional
+	Client string `json:"client,omitempty"`
+
+	// Client Scope
+	// +optional
+	ClientScope string `json:"clientScope,omitempty"`
+
+	// Roles
+	// +optional
+	Roles []string `json:"roles,omitempty"`
+
+	// Self
+	// +optional
+	Self string `json:"self,omitempty"`
+}
+
+// https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_rolerepresentation-composites
+type RoleRepresentationComposites struct {
+	// Map client => []role
+	// +optional
+	Client map[string][]string `json:"client,omitempty"`
+
+	// Realm roles
+	// +optional
+	Realm []string `json:"realm,omitempty"`
 }
 
 // https://www.keycloak.org/docs-api/10.0/rest-api/index.html#_userfederationproviderrepresentation
@@ -411,6 +565,7 @@ type KeycloakRealmStatus struct {
 }
 
 // KeycloakRealm is the Schema for the keycloakrealms API
+// +genclient
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

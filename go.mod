@@ -25,12 +25,12 @@ require (
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/application-monitoring-operator v1.4.0
+	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.25.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
-	github.com/integr8ly/grafana-operator/v3 v3.6.0
-	github.com/integr8ly/keycloak-client v0.1.3-0.20210125112511-1972ece81982
-	github.com/keycloak/keycloak-operator v0.0.0-20210115090828-e5d4686bb8a4
+	github.com/integr8ly/grafana-operator/v3 v3.10.1
+	github.com/integr8ly/keycloak-client v0.1.4
+	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.2
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible

@@ -555,7 +555,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
-	specJSON, name, err := getSpecDetailsForDashboard(dashboard, r.installation)
+	specJSON, _, err := getSpecDetailsForDashboard(dashboard, r.installation)
 	if err != nil {
 		return err
 	}
@@ -568,7 +568,6 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		}
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
 			Json: specJSON,
-			Name: name,
 		}
 		if len(pluginList) > 0 {
 			grafanaDB.Spec.Plugins = pluginList
@@ -586,6 +585,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, isMultiAZCluster bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Log.Info("Reconciling Monitoring Components")
+
 	m := &monitoring.ApplicationMonitoring{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultMonitoringName,
@@ -624,7 +624,31 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return nil
 	})
 	if err != nil {
+		r.Log.Error("Failed reconciling AMO CR", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update applicationmonitoring custom resource: %w", err)
+	}
+
+	r.Log.Info("Reconciling Grafana ServiceAccount")
+	grafanaServiceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grafana-serviceaccount",
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, grafanaServiceAccount, func() error {
+		serviceAccountAnnotations := grafanaServiceAccount.ObjectMeta.GetAnnotations()
+		if serviceAccountAnnotations == nil {
+			serviceAccountAnnotations = map[string]string{}
+		}
+		serviceAccountAnnotations["serviceaccounts.openshift.io/oauth-redirectreference.primary"] = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"grafana-route\"}}"
+		grafanaServiceAccount.ObjectMeta.SetAnnotations(serviceAccountAnnotations)
+
+		return nil
+	})
+	if err != nil {
+		r.Log.Error("Failed reconciling grafana service account", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana service account: %w", err)
 	}
 
 	r.Log.Infof("Operation result", l.Fields{"monitoring": m.Name, "result": or})

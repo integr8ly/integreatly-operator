@@ -85,7 +85,7 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
-	VersionMonitoring          ProductVersion = "1.5.1"
+	VersionMonitoring          ProductVersion = "1.6.0"
 	Version3Scale              ProductVersion = "2.10.0"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.25.0"
@@ -96,7 +96,7 @@ var (
 	VersionMonitoringSpec      ProductVersion = "1.0"
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
 	VersionMarin3r             ProductVersion = "0.7.0"
-	VersionGrafana             ProductVersion = "3.8.1"
+	VersionGrafana             ProductVersion = "3.10.1"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -112,10 +112,10 @@ var (
 	// Operator image tags
 	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline        OperatorVersion = "1.4"
-	OperatorVersionMonitoring       OperatorVersion = "1.5.1"
+	OperatorVersionMonitoring       OperatorVersion = "1.6.0"
 	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
-	OperatorVersionRHSSO            OperatorVersion = "12.0.3"
-	OperatorVersionRHSSOUser        OperatorVersion = "12.0.3"
+	OperatorVersionRHSSO            OperatorVersion = "13.0.0"
+	OperatorVersionRHSSOUser        OperatorVersion = "13.0.0"
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.7.0"
@@ -126,7 +126,7 @@ var (
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 	OperatorVersionMarin3r             OperatorVersion = "0.7.0"
-	OperatorVersionGrafana             OperatorVersion = "3.8.1"
+	OperatorVersionGrafana             OperatorVersion = "3.10.1"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

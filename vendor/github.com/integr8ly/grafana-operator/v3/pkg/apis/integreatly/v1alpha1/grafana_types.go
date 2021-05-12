@@ -34,6 +34,24 @@ type GrafanaSpec struct {
 	DataStorage                *GrafanaDataStorage      `json:"dataStorage,omitempty"`
 	Jsonnet                    *JsonnetConfig           `json:"jsonnet,omitempty"`
 	BaseImage                  string                   `json:"baseImage,omitempty"`
+	InitImage                  string                   `json:"initImage,omitempty"`
+	LivenessProbeSpec          *LivenessProbeSpec       `json:"livenessProbeSpec,omitempty"`
+	ReadinessProbeSpec         *ReadinessProbeSpec      `json:"readinessProbeSpec,omitempty"`
+}
+
+type ReadinessProbeSpec struct {
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
+	TimeOutSeconds      int32 `json:"timeoutSeconds,omitempty"`
+	PeriodSeconds       int32 `json:"periodSeconds,omitempty"`
+	SuccessThreshold    int32 `json:"successThreshold,omitempty"`
+	FailureThreshold    int32 `json:"failureThreshold,omitempty"`
+}
+type LivenessProbeSpec struct {
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
+	TimeOutSeconds      int32 `json:"timeoutSeconds,omitempty"`
+	PeriodSeconds       int32 `json:"periodSeconds,omitempty"`
+	SuccessThreshold    int32 `json:"successThreshold,omitempty"`
+	FailureThreshold    int32 `json:"failureThreshold,omitempty"`
 }
 
 type JsonnetConfig struct {
@@ -48,6 +66,7 @@ type GrafanaClient struct {
 
 // GrafanaService provides a means to configure the service
 type GrafanaService struct {
+	Name        string            `json:"name,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`
 	Type        v1.ServiceType    `json:"type,omitempty"`
@@ -60,11 +79,12 @@ type GrafanaDataStorage struct {
 	Annotations map[string]string               `json:"annotations,omitempty"`
 	Labels      map[string]string               `json:"labels,omitempty"`
 	AccessModes []v1.PersistentVolumeAccessMode `json:"accessModes,omitempty"`
-	Size        resource.Quantity               `json:"size"`
-	Class       string                          `json:"class"`
+	Size        resource.Quantity               `json:"size,omitempty"`
+	Class       string                          `json:"class,omitempty"`
 }
 
 type GrafanaServiceAccount struct {
+	Skip             *bool                     `json:"skip,omitempty"`
 	Annotations      map[string]string         `json:"annotations,omitempty"`
 	Labels           map[string]string         `json:"labels,omitempty"`
 	ImagePullSecrets []v1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
@@ -84,19 +104,24 @@ type GrafanaDeployment struct {
 	EnvFrom                       []v1.EnvFromSource     `json:"envFrom,omitempty"`
 	SkipCreateAdminAccount        *bool                  `json:"skipCreateAdminAccount,omitempty"`
 	PriorityClassName             string                 `json:"priorityClassName,omitempty"`
+	HostNetwork                   *bool                  `json:"hostNetwork,omitempty"`
+	ExtraVolumes                  []v1.Volume            `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts             []v1.VolumeMount       `json:"extraVolumeMounts,omitempty"`
 }
 
 // GrafanaIngress provides a means to configure the ingress created
 type GrafanaIngress struct {
-	Annotations   map[string]string      `json:"annotations,omitempty"`
-	Hostname      string                 `json:"hostname,omitempty"`
-	Labels        map[string]string      `json:"labels,omitempty"`
-	Path          string                 `json:"path,omitempty"`
-	Enabled       bool                   `json:"enabled,omitempty"`
-	TLSEnabled    bool                   `json:"tlsEnabled,omitempty"`
-	TLSSecretName string                 `json:"tlsSecretName,omitempty"`
-	TargetPort    string                 `json:"targetPort,omitempty"`
-	Termination   v12.TLSTerminationType `json:"termination,omitempty"`
+	Annotations      map[string]string      `json:"annotations,omitempty"`
+	Hostname         string                 `json:"hostname,omitempty"`
+	Labels           map[string]string      `json:"labels,omitempty"`
+	Path             string                 `json:"path,omitempty"`
+	Enabled          bool                   `json:"enabled,omitempty"`
+	TLSEnabled       bool                   `json:"tlsEnabled,omitempty"`
+	TLSSecretName    string                 `json:"tlsSecretName,omitempty"`
+	TargetPort       string                 `json:"targetPort,omitempty"`
+	Termination      v12.TLSTerminationType `json:"termination,omitempty"`
+	IngressClassName string                 `json:"ingressClassName,omitempty"`
+	PathType         string                 `json:"pathType,omitempty"`
 }
 
 // GrafanaConfig is the configuration for grafana
@@ -110,17 +135,21 @@ type GrafanaConfig struct {
 	Auth                          *GrafanaConfigAuth                          `json:"auth,omitempty" ini:"auth,omitempty"`
 	AuthBasic                     *GrafanaConfigAuthBasic                     `json:"auth.basic,omitempty" ini:"auth.basic,omitempty"`
 	AuthAnonymous                 *GrafanaConfigAuthAnonymous                 `json:"auth.anonymous,omitempty" ini:"auth.anonymous,omitempty"`
+	AuthAzureAD                   *GrafanaConfigAuthAzureAD                   `json:"auth.azuread,omitempty" ini:"auth.azuread,omitempty"`
 	AuthGoogle                    *GrafanaConfigAuthGoogle                    `json:"auth.google,omitempty" ini:"auth.google,omitempty"`
 	AuthGithub                    *GrafanaConfigAuthGithub                    `json:"auth.github,omitempty" ini:"auth.github,omitempty"`
 	AuthGitlab                    *GrafanaConfigAuthGitlab                    `json:"auth.gitlab,omitempty" ini:"auth.gitlab,omitempty"`
 	AuthGenericOauth              *GrafanaConfigAuthGenericOauth              `json:"auth.generic_oauth,omitempty" ini:"auth.generic_oauth,omitempty"`
+	AuthOkta                      *GrafanaConfigAuthOkta                      `json:"auth.okta,omitempty" ini:"auth.okta,omitempty"`
 	AuthLdap                      *GrafanaConfigAuthLdap                      `json:"auth.ldap,omitempty" ini:"auth.ldap,omitempty"`
 	AuthProxy                     *GrafanaConfigAuthProxy                     `json:"auth.proxy,omitempty" ini:"auth.proxy,omitempty"`
+	AuthSaml                      *GrafanaConfigAuthSaml                      `json:"auth.saml,omitempty" ini:"auth.saml,omitempty"`
 	DataProxy                     *GrafanaConfigDataProxy                     `json:"dataproxy,omitempty" ini:"dataproxy,omitempty"`
 	Analytics                     *GrafanaConfigAnalytics                     `json:"analytics,omitempty" ini:"analytics,omitempty"`
 	Dashboards                    *GrafanaConfigDashboards                    `json:"dashboards,omitempty" ini:"dashboards,omitempty"`
 	Smtp                          *GrafanaConfigSmtp                          `json:"smtp,omitempty" ini:"smtp,omitempty"`
 	Log                           *GrafanaConfigLog                           `json:"log,omitempty" ini:"log,omitempty"`
+	LogConsole                    *GrafanaConfigLogConsole                    `json:"log.console,omitempty" ini:"log.console,omitempty"`
 	Metrics                       *GrafanaConfigMetrics                       `json:"metrics,omitempty" ini:"metrics,omitempty"`
 	MetricsGraphite               *GrafanaConfigMetricsGraphite               `json:"metrics.graphite,omitempty" ini:"metrics.graphite,omitempty"`
 	Snapshots                     *GrafanaConfigSnapshots                     `json:"snapshots,omitempty" ini:"snapshots,omitempty"`
@@ -207,17 +236,21 @@ type GrafanaConfigUsers struct {
 	EditorsCanAdmin   *bool  `json:"editors_can_admin,omitempty" ini:"editors_can_admin"`
 	LoginHint         string `json:"login_hint,omitempty" ini:"login_hint,omitempty"`
 	PasswordHint      string `json:"password_hint,omitempty" ini:"password_hint,omitempty"`
+	DefaultTheme      string `json:"default_theme,omitempty" ini:"default_theme,omitempty"`
 }
 
 type GrafanaConfigAuth struct {
-	LoginCookieName                  string `json:"login_cookie_name,omitempty" ini:"login_cookie_name,omitempty"`
-	LoginMaximumInactiveLifetimeDays *int   `json:"login_maximum_inactive_lifetime_days,omitempty" ini:"login_maximum_inactive_lifetime_days,omitempty"`
-	LoginMaximumLifetimeDays         *int   `json:"login_maximum_lifetime_days,omitempty" ini:"login_maximum_lifetime_days,omitempty"`
-	TokenRotationIntervalMinutes     *int   `json:"token_rotation_interval_minutes,omitempty" ini:"token_rotation_interval_minutes,omitempty"`
-	DisableLoginForm                 *bool  `json:"disable_login_form,omitempty" ini:"disable_login_form"`
-	DisableSignoutMenu               *bool  `json:"disable_signout_menu,omitempty" ini:"disable_signout_menu"`
-	SignoutRedirectUrl               string `json:"signout_redirect_url,omitempty" ini:"signout_redirect_url,omitempty"`
-	OauthAutoLogin                   *bool  `json:"oauth_auto_login,omitempty" ini:"oauth_auto_login"`
+	LoginCookieName                      string `json:"login_cookie_name,omitempty" ini:"login_cookie_name,omitempty"`
+	LoginMaximumInactiveLifetimeDays     *int   `json:"login_maximum_inactive_lifetime_days,omitempty" ini:"login_maximum_inactive_lifetime_days,omitempty"`
+	LoginMaximumInactiveLifetimeDuration string `json:"login_maximum_inactive_lifetime_duration,omitempty" ini:"login_maximum_inactive_lifetime_duration,omitempty"`
+	LoginMaximumLifetimeDays             *int   `json:"login_maximum_lifetime_days,omitempty" ini:"login_maximum_lifetime_days,omitempty"`
+	LoginMaximumLifetimeDuration         string `json:"login_maximum_lifetime_duration,omitempty" ini:"login_maximum_lifetime_duration,omitempty"`
+	TokenRotationIntervalMinutes         *int   `json:"token_rotation_interval_minutes,omitempty" ini:"token_rotation_interval_minutes,omitempty"`
+	DisableLoginForm                     *bool  `json:"disable_login_form,omitempty" ini:"disable_login_form"`
+	DisableSignoutMenu                   *bool  `json:"disable_signout_menu,omitempty" ini:"disable_signout_menu"`
+	SigV4AuthEnabled                     *bool  `json:"sigv4_auth_enabled,omitempty" ini:"sigv4_auth_enabled"`
+	SignoutRedirectUrl                   string `json:"signout_redirect_url,omitempty" ini:"signout_redirect_url,omitempty"`
+	OauthAutoLogin                       *bool  `json:"oauth_auto_login,omitempty" ini:"oauth_auto_login"`
 }
 
 type GrafanaConfigAuthBasic struct {
@@ -228,6 +261,42 @@ type GrafanaConfigAuthAnonymous struct {
 	Enabled *bool  `json:"enabled,omitempty" ini:"enabled"`
 	OrgName string `json:"org_name,omitempty" ini:"org_name,omitempty"`
 	OrgRole string `json:"org_role,omitempty" ini:"org_role,omitempty"`
+}
+
+type GrafanaConfigAuthSaml struct {
+	Enabled                  *bool  `json:"enabled,omitempty" ini:"enabled"`
+	SingleLogout             *bool  `json:"single_logout,omitempty" ini:"single_logout,omitempty"`
+	AllowIdpInitiated        *bool  `json:"allow_idp_initiated,omitempty" ini:"allow_idp_initiated,omitempty"`
+	CertificatePath          string `json:"certificate_path,omitempty" ini:"certificate_path"`
+	KeyPath                  string `json:"private_key_path,omitempty" ini:"private_key_path"`
+	SignatureAlgorithm       string `json:"signature_algorithm,omitempty" ini:"signature_algorithm,omitempty"`
+	IdpUrl                   string `json:"idp_metadata_url,omitempty" ini:"idp_metadata_url"`
+	MaxIssueDelay            string `json:"max_issue_delay,omitempty" ini:"max_issue_delay,omitempty"`
+	MetadataValidDuration    string `json:"metadata_valid_duration,omitempty" ini:"metadata_valid_duration,omitempty"`
+	RelayState               string `json:"relay_state,omitempty" ini:"relay_state,omitempty"`
+	AssertionAttributeName   string `json:"assertion_attribute_name,omitempty" ini:"assertion_attribute_name,omitempty"`
+	AssertionAttributeLogin  string `json:"assertion_attribute_login,omitempty" ini:"assertion_attribute_login,omitempty"`
+	AssertionAttributeEmail  string `json:"assertion_attribute_email,omitempty" ini:"assertion_attribute_email,omitempty"`
+	AssertionAttributeGroups string `json:"assertion_attribute_groups,omitempty" ini:"assertion_attribute_groups,omitempty"`
+	AssertionAttributeRole   string `json:"assertion_attribute_role,omitempty" ini:"assertion_attribute_role,omitempty"`
+	AssertionAttributeOrg    string `json:"assertion_attribute_org,omitempty" ini:"assertion_attribute_org,omitempty"`
+	AllowedOrganizations     string `json:"allowed_organizations,omitempty" ini:"allowed_organizations,omitempty"`
+	OrgMapping               string `json:"org_mapping,omitempty" ini:"org_mapping,omitempty"`
+	RoleValuesEditor         string `json:"role_values_editor,omitempty" ini:"role_values_editor,omitempty"`
+	RoleValuesAdmin          string `json:"role_values_admin,omitempty" ini:"role_values_admin,omitempty"`
+	RoleValuesGrafanaAdmin   string `json:"role_values_grafana_admin,omitempty" ini:"role_values_grafana_admin,omitempty"`
+}
+
+type GrafanaConfigAuthAzureAD struct {
+	Enabled        *bool  `json:"enabled,omitempty" ini:"enabled"`
+	AllowSignUp    *bool  `json:"allow_sign_up,omitempty" ini:"allow_sign_up"`
+	ClientId       string `json:"client_id,omitempty" ini:"client_id,omitempty"`
+	ClientSecret   string `json:"client_secret,omitempty" ini:"client_secret,omitempty"`
+	Scopes         string `json:"scopes,omitempty" ini:"scopes,omitempty"`
+	AuthUrl        string `json:"auth_url,omitempty" ini:"auth_url,omitempty"`
+	TokenUrl       string `json:"token_url,omitempty" ini:"token_url,omitempty"`
+	AllowedDomains string `json:"allowed_domains,omitempty" ini:"allowed_domains,omitempty"`
+	AllowedGroups  string `json:"allowed_groups,omitempty" ini:"allowed_groups,omitempty"`
 }
 
 type GrafanaConfigAuthGoogle struct {
@@ -284,6 +353,21 @@ type GrafanaConfigAuthGenericOauth struct {
 	TLSClientCa           string `json:"tls_client_ca,omitempty" ini:"tls_auth_ca,omitempty"`
 }
 
+type GrafanaConfigAuthOkta struct {
+	Enabled           *bool  `json:"enabled,omitempty" ini:"enabled"`
+	Name              string `json:"name,omitempty" ini:"name,omitempty"`
+	AllowSignUp       *bool  `json:"allow_sign_up,omitempty" ini:"allow_sign_up"`
+	ClientId          string `json:"client_id,omitempty" ini:"client_id,omitempty"`
+	ClientSecret      string `json:"client_secret,omitempty" ini:"client_secret,omitempty"`
+	Scopes            string `json:"scopes,omitempty" ini:"scopes,omitempty"`
+	AuthUrl           string `json:"auth_url,omitempty" ini:"auth_url,omitempty"`
+	TokenUrl          string `json:"token_url,omitempty" ini:"token_url,omitempty"`
+	ApiUrl            string `json:"api_url,omitempty" ini:"api_url,omitempty"`
+	AllowedDomains    string `json:"allowed_domains,omitempty" ini:"allowed_domains,omitempty"`
+	AllowedGroups     string `json:"allowed_groups,omitempty" ini:"allowed_groups,omitempty"`
+	RoleAttributePath string `json:"role_attribute_path,omitempty" ini:"role_attribute_path,omitempty"`
+}
+
 type GrafanaConfigAuthLdap struct {
 	Enabled     *bool  `json:"enabled,omitempty" ini:"enabled"`
 	AllowSignUp *bool  `json:"allow_sign_up,omitempty" ini:"allow_sign_up"`
@@ -334,6 +418,11 @@ type GrafanaConfigLog struct {
 	Mode    string `json:"mode,omitempty" ini:"mode,omitempty"`
 	Level   string `json:"level,omitempty" ini:"level,omitempty"`
 	Filters string `json:"filters,omitempty" ini:"filters,omitempty"`
+}
+
+type GrafanaConfigLogConsole struct {
+	Level  string `json:"level,omitempty" ini:"level,omitempty"`
+	Format string `json:"format,omitempty" ini:"format,omitempty"`
 }
 
 type GrafanaConfigMetrics struct {
@@ -410,6 +499,7 @@ type GrafanaConfigPlugins struct {
 // +k8s:openapi-gen=true
 type GrafanaStatus struct {
 	Phase               StatusPhase                       `json:"phase"`
+	PreviousServiceName string                            `json:"previousServiceName"`
 	Message             string                            `json:"message"`
 	InstalledDashboards map[string][]*GrafanaDashboardRef `json:"dashboards"`
 	InstalledPlugins    PluginList                        `json:"installedPlugins"`
