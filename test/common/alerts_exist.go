@@ -350,7 +350,8 @@ func managedApiSpecificRules() []alertsTestRule {
 }
 
 // Common to all install types
-func commonExpectedRules() []alertsTestRule {
+func commonExpectedRules(installationName string) []alertsTestRule {
+	titledName := strings.Title(installationName)
 	return []alertsTestRule{
 		{
 			File: NamespacePrefix + "middleware-monitoring-operator-backup-monitoring-alerts.yaml",
@@ -533,19 +534,19 @@ func commonExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "rhsso-operator-rhsso-slo-availability-alerts.yaml",
 			Rules: []string{
-				"RHOAMRhssoAvailability5mto1hErrorBudgetBurn",
-				"RHOAMRhssoAvailability30mto6hErrorBudgetBurn",
-				"RHOAMRhssoAvailability2hto1dErrorBudgetBurn",
-				"RHOAMRhssoAvailability6hto3dErrorBudgetBurn",
+				fmt.Sprintf("%sRhssoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sRhssoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sRhssoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sRhssoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
 			},
 		},
 		{
 			File: NamespacePrefix + "user-sso-operator-user-sso-slo-availability-alerts.yaml",
 			Rules: []string{
-				"RHOAMUserSsoAvailability5mto1hErrorBudgetBurn",
-				"RHOAMUserSsoAvailability30mto6hErrorBudgetBurn",
-				"RHOAMUserSsoAvailability2hto1dErrorBudgetBurn",
-				"RHOAMUserSsoAvailability6hto3dErrorBudgetBurn",
+				fmt.Sprintf("%sUserSsoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
 			},
 		},
 	}
@@ -910,7 +911,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 	expectedAWSRules := getExpectedAWSRules(rhmi.Spec.Type, rhmi.Name)
-	expectedRules := getExpectedRules(rhmi.Spec.Type)
+	expectedRules := getExpectedRules(rhmi.Spec.Type, rhmi.Name)
 
 	// add external database alerts to list of expected rules if
 	// cluster storage is not being used
@@ -1031,11 +1032,11 @@ func getExpectedAWSRules(installType string, installationName string) []alertsTe
 	}
 }
 
-func getExpectedRules(installType string) []alertsTestRule {
+func getExpectedRules(installType string, installationName string) []alertsTestRule {
 	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-		return append(commonExpectedRules(), managedApiSpecificRules()...)
+		return append(commonExpectedRules(installationName), managedApiSpecificRules()...)
 	} else {
-		return append(commonExpectedRules(), rhmi2ExpectedRules()...)
+		return append(commonExpectedRules(installationName), rhmi2ExpectedRules()...)
 	}
 }
 
