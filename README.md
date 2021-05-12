@@ -1,3 +1,5 @@
+Dummy PR to trigger openshift-bot
+
 # Integreatly Operator
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
@@ -13,6 +15,7 @@ The operator installs the following products:
 ### managed
 
 - AMQ Online
+  
 - AMQ Streams
 - Codeready
 - Fuse
