@@ -163,7 +163,6 @@ func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 
 		}
 	}
-
 	if alertsError.isValid() {
 		return alertsError
 
