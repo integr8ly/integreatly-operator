@@ -66,7 +66,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 							"sop_url": resources.SopUrlOperatorInstallDelayed,
 							"message": fmt.Sprintf("%s operator is taking more than 2 hours to go to a complete stage", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf(`%s_version{to_version=~".+"}`, installationName)),
+						Expr:   intstr.FromString(fmt.Sprintf(`%s_version{to_version=~".+", version="" }`, installationName)),
 						For:    "120m",
 						Labels: map[string]string{"severity": "critical", "product": installationName, "addon": getAddonName(installation), "namespace": "openshift-monitoring"},
 					},
