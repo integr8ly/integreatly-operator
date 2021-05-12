@@ -60,6 +60,7 @@ Host prefix: /26
 ```
 CIDR range: "10.1.0.0/26" (note this down to use it later for another verification step)
 Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.com"
+Quota: 1 million requests per day
 ```
 
 4. You should now login to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
@@ -109,6 +110,14 @@ aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" 
 **Note**
 
 The scenario with **default CIDR range**, when user doesn't specify any CIDR, so it is automatically created by CRO, is covered by [the installation pipeline](https://github.com/integr8ly/delorean/blob/0cd8e05a49540c0c505c3c291629dd737d7cc818/scripts/ocm/ocm.sh#L144) - it doesn't provide any addon params, so CIDR block has to be created by CRO. If the pipeline finishes successfully, it means that the CIDR block was correct.
+
+**Verify RHOAM quota was applied correctly**
+
+```bash
+oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.quota
+```
+
+> The output should be 1
 
 **Verify that LDAP IDP can be configured**
 
