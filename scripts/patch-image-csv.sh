@@ -15,9 +15,9 @@
 # ./patch-image-csv.sh
 #
 # Check csv exists
-oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator
+oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator > /dev/null 2>&1
 while [ $? -ne 0 ]; do
-  oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator
+  oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator > /dev/null 2>&1
 done
 # Patch the csv
 oc patch ClusterServiceVersion managed-api-service.$ADDON_VERSION -n redhat-rhoam-operator --patch '{"metadata": {"annotations": {"containerImage": "quay.io/'$ORG'/managed-api-service:'$VERSION'" }}}' --type=merge
@@ -27,9 +27,9 @@ oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator -o yaml | grep 
 echo " "
 echo Patching the RHMI CR when its created with useClusterStorge
 # Check the rhmi cr exists
-oc get rhmi rhoam -n redhat-rhoam-operator
+oc get rhmi rhoam -n redhat-rhoam-operator > /dev/null 2>&1
 while [ $? -ne 0 ]; do
-  oc get rhmi rhoam -n redhat-rhoam-operator
+  oc get rhmi rhoam -n redhat-rhoam-operator > /dev/null 2>&1
 done
 # default USE_CLUSTER_STORAGE to true if not set
 if [ -z ${USE_CLUSTER_STORAGE+x} ]; then
