@@ -125,9 +125,9 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		switch inst.Status.Quota {
 		case "1":
-			threeScaleComponents["apicastProd"] = 1
-			threeScaleComponents["backendListener"] = 1
-			threeScaleComponents["backendWorker"] = 1
+			threeScaleComponents["apicastProd"] = 2
+			threeScaleComponents["backendListener"] = 2
+			threeScaleComponents["backendWorker"] = 2
 		case "5":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendListener"] = 3
