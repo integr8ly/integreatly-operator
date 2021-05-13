@@ -25,7 +25,7 @@ oc patch ClusterServiceVersion managed-api-service.$ADDON_VERSION -n redhat-rhoa
 echo Verificaton the CSV has been patched :
 oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator -o yaml | grep "$ORG"
 echo " "
-echo Patching the RHMI CR when its created with useClusterStorge
+echo Patching the RHMI CR when its created with useClusterStorage
 # Check the rhmi cr exists
 oc get rhmi rhoam -n redhat-rhoam-operator > /dev/null 2>&1
 while [ $? -ne 0 ]; do
