@@ -4,7 +4,7 @@
 #
 # Usage:
 # VERSION=<your image tag>
-# ORG=<you quay org>
+# ORG=<your quay org>
 # ADDON_VERSION=<version set https://gitlab.cee.redhat.com/service/managed-tenants/-/blob/main/addons/managed-api-service/metadata/stage/addon.yaml#L25>
 # USE_CLUSTER_STORAGE=<true/false optional will default true if not set>
 # Set the vars.g.
