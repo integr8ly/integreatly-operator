@@ -32,10 +32,10 @@ while [ $? -ne 0 ]; do
   oc get rhmi rhoam -n redhat-rhoam-operator
 done
 # default USE_CLUSTER_STORAGE to true if not set
-if [ -n "$USE_CLUSTER_STORAGE"]
-  USE_CLUSTER_STORAGE=true
+if [ -z ${USE_CLUSTER_STORAGE+x} ]; then
+  export USE_CLUSTER_STORAGE=true
 fi
 # Patch rhmi CR
-oc patch rhmi rhoam -n redhat-rhoam-operator --patch '{ "spec": {"useClusterStorage": "'$USE_CLUSTER_STORAGE'" }}\' --type=merge
+oc patch rhmi rhoam -n redhat-rhoam-operator --patch '{ "spec": {"useClusterStorage": "'$USE_CLUSTER_STORAGE'" }}' --type=merge
 echo Verification USE_CLUSTER_STORAGE is set :
 oc get rhmi rhoam -n redhat-rhoam-operator -o yaml | grep useClusterStorage
