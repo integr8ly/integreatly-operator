@@ -148,7 +148,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='threescale-operator'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='threescale-operator-metrics', namespace=`%s`} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
