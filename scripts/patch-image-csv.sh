@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# About: Script to patch the csv created during addon flow with dev image
+# About: Script to patch the csv created during addon flow with dev image and patch the rhmi cr with useClusterStorage
 #
 # Usage:
 # VERSION=<your image tag>
