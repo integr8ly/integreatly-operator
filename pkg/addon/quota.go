@@ -377,6 +377,81 @@ var quotaConfig string = `
 		  }
 		}
 	}
+},
+{
+	"name": "0",
+	"rate-limiting": {
+		"unit": "minute",
+		"requests_per_unit": 694,
+		"alert_limits": []
+	},
+	"resources": {
+		"backend_listener": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "450Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "500Mi"
+				}
+			}
+		},
+		"backend_worker": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.03,
+					"memory": "60Mi"
+				},
+				"limits": {
+					"cpu": 0.09,
+					"memory": "100Mi"
+				}
+			}
+		},
+		"apicast_production": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "250Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "300Mi"
+				}
+			}
+		},
+	  "rhssouser": {
+		   "replicas": 2,
+		   "resources": {
+			   "requests": {
+				   "cpu": 0.75,
+				   "memory": "1500Mi"
+			   },
+			   "limits": {
+				   "cpu": 1.5,
+				   "memory": "1500Mi"
+			   }
+		   }
+	   },
+		"ratelimit": {
+			"replicas": 2,
+            "resources": {
+			  "requests": {
+				  "cpu": 0.02,
+				  "memory": "40Mi"
+			  },
+			  "limits": {
+				  "cpu": 0.06,
+				  "memory": "80Mi"
+			  }
+		  }
+		}
+	}
 }]
 `
 
