@@ -310,7 +310,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(isMultiAZCluster, r.Log, r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(r.Log, r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
 	r.Log.Infof("reconcilePrometheusRule", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
