@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/pkg/errors"
 
@@ -22,6 +27,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -33,6 +39,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -64,7 +71,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, installationQuota *quota.Quota, request ctrl.Request) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
@@ -114,9 +121,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
-
 	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
 	r.deleteObsoleteService(ctx, serverClient)
+
+	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
+			events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
+			installation.Status.LastError = err.Error()
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
+	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
@@ -496,3 +511,64 @@ func generateSecret(length int) string {
 	}
 	return string(buf)
 }
+
+func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace string,
+	installationQuota *quota.Quota, serverClient k8sclient.Client) error {
+	isQuotaUpdated := false
+	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), serverClient, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
+	if err != nil {
+		return fmt.Errorf("error checking for quota secret %w", err)
+	}
+
+	quotaParam, err = getSecretQuotaParam(installation, quotaParam, found)
+	if err != nil {
+		return err
+	}
+
+	// get the quota config map from the cluster
+	cm := &corev1.ConfigMap{}
+	err = serverClient.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: quota.ConfigMapName}, cm)
+	if err != nil {
+		return fmt.Errorf("error getting quota config map %w", err)
+	}
+
+	// if both are toQuota and Quota are empty this indicates that it's either
+	// the first reconcile of an installation or it's the first reconcile of an upgrade to 1.6.0
+	// if the secretname is not the same as status.Quota this indicates there has been a quota change
+	// to an installation which is already using the Quota functionality.
+	// if either case is true set toQuota in the rhmi cr and update the status object and set isQuotaUpdated to true
+	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
+		quotaParam != installation.Status.Quota {
+		installation.Status.ToQuota = quotaParam
+		isQuotaUpdated = true
+	}
+
+	err = quota.GetQuota(quotaParam, cm, installationQuota, isQuotaUpdated)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, quotaParam string, found bool) (string, error) {
+	// if !found or the param is found but empty and installation is less than one minute old, return an error
+	// to stop the installation until either the installation is older than 1 minute or a paramater is found
+	if (!found || quotaParam == "") && !isInstallationOlderThan1Minute(installation) {
+		return quotaParam, fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
+	}
+
+	// if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
+	// in this case check for an Environment Variable QUOTA
+	// if neither are found then return an error as there is no QUOTA value for the installation to use and it's required by the reconcilers.
+	if (!found || quotaParam == "") && isInstallationOlderThan1Minute(installation) {
+		log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", rhmiv1alpha1.EnvKeyQuota))
+		quotaValue, exists := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
+		if !exists || quotaValue == "" {
+			return quotaParam, fmt.Errorf("no quota value provided by add on parameter '%s' or by env var '%s'",
+				addon.QuotaParamName, rhmiv1alpha1.EnvKeyQuota)
+		}
+		quotaParam = quotaValue
+	}
+	return quotaParam, nil
+}
+
