@@ -45,6 +45,14 @@ rules:
   - get
 - apiGroups:
   - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
   - project.openshift.io
   resources:
   - projectrequests

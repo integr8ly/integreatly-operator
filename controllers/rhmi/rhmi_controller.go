@@ -17,8 +17,14 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	routev1 "github.com/openshift/api/route/v1"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -78,12 +84,34 @@ const (
 	installTypeEnvName               = "INSTALLATION_TYPE"
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
+	alertManagerRouteName            = "alertmanager-route"
+	routeRequestUrl                  = "/apis/route.openshift.io/v1"
 )
 
 var (
 	productVersionMismatchFound bool
 	log                         = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "installation_controller"})
+	alertsToSilence             = []string{
+		"KeycloakInstanceNotAvailable",
+	}
 )
+
+type Silence struct {
+	ID     string `json:"id"`
+	Status struct {
+		State string `json:"state"`
+	} `json:"status"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Comment   string    `json:"comment"`
+	CreatedBy string    `json:"createdBy"`
+	EndsAt    time.Time `json:"endsAt"`
+	Matchers  []struct {
+		IsRegex bool   `json:"isRegex"`
+		Name    string `json:"name"`
+		Value   string `json:"value"`
+	} `json:"matchers"`
+	StartsAt time.Time `json:"startsAt"`
+}
 
 // RHMIReconciler reconciles a RHMI object
 type RHMIReconciler struct {
@@ -173,6 +201,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Permission to get the ConfigMap that embeds the CSV for an InstallPlan
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get
+
+// Permission to get the serviceaccount
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch
 
 // Permission for marin3r resources
 // +kubebuilder:rbac:groups=marin3r.3scale.net,resources=envoyconfigs,verbs=get;list;watch;create;update;delete
@@ -434,6 +465,191 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	return retryRequeue, err
 }
 
+func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, ctx context.Context, rc *rest.Config) error {
+
+	var alertingNamespaces = map[string]string{
+		"openshift-monitoring": "alertmanager-main",
+		installation.Spec.NamespacePrefix + "middleware-monitoring-operator": "alertmanager-route",
+	}
+
+	for namespace, route := range alertingNamespaces {
+		for _, alert := range alertsToSilence {
+			exists, err := r.silenceExists(installation, namespace, route, log, rc, alert)
+			if err != nil {
+				log.Error("Error checking for silence", err)
+			}
+			if !exists {
+				r.silenceAlert(installation, namespace, route, log, rc, alert)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *RHMIReconciler) silenceAlert(installation *rhmiv1alpha1.RHMI, namespace string, route string, log l.Logger, rc *rest.Config, alertName string) error {
+
+	endpoint := "/api/v1/silences"
+	startsAt := time.Now().Format(time.RFC3339)
+	endsAt := time.Now().Add(time.Hour * 1).Format(time.RFC3339)
+
+	var silence = []byte(`{` +
+		`"endsAt": "` + endsAt + `",` +
+		`"startsAt": "` + startsAt + `",` +
+		`"matchers":[{"isRegex": false, "name": "alertname","value": "` + alertName + `"}],` +
+		`"Comment":"Silence alert due to uninstall",` +
+		`"createdBy":"Integreatly Operator"}`)
+
+	url, err := r.getURLFromRoute(route, namespace, rc)
+	if err != nil {
+		return fmt.Errorf("error getting route : %w", err)
+
+	}
+	url = url + endpoint
+	serviceAccount := r.getServiceAccount(installation)
+
+	token, err := r.getBearerToken(installation, serviceAccount)
+	if err != nil {
+		return fmt.Errorf("error getting bearer token : %w", err)
+	}
+
+	var bearer = "Bearer " + token
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(silence))
+	req.Header.Add("Authorization", bearer)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error on response : %w", err)
+	}
+	defer resp.Body.Close()
+
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("unable to read body : %w", err)
+	}
+	return nil
+}
+
+func (r *RHMIReconciler) silenceExists(installation *rhmiv1alpha1.RHMI, namespace string, route string, log l.Logger, rc *rest.Config, alert string) (bool, error) {
+	silenceExists := false
+	endpoint := "/api/v2/silences"
+
+	url, err := r.getURLFromRoute(route, namespace, rc)
+	if err != nil {
+		return false, err
+	}
+	url = url + endpoint
+
+	serviceAccount := r.getServiceAccount(installation)
+
+	token, err := r.getBearerToken(installation, serviceAccount)
+	if err != nil {
+		return false, err
+	}
+
+	var bearer = "Bearer " + token
+
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Add("Authorization", bearer)
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error on response : %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("unable to read body : %w", err)
+	}
+
+	var existingSilences []Silence
+	err = json.Unmarshal([]byte(body), &existingSilences)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	for _, silence := range existingSilences {
+		if silence.Status.State == "active" && silence.Matchers[0].Name == "alertname" && silence.Matchers[0].Value == alert {
+			silenceExists = true
+		}
+	}
+
+	return silenceExists, nil
+}
+
+func (r *RHMIReconciler) getServiceAccount(installation *rhmiv1alpha1.RHMI) *corev1.ServiceAccount {
+
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-operator",
+			Namespace: installation.GetNamespace(),
+		},
+	}
+
+	r.Client.Get(context.TODO(), types.NamespacedName{Name: serviceAccount.Name, Namespace: serviceAccount.Namespace}, serviceAccount)
+
+	return serviceAccount
+}
+
+func (r *RHMIReconciler) getBearerToken(installation *rhmiv1alpha1.RHMI, serviceAccount *corev1.ServiceAccount) (string, error) {
+
+	tokenSecret := ""
+
+	for _, secret := range serviceAccount.Secrets {
+		if strings.Contains(secret.Name, "token") {
+			tokenSecret = secret.Name
+		}
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tokenSecret,
+			Namespace: installation.Namespace,
+		},
+	}
+
+	r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
+
+	return string(secret.Data["token"]), nil
+}
+
+func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
+	client, err := appsv1Client.NewForConfig(rc)
+	if err != nil {
+		return "", fmt.Errorf("unable to create rest client %s", err)
+	}
+	client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
+
+	host := ""
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routeName,
+			Namespace: namespace,
+		},
+	}
+
+	request := client.RESTClient().Get().Resource("routes").Name(route.Name).Namespace(route.Namespace).RequestURI(routeRequestUrl).Do(context.TODO())
+	requestBody, err := request.Raw()
+
+	if err != nil {
+		return "", fmt.Errorf("unable to find route %s Route probably already removed", err)
+	}
+	err = json.Unmarshal(requestBody, route)
+	if err != nil {
+		return "", fmt.Errorf("unable to unmarshal response body %s", err)
+	}
+	host = "https://" + route.Spec.Host
+	return host, nil
+}
+
 func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHMI) {
 
 	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
@@ -507,6 +723,13 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		if err := r.Client.Delete(context.TODO(), &alert); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
+
+	log.Info("Creating Silence for alerts")
+	err = r.createSilence(installation, context.TODO(), r.restConfig)
+
+	if err != nil {
+		log.Error("Error creating silence", err)
 	}
 
 	// Set metrics status to unavailable
