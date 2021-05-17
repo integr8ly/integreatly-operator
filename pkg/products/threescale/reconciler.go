@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
@@ -1439,21 +1440,27 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, monitoringConfig.GetOperatorNamespace())
 
 	if err != nil {
-		r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
-		return integreatlyv1alpha1.PhaseFailed, nil
-	} else {
-		accessToken, err := r.GetAdminToken(ctx, serverClient)
-		if err != nil {
-			r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
-			return integreatlyv1alpha1.PhaseInProgress, err
+		if !k8serr.IsNotFound(err) {
+			r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
+			return integreatlyv1alpha1.PhaseFailed, nil
 		}
-		_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
-		if err != nil {
-			r.log.Error("Failed to set email from address:", err)
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
+	if existingSMTPFromAddress == "" {
+		r.log.Warning("Couldn't find SMTP in a secret, retrieving it from the envar")
+		existingSMTPFromAddress = os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
+	}
+	accessToken, err := r.GetAdminToken(ctx, serverClient)
+	if err != nil {
+		r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
+	if err != nil {
+		r.log.Error("Failed to set email from address:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
