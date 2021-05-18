@@ -15,9 +15,9 @@
 # ./patch-image-csv.sh
 #
 # Check csv exists
-oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator > /dev/null 2>&1
+oc get csv managed-api-service.$ADDON_VERSION -n redhat-rhoam-operator > /dev/null 2>&1
 while [ $? -ne 0 ]; do
-  oc get csv managed-api-service.$VERSION -n redhat-rhoam-operator > /dev/null 2>&1
+  oc get csv managed-api-service.$ADDON_VERSION -n redhat-rhoam-operator > /dev/null 2>&1
 done
 # Patch the csv
 oc patch ClusterServiceVersion managed-api-service.$ADDON_VERSION -n redhat-rhoam-operator --patch '{"metadata": {"annotations": {"containerImage": "quay.io/'$ORG'/managed-api-service:'$VERSION'" }}}' --type=merge
