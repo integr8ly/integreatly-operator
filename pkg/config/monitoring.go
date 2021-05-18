@@ -32,6 +32,7 @@ var rhmiTemplateList = []string{
 	"cluster-resources",
 	"critical-slo-rhmi-alerts",
 	"cro-resources",
+	"rhoam-rhsso-availability-slo",
 }
 
 var managedAPITemplateList = []string{
@@ -43,6 +44,7 @@ var managedAPITemplateList = []string{
 	"cluster-resources",
 	"critical-slo-managed-api-alerts",
 	"cro-resources",
+	"rhoam-rhsso-availability-slo",
 }
 
 func NewMonitoring(config ProductConfig) *Monitoring {
