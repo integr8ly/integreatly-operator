@@ -41,7 +41,7 @@ func getSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, 
 		return monitoring.MonitoringGrafanaDBCROResourcesJSON, "cro-resources.json", nil
 
 	case "rhoam-rhsso-availability-slo":
-		return monitoring.GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(), "rhoam-rhsso-availability-slo.json", nil
+		return monitoring.GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(rhmi.ObjectMeta.Name), "rhoam-rhsso-availability-slo.json", nil
 
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")

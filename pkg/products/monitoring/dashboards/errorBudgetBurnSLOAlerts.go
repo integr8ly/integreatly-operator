@@ -1,6 +1,31 @@
 package monitoring
 
-func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
+import (
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+)
+
+func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName string) string {
+	quota := ``
+	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] {
+		quota = `, 
+			{
+				"datasource": "Prometheus",
+				"enable": true,
+				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
+				"hide": false,
+				"iconColor": "#FADE2A",
+				"limit": 100,
+				"name": "Quota",
+				"showIn": 0,
+				"step": "",
+				"tagKeys": "stage,quota,toQuota",
+				"tags": "",
+				"titleFormat": "Quota Change (million per day)",
+				"type": "tags",
+				"useValueForTime": false
+			}`
+	}
 	return `{
 		"annotations": {
 		  "list": [
@@ -12,7 +37,23 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON() string {
 			  "iconColor": "rgba(0, 211, 255, 1)",
 			  "name": "Annotations & Alerts",
 			  "type": "dashboard"
-			}
+			},
+			{
+				"datasource": "Prometheus",
+				"enable": true,
+				"expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
+				"hide": false,
+				"iconColor": "#FADE2A",
+				"limit": 100,
+				"name": "Upgrade",
+				"showIn": 0,
+				"step": "",
+				"tagKeys": "stage,version,to_version",
+				"tags": "",
+				"titleFormat": "Upgrade",
+				"type": "tags",
+				"useValueForTime": false
+			}` + quota + `
 		  ]
 		},
 		"editable": true,
