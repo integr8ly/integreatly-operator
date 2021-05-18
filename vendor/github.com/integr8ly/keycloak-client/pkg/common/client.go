@@ -1171,7 +1171,7 @@ func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (
 	}
 	user := string(adminCreds.Data[model.AdminUsernameProperty])
 	pass := string(adminCreds.Data[model.AdminPasswordProperty])
-	url := kc.Status.InternalURL
+	url := kc.Status.ExternalURL
 	client := &Client{
 		URL:       url,
 		requester: defaultRequester(),

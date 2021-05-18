@@ -71,6 +71,10 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 			Value: PostgresqlServiceName + "." + cr.Namespace,
 		},
 		{
+			Name:  "DB_PORT",
+			Value: fmt.Sprintf("%v", GetExternalDatabasePort(dbSecret)),
+		},
+		{
 			Name:  "DB_DATABASE",
 			Value: GetExternalDatabaseName(dbSecret),
 		},
@@ -148,6 +152,10 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 			Name:  "PROXY_ADDRESS_FORWARDING",
 			Value: "true",
 		},
+		{
+			Name:  "KEYCLOAK_STATISTICS",
+			Value: "all",
+		},
 	}
 
 	if cr.Spec.ExternalDatabase.Enabled {
@@ -170,7 +178,7 @@ func getKeycloakEnv(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) []v1.EnvVar {
 }
 
 func KeycloakDeployment(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) *v13.StatefulSet {
-	return &v13.StatefulSet{
+	keycloakStatefulset := &v13.StatefulSet{
 		ObjectMeta: v12.ObjectMeta{
 			Name:      KeycloakDeploymentName,
 			Namespace: cr.Namespace,
@@ -230,6 +238,13 @@ func KeycloakDeployment(cr *v1alpha1.Keycloak, dbSecret *v1.Secret) *v13.Statefu
 			},
 		},
 	}
+
+	if cr.Spec.KeycloakDeploymentSpec.Experimental.Affinity != nil {
+		keycloakStatefulset.Spec.Template.Spec.Affinity = cr.Spec.KeycloakDeploymentSpec.Experimental.Affinity
+	} else if cr.Spec.MultiAvailablityZones.Enabled {
+		keycloakStatefulset.Spec.Template.Spec.Affinity = KeycloakPodAffinity(cr)
+	}
+	return keycloakStatefulset
 }
 
 func KeycloakDeploymentSelector(cr *v1alpha1.Keycloak) client.ObjectKey {
@@ -272,6 +287,10 @@ func KeycloakDeploymentReconciled(cr *v1alpha1.Keycloak, currentState *v13.State
 		},
 	}
 	reconciled.Spec.Template.Spec.InitContainers = KeycloakExtensionsInitContainers(cr)
+	if cr.Spec.KeycloakDeploymentSpec.Experimental.Affinity != nil {
+		reconciled.Spec.Template.Spec.Affinity = cr.Spec.KeycloakDeploymentSpec.Experimental.Affinity
+	}
+
 	return reconciled
 }
 
@@ -300,13 +319,11 @@ func KeycloakVolumeMounts(cr *v1alpha1.Keycloak, extensionsPath string) []v1.Vol
 func addVolumeMountsFromKeycloakCR(cr *v1alpha1.Keycloak, mountedVolumes []v1.VolumeMount) []v1.VolumeMount {
 	if cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.Items != nil {
 		for _, v := range cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.Items {
-			if v.ConfigMap != nil {
-				configMapMount := v1.VolumeMount{
-					Name:      v.ConfigMap.Name,
-					MountPath: v.ConfigMap.MountPath,
-				}
-				mountedVolumes = append(mountedVolumes, configMapMount)
+			volumeMapMount := v1.VolumeMount{
+				Name:      v.Name,
+				MountPath: v.MountPath,
 			}
+			mountedVolumes = append(mountedVolumes, volumeMapMount)
 		}
 	}
 	return mountedVolumes
@@ -350,29 +367,42 @@ func KeycloakVolumes(cr *v1alpha1.Keycloak) []v1.Volume {
 func addVolumesFromKeycloakCR(cr *v1alpha1.Keycloak, volumes []v1.Volume) []v1.Volume {
 	if cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.Items != nil {
 		for _, v := range cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.Items {
-			// We could also add multiple ProjectedVolumeSources but then we lose the ability
-			// to specify different paths to mount them. This way it's more flexible.
-			if v.ConfigMap != nil {
-				configMapVolume := v1.Volume{
-					Name: v.ConfigMap.Name,
-					VolumeSource: v1.VolumeSource{
-						Projected: &v1.ProjectedVolumeSource{
-							Sources: []v1.VolumeProjection{
-								{
-									ConfigMap: &v1.ConfigMapProjection{
-										LocalObjectReference: v1.LocalObjectReference{
-											Name: v.ConfigMap.Name,
-										},
-										Items: v.ConfigMap.Items,
-									},
-								},
+			var sources []v1.VolumeProjection
+			if v.ConfigMaps != nil {
+				for _, name := range v.ConfigMaps {
+					sources = append(sources, v1.VolumeProjection{
+						ConfigMap: &v1.ConfigMapProjection{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: name,
 							},
-							DefaultMode: cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.DefaultMode,
+							Items: v.Items,
 						},
-					},
+					})
 				}
-				volumes = append(volumes, configMapVolume)
 			}
+			if v.Secrets != nil {
+				for _, name := range v.Secrets {
+					sources = append(sources, v1.VolumeProjection{
+						Secret: &v1.SecretProjection{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: name,
+							},
+							Items: v.Items,
+						},
+					})
+				}
+			}
+
+			mapVolume := v1.Volume{
+				Name: v.Name,
+				VolumeSource: v1.VolumeSource{
+					Projected: &v1.ProjectedVolumeSource{
+						Sources:     sources,
+						DefaultMode: cr.Spec.KeycloakDeploymentSpec.Experimental.Volumes.DefaultMode,
+					},
+				},
+			}
+			volumes = append(volumes, mapVolume)
 		}
 	}
 	return volumes
@@ -411,5 +441,48 @@ func readinessProbe() *v1.Probe {
 		TimeoutSeconds:      ProbeTimeoutSeconds,
 		PeriodSeconds:       ProbeTimeBetweenRunsSeconds,
 		FailureThreshold:    ProbeFailureThreshold,
+	}
+}
+
+func KeycloakPodAffinity(cr *v1alpha1.Keycloak) *v1.Affinity {
+	return &v1.Affinity{
+		PodAntiAffinity: &v1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+				{
+					Weight: 100,
+					PodAffinityTerm: v1.PodAffinityTerm{
+						LabelSelector: &v12.LabelSelector{
+							MatchExpressions: []v12.LabelSelectorRequirement{
+								{
+									Key:      "app",
+									Operator: "In",
+									Values: []string{
+										ApplicationName,
+									},
+								},
+							},
+						},
+						TopologyKey: "topology.kubernetes.io/zone",
+					},
+				},
+				{
+					Weight: 90,
+					PodAffinityTerm: v1.PodAffinityTerm{
+						LabelSelector: &v12.LabelSelector{
+							MatchExpressions: []v12.LabelSelectorRequirement{
+								{
+									Key:      "app",
+									Operator: "In",
+									Values: []string{
+										ApplicationName,
+									},
+								},
+							},
+						},
+						TopologyKey: "kubernetes.io/hostname",
+					},
+				},
+			},
+		},
 	}
 }
