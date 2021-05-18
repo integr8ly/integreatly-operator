@@ -76,7 +76,7 @@ import (
 )
 
 const (
-	deletionFinalizer                = "finalizer/configmaps"
+	deletionFinalizer                = "configmaps/finalizer"
 	DefaultInstallationName          = "rhmi"
 	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"

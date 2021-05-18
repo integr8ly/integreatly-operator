@@ -179,7 +179,7 @@ code/fix:
 .PHONY: image/build
 image/build: code/gen
 	echo "build image $(OPERATOR_IMAGE)"
-	docker build . -t ${OPERATOR_IMAGE}
+	docker build -t ${OPERATOR_IMAGE} .
 
 .PHONY: image/push
 image/push:

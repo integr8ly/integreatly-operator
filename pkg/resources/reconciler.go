@@ -160,7 +160,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
 func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
-	finalizer := "finalizer." + productName + ".integreatly.org"
+	finalizer := productName + ".integreatly.org" + "/finalizer"
 	// Add finalizer if not there
 	err := AddFinalizer(ctx, inst, client, finalizer, log)
 	if err != nil {
