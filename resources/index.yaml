@@ -1,5 +1,5 @@
 {
-  "id": "managed-kafka-staging",
+  "id": "rhoam-staging",
   "config": {
     "grafana": {
       "dashboards": []

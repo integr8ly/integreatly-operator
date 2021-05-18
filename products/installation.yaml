@@ -86,6 +86,10 @@ products:
     channel: rhmi
     installFrom: "local"
     manifestsDir: "integreatly-monitoring"
+  observability:
+    channel: rhmi
+    installFrom: "local"
+    manifestsDir: "integreatly-observability"
   rhsso:
     installFrom: "local"
     manifestsDir: "integreatly-rhsso"
