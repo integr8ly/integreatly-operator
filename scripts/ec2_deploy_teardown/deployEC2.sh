@@ -21,7 +21,7 @@ else
 fi
 
 echo "Getting image"
-AMI=`aws ec2 describe-images --filters "Name=is-public,Values=true" "Name=description,Values=Provided by Red Hat*" "Name=name,Values=${IMAGE}" --region ${CLUSTER_REGION} --output text --query 'Images[0].ImageId'`
+AMI=`aws ec2 describe-images --filters "Name=description,Values=Provided by Red Hat*" "Name=name,Values=${IMAGE}" --region ${CLUSTER_REGION} --output text --query 'Images[0].ImageId'`
 if [[ $AMI =~ "ami-" ]]; then
   echo "AMI "${AMI}" is available"
 else
