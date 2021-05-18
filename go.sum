@@ -770,7 +770,7 @@ github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mq
 github.com/influxdata/usage-client v0.0.0-20160829180054-6d3895376368/go.mod h1:Wbbw6tYNvwa5dlB6304Sd+82Z3f7PmVZHVKU637d4po=
 github.com/integr8ly/application-monitoring-operator v1.4.0 h1:0QXO9M0ztJRnUeGXtOhPX5c7Qv3n7dr+s9tQEni2CWQ=
 github.com/integr8ly/application-monitoring-operator v1.4.0/go.mod h1:bC4f/eZfXeB2vCJP2iZnWYDm/znUcsETOYHpHZJIMsE=
-github.com/integr8ly/cloud-resource-operator v0.24.0 h1:WTKNewFRMQgJzuR57KlaHkNj96rcSx6ic8meQrQAPLw=
+github.com/integr8ly/cloud-resource-operator v0.24.0 h1:9xJ0yOK5e30lqrN7NRK/ualuJeiAdLt8eDKxl0R3iHw=
 github.com/integr8ly/cloud-resource-operator v0.24.0/go.mod h1:pxmR7H2T5MJqcw1F9DTmsX3YfEc419Q/tp5m2g8xdZk=
 github.com/integr8ly/grafana-operator v2.0.0+incompatible h1:wSqKpcr5wE6pws35iJeOYGVBMJbSNEhcE6hlD0zF9NU=
 github.com/integr8ly/grafana-operator v2.0.0+incompatible/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
