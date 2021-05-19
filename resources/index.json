@@ -2,15 +2,15 @@
   "id": "managed-kafka-staging",
   "config": {
     "grafana": {
-      "dashboards": []
+      "dashboards": ["test.yaml"]
     },
     "alertmanager": {
       "pagerDutySecretName": "redhat-rhoam-pagerduty",
       "deadmansSnitchSecretName": "redhat-rhoam-deadmanssnitch"
     },
     "prometheus": {
-      "pod_monitors": [],
-      "rules": []
+      "pod_monitors": ["test.yaml"],
+      "rules": ["test.yaml"]
     },
     "observatoria": [
       {
