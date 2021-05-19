@@ -79,6 +79,9 @@ type KeycloakSpec struct {
 	// Name of the StorageClass for Postgresql Persistent Volume Claim
 	// +optional
 	StorageClassName *string `json:"storageClassName,omitempty"`
+	// Specify PodAntiAffinity settings for Keycloak deployment in Multi AZ
+	// +optional
+	MultiAvailablityZones MultiAvailablityZonesConfig `json:"multiAvailablityZones,omitempty"`
 }
 
 type DeploymentSpec struct {
@@ -115,6 +118,9 @@ type ExperimentalSpec struct {
 	// Additional volume mounts
 	// +optional
 	Volumes VolumesSpec `json:"volumes,omitempty"`
+	// Affinity settings
+	//+optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 type VolumesSpec struct {
@@ -124,20 +130,20 @@ type VolumesSpec struct {
 	DefaultMode *int32 `json:"defaultMode,omitempty"`
 }
 
-type ConfigMapVolumeSpec struct {
-	// ConfigMap name
+type VolumeSpec struct {
+	// Volume name
 	Name string `json:"name,omitempty"`
 	// An absolute path where to mount it
 	MountPath string `json:"mountPath"`
-	// ConfigMap mount details
+	// Allow multiple configmaps to mount to the same directory
+	// +optional
+	ConfigMaps []string `json:"configMaps,omitempty"`
+	// Secret mount
+	// +optional
+	Secrets []string `json:"secrets,omitempty"`
+	// Mount details
 	// +optional
 	Items []corev1.KeyToPath `json:"items,omitempty" protobuf:"bytes,2,rep,name=items"`
-}
-
-type VolumeSpec struct {
-	// ConfigMap mount
-	// +optional
-	ConfigMap *ConfigMapVolumeSpec `json:"configMap,omitempty"`
 }
 
 type KeycloakExternal struct {
@@ -161,9 +167,10 @@ type KeycloakExternalAccess struct {
 	// Ingress TLS configuration is the same in both cases and it is up to the user
 	// to configure TLS section of the Ingress.
 	TLSTermination TLSTerminationType `json:"tlsTermination,omitempty"`
-	// If set, the Operator will use value of host for Ingress/Route host
-	// instead of default value keycloak.local for ingress and automatically
-	// chosen name for Route
+	// If set, the Operator will use value of host for Ingress host
+	// instead of default value keycloak.local. Using this setting in OpenShift
+	// environment will result an error. Only users with special permissions are
+	// allowed to modify the hostname.
 	// +optional
 	Host string `json:"host,omitempty"`
 }
@@ -176,6 +183,11 @@ type KeycloakExternalDatabase struct {
 
 type PodDisruptionBudgetConfig struct {
 	// If set to true, the operator will create a PodDistruptionBudget for the Keycloak deployment and set its `maxUnavailable` value to 1.
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type MultiAvailablityZonesConfig struct {
+	// If set to true, the operator will create a podAntiAffinity settings for the Keycloak deployment.
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -214,8 +226,10 @@ type KeycloakStatus struct {
 	SecondaryResources map[string][]string `json:"secondaryResources,omitempty"`
 	// Version of Keycloak or RHSSO running on the cluster.
 	Version string `json:"version"`
-	// Service IP and Port for in-cluster access to the keycloak instance.
+	// An internal URL (service name) to be used by the admin client.
 	InternalURL string `json:"internalURL"`
+	// External URL for accessing Keycloak instance from outside the cluster. Is identical to external.URL if it's specified, otherwise is computed (e.g. from Ingress).
+	ExternalURL string `json:"externalURL"`
 	// The secret where the admin credentials are to be found.
 	CredentialSecret string `json:"credentialSecret"`
 }
@@ -230,6 +244,7 @@ var (
 )
 
 // Keycloak is the Schema for the keycloaks API.
+// +genclient
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
