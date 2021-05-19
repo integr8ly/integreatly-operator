@@ -45,6 +45,7 @@ dmitri.shuralyov.com/service/change v0.0.0-20181023043359-a85b471d5412/go.mod h1
 dmitri.shuralyov.com/state v0.0.0-20180228185332-28bcc343414c/go.mod h1:0PRwlb0D6DFvNNtx+9ybjezNCa8XF0xaYcETyp6rHWU=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
+github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf h1:7ev7/t4QJgQqPxfKAZko/svXooB1t8Rlt5UFzWaa8gY=
 github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf/go.mod h1:G2jfrlmdPGTOnDxyJ8JdsSZlB+xZqv3lBtwJTFtVVIo=
 github.com/3scale/3scale-porta-go-client v0.0.4/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/3scale/marin3r v0.7.0 h1:m3snY9Vi8Ho1aUSL4vEfBZJa42S+Q73Vv5nR2vWjy8o=

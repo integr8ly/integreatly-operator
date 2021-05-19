@@ -1,4 +1,0 @@
-packageName: rhmi-observability
-channels:
-  - currentCSV: observability-operator.v3.0.0
-    name: rhmi
