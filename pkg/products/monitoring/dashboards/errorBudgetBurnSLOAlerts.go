@@ -39,28 +39,28 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "type": "dashboard"
 			},
 			{
-				"datasource": "Prometheus",
-				"enable": true,
-				"expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
-				"hide": false,
-				"iconColor": "#FADE2A",
-				"limit": 100,
-				"name": "Upgrade",
-				"showIn": 0,
-				"step": "",
-				"tagKeys": "stage,version,to_version",
-				"tags": "",
-				"titleFormat": "Upgrade",
-				"type": "tags",
-				"useValueForTime": false
+			  "datasource": "Prometheus",
+			  "enable": true,
+			  "expr": "count by (stage,version,to_version)(` + installationName + `_version{to_version!=\"\"})",
+			  "hide": false,
+			  "iconColor": "#FADE2A",
+			  "limit": 100,
+			  "name": "Upgrade",
+			  "showIn": 0,
+			  "step": "",
+			  "tagKeys": "stage,version,to_version",
+			  "tags": "",
+			  "titleFormat": "Upgrade",
+			  "type": "tags",
+			  "useValueForTime": false
 			}` + quota + `
 		  ]
 		},
 		"editable": true,
 		"gnetId": null,
 		"graphTooltip": 0,
-		"id": 12,
-		"iteration": 1619613992303,
+		"id": 2,
+		"iteration": 1621404340295,
 		"links": [],
 		"panels": [
 		  {
@@ -444,6 +444,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": "Prometheus",
+			"description": "the ratio of bad events to total events in time window 5 min",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {},
@@ -521,10 +522,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "15m",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "5min  - SSO Availability 5xx haproxy Errors rate ratio ",
+			"title": "5min  - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -567,6 +568,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": null,
+			"description": "the ratio of bad events to total events in time window 30 min",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -628,10 +630,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "1h",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "30 min - SSO Availability 5xx haproxy Errors rate ratio",
+			"title": "30 min - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -674,6 +676,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": null,
+			"description": "the ratio of bad events to total events in time window 1h",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -729,10 +732,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "2h",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "1 h - SSO Availability 5xx haproxy Errors rate ratio",
+			"title": "1 h - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -775,6 +778,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": null,
+			"description": "the ratio of bad events to total events in time window 6h",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -830,10 +834,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "12h",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "6 h - SSO Availability 5xx haproxy Errors rate ratio",
+			"title": "6 h  - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -876,6 +880,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": null,
+			"description": "the ratio of bad events to total events in time window 1 day",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -931,10 +936,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "1d",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "1 day - SSO Availability 5xx haproxy Errors rate ratio",
+			"title": "1 day - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -977,6 +982,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"dashLength": 10,
 			"dashes": false,
 			"datasource": null,
+			"description": "the ratio of bad events to total events in time window 3 days ",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -1032,10 +1038,10 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": [],
-			"timeFrom": null,
+			"timeFrom": "3d",
 			"timeRegions": [],
 			"timeShift": null,
-			"title": "3 days - SSO Availability 5xx haproxy Errors rate ratio",
+			"title": "3 days  - SSO 5xx Errors ratio",
 			"tooltip": {
 			  "shared": true,
 			  "sort": 0,
@@ -1166,13 +1172,13 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 		  ]
 		},
 		"time": {
-		  "from": "now-15m",
+		  "from": "now-3h",
 		  "to": "now"
 		},
 		"timepicker": {},
 		"timezone": "",
-		"title": "SLO SSO Availability for 5xx Errors",
+		"title": "SLO SSO Availability - 5xx HAProxy Errors",
 		"uid": "AAqDgdrMk",
-		"version": 11
+		"version": 3
 	  }`
 }
