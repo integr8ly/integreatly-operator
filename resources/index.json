@@ -1,0 +1,28 @@
+{
+  "id": "managed-kafka-staging",
+  "config": {
+    "grafana": {
+      "dashboards": []
+    },
+    "alertmanager": {
+      "pagerDutySecretName": "redhat-rhoam-pagerduty",
+      "deadmansSnitchSecretName": "redhat-rhoam-deadmanssnitch"
+    },
+    "prometheus": {
+      "pod_monitors": [],
+      "rules": []
+    },
+    "observatoria": [
+      {
+        "id": "default",
+        "gateway": "https://observatorium-observatorium.apps.pbraun-observatorium.observability.rhmw.io",
+        "tenant": "test",
+        "authType": "dex",
+        "dexConfig": {
+          "url": "http://dex-dex.apps.pbraun-observatorium.observability.rhmw.io",
+          "credentialSecretName": "observatorium-dex-credentials"
+        }
+      }
+    ]
+  }
+}
