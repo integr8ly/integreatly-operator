@@ -2,8 +2,8 @@
 
 # Compares current manifest vs manifest generated for master
 manifest_compare() {
-    sort $FILE_NAME > $SORTED_FROM_BRANCH
-    sort $CURRENT_MASTER > $SORTED_CURRENT_MASTER
+    sort -u $FILE_NAME > $SORTED_FROM_BRANCH
+    sort -u $CURRENT_MASTER > $SORTED_CURRENT_MASTER
     MANIFESTS_DIFF=$(diff --suppress-common-lines ${SORTED_FROM_BRANCH} ${SORTED_CURRENT_MASTER})
     if [ ! -z "$MANIFESTS_DIFF" ]; then
         echo "Difference found between master manifests"
@@ -50,7 +50,7 @@ manifest_generate() {
     # Dependencies used
     go mod graph | cut -d " " -f 2 | tr @ - | while read x; do echo "${SERVICE_NAME}:${VERSION}/$x" >> "$GENERATION_FILE"; done
 
-    sort "$GENERATION_FILE" > "$FILE_NAME"
+    sort -u "$GENERATION_FILE" > "$FILE_NAME"
 
     echo "Manifest generated successfully, deleting temporary files"
     rm -f "$GENERATION_FILE"
