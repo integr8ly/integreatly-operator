@@ -227,6 +227,8 @@ test/e2e/single: export WATCH_NAMESPACE := $(NAMESPACE)
 test/e2e/single: 
 	go clean -testcache && go test ./test/functional -ginkgo.focus="$(TEST).*" -test.v -ginkgo.v -ginkgo.progress -timeout=80m
 
+# test test test
+
 .PHONY: test/functional
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
 test/functional:
