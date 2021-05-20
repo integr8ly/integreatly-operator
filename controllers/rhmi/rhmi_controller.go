@@ -77,6 +77,7 @@ import (
 
 const (
 	deletionFinalizer                = "configmaps/finalizer"
+	previousDeletionFinalizer        = "finalizer/configmaps"
 	DefaultInstallationName          = "rhmi"
 	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"
@@ -312,7 +313,14 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if !resources.Contains(installation.GetFinalizers(), deletionFinalizer) && installation.GetDeletionTimestamp() == nil {
-		installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
+		if resources.Contains(installation.GetFinalizers(), previousDeletionFinalizer) {
+			installation.SetFinalizers(resources.Replace(installation.GetFinalizers(), previousDeletionFinalizer, deletionFinalizer))
+			if err = r.Update(context.TODO(), installation); err != nil {
+				return ctrl.Result{}, err
+			}
+		} else {
+			installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
+		}
 	}
 
 	if installation.Status.Stages == nil {

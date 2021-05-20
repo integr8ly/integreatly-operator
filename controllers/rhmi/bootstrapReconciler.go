@@ -26,6 +26,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
+	res "github.com/integr8ly/integreatly-operator/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -148,9 +149,8 @@ func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8
 func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cloudConfig := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       DefaultCloudResourceConfigName,
-			Namespace:  r.installation.Namespace,
-			Finalizers: []string{deletionFinalizer},
+			Name:      DefaultCloudResourceConfigName,
+			Namespace: r.installation.Namespace,
 		},
 	}
 
@@ -158,6 +158,11 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 		if cloudConfig.Data == nil {
 			cloudConfig.Data = map[string]string{}
 		}
+
+		if res.Contains(cloudConfig.Finalizers, previousDeletionFinalizer) {
+			res.Replace(cloudConfig.Finalizers, previousDeletionFinalizer, deletionFinalizer)
+		}
+
 		if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
 			cloudConfig.Data["managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`

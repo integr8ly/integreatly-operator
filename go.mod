@@ -55,6 +55,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	sigs.k8s.io/controller-runtime v0.8.3
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
