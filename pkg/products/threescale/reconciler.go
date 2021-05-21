@@ -388,12 +388,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	// phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
-	// r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
-	// if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-	// 	events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
-	// 	return phase, err
-	// }
+	phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
+	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
+		return phase, err
+	}
 
 	// Ensure deployment configs are ready before returning phase complete
 	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
