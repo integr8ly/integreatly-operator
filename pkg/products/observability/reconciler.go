@@ -125,7 +125,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
-	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 

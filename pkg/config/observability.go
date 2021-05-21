@@ -1,7 +1,9 @@
 package config
 
 import (
+	oo "github.com/bf2fc6cc711aee1a0c2a/observability-operator/api/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,7 +16,7 @@ func NewObservability(config ProductConfig) *Observability {
 }
 
 func (m *Observability) GetProductName() integreatlyv1alpha1.ProductName {
-	return integreatlyv1alpha1.ProductMarin3r
+	return integreatlyv1alpha1.ProductObservability
 }
 
 func (m *Observability) GetOperatorNamespace() string {
@@ -55,5 +57,12 @@ func (m *Observability) GetHost() string {
 }
 
 func (m *Observability) GetWatchableCRDs() []runtime.Object {
-	return []runtime.Object{}
+	return []runtime.Object{
+		&oo.Observability{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Observability",
+				APIVersion: oo.GroupVersion.String(),
+			},
+		},
+	}
 }

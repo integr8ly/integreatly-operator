@@ -561,6 +561,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	_, err := controllerutil.CreateOrUpdate(ctx, client, serviceMonitor, func() error {
 		serviceMonitor.Labels = map[string]string{
 			"monitoring-key": "middleware",
+			"configures": "observability-operator",
 		}
 		serviceMonitor.Spec = prometheus.ServiceMonitorSpec{
 			Endpoints: []prometheus.Endpoint{
