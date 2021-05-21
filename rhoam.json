@@ -1,0 +1,167 @@
+{
+    "apiVersion": "integreatly.org/v1alpha1",
+    "kind": "RHMI",
+    "metadata": {
+        "creationTimestamp": "2021-05-19T09:46:40Z",
+        "finalizers": [
+            "finalizer/configmaps",
+            "finalizer.cloud-resources.integreatly.org",
+            "finalizer.marin3r.integreatly.org"
+        ],
+        "generation": 2,
+        "managedFields": [
+            {
+                "apiVersion": "integreatly.org/v1alpha1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:finalizers": {
+                            ".": {},
+                            "v:\"finalizer.cloud-resources.integreatly.org\"": {},
+                            "v:\"finalizer.marin3r.integreatly.org\"": {},
+                            "v:\"finalizer/configmaps\"": {}
+                        }
+                    },
+                    "f:spec": {
+                        ".": {},
+                        "f:alertingEmailAddresses": {
+                            ".": {},
+                            "f:businessUnit": {},
+                            "f:cssre": {}
+                        },
+                        "f:deadMansSnitchSecret": {},
+                        "f:masterURL": {},
+                        "f:namespacePrefix": {},
+                        "f:pagerDutySecret": {},
+                        "f:priorityClassName": {},
+                        "f:pullSecret": {
+                            ".": {},
+                            "f:name": {},
+                            "f:namespace": {}
+                        },
+                        "f:rebalancePods": {},
+                        "f:routingSubdomain": {},
+                        "f:smtpSecret": {},
+                        "f:type": {},
+                        "f:useClusterStorage": {}
+                    },
+                    "f:status": {
+                        ".": {},
+                        "f:lastError": {},
+                        "f:preflightMessage": {},
+                        "f:preflightStatus": {},
+                        "f:stage": {},
+                        "f:stages": {
+                            ".": {},
+                            "f:bootstrap": {
+                                ".": {},
+                                "f:name": {},
+                                "f:phase": {}
+                            },
+                            "f:cloud-resources": {
+                                ".": {},
+                                "f:name": {},
+                                "f:phase": {},
+                                "f:products": {
+                                    ".": {},
+                                    "f:cloud-resources": {
+                                        ".": {},
+                                        "f:host": {},
+                                        "f:name": {},
+                                        "f:operator": {},
+                                        "f:status": {},
+                                        "f:version": {}
+                                    }
+                                }
+                            },
+                            "f:observability": {
+                                ".": {},
+                                "f:name": {},
+                                "f:phase": {},
+                                "f:products": {
+                                    ".": {},
+                                    "f:observability": {
+                                        ".": {},
+                                        "f:host": {},
+                                        "f:name": {},
+                                        "f:status": {},
+                                        "f:version": {}
+                                    }
+                                }
+                            }
+                        },
+                        "f:toQuota": {},
+                        "f:toVersion": {}
+                    }
+                },
+                "manager": "main",
+                "operation": "Update",
+                "time": "2021-05-19T09:48:20Z"
+            }
+        ],
+        "name": "rhoam",
+        "namespace": "redhat-rhoam-operator",
+        "resourceVersion": "538055",
+        "selfLink": "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhoam-operator/rhmis/rhoam",
+        "uid": "41981cc5-c613-403c-be0a-48b77bc6c4dc"
+    },
+    "spec": {
+        "alertingEmailAddresses": {
+            "businessUnit": "noreply-test@rhmi-redhat.com",
+            "cssre": "noreply-test@rhmi-redhat.com"
+        },
+        "deadMansSnitchSecret": "redhat-rhoam-deadmanssnitch",
+        "masterURL": "console-openshift-console.apps.lfitzger.pv3a.s1.devshift.org",
+        "namespacePrefix": "redhat-rhoam-",
+        "pagerDutySecret": "redhat-rhoam-pagerduty",
+        "priorityClassName": "rhoam-pod-priority",
+        "pullSecret": {
+            "name": "",
+            "namespace": ""
+        },
+        "rebalancePods": true,
+        "routingSubdomain": "apps.lfitzger.pv3a.s1.devshift.org",
+        "smtpSecret": "redhat-rhoam-smtp",
+        "type": "managed-api",
+        "useClusterStorage": "true"
+    },
+    "status": {
+        "lastError": "",
+        "preflightMessage": "preflight checks passed",
+        "preflightStatus": "successful",
+        "stage": "observability",
+        "stages": {
+            "bootstrap": {
+                "name": "bootstrap",
+                "phase": "completed"
+            },
+            "cloud-resources": {
+                "name": "cloud-resources",
+                "phase": "completed",
+                "products": {
+                    "cloud-resources": {
+                        "host": "",
+                        "name": "cloud-resources",
+                        "operator": "0.25.0",
+                        "status": "completed",
+                        "version": "0.25.0"
+                    }
+                }
+            },
+            "observability": {
+                "name": "observability",
+                "phase": "in progress",
+                "products": {
+                    "observability": {
+                        "host": "",
+                        "name": "observability",
+                        "status": "awaiting operator",
+                        "version": ""
+                    }
+                }
+            }
+        },
+        "toQuota": "1",
+        "toVersion": "1.6.0"
+    }
+}
