@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
@@ -231,6 +232,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
 			Json: getCustomerMonitoringGrafanaRateLimitJSON(fmt.Sprintf("%d", limitConfig.RequestsPerUnit), activeQuota),
+			Name: rateLimitDashBoardName,
 		}
 		return nil
 	})
@@ -337,7 +339,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 				PreferService: true,
 			},
 			ServiceAccount: &grafanav1alpha1.GrafanaServiceAccount{
-				Skip:        boolPtr(true),
 				Annotations: serviceAccountAnnotations,
 			},
 			DashboardLabelSelector: []*metav1.LabelSelector{
@@ -419,35 +420,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 	}
 
 	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
-
-	return r.reconcileServiceAccount(ctx, client)
-}
-
-func (r *Reconciler) reconcileServiceAccount(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-
-	r.log.Info("Reconciling Grafana ServiceAccount")
-	grafanaServiceAccount := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "grafana-serviceaccount",
-			Namespace: r.Config.GetOperatorNamespace(),
-		},
-	}
-
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaServiceAccount, func() error {
-		serviceAccountAnnotations := grafanaServiceAccount.ObjectMeta.GetAnnotations()
-		if serviceAccountAnnotations == nil {
-			serviceAccountAnnotations = map[string]string{}
-		}
-		serviceAccountAnnotations["serviceaccounts.openshift.io/oauth-redirectreference.primary"] = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"grafana-route\"}}"
-		grafanaServiceAccount.ObjectMeta.SetAnnotations(serviceAccountAnnotations)
-
-		return nil
-	})
-	if err != nil {
-		r.log.Error("Failed reconciling grafana service account", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana service account: %w", err)
-	}
-	r.log.Infof("Operation result on service account", l.Fields{"result": or})
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -606,8 +578,4 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 	}
 
 	return nil
-}
-
-func boolPtr(value bool) *bool {
-	return &value
 }

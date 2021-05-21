@@ -34,7 +34,6 @@ type KeycloakUserStatus struct {
 }
 
 // KeycloakUser is the Schema for the keycloakusers API.
-// +genclient
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

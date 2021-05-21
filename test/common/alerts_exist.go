@@ -356,6 +356,7 @@ func commonExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "rhsso-keycloak.yaml",
 			Rules: []string{
+				"KeycloakJavaHeapThresholdExceeded",
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
 				"KeycloakJavaGCTimePerMinuteMarkSweep",
@@ -369,6 +370,7 @@ func commonExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "user-sso-keycloak.yaml",
 			Rules: []string{
+				"KeycloakJavaHeapThresholdExceeded",
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
 				"KeycloakJavaGCTimePerMinuteMarkSweep",

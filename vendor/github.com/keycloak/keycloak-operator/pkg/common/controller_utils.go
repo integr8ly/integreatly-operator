@@ -25,17 +25,15 @@ const (
 	DeploymentKind            = "Deployment"
 	PersistentVolumeClaimKind = "PersistentVolumeClaim"
 	PodDisruptionBudgetKind   = "PodDisruptionBudget"
-	OpenShiftAPIServerKind    = "OpenShiftAPIServer"
 )
 
 func WatchSecondaryResource(c controller.Controller, controllerName string, resourceKind string, objectTypetoWatch runtime.Object, cr runtime.Object) error {
 	stateManager := GetStateManager()
 	stateFieldName := GetStateFieldName(controllerName, resourceKind)
 
-	// Avoid watching non-existing resources and watch duplication
-	watchExists, _ := stateManager.GetState(stateFieldName).(bool)
-	keyExists, _ := stateManager.GetState(resourceKind).(bool)
-	if !keyExists || watchExists {
+	// Check to see if the watch exists for this resource type already for this controller, if it does, we return so we don't set up another watch
+	watchExists, keyExists := stateManager.GetState(stateFieldName).(bool)
+	if keyExists || watchExists {
 		return nil
 	}
 

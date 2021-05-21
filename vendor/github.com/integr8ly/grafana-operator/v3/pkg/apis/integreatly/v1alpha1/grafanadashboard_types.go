@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 )
 
 const GrafanaDashboardKind = "GrafanaDashboard"
@@ -22,6 +22,7 @@ type GrafanaDashboardSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	Json             string                       `json:"json"`
 	Jsonnet          string                       `json:"jsonnet"`
+	Name             string                       `json:"name"`
 	Plugins          PluginList                   `json:"plugins,omitempty"`
 	Url              string                       `json:"url,omitempty"`
 	ConfigMapRef     *corev1.ConfigMapKeySelector `json:"configMapRef,omitempty"`
@@ -75,13 +76,13 @@ func init() {
 }
 
 func (d *GrafanaDashboard) Hash() string {
-	hash := sha256.New()
-
+	var datasources strings.Builder
 	for _, input := range d.Spec.Datasources {
-		io.WriteString(hash, input.DatasourceName)
-		io.WriteString(hash, input.InputName)
+		datasources.WriteString(input.DatasourceName)
+		datasources.WriteString(input.InputName)
 	}
 
+	hash := sha256.New()
 	io.WriteString(hash, d.Spec.Json)
 	io.WriteString(hash, d.Spec.Url)
 	io.WriteString(hash, d.Spec.Jsonnet)
