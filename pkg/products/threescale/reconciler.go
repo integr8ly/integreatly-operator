@@ -79,6 +79,7 @@ const (
 	backendListenerDCName          = "backend-listener"
 	systemSeedSecretName           = "system-seed"
 	systemMasterApiCastSecretName  = "system-master-apicast"
+	systemAppDCName                = "system-app"
 
 	apicastRatelimiting              = "apicast-ratelimit"
 	backendListenerEnvoyConfigNodeID = "backend-listener-envoyconfig"
@@ -384,6 +385,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("reconcileDeploymentConfigs", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
+		return phase, err
+	}
+
+	phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
+	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
 		return phase, err
 	}
 
@@ -1965,6 +1973,7 @@ func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClien
 		podPriorityMutation := resources.NoopMutate
 		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 			podPriorityMutation = resources.MutatePodPriority(r.installation.Spec.PriorityClassName)
+
 		}
 
 		phase, err := resources.UpdatePodTemplateIfExists(
@@ -1982,6 +1991,69 @@ func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClien
 		}
 	}
 
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	for _, name := range threeScaleDeploymentConfigs {
+		deploymentConfig := &appsv1.DeploymentConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: r.Config.GetNamespace(),
+			},
+		}
+
+		objKey, err := k8sclient.ObjectKeyFromObject(deploymentConfig)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		if err := serverClient.Get(ctx, objKey, deploymentConfig); err != nil {
+			if k8serr.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseInProgress, nil
+			}
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		if name == systemAppDCName {
+			envVars := make(map[string]corev1.EnvVarSource)
+			internalBackendListenerRoute := &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "backend-listener",
+					},
+					Key: "service_endpoint",
+				},
+			}
+			envVars["APICAST_BACKEND_ROOT_ENDPOINT"] = *internalBackendListenerRoute
+			envVars["BACKEND_ROUTE"] = *internalBackendListenerRoute
+
+			// Have to use the index when iterating here because when using range go creates a copy of the variable
+			// so any update will be applyed to the copy
+			for envVarName, envVarValue := range envVars {
+				if deploymentConfig.Spec.Strategy.RollingParams != nil {
+					for i, env := range deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env {
+						if env.Name == envVarName {
+							deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env[i].ValueFrom = &envVarValue
+						}
+					}
+				}
+
+				for i, container := range deploymentConfig.Spec.Template.Spec.Containers {
+					for j, env := range container.Env {
+						if env.Name == envVarName {
+							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].ValueFrom = &envVarValue
+						}
+					}
+				}
+			}
+
+			if err := serverClient.Update(ctx, deploymentConfig); err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+		}
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
