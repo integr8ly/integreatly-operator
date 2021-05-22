@@ -440,7 +440,7 @@ github.com/integr8ly/keycloak-client/pkg/common
 github.com/jmespath/go-jmespath
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
-# github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
+# github.com/keycloak/keycloak-operator v0.0.0-20210517080327-281373538a44
 ## explicit
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common

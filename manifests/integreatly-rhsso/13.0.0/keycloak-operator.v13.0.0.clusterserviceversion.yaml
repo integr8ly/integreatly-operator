@@ -5,7 +5,7 @@ metadata:
     capabilities: Deep Insights
     categories: Security
     certified: 'False'
-    containerImage: 'quay.io/keycloak/keycloak-operator:13.0.0'
+    containerImage: 'quay.io/keycloak/keycloak-operator:latest'
     createdAt: 2021-05-06 00:00:00
     description: 'An Operator for installing and managing Keycloak'
     repository: 'https://github.com/keycloak/keycloak-operator'
@@ -193,7 +193,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/keycloak/keycloak-operator:13.0.0
+                    image: quay.io/keycloak/keycloak-operator:latest
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
