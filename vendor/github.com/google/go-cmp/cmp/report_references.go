@@ -1,6 +1,10 @@
 // Copyright 2020, The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
+=======
+// license that can be found in the LICENSE.md file.
+>>>>>>> 4c0348511... Update vendor folder
 
 package cmp
 

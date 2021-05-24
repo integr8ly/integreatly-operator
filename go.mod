@@ -39,7 +39,6 @@ require (
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/operator-framework/operator-registry v1.15.3
-	github.com/operator-framework/operator-sdk v1.7.2 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.10.0
@@ -64,7 +63,7 @@ replace (
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
-	github.com/operator-framework/api => github.com/operator-framework/api v0.1.1
+	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
 	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 	github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
@@ -81,15 +80,17 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.20.6
 	k8s.io/cri-api => k8s.io/cri-api v0.20.6
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.20.6
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.1.0
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.20.6
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.20.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.20.6
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.20.6
-	k8s.io/kubectl => k8s.io/kubectl v0.20.6
 	k8s.io/kubelet => k8s.io/kubelet v0.20.6
+	k8s.io/kubernetes => k8s.io/kubernetes v1.19.4
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.20.6
 	k8s.io/metrics => k8s.io/metrics v0.20.6
+
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.6
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.6.3
 )

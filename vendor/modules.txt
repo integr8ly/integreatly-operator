@@ -109,6 +109,8 @@ github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 ## explicit
 github.com/blang/semver
+# github.com/blang/semver/v4 v4.0.0
+github.com/blang/semver/v4
 # github.com/census-instrumentation/opencensus-proto v0.2.1
 github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
@@ -523,10 +525,13 @@ github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 ## explicit
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
-# github.com/operator-framework/api v0.8.1-0.20210414192051-b51286920978 => github.com/operator-framework/api v0.1.1
+# github.com/operator-framework/api v0.8.1-0.20210414192051-b51286920978 => github.com/operator-framework/api v0.8.1
 github.com/operator-framework/api/pkg/lib/version
+github.com/operator-framework/api/pkg/manifests
 github.com/operator-framework/api/pkg/operators
+github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/operators/v1alpha1
+github.com/operator-framework/api/pkg/operators/v1alpha2
 github.com/operator-framework/api/pkg/validation
 github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
@@ -548,8 +553,6 @@ github.com/operator-framework/operator-registry/pkg/client
 github.com/operator-framework/operator-registry/pkg/containertools
 github.com/operator-framework/operator-registry/pkg/lib/bundle
 github.com/operator-framework/operator-registry/pkg/registry
-# github.com/operator-framework/operator-sdk v1.7.2 => github.com/operator-framework/operator-sdk v1.7.0
-## explicit
 # github.com/otiai10/copy v1.0.2
 github.com/otiai10/copy
 # github.com/pkg/errors v0.9.1
@@ -971,7 +974,7 @@ k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/klog/v2 v2.4.0
+# k8s.io/klog/v2 v2.4.0 => k8s.io/klog/v2 v2.1.0
 k8s.io/klog/v2
 # k8s.io/kube-aggregator v0.17.3 => k8s.io/kube-aggregator v0.20.6
 k8s.io/kube-aggregator/pkg/apis/apiregistration
@@ -1051,7 +1054,7 @@ sigs.k8s.io/yaml
 # github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
-# github.com/operator-framework/api => github.com/operator-framework/api v0.1.1
+# github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
 # github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 # github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
@@ -1068,13 +1071,14 @@ sigs.k8s.io/yaml
 # k8s.io/component-base => k8s.io/component-base v0.20.6
 # k8s.io/cri-api => k8s.io/cri-api v0.20.6
 # k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.20.6
+# k8s.io/klog/v2 => k8s.io/klog/v2 v2.1.0
 # k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.20.6
 # k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.20.6
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
 # k8s.io/kube-proxy => k8s.io/kube-proxy v0.20.6
 # k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.20.6
-# k8s.io/kubectl => k8s.io/kubectl v0.20.6
 # k8s.io/kubelet => k8s.io/kubelet v0.20.6
+# k8s.io/kubernetes => k8s.io/kubernetes v1.19.4
 # k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.20.6
 # k8s.io/metrics => k8s.io/metrics v0.20.6
 # k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.6

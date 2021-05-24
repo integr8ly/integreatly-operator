@@ -351,8 +351,11 @@ func formatMapKey(v reflect.Value, disambiguate bool, ptrs *pointerReferences) s
 	opts.PrintAddresses = disambiguate
 	opts.AvoidStringer = disambiguate
 	opts.QualifiedNames = disambiguate
+<<<<<<< HEAD
 	opts.VerbosityLevel = maxVerbosityPreset
 	opts.LimitVerbosity = true
+=======
+>>>>>>> 4c0348511... Update vendor folder
 	s := opts.FormatValue(v, reflect.Map, ptrs).String()
 	return strings.TrimSpace(s)
 }
