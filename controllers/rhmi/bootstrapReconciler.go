@@ -515,6 +515,7 @@ func generateSecret(length int) string {
 func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace string,
 	installationQuota *quota.Quota, serverClient k8sclient.Client) error {
 	isQuotaUpdated := false
+
 	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), serverClient, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
 	if err != nil {
 		return fmt.Errorf("error checking for quota secret %w", err)
@@ -526,8 +527,8 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 	}
 
 	// get the quota config map from the cluster
-	cm := &corev1.ConfigMap{}
-	err = serverClient.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: quota.ConfigMapName}, cm)
+	configMap := &corev1.ConfigMap{}
+	err = serverClient.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: quota.ConfigMapName}, configMap)
 	if err != nil {
 		return fmt.Errorf("error getting quota config map %w", err)
 	}
@@ -543,32 +544,34 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 		isQuotaUpdated = true
 	}
 
-	err = quota.GetQuota(quotaParam, cm, installationQuota, isQuotaUpdated)
+	// Updates the installation quota to the quota param if the quota is updated
+	err = quota.GetQuota(quotaParam, configMap, installationQuota, isQuotaUpdated)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, quotaParam string, found bool) (string, error) {
-	// if !found or the param is found but empty and installation is less than one minute old, return an error
-	// to stop the installation until either the installation is older than 1 minute or a paramater is found
-	if (!found || quotaParam == "") && !isInstallationOlderThan1Minute(installation) {
-		return quotaParam, fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
+
+	if found && quotaParam != "" {
+		return quotaParam, nil
 	}
 
 	// if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
 	// in this case check for an Environment Variable QUOTA
 	// if neither are found then return an error as there is no QUOTA value for the installation to use and it's required by the reconcilers.
-	if (!found || quotaParam == "") && isInstallationOlderThan1Minute(installation) {
-		log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", rhmiv1alpha1.EnvKeyQuota))
+	if isInstallationOlderThan1Minute(installation) {
+		log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for quota value",
+			rhmiv1alpha1.EnvKeyQuota))
 		quotaValue, exists := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
 		if !exists || quotaValue == "" {
 			return quotaParam, fmt.Errorf("no quota value provided by add on parameter '%s' or by env var '%s'",
 				addon.QuotaParamName, rhmiv1alpha1.EnvKeyQuota)
 		}
-		quotaParam = quotaValue
+		return quotaValue, nil
 	}
-	return quotaParam, nil
-}
 
+	return quotaParam, fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
+}
