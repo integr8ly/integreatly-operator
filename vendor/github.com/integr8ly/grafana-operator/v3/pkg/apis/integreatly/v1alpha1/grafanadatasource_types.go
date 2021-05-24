@@ -2,8 +2,9 @@ package v1alpha1
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const GrafanaDataSourceKind = "GrafanaDataSource"
@@ -52,6 +53,7 @@ type GrafanaDataSourceList struct {
 type GrafanaDataSourceFields struct {
 	Name              string                          `json:"name"`
 	Type              string                          `json:"type"`
+	Uid               string                          `json:"uid,omitempty"`
 	Access            string                          `json:"access"`
 	OrgId             int                             `json:"orgId,omitempty"`
 	Url               string                          `json:"url"`
@@ -72,6 +74,7 @@ type GrafanaDataSourceFields struct {
 // The most common json options
 // See https://grafana.com/docs/administration/provisioning/#datasources
 type GrafanaDataSourceJsonData struct {
+	OauthPassThru           bool   `json:"oauthPassThru,omitempty"`
 	TlsAuth                 bool   `json:"tlsAuth,omitempty"`
 	TlsAuthWithCACert       bool   `json:"tlsAuthWithCACert,omitempty"`
 	TlsSkipVerify           bool   `json:"tlsSkipVerify,omitempty"`
@@ -95,7 +98,7 @@ type GrafanaDataSourceJsonData struct {
 	MaxOpenConns            int    `json:"maxOpenConns,omitempty"`
 	MaxIdleConns            int    `json:"maxIdleConns,omitempty"`
 	ConnMaxLifetime         int    `json:"connMaxLifetime,omitempty"`
-	//  Usefull fields for clickhouse datasource
+	//  Useful fields for clickhouse datasource
 	//  See https://github.com/Vertamedia/clickhouse-grafana/tree/master/dist/README.md#configure-the-datasource-with-provisioning
 	//  See https://github.com/Vertamedia/clickhouse-grafana/tree/master/src/datasource.ts#L44
 	AddCorsHeader               bool   `json:"addCorsHeader,omitempty"`
@@ -120,6 +123,35 @@ type GrafanaDataSourceJsonData struct {
 	ClientEmail        string `json:"clientEmail,omitempty"`
 	AuthenticationType string `json:"authenticationType,omitempty"`
 	DefaultProject     string `json:"defaultProject,omitempty"`
+	// Fields for Azure data sources
+	AppInsightsAppId             string `json:"appInsightsAppId,omitempty"`
+	AzureLogAnalyticsSameAs      string `json:"azureLogAnalyticsSameAs,omitempty"`
+	ClientId                     string `json:"clientId,omitempty"`
+	CloudName                    string `json:"cloudName,omitempty"`
+	LogAnalyticsDefaultWorkspace string `json:"logAnalyticsDefaultWorkspace,omitempty"`
+	LogAnalyticsClientId         string `json:"logAnalyticsClientId,omitempty"`
+	LogAnalyticsSubscriptionId   string `json:"logAnalyticsSubscriptionId,omitempty"`
+	LogAnalyticsTenantId         string `json:"logAnalyticsTenantId,omitempty"`
+	SubscriptionId               string `json:"subscriptionId,omitempty"`
+	TenantId                     string `json:"tenantId,omitempty"`
+	// Fields for InfluxDB data sources
+	HTTPMode      string `json:"httpMode,omitempty"`
+	Version       string `json:"version,omitempty"`
+	Organization  string `json:"organization,omitempty"`
+	DefaultBucket string `json:"defaultBucket,omitempty"`
+	// Fields for Loki data sources
+	MaxLines      int                                  `json:"maxLines,omitempty"`
+	DerivedFields []GrafanaDataSourceJsonDerivedFields `json:"derivedFields,omitempty"`
+	// Fields for Prometheus data sources
+	CustomQueryParameters string `json:"customQueryParameters,omitempty"`
+	HTTPMethod            string `json:"httpMethod,omitempty"`
+}
+
+type GrafanaDataSourceJsonDerivedFields struct {
+	DatasourceUid string `json:"datasourceUid,omitempty"`
+	MatcherRegex  string `json:"matcherRegex,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Url           string `json:"url,omitempty"`
 }
 
 // The most common secure json options
@@ -145,13 +177,19 @@ type GrafanaDataSourceSecureJsonData struct {
 	HTTPHeaderValue9 string `json:"httpHeaderValue9,omitempty"`
 	// Fields for Stackdriver data sources
 	PrivateKey string `json:"privateKey,omitempty"`
+	// Fields for Azure data sources
+	ClientSecret             string `json:"clientSecret,omitempty"`
+	AppInsightsApiKey        string `json:"appInsightsApiKey,omitempty"`
+	LogAnalyticsClientSecret string `json:"logAnalyticsClientSecret,omitempty"`
+	// Fields for InfluxDB data sources
+	Token string `json:"token,omitempty"`
 }
 
 func init() {
 	SchemeBuilder.Register(&GrafanaDataSource{}, &GrafanaDataSourceList{})
 }
 
-// return a unique per namespaec key of the datasource
+// return a unique per namespace key of the datasource
 func (ds *GrafanaDataSource) Filename() string {
 	return fmt.Sprintf("%v_%v.yaml", ds.Namespace, strings.ToLower(ds.Name))
 }

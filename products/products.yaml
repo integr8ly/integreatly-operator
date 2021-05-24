@@ -12,7 +12,7 @@ products:
     url: "https://github.com/integr8ly/cloud-resource-operator"
     installType: "rhoam/rhmi"
   - name: grafana-operator
-    version: v3.8.1
+    version: v3.10.1
     url: "https://github.com/integr8ly/grafana-operator"
     installType: "rhoam/rhmi"
   - name: marin3r
@@ -20,11 +20,11 @@ products:
     url: "https://github.com/3scale/marin3r"
     installType: "rhoam"
   - name: application-monitoring-operator
-    version: v1.5.0
+    version: v1.6.0
     url: "https://github.com/integr8ly/application-monitoring-operator"
     installType: "rhmi/rhoam"
   - name: keycloak-operator
-    version: 12.0.3
+    version: 13.0.0
     url: "https://github.com/keycloak/keycloak-operator"
     installType: "rhmi/rhoam"
   - name: tutorial-web-app-operator

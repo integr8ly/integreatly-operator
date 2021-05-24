@@ -21,8 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-openapi/strfmt"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"github.com/prometheus/alertmanager/api/v2/models"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -84,7 +86,6 @@ const (
 	installTypeEnvName               = "INSTALLATION_TYPE"
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
-	alertManagerRouteName            = "alertmanager-route"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
 )
 
@@ -95,23 +96,6 @@ var (
 		"KeycloakInstanceNotAvailable",
 	}
 )
-
-type Silence struct {
-	ID     string `json:"id"`
-	Status struct {
-		State string `json:"state"`
-	} `json:"status"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Comment   string    `json:"comment"`
-	CreatedBy string    `json:"createdBy"`
-	EndsAt    time.Time `json:"endsAt"`
-	Matchers  []struct {
-		IsRegex bool   `json:"isRegex"`
-		Name    string `json:"name"`
-		Value   string `json:"value"`
-	} `json:"matchers"`
-	StartsAt time.Time `json:"startsAt"`
-}
 
 // RHMIReconciler reconciles a RHMI object
 type RHMIReconciler struct {
@@ -201,9 +185,6 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Permission to get the ConfigMap that embeds the CSV for an InstallPlan
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get
-
-// Permission to get the serviceaccount
-// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch
 
 // Permission for marin3r resources
 // +kubebuilder:rbac:groups=marin3r.3scale.net,resources=envoyconfigs,verbs=get;list;watch;create;update;delete
@@ -465,7 +446,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	return retryRequeue, err
 }
 
-func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, ctx context.Context, rc *rest.Config) error {
+func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config) error {
 
 	var alertingNamespaces = map[string]string{
 		"openshift-monitoring": "alertmanager-main",
@@ -474,30 +455,44 @@ func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, ctx cont
 
 	for namespace, route := range alertingNamespaces {
 		for _, alert := range alertsToSilence {
-			exists, err := r.silenceExists(installation, namespace, route, log, rc, alert)
+			exists, err := r.silenceExists(namespace, route, rc, alert)
 			if err != nil {
-				log.Error("Error checking for silence", err)
+				log.Error("Error checking for silence : %w", err)
 			}
 			if !exists {
-				r.silenceAlert(installation, namespace, route, log, rc, alert)
+				err := r.silenceAlert(namespace, route, rc, alert)
+				if err != nil {
+					log.Error("error silencing alert : %w", err)
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func (r *RHMIReconciler) silenceAlert(installation *rhmiv1alpha1.RHMI, namespace string, route string, log l.Logger, rc *rest.Config, alertName string) error {
+func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.Config, alertName string) error {
 
 	endpoint := "/api/v1/silences"
-	startsAt := time.Now().Format(time.RFC3339)
-	endsAt := time.Now().Add(time.Hour * 1).Format(time.RFC3339)
+	startsAt := strfmt.DateTime(time.Now())
+	endsAt := strfmt.DateTime(time.Now().Add(time.Hour * 1))
 
-	var silence = []byte(`{` +
-		`"endsAt": "` + endsAt + `",` +
-		`"startsAt": "` + startsAt + `",` +
-		`"matchers":[{"isRegex": false, "name": "alertname","value": "` + alertName + `"}],` +
-		`"Comment":"Silence alert due to uninstall",` +
-		`"createdBy":"Integreatly Operator"}`)
+	matchers := models.Matchers{}
+	matchers = append(matchers, &models.Matcher{
+		IsEqual: nil,
+		IsRegex: &[]bool{false}[0],
+		Name:    &[]string{"alertname"}[0],
+		Value:   &alertName,
+	})
+
+	comment := "Silence alert due to uninstall"
+	createdBy := "Integreatly Operator"
+	silence := models.Silence{
+		Comment:   &comment,
+		CreatedBy: &createdBy,
+		EndsAt:    &endsAt,
+		Matchers:  matchers,
+		StartsAt:  &startsAt,
+	}
 
 	url, err := r.getURLFromRoute(route, namespace, rc)
 	if err != nil {
@@ -505,16 +500,20 @@ func (r *RHMIReconciler) silenceAlert(installation *rhmiv1alpha1.RHMI, namespace
 
 	}
 	url = url + endpoint
-	serviceAccount := r.getServiceAccount(installation)
 
-	token, err := r.getBearerToken(installation, serviceAccount)
+	var bearer = "Bearer " + r.restConfig.BearerToken
+
+	reqBodyBytes := new(bytes.Buffer)
+	err = json.NewEncoder(reqBodyBytes).Encode(silence)
 	if err != nil {
-		return fmt.Errorf("error getting bearer token : %w", err)
+		return fmt.Errorf("error encoding silence : %w", err)
 	}
 
-	var bearer = "Bearer " + token
+	req, err := http.NewRequest("POST", url, reqBodyBytes)
+	if err != nil {
+		return fmt.Errorf("error on request : %w", err)
+	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(silence))
 	req.Header.Add("Authorization", bearer)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -534,7 +533,7 @@ func (r *RHMIReconciler) silenceAlert(installation *rhmiv1alpha1.RHMI, namespace
 	return nil
 }
 
-func (r *RHMIReconciler) silenceExists(installation *rhmiv1alpha1.RHMI, namespace string, route string, log l.Logger, rc *rest.Config, alert string) (bool, error) {
+func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.Config, alert string) (bool, error) {
 	silenceExists := false
 	endpoint := "/api/v2/silences"
 
@@ -544,16 +543,13 @@ func (r *RHMIReconciler) silenceExists(installation *rhmiv1alpha1.RHMI, namespac
 	}
 	url = url + endpoint
 
-	serviceAccount := r.getServiceAccount(installation)
-
-	token, err := r.getBearerToken(installation, serviceAccount)
-	if err != nil {
-		return false, err
-	}
-
-	var bearer = "Bearer " + token
+	var bearer = "Bearer " + r.restConfig.BearerToken
 
 	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, fmt.Errorf("error on request : %w", err)
+	}
+
 	req.Header.Add("Authorization", bearer)
 
 	client := &http.Client{}
@@ -570,55 +566,20 @@ func (r *RHMIReconciler) silenceExists(installation *rhmiv1alpha1.RHMI, namespac
 		return false, fmt.Errorf("unable to read body : %w", err)
 	}
 
-	var existingSilences []Silence
+	var existingSilences models.GettableSilences
+
 	err = json.Unmarshal([]byte(body), &existingSilences)
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
 	for _, silence := range existingSilences {
-		if silence.Status.State == "active" && silence.Matchers[0].Name == "alertname" && silence.Matchers[0].Value == alert {
+		if *silence.Status.State == "active" && *silence.Silence.Matchers[0].Name == "alertname" && *silence.Silence.Matchers[0].Value == alert {
 			silenceExists = true
 		}
 	}
 
 	return silenceExists, nil
-}
-
-func (r *RHMIReconciler) getServiceAccount(installation *rhmiv1alpha1.RHMI) *corev1.ServiceAccount {
-
-	serviceAccount := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-operator",
-			Namespace: installation.GetNamespace(),
-		},
-	}
-
-	r.Client.Get(context.TODO(), types.NamespacedName{Name: serviceAccount.Name, Namespace: serviceAccount.Namespace}, serviceAccount)
-
-	return serviceAccount
-}
-
-func (r *RHMIReconciler) getBearerToken(installation *rhmiv1alpha1.RHMI, serviceAccount *corev1.ServiceAccount) (string, error) {
-
-	tokenSecret := ""
-
-	for _, secret := range serviceAccount.Secrets {
-		if strings.Contains(secret.Name, "token") {
-			tokenSecret = secret.Name
-		}
-	}
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecret,
-			Namespace: installation.Namespace,
-		},
-	}
-
-	r.Client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret)
-
-	return string(secret.Data["token"]), nil
 }
 
 func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
@@ -726,7 +687,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 
 	log.Info("Creating Silence for alerts")
-	err = r.createSilence(installation, context.TODO(), r.restConfig)
+	err = r.createSilence(installation, r.restConfig)
 
 	if err != nil {
 		log.Error("Error creating silence", err)

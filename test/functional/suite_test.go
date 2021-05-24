@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -20,9 +21,6 @@ import (
 
 const (
 	testResultsDirectory = "/test-run-results"
-	jUnitOutputFilename  = "junit-integreatly-operator.xml"
-	addonMetadataName    = "addon-metadata.json"
-	testOutputFileName   = "test-output.txt"
 	testSuiteName        = "integreatly-operator"
 )
 
@@ -61,10 +59,10 @@ func TestAPIs(t *testing.T) {
 		t.Fatalf("could not get install type %s", err)
 	}
 
-	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("%s/%s", testResultsDirectory, jUnitOutputFilename))
+	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("%s/%s", testResultsDirectory, utils.JUnitFileName(testSuiteName)))
 
 	RunSpecsWithDefaultAndCustomReporters(t,
-		"Functional Test Suite",
+		utils.SpecDescription("Functional Test Suite"),
 		[]Reporter{junitReporter})
 }
 

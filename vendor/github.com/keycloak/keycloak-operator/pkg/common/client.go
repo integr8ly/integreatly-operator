@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"github.com/keycloak/keycloak-operator/pkg/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	config2 "sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -90,6 +92,20 @@ func (c *Client) CreateRealm(realm *v1alpha1.KeycloakRealm) (string, error) {
 
 func (c *Client) CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
 	return c.create(client, fmt.Sprintf("realms/%s/clients", realmName), "client")
+}
+
+func (c *Client) CreateClientRole(clientID string, role *v1alpha1.RoleRepresentation, realmName string) (string, error) {
+	return c.create(role, fmt.Sprintf("realms/%s/clients/%s/roles", realmName, clientID), "client role")
+}
+
+func (c *Client) CreateClientRealmScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *[]v1alpha1.RoleRepresentation, realmName string) error {
+	_, err := c.create(mappings, fmt.Sprintf("realms/%s/clients/%s/scope-mappings/realm", realmName, specClient.ID), "client realm scope mappings")
+	return err
+}
+
+func (c *Client) CreateClientClientScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *v1alpha1.ClientMappingsRepresentation, realmName string) error {
+	_, err := c.create(mappings.Mappings, fmt.Sprintf("realms/%s/clients/%s/scope-mappings/clients/%s", realmName, specClient.ID, mappings.ID), "client client scope mappings")
+	return err
 }
 
 func (c *Client) CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
@@ -405,6 +421,10 @@ func (c *Client) UpdateClient(specClient *v1alpha1.KeycloakAPIClient, realmName 
 	return c.update(specClient, fmt.Sprintf("realms/%s/clients/%s", realmName, specClient.ID), "client")
 }
 
+func (c *Client) UpdateClientRole(clientID string, role, oldRole *v1alpha1.RoleRepresentation, realmName string) error {
+	return c.update(role, fmt.Sprintf("realms/%s/clients/%s/roles/%s", realmName, clientID, oldRole.Name), "client role")
+}
+
 func (c *Client) UpdateUser(specUser *v1alpha1.KeycloakAPIUser, realmName string) error {
 	return c.update(specUser, fmt.Sprintf("realms/%s/users/%s", realmName, specUser.ID), "user")
 }
@@ -415,6 +435,14 @@ func (c *Client) UpdateIdentityProvider(specIdentityProvider *v1alpha1.KeycloakI
 
 func (c *Client) UpdateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error {
 	return c.update(authenticatorConfig, fmt.Sprintf("realms/%s/authentication/config/%s", realmName, authenticatorConfig.ID), "AuthenticatorConfig")
+}
+
+func (c *Client) UpdateClientDefaultClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error {
+	return c.update(clientScope, fmt.Sprintf("realms/%s/clients/%s/default-client-scopes/%s", realmName, specClient.ID, clientScope.ID), "client default client scope")
+}
+
+func (c *Client) UpdateClientOptionalClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error {
+	return c.update(clientScope, fmt.Sprintf("realms/%s/clients/%s/optional-client-scopes/%s", realmName, specClient.ID, clientScope.ID), "client optional client scope")
 }
 
 // Generic delete function for deleting Keycloak resources
@@ -471,6 +499,27 @@ func (c *Client) DeleteRealm(realmName string) error {
 func (c *Client) DeleteClient(clientID, realmName string) error {
 	err := c.delete(fmt.Sprintf("realms/%s/clients/%s", realmName, clientID), "client", nil)
 	return err
+}
+
+func (c *Client) DeleteClientRole(clientID, role, realmName string) error {
+	err := c.delete(fmt.Sprintf("realms/%s/clients/%s/roles/%s", realmName, clientID, role), "client role", nil)
+	return err
+}
+
+func (c *Client) DeleteClientRealmScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *[]v1alpha1.RoleRepresentation, realmName string) error {
+	return c.delete(fmt.Sprintf("realms/%s/clients/%s/scope-mappings/realm", realmName, specClient.ID), "client realm scope mappings", mappings)
+}
+
+func (c *Client) DeleteClientClientScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *v1alpha1.ClientMappingsRepresentation, realmName string) error {
+	return c.delete(fmt.Sprintf("realms/%s/clients/%s/scope-mappings/clients/%s", realmName, specClient.ID, mappings.ID), "client client scope mappings", mappings.Mappings)
+}
+
+func (c *Client) DeleteClientDefaultClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error {
+	return c.delete(fmt.Sprintf("realms/%s/clients/%s/default-client-scopes/%s", realmName, specClient.ID, clientScope.ID), "client default client scope", clientScope)
+}
+
+func (c *Client) DeleteClientOptionalClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error {
+	return c.delete(fmt.Sprintf("realms/%s/clients/%s/optional-client-scopes/%s", realmName, specClient.ID, clientScope.ID), "client optional client scope", clientScope)
 }
 
 func (c *Client) DeleteUser(userID, realmName string) error {
@@ -557,6 +606,78 @@ func (c *Client) ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, e
 	}
 
 	return res, nil
+}
+
+func (c *Client) ListClientRoles(clientID, realmName string) ([]v1alpha1.RoleRepresentation, error) {
+	result, err := c.list(fmt.Sprintf("realms/%s/clients/%s/roles", realmName, clientID), "client roles", func(body []byte) (T, error) {
+		var roles []v1alpha1.RoleRepresentation
+		err := json.Unmarshal(body, &roles)
+		return roles, err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, ok := result.([]v1alpha1.RoleRepresentation)
+
+	if !ok {
+		return nil, errors.Errorf("error decoding list client roles response")
+	}
+
+	return res, nil
+}
+
+func (c *Client) ListScopeMappings(clientID, realmName string) (*v1alpha1.MappingsRepresentation, error) {
+	result, err := c.list(fmt.Sprintf("realms/%s/clients/%s/scope-mappings", realmName, clientID), "client scope mappings", func(body []byte) (T, error) {
+		var mappings v1alpha1.MappingsRepresentation
+		err := json.Unmarshal(body, &mappings)
+		return mappings, err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, ok := result.(v1alpha1.MappingsRepresentation)
+
+	if !ok {
+		return nil, errors.Errorf("error decoding list client scope mappings response")
+	}
+
+	return &res, nil
+}
+
+func (c *Client) listClientScopes(path string, msg string) ([]v1alpha1.KeycloakClientScope, error) {
+	result, err := c.list(path, msg, func(body []byte) (T, error) {
+		var assignedClientScopes []v1alpha1.KeycloakClientScope
+		err := json.Unmarshal(body, &assignedClientScopes)
+		return assignedClientScopes, err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, ok := result.([]v1alpha1.KeycloakClientScope)
+
+	if !ok {
+		return nil, errors.Errorf("error decoding list %s response", msg)
+	}
+
+	return res, nil
+}
+
+func (c *Client) ListAvailableClientScopes(realmName string) ([]v1alpha1.KeycloakClientScope, error) {
+	return c.listClientScopes(fmt.Sprintf("realms/%s/client-scopes", realmName), "available client scopes")
+}
+
+func (c *Client) ListDefaultClientScopes(clientID, realmName string) ([]v1alpha1.KeycloakClientScope, error) {
+	return c.listClientScopes(fmt.Sprintf("realms/%s/clients/%s/default-client-scopes", realmName, clientID), "default client scopes")
+}
+
+func (c *Client) ListOptionalClientScopes(clientID, realmName string) ([]v1alpha1.KeycloakClientScope, error) {
+	return c.listClientScopes(fmt.Sprintf("realms/%s/clients/%s/optional-client-scopes", realmName, clientID), "optional client scopes")
 }
 
 func (c *Client) ListUsers(realmName string) ([]*v1alpha1.KeycloakAPIUser, error) {
@@ -725,12 +846,31 @@ func (c *Client) login(user, pass string) error {
 }
 
 // defaultRequester returns a default client for requesting http endpoints
-func defaultRequester() Requester {
-	transport := http.DefaultTransport.(*http.Transport).Clone() // nolint
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // nolint
+func defaultRequester(serverCert []byte) (Requester, error) {
+	tlsConfig, err := createTLSConfig(serverCert)
+	if err != nil {
+		return nil, err
+	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = tlsConfig
 
 	c := &http.Client{Transport: transport, Timeout: time.Second * 10}
-	return c
+	return c, nil
+}
+
+// createTLSConfig constructs and returns a TLS Config with a root CA read
+// from the serverCert param if present, or a permissive config which
+// is insecure otherwise
+func createTLSConfig(serverCert []byte) (*tls.Config, error) {
+	if serverCert == nil {
+		return &tls.Config{InsecureSkipVerify: true}, nil // nolint
+	}
+
+	rootCAPool := x509.NewCertPool()
+	if ok := rootCAPool.AppendCertsFromPEM(serverCert); !ok {
+		return nil, errors.Errorf("unable to successfully load certificate")
+	}
+	return &tls.Config{RootCAs: rootCAPool}, nil
 }
 
 //go:generate moq -out keycloakClient_moq.go . KeycloakInterface
@@ -753,6 +893,22 @@ type KeycloakInterface interface {
 	UpdateClient(specClient *v1alpha1.KeycloakAPIClient, realmName string) error
 	DeleteClient(clientID, realmName string) error
 	ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, error)
+	ListClientRoles(clientID, realmName string) ([]v1alpha1.RoleRepresentation, error)
+	ListScopeMappings(clientID, realmName string) (*v1alpha1.MappingsRepresentation, error)
+	ListAvailableClientScopes(realmName string) ([]v1alpha1.KeycloakClientScope, error)
+	ListDefaultClientScopes(clientID, realmName string) ([]v1alpha1.KeycloakClientScope, error)
+	ListOptionalClientScopes(clientID, realmName string) ([]v1alpha1.KeycloakClientScope, error)
+	CreateClientRole(clientID string, role *v1alpha1.RoleRepresentation, realmName string) (string, error)
+	UpdateClientRole(clientID string, role, oldRole *v1alpha1.RoleRepresentation, realmName string) error
+	DeleteClientRole(clientID, role, realmName string) error
+	CreateClientRealmScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *[]v1alpha1.RoleRepresentation, realmName string) error
+	DeleteClientRealmScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *[]v1alpha1.RoleRepresentation, realmName string) error
+	CreateClientClientScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *v1alpha1.ClientMappingsRepresentation, realmName string) error
+	DeleteClientClientScopeMappings(specClient *v1alpha1.KeycloakAPIClient, mappings *v1alpha1.ClientMappingsRepresentation, realmName string) error
+	UpdateClientDefaultClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error
+	DeleteClientDefaultClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error
+	UpdateClientOptionalClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error
+	DeleteClientOptionalClientScope(specClient *v1alpha1.KeycloakAPIClient, clientScope *v1alpha1.KeycloakClientScope, realmName string) error
 
 	CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error)
 	CreateFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error)
@@ -812,13 +968,11 @@ func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (
 		return nil, err
 	}
 
-	var credentialSecret, endpoint string
+	var credentialSecret string
 	if kc.Spec.External.Enabled {
 		credentialSecret = "credential-" + kc.Name
-		endpoint = kc.Spec.External.URL
 	} else {
 		credentialSecret = kc.Status.CredentialSecret
-		endpoint = kc.Status.InternalURL
 	}
 
 	adminCreds, err := secretClient.CoreV1().Secrets(kc.Namespace).Get(context.TODO(), credentialSecret, v12.GetOptions{})
@@ -827,12 +981,89 @@ func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (
 	}
 	user := string(adminCreds.Data[model.AdminUsernameProperty])
 	pass := string(adminCreds.Data[model.AdminPasswordProperty])
+
+	serverCert, err := getKCServerCert(secretClient, kc)
+	if err != nil {
+		return nil, err
+	}
+
+	requester, err := defaultRequester(serverCert)
+	if err != nil {
+		return nil, err
+	}
+
+	kcURL, err := getKeycloakURL(kc, requester)
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
-		URL:       endpoint,
-		requester: defaultRequester(),
+		URL:       kcURL,
+		requester: requester,
 	}
 	if err := client.login(user, pass); err != nil {
 		return nil, err
 	}
 	return client, nil
+}
+
+func getKCServerCert(secretClient *kubernetes.Clientset, kc v1alpha1.Keycloak) ([]byte, error) {
+	sslCertsSecret, err := secretClient.CoreV1().Secrets(kc.Namespace).Get(context.TODO(), model.ServingCertSecretName, v12.GetOptions{})
+	switch {
+	case err == nil:
+		return sslCertsSecret.Data["tls.crt"], nil
+	case k8sErrors.IsNotFound(err):
+		return nil, nil
+	default:
+		return nil, err
+	}
+}
+
+// At normal conditions, Keycloak should be accessible via the internalURL. However, there are some corner cases (like
+// operator running locally during development or services being inaccessible due to network policies) which requires
+// use of externalURL.
+func getKeycloakURL(kc v1alpha1.Keycloak, requester Requester) (string, error) {
+	var kcURL string
+	var err error
+
+	if kc.Status.InternalURL != "" {
+		kcURL, err = validateKeycloakURL(kc.Status.InternalURL, requester)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if kcURL == "" && kc.Status.ExternalURL != "" {
+		kcURL, err = validateKeycloakURL(kc.Status.ExternalURL, requester)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if kcURL == "" {
+		return "", errors.Errorf("neither internal nor external url is a valid keycloak url (is keycloak instance running?)")
+	}
+
+	log.Info(fmt.Sprintf("found keycloak url: %s", kcURL))
+
+	return kcURL, nil
+}
+
+func validateKeycloakURL(url string, requester Requester) (string, error) {
+	req, err := http.NewRequest(
+		"GET",
+		url,
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := requester.Do(req)
+	if err != nil {
+		log.Info(fmt.Sprintf("%s is not a valid keycloak url", url))
+		return "", nil
+	}
+	_ = res.Body.Close()
+	return url, nil
 }

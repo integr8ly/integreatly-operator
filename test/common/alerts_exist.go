@@ -356,7 +356,6 @@ func commonExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "rhsso-keycloak.yaml",
 			Rules: []string{
-				"KeycloakJavaHeapThresholdExceeded",
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
 				"KeycloakJavaGCTimePerMinuteMarkSweep",
@@ -370,7 +369,6 @@ func commonExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "user-sso-keycloak.yaml",
 			Rules: []string{
-				"KeycloakJavaHeapThresholdExceeded",
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
 				"KeycloakJavaGCTimePerMinuteMarkSweep",
@@ -396,12 +394,6 @@ func commonExpectedRules() []alertsTestRule {
 				"KubePersistentVolumeFillingUp",
 				"KubePersistentVolumeFillingUp",
 				"PersistentVolumeErrors",
-			},
-		},
-		{
-			File: NamespacePrefix + "middleware-monitoring-operator-ksm-monitoring-alerts.yaml",
-			Rules: []string{
-				"MiddlewareMonitoringPodCount",
 			},
 		},
 		{

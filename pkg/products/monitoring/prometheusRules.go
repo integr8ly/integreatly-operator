@@ -9,14 +9,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool, logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 	nsPrefix := r.installation.Spec.NamespacePrefix
-
-	monitoringExpectedPodCount := 7
-	if isClusterMultiAZ {
-		monitoringExpectedPodCount = 11
-	}
 
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "monitoring",
@@ -191,23 +186,6 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool, logger l.Logger,
 						},
 						Expr:   intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
-					},
-				},
-			},
-
-			{
-				AlertName: "ksm-monitoring-alerts",
-				Namespace: r.Config.GetOperatorNamespace(),
-				GroupName: "general.rules",
-				Rules: []monitoringv1.Rule{
-					{
-						Alert: "MiddlewareMonitoringPodCount",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": fmt.Sprintf("Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly %d pods.", monitoringExpectedPodCount),
-						},
-						Expr: intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='"+nsPrefix+"middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='"+nsPrefix+"middleware-monitoring-operator'}) != %d", monitoringExpectedPodCount)), For: "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},

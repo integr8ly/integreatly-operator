@@ -9,9 +9,13 @@ const (
 	PostgresqlBackupPersistentVolumeName = ApplicationName + "-backup"
 	PostgresqlDeploymentName             = ApplicationName + "-postgresql"
 	KeycloakProbesName                   = ApplicationName + "-probes"
+	KeycloakMetricsRouteName             = ApplicationName + "-metrics-rewrite"
+	KeycloakMetricsRoutePath             = "/auth/realms/master/metrics"
+	KeycloakMetricsRouteRewritePath      = "/auth/realms/master"
 	PostgresqlDeploymentComponent        = "database"
 	PostgresqlServiceName                = ApplicationName + "-postgresql"
 	KeycloakDiscoveryServiceName         = ApplicationName + "-discovery"
+	KeycloakMonitoringServiceName        = ApplicationName + "-monitoring"
 	KeycloakDeploymentName               = ApplicationName
 	KeycloakDeploymentComponent          = "keycloak"
 	PostgresqlBackupComponent            = "database-backup"

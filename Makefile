@@ -21,8 +21,8 @@ TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 
 # These tags are modified by the prepare-release script.
-RHMI_TAG ?= 2.8.0
-RHOAM_TAG ?= 1.6.0
+RHMI_TAG ?= 2.9.0
+RHOAM_TAG ?= 1.7.0
 
 export SKIP_FLAKES := true
 

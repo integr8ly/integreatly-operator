@@ -8,6 +8,7 @@ import (
 	"time"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -17,7 +18,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/webapp"
 	"github.com/integr8ly/integreatly-operator/version"
 
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
@@ -36,9 +39,8 @@ import (
 var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_controller"})
 
 const (
-	// IntegreatlyPackage - package name is used for Subsription name
+	// IntegreatlyPackage - package name is used for Subscription name
 	IntegreatlyPackage              = "integreatly"
-	CSVNamePrefix                   = "integreatly-operator"
 	RHMIAddonSubscription           = "addon-rhmi"
 	RHMIAddonSubscriptionEdge       = "addon-rhmi-internal"
 	ManagedAPIAddonSubscription     = "addon-managed-api-service"
@@ -186,16 +188,26 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 		return ctrl.Result{}, nil
 	}
-
-	latestRHMIInstallPlan, err := rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// if installplan is not found trigger the creation of a new one
-			err = rhmiConfigs.CreateInstallPlan(ctx, rhmiSubscription, r.Client)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+	log.Infof("Verifying the fields in the RHMI Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
+	latestRHMIInstallPlan := &olmv1alpha1.InstallPlan{}
+	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+		// gets the subscription with the recreated installplan
+		err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
+		if err != nil {
+			log.Infof("Couldn't retrieve the subscription due to an error", l.Fields{"Error": err})
+			return false, nil
 		}
+
+		latestRHMIInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
+		if err != nil {
+			log.Infof("Install Plan was not created due to an error", l.Fields{"Error": err})
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		log.Infof("Triggering a new reconcile loop due to an error", l.Fields{"Error": err})
+
 		return ctrl.Result{}, err
 	}
 
@@ -246,40 +258,49 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		}
 	}
 
-	isInstallPlanDeleted := false
-	currentOperatorVersionName := fmt.Sprintf("%s.v%s", CSVNamePrefix, version.GetVersion())
-	if csvFromCatalogSource.Spec.Replaces != currentOperatorVersionName {
+	csvNamePrefix := "integreatly-operator"                                               //default prefix
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) { //if install type is RHOAM
+		csvNamePrefix = "managed-api-service"
+	}
 
-		if csvFromCatalogSource.Spec.Replaces != latestRHMICSV.Spec.Replaces {
-			err = rhmiConfigs.DeleteInstallPlan(ctx, latestRHMIInstallPlan, r.Client)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("error deleting installplan %w", err)
-			}
-
-			isInstallPlanDeleted = true
-			log.Info("Installplan deleted for the install of patch upgrade")
-
-			err = rhmiConfigs.CreateInstallPlan(ctx, rhmiSubscription, r.Client)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+	currentOperatorVersionName := fmt.Sprintf("%s.v%s", csvNamePrefix, version.GetVersion())
+	if csvFromCatalogSource.Spec.Replaces != currentOperatorVersionName { //if Catalog Source CSV does not replace currently installed operator
+		err = rhmiConfigs.DeleteInstallPlan(ctx, latestRHMIInstallPlan, r.Client)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("error deleting installplan %w", err)
 		}
 
-		if isInstallPlanDeleted {
-			// Requeue reconciler until the installplan is recreated
-			return ctrl.Result{
-				Requeue:      true,
-				RequeueAfter: 10 * time.Second,
-			}, nil
-		}
+		log.Info("Installplan deleted for the install of patch upgrade")
 
-		// gets the subscription wit the recreated installplan
-		err := r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
+		err = rhmiConfigs.CreateInstallPlan(ctx, rhmiSubscription, r.Client)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-	}
 
+		err := wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err error) {
+			// gets the subscription with the recreated installplan
+			log.Info("Waiting for the new install plan to be created")
+			err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
+			log.Info("got subscription")
+			if err != nil {
+				log.Infof("Couldn't get subscription", l.Fields{"Error": err})
+				return false, nil
+			}
+			log.Infof("install plan read from the new subscription", l.Fields{"InstallPlanName": latestRHMIInstallPlan.Name})
+			latestRHMIInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
+			if err != nil {
+				log.Infof("Install plan was not created", l.Fields{"Error": err})
+				return false, nil
+			}
+			log.Infof("new install plan was created by OLM", l.Fields{"InstallPlanName": latestRHMIInstallPlan.Name})
+			return true, nil
+		})
+		if err != nil {
+			log.Infof("Triggering a new reconcile loop due to an error after waiting for the creation of a new install plan", l.Fields{"Error": err})
+
+			return ctrl.Result{}, err
+		}
+	}
 	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV)
 
 	if isServiceAffecting && !latestRHMIInstallPlan.Spec.Approved && config.Status.UpgradeAvailable == nil {
@@ -298,6 +319,18 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		}, nil
 	}
 
+	if isServiceAffecting {
+		// Fixes cases where an upgrade is already in progress eg: patch upgrades
+		// In that case we want to clear the toVersion so that the operator will reset it to the new upgrade
+		// If it's not cleared, the installation controller logic can't handle it, which will block the upgrade from completing.
+		if installation.Status.ToVersion != "" {
+			installation.Status.ToVersion = ""
+		}
+		if err := r.Status().Update(context.TODO(), installation); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -308,7 +341,6 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 	if !isServiceAffecting {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-
 		if config.Status.UpgradeAvailable != nil && config.Status.UpgradeAvailable.TargetVersion == rhmiSubscription.Status.CurrentCSV {
 			config.Status.UpgradeAvailable = nil
 			if err := r.Status().Update(context.TODO(), config); err != nil {
@@ -317,6 +349,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		}
 
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestRHMIInstallPlan, eventRecorder)
+		logrus.Infof("Approving install plan %s ", latestRHMIInstallPlan.Name)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -327,6 +360,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 			RequeueAfter: 10 * time.Second,
 		}, nil
 	}
+
 	return ctrl.Result{
 		Requeue:      true,
 		RequeueAfter: time.Minute,

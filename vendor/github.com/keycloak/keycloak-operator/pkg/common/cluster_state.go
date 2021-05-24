@@ -57,10 +57,12 @@ type ClusterState struct {
 	PostgresqlDeployment            *v12.Deployment
 	KeycloakService                 *v1.Service
 	KeycloakDiscoveryService        *v1.Service
+	KeycloakMonitoringService       *v1.Service
 	KeycloakDeployment              *v12.StatefulSet
 	KeycloakAdminSecret             *v1.Secret
 	KeycloakIngress                 *v1beta1.Ingress
 	KeycloakRoute                   *v13.Route
+	KeycloakMetricsRoute            *v13.Route
 	PostgresqlServiceEndpoints      *v1.Endpoints
 	PodDisruptionBudget             *v1beta12.PodDisruptionBudget
 	KeycloakProbes                  *v1.ConfigMap
@@ -131,6 +133,11 @@ func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controller
 		return err
 	}
 
+	err = i.readKeycloakMonitoringServiceCurrentState(context, cr, controllerClient)
+	if err != nil {
+		return err
+	}
+
 	err = i.readKeycloakOrRHSSODeploymentCurrentState(context, cr, controllerClient)
 	if err != nil {
 		return err
@@ -148,6 +155,13 @@ func (i *ClusterState) Read(context context.Context, cr *kc.Keycloak, controller
 		}
 	} else {
 		err = i.readKeycloakIngressCurrentState(context, cr, controllerClient)
+		if err != nil {
+			return err
+		}
+	}
+
+	if i.KeycloakRoute != nil {
+		err = i.readKeycloakMetricsRouteCurrentState(context, cr, controllerClient)
 		if err != nil {
 			return err
 		}
@@ -233,7 +247,11 @@ func (i *ClusterState) readPostgresqlServiceEndpointsCurrentState(context contex
 }
 
 func (i *ClusterState) readPostgresqlDeploymentCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
-	postgresqlDeployment := model.PostgresqlDeployment(cr)
+	// Find out if we're on OpenShift or Kubernetes
+	stateManager := GetStateManager()
+	isOpenshift, _ := stateManager.GetState(OpenShiftAPIServerKind).(bool)
+
+	postgresqlDeployment := model.PostgresqlDeployment(cr, isOpenshift)
 	postgresqlDeploymentSelector := model.PostgresqlDeploymentSelector(cr)
 
 	err := controllerClient.Get(context, postgresqlDeploymentSelector, postgresqlDeployment)
@@ -411,6 +429,22 @@ func (i *ClusterState) readKeycloakDiscoveryServiceCurrentState(context context.
 	return nil
 }
 
+func (i *ClusterState) readKeycloakMonitoringServiceCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
+	keycloakMonitoringService := model.KeycloakMonitoringService(cr)
+	keycloakMonitoringServiceSelector := model.KeycloakMonitoringServiceSelector(cr)
+
+	err := controllerClient.Get(context, keycloakMonitoringServiceSelector, keycloakMonitoringService)
+	if err != nil {
+		if !apiErrors.IsNotFound(err) {
+			return err
+		}
+	} else {
+		i.KeycloakMonitoringService = keycloakMonitoringService.DeepCopy()
+		cr.UpdateStatusSecondaryResources(i.KeycloakMonitoringService.Kind, i.KeycloakMonitoringService.Name)
+	}
+	return nil
+}
+
 func (i *ClusterState) readKeycloakRouteCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
 	keycloakRoute := model.KeycloakRoute(cr)
 	keycloakRouteSelector := model.KeycloakRouteSelector(cr)
@@ -423,6 +457,22 @@ func (i *ClusterState) readKeycloakRouteCurrentState(context context.Context, cr
 	} else {
 		i.KeycloakRoute = keycloakRoute.DeepCopy()
 		cr.UpdateStatusSecondaryResources(i.KeycloakRoute.Kind, i.KeycloakRoute.Name)
+	}
+	return nil
+}
+
+func (i *ClusterState) readKeycloakMetricsRouteCurrentState(context context.Context, cr *kc.Keycloak, controllerClient client.Client) error {
+	keycloakMetricsRoute := model.KeycloakMetricsRoute(cr, i.KeycloakRoute)
+	keycloakRouteSelector := model.KeycloakMetricsRouteSelector(cr)
+
+	err := controllerClient.Get(context, keycloakRouteSelector, keycloakMetricsRoute)
+	if err != nil {
+		if !apiErrors.IsNotFound(err) {
+			return err
+		}
+	} else {
+		i.KeycloakMetricsRoute = keycloakMetricsRoute.DeepCopy()
+		cr.UpdateStatusSecondaryResources(i.KeycloakRoute.Kind, i.KeycloakMetricsRoute.Name)
 	}
 	return nil
 }
