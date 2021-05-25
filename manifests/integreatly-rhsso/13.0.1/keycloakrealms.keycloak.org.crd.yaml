@@ -60,8 +60,8 @@ spec:
                           type: string
                         type: array
                     required:
-                    - key
-                    - operator
+                      - key
+                      - operator
                     type: object
                   type: array
                 matchLabels:
@@ -151,8 +151,8 @@ spec:
                         description: Top level
                         type: boolean
                     required:
-                    - alias
-                    - authenticationExecutions
+                      - alias
+                      - authenticationExecutions
                     type: object
                   type: array
                 authenticatorConfig:
@@ -171,7 +171,7 @@ spec:
                         description: ID
                         type: string
                     required:
-                    - alias
+                      - alias
                     type: object
                   type: array
                 bruteForceProtected:
@@ -813,7 +813,7 @@ spec:
                           type: string
                         type: array
                     required:
-                    - clientId
+                      - clientId
                     type: object
                   type: array
                 defaultLocale:
@@ -993,7 +993,7 @@ spec:
                               description: Name
                               type: string
                           required:
-                          - name
+                            - name
                           type: object
                         type: array
                       description: Client Roles
@@ -1045,7 +1045,7 @@ spec:
                             description: Name
                             type: string
                         required:
-                        - name
+                          - name
                         type: object
                       type: array
                   type: object
@@ -1138,6 +1138,9 @@ spec:
                         type: string
                     type: object
                   type: array
+                userManagedAccessAllowed:
+                  description: User Managed Access Allowed
+                  type: boolean
                 users:
                   description: A set of Keycloak Users.
                   items:
@@ -1232,7 +1235,7 @@ spec:
                   format: int32
                   type: integer
               required:
-              - realm
+                - realm
               type: object
             realmOverrides:
               description: A list of overrides to the default Realm behavior.
@@ -1245,7 +1248,7 @@ spec:
                     description: Identity Provider to be overridden.
                     type: string
                 required:
-                - identityProvider
+                  - identityProvider
                 type: object
               type: array
               x-kubernetes-list-type: atomic
@@ -1255,7 +1258,7 @@ spec:
                 for targeting purposes.
               type: boolean
           required:
-          - realm
+            - realm
           type: object
         status:
           description: KeycloakRealmStatus defines the observed state of KeycloakRealm
@@ -1284,14 +1287,14 @@ spec:
                 ]'
               type: object
           required:
-          - loginURL
-          - message
-          - phase
-          - ready
+            - loginURL
+            - message
+            - phase
+            - ready
           type: object
       type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
