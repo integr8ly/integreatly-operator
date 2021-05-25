@@ -126,17 +126,19 @@ _8. Create a new app_
 _9. Start custom policy builds_
 
 - `oc start-build apicast-example-policy`
+- Give some time between builds
 - `oc start-build apicast-custom-policies`
-- once finished, the `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` should be available to be used as image for self-managed APIcast (this also depends on the namespace name used)
 
 _10. Install "Red Hat Integration - 3scale APIcast gateway" operator via Operator Hub in OSD web console for the namespace_
 
 - do not use community version!
+- Accept the defaults and install in the selfmanaged-apicast namespace
 
 _11. Get the 3scale Admin Portal token_
 
-- navigate to the 3scale Admin Portal (web console)
+- navigate to the 3scale Admin Portal (web console) route can be got with `oc get routes --namespace redhat-rhoam-3scale | grep admin`
 - log in as `customer-admin`
+- navigate to `Account Settings/Personal/Tokens/Add Access Token`
 - create an access token (full read and write access)
 
 _12. Create an adminportal-credentials secret_
@@ -146,18 +148,24 @@ _12. Create an adminportal-credentials secret_
 
 _13. Create a self-managed APIcast_
 
-- navigate back to self-managed APIcast operator and click on "Create an APIcast"
-- use `Edit Form`
+- navigate to `Operators\Installed Operators` in osd
+- Select `Red Hat Integration - 3scale APIcast gateway`
+- Select the `APIcast` tab
+- Use the `Create APIcast` button
+- use `Form view`
 - change "Admin Portal Credentials Ref" secret name to `adminportal-credentials`
-- set "Configuration Load Mode" to lazy
 - set "Image" to `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` (this also depends on the namespace name used)
+- set "Configuration Load Mode" to lazy
+- Then use the `Create` button
 
 _14. Use self-managed APIcast instead of the builded one for API (echo service)_
 
-- navigate to 3scale Admin Portal (web console)
+- navigate to 3scale Admin Portal (web console) route can be got with `oc get routes --namespace redhat-rhoam-3scale | grep admin`
+- In `API's\Products` on the Dashboard screen go to
 - API -> Integration -> Settings -> tick APIcast Self Managed radio-box
   - change "Staging Public Base URL" so that it is slightly different at the beginning, e.g. replace `api-3scale-apicast-` with `selfmanaged-`
-- API -> Configuration -> Promote to Staging and to Production
+  - Then use the `Update Product` button
+- API -> Configuration -> Use the `Promote to Staging` and `Promote to Production` buttons
 
 _15. Create a route for the self-managed APIcast_
 
@@ -168,6 +176,7 @@ _15. Create a route for the self-managed APIcast_
   - service: select service of your apicast
   - target port: 8080 -> 8080
   - tick secure route, TLS termination: Edge
+  - Then use the `Create` button
 
 _16. Verify your work_
 
@@ -181,8 +190,9 @@ _17. Make custom-policy available in 3scale Admin Portal_
 - `cat policies/example/0.1/apicast-policy.json` - note the output
 - navigate to 3scale Admin Portal
 - ? (Help) -> 3scale API docs -> APIcast Policy Registry Create
-  - use `customer-admin` access token
+  - use `customer-admin` access token, i.e. the one generated in step 11.
   - name -> use name from apicast-policy.json
+  - version -> use the version from apicast-policy.json
   - schema -> paste the `apicast-policy.json` content there
 - press "Send Request" button
 - navigate to 3scale Admin Portal -> API -> Integration -> Policies -> Add Policy
