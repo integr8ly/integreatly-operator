@@ -16,7 +16,6 @@ func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
-
 	// build an array of postgres resources to check and an array of test errors
 	rdsResourceIDs, testErrors := GetRDSResourceIDs(goContext, ctx.Client, rhmi)
 
