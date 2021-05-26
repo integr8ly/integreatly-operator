@@ -1,5 +1,5 @@
 channels:
-- currentCSV: cloud-resources.v0.25.0
+- currentCSV: cloud-resources.v0.24.1
   name: rhmi
 defaultChannel: rhmi
 packageName: rhmi-cloud-resources

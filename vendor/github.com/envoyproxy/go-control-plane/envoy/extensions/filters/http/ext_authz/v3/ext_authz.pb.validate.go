@@ -37,9 +37,6 @@ var (
 	_ = v3.ApiVersion(0)
 )
 
-// define the regex for a UUID once up-front
-var _ext_authz_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
 // Validate checks the field values on ExtAuthz with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
 func (m *ExtAuthz) Validate() error {
@@ -82,6 +79,16 @@ func (m *ExtAuthz) Validate() error {
 		if err := v.Validate(); err != nil {
 			return ExtAuthzValidationError{
 				field:  "FilterEnabled",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetFilterEnabledMetadata()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExtAuthzValidationError{
+				field:  "FilterEnabledMetadata",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -492,6 +499,16 @@ func (m *AuthorizationResponse) Validate() error {
 		}
 	}
 
+	if v, ok := interface{}(m.GetAllowedClientHeadersOnSuccess()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AuthorizationResponseValidationError{
+				field:  "AllowedClientHeadersOnSuccess",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -663,6 +680,8 @@ func (m *CheckSettings) Validate() error {
 	}
 
 	// no validation rules for ContextExtensions
+
+	// no validation rules for DisableRequestBodyBuffering
 
 	return nil
 }
