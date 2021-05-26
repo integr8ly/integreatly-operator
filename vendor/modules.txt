@@ -416,7 +416,7 @@ github.com/imdario/mergo
 # github.com/integr8ly/application-monitoring-operator v1.6.0
 ## explicit
 github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1
-# github.com/integr8ly/cloud-resource-operator v0.25.0
+# github.com/integr8ly/cloud-resource-operator v0.24.0
 ## explicit
 github.com/integr8ly/cloud-resource-operator/apis/config/v1
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
