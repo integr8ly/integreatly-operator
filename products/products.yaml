@@ -24,7 +24,7 @@ products:
     url: "https://github.com/integr8ly/application-monitoring-operator"
     installType: "rhmi/rhoam"
   - name: keycloak-operator
-    version: 13.0.0
+    version: 13.0.1
     url: "https://github.com/keycloak/keycloak-operator"
     installType: "rhmi/rhoam"
   - name: tutorial-web-app-operator
