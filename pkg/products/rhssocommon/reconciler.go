@@ -36,9 +36,9 @@ import (
 )
 
 var (
-	idpAlias             = "openshift-v4"
-	manifestPackage      = "integreatly-rhsso"
-	podMonitorName       = "keycloak-pod-monitor"
+	idpAlias        = "openshift-v4"
+	manifestPackage = "integreatly-rhsso"
+	podMonitorName  = "keycloak-pod-monitor"
 )
 
 type Reconciler struct {
