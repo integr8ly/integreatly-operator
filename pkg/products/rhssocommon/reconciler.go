@@ -8,7 +8,6 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -37,10 +36,9 @@ import (
 )
 
 var (
-	idpAlias             = "openshift-v4"
-	manifestPackage      = "integreatly-rhsso"
-	podMonitorName       = "keycloak-pod-monitor"
-	grafanaDashboardName = "keycloak"
+	idpAlias        = "openshift-v4"
+	manifestPackage = "integreatly-rhsso"
+	podMonitorName  = "keycloak-pod-monitor"
 )
 
 type Reconciler struct {
@@ -578,30 +576,6 @@ func (r *Reconciler) RemovePodMonitors(ctx context.Context, client k8sclient.Cli
 	}
 
 	err = client.Delete(ctx, podMonitor)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) RemoveUnusedDasboard(ctx context.Context, client k8sclient.Client, config config.ConfigReadable) (integreatlyv1alpha1.StatusPhase, error) {
-
-	grafanaDashboard := &grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      grafanaDashboardName,
-			Namespace: config.GetNamespace(),
-		},
-	}
-
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: grafanaDashboardName, Namespace: config.GetNamespace()}, grafanaDashboard)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	err = client.Delete(ctx, grafanaDashboard)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
