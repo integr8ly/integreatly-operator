@@ -65,7 +65,7 @@ products:
     channel: "rhmi"
     installFrom: "index"
     package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.25.0"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.24.1"
   codeready-workspaces:
     channel: "rhmi"
     installFrom: "local"

@@ -52,7 +52,7 @@ const (
 	defaultAwsBackupRetentionPeriod      = 31
 	defaultAwsDBInstanceClass            = "db.t3.small"
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "10.15"
+	defaultAwsEngineVersion              = "10.13"
 	defaultAwsPubliclyAccessible         = false
 	defaultAwsSkipFinalSnapshot          = false
 	defaultAWSCopyTagsToSnapshot         = true
@@ -64,7 +64,7 @@ const (
 )
 
 var (
-	defaultSupportedEngineVersions = []string{"10.15", "10.13", "10.6", "9.6", "9.5"}
+	defaultSupportedEngineVersions = []string{"10.13", "10.6", "9.6", "9.5"}
 	healthyAWSDBInstanceStatuses   = []string{
 		"backtracking",
 		"available",
