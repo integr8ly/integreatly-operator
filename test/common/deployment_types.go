@@ -10,10 +10,8 @@ import (
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -450,15 +448,15 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	var rhssoExpectedReplicas int32 = 2
-	var rhssoUserExpectedReplicas int32 = 3
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		rhssoUserExpectedReplicas = 2
+	quotaConfig, _, err := getQuotaconfig(t, ctx.Client)
+	if err != nil {
+		t.Fatalf("Error retrieving Quota: %v", err)
 	}
-	if resources.RunningInProw(rhmi) {
-		rhssoExpectedReplicas = 1
-		rhssoUserExpectedReplicas = 1
-	}
+
+	rhssoExpectedReplicas := quotaConfig.GetProduct(integreatlyv1alpha1.ProductRHSSO).GetReplicas(quota.KeycloakName)
+	rhssoUserExpectedReplicas := quotaConfig.GetProduct(integreatlyv1alpha1.ProductRHSSOUser).GetReplicas(
+		quota.KeycloakName)
+
 	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		keycloakCR := &v1alpha1.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
