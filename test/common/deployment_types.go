@@ -392,27 +392,13 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				continue
 			}
 			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-				if product.Name == "apicast-production" {
+				if product.Name == "apicast-production" || product.Name == "backend-listener" || product.
+					Name == "backend-worker"  {
 					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=apicast-production")...)
+					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace,
+						"deploymentconfig=" + product.Name)...)
 					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-					}
-					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-				} else if product.Name == "backend-listener" {
-					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentConfig=backend-listener")...)
-					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-					}
-					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-				} else if product.Name == "backend-worker" {
-					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=backend-worker")...)
-					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
+						t.Fatalf("failed to get %v pods for 3scale: %v", product.Name, err)
 					}
 					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
 				}
