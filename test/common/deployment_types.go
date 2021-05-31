@@ -393,10 +393,10 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 			}
 			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 				if product.Name == "apicast-production" || product.Name == "backend-listener" || product.
-					Name == "backend-worker"  {
+					Name == "backend-worker" {
 					pods := &corev1.PodList{}
 					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace,
-						"deploymentconfig=" + product.Name)...)
+						"deploymentconfig="+product.Name)...)
 					if err != nil {
 						t.Fatalf("failed to get %v pods for 3scale: %v", product.Name, err)
 					}
