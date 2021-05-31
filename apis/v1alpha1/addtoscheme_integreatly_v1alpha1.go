@@ -48,6 +48,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
+
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 )
 
 // AddToSchemes may be used to add all resources defined in the project to a Scheme
@@ -92,5 +94,6 @@ func init() {
 		discoveryservicev1.SchemeBuilder.AddToScheme,
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
+		cloudcredentialv1.AddToScheme,
 	)
 }
