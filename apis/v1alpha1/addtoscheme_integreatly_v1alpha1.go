@@ -51,6 +51,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
+
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 )
 
 // AddToSchemes may be used to add all resources defined in the project to a Scheme
@@ -97,5 +99,6 @@ func init() {
 		apiextensionv1.SchemeBuilder.AddToScheme,
 		observabilityoperator.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
+		cloudcredentialv1.AddToScheme,
 	)
 }
