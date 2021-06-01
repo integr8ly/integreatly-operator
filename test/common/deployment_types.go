@@ -434,20 +434,18 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	quotaConfig, _, err := getQuotaconfig(t, ctx.Client)
-	if err != nil {
-		t.Fatalf("Error retrieving Quota: %v", err)
-	}
-
-	var rhssoExpectedReplicas int32 = 3
-	rhssoUserExpectedReplicas := quotaConfig.GetProduct(integreatlyv1alpha1.ProductRHSSOUser).GetReplicas(
-		quota.KeycloakName)
-
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		rhssoUserExpectedReplicas = 2
-	}
+	var rhssoExpectedReplicas int32 = 2
+	var rhssoUserExpectedReplicas int32 = 2
 
 	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		quotaConfig, _, err := getQuotaconfig(t, ctx.Client)
+		if err != nil {
+			t.Fatalf("Error retrieving Quota: %v", err)
+		}
+
+		rhssoUserExpectedReplicas = quotaConfig.GetProduct(integreatlyv1alpha1.ProductRHSSOUser).GetReplicas(
+			quota.KeycloakName)
+
 		keycloakCR := &v1alpha1.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
