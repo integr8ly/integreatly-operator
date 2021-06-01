@@ -172,11 +172,32 @@ check_csv_replaces_field() {
   fi
 }
 
+# Sets the related images in the CSV for RHOAM
+set_related_images() {
+  echo "Adding related images to the CSV"
+  position=0
+  # Get supported components
+  for (( i=0; i<=$(yq r -j ./products/products.yaml | jq -r '.products' | jq length); i++))
+  do
+    product_name=$(yq r ./products/products.yaml "products[$i].manifestsDir")
+    if [[ $(yq r ./products/products.yaml "products[$i].installType") == *"rhoam"* && $(yq r ./products/products.yaml "products[$i].relatedImages") == true ]]; then
+      # Read component version
+      component_version=$(grep currentCSV manifests/$product_name/*.package.yaml | awk -F v '{print $2}')
+      # Read image from the component version
+      component_image=$(yq r -j ./manifests/$product_name/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select(.image|test("quay.")) | .image' | sed 's:^.\(.*\).$:\1:')
+      # Push image to relatedImages in RHOAM CSV
+      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' spec.relatedImages[$position].image ${component_image} 
+      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' spec.relatedImages[$position].name ${product_name}
+
+      position=$((position+1))
+    fi
+  done
+}
+
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
  exit 1
 fi
-
 
 if [[ $SEMVER =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$ ]]; then
   echo "Valid version string: ${SEMVER}"
@@ -210,6 +231,12 @@ else
   PREVIOUS_REPLACES_VALUE=$(yq r "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" spec.replaces)
   update_csv
 fi
+
+# Adding the relatedImages section
+if [[ "$OLM_TYPE" == "managed-api-service" ]]; then
+  set_related_images
+fi
+
 set_installation_type
 set_descriptions
 set_clusterPermissions
