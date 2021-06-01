@@ -251,7 +251,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		//Keycloak operator should make decision based on the image, and can change update strategy
 		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 
-		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
 
 		if kc.Spec.Instances < numberOfReplicas {

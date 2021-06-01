@@ -200,6 +200,7 @@ test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/prow: export INSTALLATION_NAME := rhmi
 test/e2e/prow: export INSTALLATION_SHORTHAND := rhmi
+test/e2e/prow: IN_PROW = "true"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
@@ -212,6 +213,7 @@ test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhoam-
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
+test/e2e/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e
