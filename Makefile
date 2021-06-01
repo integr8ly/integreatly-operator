@@ -12,7 +12,6 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=1.7.2
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-IN_PROW ?= "false"
 DEV_QUOTA ?= "1"
 TYPE_OF_MANIFEST ?= master
 
@@ -201,7 +200,6 @@ test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/prow: export INSTALLATION_NAME := rhmi
 test/e2e/prow: export INSTALLATION_SHORTHAND := rhmi
-test/e2e/prow: IN_PROW = "true"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
@@ -214,7 +212,6 @@ test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhoam-
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
-test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e
@@ -410,9 +407,6 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > config/samples/integreatly-rhmi-cr.yml
-	# Workaround until in_prow annotation can be removed from prow
-	yq w -i config/samples/integreatly-rhmi-cr.yml metadata.annotations.in_prow "IN_PROW"
-	$(SED_INLINE) "s/IN_PROW/'$(IN_PROW)'/g" config/samples/integreatly-rhmi-cr.yml
 	@-oc create -f config/samples/integreatly-rhmi-cr.yml
 
 .PHONY: prepare-patch-release
