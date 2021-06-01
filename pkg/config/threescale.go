@@ -2,8 +2,6 @@ package config
 
 import (
 	"errors"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,12 +114,6 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 		"zyncQue":         3,
 	}
 
-	if resources.RunningInProw(inst) {
-		setDefaultNumberOfReplicas(1, threeScaleComponents)
-	} else if inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		setDefaultNumberOfReplicas(2, threeScaleComponents)
-	}
-
 	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		switch inst.Status.Quota {
 		case "1":
@@ -145,6 +137,8 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 			threeScaleComponents["backendWorker"] = 4
 			threeScaleComponents["backendListener"] = 5
 		}
+	} else {
+		setDefaultNumberOfReplicas(2, threeScaleComponents)
 	}
 
 	return threeScaleComponents
