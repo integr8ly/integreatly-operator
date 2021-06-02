@@ -388,12 +388,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
-	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
-		return phase, err
-	}
+	// phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
+	// r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
+	// if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	// 	events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
+	// 	return phase, err
+	// }
 
 	// Ensure deployment configs are ready before returning phase complete
 	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
@@ -2101,10 +2101,10 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	proxyServer := ratelimit.NewEnvoyProxyServer(ctx, serverClient, r.log)
 
-	err := r.createBackendListenerProxyService(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
+	// err := r.createBackendListenerProxyService(ctx, serverClient)
+	// if err != nil {
+	// 	return integreatlyv1alpha1.PhaseInProgress, err
+	// }
 
 	// creates envoy proxy sidecar container for apicast staging
 	phase, err := proxyServer.CreateEnvoyProxyContainer(
@@ -2133,17 +2133,17 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	}
 
 	// creates envoy proxy sidecar container for backend listener
-	phase, err = proxyServer.CreateEnvoyProxyContainer(
-		backendListenerDCName,
-		r.Config.GetNamespace(),
-		BackendNodeID,
-		BackendServiceName,
-		"http",
-		BackendEnvoyProxyPort,
-	)
-	if phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
+	// phase, err = proxyServer.CreateEnvoyProxyContainer(
+	// 	backendListenerDCName,
+	// 	r.Config.GetNamespace(),
+	// 	BackendNodeID,
+	// 	BackendServiceName,
+	// 	"http",
+	// 	BackendEnvoyProxyPort,
+	// )
+	// if phase != integreatlyv1alpha1.PhaseCompleted {
+	// 	return phase, err
+	// }
 
 	r.log.Info("Finished creating envoy sidecar containers for 3scale components")
 
@@ -2189,32 +2189,32 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	}
 
 	// backend-listener cluster
-	backendClusterResource := ratelimit.CreateClusterResource(
-		BackendContainerAddress,
-		BackendClusterName,
-		BackendContainerPort,
-	)
+	// backendClusterResource := ratelimit.CreateClusterResource(
+	// 	BackendContainerAddress,
+	// 	BackendClusterName,
+	// 	BackendContainerPort,
+	// )
 
-	backendHTTPFilters, _ := getBackendListenerHTTPFilters()
+	// backendHTTPFilters, _ := getBackendListenerHTTPFilters()
 	// backend listener listener
-	backendFilters, _ := getListenerResourceFilters(
-		getBackendListenerVitualHosts(BackendClusterName),
-		backendHTTPFilters,
-	)
-	backendListenerResource := ratelimit.CreateListenerResource(
-		BackendListenerName,
-		BackendEnvoyProxyAddress,
-		BackendEnvoyProxyPort,
-		backendFilters,
-	)
+	// backendFilters, _ := getListenerResourceFilters(
+	// 	getBackendListenerVitualHosts(BackendClusterName),
+	// 	backendHTTPFilters,
+	// )
+	// backendListenerResource := ratelimit.CreateListenerResource(
+	// 	BackendListenerName,
+	// 	BackendEnvoyProxyAddress,
+	// 	BackendEnvoyProxyPort,
+	// 	backendFilters,
+	// )
 
-	// create envoy config for apicast
-	backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
-	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{backendListenerResource}, installation)
-	if err != nil {
-		r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
+	// create envoy config for backend listener
+	// backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
+	// err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{backendListenerResource}, installation)
+	// if err != nil {
+	// 	r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
+	// 	return integreatlyv1alpha1.PhaseFailed, err
+	// }
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
