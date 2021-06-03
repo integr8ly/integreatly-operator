@@ -307,6 +307,11 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Stages = map[rhmiv1alpha1.StageName]rhmiv1alpha1.RHMIStageStatus{}
 	}
 
+	// If the CR is being deleted, handle uninstall and return
+	if installation.DeletionTimestamp != nil {
+		return r.handleUninstall(installation, installType)
+	}
+
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
@@ -328,11 +333,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
-	}
-
-	// If the CR is being deleted, handle uninstall and return
-	if installation.DeletionTimestamp != nil {
-		return r.handleUninstall(installation, installType)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
