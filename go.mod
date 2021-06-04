@@ -18,9 +18,10 @@ require (
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
 	github.com/envoyproxy/go-control-plane v0.9.7
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/go-openapi/spec v0.19.12
+	github.com/go-openapi/spec v0.20.3
+	github.com/go-openapi/strfmt v0.20.1
 	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.5.4
 	github.com/google/go-querystring v1.0.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/headzoo/surf v1.0.0
@@ -40,13 +41,14 @@ require (
 	// github.com/operator-framework/operator-marketplace v0.0.0-20200919233811-2d6d71892437
 	github.com/operator-framework/operator-registry v1.14.3
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/alertmanager v0.22.0
+	github.com/prometheus/client_golang v1.10.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/protobuf v1.24.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.20.0
 	k8s.io/apiextensions-apiserver v0.19.2
 	k8s.io/apimachinery v0.20.0
@@ -70,7 +72,7 @@ replace (
 // replace github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
 
 replace (
-	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
+	github.com/go-openapi/spec => github.com/go-openapi/spec v0.20.3
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.1.1
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88

@@ -17,8 +17,16 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/go-openapi/strfmt"
+	routev1 "github.com/openshift/api/route/v1"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"github.com/prometheus/alertmanager/api/v2/models"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -78,11 +86,15 @@ const (
 	installTypeEnvName               = "INSTALLATION_TYPE"
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
+	routeRequestUrl                  = "/apis/route.openshift.io/v1"
 )
 
 var (
 	productVersionMismatchFound bool
 	log                         = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "installation_controller"})
+	alertsToSilence             = []string{
+		"KeycloakInstanceNotAvailable",
+	}
 )
 
 // RHMIReconciler reconciles a RHMI object
@@ -434,6 +446,171 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	return retryRequeue, err
 }
 
+func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config) error {
+
+	var alertingNamespaces = map[string]string{
+		"openshift-monitoring": "alertmanager-main",
+		installation.Spec.NamespacePrefix + "middleware-monitoring-operator": "alertmanager-route",
+	}
+
+	for namespace, route := range alertingNamespaces {
+		for _, alert := range alertsToSilence {
+			exists, err := r.silenceExists(namespace, route, rc, alert)
+			if err != nil {
+				log.Error("Error checking for silence : %w", err)
+			}
+			if !exists {
+				err := r.silenceAlert(namespace, route, rc, alert)
+				if err != nil {
+					log.Error("error silencing alert : %w", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.Config, alertName string) error {
+
+	endpoint := "/api/v1/silences"
+	startsAt := strfmt.DateTime(time.Now())
+	endsAt := strfmt.DateTime(time.Now().Add(time.Hour * 1))
+
+	matchers := models.Matchers{}
+	matchers = append(matchers, &models.Matcher{
+		IsEqual: nil,
+		IsRegex: &[]bool{false}[0],
+		Name:    &[]string{"alertname"}[0],
+		Value:   &alertName,
+	})
+
+	comment := "Silence alert due to uninstall"
+	createdBy := "Integreatly Operator"
+	silence := models.Silence{
+		Comment:   &comment,
+		CreatedBy: &createdBy,
+		EndsAt:    &endsAt,
+		Matchers:  matchers,
+		StartsAt:  &startsAt,
+	}
+
+	url, err := r.getURLFromRoute(route, namespace, rc)
+	if err != nil {
+		return fmt.Errorf("error getting route : %w", err)
+
+	}
+	url = url + endpoint
+
+	var bearer = "Bearer " + r.restConfig.BearerToken
+
+	reqBodyBytes := new(bytes.Buffer)
+	err = json.NewEncoder(reqBodyBytes).Encode(silence)
+	if err != nil {
+		return fmt.Errorf("error encoding silence : %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, reqBodyBytes)
+	if err != nil {
+		return fmt.Errorf("error on request : %w", err)
+	}
+
+	req.Header.Add("Authorization", bearer)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error on response : %w", err)
+	}
+	defer resp.Body.Close()
+
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("unable to read body : %w", err)
+	}
+	return nil
+}
+
+func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.Config, alert string) (bool, error) {
+	silenceExists := false
+	endpoint := "/api/v2/silences"
+
+	url, err := r.getURLFromRoute(route, namespace, rc)
+	if err != nil {
+		return false, err
+	}
+	url = url + endpoint
+
+	var bearer = "Bearer " + r.restConfig.BearerToken
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return false, fmt.Errorf("error on request : %w", err)
+	}
+
+	req.Header.Add("Authorization", bearer)
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error on response : %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("unable to read body : %w", err)
+	}
+
+	var existingSilences models.GettableSilences
+
+	err = json.Unmarshal([]byte(body), &existingSilences)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	for _, silence := range existingSilences {
+		if *silence.Status.State == "active" && *silence.Silence.Matchers[0].Name == "alertname" && *silence.Silence.Matchers[0].Value == alert {
+			silenceExists = true
+		}
+	}
+
+	return silenceExists, nil
+}
+
+func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
+	client, err := appsv1Client.NewForConfig(rc)
+	if err != nil {
+		return "", fmt.Errorf("unable to create rest client %s", err)
+	}
+	client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
+
+	host := ""
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routeName,
+			Namespace: namespace,
+		},
+	}
+
+	request := client.RESTClient().Get().Resource("routes").Name(route.Name).Namespace(route.Namespace).RequestURI(routeRequestUrl).Do(context.TODO())
+	requestBody, err := request.Raw()
+
+	if err != nil {
+		return "", fmt.Errorf("unable to find route %s Route probably already removed", err)
+	}
+	err = json.Unmarshal(requestBody, route)
+	if err != nil {
+		return "", fmt.Errorf("unable to unmarshal response body %s", err)
+	}
+	host = "https://" + route.Spec.Host
+	return host, nil
+}
+
 func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHMI) {
 
 	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
@@ -507,6 +684,13 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		if err := r.Client.Delete(context.TODO(), &alert); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
+
+	log.Info("Creating Silence for alerts")
+	err = r.createSilence(installation, r.restConfig)
+
+	if err != nil {
+		log.Error("Error creating silence", err)
 	}
 
 	// Set metrics status to unavailable
