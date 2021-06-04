@@ -20,7 +20,7 @@ Acceptance Criteria:
 
 1. Select the Jenkins job used for installation of the QE release testing cluster from
 
-https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
+https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
 
 2. Check the functional tests were run as part of the pipeline.
 3. Check if there were any failed or skipped tests (flaky ones).
