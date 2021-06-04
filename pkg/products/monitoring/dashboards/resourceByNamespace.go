@@ -1,8 +1,33 @@
 package monitoring
 
+import (
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+)
+
 // This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
 func GetMonitoringGrafanaDBResourceByNSJSON(installationName string) string {
+	quota := ``
+	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] {
+		quota = `,
+			{
+				"datasource": "Prometheus",
+				"enable": true,
+				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
+				"hide": false,
+				"iconColor": "#FADE2A",
+				"limit": 100,
+				"name": "Quota",
+				"showIn": 0,
+				"step": "",
+				"tagKeys": "stage,quota,toQuota",
+				"tags": "",
+				"titleFormat": "Quota Change (million per day)",
+				"type": "tags",
+				"useValueForTime": false
+			}`
+	}
 	return `{
 	"annotations": {
 		"list": [{
@@ -29,23 +54,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(installationName string) string {
 				"titleFormat": "Upgrade",
 				"type": "tags",
 				"useValueForTime": false
-			},
-			{
-				"datasource": "Prometheus",
-				"enable": true,
-				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
-				"hide": false,
-				"iconColor": "#FADE2A",
-				"limit": 100,
-				"name": "Quota",
-				"showIn": 0,
-				"step": "",
-				"tagKeys": "stage,quota,toQuota",
-				"tags": "",
-				"titleFormat": "Quota Change (million per day)",
-				"type": "tags",
-				"useValueForTime": false
-			}
+			}` + quota + `
 		]
 	},
 	"editable": true,
