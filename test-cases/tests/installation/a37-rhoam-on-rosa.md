@@ -18,4 +18,4 @@ Verify RHOAM installation on ROSA works as expected.
 
 1. Trigger the pipeline and validate the results
 
-> [ROSA pipeline](https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/ManagedAPI/job/managed-api-rosa/)
+> [ROSA pipeline](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-rosa/)
