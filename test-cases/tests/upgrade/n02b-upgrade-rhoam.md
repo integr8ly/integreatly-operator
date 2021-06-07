@@ -11,6 +11,10 @@ tags:
 
 # N02B - Upgrade RHOAM
 
+## Prerequisites
+
+To prepare a cluster for the upgrade testing the current GA version must be in managed-tenants repo.
+
 ## Description
 
 Mesure the downtime of the RHOAM components during the RHOAM upgrade (not to be confused with the OpenShift upgrade) to ensure RHOAM can be safely upgraded.
@@ -52,20 +56,26 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc edit RHMIConfig rhmi-config -n redhat-rhoam-operator
    ```
 
+   > This is only required if RHOAM release candidate is considered to be service affecting. The upgrade starts automatically otherwise. Following step is also not required if release candidate is not service affecting.
+
 4. Edit following fields in the **rhmi-config** and save:
 
    - spec.upgrade.notBeforeDays: 0
    - spec.upgrade.waitForMaintenance: `false`
 
-   > The upgrade should start shortly. Have a look at `status.upgrade.scheduled.for`. In rare situations it might get scheduled more that 6 hours in past, in that case upgrade won't be triggered. Play with the `spec.maintenance.*` and `spec.upgrade.*` values to get it scheduled some other time.
-
-   Use the command below to check whether the installPlan exists and is approved. The operator should approve the installPlan based on **rhoam-config**. The installPlan should not be approved manually - if the installPlan is not approved shortly, restart the rhmi-operator (delete the pod or scale down to 0 and then scale back up to 1).
+   Use the command below to check whether the installPlan exists and is approved.
 
    ```
    oc get installplans -n redhat-rhoam-operator
    ```
 
-5. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
+   In case release candidate is service affecting, you need to approve the installPlan first.
+
+   ```
+   oc patch installplan install-<hash> --namespace redhat-rhoam-operator --type merge --patch '{"spec":{"approved":true}}'
+   ```
+
+5. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `1.8.0`)):
 
    ```bash
    watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHOAM Upgrade completed\!'"
