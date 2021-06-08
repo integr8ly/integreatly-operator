@@ -219,6 +219,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
 		grafanaDB.Labels = map[string]string{
 			"monitoring-key": "customer",
+			"configures": "observability-operator",
 		}
 
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{

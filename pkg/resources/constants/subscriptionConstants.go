@@ -15,4 +15,5 @@ const (
 	UPSSubscriptionName              = "rhmi-unifiedpush"
 	GrafanaSubscriptionName          = "rhmi-grafana"
 	Marin3rSubscriptionName          = "rhmi-marin3r"
+	ObservabilitySubscriptionName    = "rhmi-observability"
 )

@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
+	oo "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -92,5 +93,6 @@ func init() {
 		discoveryservicev1.SchemeBuilder.AddToScheme,
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
+		oo.SchemeBuilder.AddToScheme,
 	)
 }
