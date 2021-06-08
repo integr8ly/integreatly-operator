@@ -20,7 +20,7 @@ COPY version ./version
 
 RUN make test/compile/functional
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi8-micro:latest
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
