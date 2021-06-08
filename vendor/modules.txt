@@ -337,15 +337,31 @@ github.com/ghodss/yaml
 github.com/go-logr/logr
 # github.com/go-logr/zapr v0.1.1
 github.com/go-logr/zapr
-# github.com/go-openapi/jsonpointer v0.19.3
+# github.com/go-openapi/analysis v0.20.0
+github.com/go-openapi/analysis
+github.com/go-openapi/analysis/internal
+# github.com/go-openapi/errors v0.20.0
+github.com/go-openapi/errors
+# github.com/go-openapi/jsonpointer v0.19.5
 github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.5
 github.com/go-openapi/jsonreference
-# github.com/go-openapi/spec v0.19.12 => github.com/go-openapi/spec v0.19.6
+# github.com/go-openapi/loads v0.20.2
+github.com/go-openapi/loads
+# github.com/go-openapi/runtime v0.19.28
+github.com/go-openapi/runtime
+# github.com/go-openapi/spec v0.20.3
 ## explicit
 github.com/go-openapi/spec
-# github.com/go-openapi/swag v0.19.9
+# github.com/go-openapi/strfmt v0.20.1
+## explicit
+github.com/go-openapi/strfmt
+# github.com/go-openapi/swag v0.19.15
 github.com/go-openapi/swag
+# github.com/go-openapi/validate v0.20.2
+github.com/go-openapi/validate
+# github.com/go-stack/stack v1.8.0
+github.com/go-stack/stack
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
@@ -363,7 +379,7 @@ github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/google/go-cmp v0.5.2
+# github.com/google/go-cmp v0.5.4
 ## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
@@ -435,7 +451,7 @@ github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common
 github.com/keycloak/keycloak-operator/pkg/k8sutil
 github.com/keycloak/keycloak-operator/pkg/model
-# github.com/mailru/easyjson v0.7.1
+# github.com/mailru/easyjson v0.7.6
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
@@ -576,7 +592,7 @@ github.com/prometheus/client_model/go
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.2.0
+# github.com/prometheus/procfs v0.6.0
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
@@ -591,6 +607,14 @@ github.com/stretchr/testify/require
 # github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 ## explicit
 github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1
+# go.mongodb.org/mongo-driver v1.5.1
+go.mongodb.org/mongo-driver/bson
+go.mongodb.org/mongo-driver/bson/bsoncodec
+go.mongodb.org/mongo-driver/bson/bsonoptions
+go.mongodb.org/mongo-driver/bson/bsonrw
+go.mongodb.org/mongo-driver/bson/bsontype
+go.mongodb.org/mongo-driver/bson/primitive
+go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
@@ -602,9 +626,9 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
+# golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
+# golang.org/x/net v0.0.0-20210421230115-4e50805a0758
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -632,7 +656,9 @@ golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.4
+# golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
+golang.org/x/term
+# golang.org/x/text v0.3.6
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -1051,7 +1077,6 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
 # github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
-# github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 # github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
@@ -1077,6 +1102,7 @@ sigs.k8s.io/yaml
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
 # k8s.io/kube-proxy => k8s.io/kube-proxy v0.20.6
 # k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.20.6
+# k8s.io/kubectl => k8s.io/kubectl v0.20.6
 # k8s.io/kubelet => k8s.io/kubelet v0.20.6
 # k8s.io/kubernetes => k8s.io/kubernetes v1.19.4
 # k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.20.6

@@ -429,11 +429,7 @@ func parseCPUInfoRISCV(info []byte) ([]CPUInfo, error) {
 
 	firstLine := firstNonEmptyLine(scanner)
 	if !strings.HasPrefix(firstLine, "processor") || !strings.Contains(firstLine, ":") {
-<<<<<<< HEAD
 		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
-=======
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
->>>>>>> 4c0348511... Update vendor folder
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	v, err := strconv.ParseUint(field[1], 0, 32)

@@ -26,15 +26,8 @@ import (
 )
 
 var (
-<<<<<<< HEAD:vendor/github.com/go-openapi/validate/schema.go
-	specSchemaType    = reflect.TypeOf(&spec.Schema{})
-	specParameterType = reflect.TypeOf(&spec.Parameter{})
-	specHeaderType    = reflect.TypeOf(&spec.Header{})
-	// specItemsType     = reflect.TypeOf(&spec.Items{})
-=======
 	specSchemaType = reflect.TypeOf(&spec.Schema{})
 	//specItemsType     = reflect.TypeOf(&spec.Items{})
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/validate/schema.go
 )
 
 // SchemaValidator validates data against a JSON schema

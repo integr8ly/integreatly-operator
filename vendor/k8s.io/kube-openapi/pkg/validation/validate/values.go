@@ -15,7 +15,6 @@
 package validate
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"unicode/utf8"
@@ -110,58 +109,18 @@ func MaxLength(path, in, data string, maxLength int64) *errors.Validation {
 	return nil
 }
 
-// ReadOnly validates an interface for readonly
-func ReadOnly(ctx context.Context, path, in string, data interface{}) *errors.Validation {
-
-	// read only is only validated when operationType is request
-	if op := extractOperationType(ctx); op != request {
-		return nil
-	}
-
-	// data must be of zero value of its type
-	val := reflect.ValueOf(data)
-	if val.IsValid() {
-		if reflect.DeepEqual(reflect.Zero(val.Type()).Interface(), val.Interface()) {
-			return nil
-		}
-	} else {
-		return nil
-	}
-
-	return errors.ReadOnly(path, in, data)
-}
-
 // Required validates an interface for requiredness
 func Required(path, in string, data interface{}) *errors.Validation {
 	val := reflect.ValueOf(data)
 	if val.IsValid() {
 		if reflect.DeepEqual(reflect.Zero(val.Type()).Interface(), val.Interface()) {
-			return errors.Required(path, in, data)
+			return errors.Required(path, in)
 		}
 		return nil
 	}
-	return errors.Required(path, in, data)
+	return errors.Required(path, in)
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/validate/values.go
-// RequiredString validates a string for requiredness
-func RequiredString(path, in, data string) *errors.Validation {
-	if data == "" {
-		return errors.Required(path, in, data)
-	}
-	return nil
-}
-
-// RequiredNumber validates a number for requiredness
-func RequiredNumber(path, in string, data float64) *errors.Validation {
-	if data == 0 {
-		return errors.Required(path, in, data)
-	}
-	return nil
-}
-
-=======
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/validate/values.go
 // Pattern validates a string against a regular expression
 func Pattern(path, in, data, pattern string) *errors.Validation {
 	re, err := compileRegexp(pattern)

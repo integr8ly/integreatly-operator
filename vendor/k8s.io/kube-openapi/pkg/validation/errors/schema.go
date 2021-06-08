@@ -15,7 +15,6 @@
 package errors
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -26,7 +25,6 @@ const (
 	typeFailWithData          = "%s in %s must be of type %s: %q"
 	typeFailWithError         = "%s in %s must be of type %s, because: %s"
 	requiredFail              = "%s in %s is required"
-	readOnlyFail              = "%s in %s is readOnly"
 	tooLongMessage            = "%s in %s should be at most %d chars long"
 	tooShortMessage           = "%s in %s should be at least %d chars long"
 	patternFail               = "%s in %s should match '%s'"
@@ -43,7 +41,6 @@ const (
 	typeFailWithDataNoIn      = "%s must be of type %s: %q"
 	typeFailWithErrorNoIn     = "%s must be of type %s, because: %s"
 	requiredFailNoIn          = "%s is required"
-	readOnlyFailNoIn          = "%s is readOnly"
 	tooLongMessageNoIn        = "%s should be at most %d chars long"
 	tooShortMessageNoIn       = "%s should be at least %d chars long"
 	patternFailNoIn           = "%s should match '%s'"
@@ -94,7 +91,6 @@ const (
 	UnallowedPropertyCode
 	FailedAllPatternPropsCode
 	MultipleOfMustBePositiveCode
-	ReadOnlyFailCode
 )
 
 // CompositeError is an error that groups several errors together
@@ -118,15 +114,6 @@ func (c *CompositeError) Error() string {
 		return strings.Join(msgs, "\n")
 	}
 	return c.message
-}
-
-// MarshalJSON implements the JSON encoding interface
-func (c CompositeError) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"code":    c.code,
-		"message": c.message,
-		"errors":  c.Errors,
-	})
 }
 
 // CompositeValidationError an error to wrap a bunch of other errors
@@ -311,11 +298,7 @@ func TooFewItems(name, in string, min int64, value interface{}) *Validation {
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMaximumInt error for when maximum validation fails
-=======
 // ExceedsMaximumInt error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMaximumInt(name, in string, max int64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -340,11 +323,7 @@ func ExceedsMaximumInt(name, in string, max int64, exclusive bool, value interfa
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMaximumUint error for when maximum validation fails
-=======
 // ExceedsMaximumUint error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMaximumUint(name, in string, max uint64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -369,11 +348,7 @@ func ExceedsMaximumUint(name, in string, max uint64, exclusive bool, value inter
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMaximum error for when maximum validation fails
-=======
 // ExceedsMaximum error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMaximum(name, in string, max float64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -398,11 +373,7 @@ func ExceedsMaximum(name, in string, max float64, exclusive bool, value interfac
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMinimumInt error for when minimum validation fails
-=======
 // ExceedsMinimumInt error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMinimumInt(name, in string, min int64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -427,11 +398,7 @@ func ExceedsMinimumInt(name, in string, min int64, exclusive bool, value interfa
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMinimumUint error for when minimum validation fails
-=======
 // ExceedsMinimumUint error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMinimumUint(name, in string, min uint64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -456,11 +423,7 @@ func ExceedsMinimumUint(name, in string, min uint64, exclusive bool, value inter
 	}
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/errors/schema.go
-// ExceedsMinimum error for when minimum validation fails
-=======
 // ExceedsMinimum error for when maxinum validation fails
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/errors/schema.go
 func ExceedsMinimum(name, in string, min float64, exclusive bool, value interface{}) *Validation {
 	var message string
 	if in == "" {
@@ -522,7 +485,7 @@ func EnumFail(name, in string, value interface{}, values []interface{}) *Validat
 }
 
 // Required error for when a value is missing
-func Required(name, in string, value interface{}) *Validation {
+func Required(name, in string) *Validation {
 	var msg string
 	if in == "" {
 		msg = fmt.Sprintf(requiredFailNoIn, name)
@@ -533,24 +496,6 @@ func Required(name, in string, value interface{}) *Validation {
 		code:    RequiredFailCode,
 		Name:    name,
 		In:      in,
-		Value:   value,
-		message: msg,
-	}
-}
-
-// ReadOnly error for when a value is present in request
-func ReadOnly(name, in string, value interface{}) *Validation {
-	var msg string
-	if in == "" {
-		msg = fmt.Sprintf(readOnlyFailNoIn, name)
-	} else {
-		msg = fmt.Sprintf(readOnlyFail, name, in)
-	}
-	return &Validation{
-		code:    ReadOnlyFailCode,
-		Name:    name,
-		In:      in,
-		Value:   value,
 		message: msg,
 	}
 }

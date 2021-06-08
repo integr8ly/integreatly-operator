@@ -65,7 +65,7 @@ type NameNormalizer func(string) string
 
 // DefaultNameNormalizer removes all dashes
 func DefaultNameNormalizer(name string) string {
-	return strings.ReplaceAll(name, "-", "")
+	return strings.Replace(name, "-", "", -1)
 }
 
 type defaultFormats struct {
@@ -160,12 +160,6 @@ func (f *defaultFormats) MapStructureHookFunc() mapstructure.DecodeHookFunc {
 					return Base64(data.(string)), nil
 				case "password":
 					return Password(data.(string)), nil
-				case "ulid":
-					ulid, err := ParseULID(data.(string))
-					if err != nil {
-						return nil, err
-					}
-					return ulid, nil
 				default:
 					return nil, errors.InvalidTypeName(v.Name)
 				}

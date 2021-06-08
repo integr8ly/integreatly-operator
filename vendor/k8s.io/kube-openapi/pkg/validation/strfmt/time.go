@@ -49,44 +49,19 @@ func IsDateTime(str string) bool {
 const (
 	// RFC3339Millis represents a ISO8601 format to millis instead of to nanos
 	RFC3339Millis = "2006-01-02T15:04:05.000Z07:00"
-	// RFC3339MillisNoColon represents a ISO8601 format to millis instead of to nanos
-	RFC3339MillisNoColon = "2006-01-02T15:04:05.000Z0700"
 	// RFC3339Micro represents a ISO8601 format to micro instead of to nano
 	RFC3339Micro = "2006-01-02T15:04:05.000000Z07:00"
-	// RFC3339MicroNoColon represents a ISO8601 format to micro instead of to nano
-	RFC3339MicroNoColon = "2006-01-02T15:04:05.000000Z0700"
 	// ISO8601LocalTime represents a ISO8601 format to ISO8601 in local time (no timezone)
 	ISO8601LocalTime = "2006-01-02T15:04:05"
-<<<<<<< HEAD:vendor/github.com/go-openapi/strfmt/time.go
-	// ISO8601TimeWithReducedPrecision represents a ISO8601 format with reduced precision (dropped secs)
-	ISO8601TimeWithReducedPrecision = "2006-01-02T15:04Z"
-	// ISO8601TimeWithReducedPrecisionLocaltime represents a ISO8601 format with reduced precision and no timezone (dropped seconds + no timezone)
-	ISO8601TimeWithReducedPrecisionLocaltime = "2006-01-02T15:04"
-	// ISO8601TimeUniversalSortableDateTimePattern represents a ISO8601 universal sortable date time pattern.
-	ISO8601TimeUniversalSortableDateTimePattern = "2006-01-02 15:04:05"
-=======
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/strfmt/time.go
 	// DateTimePattern pattern to match for the date-time format from http://tools.ietf.org/html/rfc3339#section-5.6
 	DateTimePattern = `^([0-9]{2}):([0-9]{2}):([0-9]{2})(.[0-9]+)?(z|([+-][0-9]{2}:[0-9]{2}))$`
 )
 
 var (
-<<<<<<< HEAD:vendor/github.com/go-openapi/strfmt/time.go
-	rxDateTime = regexp.MustCompile(DateTimePattern)
-
-	// DateTimeFormats is the collection of formats used by ParseDateTime()
-	DateTimeFormats = []string{RFC3339Micro, RFC3339MicroNoColon, RFC3339Millis, RFC3339MillisNoColon, time.RFC3339, time.RFC3339Nano, ISO8601LocalTime, ISO8601TimeWithReducedPrecision, ISO8601TimeWithReducedPrecisionLocaltime, ISO8601TimeUniversalSortableDateTimePattern}
-
-=======
 	dateTimeFormats = []string{RFC3339Micro, RFC3339Millis, time.RFC3339, time.RFC3339Nano, ISO8601LocalTime}
 	rxDateTime      = regexp.MustCompile(DateTimePattern)
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/strfmt/time.go
 	// MarshalFormat sets the time resolution format used for marshaling time (set to milliseconds)
 	MarshalFormat = RFC3339Millis
-
-	// NormalizeTimeForMarshal provides a normalization function on time befeore marshalling (e.g. time.UTC).
-	// By default, the time value is not changed.
-	NormalizeTimeForMarshal = func(t time.Time) time.Time { return t }
 )
 
 // ParseDateTime parses a string that represents an ISO8601 time or a unix epoch
@@ -95,7 +70,7 @@ func ParseDateTime(data string) (DateTime, error) {
 		return NewDateTime(), nil
 	}
 	var lastError error
-	for _, layout := range DateTimeFormats {
+	for _, layout := range dateTimeFormats {
 		dd, err := time.Parse(layout, data)
 		if err != nil {
 			lastError = err
@@ -121,7 +96,7 @@ func NewDateTime() DateTime {
 
 // String converts this time to a string
 func (t DateTime) String() string {
-	return NormalizeTimeForMarshal(time.Time(t)).Format(MarshalFormat)
+	return time.Time(t).Format(MarshalFormat)
 }
 
 // MarshalText implements the text marshaller interface
@@ -160,7 +135,7 @@ func (t *DateTime) Scan(raw interface{}) error {
 
 // MarshalJSON returns the DateTime as JSON
 func (t DateTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(NormalizeTimeForMarshal(time.Time(t)).Format(MarshalFormat))
+	return json.Marshal(time.Time(t).Format(MarshalFormat))
 }
 
 // UnmarshalJSON sets the DateTime from JSON
@@ -181,56 +156,6 @@ func (t *DateTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/strfmt/time.go
-// MarshalBSON renders the DateTime as a BSON document
-func (t DateTime) MarshalBSON() ([]byte, error) {
-	return bson.Marshal(bson.M{"data": t})
-}
-
-// UnmarshalBSON reads the DateTime from a BSON document
-func (t *DateTime) UnmarshalBSON(data []byte) error {
-	var obj struct {
-		Data DateTime
-	}
-
-	if err := bson.Unmarshal(data, &obj); err != nil {
-		return err
-	}
-
-	*t = obj.Data
-
-	return nil
-}
-
-// MarshalBSONValue is an interface implemented by types that can marshal themselves
-// into a BSON document represented as bytes. The bytes returned must be a valid
-// BSON document if the error is nil.
-// Marshals a DateTime as a bsontype.DateTime, an int64 representing
-// milliseconds since epoch.
-func (t DateTime) MarshalBSONValue() (bsontype.Type, []byte, error) {
-	// UnixNano cannot be used, the result of calling UnixNano on the zero
-	// Time is undefined.
-	i64 := NormalizeTimeForMarshal(time.Time(t)).Unix() * 1000
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(i64))
-
-	return bsontype.DateTime, buf, nil
-}
-
-// UnmarshalBSONValue is an interface implemented by types that can unmarshal a
-// BSON value representation of themselves. The BSON bytes and type can be
-// assumed to be valid. UnmarshalBSONValue must copy the BSON value bytes if it
-// wishes to retain the data after returning.
-func (t *DateTime) UnmarshalBSONValue(tpe bsontype.Type, data []byte) error {
-	i64 := int64(binary.LittleEndian.Uint64(data))
-	// TODO: Use bsonprim.DateTime.Time() method
-	*t = DateTime(time.Unix(i64/1000, i64%1000*1000000))
-
-	return nil
-}
-
-=======
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/strfmt/time.go
 // DeepCopyInto copies the receiver and writes its value into out.
 func (t *DateTime) DeepCopyInto(out *DateTime) {
 	*out = *t
@@ -245,40 +170,3 @@ func (t *DateTime) DeepCopy() *DateTime {
 	t.DeepCopyInto(out)
 	return out
 }
-<<<<<<< HEAD:vendor/github.com/go-openapi/strfmt/time.go
-
-// GobEncode implements the gob.GobEncoder interface.
-func (t DateTime) GobEncode() ([]byte, error) {
-	return t.MarshalBinary()
-}
-
-// GobDecode implements the gob.GobDecoder interface.
-func (t *DateTime) GobDecode(data []byte) error {
-	return t.UnmarshalBinary(data)
-}
-
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (t DateTime) MarshalBinary() ([]byte, error) {
-	return NormalizeTimeForMarshal(time.Time(t)).MarshalBinary()
-}
-
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
-func (t *DateTime) UnmarshalBinary(data []byte) error {
-	var original time.Time
-
-	err := original.UnmarshalBinary(data)
-	if err != nil {
-		return err
-	}
-
-	*t = DateTime(original)
-
-	return nil
-}
-
-// Equal checks if two DateTime instances are equal using time.Time's Equal method
-func (t DateTime) Equal(t2 DateTime) bool {
-	return time.Time(t).Equal(time.Time(t2))
-}
-=======
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/strfmt/time.go

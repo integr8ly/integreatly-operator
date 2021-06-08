@@ -66,46 +66,6 @@ func (o *objectValidator) isExample() bool {
 	return len(p) > 1 && (p[len(p)-1] == swaggerExample || p[len(p)-1] == swaggerExamples) && p[len(p)-2] != swaggerExample
 }
 
-<<<<<<< HEAD:vendor/github.com/go-openapi/validate/object_validator.go
-func (o *objectValidator) checkArrayMustHaveItems(res *Result, val map[string]interface{}) {
-	// for swagger 2.0 schemas, there is an additional constraint to have array items defined explicitly.
-	// with pure jsonschema draft 4, one may have arrays with undefined items (i.e. any type).
-	if t, typeFound := val[jsonType]; typeFound {
-		if tpe, ok := t.(string); ok && tpe == arrayType {
-			if item, itemsKeyFound := val[jsonItems]; !itemsKeyFound {
-				res.AddErrors(errors.Required(jsonItems, o.Path, item))
-			}
-		}
-	}
-}
-
-func (o *objectValidator) checkItemsMustBeTypeArray(res *Result, val map[string]interface{}) {
-	if !o.isProperties() && !o.isDefault() && !o.isExample() {
-		if _, itemsKeyFound := val[jsonItems]; itemsKeyFound {
-			t, typeFound := val[jsonType]
-			if typeFound {
-				if tpe, ok := t.(string); !ok || tpe != arrayType {
-					res.AddErrors(errors.InvalidType(o.Path, o.In, arrayType, nil))
-				}
-			} else {
-				// there is no type
-				res.AddErrors(errors.Required(jsonType, o.Path, t))
-			}
-		}
-	}
-}
-
-func (o *objectValidator) precheck(res *Result, val map[string]interface{}) {
-	if o.Options.EnableArrayMustHaveItemsCheck {
-		o.checkArrayMustHaveItems(res, val)
-	}
-	if o.Options.EnableObjectArrayTypeCheck {
-		o.checkItemsMustBeTypeArray(res, val)
-	}
-}
-
-=======
->>>>>>> 4c0348511... Update vendor folder:vendor/k8s.io/kube-openapi/pkg/validation/validate/object_validator.go
 func (o *objectValidator) Validate(data interface{}) *Result {
 	val := data.(map[string]interface{})
 	// TODO: guard against nil data
@@ -185,8 +145,8 @@ func (o *objectValidator) Validate(data interface{}) *Result {
 	// Check required properties
 	if len(o.Required) > 0 {
 		for _, k := range o.Required {
-			if v, ok := val[k]; !ok && !createdFromDefaults[k] {
-				res.AddErrors(errors.Required(o.Path+"."+k, o.In, v))
+			if _, ok := val[k]; !ok && !createdFromDefaults[k] {
+				res.AddErrors(errors.Required(o.Path+"."+k, o.In))
 				continue
 			}
 		}
@@ -228,9 +188,9 @@ func (o *objectValidator) validatePatternProperty(key string, value interface{},
 
 	// BUG(fredbi): can't get to here. Should remove dead code (commented out).
 
-	// if succeededOnce {
+	//if succeededOnce {
 	//	result.Inc()
-	// }
+	//}
 
 	return matched, succeededOnce, patterns
 }

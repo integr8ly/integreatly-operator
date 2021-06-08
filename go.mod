@@ -42,12 +42,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.10.0
-	gopkg.in/yaml.v2 v2.4.0
-	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	github.com/sirupsen/logrus v1.7.0
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
+	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.20.6
 	k8s.io/apiextensions-apiserver v0.20.2
 	k8s.io/apimachinery v0.20.6
@@ -60,7 +60,6 @@ require (
 replace (
 	github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
-	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
@@ -86,6 +85,7 @@ replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.20.6
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.20.6
+	k8s.io/kubectl => k8s.io/kubectl v0.20.6
 	k8s.io/kubelet => k8s.io/kubelet v0.20.6
 	k8s.io/kubernetes => k8s.io/kubernetes v1.19.4
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.20.6
