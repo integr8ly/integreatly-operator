@@ -5,7 +5,11 @@ import (
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/test/common"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	observability "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -138,9 +142,44 @@ func (r *Reconciler) reconcileSecrets(_ context.Context, _ k8sclient.Client, _ *
 }
 
 
-func (r *Reconciler) reconcileComponents(_ context.Context, _ k8sclient.Client, _ *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	oo := &observability.Observability{
+		             ObjectMeta: metav1.ObjectMeta{
+		                     Name: "observability-stack" ,
+		                     Namespace: fmt.Sprintf("%s%s-operator", common.NamespacePrefix, defaultInstallationNamespace),
+		             },
+		     }
+
+	     if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+		             disabled := true
+		             oo.Spec =       observability.ObservabilitySpec{
+			                     ConfigurationSelector: &metav1.LabelSelector{
+			                             MatchLabels:      map[string]string{
+			                                     "monitoring-key": r.Config.GetLabelSelector(),
+			                             },
+			                             MatchExpressions: nil,
+			                     },
+			                     SelfContained: &observability.SelfContained{
+			                             DisableRepoSync:       &disabled,
+			                             DisableObservatorium:  &disabled,
+			                             DisablePagerDuty:      &disabled,
+			                             NamespaceLabelSelector: &metav1.LabelSelector{
+											 MatchLabels: map[string]string{
+												 "monitoring-key": r.Config.GetLabelSelector(),
+											 },
+										 },
+			                     },
+			                     ResyncPeriod: "1h",
+			             }
+
+		             return nil
+		     }); err != nil {
+		             return integreatlyv1alpha1.PhaseInProgress, err
+		     }
+
+		     return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {

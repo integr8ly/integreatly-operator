@@ -1,7 +1,7 @@
 package config
 
 import (
-	oo "github.com/bf2fc6cc711aee1a0c2a/observability-operator/api/v1"
+	oo "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,6 +43,11 @@ func (m *Observability) Read() ProductConfig {
 func (m *Observability) GetProductVersion() integreatlyv1alpha1.ProductVersion {
 	return integreatlyv1alpha1.VersionObservability
 }
+
+func (m *Observability) GetLabelSelector() string {
+	     return "middleware"
+	}
+
 
 func (m *Observability) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionObservability
