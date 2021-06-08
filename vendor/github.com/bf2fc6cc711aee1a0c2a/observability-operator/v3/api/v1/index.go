@@ -6,12 +6,11 @@ import (
 )
 
 type RepositoryInfo struct {
-	Repository   string
-	Channel      string
-	Tag          string
-	AccessToken  string
-	MapSource    *v1.ConfigMap
-	SecretSource *v1.Secret
+	Repository  string
+	Channel     string
+	Tag         string
+	AccessToken string
+	Source      *v1.Secret
 }
 
 type GrafanaIndex struct {
@@ -72,11 +71,10 @@ type RepositoryConfig struct {
 }
 
 type RepositoryIndex struct {
-	BaseUrl      string            `json:"-"`
-	AccessToken  string            `json:"-"`
-	Tag          string            `json:"-"`
-	MapSource    *v1.ConfigMap     `json:"-"`
-	SecretSource *v1.Secret        `json:"-"`
-	Id           string            `json:"id"`
-	Config       *RepositoryConfig `json:"config"`
+	BaseUrl     string            `json:"-"`
+	AccessToken string            `json:"-"`
+	Tag         string            `json:"-"`
+	Source      *v1.Secret        `json:"-"`
+	Id          string            `json:"id"`
+	Config      *RepositoryConfig `json:"config"`
 }
