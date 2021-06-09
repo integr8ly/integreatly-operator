@@ -4,11 +4,18 @@ projectName: integreatly-operator
 repo: github.com/integr8ly/integreatly-operator
 resources:
 - group: integreatly.org
+  controller: true
+  domain: integreatly.org
   kind: RHMI
+  path: github.com/integr8ly/integreatly-operator/api/v1alpha1
   version: v1alpha1
 - group: integreatly.org
+  controller: true
+  domain: integreatly.org
   kind: RHMIConfig
+  path: github.com/integr8ly/integreatly-operator/api/v1alpha1
   version: v1alpha1
-version: 3-alpha
+version: "3"
 plugins:
-  go.sdk.operatorframework.io/v2-alpha: {}
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}

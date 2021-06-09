@@ -30,6 +30,21 @@ func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8
 	return nil
 }
 
+// Update finalizers format (Operator SDK 1.7.0)
+func UpdateFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, productName string, finalizer string, log l.Logger) error {
+	previousFinalizer := "finalizer." + productName + ".integreatly.org"
+
+	if Contains(inst.GetFinalizers(), previousFinalizer) && inst.GetDeletionTimestamp() == nil {
+		inst.SetFinalizers(Replace(inst.GetFinalizers(), previousFinalizer, finalizer))
+		err := client.Update(ctx, inst)
+		if err != nil {
+			log.Error("Error replacing finalizer to custom resource", err)
+			return err
+		}
+	}
+	return nil
+}
+
 // RemoveOauthClient deletes an oauth client by name
 func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string, log l.Logger) error {
 	err := oauthClient.OAuthClients().Delete(context.TODO(), oauthClientName, metav1.DeleteOptions{})
@@ -72,7 +87,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 
 // RemoveProductFinalizer removes a given finalizer from the installation custom resource
 func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, product string, log l.Logger) error {
-	finalizer := "finalizer." + product + ".integreatly.org"
+	finalizer := product + ".integreatly.org" + "/finalizer"
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
@@ -108,6 +123,16 @@ func Remove(list []string, s string) []string {
 	for i, v := range list {
 		if v == s {
 			list = append(list[:i], list[i+1:]...)
+		}
+	}
+	return list
+}
+
+// Replaces a string from array of strings with another string
+func Replace(list []string, oldString string, newString string) []string {
+	for i, v := range list {
+		if v == oldString {
+			list[i] = newString
 		}
 	}
 	return list

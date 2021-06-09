@@ -42,9 +42,7 @@ func (r ManifestResult) HasWarn() bool {
 // https://godoc.org/k8s.io/apimachinery/pkg/util/validation/field
 
 // Error is an implementation of the 'error' interface, which represents a
-// warning or an error in a yaml file. Error type is taken as is from
-// https://github.com/operator-framework/operator-registry/blob/master/vendor/k8s.io/apimachinery/pkg/util/validation/field/errors.go#L31
-// to maintain compatibility with upstream.
+// warning or an error in a yaml file.
 type Error struct {
 	// Type is the ErrorType string constant that represents the kind of
 	// error, ex. "MandatoryStructMissing", "I/O".
@@ -102,6 +100,7 @@ const (
 	ErrorInvalidManifestStructure ErrorType = "ManifestStructureNotValid"
 	ErrorInvalidBundle            ErrorType = "BundleNotValid"
 	ErrorInvalidPackageManifest   ErrorType = "PackageManifestNotValid"
+	ErrorObjectFailedValidation   ErrorType = "ObjectFailedValidation"
 )
 
 func NewError(t ErrorType, detail, field string, v interface{}) Error {
@@ -231,4 +230,16 @@ func WarnInvalidOperation(detail string, value interface{}) Error {
 
 func invalidOperation(lvl Level, detail string, value interface{}) Error {
 	return Error{ErrorInvalidOperation, lvl, "", value, detail}
+}
+
+func ErrInvalidObject(value interface{}, detail string) Error {
+	return invalidObject(LevelError, detail, value)
+}
+
+func invalidObject(lvl Level, detail string, value interface{}) Error {
+	return Error{ErrorObjectFailedValidation, lvl, "", value, detail}
+}
+
+func WarnInvalidObject(detail string, value interface{}) Error {
+	return failedValidation(LevelWarn, detail, value)
 }
