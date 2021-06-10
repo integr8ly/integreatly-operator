@@ -29,8 +29,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": fmt.Sprintf("Pod count for namespace %s is %s. Expected exactly %d pods.", "{{ $labels.namespace }}", "{{  printf \"%.0f\" $value }}", apicuritoPodCountExpected),
 						},
-						Expr: intstr.FromString(
-							fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) != %d", r.Config.GetNamespace(), r.Config.GetNamespace(), apicuritoPodCountExpected)),
+						Expr:   intstr.FromString(fmt.Sprintf("sum(sum(kube_pod_status_ready{condition='true',namespace='%s'}) by (namespace, pod) * on (namespace, pod) group_left() (sum(kube_pod_status_phase{phase='Running'}) by (pod, namespace) == 1)) != %d", r.Config.GetNamespace(), apicuritoPodCountExpected)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},

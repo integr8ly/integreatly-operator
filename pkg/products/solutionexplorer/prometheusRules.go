@@ -65,7 +65,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "Pod count for namespace {{  $labels.namespace  }} is {{  $value }}. Expected exactly 1 pods.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%[1]v'})) or sum(kube_pod_status_ready{condition='true', namespace='%[1]v'}) != 1", r.Config.GetNamespace())),
+						Expr: intstr.FromString(
+							fmt.Sprintf("sum ( sum(kube_pod_status_ready{condition='true',namespace='%s'}) by (namespace, pod) * on (namespace, pod) group_left() (sum(kube_pod_status_phase{phase='Running'}) by (pod, namespace) == 1) ) != 1", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
