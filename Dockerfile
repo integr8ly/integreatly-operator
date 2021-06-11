@@ -19,7 +19,7 @@ COPY test/ test/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o rhmi-operator main.go
 
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 ENV OPERATOR=/usr/local/bin/rhmi-operator \
     USER_UID=1001 \
