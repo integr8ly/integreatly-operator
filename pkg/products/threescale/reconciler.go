@@ -388,12 +388,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	// phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
-	// r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
-	// if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-	// 	events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
-	// 	return phase, err
-	// }
+	phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
+	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
+		return phase, err
+	}
 
 	// Ensure deployment configs are ready before returning phase complete
 	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
@@ -749,7 +749,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Client) (bool, error) {
-	expectedRoutes := 6
+	expectedRoutes := 4
 	opts := k8sclient.ListOptions{
 		Namespace: r.Config.GetNamespace(),
 	}
@@ -2018,7 +2018,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 
 		if name == systemAppDCName {
 			envVars := make(map[string]corev1.EnvVarSource)
-			internalBackendListenerRoute := &corev1.EnvVarSource{
+			backendListenerServiceEndpoint := &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "backend-listener",
@@ -2026,12 +2026,25 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 					Key: "service_endpoint",
 				},
 			}
-			envVars["APICAST_BACKEND_ROOT_ENDPOINT"] = *internalBackendListenerRoute
-			envVars["BACKEND_ROUTE"] = *internalBackendListenerRoute
+
+			backendListenerRoute := &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "backend-listener",
+					},
+					Key: "route_endpoint",
+				},
+			}
+			envVars["APICAST_BACKEND_ROOT_ENDPOINT"] = *backendListenerRoute
+			envVars["BACKEND_ROUTE"] = *backendListenerServiceEndpoint
+			envVars["BACKEND_PUBLIC_URL"] = *backendListenerRoute
 
 			// Have to use the index when iterating here because when using range go creates a copy of the variable
 			// so any update will be applyed to the copy
-			for envVarName, envVarValue := range envVars {
+			for envVarName, _ := range envVars {
+				foundEnv := false
+				envVarValue := envVars[envVarName]
+
 				if deploymentConfig.Spec.Strategy.RollingParams != nil {
 					for i, env := range deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env {
 						if env.Name == envVarName {
@@ -2043,8 +2056,19 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 				for i, container := range deploymentConfig.Spec.Template.Spec.Containers {
 					for j, env := range container.Env {
 						if env.Name == envVarName {
+							foundEnv = true
+							r.log.Infof("updating env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
 							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].ValueFrom = &envVarValue
 						}
+					}
+
+					if foundEnv == false {
+						r.log.Infof("adding env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
+
+						deploymentConfig.Spec.Template.Spec.Containers[i].Env = append(
+							deploymentConfig.Spec.Template.Spec.Containers[i].Env,
+							corev1.EnvVar{Name: envVarName, ValueFrom: &envVarValue},
+						)
 					}
 				}
 			}
@@ -2101,10 +2125,10 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	proxyServer := ratelimit.NewEnvoyProxyServer(ctx, serverClient, r.log)
 
-	// err := r.createBackendListenerProxyService(ctx, serverClient)
-	// if err != nil {
-	// 	return integreatlyv1alpha1.PhaseInProgress, err
-	// }
+	err := r.createBackendListenerProxyService(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
 
 	// creates envoy proxy sidecar container for apicast staging
 	phase, err := proxyServer.CreateEnvoyProxyContainer(
@@ -2133,17 +2157,17 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	}
 
 	// creates envoy proxy sidecar container for backend listener
-	// phase, err = proxyServer.CreateEnvoyProxyContainer(
-	// 	backendListenerDCName,
-	// 	r.Config.GetNamespace(),
-	// 	BackendNodeID,
-	// 	BackendServiceName,
-	// 	"http",
-	// 	BackendEnvoyProxyPort,
-	// )
-	// if phase != integreatlyv1alpha1.PhaseCompleted {
-	// 	return phase, err
-	// }
+	phase, err = proxyServer.CreateEnvoyProxyContainer(
+		backendListenerDCName,
+		r.Config.GetNamespace(),
+		BackendNodeID,
+		BackendServiceName,
+		"http",
+		BackendEnvoyProxyPort,
+	)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
 
 	r.log.Info("Finished creating envoy sidecar containers for 3scale components")
 
@@ -2189,32 +2213,32 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	}
 
 	// backend-listener cluster
-	// backendClusterResource := ratelimit.CreateClusterResource(
-	// 	BackendContainerAddress,
-	// 	BackendClusterName,
-	// 	BackendContainerPort,
-	// )
+	backendClusterResource := ratelimit.CreateClusterResource(
+		BackendContainerAddress,
+		BackendClusterName,
+		BackendContainerPort,
+	)
 
-	// backendHTTPFilters, _ := getBackendListenerHTTPFilters()
+	backendHTTPFilters, _ := getBackendListenerHTTPFilters()
 	// backend listener listener
-	// backendFilters, _ := getListenerResourceFilters(
-	// 	getBackendListenerVitualHosts(BackendClusterName),
-	// 	backendHTTPFilters,
-	// )
-	// backendListenerResource := ratelimit.CreateListenerResource(
-	// 	BackendListenerName,
-	// 	BackendEnvoyProxyAddress,
-	// 	BackendEnvoyProxyPort,
-	// 	backendFilters,
-	// )
+	backendFilters, _ := getListenerResourceFilters(
+		getBackendListenerVitualHosts(BackendClusterName),
+		backendHTTPFilters,
+	)
+	backendListenerResource := ratelimit.CreateListenerResource(
+		BackendListenerName,
+		BackendEnvoyProxyAddress,
+		BackendEnvoyProxyPort,
+		backendFilters,
+	)
 
 	// create envoy config for backend listener
-	// backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
-	// err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{backendListenerResource}, installation)
-	// if err != nil {
-	// 	r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
-	// 	return integreatlyv1alpha1.PhaseFailed, err
-	// }
+	backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
+	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{backendListenerResource}, installation)
+	if err != nil {
+		r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -2274,13 +2298,9 @@ func (r *Reconciler) createBackendListenerProxyService(ctx context.Context, serv
 	}
 
 	// links the backend listener proxy service to the external backend listener route
-	backendRoute := &routev1.Route{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: r.Config.GetNamespace(),
-		Name:      "backend",
-	}, backendRoute)
+	backendRoute, err := r.getBackendListenerRoute(ctx, serverClient)
 	if err != nil {
-		return fmt.Errorf("Error getting the backend-listener external route: %v", err)
+		return err
 	}
 
 	backendRoute.Spec.To.Name = backendListenerService.Name
@@ -2293,4 +2313,16 @@ func (r *Reconciler) createBackendListenerProxyService(ctx context.Context, serv
 		l.Fields{"ServiceName": backendListenerService.Name},
 	)
 	return nil
+}
+
+func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k8sclient.Client) (*routev1.Route, error) {
+	backendRoute := &routev1.Route{}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: r.Config.GetNamespace(),
+		Name:      "backend",
+	}, backendRoute)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting the backend-listener external route: %v", err)
+	}
+	return backendRoute, nil
 }
