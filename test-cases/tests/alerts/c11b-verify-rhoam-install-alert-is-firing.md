@@ -9,11 +9,16 @@ products:
       - 0.2.0
       - 1.0.0
       - 1.4.0
+tags:
+  - destructive
+  - manual-selection
 ---
 
 # C11B - Verify RHOAM install alert is firing
 
 ## Description
+
+> Obsolete, the alert in question should not fire if RHOAM operator is down, it is just for installations/upgrades.
 
 Verify that RHOAM operator alerts are in place and working as expected
 

@@ -23,10 +23,12 @@ type SecretRef struct {
 
 // +kubebuilder:object:generate=true
 type ResourceTypeSpec struct {
-	Type       string     `json:"type"`
-	Tier       string     `json:"tier"`
-	SkipCreate bool       `json:"skipCreate,omitempty"`
-	SecretRef  *SecretRef `json:"secretRef"`
+	Type       string `json:"type"`
+	Tier       string `json:"tier"`
+	SkipCreate bool   `json:"skipCreate,omitempty"`
+	// ApplyImmediately is only available to Postgres cr, for blobstorage and redis cr's currently does nothing
+	ApplyImmediately bool       `json:"applyImmediately,omitempty"`
+	SecretRef        *SecretRef `json:"secretRef"`
 }
 
 type StatusPhase string

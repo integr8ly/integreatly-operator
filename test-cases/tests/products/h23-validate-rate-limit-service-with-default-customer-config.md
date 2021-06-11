@@ -6,7 +6,10 @@ products:
     targets:
       - 1.0.0
       - 1.5.0
+      - 1.7.0
 estimate: 1h
+tags:
+  - destructive
 ---
 
 # H23 - Validate rate limit service with default customer config

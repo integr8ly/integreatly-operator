@@ -15,7 +15,7 @@ const WINDOW = 6
 func UpdateStatus(ctx context.Context, client k8sclient.Client, config *rhmiconfigv1alpha1.RHMIConfig) error {
 
 	// removes the upgrade schedule time from the CR, if Upgrade.Schedule is set to false
-	if *config.Spec.Upgrade.Schedule == false {
+	if config.Spec.Upgrade.Schedule == nil || *config.Spec.Upgrade.Schedule == false {
 		config.Status.Upgrade.Scheduled = nil
 		return client.Status().Update(ctx, config)
 	}

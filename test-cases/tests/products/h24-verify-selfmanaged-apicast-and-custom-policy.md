@@ -1,11 +1,13 @@
 ---
+automation:
+  - MGDAPI-1920
 products:
   - name: rhoam
     environments:
       - osd-fresh-install
 estimate: 1h
 tags:
-  - manual-selection
+  - per-release
 ---
 
 # H24 - Verify self-managed APIcast and custom policy
@@ -18,6 +20,8 @@ Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse
 Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/guide/757a6ad2-8ca0-4150-b949-cbb1ee4e5969#_ca8e43cd-5336-4a9e-8d42-8cd5ceef1299) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
 
 ## Steps
+
+Unofficial - follow the official guide!
 
 _1. This test case must be done using `customer-admin` user (or any other user from `dedicated-admins` group). Do not use `kubeadmin`!_
 
@@ -129,24 +133,33 @@ _9. Start custom policy builds_
 - Give some time between builds
 - `oc start-build apicast-custom-policies`
 
-_10. Install "Red Hat Integration - 3scale APIcast gateway" operator via Operator Hub in OSD web console for the namespace_
-
-- do not use community version!
-- Accept the defaults and install in the selfmanaged-apicast namespace
-
-_11. Get the 3scale Admin Portal token_
+_10. Get the 3scale Admin Portal token_
 
 - navigate to the 3scale Admin Portal (web console) route can be got with `oc get routes --namespace redhat-rhoam-3scale | grep admin`
 - log in as `customer-admin`
 - navigate to `Account Settings/Personal/Tokens/Add Access Token`
 - create an access token (full read and write access)
 
-_12. Create an adminportal-credentials secret_
+_11. Create an adminportal-credentials secret_
 
 - `oc create secret generic adminportal-credentials --from-literal=AdminPortalURL=https://<access-token>@<url-to-3scale-admin-portal>`
 - example: `oc create secret generic prod-sm-apicast --from-literal=AdminPortalURL=https://a926aaa5bb0ed9e89fd3a8c92bce7aefd5dc63748212db318eb968222fc45c7b@3scale-admin.apps.multiaz-24-trep.b5s6.s1.devshift.org`
 
-_13. Create a self-managed APIcast_
+_12. Use self-managed APIcast instead of the builded one for API (echo service)_
+
+- navigate to 3scale Admin Portal (web console) route can be got with `oc get routes --namespace redhat-rhoam-3scale | grep admin`
+- In `API's\Products` on the Dashboard screen go to
+- API -> Integration -> Settings -> tick APIcast Self Managed radio-box
+  - change "Staging Public Base URL" so that it is slightly different at the beginning, e.g. replace `api-3scale-apicast-` with `selfmanaged-`
+  - Then use the `Update Product` button
+- API -> Configuration -> Use the `Promote to Staging` and `Promote to Production` buttons
+
+_13. Install "Red Hat Integration - 3scale APIcast gateway" operator via Operator Hub in OSD web console for the namespace_
+
+- do not use community version!
+- Accept the defaults and install in the selfmanaged-apicast namespac
+
+_14. Create a self-managed APIcast_
 
 - navigate to `Operators\Installed Operators` in osd
 - Select `Red Hat Integration - 3scale APIcast gateway`
@@ -155,17 +168,8 @@ _13. Create a self-managed APIcast_
 - use `Form view`
 - change "Admin Portal Credentials Ref" secret name to `adminportal-credentials`
 - set "Image" to `image-registry.openshift-image-registry.svc:5000/selfmanaged-apicast/apicast-policy:example` (this also depends on the namespace name used)
-- set "Configuration Load Mode" to lazy
+- set "Configuration Load Mode" to boot
 - Then use the `Create` button
-
-_14. Use self-managed APIcast instead of the builded one for API (echo service)_
-
-- navigate to 3scale Admin Portal (web console) route can be got with `oc get routes --namespace redhat-rhoam-3scale | grep admin`
-- In `API's\Products` on the Dashboard screen go to
-- API -> Integration -> Settings -> tick APIcast Self Managed radio-box
-  - change "Staging Public Base URL" so that it is slightly different at the beginning, e.g. replace `api-3scale-apicast-` with `selfmanaged-`
-  - Then use the `Update Product` button
-- API -> Configuration -> Use the `Promote to Staging` and `Promote to Production` buttons
 
 _15. Create a route for the self-managed APIcast_
 

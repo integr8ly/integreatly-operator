@@ -4,11 +4,9 @@ products:
     environments:
       - osd-fresh-install
       - osd-post-upgrade
-    targets:
-      - 0.1.0
-      - 0.2.0
-      - 1.0.0
 estimate: 15m
+tags:
+  - manual-selection
 ---
 
 # M05B - Verify secrets
@@ -17,6 +15,8 @@ More info:
 
 - <https://issues.redhat.com/browse/INTLY-4885>
 - <https://issues.redhat.com/browse/INTLY-9096>
+
+Obsolete - secrets are managed by 3rd party (Hive, OCM) now.
 
 ## Steps
 

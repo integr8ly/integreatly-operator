@@ -22,6 +22,12 @@ Acceptance Criteria:
 
 https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
 
+If there is not such build (typically if working with post upgrade cluster) then trigger the build
+
+- provide "ocmAccessToken"
+- provide display name of the cluster to "clusterName"
+- make sure only "runFunctionalTests" is ticked for Pipeline steps
+
 2. Check the functional tests were run as part of the pipeline.
 3. Check if there were any failed or skipped tests (flaky ones).
 4. If so, then investigate failed tests, and re-run or verify manually any skipped tests.

@@ -56,6 +56,22 @@ func TestUpdateStatus(t *testing.T) {
 		Validate func(*testing.T, error, *rhmiconfigv1alpha1.RHMIConfig)
 	}{
 		{
+			Name: "test no nil pointer when Spec.Upgrade.Schedule not set",
+			Config: &rhmiconfigv1alpha1.RHMIConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-config",
+					Namespace: "testing-namespaces-operator",
+				},
+				Spec:   rhmiconfigv1alpha1.RHMIConfigSpec{},
+				Status: rhmiconfigv1alpha1.RHMIConfigStatus{},
+			},
+			Validate: func(t *testing.T, err error, config *rhmiconfigv1alpha1.RHMIConfig) {
+				if err != nil {
+					t.Error("Expected no error, but got: " + err.Error())
+				}
+			},
+		},
+		{
 			Name: "status updated with pending installplan",
 			Config: &rhmiconfigv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{

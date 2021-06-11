@@ -52,7 +52,7 @@ const (
 	defaultAwsBackupRetentionPeriod      = 31
 	defaultAwsDBInstanceClass            = "db.t3.small"
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "10.13"
+	defaultAwsEngineVersion              = "10.15"
 	defaultAwsPubliclyAccessible         = false
 	defaultAwsSkipFinalSnapshot          = false
 	defaultAWSCopyTagsToSnapshot         = true
@@ -64,7 +64,7 @@ const (
 )
 
 var (
-	defaultSupportedEngineVersions = []string{"10.13", "10.6", "9.6", "9.5"}
+	defaultSupportedEngineVersions = []string{"10.15", "10.13", "10.6", "9.6", "9.5"}
 	healthyAWSDBInstanceStatuses   = []string{
 		"backtracking",
 		"available",
@@ -309,7 +309,7 @@ func (p *PostgresProvider) createRDSInstance(ctx context.Context, cr *v1alpha1.P
 
 	// check if found instance and user strategy differs, and modify instance
 	logger.Infof("found existing rds instance: %s", *foundInstance.DBInstanceIdentifier)
-	mi, err := buildRDSUpdateStrategy(rdsCfg, foundInstance)
+	mi, err := buildRDSUpdateStrategy(rdsCfg, foundInstance, cr)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("error building update config for rds instance: %s", *foundInstance.DBInstanceIdentifier)
@@ -647,7 +647,7 @@ func (p *PostgresProvider) isLastResource(ctx context.Context, namespace string)
 }
 
 // verifies if there is a change between a found instance and the configuration from the instance strat and verified the changes are not pending
-func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *rds.DBInstance) (*rds.ModifyDBInstanceInput, error) {
+func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *rds.DBInstance, cr *v1alpha1.Postgres) (*rds.ModifyDBInstanceInput, error) {
 	logrus.Infof("verifying that %s configuration is as expected", *foundConfig.DBInstanceIdentifier)
 	updateFound := false
 
@@ -701,6 +701,9 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 		}
 		if engineUpgradeNeeded {
 			mi.EngineVersion = rdsConfig.EngineVersion
+			if cr.Spec.ApplyImmediately {
+				mi.ApplyImmediately = aws.Bool(cr.Spec.ApplyImmediately)
+			}
 			updateFound = true
 		}
 	}

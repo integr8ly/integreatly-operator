@@ -62,29 +62,6 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 			r.Log.Infof("Operation result", l.Fields{"productName": r.ProductName, "alertName": alert.AlertName, "result": string(or)})
 		}
 	}
-
-	rule := &monitoringv1.PrometheusRule{}
-	err := client.Get(ctx, k8sclient.ObjectKey{
-		Name:      "ksm-monitoring-alerts",
-		Namespace: "redhat-rhoam-middleware-monitoring-operator",
-	}, rule)
-	if !errors.IsNotFound(err) {
-		if err := client.Delete(ctx, rule); err != nil {
-			r.Log.Info("Alert \"ksm-monitoring-alerts\" was deleted")
-		}
-	}
-
-	rule = &monitoringv1.PrometheusRule{}
-	err = client.Get(ctx, k8sclient.ObjectKey{
-		Name:      "rate-limit-soft-limits",
-		Namespace: "redhat-rhoam-marin3r",
-	}, rule)
-	if !errors.IsNotFound(err) {
-		if err := client.Delete(ctx, rule); err != nil {
-			r.Log.Info("Alert \"rate-limit-soft-limits\" was deleted")
-		}
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
