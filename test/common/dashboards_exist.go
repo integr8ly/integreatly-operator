@@ -44,6 +44,9 @@ var commonExpectedDashboards = []dashboardsTestRule{
 	{
 		Title: "CRO Resources",
 	},
+	{
+		Title: "SLO SSO Availability - 5xx HAProxy Errors",
+	},
 }
 
 // Applicable to install types used in 2.X
