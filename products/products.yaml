@@ -1,10 +1,17 @@
+# This file represents informations around components used within RHOAM and RHMI
+# name - the name of the components
+# version - version of the components - by github tag
+# url - url to github repo of the component
+# installType - installation type where the component is required
+# manifestDir - name of the directory where manifest is stored
+# quayScan - decide whether the image should be scanned or not 
 products:
   - name: 3scale-operator
     version: 3scale-2.10.0-GA
     url: "https://github.com/3scale/3scale-operator"
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-3scale"
-    quayScan: false
+    quayScan: true
   - name: apicurito-registry-operator
     version: 0.0.3
     url: "https://github.com/Apicurio/apicurio-registry-operator"

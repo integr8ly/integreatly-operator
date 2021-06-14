@@ -172,6 +172,55 @@ check_csv_replaces_field() {
   fi
 }
 
+# Sets the related images in the CSV for RHOAM
+set_related_images() {
+  echo "Adding related images to the CSV"
+  position=0
+  # Get supported components
+  for (( i=0; i<$(yq r -j ./products/products.yaml | jq -r '.products' | jq length); i++))
+  do
+    product_dir=$(yq r ./products/products.yaml "products[$i].manifestsDir")
+    if [[ $(yq r ./products/products.yaml "products[$i].installType") == *"rhoam"* && $(yq r ./products/products.yaml "products[$i].quayScan") == true ]]; then
+      # Read component version
+      component_version=$(grep currentCSV manifests/$product_dir/*.package.yaml | awk -F v '{print $2}')
+
+      # Read component name
+      component_name=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' |  tr -d '"')
+      
+      # Read image from the component version but only select quay.io or redhat.registry
+      component_image=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select((.image|test("quay.")) or (.image|test("registry.redhat"))) | .image' |  tr -d '"')
+
+      # Push image to relatedImages in RHOAM CSV
+      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${component_image} 
+      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${component_name}
+      position=$((position+1))
+
+      # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
+      relatedImagesLength=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r '.spec.relatedImages' | jq length)
+
+      # Adding generic related images
+      if [[ $relatedImagesLength != 0 ]]; then
+        for (( y=0; y<$relatedImagesLength; y++))
+        do
+          relatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
+          relatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
+          yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${relatedImageURL}
+          yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${relatedImageName}
+          position=$((position+1))
+        done
+      fi
+
+      # Adding KC related image
+      if [[ "$component_name" == *"keycloak-operator"* ]]; then
+        kcRelatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].name' |  tr -d '"')
+        kcRelatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].value' |  tr -d '"')
+        yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${kcRelatedImageURL}
+        yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${kcRelatedImageName}
+      fi
+    fi
+  done
+}
+
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
  exit 1
@@ -217,6 +266,10 @@ set_images
 
 if [[ -n "$SERVICE_AFFECTING" ]]; then
  set_csv_service_affecting_field "$SERVICE_AFFECTING"
+fi
+
+if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
+  set_related_images
 fi
 
 update_base_csv
