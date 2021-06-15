@@ -203,6 +203,15 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres: %w", err)
 	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
+		if postgres != nil {
+			postgres.Spec.ApplyImmediately = true
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
+	}
 
 	// reconcile postgres alerts
 	phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres, r.log)

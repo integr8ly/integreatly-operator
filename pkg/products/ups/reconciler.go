@@ -203,6 +203,15 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
+	_, err = controllerutil.CreateOrUpdate(ctx, client, postgres, func() error {
+		if postgres != nil {
+			postgres.Spec.ApplyImmediately = true
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
+	}
 
 	// reconcile postgres alerts
 	phase, err := resources.ReconcilePostgresAlerts(ctx, client, installation, postgres, r.log)
