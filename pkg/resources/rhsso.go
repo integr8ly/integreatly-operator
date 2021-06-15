@@ -39,6 +39,15 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision postgres instance while reconciling rhsso postgres credentials, %s: %w", name, err)
 	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
+		if postgres != nil {
+			postgres.Spec.ApplyImmediately = true
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update posgres instance while reconciling rhsso postgres credentials, %s: %w", name, err)
+	}
 	if postgres.Status.Phase != types.PhaseComplete {
 		return nil, nil
 	}
