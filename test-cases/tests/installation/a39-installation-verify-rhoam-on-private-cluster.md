@@ -2,7 +2,7 @@
 products:
   - name: rhoam
     environments:
-      - external
+      - osd-private-post-upgrade
 estimate: 3h
 tags:
   - per-release
