@@ -305,6 +305,16 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
 	}
 
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
+		if postgres != nil {
+			postgres.Spec.ApplyImmediately = true
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
+	}
+
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}

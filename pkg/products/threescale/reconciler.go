@@ -933,16 +933,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
-		if postgres != nil {
-			postgres.Spec.ApplyImmediately = true
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
-	}
-
 	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
