@@ -53,7 +53,7 @@ metadata:
     certified: "false"
     containerImage: quay.io/integreatly/integreatly-operator:v2.9.0-rc1
     olm.skipRange: '>=2.4.0 <2.6.1'
-    operators.operatorframework.io/builder: operator-sdk-v1.2.0
+    operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHMI
     serviceAffecting: "true"
@@ -619,5 +619,5 @@ spec:
   maturity: alpha
   provider:
     name: rhmi
-  replaces: integreatly-operator.v2.8.0
   version: 2.9.0
+  replaces: integreatly-operator.v2.8.0
