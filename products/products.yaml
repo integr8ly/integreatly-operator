@@ -18,7 +18,7 @@ products:
     manifestsDir: "integreatly-cloud-resources"
     quayScan: true
   - name: grafana-operator
-    version: v3.10.1
+    version: v3.10.2
     url: "https://github.com/integr8ly/grafana-operator"
     installType: "rhoam/rhmi"
     manifestsDir: "integreatly-grafana"

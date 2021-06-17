@@ -433,7 +433,7 @@ github.com/integr8ly/cloud-resource-operator/pkg/resources
 # github.com/integr8ly/grafana-operator v2.0.0+incompatible
 ## explicit
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/grafana-operator/v3 v3.10.1
+# github.com/integr8ly/grafana-operator/v3 v3.10.2
 ## explicit
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/keycloak-client v0.1.4
