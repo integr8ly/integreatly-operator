@@ -9,7 +9,7 @@ tags:
   - manual-selection
 ---
 
-# I13 - Install rhoam ocm 
+# I13 - Install rhoam ocm
 
 ## Description
 
