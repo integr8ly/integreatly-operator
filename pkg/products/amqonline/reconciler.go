@@ -296,6 +296,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		r.inst.Namespace,
 		postgresqlName,
 		r.inst.Namespace,
+		constants.PostgresApplyImmediately,
 		func(cr metav1.Object) error {
 			owner.AddIntegreatlyOwnerAnnotations(cr, r.inst)
 			return nil

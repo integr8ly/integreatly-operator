@@ -915,7 +915,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a postgres instance
 	r.log.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, constants.PostgresApplyImmediately, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -923,25 +923,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
-		if postgres != nil {
-			postgres.Spec.ApplyImmediately = true
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgres, func() error {
-		if postgres != nil {
-			postgres.Spec.ApplyImmediately = true
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update postgres: %w", err)
-	}
 
 	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {
