@@ -19,7 +19,125 @@ Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse
 
 Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
 
+The document includes the steps for manual test and instructions how to run the automation script
+
+1. [Automation script](#Automation-script)
+2. [Manual Test Steps](#Manual-Test-Steps)
+
 ## Steps
+
+### Automation script
+
+#### Automation Test procedure briefly
+
+```sh
+$ cd integreatly-operator/test/scripts/products/h24-verify-selfmanaged-apicast-and-custom-policy
+$ test.sh
+```
+
+**Notes**
+Parameters for configuration and recommendations for test could be found in _test.sh_ file and below:
+
+#### Automation Test Prerequisites
+
+- To be logged to Openshift cluster as admin (kubeadmin)
+
+#### Recommended have the following before running the script
+
+- Password for customer-admin user, if testing-idp is not yet available
+- Customer Token, if testing-idp and customers are already available
+  - To get customer token (example below is for user _customer-admin01_):
+    - Login to OSD Portal as _customer-admin01_
+    - at the top-right corner, under _Customer Admin 01_, select _Copy login command_ ->
+      _Login with testing-idp_-> _Sign-In as customer-admin01 user/password_->_Display Token_
+- Open 3scale Admin Portal, to be ready to put updates. Details will be notified by script.
+- If re-executing the script, and if APIcast Configuration and Promotion in 3scale admin portal already done before, -
+  have 3scale admin portal page opened or save user_key as appears in URL in Staging APIcast section.
+
+#### Configuration parameters:
+
+- create-testing-idp
+  - _true_ - to allow script to create IDP and customer-admin users, if not exists yet.
+  - _false_ - if IDP and customer-admin users do not exists yet  
+    **Note:** IDP also could be created using separate idp creation script, as in following example:
+
+```sh
+  $ PASSWORD=<password> DEDICATED_ADMIN_PASSWORD=<password> scripts/setup-sso-idp.sh
+```
+
+- use-customer-admin-user
+  - true - use this option
+  - false - this option could be used for script debugging, using current user, such as kubeadmin
+- promote-manually
+  - true - use this option. The option will require manual configuration -  
+    to use the self-managed APIcast instead of the built-in, and for promotion to Staging and Production.  
+    Following notes are provided by the script in runtime, and script is waiting for these manual operations completion.
+
+```
+   *This is the manual step - Configure the service to use the self-managed APIcast instead of the built-in APIcast for API.
+	*a. Navigate to 3scale Admin Portal. You can use the following command to find route: *oc get routes --namespace redhat-rhoam-3scale | grep admin*
+	*b. In the Products section, click API → Integration → Settings → APIcast Self Managed
+	*c. Change the Staging Public Base URL. Replace api-3scale-apicast- with selfmanaged-
+	*d. Click Update Product.
+	*e. Click API → Configuration → Promote to Staging and Promote to Production
+	*f. Copy user_key value (from Staging APIcast - Example curl for testing) to command prompt:
+```
+
+- false - the option is in development, for fully automated script running in batch mode, without interaction with user
+- 3scale-version="2.11"
+- apicast-operator-version="v0.5.0"
+- apicast-image-stream-tag="3scale2.11.0"
+- apicast-namespace="selfmanaged-apicast"
+
+#### Run the automation test script
+
+```sh
+$ cd integreatly-operator/test/scripts/products/h24-verify-selfmanaged-apicast-and-custom-policy
+$ test.sh
+```
+
+- The script is working in interactive mode, two inputs will be required in command line in script runtime
+  (while using following default parameters: _promote-manually=true_, _create-testing-idp=false_):
+  - 1st input prompt:
+
+```sh
+    .......
+    INFO[0009] Customer Login
+    Enter Customer Admin user Token, and press Enter:
+```
+
+Get token as described in [Recommended have before...](#Recommended-have-the-following-before-running-the-script) section,
+and put token to command prompt.
+
+- 2nd input prompt:
+
+```sh
+  .......
+    e. Click API → Configuration → Promote to Staging and Promote to Production
+    f. Copy user_key value (from Staging APIcast - Example curl for testing) to command prompt:
+```
+
+Put **user_key** to command prompt. _User-key will be taken from 3scale portal, as described in Information provided by the Script in runtime, and in [configuration parameters](#Configuration-parameters:) section_
+
+- Wait for the test to finish. Ensure that it finished successfully, Response code **200**, the end of the script output
+  should look similar to following:
+
+```sh
+  INFO[0371] Create route for self-managed APIcast
+  INFO[0372] routeHost: selfmanaged-staging.apps....
+  INFO[0432] HTTP Request: https://selfmanaged-staging.....
+  INFO[0432] Response Code: 200
+  INFO[0432] Response Body: {
+  "method": "GET",
+   ........
+  "HTTP_X_REQUEST_ID": "....",
+  "HTTP_X_ENVOY_EXPECTED_RQ_TIMEOUT_MS": "15000"
+  .......
+  INFO[0432] Validation of Self-managed APIcast API gateway Deployment - Succeeded
+  INFO[0432] Self-managed APIcast API gateway - Deployment script Completed
+```
+
+### Manual Test Steps
 
 Unofficial - follow the official guide!
 
