@@ -236,6 +236,7 @@ const jira: CommandModule<{}, Args> = {
                 logger.info(
                     `created task '${result.key}' '${issue.fields.summary}'`
                 );
+
                 if (hasDestructive) {
                     if (isDestructive(test)) {
                         if (test == tests[0]) {
@@ -261,6 +262,7 @@ const jira: CommandModule<{}, Args> = {
                         );
                     }
                 }
+
                 if (previousRun) {
                     await jiraApi.addLinkToIssue(
                         result.key,
