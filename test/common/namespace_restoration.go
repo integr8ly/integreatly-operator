@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	marin3rv1alpha1 "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -110,7 +111,11 @@ var (
 				ThreeScaleOperatorNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
-				return removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace)
+				if err := removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace); err != nil {
+					return err
+				}
+
+				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
 			},
 		},
 	}
@@ -361,6 +366,36 @@ func removeApplicationMonitoringFinalizers(ctx *TestingContext, nameSpace string
 		for _, applicationMonitoring := range applicationMonitorings.Items {
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &applicationMonitoring, func() error {
 				applicationMonitoring.Finalizers = []string{}
+				return nil
+			})
+
+			if err != nil {
+				return false, err
+			}
+		}
+
+		return true, nil
+	})
+
+	return err
+}
+
+// Poll removal of all finalizers from EnvoyConfigRevisions from a namespace
+func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) error {
+	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+		envoyConfigRevisions := &marin3rv1alpha1.EnvoyConfigRevisionList{}
+
+		err = ctx.Client.List(goctx.TODO(), envoyConfigRevisions, &k8sclient.ListOptions{
+			Namespace: nameSpace,
+		})
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, envoyConfigRevision := range envoyConfigRevisions.Items {
+			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &envoyConfigRevision, func() error {
+				envoyConfigRevision.Finalizers = []string{}
 				return nil
 			})
 
