@@ -1,4 +1,3 @@
-import { test } from "gray-matter";
 import * as markdown2confluence from "markdown2confluence-cws";
 import { CommandModule } from "yargs";
 import { assertEpic, Issue, Jira } from "../lib/jira";
@@ -203,10 +202,14 @@ const jira: CommandModule<{}, Args> = {
         let hasDestructive = false;
         let firstDestructive = null;
         let lastDestructive = null;
-        if(tests.filter(x => isDestructive(x)).length) {
+        if (tests.filter((x) => isDestructive(x)).length) {
             hasDestructive = true;
-            tests.sort(function(x, y) {
-                return (isDestructive(x) == isDestructive(y)) ? 0 : isDestructive(x) ? -1 : 1
+            tests.sort(function (x, y) {
+                return isDestructive(x) == isDestructive(y)
+                    ? 0
+                    : isDestructive(x)
+                    ? -1
+                    : 1;
             });
         }
 
@@ -238,22 +241,24 @@ const jira: CommandModule<{}, Args> = {
                         if (test == tests[0]) {
                             lastDestructive = result;
                             firstDestructive = result;
+                        } else {
+                            await jiraApi.addLinkToIssue(
+                                lastDestructive.key,
+                                toIssueBlock(result)
+                            );
+                            logger.info(
+                                `'${result.key}' blocked by '${lastDestructive.key}'`
+                            );
+                            lastDestructive = result;
                         }
-                        else {
-                        await jiraApi.addLinkToIssue(
-                            lastDestructive.key,
-                            toIssueBlock(result)
-                        );
-                        logger.info(`'${result.key}' blocked by '${lastDestructive.key}'`);
-                        lastDestructive = result;
-                        }
-                    }
-                    else {
+                    } else {
                         await jiraApi.addLinkToIssue(
                             result.key,
                             toIssueBlock(firstDestructive)
                         );
-                        logger.info(`'${firstDestructive.key}' blocked by '${result.key}'`);
+                        logger.info(
+                            `'${firstDestructive.key}' blocked by '${result.key}'`
+                        );
                     }
                 }
                 if (previousRun) {
