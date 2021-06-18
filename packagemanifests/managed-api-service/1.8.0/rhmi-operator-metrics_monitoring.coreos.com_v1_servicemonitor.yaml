@@ -6,12 +6,8 @@ metadata:
   name: rhmi-operator-metrics
 spec:
   endpoints:
-  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-    path: /metrics
-    port: https
-    scheme: https
-    tlsConfig:
-      insecureSkipVerify: true
+  - path: /metrics
+    port: http-metrics
   selector:
     matchLabels:
       name: rhmi-operator
