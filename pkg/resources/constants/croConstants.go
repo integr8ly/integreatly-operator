@@ -13,4 +13,5 @@ const (
 	AMQAuthServicePostgres       = "standard-authservice-postgresql"
 	ThreeScaleBlobStoragePrefix  = "threescale-blobstorage-"
 	BackupsBlobStoragePrefix     = "backups-blobstorage-"
+	PostgresApplyImmediately     = true
 )

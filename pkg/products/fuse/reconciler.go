@@ -285,7 +285,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 
 	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
 	ns := rhmi.Namespace
-	postgres, err := croResources.ReconcilePostgres(ctx, client, defaultInstallationNamespace, rhmi.Spec.Type, croResources.TierProduction, pgName, ns, pgName, ns, func(cr metav1.Object) error {
+	postgres, err := croResources.ReconcilePostgres(ctx, client, defaultInstallationNamespace, rhmi.Spec.Type, croResources.TierProduction, pgName, ns, pgName, ns, constants.PostgresApplyImmediately, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, rhmi)
 		return nil
 	})

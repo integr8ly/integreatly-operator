@@ -700,6 +700,7 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 			return nil, errorUtil.Wrap(err, "invalid postgres version")
 		}
 		if engineUpgradeNeeded {
+			logrus.Info(fmt.Sprintf("Engine upgrade found, the current EngineVersion is %s and is upgrading to %s", *foundConfig.EngineVersion, *rdsConfig.EngineVersion))
 			mi.EngineVersion = rdsConfig.EngineVersion
 			if cr.Spec.ApplyImmediately {
 				mi.ApplyImmediately = aws.Bool(cr.Spec.ApplyImmediately)
@@ -707,9 +708,11 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 			updateFound = true
 		}
 	}
-	if !updateFound || !verifyPendingModification(mi, foundConfig.PendingModifiedValues) {
+
+	if (!updateFound || !verifyPendingModification(mi, foundConfig.PendingModifiedValues)) && (mi.ApplyImmediately == nil || !*mi.ApplyImmediately) {
 		return nil, nil
 	}
+
 	return mi, nil
 }
 
