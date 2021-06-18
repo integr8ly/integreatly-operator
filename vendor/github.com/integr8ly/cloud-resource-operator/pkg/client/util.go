@@ -64,9 +64,6 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 			},
 		},
 	}
-	if applyImmediately {
-		pg.Spec.ApplyImmediately = applyImmediately
-	}
 
 	// execute logic to modify the resource before creation
 	// e.g. add owner refs
@@ -84,6 +81,10 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 		pg.Spec.SecretRef = &croType.SecretRef{
 			Name:      secretName,
 			Namespace: secretNs,
+		}
+
+		if applyImmediately {
+			pg.Spec.ApplyImmediately = applyImmediately
 		}
 		return nil
 	})
