@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	k8sresources "github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -89,7 +89,7 @@ func IsClusterRunType(ctx context.Context, client k8sclient.Client, installation
 		},
 	}
 
-	return resources.Exists(ctx, client, deployment)
+	return k8sresources.Exists(ctx, client, deployment)
 }
 
 // GetSubscription attempts to find the subscription that installed the operator.
@@ -111,6 +111,33 @@ func GetSubscription(ctx context.Context, client k8sclient.Client, installation 
 	}
 
 	return nil, nil
+}
+
+// GetCatalogSource attempts to find the CatalogSource that provided the operator
+// If the CatalogSource is not found, `nil` is returned
+func GetCatalogSource(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*operatorsv1alpha1.CatalogSource, error) {
+	// Attempt to find the Subscription
+	subscription, err := GetSubscription(ctx, client, installation)
+	if err != nil {
+		return nil, err
+	}
+
+	// Subscription was not found. There might still be a CatalogSource,
+	// but this is not a normal scenario, return `nil`
+	if subscription == nil {
+		return nil, nil
+	}
+
+	// Retrieve the CatalogSource from the Subscription reference
+	catalogSource := &operatorsv1alpha1.CatalogSource{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name:      subscription.Spec.CatalogSource,
+		Namespace: subscription.Spec.CatalogSourceNamespace,
+	}, catalogSource); err != nil {
+		return nil, err
+	}
+
+	return catalogSource, nil
 }
 
 func addonPrefixed(name string) string {

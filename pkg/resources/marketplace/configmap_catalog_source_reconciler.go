@@ -3,8 +3,9 @@ package marketplace
 import (
 	"context"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"reflect"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +37,10 @@ func NewConfigMapCatalogSourceReconciler(manifestsProductDirectory string, clien
 
 func (r *ConfigMapCatalogSourceReconciler) CatalogSourceName() string {
 	return r.CSName
+}
+
+func (r *ConfigMapCatalogSourceReconciler) CatalogSourceNamespace() string {
+	return r.Namespace
 }
 
 func (r *ConfigMapCatalogSourceReconciler) Reconcile(ctx context.Context) (reconcile.Result, error) {

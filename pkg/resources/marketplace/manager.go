@@ -67,7 +67,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 			Channel:                t.Channel,
 			Package:                t.Package,
 			CatalogSource:          catalogSourceReconciler.CatalogSourceName(),
-			CatalogSourceNamespace: t.Namespace,
+			CatalogSourceNamespace: catalogSourceReconciler.CatalogSourceNamespace(),
 		}
 		return nil
 	}

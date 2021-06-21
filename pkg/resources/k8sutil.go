@@ -1,39 +1,26 @@
 package resources
 
 import (
-	"fmt"
-	"os"
-)
-
-const (
-	serviceAccountDir = "/var/run/secrets/kubernetes.io/serviceaccount"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 )
 
 // GetWatchNamespace returns the Namespace the operator should be watching for changes
+//
+// Deprecated: Use pkg/resources/k8s.GetWatchNamespace() instead
 func GetWatchNamespace() (string, error) {
-	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
-	// which specifies the Namespace to watch.
-	// An empty value means the operator is running with cluster scope.
-	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
-
-	ns, found := os.LookupEnv(watchNamespaceEnvVar)
-	if !found {
-		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
-	}
-	return ns, nil
+	return k8s.GetWatchNamespace()
 }
 
 // IsRunLocally checks if the operator is run locally
+//
+// Deprecated: Use pkg/resources/k8s.IsRunLocally() instead
 func IsRunLocally() bool {
-	return !IsRunInCluster()
+	return k8s.IsRunLocally()
 }
 
 // IsRunInCluster checks if the operator is run in cluster
+//
+// Deprecated: Use pkg/resources/k8s.IsRunInCluster() instead
 func IsRunInCluster() bool {
-	_, err := os.Stat(serviceAccountDir)
-	if err == nil {
-		return true
-	}
-
-	return !os.IsNotExist(err)
+	return k8s.IsRunInCluster()
 }
