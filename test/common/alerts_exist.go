@@ -398,6 +398,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
+			File: NamespacePrefix + "middleware-monitoring-operator-ksm-monitoring-alerts.yaml",
+			Rules: []string{
+				"MiddlewareMonitoringPodCount",
+			},
+		},
+		{
 			File: NamespacePrefix + "3scale-ksm-3scale-alerts.yaml",
 			Rules: []string{
 				"ThreeScaleApicastStagingPod",

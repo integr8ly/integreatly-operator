@@ -53,5 +53,5 @@ func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 
 // return expected resource variables
 func verifyRDSInstanceConfig(instance rds.DBInstance) bool {
-	return *instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && *instance.AutoMinorVersionUpgrade == false && *instance.EngineVersion == "10.13"
+	return *instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && *instance.AutoMinorVersionUpgrade == false && *instance.EngineVersion == "10.15"
 }
