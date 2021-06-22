@@ -48,22 +48,9 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster.
 
-   There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
+   There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 7 and 8, you might want to do these pre-upgrade as well.
 
-3. Edit RHMIConfig in the `redhat-rhoam-operator` config to start the upgrade
-
-   ```
-   oc edit RHMIConfig rhmi-config -n redhat-rhoam-operator
-   ```
-
-   > This is only required if RHOAM release candidate is considered to be service affecting. The upgrade starts automatically otherwise. Following step is also not required if release candidate is not service affecting.
-
-4. Edit following fields in the **rhmi-config** and save:
-
-   - spec.upgrade.notBeforeDays: 0
-   - spec.upgrade.waitForMaintenance: `false`
-
-   Use the command below to check whether the installPlan exists and is approved.
+3. Use the command below to check whether the installPlan exists and is approved.
 
    ```
    oc get installplans -n redhat-rhoam-operator
@@ -75,15 +62,20 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc patch installplan install-<hash> --namespace redhat-rhoam-operator --type merge --patch '{"spec":{"approved":true}}'
    ```
 
-5. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `1.8.0`)):
+4. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `1.8.0`)):
 
    ```bash
-   watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHOAM Upgrade completed\!'"
+   watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "1.x.x" && echo 'RHOAM Upgrade completed\!'"
    ```
 
    > This script will run every 60 seconds to check whether the RHOAM upgrade has finished
    >
    > Once it's finished, it should print out "Upgrade completed!"
+
+5. In OpenShift console, click on the "bell" icon in the top right corner. Go through the notifications that were generated in the time between the RHOAM upgrade started and ended.
+
+   > Verify that there were no RHOAM-related alerts firing during the upgrade
+   > If unsure whether the alert is RHOAM-related, consult it with engineering
 
 6. Go to the OpenShift console, go through all the `redhat-rhoam-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
