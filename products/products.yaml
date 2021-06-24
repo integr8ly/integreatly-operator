@@ -36,7 +36,7 @@ products:
     manifestsDir: "integreatly-monitoring"
     quayScan: true
   - name: keycloak-operator
-    version: 13.0.1
+    version: 14.0.0
     url: "https://github.com/keycloak/keycloak-operator"
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-rhsso"
