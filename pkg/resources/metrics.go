@@ -364,7 +364,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	}
 
 	// job to check time that the operator metrics are exposed
-	job := "cloud-resource-operator-metrics"
+	job := "operator-metrics-service"
 
 	// build and reconcile postgres will fill in 4 hours alert
 	alertName := "PostgresStorageWillFillIn4Hours"
@@ -534,7 +534,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	}
 
 	// job to check time that the operator metrics are exposed
-	job := "cloud-resource-operator-metrics"
+	job := "operator-metrics-service"
 
 	alertName = "RedisMemoryUsageMaxIn4Hours"
 	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
