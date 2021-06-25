@@ -115,6 +115,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
 
+	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
+	r.deleteObsoleteService(ctx, serverClient)
+
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	metrics.SetRHMIInfo(installation)
@@ -122,6 +125,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	r.log.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
+func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8sclient.Client) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+		service := &corev1.Service{}
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{
+			Name:      "rhmi-operator-metrics",
+			Namespace: "redhat-rhmi-operator",
+		}, service)
+		if err == nil {
+			if err := serverClient.Delete(ctx, service); err != nil {
+				r.log.Info("Service \"rhmi-operator-metrics\" was deleted from redhat-rhmi-operator")
+			}
+		}
+	}
 }
 
 func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
