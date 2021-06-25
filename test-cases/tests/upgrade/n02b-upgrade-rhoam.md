@@ -81,7 +81,11 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
-7. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
+7. In anonymous browser window, log in to OpenShift console as a user with dedicated-admin permissions (e.g. "customer-admin01"), click on the dashboard icon on the top right corner
+
+   > Validate that all 3 links under OpenShift Managed Services (API Management, API Management Dashboards, API Management SSO) are accessible and you can log in.
+
+8. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
 
    ```
    cd delorean
@@ -91,13 +95,13 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-8. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
+9. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
 ```bash
 echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
-9. Select the **Workload App** dashboard
+10. Select the **Workload App** dashboard
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
@@ -106,4 +110,4 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 >
 > Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready
 
-10. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+11. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
