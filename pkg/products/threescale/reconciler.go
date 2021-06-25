@@ -1673,7 +1673,7 @@ func tsUserIDInKc(tsUser *User, kcUser *keycloak.KeycloakUser) bool {
 
 func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
-		if kcu.UserName == tsUser.UserDetails.Username {
+		if strings.ToLower(kcu.UserName) == tsUser.UserDetails.Username {
 			return true
 		}
 	}
@@ -1683,7 +1683,7 @@ func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 
 func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
-		if tsu.UserDetails.Username == kcUser.UserName {
+		if tsu.UserDetails.Username == strings.ToLower(kcUser.UserName) {
 			return true
 		}
 	}
