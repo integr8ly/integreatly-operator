@@ -1229,7 +1229,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 				continue
 			}
 
-			_, err = r.tsClient.UpdateUser(tsUser.UserDetails.Id, genKcUser.Spec.User.UserName, tsUser.UserDetails.Email, *accessToken)
+			_, err = r.tsClient.UpdateUser(tsUser.UserDetails.Id, strings.ToLower(genKcUser.Spec.User.UserName), tsUser.UserDetails.Email, *accessToken)
 			if err != nil {
 				r.log.Warning("Failed to updating 3scale user details: " + err.Error())
 			}
@@ -1237,12 +1237,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	for _, kcUser := range added {
-		user, _ := r.tsClient.GetUser(kcUser.UserName, *accessToken)
+		user, _ := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
 		// recheck the user is new.
 		// 3scale user may being update during the update phase
 		if user == nil {
 			statusCode := http.StatusServiceUnavailable
-			res, err := r.tsClient.AddUser(kcUser.UserName, strings.ToLower(kcUser.Email), "", *accessToken)
+			res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 
 			if err != nil {
 				r.log.Error(fmt.Sprintf("Failed to add keycloak user %s to 3scale", kcUser.UserName), err)
@@ -1300,7 +1300,7 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 
 	userCreated3ScaleName := "3scale_user_created"
 	for _, user := range kcu {
-		tsUser, err := r.tsClient.GetUser(user.UserName, *accessToken)
+		tsUser, err := r.tsClient.GetUser(strings.ToLower(user.UserName), *accessToken)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress,
 				fmt.Errorf("failed to get 3scale user with keycloak username %s, err: %s", user.UserName, err)
