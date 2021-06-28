@@ -1110,7 +1110,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 			want2: nil,
 		},
 		{
-			name: "Test - Keycloak User not in 3scale appended to added & comparison is case sensitive",
+			name: "Test - Keycloak User not in 3scale appended to added",
 			fields: fields{
 				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
 					return config.NewRHSSO(config.ProductConfig{
@@ -1129,7 +1129,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 				},
 				kcUsers: []keycloak.KeycloakAPIUser{
 					{
-						UserName: "3SCALE",
+						UserName: "NEW-3SCALE",
 					},
 					{
 						UserName: defaultInstallationNamespace,
@@ -1138,7 +1138,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 			},
 			want: []keycloak.KeycloakAPIUser{
 				{
-					UserName: "3SCALE",
+					UserName: "NEW-3SCALE",
 				},
 			},
 			want1: nil,
