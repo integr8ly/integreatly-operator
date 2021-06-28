@@ -1282,6 +1282,66 @@ func TestReconciler_getUserDiff(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Test - 3scale User with same uppercase name in KeyCloak CR appended to updated and to added",
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
+				}},
+				log: getLogger(),
+			},
+			args: args{
+				tsUsers: []*User{
+					{
+						UserDetails: UserDetails{
+							Username: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+							Id:       1,
+						},
+					},
+				},
+				kcUsers: []keycloak.KeycloakAPIUser{
+					{
+						UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+						Attributes: map[string][]string{
+							user3ScaleID: {fmt.Sprint(1)},
+						},
+					},
+				},
+				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("generated-uppercase-%s", defaultInstallationNamespace),
+						Namespace: "rhsso",
+					},
+					Spec: keycloak.KeycloakUserSpec{
+						User: keycloak.KeycloakAPIUser{
+							Attributes: map[string][]string{
+								user3ScaleID: {fmt.Sprint(1)},
+							},
+							UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+						},
+					},
+				}),
+			},
+			want: []keycloak.KeycloakAPIUser{
+				{
+					UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+					Attributes: map[string][]string{
+						user3ScaleID: {fmt.Sprint(1)},
+					},
+				},
+			},
+			want1: nil,
+			want2: []*User{
+				{
+					UserDetails: UserDetails{
+						Username: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+						Id:       1,
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
