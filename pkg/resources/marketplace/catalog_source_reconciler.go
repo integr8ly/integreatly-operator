@@ -9,4 +9,5 @@ import (
 type CatalogSourceReconciler interface {
 	Reconcile(ctx context.Context) (reconcile.Result, error)
 	CatalogSourceName() string
+	CatalogSourceNamespace() string
 }

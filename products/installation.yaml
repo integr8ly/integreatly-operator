@@ -1,7 +1,7 @@
 # Product declaration file. This file declares the available product operators
 # and how to install them.
 # 
-# Currently supports "local" and "index" installations.
+# Currently supports "local", "index" and "implicit" installations.
 #
 # ------------------------------------------------------------------------------
 #
@@ -35,6 +35,21 @@
 # ```
 #
 # ------------------------------------------------------------------------------
+#
+# Implicit:
+#
+# Install the operator by creating a Subscription assuming that the operator is
+# provided by the same CatalogSource that installed RHOAM.
+#
+# * Example:
+#
+# ```
+# product:
+#   installFrom: "implicit"
+#   channel: "alpha"
+# ```
+#
+# --------------------------------------------------------------------------------
 #
 # Common fields:
 # * `channel`: Name of the channel to point the Subscription to. Defaults to "rhmi"

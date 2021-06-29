@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	rhmiresources "github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,7 +19,7 @@ const (
 // GetParameter retrieves the value for an addon parameter by finding the RHMI
 // CR and selecting the addon name for its installation type.
 func GetParameter(ctx context.Context, client k8sclient.Client, namespace, parameter string) ([]byte, bool, error) {
-	rhmi, err := resources.GetRhmiCr(client, ctx, namespace, log)
+	rhmi, err := rhmiresources.GetRhmiCr(client, ctx, namespace, log)
 	if err != nil {
 		return nil, false, err
 	}

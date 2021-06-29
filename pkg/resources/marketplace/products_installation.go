@@ -36,6 +36,7 @@ type ProductInstallationSource string
 
 var ProductInstallationSourceLocal ProductInstallationSource = "local"
 var ProductInstallationSourceIndex ProductInstallationSource = "index"
+var ProductInstallationSourceImplicit ProductInstallationSource = "implicit"
 
 func LocalProductDeclaration(manifestsPath string) *ProductDeclaration {
 	manifestsDir := fmt.Sprintf("manifests/%s", manifestsPath)
@@ -57,6 +58,8 @@ func (p *ProductDeclaration) ToCatalogSourceReconciler(log logger.Logger, client
 			return nil, fmt.Errorf("installation source %s requires manifestsDir", p.InstallFrom)
 		}
 		return NewConfigMapCatalogSourceReconciler(*p.ManifestsDir, client, namespace, catalogSourceName), nil
+	case ProductInstallationSourceImplicit:
+		return NewImplicitCatalogSourceReconciler(log, client)
 	}
 
 	return nil, fmt.Errorf("installation source %s not supported", p.InstallFrom)
