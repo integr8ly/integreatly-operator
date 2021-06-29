@@ -6,6 +6,7 @@ products:
     targets:
       - 1.4.0
       - 1.5.0
+      - 1.8.0
 estimate: 30m
 ---
 

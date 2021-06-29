@@ -48,22 +48,9 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster.
 
-   There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
+   There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 7 and 8, you might want to do these pre-upgrade as well.
 
-3. Edit RHMIConfig in the `redhat-rhoam-operator` config to start the upgrade
-
-   ```
-   oc edit RHMIConfig rhmi-config -n redhat-rhoam-operator
-   ```
-
-   > This is only required if RHOAM release candidate is considered to be service affecting. The upgrade starts automatically otherwise. Following step is also not required if release candidate is not service affecting.
-
-4. Edit following fields in the **rhmi-config** and save:
-
-   - spec.upgrade.notBeforeDays: 0
-   - spec.upgrade.waitForMaintenance: `false`
-
-   Use the command below to check whether the installPlan exists and is approved.
+3. Use the command below to check whether the installPlan exists and is approved.
 
    ```
    oc get installplans -n redhat-rhoam-operator
@@ -75,21 +62,30 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc patch installplan install-<hash> --namespace redhat-rhoam-operator --type merge --patch '{"spec":{"approved":true}}'
    ```
 
-5. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `1.8.0`)):
+4. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `1.8.0`)):
 
    ```bash
-   watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHOAM Upgrade completed\!'"
+   watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "1.x.x" && echo 'RHOAM Upgrade completed\!'"
    ```
 
    > This script will run every 60 seconds to check whether the RHOAM upgrade has finished
    >
    > Once it's finished, it should print out "Upgrade completed!"
 
+5. In OpenShift console, click on the "bell" icon in the top right corner. Go through the notifications that were generated in the time between the RHOAM upgrade started and ended.
+
+   > Verify that there were no RHOAM-related alerts firing during the upgrade
+   > If unsure whether the alert is RHOAM-related, consult it with engineering
+
 6. Go to the OpenShift console, go through all the `redhat-rhoam-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
-7. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
+7. In anonymous browser window, log in to OpenShift console as a user with dedicated-admin permissions (e.g. "customer-admin01"), click on the dashboard icon on the top right corner
+
+   > Validate that all 3 links under OpenShift Managed Services (API Management, API Management Dashboards, API Management SSO) are accessible and you can log in.
+
+8. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
 
    ```
    cd delorean
@@ -99,13 +95,13 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-8. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
+9. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
 ```bash
 echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
-9. Select the **Workload App** dashboard
+10. Select the **Workload App** dashboard
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
@@ -114,4 +110,4 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 >
 > Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready
 
-10. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+11. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)

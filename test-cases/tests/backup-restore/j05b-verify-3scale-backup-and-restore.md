@@ -5,12 +5,12 @@ products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-      - osd-fresh-install
     targets:
       - 0.1.0
       - 0.2.0
       - 1.0.0
       - 1.5.0
+      - 1.8.0
 estimate: 3h
 tags:
   - destructive
@@ -21,6 +21,7 @@ tags:
 ## Description
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
+In case the current cluster is not available for some reason, you can perform this test case on the "fresh install" cluster
 
 ## Steps
 
