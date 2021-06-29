@@ -51,6 +51,14 @@ Host prefix: /26
 
 9. Click on `Create cluster` (cluster creation takes ~40 minutes)
 
+Run following command:
+
+```
+ocm get subs --parameter search="cluster_id = '<your-cluster-ID>'" | jq -r .items[0].metrics[0].health_state
+```
+
+Provide your cluster ID (e.g. 1lblvj4k7qgsqimqhbkc64n9q350748n). The command should return `healthy`.
+
 **Verify RHOAM installation via addon**
 
 1. Once the cluster is created, you can install the RHOAM addon

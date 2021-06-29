@@ -41,7 +41,7 @@ Verify quota is set correctly.
    make local/deploy
    ```
 
-   > Note: do not re-deploy if the workload-web-app is already present in the cluster.
+   > Note: do not re-deploy if the workload-web-app is already present in the cluster - check if `workload-web-app` namespace exists in the cluster or not.
 
    There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 

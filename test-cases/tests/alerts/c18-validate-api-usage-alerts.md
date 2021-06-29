@@ -69,7 +69,7 @@ estimate: 90m
 
     This updates the per minute rate limit to 694
 
-4.  Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis:
+4.  Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis. Note the original values to be able to revert back once finished:
 
     ```shell script
     oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": { "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"30m\"\n  }\n}"}'
@@ -77,7 +77,7 @@ estimate: 90m
 
 5.  Patch the `rhoam` CR to specify BU, SRE and Customer email addresses:
 
-    _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`
+    _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`. Note the original values to be able to revert back once finished.
 
     Patch BU and SRE email addresses:
 
@@ -200,3 +200,7 @@ estimate: 90m
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.
+
+18. Revert the value changed as part of this test case
+
+Use the commands from Step #4 and Step #5, just use the original values. Only required if the cluster is to be used for other test cases.
