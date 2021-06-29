@@ -196,8 +196,7 @@ func verifyExpectedDashboards(t TestingTB, expectedDashboards []dashboardsTestRu
 	}
 
 	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
-		// Seen as flaky in OSDe2e from v1.3.0, see https://issues.redhat.com/browse/MGDAPI-1367
-		t.Skip("missing or too many dashboards found, marking E03 as flaky https://issues.redhat.com/browse/MGDAPI-1367")
+		t.Fatal("missing or too many dashboards found")
 	}
 }
 
