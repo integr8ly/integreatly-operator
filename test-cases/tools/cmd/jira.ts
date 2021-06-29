@@ -204,13 +204,13 @@ const jira: CommandModule<{}, Args> = {
         let lastDestructive = null;
         if (tests.filter((x) => isDestructive(x)).length) {
             hasDestructive = true;
-            tests.sort(function (x, y) {
-                return isDestructive(x) == isDestructive(y)
+            tests.sort((x, y) =>
+                isDestructive(x) === isDestructive(y)
                     ? 0
                     : isDestructive(x)
                     ? -1
-                    : 1;
-            });
+                    : 1
+            );
         }
 
         for (const test of tests) {
@@ -239,7 +239,7 @@ const jira: CommandModule<{}, Args> = {
 
                 if (hasDestructive) {
                     if (isDestructive(test)) {
-                        if (test == tests[0]) {
+                        if (test === tests[0]) {
                             lastDestructive = result;
                             firstDestructive = result;
                         } else {
