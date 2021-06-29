@@ -51,7 +51,7 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.9.0-rc4
+    containerImage: quay.io/integreatly/integreatly-operator:v2.9.0
     olm.skipRange: '>=2.4.0 <2.6.1'
     operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -416,7 +416,7 @@ spec:
                   value: default@test.com
                 - name: QUOTA
                   value: "20"
-                image: quay.io/integreatly/integreatly-operator:v2.9.0-rc4
+                image: quay.io/integreatly/integreatly-operator:v2.9.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
