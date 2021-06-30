@@ -32,10 +32,10 @@ Test that all namespace will be automatically recreated by the integreatly-opera
 2. By default, this test is not run as part of the functional test suite. To run this singular functional test, run the following command from the RHOAM operator repo against a target cluster:
 
 ```
-export DESTRUCTIVE=true; export WATCH_NAMESPACE=redhat-rhoam-operator;  go clean -testcache && go test -v ./test/functional -run="//^J03" -timeout=80m | tee test-results.log
+DESTRUCTIVE=true INSTALLATION_TYPE=managed-api TEST="J03" make test/e2e/single | tee test-results.log
 ```
 
-3. Check the namespaces in Rhoam except the `redhat-rhoam-operator` are recreated during the test run, the Active for
+3. Check the namespaces in RHOAM except the `redhat-rhoam-operator` are recreated during the test run, the Active for
    namespaces from the command below should be recent.
 
 ```
