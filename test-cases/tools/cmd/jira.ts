@@ -101,6 +101,13 @@ function toIssueLink(run: TestRun) {
     };
 }
 
+function toIssueBlock(issue: Issue) {
+    return {
+        outwardIssue: { key: issue.key },
+        type: { name: "Blocks" },
+    };
+}
+
 interface Args {
     jiraUsername: string;
     jiraPassword: string;
@@ -192,6 +199,20 @@ const jira: CommandModule<{}, Args> = {
         let tests = loadTestCases(args.product);
         tests = releaseFilter(tests, args.environment, fixVersion.name);
 
+        let hasDestructive = false;
+        let firstDestructive = null;
+        let lastDestructive = null;
+        if (tests.filter((x) => isDestructive(x)).length) {
+            hasDestructive = true;
+            tests.sort((x, y) =>
+                isDestructive(x) === isDestructive(y)
+                    ? 0
+                    : isDestructive(x)
+                    ? -1
+                    : 1
+            );
+        }
+
         for (const test of tests) {
             const previousRun = previousRuns.find((run) => run.id === test.id);
 
@@ -215,6 +236,32 @@ const jira: CommandModule<{}, Args> = {
                 logger.info(
                     `created task '${result.key}' '${issue.fields.summary}'`
                 );
+
+                if (hasDestructive) {
+                    if (isDestructive(test)) {
+                        if (test === tests[0]) {
+                            lastDestructive = result;
+                            firstDestructive = result;
+                        } else {
+                            await jiraApi.addLinkToIssue(
+                                lastDestructive.key,
+                                toIssueBlock(result)
+                            );
+                            logger.info(
+                                `'${result.key}' blocked by '${lastDestructive.key}'`
+                            );
+                            lastDestructive = result;
+                        }
+                    } else {
+                        await jiraApi.addLinkToIssue(
+                            result.key,
+                            toIssueBlock(firstDestructive)
+                        );
+                        logger.info(
+                            `'${firstDestructive.key}' blocked by '${result.key}'`
+                        );
+                    }
+                }
 
                 if (previousRun) {
                     await jiraApi.addLinkToIssue(
