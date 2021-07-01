@@ -582,5 +582,5 @@ func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient
 		}
 	}
 
-	return quotaParam, fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
+	return "", fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
 }
