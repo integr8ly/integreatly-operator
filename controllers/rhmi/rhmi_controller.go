@@ -21,17 +21,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-openapi/strfmt"
-	routev1 "github.com/openshift/api/route/v1"
-	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"github.com/prometheus/alertmanager/api/v2/models"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-openapi/strfmt"
+	routev1 "github.com/openshift/api/route/v1"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"github.com/prometheus/alertmanager/api/v2/models"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -73,6 +75,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
+
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 )
 
 const (
@@ -88,6 +92,7 @@ const (
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
+	addonStsArnParameterName         = "sts-role-arn"
 )
 
 var (
@@ -223,6 +228,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=marin3r.3scale.net,resources=envoyconfigs,verbs=get;list;watch;create;update;delete,namespace=integreatly-operator
 
 // +kubebuilder:rbac:groups=operator.marin3r.3scale.net,resources=discoveryservices,verbs=get;list;watch;create;update;delete,namespace=integreatly-operator
+
+// +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
 
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -957,6 +964,21 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		}
 	}
 
+	log.Info("preflightChecks: checking if STS mode")
+	sts, err := checkIfStsClusterByCredentialsMode(context.TODO(), r.Client, installation.Namespace)
+	if err != nil {
+		log.Error("Error checking STS mode", err)
+		return result, err
+	}
+	if sts {
+		log.Info("validation of STS role ARN parameter ")
+		validArn, err := validateAddOnStsRoleArnParamaterPattern(r.Client, installation.Namespace)
+		if err != nil || !validArn {
+			log.Error("STS role ARN parameter pattern validation failed", err)
+			return result, err
+		}
+	}
+
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"
 	err = r.Status().Update(context.TODO(), installation)
@@ -1418,4 +1440,64 @@ func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace
 func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
 	aMinuteAgo := time.Now().Add(-time.Minute)
 	return aMinuteAgo.After(installation.CreationTimestamp.Time)
+}
+
+func validateAddOnStsRoleArnParamaterPattern(client k8sclient.Client, namespace string) (bool, error) {
+	// function is checking if STS addon parameter Pattern is valid
+	// Parameter is Valid only in case:
+	// 1.	Parameter exists and value matching AWS Role ARN pattern
+	// Parameter is Not valid  in other cases:
+	// 2.	parameter exists and value is NOT matching AWS Role ARN pattern
+	// 3.	parameter exists and value is empty
+	// 4.	parameter does not exists
+
+	awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
+	r, err := regexp.Compile(awsArnPattern)
+	if err != nil {
+		log.Error("regexp Compile error: ", err)
+		return false, err
+	}
+
+	stsRoleArn, stsFound, err := addon.GetStringParameterByInstallType(
+		context.TODO(),
+		client,
+		rhmiv1alpha1.InstallationTypeManagedApi,
+		namespace,
+		addonStsArnParameterName,
+	)
+	if err != nil {
+		log.Error("failed while retrieving addon parameter", err)
+		return false, err
+	} else if stsFound && r.MatchString(stsRoleArn) { //case 1 - VALID
+		log.Info("ARN pattern is valid")
+		return true, nil
+	} else if stsFound && len(stsRoleArn) == 0 { //case 2 - NOT valid
+		log.Info("AWS STS role ARN parameter validation failed - parameter value is empty")
+		return false, nil
+	} else if !stsFound { //case 3 - NOT valid
+		log.Info("AWS STS role ARN parameter validation failed - parameter not found")
+		return false, nil
+	} else if stsFound && !r.MatchString(stsRoleArn) { //case 4 - NOT valid
+		log.Info("AWS STS role ARN parameter validation failed - parameter pattern is not matching to AWS ARN standard")
+		return false, nil
+
+	} else {
+		log.Info("AWS STS role ARN parameter validation failed")
+		return false, nil
+	}
+}
+
+func checkIfStsClusterByCredentialsMode(ctx context.Context, client k8sclient.Client, operatorNamespace string) (bool, error) {
+	cloudCredential := &cloudcredentialv1.CloudCredential{}
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "cluster"}, cloudCredential)
+	if err != nil {
+		log.Error("failed to get cloudCredential whle checking if STS mode", err)
+		return false, err
+	}
+	if cloudCredential.Spec.CredentialsMode == cloudcredentialv1.CloudCredentialsModeManual {
+		log.Info("STS mode")
+		return true, nil
+	}
+	log.Info("non STS mode")
+	return false, nil
 }
