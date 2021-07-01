@@ -443,6 +443,7 @@ gen/namespaces:
 .PHONY: vendor/check
 vendor/check: vendor/fix
 	git diff --exit-code vendor/
+	git diff --exit-code go.sum
 
 .PHONY: vendor/fix
 vendor/fix:
