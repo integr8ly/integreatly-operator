@@ -2,7 +2,7 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
+      - external
     targets:
       - 1.0.0
       - 1.3.0
@@ -26,11 +26,12 @@ estimate: 90m
    - ocmClusterLifespan: 36
    - openshiftVersion: (search for the version in the test plan document)
    - useByoc: false
+   - quota: 1
    - multiAZ: false
    - patchCloudResAwsStrCM: false
    - clusterID: api-usage-alerts
    - emailRecipients: <your@email.address>
-   - stepsToDo: provision + install
+   - pipelineSteps: provisionCluster, installProduct, setupIdp
 
 3. Valid SMTP credentials have been added to the `redhat-rhoam-smtp` secret
 
@@ -200,7 +201,3 @@ estimate: 90m
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.
-
-18. Revert the value changed as part of this test case
-
-Use the commands from Step #4 and Step #5, just use the original values. Only required if the cluster is to be used for other test cases.

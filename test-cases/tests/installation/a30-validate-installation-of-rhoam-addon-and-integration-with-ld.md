@@ -61,7 +61,7 @@ CID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | 
 ocm get subs --parameter search="cluster_id = '${CID}'" | jq -r .items[0].metrics[0].health_state
 ```
 
-The command should return `healthy`.
+The command should eventually return `healthy`. After cluster is marked as `ready` in OCM UI it should not take more than 30 minutes for this to happen.
 
 **Verify RHOAM installation via addon**
 
@@ -78,10 +78,7 @@ Quota: 1 million requests per day
 4. You should now login to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
 
 ```bash
-# Copy your cluster's name from OCM UI ("test-ldap-idp" by default) and assign it to the env var CLUSTER_NAME
-CLUSTER_NAME=<your-cluster-name>
-# Get cluster's CID
-CID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
+# See above if you do not have CID populated
 # Get your cluster API URL and kubeadmin password
 API_URL=$(ocm get cluster $CID | jq -r .api.url)
 KUBEADMIN_PASSWORD=$(ocm get cluster $CID/credentials | jq -r .admin.password)
