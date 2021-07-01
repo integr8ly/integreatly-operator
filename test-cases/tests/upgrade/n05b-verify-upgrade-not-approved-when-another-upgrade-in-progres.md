@@ -12,6 +12,8 @@ tags:
 
 ## Description
 
+Obsolete - this is a very edge case and can't be tested via addon flow.
+
 **Note:** This test can be executed only when installing RHOAM using olm, just ignore it when testing RHOAM on OSD
 
 ## Prerequisites

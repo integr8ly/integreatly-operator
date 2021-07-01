@@ -4,31 +4,21 @@ automation:
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
     targets:
       - 1.1.0
       - 1.6.0
+      - 1.9.0
 estimate: 15m
 ---
 
-# A32 - Validate SSO config
+# A32 - Validate SSO URLs from RHMI CR
 
 ## Prerequisites
 
 - Logged in to a testing cluster as a `kubeadmin`
 
 ## Steps
-
-**Validate CPU value requested by SSO**
-
-1. Run following commands
-
-```bash
-oc get pods -n redhat-rhoam-rhsso -o yaml | grep "cpu: \""
-```
-
-> Make sure that the output from this command contains only the lines with `cpu: "650m"`
 
 **Validate RHSSO URL from RHOAM CR**
 
