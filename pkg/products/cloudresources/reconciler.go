@@ -150,6 +150,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if err := r.addRedisServiceUpdates(ctx, client); err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile redis service updates", err)
+		return phase, err
+	}
+
 	// In this case due to cloudresources reconciler is always installed in the
 	// same namespace as the operatorNamespace we pass operatorNamespace as the
 	// productNamepace too
@@ -433,6 +439,24 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 
 	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
 
+	return nil
+}
+
+func (r *Reconciler) addRedisServiceUpdates(ctx context.Context, client k8sclient.Client) error {
+	cfgMap := &corev1.ConfigMap{}
+
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name:      "cloud-resources-aws-strategies",
+		Namespace: r.installation.Namespace,
+	}, cfgMap); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	// todo add serviceupdate entry to the config map once the format of that is decided
+	// see example below of how that's done for the cidr range
 	return nil
 }
 
