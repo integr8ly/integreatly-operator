@@ -27,7 +27,7 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
 3. Deploy the **workload-web-app** to the cluster.
 
-   IMPORTANT. Make sure that you don't run `make local/deploy` again, as this will break the monitoring dashboard
+   IMPORTANT. Make sure that you don't run `make local/deploy` again, as this will break the monitoring dashboard. If **workload-web-app** namespace exists in the cluster, the workload-web-app has already been deployed.
 
    ```bash
     export GRAFANA_DASHBOARD=true RHOAM=true

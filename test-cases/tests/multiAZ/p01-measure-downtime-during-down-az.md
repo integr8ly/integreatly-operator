@@ -48,7 +48,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    oc scale dc workload-web-app --replicas=3 -n workload-web-app
    ```
 
-   > Note: do not re-deploy if the workload-web-app is already present in the cluster.
+   > Note: do not re-deploy if the workload-web-app is already present in the cluster - check if `workload-web-app` namespace exists in the cluster or not.
 
 4. Record the pod distribution from 3scale, user-sso, rhsso, marin3r, and middleware-monitoring-operator namespaces using [podsAZ](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) script
 

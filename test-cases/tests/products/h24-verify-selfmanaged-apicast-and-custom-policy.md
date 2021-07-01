@@ -17,7 +17,7 @@ tags:
 This test case should prove that it is possible for customers to deploy self-managed APIcast and use custom policies on it. The 3scale QE team will perform this test case in RHOAM each time there is an upgrade of 3scale. We (RHOAM QE) should only perform this if there are modifications on our end that might break the functionality - typically changes in permissions in RHOAM and/or OSD.
 Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse/MGDAPI-370)
 
-Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/guide/757a6ad2-8ca0-4150-b949-cbb1ee4e5969#_ca8e43cd-5336-4a9e-8d42-8cd5ceef1299) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
+Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
 
 ## Steps
 

@@ -2,7 +2,7 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
+      - external
     targets:
       - 1.0.0
       - 1.3.0
@@ -26,11 +26,12 @@ estimate: 90m
    - ocmClusterLifespan: 36
    - openshiftVersion: (search for the version in the test plan document)
    - useByoc: false
+   - quota: 1
    - multiAZ: false
    - patchCloudResAwsStrCM: false
    - clusterID: api-usage-alerts
    - emailRecipients: <your@email.address>
-   - stepsToDo: provision + install
+   - pipelineSteps: provisionCluster, installProduct, setupIdp
 
 3. Valid SMTP credentials have been added to the `redhat-rhoam-smtp` secret
 
@@ -77,7 +78,7 @@ estimate: 90m
 
 5.  Patch the `rhoam` CR to specify BU, SRE and Customer email addresses:
 
-    _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`
+    _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`.
 
     Patch BU and SRE email addresses:
 

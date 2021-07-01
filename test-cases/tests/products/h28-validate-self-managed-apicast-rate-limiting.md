@@ -28,7 +28,13 @@ Workload web app not deployed on the cluster
 - Create a request via Managed APIcast and make sure it is counted just once.
 - Create a request via Self Managed APIcast and make sure it is counted just once.
 
-Note: Apicasts might not calls backend-listeners for each request so in case of Self Managed Apicast slightly more requests might be allowed than expected.
+Note: to create a request you can use `curl` as follows. It prints `200` if everything goes ok:
+
+```curl -s -o /dev/null -w "%{http_code}" "<your-apicast-url>/?user_key=<your-user-key>
+
+```
+
+Note: Apicasts might not call backend-listeners for each request so in case of Self Managed Apicast slightly more requests might be allowed than expected.
 
 Note: to check the rate limit counter use Rate Limiting Grafana Dashboard or following promQL:
 
