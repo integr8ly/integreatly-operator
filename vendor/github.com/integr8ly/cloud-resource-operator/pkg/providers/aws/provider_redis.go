@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,10 @@ const (
 	// 3scale does not support in transit encryption (redis with tls)
 	defaultInTransitEncryption = false
 )
+
+type ServiceUpdate struct {
+	updates []string
+}
 
 var healthyAWSReplicationGroupStatuses = []string{
 	"creating",
@@ -105,7 +110,7 @@ func (p *RedisProvider) CreateRedis(ctx context.Context, r *v1alpha1.Redis) (*pr
 	}
 
 	// info about the elasticache cluster to be created
-	elasticacheCreateConfig, _, stratCfg, err := p.getElasticacheConfig(ctx, r)
+	elasticacheCreateConfig, _, serviceUpdates, stratCfg, err := p.getElasticacheConfig(ctx, r)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to retrieve aws elasticache cluster config %s", r.Name)
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
@@ -173,10 +178,10 @@ func (p *RedisProvider) CreateRedis(ctx context.Context, r *v1alpha1.Redis) (*pr
 	}
 
 	// create the aws elasticache cluster
-	return p.createElasticacheCluster(ctx, r, elasticache.New(sess), sts.New(sess), ec2.New(sess), elasticacheCreateConfig, stratCfg, isEnabled)
+	return p.createElasticacheCluster(ctx, r, elasticache.New(sess), sts.New(sess), ec2.New(sess), elasticacheCreateConfig, stratCfg, serviceUpdates, isEnabled)
 }
 
-func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI, stsSvc stsiface.STSAPI, ec2Svc ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, stratCfg *StrategyConfig, standaloneNetworkExists bool) (*providers.RedisCluster, types.StatusMessage, error) {
+func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI, stsSvc stsiface.STSAPI, ec2Svc ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, _ *StrategyConfig, serviceUpdates *ServiceUpdate, standaloneNetworkExists bool) (*providers.RedisCluster, types.StatusMessage, error) {
 	logger := p.Logger.WithField("action", "createElasticacheCluster")
 	// the aws access key can sometimes still not be registered in aws on first try, so loop
 	rgs, err := getReplicationGroups(cacheSvc)
@@ -305,6 +310,11 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 		}
 	}
 
+	err = p.applyCriticalSecurityUpdates(cacheSvc, foundCache.ReplicationGroupId, serviceUpdates, r.Spec.ApplyImmediately)
+	if err != nil {
+		logrus.Info("there was an error applying critical security updates")
+	}
+
 	primaryEndpoint := foundCache.NodeGroups[0].PrimaryEndpoint
 	rdd := &providers.RedisDeploymentDetails{
 		URI:  *primaryEndpoint.Address,
@@ -426,7 +436,7 @@ func (p *RedisProvider) DeleteRedis(ctx context.Context, r *v1alpha1.Redis) (cro
 	// expose metrics about the redis being deleted
 	p.setRedisDeletionTimestampMetric(ctx, r)
 
-	elasticacheCreateConfig, elasticacheDeleteConfig, stratCfg, err := p.getElasticacheConfig(ctx, r)
+	elasticacheCreateConfig, elasticacheDeleteConfig, _, stratCfg, err := p.getElasticacheConfig(ctx, r)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to retrieve aws elasticache config for instance %s", r.Name)
 		return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
@@ -576,14 +586,14 @@ func getReplicationGroups(cacheSvc elasticacheiface.ElastiCacheAPI) ([]*elastica
 }
 
 // getElasticacheConfig retrieves the elasticache config from the cloud-resources-aws-strategies configmap
-func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Redis) (*elasticache.CreateReplicationGroupInput, *elasticache.DeleteReplicationGroupInput, *StrategyConfig, error) {
+func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Redis) (*elasticache.CreateReplicationGroupInput, *elasticache.DeleteReplicationGroupInput, *ServiceUpdate, *StrategyConfig, error) {
 	stratCfg, err := p.ConfigManager.ReadStorageStrategy(ctx, providers.RedisResourceType, r.Spec.Tier)
 	if err != nil {
-		return nil, nil, nil, errorUtil.Wrap(err, "failed to read aws strategy config")
+		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to read aws strategy config")
 	}
 	defRegion, err := GetRegionFromStrategyOrDefault(ctx, p.Client, stratCfg)
 	if err != nil {
-		return nil, nil, nil, errorUtil.Wrap(err, "failed to get default region")
+		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to get default region")
 	}
 	if stratCfg.Region == "" {
 		p.Logger.Debugf("region not set in deployment strategy configuration, using default region %s", defRegion)
@@ -593,14 +603,22 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 	// unmarshal the elasticache cluster config
 	elasticacheCreateConfig := &elasticache.CreateReplicationGroupInput{}
 	if err := json.Unmarshal(stratCfg.CreateStrategy, elasticacheCreateConfig); err != nil {
-		return nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
+		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
 	}
 
 	elasticacheDeleteConfig := &elasticache.DeleteReplicationGroupInput{}
 	if err := json.Unmarshal(stratCfg.DeleteStrategy, elasticacheDeleteConfig); err != nil {
-		return nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
+		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
 	}
-	return elasticacheCreateConfig, elasticacheDeleteConfig, stratCfg, nil
+
+	elasticacheServiceUpdates := &ServiceUpdate{}
+	if stratCfg.ServiceUpdates != nil {
+		if err := json.Unmarshal(stratCfg.ServiceUpdates, &elasticacheServiceUpdates.updates); err != nil {
+			return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration (serviceUpdates field)")
+		}
+	}
+
+	return elasticacheCreateConfig, elasticacheDeleteConfig, elasticacheServiceUpdates, stratCfg, nil
 }
 
 func (p *RedisProvider) isLastResource(ctx context.Context, namespace string) (bool, error) {
@@ -981,30 +999,40 @@ func (p *RedisProvider) setRedisServiceMaintenanceMetric(ctx context.Context, ca
 	}
 
 	// Retrieve service maintenance updates, create and export Prometheus metrics
-	output, err := cacheSvc.DescribeServiceUpdates(&elasticache.DescribeServiceUpdatesInput{})
+	output, err := cacheSvc.DescribeUpdateActions(&elasticache.DescribeUpdateActionsInput{
+		ReplicationGroupIds: []*string{instance.ReplicationGroupId},
+	})
 	if err != nil {
-		logrus.Errorf("failed to get maintenance information while exposing maintenance metric for %s : %v", *instance.ReplicationGroupId, err)
+		logrus.Errorf("failed to get update actions information while exposing maintenance metric for %s : %v", *instance.ReplicationGroupId, err)
+		return
+	}
+	if output == nil {
+		logrus.Errorf("failed to get update actions(output = nil) information while exposing maintenance metric for %s", *instance.ReplicationGroupId)
 		return
 	}
 
-	logrus.Infof("there are elasticache service updates: %d available", len(output.ServiceUpdates))
-	for _, su := range output.ServiceUpdates {
+	logrus.Infof("there are elasticache service update actions: %d available", len(output.UpdateActions))
+	for _, updateAction := range output.UpdateActions {
 		metricLabels := map[string]string{}
 		metricLabels["clusterID"] = clusterID
 
-		metricLabels["AutoUpdateAfterRecommendedApplyByDate"] = strconv.FormatBool(*su.AutoUpdateAfterRecommendedApplyByDate)
-		metricLabels["Engine"] = *su.Engine
-		metricLabels["EstimatedUpdateTime"] = *su.EstimatedUpdateTime
-		metricLabels["ServiceUpdateDescription"] = *su.ServiceUpdateDescription
-		metricLabels["ServiceUpdateEndDate"] = strconv.FormatInt((*su.ServiceUpdateEndDate).Unix(), 10)
-		metricLabels["ServiceUpdateName"] = *su.ServiceUpdateName
-		metricLabels["ServiceUpdateRecommendedApplyByDate"] = strconv.FormatInt((*su.ServiceUpdateRecommendedApplyByDate).Unix(), 10)
-		metricLabels["ServiceUpdateReleaseDate"] = strconv.FormatInt((*su.ServiceUpdateReleaseDate).Unix(), 10)
-		metricLabels["ServiceUpdateSeverity"] = *su.ServiceUpdateSeverity
-		metricLabels["ServiceUpdateStatus"] = *su.ServiceUpdateStatus
-		metricLabels["ServiceUpdateType"] = *su.ServiceUpdateType
+		metricLabels["ReplicationGroupId"] = resources.SafeStringDereference(updateAction.ReplicationGroupId)
+		metricLabels["CacheClusterId"] = resources.SafeStringDereference(updateAction.CacheClusterId)
+		metricLabels["Engine"] = resources.SafeStringDereference(updateAction.Engine)
+		metricLabels["EstimatedUpdateTime"] = resources.SafeStringDereference(updateAction.EstimatedUpdateTime)
+		metricLabels["NodesUpdated"] = resources.SafeStringDereference(updateAction.NodesUpdated)
+		metricLabels["ServiceUpdateName"] = resources.SafeStringDereference(updateAction.ServiceUpdateName)
+		metricLabels["ServiceUpdateRecommendedApplyByDate"] = strconv.FormatInt((resources.SafeTimeDereference(updateAction.ServiceUpdateRecommendedApplyByDate)).Unix(), 10)
+		metricLabels["ServiceUpdateReleaseDate"] = strconv.FormatInt((resources.SafeTimeDereference(updateAction.ServiceUpdateReleaseDate)).Unix(), 10)
+		metricLabels["ServiceUpdateSeverity"] = resources.SafeStringDereference(updateAction.ServiceUpdateSeverity)
+		metricLabels["ServiceUpdateStatus"] = resources.SafeStringDereference(updateAction.ServiceUpdateStatus)
+		metricLabels["ServiceUpdateType"] = resources.SafeStringDereference(updateAction.ServiceUpdateType)
+		metricLabels["SlaMet"] = resources.SafeStringDereference(updateAction.SlaMet)
+		metricLabels["UpdateActionAvailableDate"] = strconv.FormatInt((resources.SafeTimeDereference(updateAction.UpdateActionAvailableDate)).Unix(), 10)
+		metricLabels["UpdateActionStatus"] = resources.SafeStringDereference(updateAction.UpdateActionStatus)
+		metricLabels["UpdateActionStatusModifiedDate"] = strconv.FormatInt((resources.SafeTimeDereference(updateAction.UpdateActionStatusModifiedDate)).Unix(), 10)
 
-		metricEpochTimestamp := (*su.ServiceUpdateRecommendedApplyByDate).Unix()
+		metricEpochTimestamp := (resources.SafeTimeDereference(updateAction.ServiceUpdateRecommendedApplyByDate)).Unix()
 
 		resources.SetMetric(resources.DefaultRedisMaintenanceMetricName, metricLabels, float64(metricEpochTimestamp))
 	}
@@ -1055,4 +1083,93 @@ func (p *RedisProvider) buildCacheName(ctx context.Context, rd *v1alpha1.Redis) 
 
 func replicationGroupStatusIsHealthy(cache *elasticache.ReplicationGroup) bool {
 	return resources.Contains(healthyAWSReplicationGroupStatuses, *cache.Status)
+}
+
+func (p *RedisProvider) applyCriticalSecurityUpdates(cacheSvc elasticacheiface.ElastiCacheAPI, replicationGroupId *string, serviceUpdates *ServiceUpdate, applyImmediately bool) error {
+	logger := p.Logger.WithField("action", "applyCriticalSecurityUpdates")
+	ServiceUpdateStatusAvailable := elasticache.ServiceUpdateStatusAvailable
+
+	updateActions, err := cacheSvc.DescribeUpdateActions(&elasticache.DescribeUpdateActionsInput{
+		ReplicationGroupIds: []*string{replicationGroupId},
+		ServiceUpdateStatus: []*string{&ServiceUpdateStatusAvailable},
+	})
+
+	if err != nil {
+		logger.Errorf("failed to get elasticache service updates: %v", err)
+		// NOT returning an error to avoid problems with this code until it is sufficiently tested
+		return err
+		// TODO: refactor to bubble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
+	}
+
+	// Filter list of available updates down to Available Critical Security updates only
+	var acceptableUpdates []*elasticache.UpdateAction
+	for _, update := range updateActions.UpdateActions {
+		// first check if the available update action has not been applied already
+		// if it has been applied log the current status and return if upgrade is in progress
+		// if it wasn't applied and applyImmediately is set to true then check if it's critical security update and add it to the list of acceptable updates
+		// if applyImmediately is false loop through the list of service updates specified in the CRO configuration and add matches to the list of acceptable updates.
+
+		if *update.UpdateActionStatus != elasticache.UpdateActionStatusNotApplied {
+			if *update.UpdateActionStatus == elasticache.UpdateActionStatusComplete {
+				logrus.Infof("Service update %s complete on the redis instance %s", resources.SafeStringDereference(update.ServiceUpdateName), *replicationGroupId)
+			} else {
+				// Log current status of upgrades that are applied but not completed
+				logger.Warnf("Service update in progress. Redis instance %s Service update name: %s Current status: %s", *replicationGroupId, resources.SafeStringDereference(update.ServiceUpdateName), resources.SafeStringDereference(update.UpdateActionStatus))
+				// TODO: once this code has been proven, add StatusMessage to the return value
+				return nil
+			}
+			continue
+		}
+
+		if applyImmediately {
+			if *update.ServiceUpdateSeverity == elasticache.ServiceUpdateSeverityCritical &&
+				*update.ServiceUpdateType == elasticache.ServiceUpdateTypeSecurityUpdate &&
+				*update.ServiceUpdateStatus == elasticache.ServiceUpdateStatusAvailable {
+
+				acceptableUpdates = append(acceptableUpdates, update)
+				continue
+			}
+		}
+
+		for _, specifiedUpdate := range serviceUpdates.updates {
+			if specifiedUpdate == *update.ServiceUpdateName &&
+				*update.ServiceUpdateStatus == elasticache.ServiceUpdateStatusAvailable {
+
+				logger.Infof("found ServiceUpdate %s which matches %s ServiceUpdate in aws", specifiedUpdate, *update.ServiceUpdateName)
+				acceptableUpdates = append(acceptableUpdates, update)
+				break
+			}
+		}
+	}
+
+	// Sort by UpdateActionAvailableDate in descending order
+	sort.Slice(acceptableUpdates, func(i, j int) bool {
+		return resources.SafeTimeDereference(acceptableUpdates[i].UpdateActionAvailableDate).After(resources.SafeTimeDereference(acceptableUpdates[j].UpdateActionAvailableDate))
+	})
+
+	if len(acceptableUpdates) > 0 {
+		// Select latest update to be applied
+		update := acceptableUpdates[0]
+		// Available critical security updates need to be applied immediately
+		logger.Warnf("Commencing critical security update of Redis instance %s Service update name: %s", *replicationGroupId, resources.SafeStringDereference(update.ServiceUpdateName))
+		updateOutput, err := cacheSvc.BatchApplyUpdateAction(&elasticache.BatchApplyUpdateActionInput{
+			ReplicationGroupIds: []*string{replicationGroupId},
+			ServiceUpdateName:   update.ServiceUpdateName,
+		})
+		if err != nil {
+			logger.Errorf("Encountered an error when applying Service Update: %v", err)
+			// NOT returning an error to avoid problems with this code until it is sufficiently tested
+			return nil
+			// TODO: refactor to buble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
+		}
+		if len(updateOutput.UnprocessedUpdateActions) > 0 {
+			for _, failure := range updateOutput.UnprocessedUpdateActions {
+				logger.Errorf("Encountered a %s error when applying Service Update: %s", resources.SafeStringDereference(failure.ErrorType), resources.SafeStringDereference(failure.ErrorMessage))
+				// NOT returning an error to avoid problems with this code until it is sufficiently tested
+				return nil
+				// TODO: refactor to buble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
+			}
+		}
+	}
+	return nil
 }
