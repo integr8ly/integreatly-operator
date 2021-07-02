@@ -193,7 +193,7 @@ set_related_images() {
       # Read image from the component version but only select quay.io or redhat.registry
       component_image=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select((.image|test("quay.")) or (.image|test("registry.redhat"))) | .image' |  tr -d '"')
 
-      containerImageField="$containerImageField{\"${component_name}\": \"${component_image}\"},"
+      containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
       position=$((position+1))
 
       # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
@@ -205,7 +205,7 @@ set_related_images() {
         do
           relatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
           relatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
-          containerImageField="$containerImageField{\"${relatedImageName}\": \"${relatedImageURL}\"},"
+          containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
           position=$((position+1))
         done
       fi
@@ -214,7 +214,7 @@ set_related_images() {
       if [[ "$component_name" == *"keycloak-operator"* ]]; then
         kcRelatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].name' |  tr -d '"')
         kcRelatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].value' |  tr -d '"')
-        containerImageField="$containerImageField{\"${kcRelatedImageName}\": \"${kcRelatedImageURL}\"},"
+        containerImageField="$containerImageField{\"component_name\":\"${kcRelatedImageName}\",\"component_url\":\"${kcRelatedImageURL}\"},"
       fi
     fi
   done
