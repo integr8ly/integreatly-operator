@@ -57,3 +57,10 @@ func StringOrDefault(str, defaultTo string) string {
 	}
 	return str
 }
+
+func SafeStringDereference(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}
