@@ -55,6 +55,9 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
+    containerImages: |-
+        [
+          {"component_name":"3scale-operator.v0.7.0","component_url":"registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:655062177bc53b155b87876dc1096530c365f18f9be3ceb0d32aa2d343968f9a"},{"component_name":"apicast-gateway-rhel8","component_url":"registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:6ea21688678d40ec75e3a309721209eab16978e7d96941df05500e7214b5dd1d"},{"component_name":"backend-rhel7","component_url":"registry.redhat.io/3scale-amp2/backend-rhel7@sha256:b5975297fb2bc871e2010619308d4eb59744fde96176a5611303222c326576ac"}]
     serviceAffecting: "true"
   name: managed-api-service.v1.8.0
   namespace: placeholder

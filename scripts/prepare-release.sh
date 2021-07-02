@@ -175,9 +175,12 @@ check_csv_replaces_field() {
 # Sets the related images in the CSV for RHOAM
 set_related_images() {
   echo "Adding related images to the CSV"
+  containerImageField="""[
+  """
   position=0
+  length=$(yq r -j ./products/products.yaml | jq -r '.products' | jq length)
   # Get supported components
-  for (( i=0; i<$(yq r -j ./products/products.yaml | jq -r '.products' | jq length); i++))
+  for (( i=0; i<${length}; i++))
   do
     product_dir=$(yq r ./products/products.yaml "products[$i].manifestsDir")
     if [[ $(yq r ./products/products.yaml "products[$i].installType") == *"rhoam"* && $(yq r ./products/products.yaml "products[$i].quayScan") == true ]]; then
@@ -190,9 +193,7 @@ set_related_images() {
       # Read image from the component version but only select quay.io or redhat.registry
       component_image=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select((.image|test("quay.")) or (.image|test("registry.redhat"))) | .image' |  tr -d '"')
 
-      # Push image to relatedImages in RHOAM CSV
-      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${component_image} 
-      yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${component_name}
+      containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
       position=$((position+1))
 
       # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
@@ -204,8 +205,7 @@ set_related_images() {
         do
           relatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
           relatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
-          yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${relatedImageURL}
-          yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${relatedImageName}
+          containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
           position=$((position+1))
         done
       fi
@@ -214,11 +214,13 @@ set_related_images() {
       if [[ "$component_name" == *"keycloak-operator"* ]]; then
         kcRelatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].name' |  tr -d '"')
         kcRelatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].value' |  tr -d '"')
-        yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].image ${kcRelatedImageURL}
-        yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages[$position].name ${kcRelatedImageName}
+        containerImageField="$containerImageField{\"component_name\":\"${kcRelatedImageName}\",\"component_url\":\"${kcRelatedImageURL}\"},"
       fi
     fi
   done
+  containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
+  containerImageField="$containerImageRemovedLastCharacter]"
+  yq w -i "packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.containerImages "$containerImageField"
 }
 
 if [[ -z "$SEMVER" ]]; then
