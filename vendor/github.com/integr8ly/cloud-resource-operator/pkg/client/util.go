@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/pkg/errors"
@@ -82,10 +83,8 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 			Name:      secretName,
 			Namespace: secretNs,
 		}
+		pg.Spec.ApplyImmediately = applyImmediately
 
-		if applyImmediately {
-			pg.Spec.ApplyImmediately = applyImmediately
-		}
 		return nil
 	})
 	if err != nil {
@@ -96,7 +95,7 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 }
 
 // ReconcileRedis creates or updates a redis custom resource
-func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs string, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
+func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs string, applyImmediately bool, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
 	r := &v1alpha1.Redis{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -124,6 +123,8 @@ func ReconcileRedis(ctx context.Context, client client.Client, productName, depl
 			Name:      secretName,
 			Namespace: secretNs,
 		}
+		r.Spec.ApplyImmediately = applyImmediately
+
 		return nil
 	})
 	if err != nil {
