@@ -33,7 +33,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
@@ -333,23 +332,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		return r.preflightChecks(installation, installType, configManager)
 	}
 
-	installationQuota := &quota.Quota{}
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
-		if err = r.processQuota(installation, request.Namespace, installationQuota); err != nil {
-			eventRecorder := r.mgr.GetEventRecorderFor("rhmi-controller")
-			events.HandleError(eventRecorder, installation, rhmiv1alpha1.PhaseFailed, "Error while processing the Quota", err)
-			installation.Status.LastError = err.Error()
-			if err = r.Status().Update(context.TODO(), installation); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, err
-		}
-		if err = r.Status().Update(context.TODO(), installation); err != nil {
-			return ctrl.Result{}, err
-		}
-		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
-	}
-
 	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
 		return r.handleUninstall(installation, installType)
@@ -384,13 +366,14 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		log.Error("Error reconciling alerts for the rhmi installation", err)
 	}
 
+	installationQuota := &quota.Quota{}
 	for _, stage := range installType.GetInstallStages() {
 		var err error
 		var stagePhase rhmiv1alpha1.StatusPhase
 		var stageLog = l.NewLoggerWithContext(l.Fields{l.StageLogContext: stage.Name})
 
 		if stage.Name == rhmiv1alpha1.BootstrapStage {
-			stagePhase, err = r.bootstrapStage(installation, configManager, stageLog)
+			stagePhase, err = r.bootstrapStage(installation, configManager, stageLog, installationQuota, request)
 		} else {
 			stagePhase, err = r.processStage(installation, &stage, configManager, installationQuota, stageLog)
 		}
@@ -1000,7 +983,7 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 	return foundProducts, nil
 }
 
-func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configManager config.ConfigReadWriter, log l.Logger) (rhmiv1alpha1.StatusPhase, error) {
+func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configManager config.ConfigReadWriter, log l.Logger, quota *quota.Quota, request ctrl.Request) (rhmiv1alpha1.StatusPhase, error) {
 	installation.Status.Stage = rhmiv1alpha1.BootstrapStage
 	mpm := marketplace.NewManager()
 
@@ -1014,7 +997,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	if err != nil {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
-	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient)
+	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, quota, request)
 	if err != nil || phase == rhmiv1alpha1.PhaseFailed {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
@@ -1362,57 +1345,6 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 
 		return check(value)
 	}
-}
-
-func (r *RHMIReconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace string,
-	installationQuota *quota.Quota) error {
-	isQuotaUpdated := false
-	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), r.Client, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
-	if err != nil {
-		return fmt.Errorf("error checking for quota secret %w", err)
-	}
-
-	// if !found or the param is found but empty and installation is less than one minute old, return an error
-	// to stop the installation until either the installation is older than 1 minute or a paramater is found
-	if (!found || quotaParam == "") && !isInstallationOlderThan1Minute(installation) {
-		return fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
-	}
-
-	// if the param is not found after the installation is 1 minute old it means that it wasn't provided to the installation
-	// in this case check for an Environment Variable QUOTA
-	// if neither are found then return an error as there is no QUOTA value for the installation to use and it's required by the reconcilers.
-	if (!found || quotaParam == "") && isInstallationOlderThan1Minute(installation) {
-		log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", rhmiv1alpha1.EnvKeyQuota))
-		quotaValue, exists := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
-		if !exists || quotaValue == "" {
-			return fmt.Errorf("no quota value provided by add on parameter '%s' or by env var '%s'", addon.QuotaParamName, rhmiv1alpha1.EnvKeyQuota)
-		}
-		quotaParam = quotaValue
-	}
-
-	// get the quota config map from the cluster
-	cm := &corev1.ConfigMap{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: quota.ConfigMapName}, cm)
-	if err != nil {
-		return fmt.Errorf("error getting quota config map %w", err)
-	}
-
-	// if both are toQuota and Quota are empty this indicates that it's either
-	// the first reconcile of an installation or it's the first reconcile of an upgrade to 1.6.0
-	// if the secretname is not the same as status.Quota this indicates there has been a quota change
-	// to an installation which is already using the Quota functionality.
-	// if either case is true set toQuota in the rhmi cr and update the status object and set isQuotaUpdated to true
-	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
-		quotaParam != installation.Status.Quota {
-		installation.Status.ToQuota = quotaParam
-		isQuotaUpdated = true
-	}
-
-	err = quota.GetQuota(quotaParam, cm, installationQuota, isQuotaUpdated)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
