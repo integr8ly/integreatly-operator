@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"strings"
 	"time"
+
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +27,7 @@ import (
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -45,6 +47,8 @@ const (
 	defaultInstallationNamespace = "cloud-resources"
 	manifestPackage              = "integreatly-cloud-resources"
 )
+
+var RedisServiceUpdatesToInstall = []string{"elasticache-20210615-002"}
 
 type Reconciler struct {
 	Config        *config.CloudResources
@@ -147,6 +151,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err := r.reconcileCIDRValue(ctx, client); err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile CIDR value", err)
+		return phase, err
+	}
+
+	if err := r.addRedisServiceUpdates(ctx, client); err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile redis service updates", err)
 		return phase, err
 	}
 
@@ -433,6 +443,71 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 
 	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
 
+	return nil
+}
+
+func (r *Reconciler) addRedisServiceUpdates(ctx context.Context, client k8sclient.Client) error {
+	cfgMap := &corev1.ConfigMap{}
+
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name:      "cloud-resources-aws-strategies",
+		Namespace: r.installation.Namespace,
+	}, cfgMap); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	// Add service update names from RedisServiceUpdatesToInstall variable into CRO config
+	// preserve other values present in the serviceUpdates list for production redis
+	redisConfig := map[string]map[string]interface{}{}
+	data, ok := cfgMap.Data[string(croProviders.RedisResourceType)]
+	if ok {
+		if err := json.Unmarshal([]byte(data), &redisConfig); err != nil {
+			return err
+		}
+	}
+
+	// setup config structure in a safe manner
+	updatesConfig := []string{}
+	if _, ok = redisConfig["production"]; !ok {
+		redisConfig["production"] = make(map[string]interface{})
+	}
+	if _, ok = redisConfig["production"]["serviceUpdates"]; !ok {
+		redisConfig["production"]["serviceUpdates"] = []string{}
+	}
+	updatesConfig, ok = redisConfig["production"]["serviceUpdates"].([]string)
+	if !ok {
+		redisConfig["production"]["serviceUpdates"] = []string{}
+	}
+	originalLen := len(updatesConfig)
+
+	// add items from RedisServiceUpdatesToInstall to the config if they are not in it already
+	for _, update := range RedisServiceUpdatesToInstall {
+		found := false
+		for _, u := range updatesConfig {
+			if u == update {
+				found = true
+				break
+			}
+		}
+		if !found {
+			updatesConfig = append(updatesConfig, update)
+		}
+	}
+
+	// We are only appending updates to an array, so patch call is required only if number of items in the array changed
+	if originalLen != len(updatesConfig) {
+		// add updated array of updates to the original config, this will preserve all other redis config data
+		redisConfig["production"]["serviceUpdates"] = updatesConfig
+		updatesConfigJSON, err := json.Marshal(redisConfig)
+		if err != nil {
+			return err
+		}
+		cfgMap.Data[string(croProviders.RedisResourceType)] = string(updatesConfigJSON)
+		return client.Patch(ctx, cfgMap, k8sclient.Merge)
+	}
 	return nil
 }
 
