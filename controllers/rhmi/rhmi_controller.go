@@ -877,6 +877,16 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			return result, err
 		}
 
+		// Check if the trial-quota parameter is found from the add-on when normal quota param is not found
+		if !okParam {
+			okParam, err = addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.TrialQuotaParamName)
+			if err != nil {
+				preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.TrialQuotaParamName, err)
+				log.Warning(preflightMessage)
+				return result, err
+			}
+		}
+
 		// Check if the quota parameter is found from the environment variable
 		quotaEnv, envOk := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
 
