@@ -360,6 +360,10 @@ cluster/prepare/dms:
 cluster/prepare/quota:
 	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) -f config/secrets/quota-secret.yaml | oc apply -f -
 
+.PHONY: cluster/prepare/quota/trial
+cluster/prepare/quota/trial:
+	@-oc process -n $(NAMESPACE) -f config/secrets/quota-trial-secret.yaml | oc apply -f -
+
 .PHONY: cluster/prepare/delorean
 cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 

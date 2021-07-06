@@ -46,6 +46,7 @@ type StrategyConfig struct {
 	Region         string          `json:"region"`
 	CreateStrategy json.RawMessage `json:"createStrategy"`
 	DeleteStrategy json.RawMessage `json:"deleteStrategy"`
+	ServiceUpdates json.RawMessage `json:"serviceUpdates"`
 }
 
 //go:generate moq -out config_moq.go . ConfigManager

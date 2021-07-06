@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	QuotaParamName = "addon-managed-api-service"
+	QuotaParamName      = "addon-managed-api-service"
+	TrialQuotaParamName = "trial-quota"
 )
 
 // GetParameter retrieves the value for an addon parameter by finding the RHMI
