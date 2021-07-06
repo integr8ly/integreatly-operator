@@ -276,7 +276,7 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 	}
 
 	// check if any modifications are required to bring the elasticache instance up to date with the strategy map.
-	modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger)
+	modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger, r.Spec.ApplyImmediately)
 	if err != nil {
 		errMsg := "failed to build elasticache modify strategy"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -644,7 +644,7 @@ func (p *RedisProvider) isLastResource(ctx context.Context, namespace string) (b
 // if modifications are required, a modify input struct will be returned with all proposed changes.
 //
 // if no modifications are required, nil will be returned.
-func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry) (*elasticache.ModifyReplicationGroupInput, error) {
+func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry, applyImmediately bool) (*elasticache.ModifyReplicationGroupInput, error) {
 	// setup logger.
 	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
 	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
@@ -741,6 +741,9 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 			modifyInput.SnapshotWindow = elasticacheConfig.SnapshotWindow
 			updateFound = true
 		}
+
+		// ApplyImmediately flag is controlled by the redis cr.Spec.applyImmediately flag
+		modifyInput.ApplyImmediately = aws.Bool(applyImmediately)
 	}
 
 	if updateFound {
@@ -1011,7 +1014,7 @@ func (p *RedisProvider) setRedisServiceMaintenanceMetric(ctx context.Context, ca
 		return
 	}
 
-	logrus.Infof("there are elasticache service update actions: %d available", len(output.UpdateActions))
+	logrus.Infof("there are elasticache service update actions %d available : %s", len(output.UpdateActions), output.UpdateActions)
 	for _, updateAction := range output.UpdateActions {
 		metricLabels := map[string]string{}
 		metricLabels["clusterID"] = clusterID
