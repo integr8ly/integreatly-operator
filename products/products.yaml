@@ -19,7 +19,7 @@ products:
     manifestsDir: "integreatly-apicurito"
     quayScan: false
   - name: cloud-resource-operator
-    version: v0.28.0
+    version: v0.29.0
     url: "https://github.com/integr8ly/cloud-resource-operator"
     installType: "rhoam/rhmi"
     manifestsDir: "integreatly-cloud-resources"
