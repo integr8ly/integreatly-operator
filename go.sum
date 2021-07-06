@@ -395,6 +395,7 @@ github.com/elastic/go-windows v1.0.1/go.mod h1:FoVvqWSun28vaDQPbj2Elfc0JahhPB7WQ
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f h1:8GDPb0tCY8LQ+OJ3dbHb5sA6YZWXFORQYZx5sdsTlMs=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
+github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f h1:AUj1VoZUfhPhOPHULCQQDnGhRelpFWHMLhQVWDsS0v4=
 github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f/go.mod h1:gNh8nYJoAm43RfaxurUnxr+N1PwuFV3ZMl/efxlIlY8=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/emicklei/go-restful v2.9.5+incompatible/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -1181,6 +1182,7 @@ github.com/operator-framework/operator-sdk v1.7.2 h1:B5usulD6v+vVB8/YayNXaW/XiDu
 github.com/operator-framework/operator-sdk v1.7.2/go.mod h1:q6OC/k+l7oiHRB7hlWuHkuNnJdW65im6ujCuaJRkEV4=
 github.com/otiai10/copy v1.0.2 h1:DDNipYy6RkIkjMwy+AWzgKiNTyj2RUI9yEMeETEpVyc=
 github.com/otiai10/copy v1.0.2/go.mod h1:c7RpqBkwMom4bYTSkLSym4VSJz/XtncWRAj/J4PEIMY=
+github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95 h1:+OLn68pqasWca0z5ryit9KGfp3sUsW4Lqg32iRMJyzs=
 github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95/go.mod h1:9qAhocn7zKJG+0mI8eUu6xqkFDYS2kb2saOteoSB3cE=
 github.com/otiai10/mint v1.3.0 h1:Ady6MKVezQwHBkGzLFbrsywyp09Ah7rkmfjV3Bcr5uc=
 github.com/otiai10/mint v1.3.0/go.mod h1:F5AjcsTsWUqX+Na9fpHb52P8pcRX2CI6A3ctIT91xUo=
