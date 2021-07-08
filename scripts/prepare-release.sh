@@ -205,8 +205,10 @@ set_related_images() {
         do
           relatedImageName=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
           relatedImageURL=$(yq r -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
-          containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
-          position=$((position+1))
+          if [[ "$relatedImageName" != "redis-32-rhel7" ]] && [[ "$relatedImageName" != "mysql-57-rhel7" ]] && [[ "$relatedImageName" != "openshift-cli" ]]; then
+            containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
+            position=$((position+1))
+          fi
         done
       fi
 
