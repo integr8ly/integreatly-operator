@@ -533,6 +533,13 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				fmt.Sprintf("%sUserSsoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
 			},
 		},
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-test-alerts.yaml",
+			Rules: []string{
+				"TestFireCriticalAlert",
+				"TestFireWarningAlert",
+			},
+		},
 	}
 }
 

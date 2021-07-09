@@ -301,6 +301,33 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					},
 				},
 			},
+			{
+				AlertName: "test-alerts",
+				Namespace: r.Config.GetOperatorNamespace(),
+				GroupName: "test.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "TestFireCriticalAlert",
+						Annotations: map[string]string{
+							"sop_url": "",
+							"message": fmt.Sprintf("This is occasional Test Fire alert from Team SRE"),
+						},
+						Expr:   intstr.FromString("count(kube_secret_info{namespace='" + r.Config.GetOperatorNamespace() + "', secret='cj3cssrec'}) > 0"),
+						For:    "10s",
+						Labels: map[string]string{"severity": "critical", "product": "secret"},
+					},
+					{
+						Alert: "TestFireWarningAlert",
+						Annotations: map[string]string{
+							"sop_url": "",
+							"message": fmt.Sprintf("This is occasional Test Fire alert from Team SRE"),
+						},
+						Expr:   intstr.FromString("count(kube_secret_info{namespace='" + r.Config.GetOperatorNamespace() + "', secret='wj3cssrew'}) > 0"),
+						For:    "10s",
+						Labels: map[string]string{"severity": "warning", "product": "secret"},
+					},
+				},
+			},
 		},
 	}
 }
