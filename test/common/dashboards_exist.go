@@ -42,6 +42,9 @@ var commonExpectedDashboards = []dashboardsTestRule{
 		Title: "Critical SLO summary",
 	},
 	{
+		Title: "Keycloak Metrics",
+	},
+	{
 		Title: "CRO Resources",
 	},
 	{
