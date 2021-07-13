@@ -57,16 +57,20 @@ func (c *ElastiCache) AddTagsToResourceRequest(input *AddTagsToResourceInput) (r
 
 // AddTagsToResource API operation for Amazon ElastiCache.
 //
-// Adds up to 50 cost allocation tags to the named resource. A cost allocation
-// tag is a key-value pair where the key and value are case-sensitive. You can
-// use cost allocation tags to categorize and track your AWS costs.
+// A tag is a key-value pair where the key and value are case-sensitive. You
+// can use tags to categorize and track all your ElastiCache resources, with
+// the exception of global replication group. When you add or remove tags on
+// replication groups, those actions will be replicated to all nodes in the
+// replication group. For more information, see Resource-level permissions (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/IAM.ResourceLevelPermissions.html).
 //
-// When you apply tags to your ElastiCache resources, AWS generates a cost allocation
-// report as a comma-separated value (CSV) file with your usage and costs aggregated
-// by your tags. You can apply tags that represent business categories (such
-// as cost centers, application names, or owners) to organize your costs across
-// multiple services. For more information, see Using Cost Allocation Tags in
-// Amazon ElastiCache (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Tagging.html)
+// For example, you can use cost-allocation tags to your ElastiCache resources,
+// AWS generates a cost allocation report as a comma-separated value (CSV) file
+// with your usage and costs aggregated by your tags. You can apply tags that
+// represent business categories (such as cost centers, application names, or
+// owners) to organize your costs across multiple services.
+//
+// For more information, see Using Cost Allocation Tags in Amazon ElastiCache
+// (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Tagging.html)
 // in the ElastiCache User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -80,8 +84,35 @@ func (c *ElastiCache) AddTagsToResourceRequest(input *AddTagsToResourceInput) (r
 //   * ErrCodeCacheClusterNotFoundFault "CacheClusterNotFound"
 //   The requested cluster ID does not refer to an existing cluster.
 //
+//   * ErrCodeCacheParameterGroupNotFoundFault "CacheParameterGroupNotFound"
+//   The requested cache parameter group name does not refer to an existing cache
+//   parameter group.
+//
+//   * ErrCodeCacheSecurityGroupNotFoundFault "CacheSecurityGroupNotFound"
+//   The requested cache security group name does not refer to an existing cache
+//   security group.
+//
+//   * ErrCodeCacheSubnetGroupNotFoundFault "CacheSubnetGroupNotFoundFault"
+//   The requested cache subnet group name does not refer to an existing cache
+//   subnet group.
+//
+//   * ErrCodeInvalidReplicationGroupStateFault "InvalidReplicationGroupState"
+//   The requested replication group is not in the available state.
+//
+//   * ErrCodeReplicationGroupNotFoundFault "ReplicationGroupNotFoundFault"
+//   The specified replication group does not exist.
+//
+//   * ErrCodeReservedCacheNodeNotFoundFault "ReservedCacheNodeNotFound"
+//   The requested reserved cache node was not found.
+//
 //   * ErrCodeSnapshotNotFoundFault "SnapshotNotFoundFault"
 //   The requested snapshot name does not refer to an existing snapshot.
+//
+//   * ErrCodeUserNotFoundFault "UserNotFound"
+//   The user does not exist or could not be found.
+//
+//   * ErrCodeUserGroupNotFoundFault "UserGroupNotFound"
+//   The user group was not found or does not exist
 //
 //   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
 //   The request cannot be processed because it would cause the resource to have
@@ -585,6 +616,11 @@ func (c *ElastiCache) CopySnapshotRequest(input *CopySnapshotInput) (req *reques
 //   The current state of the snapshot does not allow the requested operation
 //   to occur.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
 //
@@ -822,6 +858,11 @@ func (c *ElastiCache) CreateCacheParameterGroupRequest(input *CreateCacheParamet
 //   The current state of the cache parameter group does not allow the requested
 //   operation to occur.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
 //
@@ -916,6 +957,11 @@ func (c *ElastiCache) CreateCacheSecurityGroupRequest(input *CreateCacheSecurity
 //   * ErrCodeCacheSecurityGroupQuotaExceededFault "QuotaExceeded.CacheSecurityGroup"
 //   The request cannot be processed because it would exceed the allowed number
 //   of cache security groups.
+//
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -1014,6 +1060,11 @@ func (c *ElastiCache) CreateCacheSubnetGroupRequest(input *CreateCacheSubnetGrou
 //   The request cannot be processed because it would exceed the allowed number
 //   of subnets in a cache subnet group.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 //   * ErrCodeInvalidSubnet "InvalidSubnet"
 //   An invalid subnet identifier was specified.
 //
@@ -1093,9 +1144,9 @@ func (c *ElastiCache) CreateGlobalReplicationGroupRequest(input *CreateGlobalRep
 // cross-region replication. Using Global Datastore for Redis, you can create
 // cross-region read replica clusters for ElastiCache for Redis to enable low-latency
 // reads and disaster recovery across regions. For more information, see Replication
-// Across Regions Using Global Datastore (/AmazonElastiCache/latest/red-ug/Redis-Global-Clusters.html).
+// Across Regions Using Global Datastore (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html).
 //
-//    * The GlobalReplicationGroupIdSuffix is the name of the Global Datastore.
+//    * The GlobalReplicationGroupIdSuffix is the name of the Global datastore.
 //
 //    * The PrimaryReplicationGroupId represents the name of the primary cluster
 //    that accepts writes and will replicate updates to the secondary cluster.
@@ -1115,7 +1166,7 @@ func (c *ElastiCache) CreateGlobalReplicationGroupRequest(input *CreateGlobalRep
 //   The requested replication group is not in the available state.
 //
 //   * ErrCodeGlobalReplicationGroupAlreadyExistsFault "GlobalReplicationGroupAlreadyExistsFault"
-//   The Global Datastore name already exists.
+//   The Global datastore name already exists.
 //
 //   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
 //   The specified service linked role (SLR) was not found.
@@ -1193,17 +1244,29 @@ func (c *ElastiCache) CreateReplicationGroupRequest(input *CreateReplicationGrou
 // replication group.
 //
 // This API can be used to create a standalone regional replication group or
-// a secondary replication group associated with a Global Datastore.
+// a secondary replication group associated with a Global datastore.
 //
 // A Redis (cluster mode disabled) replication group is a collection of clusters,
 // where one of the clusters is a read/write primary and the others are read-only
 // replicas. Writes to the primary are asynchronously propagated to the replicas.
 //
-// A Redis (cluster mode enabled) replication group is a collection of 1 to
-// 90 node groups (shards). Each node group (shard) has one read/write primary
-// node and up to 5 read-only replica nodes. Writes to the primary are asynchronously
-// propagated to the replicas. Redis (cluster mode enabled) replication groups
-// partition the data across node groups (shards).
+// A Redis cluster-mode enabled cluster is comprised of from 1 to 90 shards
+// (API/CLI: node groups). Each shard has a primary node and up to 5 read-only
+// replica nodes. The configuration can range from 90 shards and 0 replicas
+// to 15 shards and 5 replicas, which is the maximum number or replicas allowed.
+//
+// The node or shard limit can be increased to a maximum of 500 per cluster
+// if the Redis engine version is 5.0.6 or higher. For example, you can choose
+// to configure a 500 node cluster that ranges between 83 shards (one primary
+// and 5 replicas per shard) and 500 shards (single primary and no replicas).
+// Make sure there are enough available IP addresses to accommodate the increase.
+// Common pitfalls include the subnets in the subnet group have too small a
+// CIDR range or the subnets are shared and heavily used by other clusters.
+// For more information, see Creating a Subnet Group (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SubnetGroups.Creating.html).
+// For versions below 5.0.6, the limit is 250 per cluster.
+//
+// To request a limit increase, see AWS Service Limits (https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html)
+// and choose the limit type Nodes per cluster per instance type.
 //
 // When a Redis (cluster mode disabled) replication group has been successfully
 // created, you can add one or more read replicas to it, up to a total of 5
@@ -1280,10 +1343,10 @@ func (c *ElastiCache) CreateReplicationGroupRequest(input *CreateReplicationGrou
 //   maximum is 90
 //
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -1400,6 +1463,11 @@ func (c *ElastiCache) CreateSnapshotRequest(input *CreateSnapshotInput) (req *re
 //
 //   Neither of these are supported by ElastiCache.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombination"
 //   Two or more incompatible parameters were specified.
 //
@@ -1498,6 +1566,11 @@ func (c *ElastiCache) CreateUserRequest(input *CreateUserInput) (req *request.Re
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombination"
 //   Two or more incompatible parameters were specified.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/elasticache-2015-02-02/CreateUser
 func (c *ElastiCache) CreateUser(input *CreateUserInput) (*CreateUserOutput, error) {
 	req, out := c.CreateUserRequest(input)
@@ -1593,6 +1666,11 @@ func (c *ElastiCache) CreateUserGroupRequest(input *CreateUserGroupInput) (req *
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
 //
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/elasticache-2015-02-02/CreateUserGroup
 func (c *ElastiCache) CreateUserGroup(input *CreateUserGroupInput) (*CreateUserGroupOutput, error) {
 	req, out := c.CreateUserGroupRequest(input)
@@ -1659,7 +1737,7 @@ func (c *ElastiCache) DecreaseNodeGroupsInGlobalReplicationGroupRequest(input *D
 
 // DecreaseNodeGroupsInGlobalReplicationGroup API operation for Amazon ElastiCache.
 //
-// Decreases the number of node groups in a Global Datastore
+// Decreases the number of node groups in a Global datastore
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1670,10 +1748,10 @@ func (c *ElastiCache) DecreaseNodeGroupsInGlobalReplicationGroupRequest(input *D
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -1877,7 +1955,11 @@ func (c *ElastiCache) DeleteCacheClusterRequest(input *DeleteCacheClusterInput) 
 //
 //    * Redis (cluster mode enabled) clusters
 //
+//    * Redis (cluster mode disabled) clusters
+//
 //    * A cluster that is the last read replica of a replication group
+//
+//    * A cluster that is the primary node of a replication group
 //
 //    * A node group (shard) that has Multi-AZ mode enabled
 //
@@ -1991,7 +2073,8 @@ func (c *ElastiCache) DeleteCacheParameterGroupRequest(input *DeleteCacheParamet
 // DeleteCacheParameterGroup API operation for Amazon ElastiCache.
 //
 // Deletes the specified cache parameter group. You cannot delete a cache parameter
-// group if it is associated with any cache clusters.
+// group if it is associated with any cache clusters. You cannot delete the
+// default cache parameter groups in your account.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2176,7 +2259,8 @@ func (c *ElastiCache) DeleteCacheSubnetGroupRequest(input *DeleteCacheSubnetGrou
 //
 // Deletes a cache subnet group.
 //
-// You cannot delete a cache subnet group if it is associated with any clusters.
+// You cannot delete a default cache subnet group or one that is associated
+// with any clusters.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2259,17 +2343,19 @@ func (c *ElastiCache) DeleteGlobalReplicationGroupRequest(input *DeleteGlobalRep
 
 // DeleteGlobalReplicationGroup API operation for Amazon ElastiCache.
 //
-// Deleting a Global Datastore is a two-step process:
+// Deleting a Global datastore is a two-step process:
 //
 //    * First, you must DisassociateGlobalReplicationGroup to remove the secondary
-//    clusters in the Global Datastore.
+//    clusters in the Global datastore.
 //
-//    * Once the Global Datastore contains only the primary cluster, you can
-//    use DeleteGlobalReplicationGroup API to delete the Global Datastore while
-//    retainining the primary cluster using Retain…= true.
+//    * Once the Global datastore contains only the primary cluster, you can
+//    use the DeleteGlobalReplicationGroup API to delete the Global datastore
+//    while retainining the primary cluster using RetainPrimaryReplicationGroup=true.
 //
 // Since the Global Datastore has only a primary cluster, you can delete the
-// Global Datastore while retaining the primary by setting RetainPrimaryCluster=true.
+// Global Datastore while retaining the primary by setting RetainPrimaryReplicationGroup=true.
+// The primary cluster is never deleted when deleting a Global Datastore. It
+// can only be deleted when it no longer is associated with any Global Datastore.
 //
 // When you receive a successful response from this operation, Amazon ElastiCache
 // immediately begins deleting the selected resources; you cannot cancel or
@@ -2284,10 +2370,10 @@ func (c *ElastiCache) DeleteGlobalReplicationGroupRequest(input *DeleteGlobalRep
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -2567,7 +2653,7 @@ func (c *ElastiCache) DeleteUserRequest(input *DeleteUserInput) (req *request.Re
 
 // DeleteUser API operation for Amazon ElastiCache.
 //
-// For Redis engine version 6.04 onwards: Deletes a user. The user will be removed
+// For Redis engine version 6.x onwards: Deletes a user. The user will be removed
 // from all user groups and in turn removed from all replication groups. For
 // more information, see Using Role Based Access Control (RBAC) (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Clusters.RBAC.html).
 //
@@ -2656,8 +2742,8 @@ func (c *ElastiCache) DeleteUserGroupRequest(input *DeleteUserGroupInput) (req *
 
 // DeleteUserGroup API operation for Amazon ElastiCache.
 //
-// For Redis engine version 6.04 onwards: Deletes a ser group. The user group
-// must first be disassociated from the replcation group before it can be deleted.
+// For Redis engine version 6.x onwards: Deletes a user group. The user group
+// must first be disassociated from the replication group before it can be deleted.
 // For more information, see Using Role Based Access Control (RBAC) (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Clusters.RBAC.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -3909,7 +3995,7 @@ func (c *ElastiCache) DescribeGlobalReplicationGroupsRequest(input *DescribeGlob
 // DescribeGlobalReplicationGroups API operation for Amazon ElastiCache.
 //
 // Returns information about a particular global replication group. If no identifier
-// is specified, returns information about all Global Datastores.
+// is specified, returns information about all Global datastores.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -3920,7 +4006,7 @@ func (c *ElastiCache) DescribeGlobalReplicationGroupsRequest(input *DescribeGlob
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -5194,7 +5280,7 @@ func (c *ElastiCache) DisassociateGlobalReplicationGroupRequest(input *Disassoci
 
 // DisassociateGlobalReplicationGroup API operation for Amazon ElastiCache.
 //
-// Remove a secondary cluster from the Global Datastore using the Global Datastore
+// Remove a secondary cluster from the Global datastore using the Global datastore
 // name. The secondary cluster will no longer receive updates from the primary
 // cluster, but will remain as a standalone cluster in that AWS region.
 //
@@ -5207,10 +5293,10 @@ func (c *ElastiCache) DisassociateGlobalReplicationGroupRequest(input *Disassoci
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -5297,10 +5383,10 @@ func (c *ElastiCache) FailoverGlobalReplicationGroupRequest(input *FailoverGloba
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -5374,7 +5460,7 @@ func (c *ElastiCache) IncreaseNodeGroupsInGlobalReplicationGroupRequest(input *I
 
 // IncreaseNodeGroupsInGlobalReplicationGroup API operation for Amazon ElastiCache.
 //
-// Increase the number of node groups in the Global Datastore
+// Increase the number of node groups in the Global datastore
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5385,10 +5471,10 @@ func (c *ElastiCache) IncreaseNodeGroupsInGlobalReplicationGroupRequest(input *I
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -5459,7 +5545,7 @@ func (c *ElastiCache) IncreaseReplicaCountRequest(input *IncreaseReplicaCountInp
 
 // IncreaseReplicaCount API operation for Amazon ElastiCache.
 //
-// Dynamically increases the number of replics in a Redis (cluster mode disabled)
+// Dynamically increases the number of replicas in a Redis (cluster mode disabled)
 // replication group or the number of replica nodes in one or more node groups
 // (shards) of a Redis (cluster mode enabled) replication group. This operation
 // is performed with no cluster down time.
@@ -5673,16 +5759,16 @@ func (c *ElastiCache) ListTagsForResourceRequest(input *ListTagsForResourceInput
 
 // ListTagsForResource API operation for Amazon ElastiCache.
 //
-// Lists all cost allocation tags currently on the named resource. A cost allocation
-// tag is a key-value pair where the key is case-sensitive and the value is
-// optional. You can use cost allocation tags to categorize and track your AWS
-// costs.
+// Lists all tags currently on a named resource.
+//
+// A tag is a key-value pair where the key and value are case-sensitive. You
+// can use tags to categorize and track all your ElastiCache resources, with
+// the exception of global replication group. When you add or remove tags on
+// replication groups, those actions will be replicated to all nodes in the
+// replication group. For more information, see Resource-level permissions (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/IAM.ResourceLevelPermissions.html).
 //
 // If the cluster is not in the available state, ListTagsForResource returns
 // an error.
-//
-// You can have a maximum of 50 cost allocation tags on an ElastiCache resource.
-// For more information, see Monitoring Costs with Tags (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Tagging.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5695,8 +5781,35 @@ func (c *ElastiCache) ListTagsForResourceRequest(input *ListTagsForResourceInput
 //   * ErrCodeCacheClusterNotFoundFault "CacheClusterNotFound"
 //   The requested cluster ID does not refer to an existing cluster.
 //
+//   * ErrCodeCacheParameterGroupNotFoundFault "CacheParameterGroupNotFound"
+//   The requested cache parameter group name does not refer to an existing cache
+//   parameter group.
+//
+//   * ErrCodeCacheSecurityGroupNotFoundFault "CacheSecurityGroupNotFound"
+//   The requested cache security group name does not refer to an existing cache
+//   security group.
+//
+//   * ErrCodeCacheSubnetGroupNotFoundFault "CacheSubnetGroupNotFoundFault"
+//   The requested cache subnet group name does not refer to an existing cache
+//   subnet group.
+//
+//   * ErrCodeInvalidReplicationGroupStateFault "InvalidReplicationGroupState"
+//   The requested replication group is not in the available state.
+//
+//   * ErrCodeReplicationGroupNotFoundFault "ReplicationGroupNotFoundFault"
+//   The specified replication group does not exist.
+//
+//   * ErrCodeReservedCacheNodeNotFoundFault "ReservedCacheNodeNotFound"
+//   The requested reserved cache node was not found.
+//
 //   * ErrCodeSnapshotNotFoundFault "SnapshotNotFoundFault"
 //   The requested snapshot name does not refer to an existing snapshot.
+//
+//   * ErrCodeUserNotFoundFault "UserNotFound"
+//   The user does not exist or could not be found.
+//
+//   * ErrCodeUserGroupNotFoundFault "UserGroupNotFound"
+//   The user group was not found or does not exist
 //
 //   * ErrCodeInvalidARNFault "InvalidARN"
 //   The requested Amazon Resource Name (ARN) does not refer to an existing resource.
@@ -5911,7 +6024,7 @@ func (c *ElastiCache) ModifyCacheParameterGroupRequest(input *ModifyCacheParamet
 //   Two or more incompatible parameters were specified.
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/elasticache-2015-02-02/ModifyCacheParameterGroup
 func (c *ElastiCache) ModifyCacheParameterGroup(input *ModifyCacheParameterGroupInput) (*CacheParameterGroupNameMessage, error) {
@@ -6075,7 +6188,7 @@ func (c *ElastiCache) ModifyGlobalReplicationGroupRequest(input *ModifyGlobalRep
 
 // ModifyGlobalReplicationGroup API operation for Amazon ElastiCache.
 //
-// Modifies the settings for a Global Datastore.
+// Modifies the settings for a Global datastore.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6086,10 +6199,10 @@ func (c *ElastiCache) ModifyGlobalReplicationGroupRequest(input *ModifyGlobalRep
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -6299,7 +6412,7 @@ func (c *ElastiCache) ModifyReplicationGroupShardConfigurationRequest(input *Mod
 // ModifyReplicationGroupShardConfiguration API operation for Amazon ElastiCache.
 //
 // Modifies a replication group's shards (node groups) by allowing you to add
-// shards, remove shards, or rebalance the keyspaces among exisiting shards.
+// shards, remove shards, or rebalance the keyspaces among existing shards.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6595,7 +6708,11 @@ func (c *ElastiCache) PurchaseReservedCacheNodesOfferingRequest(input *PurchaseR
 
 // PurchaseReservedCacheNodesOffering API operation for Amazon ElastiCache.
 //
-// Allows you to purchase a reserved cache node offering.
+// Allows you to purchase a reserved cache node offering. Reserved nodes are
+// not eligible for cancellation and are non-refundable. For more information,
+// see Managing Costs with Reserved Nodes (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/reserved-nodes.html)
+// for Redis or Managing Costs with Reserved Nodes (https://docs.aws.amazon.com/AmazonElastiCache/latest/mem-ug/reserved-nodes.html)
+// for Memcached.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6614,6 +6731,11 @@ func (c *ElastiCache) PurchaseReservedCacheNodesOfferingRequest(input *PurchaseR
 //   * ErrCodeReservedCacheNodeQuotaExceededFault "ReservedCacheNodeQuotaExceeded"
 //   The request cannot be processed because it would exceed the user's cache
 //   node quota.
+//
+//   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
+//   The request cannot be processed because it would cause the resource to have
+//   more than the allowed number of tags. The maximum number of tags permitted
+//   on a resource is 50.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -6699,10 +6821,10 @@ func (c *ElastiCache) RebalanceSlotsInGlobalReplicationGroupRequest(input *Rebal
 //
 // Returned Error Codes:
 //   * ErrCodeGlobalReplicationGroupNotFoundFault "GlobalReplicationGroupNotFoundFault"
-//   The Global Datastore does not exist
+//   The Global datastore does not exist
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value for a parameter is invalid.
@@ -6872,6 +6994,11 @@ func (c *ElastiCache) RemoveTagsFromResourceRequest(input *RemoveTagsFromResourc
 // RemoveTagsFromResource API operation for Amazon ElastiCache.
 //
 // Removes the tags identified by the TagKeys list from the named resource.
+// A tag is a key-value pair where the key and value are case-sensitive. You
+// can use tags to categorize and track all your ElastiCache resources, with
+// the exception of global replication group. When you add or remove tags on
+// replication groups, those actions will be replicated to all nodes in the
+// replication group. For more information, see Resource-level permissions (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/IAM.ResourceLevelPermissions.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6884,8 +7011,35 @@ func (c *ElastiCache) RemoveTagsFromResourceRequest(input *RemoveTagsFromResourc
 //   * ErrCodeCacheClusterNotFoundFault "CacheClusterNotFound"
 //   The requested cluster ID does not refer to an existing cluster.
 //
+//   * ErrCodeCacheParameterGroupNotFoundFault "CacheParameterGroupNotFound"
+//   The requested cache parameter group name does not refer to an existing cache
+//   parameter group.
+//
+//   * ErrCodeCacheSecurityGroupNotFoundFault "CacheSecurityGroupNotFound"
+//   The requested cache security group name does not refer to an existing cache
+//   security group.
+//
+//   * ErrCodeCacheSubnetGroupNotFoundFault "CacheSubnetGroupNotFoundFault"
+//   The requested cache subnet group name does not refer to an existing cache
+//   subnet group.
+//
+//   * ErrCodeInvalidReplicationGroupStateFault "InvalidReplicationGroupState"
+//   The requested replication group is not in the available state.
+//
+//   * ErrCodeReplicationGroupNotFoundFault "ReplicationGroupNotFoundFault"
+//   The specified replication group does not exist.
+//
+//   * ErrCodeReservedCacheNodeNotFoundFault "ReservedCacheNodeNotFound"
+//   The requested reserved cache node was not found.
+//
 //   * ErrCodeSnapshotNotFoundFault "SnapshotNotFoundFault"
 //   The requested snapshot name does not refer to an existing snapshot.
+//
+//   * ErrCodeUserNotFoundFault "UserNotFound"
+//   The user does not exist or could not be found.
+//
+//   * ErrCodeUserGroupNotFoundFault "UserGroupNotFound"
+//   The user group was not found or does not exist
 //
 //   * ErrCodeInvalidARNFault "InvalidARN"
 //   The requested Amazon Resource Name (ARN) does not refer to an existing resource.
@@ -6987,7 +7141,7 @@ func (c *ElastiCache) ResetCacheParameterGroupRequest(input *ResetCacheParameter
 //   Two or more incompatible parameters were specified.
 //
 //   * ErrCodeInvalidGlobalReplicationGroupStateFault "InvalidGlobalReplicationGroupState"
-//   The Global Datastore is not available or in primary-only state.
+//   The Global datastore is not available or in primary-only state.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/elasticache-2015-02-02/ResetCacheParameterGroup
 func (c *ElastiCache) ResetCacheParameterGroup(input *ResetCacheParameterGroupInput) (*CacheParameterGroupNameMessage, error) {
@@ -7344,8 +7498,8 @@ type AddTagsToResourceInput struct {
 	// ResourceName is a required field
 	ResourceName *string `type:"string" required:"true"`
 
-	// A list of cost allocation tags to be added to this resource. A tag is a key-value
-	// pair. A tag key must be accompanied by a tag value.
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
 	//
 	// Tags is a required field
 	Tags []*Tag `locationNameList:"Tag" type:"list" required:"true"`
@@ -7773,9 +7927,8 @@ type CacheCluster struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -7791,9 +7944,8 @@ type CacheCluster struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -7828,9 +7980,9 @@ type CacheCluster struct {
 	// library.
 	ClientDownloadLandingPage *string `type:"string"`
 
-	// Represents a Memcached cluster endpoint which, if Automatic Discovery is
-	// enabled on the cluster, can be used by an application to connect to any node
-	// in the cluster. The configuration endpoint will always have .cfg in it.
+	// Represents a Memcached cluster endpoint which can be used by an application
+	// to connect to any node in the cluster. The configuration endpoint will always
+	// have .cfg in it.
 	//
 	// Example: mem-3.9dvc4r.cfg.usw2.cache.amazonaws.com:11211
 	ConfigurationEndpoint *Endpoint `type:"structure"`
@@ -7841,6 +7993,9 @@ type CacheCluster struct {
 	// The version of the cache engine that is used in this cluster.
 	EngineVersion *string `type:"string"`
 
+	// Returns the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfiguration `locationNameList:"LogDeliveryConfiguration" type:"list"`
+
 	// Describes a notification topic and its status. Notification topics are used
 	// for publishing ElastiCache events to subscribers using Amazon Simple Notification
 	// Service (SNS).
@@ -7849,7 +8004,7 @@ type CacheCluster struct {
 	// The number of cache nodes in the cluster.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	NumCacheNodes *int64 `type:"integer"`
 
 	// A group of settings that are applied to the cluster in the future, or that
@@ -7889,6 +8044,10 @@ type CacheCluster struct {
 	// The replication group to which this cluster belongs. If this field is empty,
 	// the cluster is not associated with any replication group.
 	ReplicationGroupId *string `type:"string"`
+
+	// A boolean value indicating whether log delivery is enabled for the replication
+	// group.
+	ReplicationGroupLogDeliveryEnabled *bool `type:"boolean"`
 
 	// A list of VPC Security Groups associated with the cluster.
 	SecurityGroups []*SecurityGroupMembership `type:"list"`
@@ -8032,6 +8191,12 @@ func (s *CacheCluster) SetEngineVersion(v string) *CacheCluster {
 	return s
 }
 
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *CacheCluster) SetLogDeliveryConfigurations(v []*LogDeliveryConfiguration) *CacheCluster {
+	s.LogDeliveryConfigurations = v
+	return s
+}
+
 // SetNotificationConfiguration sets the NotificationConfiguration field's value.
 func (s *CacheCluster) SetNotificationConfiguration(v *NotificationConfiguration) *CacheCluster {
 	s.NotificationConfiguration = v
@@ -8074,6 +8239,12 @@ func (s *CacheCluster) SetReplicationGroupId(v string) *CacheCluster {
 	return s
 }
 
+// SetReplicationGroupLogDeliveryEnabled sets the ReplicationGroupLogDeliveryEnabled field's value.
+func (s *CacheCluster) SetReplicationGroupLogDeliveryEnabled(v bool) *CacheCluster {
+	s.ReplicationGroupLogDeliveryEnabled = &v
+	return s
+}
+
 // SetSecurityGroups sets the SecurityGroups field's value.
 func (s *CacheCluster) SetSecurityGroups(v []*SecurityGroupMembership) *CacheCluster {
 	s.SecurityGroups = v
@@ -8110,8 +8281,8 @@ type CacheEngineVersion struct {
 
 	// The name of the cache parameter group family associated with this cache engine.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	CacheParameterGroupFamily *string `type:"string"`
 
 	// The name of the cache engine.
@@ -8173,9 +8344,8 @@ func (s *CacheEngineVersion) SetEngineVersion(v string) *CacheEngineVersion {
 //    for Redis engine version 5.0.6 onward and for Memcached engine version
 //    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 //    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-//    At this time, M6g node types are available in the following regions: us-east-1,
-//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 //    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 //    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 //    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -8191,9 +8361,8 @@ func (s *CacheEngineVersion) SetEngineVersion(v string) *CacheEngineVersion {
 //    for Redis engine version 5.0.6 onward and for Memcached engine version
 //    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 //    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-//    At this time, R6g node types are available in the following regions: us-east-1,
-//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 //    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 //    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 //    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -8534,8 +8703,8 @@ type CacheParameterGroup struct {
 	// The name of the cache parameter group family that this cache parameter group
 	// is compatible with.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	CacheParameterGroupFamily *string `type:"string"`
 
 	// The name of the cache parameter group.
@@ -8544,7 +8713,7 @@ type CacheParameterGroup struct {
 	// The description for this cache parameter group.
 	Description *string `type:"string"`
 
-	// Indicates whether the parameter group is associated with a Global Datastore
+	// Indicates whether the parameter group is associated with a Global datastore
 	IsGlobal *bool `type:"boolean"`
 }
 
@@ -8826,6 +8995,30 @@ func (s *CacheSubnetGroup) SetVpcId(v string) *CacheSubnetGroup {
 	return s
 }
 
+// The configuration details of the CloudWatch Logs destination.
+type CloudWatchLogsDestinationDetails struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the CloudWatch Logs log group.
+	LogGroup *string `type:"string"`
+}
+
+// String returns the string representation
+func (s CloudWatchLogsDestinationDetails) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CloudWatchLogsDestinationDetails) GoString() string {
+	return s.String()
+}
+
+// SetLogGroup sets the LogGroup field's value.
+func (s *CloudWatchLogsDestinationDetails) SetLogGroup(v string) *CloudWatchLogsDestinationDetails {
+	s.LogGroup = &v
+	return s
+}
+
 type CompleteMigrationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9002,15 +9195,19 @@ type CopySnapshotInput struct {
 	// SourceSnapshotName is a required field
 	SourceSnapshotName *string `type:"string" required:"true"`
 
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
+
 	// The Amazon S3 bucket to which the snapshot is exported. This parameter is
 	// used only when exporting a snapshot for external access.
 	//
 	// When using this parameter to export a snapshot, be sure Amazon ElastiCache
 	// has the needed permissions to this S3 bucket. For more information, see Step
-	// 2: Grant ElastiCache Access to Your Amazon S3 Bucket (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/backups-exporting.html#backups-exporting-grant-access)
+	// 2: Grant ElastiCache Access to Your Amazon S3 Bucket (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/backups-exporting.html#backups-exporting-grant-access)
 	// in the Amazon ElastiCache User Guide.
 	//
-	// For more information, see Exporting a Snapshot (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Snapshots.Exporting.html)
+	// For more information, see Exporting a Snapshot (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/backups-exporting.html)
 	// in the Amazon ElastiCache User Guide.
 	TargetBucket *string `type:"string"`
 
@@ -9057,6 +9254,12 @@ func (s *CopySnapshotInput) SetKmsKeyId(v string) *CopySnapshotInput {
 // SetSourceSnapshotName sets the SourceSnapshotName field's value.
 func (s *CopySnapshotInput) SetSourceSnapshotName(v string) *CopySnapshotInput {
 	s.SourceSnapshotName = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *CopySnapshotInput) SetTags(v []*Tag) *CopySnapshotInput {
+	s.Tags = v
 	return s
 }
 
@@ -9153,9 +9356,8 @@ type CreateCacheClusterInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -9171,9 +9373,8 @@ type CreateCacheClusterInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -9230,6 +9431,9 @@ type CreateCacheClusterInput struct {
 	// group and create it anew with the earlier engine version.
 	EngineVersion *string `type:"string"`
 
+	// Specifies the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `locationNameList:"LogDeliveryConfigurationRequest" type:"list"`
+
 	// The Amazon Resource Name (ARN) of the Amazon Simple Notification Service
 	// (SNS) topic to which notifications are sent.
 	//
@@ -9239,9 +9443,9 @@ type CreateCacheClusterInput struct {
 	// The initial number of cache nodes that the cluster has.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	//
-	// If you need more than 20 nodes for your Memcached cluster, please fill out
+	// If you need more than 40 nodes for your Memcached cluster, please fill out
 	// the ElastiCache Limit Increase Request form at http://aws.amazon.com/contact-us/elasticache-node-limit-request/
 	// (http://aws.amazon.com/contact-us/elasticache-node-limit-request/).
 	NumCacheNodes *int64 `type:"integer"`
@@ -9283,28 +9487,6 @@ type CreateCacheClusterInput struct {
 	// performed. It is specified as a range in the format ddd:hh24:mi-ddd:hh24:mi
 	// (24H Clock UTC). The minimum maintenance window is a 60 minute period. Valid
 	// values for ddd are:
-	//
-	// Specifies the weekly time range during which maintenance on the cluster is
-	// performed. It is specified as a range in the format ddd:hh24:mi-ddd:hh24:mi
-	// (24H Clock UTC). The minimum maintenance window is a 60 minute period.
-	//
-	// Valid values for ddd are:
-	//
-	//    * sun
-	//
-	//    * mon
-	//
-	//    * tue
-	//
-	//    * wed
-	//
-	//    * thu
-	//
-	//    * fri
-	//
-	//    * sat
-	//
-	// Example: sun:23:00-mon:01:30
 	PreferredMaintenanceWindow *string `type:"string"`
 
 	// The outpost ARN in which the cache cluster is created.
@@ -9368,7 +9550,7 @@ type CreateCacheClusterInput struct {
 	// This parameter is only valid if the Engine parameter is redis.
 	SnapshotWindow *string `type:"string"`
 
-	// A list of cost allocation tags to be added to this resource.
+	// A list of tags to be added to this resource.
 	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
@@ -9452,6 +9634,12 @@ func (s *CreateCacheClusterInput) SetEngine(v string) *CreateCacheClusterInput {
 // SetEngineVersion sets the EngineVersion field's value.
 func (s *CreateCacheClusterInput) SetEngineVersion(v string) *CreateCacheClusterInput {
 	s.EngineVersion = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *CreateCacheClusterInput) SetLogDeliveryConfigurations(v []*LogDeliveryConfigurationRequest) *CreateCacheClusterInput {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -9581,8 +9769,8 @@ type CreateCacheParameterGroupInput struct {
 	// The name of the cache parameter group family that the cache parameter group
 	// can be used with.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	//
 	// CacheParameterGroupFamily is a required field
 	CacheParameterGroupFamily *string `type:"string" required:"true"`
@@ -9596,6 +9784,10 @@ type CreateCacheParameterGroupInput struct {
 	//
 	// Description is a required field
 	Description *string `type:"string" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
 // String returns the string representation
@@ -9645,6 +9837,12 @@ func (s *CreateCacheParameterGroupInput) SetDescription(v string) *CreateCachePa
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *CreateCacheParameterGroupInput) SetTags(v []*Tag) *CreateCacheParameterGroupInput {
+	s.Tags = v
+	return s
+}
+
 type CreateCacheParameterGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9687,6 +9885,10 @@ type CreateCacheSecurityGroupInput struct {
 	//
 	// Description is a required field
 	Description *string `type:"string" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
 // String returns the string representation
@@ -9724,6 +9926,12 @@ func (s *CreateCacheSecurityGroupInput) SetCacheSecurityGroupName(v string) *Cre
 // SetDescription sets the Description field's value.
 func (s *CreateCacheSecurityGroupInput) SetDescription(v string) *CreateCacheSecurityGroupInput {
 	s.Description = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *CreateCacheSecurityGroupInput) SetTags(v []*Tag) *CreateCacheSecurityGroupInput {
+	s.Tags = v
 	return s
 }
 
@@ -9778,6 +9986,10 @@ type CreateCacheSubnetGroupInput struct {
 	//
 	// SubnetIds is a required field
 	SubnetIds []*string `locationNameList:"SubnetIdentifier" type:"list" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
 // String returns the string representation
@@ -9827,6 +10039,12 @@ func (s *CreateCacheSubnetGroupInput) SetSubnetIds(v []*string) *CreateCacheSubn
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *CreateCacheSubnetGroupInput) SetTags(v []*Tag) *CreateCacheSubnetGroupInput {
+	s.Tags = v
+	return s
+}
+
 type CreateCacheSubnetGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9857,18 +10075,18 @@ func (s *CreateCacheSubnetGroupOutput) SetCacheSubnetGroup(v *CacheSubnetGroup) 
 type CreateGlobalReplicationGroupInput struct {
 	_ struct{} `type:"structure"`
 
-	// Provides details of the Global Datastore
+	// Provides details of the Global datastore
 	GlobalReplicationGroupDescription *string `type:"string"`
 
-	// The suffix name of a Global Datastore. Amazon ElastiCache automatically applies
-	// a prefix to the Global Datastore ID when it is created. Each AWS Region has
-	// its own prefix. For instance, a Global Datastore ID created in the US-West-1
+	// The suffix name of a Global datastore. Amazon ElastiCache automatically applies
+	// a prefix to the Global datastore ID when it is created. Each AWS Region has
+	// its own prefix. For instance, a Global datastore ID created in the US-West-1
 	// region will begin with "dsdfu" along with the suffix name you provide. The
 	// suffix, combined with the auto-generated prefix, guarantees uniqueness of
-	// the Global Datastore name across multiple regions.
+	// the Global datastore name across multiple regions.
 	//
-	// For a full list of AWS Regions and their respective Global Datastore iD prefixes,
-	// see Using the AWS CLI with Global Datastores (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Clusters-CLI.html).
+	// For a full list of AWS Regions and their respective Global datastore iD prefixes,
+	// see Using the AWS CLI with Global datastores (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastores-CLI.html).
 	//
 	// GlobalReplicationGroupIdSuffix is a required field
 	GlobalReplicationGroupIdSuffix *string `type:"string" required:"true"`
@@ -9933,7 +10151,7 @@ type CreateGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -10014,9 +10232,8 @@ type CreateReplicationGroupInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -10032,9 +10249,8 @@ type CreateReplicationGroupInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -10057,9 +10273,6 @@ type CreateReplicationGroupInput struct {
 	// If this argument is omitted, the default cache parameter group for the specified
 	// engine is used.
 	//
-	// If you are restoring to an engine version that is different than the original,
-	// you must specify the default version of that version. For example, CacheParameterGroupName=default.redis4.0.
-	//
 	// If you are running Redis version 3.2.4 or later, only one node group (shard),
 	// and want to use a default parameter group, we recommend that you specify
 	// the parameter group by name.
@@ -10080,7 +10293,7 @@ type CreateReplicationGroupInput struct {
 	CacheSubnetGroupName *string `type:"string"`
 
 	// The name of the cache engine to be used for the clusters in this replication
-	// group.
+	// group. Must be Redis.
 	Engine *string `type:"string"`
 
 	// The version number of the cache engine to be used for the clusters in this
@@ -10095,11 +10308,14 @@ type CreateReplicationGroupInput struct {
 	// engine version.
 	EngineVersion *string `type:"string"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	GlobalReplicationGroupId *string `type:"string"`
 
 	// The ID of the KMS key used to encrypt the disk in the cluster.
 	KmsKeyId *string `type:"string"`
+
+	// Specifies the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `locationNameList:"LogDeliveryConfigurationRequest" type:"list"`
 
 	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
 	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html).
@@ -10259,9 +10475,10 @@ type CreateReplicationGroupInput struct {
 	// appropriate time range.
 	SnapshotWindow *string `type:"string"`
 
-	// A list of cost allocation tags to be added to this resource. Tags are comma-separated
-	// key,value pairs (e.g. Key=myKey, Value=myKeyValue. You can include multiple
-	// tags as shown following: Key=myKey, Value=myKeyValue Key=mySecondKey, Value=mySecondKeyValue.
+	// A list of tags to be added to this resource. Tags are comma-separated key,value
+	// pairs (e.g. Key=myKey, Value=myKeyValue. You can include multiple tags as
+	// shown following: Key=myKey, Value=myKeyValue Key=mySecondKey, Value=mySecondKeyValue.
+	// Tags on replication groups will be replicated to all nodes.
 	Tags []*Tag `locationNameList:"Tag" type:"list"`
 
 	// A flag that enables in-transit encryption when set to true.
@@ -10285,7 +10502,7 @@ type CreateReplicationGroupInput struct {
 	// an AuthToken, and a CacheSubnetGroup.
 	TransitEncryptionEnabled *bool `type:"boolean"`
 
-	// The list of user groups to associate with the replication group.
+	// The user group to associate with the replication group.
 	UserGroupIds []*string `min:"1" type:"list"`
 }
 
@@ -10397,6 +10614,12 @@ func (s *CreateReplicationGroupInput) SetGlobalReplicationGroupId(v string) *Cre
 // SetKmsKeyId sets the KmsKeyId field's value.
 func (s *CreateReplicationGroupInput) SetKmsKeyId(v string) *CreateReplicationGroupInput {
 	s.KmsKeyId = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *CreateReplicationGroupInput) SetLogDeliveryConfigurations(v []*LogDeliveryConfigurationRequest) *CreateReplicationGroupInput {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -10562,6 +10785,10 @@ type CreateSnapshotInput struct {
 	//
 	// SnapshotName is a required field
 	SnapshotName *string `type:"string" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
 // String returns the string representation
@@ -10611,6 +10838,12 @@ func (s *CreateSnapshotInput) SetSnapshotName(v string) *CreateSnapshotInput {
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *CreateSnapshotInput) SetTags(v []*Tag) *CreateSnapshotInput {
+	s.Tags = v
+	return s
+}
+
 type CreateSnapshotOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -10638,10 +10871,14 @@ func (s *CreateSnapshotOutput) SetSnapshot(v *Snapshot) *CreateSnapshotOutput {
 type CreateUserGroupInput struct {
 	_ struct{} `type:"structure"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	//
 	// Engine is a required field
 	Engine *string `type:"string" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 
 	// The ID of the user group.
 	//
@@ -10687,6 +10924,12 @@ func (s *CreateUserGroupInput) SetEngine(v string) *CreateUserGroupInput {
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *CreateUserGroupInput) SetTags(v []*Tag) *CreateUserGroupInput {
+	s.Tags = v
+	return s
+}
+
 // SetUserGroupId sets the UserGroupId field's value.
 func (s *CreateUserGroupInput) SetUserGroupId(v string) *CreateUserGroupInput {
 	s.UserGroupId = &v
@@ -10705,7 +10948,7 @@ type CreateUserGroupOutput struct {
 	// The Amazon Resource Name (ARN) of the user group.
 	ARN *string `type:"string"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// A list of updates being applied to the user groups.
@@ -10779,22 +11022,26 @@ func (s *CreateUserGroupOutput) SetUserIds(v []*string) *CreateUserGroupOutput {
 type CreateUserInput struct {
 	_ struct{} `type:"structure"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	//
 	// AccessString is a required field
 	AccessString *string `type:"string" required:"true"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	//
 	// Engine is a required field
 	Engine *string `type:"string" required:"true"`
 
-	// Indicates a password is not required for this user account.
+	// Indicates a password is not required for this user.
 	NoPasswordRequired *bool `type:"boolean"`
 
-	// Passwords used for this user account. You can create up to two passwords
-	// for each user.
+	// Passwords used for this user. You can create up to two passwords for each
+	// user.
 	Passwords []*string `min:"1" type:"list"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 
 	// The ID of the user.
 	//
@@ -10872,6 +11119,12 @@ func (s *CreateUserInput) SetPasswords(v []*string) *CreateUserInput {
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *CreateUserInput) SetTags(v []*Tag) *CreateUserInput {
+	s.Tags = v
+	return s
+}
+
 // SetUserId sets the UserId field's value.
 func (s *CreateUserInput) SetUserId(v string) *CreateUserInput {
 	s.UserId = &v
@@ -10887,16 +11140,16 @@ func (s *CreateUserInput) SetUserName(v string) *CreateUserInput {
 type CreateUserOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) of the user account.
+	// The Amazon Resource Name (ARN) of the user.
 	ARN *string `type:"string"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	AccessString *string `type:"string"`
 
 	// Denotes whether the user requires a password to authenticate.
 	Authentication *Authentication `type:"structure"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
@@ -11014,19 +11267,19 @@ type DecreaseNodeGroupsInGlobalReplicationGroupInput struct {
 
 	// If the value of NodeGroupCount is less than the current number of node groups
 	// (shards), then either NodeGroupsToRemove or NodeGroupsToRetain is required.
-	// NodeGroupsToRemove is a list of NodeGroupIds to remove from the cluster.
-	// ElastiCache for Redis will attempt to remove all node groups listed by NodeGroupsToRemove
+	// GlobalNodeGroupsToRemove is a list of NodeGroupIds to remove from the cluster.
+	// ElastiCache for Redis will attempt to remove all node groups listed by GlobalNodeGroupsToRemove
 	// from the cluster.
 	GlobalNodeGroupsToRemove []*string `locationNameList:"GlobalNodeGroupId" type:"list"`
 
 	// If the value of NodeGroupCount is less than the current number of node groups
 	// (shards), then either NodeGroupsToRemove or NodeGroupsToRetain is required.
-	// NodeGroupsToRemove is a list of NodeGroupIds to remove from the cluster.
-	// ElastiCache for Redis will attempt to remove all node groups listed by NodeGroupsToRemove
+	// GlobalNodeGroupsToRetain is a list of NodeGroupIds to retain from the cluster.
+	// ElastiCache for Redis will attempt to retain all node groups listed by GlobalNodeGroupsToRetain
 	// from the cluster.
 	GlobalNodeGroupsToRetain []*string `locationNameList:"GlobalNodeGroupId" type:"list"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
@@ -11106,7 +11359,7 @@ type DecreaseNodeGroupsInGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -11496,7 +11749,7 @@ func (s DeleteCacheSubnetGroupOutput) GoString() string {
 type DeleteGlobalReplicationGroupInput struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
@@ -11554,7 +11807,7 @@ type DeleteGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -11766,7 +12019,7 @@ type DeleteUserGroupOutput struct {
 	// The Amazon Resource Name (ARN) of the user group.
 	ARN *string `type:"string"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// A list of updates being applied to the user groups.
@@ -11881,16 +12134,16 @@ func (s *DeleteUserInput) SetUserId(v string) *DeleteUserInput {
 type DeleteUserOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) of the user account.
+	// The Amazon Resource Name (ARN) of the user.
 	ARN *string `type:"string"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	AccessString *string `type:"string"`
 
 	// Denotes whether the user requires a password to authenticate.
 	Authentication *Authentication `type:"structure"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
@@ -12077,8 +12330,8 @@ type DescribeCacheEngineVersionsInput struct {
 
 	// The name of a specific cache parameter group family to return details for.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	//
 	// Constraints:
 	//
@@ -12573,8 +12826,8 @@ type DescribeEngineDefaultParametersInput struct {
 
 	// The name of the cache parameter group family.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	//
 	// CacheParameterGroupFamily is a required field
 	CacheParameterGroupFamily *string `type:"string" required:"true"`
@@ -12789,7 +13042,7 @@ func (s *DescribeEventsOutput) SetMarker(v string) *DescribeEventsOutput {
 type DescribeGlobalReplicationGroupsInput struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	GlobalReplicationGroupId *string `type:"string"`
 
 	// An optional marker returned from a prior request. Use this marker for pagination
@@ -12802,7 +13055,7 @@ type DescribeGlobalReplicationGroupsInput struct {
 	// so that the remaining results can be retrieved.
 	MaxRecords *int64 `type:"integer"`
 
-	// Returns the list of members that comprise the Global Datastore.
+	// Returns the list of members that comprise the Global datastore.
 	ShowMemberInfo *bool `type:"boolean"`
 }
 
@@ -12978,9 +13231,8 @@ type DescribeReservedCacheNodesInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -12996,9 +13248,8 @@ type DescribeReservedCacheNodesInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -13130,9 +13381,8 @@ type DescribeReservedCacheNodesOfferingsInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -13148,9 +13398,8 @@ type DescribeReservedCacheNodesOfferingsInput struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -13193,6 +13442,7 @@ type DescribeReservedCacheNodesOfferingsInput struct {
 	// offerings matching the specified offering type.
 	//
 	// Valid Values: "Light Utilization"|"Medium Utilization"|"Heavy Utilization"
+	// |"All Upfront"|"Partial Upfront"| "No Upfront"
 	OfferingType *string `type:"string"`
 
 	// The product description filter value. Use this parameter to show only the
@@ -13885,20 +14135,54 @@ func (s *DescribeUsersOutput) SetUsers(v []*User) *DescribeUsersOutput {
 	return s
 }
 
+// Configuration details of either a CloudWatch Logs destination or Kinesis
+// Data Firehose destination.
+type DestinationDetails struct {
+	_ struct{} `type:"structure"`
+
+	// The configuration details of the CloudWatch Logs destination.
+	CloudWatchLogsDetails *CloudWatchLogsDestinationDetails `type:"structure"`
+
+	// The configuration details of the Kinesis Data Firehose destination.
+	KinesisFirehoseDetails *KinesisFirehoseDestinationDetails `type:"structure"`
+}
+
+// String returns the string representation
+func (s DestinationDetails) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DestinationDetails) GoString() string {
+	return s.String()
+}
+
+// SetCloudWatchLogsDetails sets the CloudWatchLogsDetails field's value.
+func (s *DestinationDetails) SetCloudWatchLogsDetails(v *CloudWatchLogsDestinationDetails) *DestinationDetails {
+	s.CloudWatchLogsDetails = v
+	return s
+}
+
+// SetKinesisFirehoseDetails sets the KinesisFirehoseDetails field's value.
+func (s *DestinationDetails) SetKinesisFirehoseDetails(v *KinesisFirehoseDestinationDetails) *DestinationDetails {
+	s.KinesisFirehoseDetails = v
+	return s
+}
+
 type DisassociateGlobalReplicationGroupInput struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
 
-	// The name of the secondary cluster you wish to remove from the Global Datastore
+	// The name of the secondary cluster you wish to remove from the Global datastore
 	//
 	// ReplicationGroupId is a required field
 	ReplicationGroupId *string `type:"string" required:"true"`
 
-	// The AWS region of secondary cluster you wish to remove from the Global Datastore
+	// The AWS region of secondary cluster you wish to remove from the Global datastore
 	//
 	// ReplicationGroupRegion is a required field
 	ReplicationGroupRegion *string `type:"string" required:"true"`
@@ -13960,7 +14244,7 @@ type DisassociateGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -14067,8 +14351,8 @@ type EngineDefaults struct {
 	// Specifies the name of the cache parameter group family to which the engine
 	// default parameters apply.
 	//
-	// Valid values are: memcached1.4 | memcached1.5 | redis2.6 | redis2.8 | redis3.2
-	// | redis4.0 | redis5.0 | redis6.0 |
+	// Valid values are: memcached1.4 | memcached1.5 | memcached1.6 | redis2.6 |
+	// redis2.8 | redis3.2 | redis4.0 | redis5.0 | redis6.x |
 	CacheParameterGroupFamily *string `type:"string"`
 
 	// Provides an identifier to allow retrieval of paginated results.
@@ -14170,12 +14454,12 @@ func (s *Event) SetSourceType(v string) *Event {
 type FailoverGlobalReplicationGroupInput struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
 
-	// The AWS region of the primary cluster of the Global Datastore
+	// The AWS region of the primary cluster of the Global datastore
 	//
 	// PrimaryRegion is a required field
 	PrimaryRegion *string `type:"string" required:"true"`
@@ -14242,7 +14526,7 @@ type FailoverGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -14357,7 +14641,7 @@ func (s *GlobalNodeGroup) SetSlots(v string) *GlobalNodeGroup {
 // cluster.
 //
 //    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-//    Datastore, which is what you use to associate a secondary cluster.
+//    datastore, which is what you use to associate a secondary cluster.
 type GlobalReplicationGroup struct {
 	_ struct{} `type:"structure"`
 
@@ -14380,10 +14664,10 @@ type GlobalReplicationGroup struct {
 	// Default: false
 	AuthTokenEnabled *bool `type:"boolean"`
 
-	// The cache node type of the Global Datastore
+	// The cache node type of the Global datastore
 	CacheNodeType *string `type:"string"`
 
-	// A flag that indicates whether the Global Datastore is cluster enabled.
+	// A flag that indicates whether the Global datastore is cluster enabled.
 	ClusterEnabled *bool `type:"boolean"`
 
 	// The Elasticache engine. For Redis only.
@@ -14395,22 +14679,25 @@ type GlobalReplicationGroup struct {
 	// Indicates the slot configuration and global identifier for each slice group.
 	GlobalNodeGroups []*GlobalNodeGroup `locationNameList:"GlobalNodeGroup" type:"list"`
 
-	// The optional description of the Global Datastore
+	// The optional description of the Global datastore
 	GlobalReplicationGroupDescription *string `type:"string"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	GlobalReplicationGroupId *string `type:"string"`
 
-	// The replication groups that comprise the Global Datastore.
+	// The replication groups that comprise the Global datastore.
 	Members []*GlobalReplicationGroupMember `locationNameList:"GlobalReplicationGroupMember" type:"list"`
 
-	// The status of the Global Datastore
+	// The status of the Global datastore
 	Status *string `type:"string"`
 
 	// A flag that enables in-transit encryption when set to true. You cannot modify
 	// the value of TransitEncryptionEnabled after the cluster is created. To enable
 	// in-transit encryption on a cluster you must set TransitEncryptionEnabled
 	// to true when you create a cluster.
+	//
+	// Required: Only available when creating a replication group in an Amazon VPC
+	// using redis version 3.2.6, 4.x or later.
 	TransitEncryptionEnabled *bool `type:"boolean"`
 }
 
@@ -14502,15 +14789,15 @@ func (s *GlobalReplicationGroup) SetTransitEncryptionEnabled(v bool) *GlobalRepl
 	return s
 }
 
-// The name of the Global Datastore and role of this replication group in the
-// Global Datastore.
+// The name of the Global datastore and role of this replication group in the
+// Global datastore.
 type GlobalReplicationGroupInfo struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	GlobalReplicationGroupId *string `type:"string"`
 
-	// The role of the replication group in a Global Datastore. Can be primary or
+	// The role of the replication group in a Global datastore. Can be primary or
 	// secondary.
 	GlobalReplicationGroupMemberRole *string `type:"string"`
 }
@@ -14537,7 +14824,7 @@ func (s *GlobalReplicationGroupInfo) SetGlobalReplicationGroupMemberRole(v strin
 	return s
 }
 
-// A member of a Global Datastore. It contains the Replication Group Id, the
+// A member of a Global datastore. It contains the Replication Group Id, the
 // AWS region and the role of the replication group.
 type GlobalReplicationGroupMember struct {
 	_ struct{} `type:"structure"`
@@ -14545,10 +14832,10 @@ type GlobalReplicationGroupMember struct {
 	// Indicates whether automatic failover is enabled for the replication group.
 	AutomaticFailover *string `type:"string" enum:"AutomaticFailoverStatus"`
 
-	// The replication group id of the Global Datastore member.
+	// The replication group id of the Global datastore member.
 	ReplicationGroupId *string `type:"string"`
 
-	// The AWS region of the Global Datastore member.
+	// The AWS region of the Global datastore member.
 	ReplicationGroupRegion *string `type:"string"`
 
 	// Indicates the role of the replication group, primary or secondary.
@@ -14607,7 +14894,7 @@ type IncreaseNodeGroupsInGlobalReplicationGroupInput struct {
 	// ApplyImmediately is a required field
 	ApplyImmediately *bool `type:"boolean" required:"true"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
@@ -14618,7 +14905,7 @@ type IncreaseNodeGroupsInGlobalReplicationGroupInput struct {
 	NodeGroupCount *int64 `type:"integer" required:"true"`
 
 	// Describes the replication group IDs, the AWS regions where they are stored
-	// and the shard configuration for each that comprise the Global Datastore
+	// and the shard configuration for each that comprise the Global datastore
 	RegionalConfigurations []*RegionalConfiguration `locationNameList:"RegionalConfiguration" type:"list"`
 }
 
@@ -14694,7 +14981,7 @@ type IncreaseNodeGroupsInGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -14821,6 +15108,30 @@ func (s IncreaseReplicaCountOutput) GoString() string {
 // SetReplicationGroup sets the ReplicationGroup field's value.
 func (s *IncreaseReplicaCountOutput) SetReplicationGroup(v *ReplicationGroup) *IncreaseReplicaCountOutput {
 	s.ReplicationGroup = v
+	return s
+}
+
+// The configuration details of the Kinesis Data Firehose destination.
+type KinesisFirehoseDestinationDetails struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the Kinesis Data Firehose delivery stream.
+	DeliveryStream *string `type:"string"`
+}
+
+// String returns the string representation
+func (s KinesisFirehoseDestinationDetails) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s KinesisFirehoseDestinationDetails) GoString() string {
+	return s.String()
+}
+
+// SetDeliveryStream sets the DeliveryStream field's value.
+func (s *KinesisFirehoseDestinationDetails) SetDeliveryStream(v string) *KinesisFirehoseDestinationDetails {
+	s.DeliveryStream = &v
 	return s
 }
 
@@ -14952,6 +15263,138 @@ func (s *ListTagsForResourceInput) SetResourceName(v string) *ListTagsForResourc
 	return s
 }
 
+// Returns the destination, format and type of the logs.
+type LogDeliveryConfiguration struct {
+	_ struct{} `type:"structure"`
+
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `type:"structure"`
+
+	// Returns the destination type, either cloudwatch-logs or kinesis-firehose.
+	DestinationType *string `type:"string" enum:"DestinationType"`
+
+	// Returns the log format, either JSON or TEXT.
+	LogFormat *string `type:"string" enum:"LogFormat"`
+
+	// Refers to slow-log (https://redis.io/commands/slowlog).
+	LogType *string `type:"string" enum:"LogType"`
+
+	// Returns an error message for the log delivery configuration.
+	Message *string `type:"string"`
+
+	// Returns the log delivery configuration status. Values are one of enabling
+	// | disabling | modifying | active | error
+	Status *string `type:"string" enum:"LogDeliveryConfigurationStatus"`
+}
+
+// String returns the string representation
+func (s LogDeliveryConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s LogDeliveryConfiguration) GoString() string {
+	return s.String()
+}
+
+// SetDestinationDetails sets the DestinationDetails field's value.
+func (s *LogDeliveryConfiguration) SetDestinationDetails(v *DestinationDetails) *LogDeliveryConfiguration {
+	s.DestinationDetails = v
+	return s
+}
+
+// SetDestinationType sets the DestinationType field's value.
+func (s *LogDeliveryConfiguration) SetDestinationType(v string) *LogDeliveryConfiguration {
+	s.DestinationType = &v
+	return s
+}
+
+// SetLogFormat sets the LogFormat field's value.
+func (s *LogDeliveryConfiguration) SetLogFormat(v string) *LogDeliveryConfiguration {
+	s.LogFormat = &v
+	return s
+}
+
+// SetLogType sets the LogType field's value.
+func (s *LogDeliveryConfiguration) SetLogType(v string) *LogDeliveryConfiguration {
+	s.LogType = &v
+	return s
+}
+
+// SetMessage sets the Message field's value.
+func (s *LogDeliveryConfiguration) SetMessage(v string) *LogDeliveryConfiguration {
+	s.Message = &v
+	return s
+}
+
+// SetStatus sets the Status field's value.
+func (s *LogDeliveryConfiguration) SetStatus(v string) *LogDeliveryConfiguration {
+	s.Status = &v
+	return s
+}
+
+// Specifies the destination, format and type of the logs.
+type LogDeliveryConfigurationRequest struct {
+	_ struct{} `type:"structure"`
+
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `type:"structure"`
+
+	// Specify either cloudwatch-logs or kinesis-firehose as the destination type.
+	DestinationType *string `type:"string" enum:"DestinationType"`
+
+	// Specify if log delivery is enabled. Default true.
+	Enabled *bool `type:"boolean"`
+
+	// Specifies either JSON or TEXT
+	LogFormat *string `type:"string" enum:"LogFormat"`
+
+	// Refers to slow-log (https://redis.io/commands/slowlog).
+	LogType *string `type:"string" enum:"LogType"`
+}
+
+// String returns the string representation
+func (s LogDeliveryConfigurationRequest) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s LogDeliveryConfigurationRequest) GoString() string {
+	return s.String()
+}
+
+// SetDestinationDetails sets the DestinationDetails field's value.
+func (s *LogDeliveryConfigurationRequest) SetDestinationDetails(v *DestinationDetails) *LogDeliveryConfigurationRequest {
+	s.DestinationDetails = v
+	return s
+}
+
+// SetDestinationType sets the DestinationType field's value.
+func (s *LogDeliveryConfigurationRequest) SetDestinationType(v string) *LogDeliveryConfigurationRequest {
+	s.DestinationType = &v
+	return s
+}
+
+// SetEnabled sets the Enabled field's value.
+func (s *LogDeliveryConfigurationRequest) SetEnabled(v bool) *LogDeliveryConfigurationRequest {
+	s.Enabled = &v
+	return s
+}
+
+// SetLogFormat sets the LogFormat field's value.
+func (s *LogDeliveryConfigurationRequest) SetLogFormat(v string) *LogDeliveryConfigurationRequest {
+	s.LogFormat = &v
+	return s
+}
+
+// SetLogType sets the LogType field's value.
+func (s *LogDeliveryConfigurationRequest) SetLogType(v string) *LogDeliveryConfigurationRequest {
+	s.LogType = &v
+	return s
+}
+
 // Represents the input of a ModifyCacheCluster operation.
 type ModifyCacheClusterInput struct {
 	_ struct{} `type:"structure"`
@@ -15005,7 +15448,7 @@ type ModifyCacheClusterInput struct {
 	//
 	//    * Set
 	//
-	// For more information, see Authenticating Users with Redis AUTH (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth.html)
+	// For more information, see Authenticating Users with Redis AUTH (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth.html)
 	AuthTokenUpdateStrategy *string `type:"string" enum:"AuthTokenUpdateStrategyType"`
 
 	// This parameter is currently disabled.
@@ -15055,14 +15498,18 @@ type ModifyCacheClusterInput struct {
 	// it anew with the earlier engine version.
 	EngineVersion *string `type:"string"`
 
+	// Specifies the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `locationNameList:"LogDeliveryConfigurationRequest" type:"list"`
+
+	//
+	// This option is only supported on Memcached clusters.
+	//
 	// The list of Availability Zones where the new Memcached cache nodes are created.
 	//
 	// This parameter is only valid when NumCacheNodes in the request is greater
 	// than the sum of the number of active cache nodes and the number of cache
 	// nodes pending creation (which may be zero). The number of Availability Zones
 	// supplied in this list must match the cache nodes being added in this request.
-	//
-	// This option is only supported on Memcached clusters.
 	//
 	// Scenarios:
 	//
@@ -15128,7 +15575,7 @@ type ModifyCacheClusterInput struct {
 	// to provide the IDs of the specific cache nodes to remove.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	//
 	// Adding or removing Memcached cache nodes can be applied immediately or as
 	// a pending operation (see ApplyImmediately).
@@ -15278,6 +15725,12 @@ func (s *ModifyCacheClusterInput) SetCacheSecurityGroupNames(v []*string) *Modif
 // SetEngineVersion sets the EngineVersion field's value.
 func (s *ModifyCacheClusterInput) SetEngineVersion(v string) *ModifyCacheClusterInput {
 	s.EngineVersion = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *ModifyCacheClusterInput) SetLogDeliveryConfigurations(v []*LogDeliveryConfigurationRequest) *ModifyCacheClusterInput {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -15510,17 +15963,21 @@ type ModifyGlobalReplicationGroupInput struct {
 	// primary if the existing primary encounters a failure.
 	AutomaticFailoverEnabled *bool `type:"boolean"`
 
-	// A valid cache node type that you want to scale this Global Datastore to.
+	// A valid cache node type that you want to scale this Global datastore to.
 	CacheNodeType *string `type:"string"`
 
+	// The name of the cache parameter group to use with the Global datastore. It
+	// must be compatible with the major engine version used by the Global datastore.
+	CacheParameterGroupName *string `type:"string"`
+
 	// The upgraded version of the cache engine to be run on the clusters in the
-	// Global Datastore.
+	// Global datastore.
 	EngineVersion *string `type:"string"`
 
-	// A description of the Global Datastore
+	// A description of the Global datastore
 	GlobalReplicationGroupDescription *string `type:"string"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
@@ -15570,6 +16027,12 @@ func (s *ModifyGlobalReplicationGroupInput) SetCacheNodeType(v string) *ModifyGl
 	return s
 }
 
+// SetCacheParameterGroupName sets the CacheParameterGroupName field's value.
+func (s *ModifyGlobalReplicationGroupInput) SetCacheParameterGroupName(v string) *ModifyGlobalReplicationGroupInput {
+	s.CacheParameterGroupName = &v
+	return s
+}
+
 // SetEngineVersion sets the EngineVersion field's value.
 func (s *ModifyGlobalReplicationGroupInput) SetEngineVersion(v string) *ModifyGlobalReplicationGroupInput {
 	s.EngineVersion = &v
@@ -15597,7 +16060,7 @@ type ModifyGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -15654,7 +16117,7 @@ type ModifyReplicationGroupInput struct {
 	//
 	//    * Set
 	//
-	// For more information, see Authenticating Users with Redis AUTH (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth.html)
+	// For more information, see Authenticating Users with Redis AUTH (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/auth.html)
 	AuthTokenUpdateStrategy *string `type:"string" enum:"AuthTokenUpdateStrategyType"`
 
 	// This parameter is currently disabled.
@@ -15695,8 +16158,11 @@ type ModifyReplicationGroupInput struct {
 	// and create it anew with the earlier engine version.
 	EngineVersion *string `type:"string"`
 
-	// A flag indicating if you have Multi-AZ enabled to enhance fault tolerance.
-	// For more information, see Minimizing Downtime: Multi-AZ (http://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/AutoFailover.html).
+	// Specifies the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfigurationRequest `locationNameList:"LogDeliveryConfigurationRequest" type:"list"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
 	MultiAZEnabled *bool `type:"boolean"`
 
 	// Deprecated. This parameter is not used.
@@ -15786,11 +16252,11 @@ type ModifyReplicationGroupInput struct {
 	// groups.
 	SnapshottingClusterId *string `type:"string"`
 
-	// A list of user group IDs.
+	// The user group you are associating with the replication group.
 	UserGroupIdsToAdd []*string `type:"list"`
 
-	// A list of users groups to remove, meaning the users in the group no longer
-	// can access thereplication group.
+	// The user group to remove, meaning the users in the group no longer can access
+	// the replication group.
 	UserGroupIdsToRemove []*string `type:"list"`
 }
 
@@ -15868,6 +16334,12 @@ func (s *ModifyReplicationGroupInput) SetCacheSecurityGroupNames(v []*string) *M
 // SetEngineVersion sets the EngineVersion field's value.
 func (s *ModifyReplicationGroupInput) SetEngineVersion(v string) *ModifyReplicationGroupInput {
 	s.EngineVersion = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *ModifyReplicationGroupInput) SetLogDeliveryConfigurations(v []*LogDeliveryConfigurationRequest) *ModifyReplicationGroupInput {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -16201,7 +16673,7 @@ type ModifyUserGroupOutput struct {
 	// The Amazon Resource Name (ARN) of the user group.
 	ARN *string `type:"string"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// A list of updates being applied to the user groups.
@@ -16275,16 +16747,16 @@ func (s *ModifyUserGroupOutput) SetUserIds(v []*string) *ModifyUserGroupOutput {
 type ModifyUserInput struct {
 	_ struct{} `type:"structure"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	AccessString *string `type:"string"`
 
 	// Adds additional user permissions to the access string.
 	AppendAccessString *string `type:"string"`
 
-	// Indicates no password is required for the user account.
+	// Indicates no password is required for the user.
 	NoPasswordRequired *bool `type:"boolean"`
 
-	// The passwords belonging to the user account. You are allowed up to two.
+	// The passwords belonging to the user. You are allowed up to two.
 	Passwords []*string `min:"1" type:"list"`
 
 	// The ID of the user.
@@ -16355,16 +16827,16 @@ func (s *ModifyUserInput) SetUserId(v string) *ModifyUserInput {
 type ModifyUserOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) of the user account.
+	// The Amazon Resource Name (ARN) of the user.
 	ARN *string `type:"string"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	AccessString *string `type:"string"`
 
 	// Denotes whether the user requires a password to authenticate.
 	Authentication *Authentication `type:"structure"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
@@ -16529,7 +17001,7 @@ type NodeGroupConfiguration struct {
 	// launched.
 	PrimaryAvailabilityZone *string `type:"string"`
 
-	// The output ARN of the primary node.
+	// The outpost ARN of the primary node.
 	PrimaryOutpostArn *string `type:"string"`
 
 	// A list of Availability Zones to be used for the read replicas. The number
@@ -17067,6 +17539,58 @@ func (s *ParameterNameValue) SetParameterValue(v string) *ParameterNameValue {
 	return s
 }
 
+// The log delivery configurations being modified
+type PendingLogDeliveryConfiguration struct {
+	_ struct{} `type:"structure"`
+
+	// Configuration details of either a CloudWatch Logs destination or Kinesis
+	// Data Firehose destination.
+	DestinationDetails *DestinationDetails `type:"structure"`
+
+	// Returns the destination type, either CloudWatch Logs or Kinesis Data Firehose.
+	DestinationType *string `type:"string" enum:"DestinationType"`
+
+	// Returns the log format, either JSON or TEXT
+	LogFormat *string `type:"string" enum:"LogFormat"`
+
+	// Refers to slow-log (https://redis.io/commands/slowlog).
+	LogType *string `type:"string" enum:"LogType"`
+}
+
+// String returns the string representation
+func (s PendingLogDeliveryConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PendingLogDeliveryConfiguration) GoString() string {
+	return s.String()
+}
+
+// SetDestinationDetails sets the DestinationDetails field's value.
+func (s *PendingLogDeliveryConfiguration) SetDestinationDetails(v *DestinationDetails) *PendingLogDeliveryConfiguration {
+	s.DestinationDetails = v
+	return s
+}
+
+// SetDestinationType sets the DestinationType field's value.
+func (s *PendingLogDeliveryConfiguration) SetDestinationType(v string) *PendingLogDeliveryConfiguration {
+	s.DestinationType = &v
+	return s
+}
+
+// SetLogFormat sets the LogFormat field's value.
+func (s *PendingLogDeliveryConfiguration) SetLogFormat(v string) *PendingLogDeliveryConfiguration {
+	s.LogFormat = &v
+	return s
+}
+
+// SetLogType sets the LogType field's value.
+func (s *PendingLogDeliveryConfiguration) SetLogType(v string) *PendingLogDeliveryConfiguration {
+	s.LogType = &v
+	return s
+}
+
 // A group of settings that are applied to the cluster in the future, or that
 // are currently being applied.
 type PendingModifiedValues struct {
@@ -17085,10 +17609,13 @@ type PendingModifiedValues struct {
 	// The new cache engine version that the cluster runs.
 	EngineVersion *string `type:"string"`
 
+	// The log delivery configurations being modified
+	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `locationName:"PendingLogDeliveryConfiguration" type:"list"`
+
 	// The new number of cache nodes for the cluster.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	NumCacheNodes *int64 `type:"integer"`
 }
 
@@ -17123,6 +17650,12 @@ func (s *PendingModifiedValues) SetCacheNodeType(v string) *PendingModifiedValue
 // SetEngineVersion sets the EngineVersion field's value.
 func (s *PendingModifiedValues) SetEngineVersion(v string) *PendingModifiedValues {
 	s.EngineVersion = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *PendingModifiedValues) SetLogDeliveryConfigurations(v []*PendingLogDeliveryConfiguration) *PendingModifiedValues {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -17207,6 +17740,10 @@ type PurchaseReservedCacheNodesOfferingInput struct {
 	//
 	// ReservedCacheNodesOfferingId is a required field
 	ReservedCacheNodesOfferingId *string `type:"string" required:"true"`
+
+	// A list of tags to be added to this resource. A tag is a key-value pair. A
+	// tag key must be accompanied by a tag value, although null is accepted.
+	Tags []*Tag `locationNameList:"Tag" type:"list"`
 }
 
 // String returns the string representation
@@ -17250,6 +17787,12 @@ func (s *PurchaseReservedCacheNodesOfferingInput) SetReservedCacheNodesOfferingI
 	return s
 }
 
+// SetTags sets the Tags field's value.
+func (s *PurchaseReservedCacheNodesOfferingInput) SetTags(v []*Tag) *PurchaseReservedCacheNodesOfferingInput {
+	s.Tags = v
+	return s
+}
+
 type PurchaseReservedCacheNodesOfferingOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -17281,7 +17824,7 @@ type RebalanceSlotsInGlobalReplicationGroupInput struct {
 	// ApplyImmediately is a required field
 	ApplyImmediately *bool `type:"boolean" required:"true"`
 
-	// The name of the Global Datastore
+	// The name of the Global datastore
 	//
 	// GlobalReplicationGroupId is a required field
 	GlobalReplicationGroupId *string `type:"string" required:"true"`
@@ -17334,7 +17877,7 @@ type RebalanceSlotsInGlobalReplicationGroupOutput struct {
 	// cluster.
 	//
 	//    * The GlobalReplicationGroupIdSuffix represents the name of the Global
-	//    Datastore, which is what you use to associate a secondary cluster.
+	//    datastore, which is what you use to associate a secondary cluster.
 	GlobalReplicationGroup *GlobalReplicationGroup `type:"structure"`
 }
 
@@ -17649,12 +18192,15 @@ type ReplicationGroup struct {
 	// The user supplied description of the replication group.
 	Description *string `type:"string"`
 
-	// The name of the Global Datastore and role of this replication group in the
-	// Global Datastore.
+	// The name of the Global datastore and role of this replication group in the
+	// Global datastore.
 	GlobalReplicationGroupInfo *GlobalReplicationGroupInfo `type:"structure"`
 
 	// The ID of the KMS key used to encrypt the disk in the cluster.
 	KmsKeyId *string `type:"string"`
+
+	// Returns the destination, format and type of the logs.
+	LogDeliveryConfigurations []*LogDeliveryConfiguration `locationNameList:"LogDeliveryConfiguration" type:"list"`
 
 	// The names of all the cache clusters that are part of this replication group.
 	MemberClusters []*string `locationNameList:"ClusterId" type:"list"`
@@ -17798,6 +18344,12 @@ func (s *ReplicationGroup) SetKmsKeyId(v string) *ReplicationGroup {
 	return s
 }
 
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *ReplicationGroup) SetLogDeliveryConfigurations(v []*LogDeliveryConfiguration) *ReplicationGroup {
+	s.LogDeliveryConfigurations = v
+	return s
+}
+
 // SetMemberClusters sets the MemberClusters field's value.
 func (s *ReplicationGroup) SetMemberClusters(v []*string) *ReplicationGroup {
 	s.MemberClusters = v
@@ -17881,6 +18433,9 @@ type ReplicationGroupPendingModifiedValues struct {
 	// Indicates the status of automatic failover for this Redis replication group.
 	AutomaticFailoverStatus *string `type:"string" enum:"PendingAutomaticFailoverStatus"`
 
+	// The log delivery configurations being modified
+	LogDeliveryConfigurations []*PendingLogDeliveryConfiguration `locationName:"PendingLogDeliveryConfiguration" type:"list"`
+
 	// The primary cluster ID that is applied immediately (if --apply-immediately
 	// was specified), or during the next maintenance window.
 	PrimaryClusterId *string `type:"string"`
@@ -17911,6 +18466,12 @@ func (s *ReplicationGroupPendingModifiedValues) SetAuthTokenStatus(v string) *Re
 // SetAutomaticFailoverStatus sets the AutomaticFailoverStatus field's value.
 func (s *ReplicationGroupPendingModifiedValues) SetAutomaticFailoverStatus(v string) *ReplicationGroupPendingModifiedValues {
 	s.AutomaticFailoverStatus = &v
+	return s
+}
+
+// SetLogDeliveryConfigurations sets the LogDeliveryConfigurations field's value.
+func (s *ReplicationGroupPendingModifiedValues) SetLogDeliveryConfigurations(v []*PendingLogDeliveryConfiguration) *ReplicationGroupPendingModifiedValues {
+	s.LogDeliveryConfigurations = v
 	return s
 }
 
@@ -17949,9 +18510,8 @@ type ReservedCacheNode struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -17967,9 +18527,8 @@ type ReservedCacheNode struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -18126,9 +18685,8 @@ type ReservedCacheNodesOffering struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -18144,9 +18702,8 @@ type ReservedCacheNodesOffering struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -18695,9 +19252,8 @@ type Snapshot struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.m6g.large, cache.m6g.xlarge, cache.m6g.2xlarge,
 	//    cache.m6g.4xlarge, cache.m6g.8xlarge, cache.m6g.12xlarge, cache.m6g.16xlarge
-	//    At this time, M6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. M5 node
-	//    types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    M5 node types: cache.m5.large, cache.m5.xlarge, cache.m5.2xlarge, cache.m5.4xlarge,
 	//    cache.m5.12xlarge, cache.m5.24xlarge M4 node types: cache.m4.large, cache.m4.xlarge,
 	//    cache.m4.2xlarge, cache.m4.4xlarge, cache.m4.10xlarge T3 node types: cache.t3.micro,
 	//    cache.t3.small, cache.t3.medium T2 node types: cache.t2.micro, cache.t2.small,
@@ -18713,9 +19269,8 @@ type Snapshot struct {
 	//    for Redis engine version 5.0.6 onward and for Memcached engine version
 	//    1.5.16 onward). cache.r6g.large, cache.r6g.xlarge, cache.r6g.2xlarge,
 	//    cache.r6g.4xlarge, cache.r6g.8xlarge, cache.r6g.12xlarge, cache.r6g.16xlarge
-	//    At this time, R6g node types are available in the following regions: us-east-1,
-	//    us-west-2, us-east-2, eu-central-1, eu-west-1 and ap-northeast-1. R5 node
-	//    types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
+	//    For region availability, see Supported Node Types (https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html#CacheNodes.SupportedTypesByRegion)
+	//    R5 node types: cache.r5.large, cache.r5.xlarge, cache.r5.2xlarge, cache.r5.4xlarge,
 	//    cache.r5.12xlarge, cache.r5.24xlarge R4 node types: cache.r4.large, cache.r4.xlarge,
 	//    cache.r4.2xlarge, cache.r4.4xlarge, cache.r4.8xlarge, cache.r4.16xlarge
 	//    Previous generation: (not recommended) M2 node types: cache.m2.xlarge,
@@ -18755,7 +19310,7 @@ type Snapshot struct {
 	// The number of cache nodes in the source cluster.
 	//
 	// For clusters running Redis, this value must be 1. For clusters running Memcached,
-	// this value must be between 1 and 20.
+	// this value must be between 1 and 40.
 	NumCacheNodes *int64 `type:"integer"`
 
 	// The number of node groups (shards) in this snapshot. When restoring from
@@ -19154,9 +19709,12 @@ func (s *SubnetOutpost) SetSubnetOutpostArn(v string) *SubnetOutpost {
 	return s
 }
 
-// A cost allocation Tag that can be added to an ElastiCache cluster or replication
-// group. Tags are composed of a Key/Value pair. A tag with a null Value is
-// permitted.
+// A tag that can be added to an ElastiCache cluster or replication group. Tags
+// are composed of a Key/Value pair. You can use tags to categorize and track
+// all your ElastiCache resources, with the exception of global replication
+// group. When you add or remove tags on replication groups, those actions will
+// be replicated to all nodes in the replication group. A tag with a null Value
+// is permitted.
 type Tag struct {
 	_ struct{} `type:"structure"`
 
@@ -19194,7 +19752,7 @@ func (s *Tag) SetValue(v string) *Tag {
 type TagListMessage struct {
 	_ struct{} `type:"structure"`
 
-	// A list of cost allocation tags as key-value pairs.
+	// A list of tags as key-value pairs.
 	TagList []*Tag `locationNameList:"Tag" type:"list"`
 }
 
@@ -19566,16 +20124,16 @@ func (s *UpdateAction) SetUpdateActionStatusModifiedDate(v time.Time) *UpdateAct
 type User struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) of the user account.
+	// The Amazon Resource Name (ARN) of the user.
 	ARN *string `type:"string"`
 
-	// Access permissions string used for this user account.
+	// Access permissions string used for this user.
 	AccessString *string `type:"string"`
 
 	// Denotes whether the user requires a password to authenticate.
 	Authentication *Authentication `type:"structure"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// Indicates the user status. Can be "active", "modifying" or "deleting".
@@ -19655,7 +20213,7 @@ type UserGroup struct {
 	// The Amazon Resource Name (ARN) of the user group.
 	ARN *string `type:"string"`
 
-	// Must be Redis.
+	// The current supported value is Redis.
 	Engine *string `type:"string"`
 
 	// A list of updates being applied to the user groups.
@@ -19733,7 +20291,7 @@ type UserGroupPendingChanges struct {
 	// The list of user IDs to add.
 	UserIdsToAdd []*string `type:"list"`
 
-	// The list of user group IDs ro remove.
+	// The list of user IDs to remove.
 	UserIdsToRemove []*string `type:"list"`
 }
 
@@ -19897,6 +20455,78 @@ func ChangeType_Values() []string {
 	return []string{
 		ChangeTypeImmediate,
 		ChangeTypeRequiresReboot,
+	}
+}
+
+const (
+	// DestinationTypeCloudwatchLogs is a DestinationType enum value
+	DestinationTypeCloudwatchLogs = "cloudwatch-logs"
+
+	// DestinationTypeKinesisFirehose is a DestinationType enum value
+	DestinationTypeKinesisFirehose = "kinesis-firehose"
+)
+
+// DestinationType_Values returns all elements of the DestinationType enum
+func DestinationType_Values() []string {
+	return []string{
+		DestinationTypeCloudwatchLogs,
+		DestinationTypeKinesisFirehose,
+	}
+}
+
+const (
+	// LogDeliveryConfigurationStatusActive is a LogDeliveryConfigurationStatus enum value
+	LogDeliveryConfigurationStatusActive = "active"
+
+	// LogDeliveryConfigurationStatusEnabling is a LogDeliveryConfigurationStatus enum value
+	LogDeliveryConfigurationStatusEnabling = "enabling"
+
+	// LogDeliveryConfigurationStatusModifying is a LogDeliveryConfigurationStatus enum value
+	LogDeliveryConfigurationStatusModifying = "modifying"
+
+	// LogDeliveryConfigurationStatusDisabling is a LogDeliveryConfigurationStatus enum value
+	LogDeliveryConfigurationStatusDisabling = "disabling"
+
+	// LogDeliveryConfigurationStatusError is a LogDeliveryConfigurationStatus enum value
+	LogDeliveryConfigurationStatusError = "error"
+)
+
+// LogDeliveryConfigurationStatus_Values returns all elements of the LogDeliveryConfigurationStatus enum
+func LogDeliveryConfigurationStatus_Values() []string {
+	return []string{
+		LogDeliveryConfigurationStatusActive,
+		LogDeliveryConfigurationStatusEnabling,
+		LogDeliveryConfigurationStatusModifying,
+		LogDeliveryConfigurationStatusDisabling,
+		LogDeliveryConfigurationStatusError,
+	}
+}
+
+const (
+	// LogFormatText is a LogFormat enum value
+	LogFormatText = "text"
+
+	// LogFormatJson is a LogFormat enum value
+	LogFormatJson = "json"
+)
+
+// LogFormat_Values returns all elements of the LogFormat enum
+func LogFormat_Values() []string {
+	return []string{
+		LogFormatText,
+		LogFormatJson,
+	}
+}
+
+const (
+	// LogTypeSlowLog is a LogType enum value
+	LogTypeSlowLog = "slow-log"
+)
+
+// LogType_Values returns all elements of the LogType enum
+func LogType_Values() []string {
+	return []string{
+		LogTypeSlowLog,
 	}
 }
 

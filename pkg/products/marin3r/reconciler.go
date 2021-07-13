@@ -3,8 +3,9 @@ package marin3r
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"strconv"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
@@ -292,7 +293,7 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 	ns := r.installation.Namespace
 
 	redisName := fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name)
-	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, true, func(cr metav1.Object) error {
+	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, false, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})

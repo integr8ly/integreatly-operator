@@ -3,8 +3,8 @@ package aws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -276,7 +276,7 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 	}
 
 	// check if any modifications are required to bring the elasticache instance up to date with the strategy map.
-	modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger, r.Spec.ApplyImmediately)
+	modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger)
 	if err != nil {
 		errMsg := "failed to build elasticache modify strategy"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -310,9 +310,9 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 		}
 	}
 
-	err = p.applyCriticalSecurityUpdates(cacheSvc, foundCache.ReplicationGroupId, serviceUpdates, r.Spec.ApplyImmediately)
+	err = p.checkSpecifiedSecurityUpdates(cacheSvc, foundCache, serviceUpdates)
 	if err != nil {
-		logrus.Info("there was an error applying critical security updates")
+		logrus.Errorf("there was an error applying critical security updates, %v", err)
 	}
 
 	primaryEndpoint := foundCache.NodeGroups[0].PrimaryEndpoint
@@ -644,7 +644,7 @@ func (p *RedisProvider) isLastResource(ctx context.Context, namespace string) (b
 // if modifications are required, a modify input struct will be returned with all proposed changes.
 //
 // if no modifications are required, nil will be returned.
-func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry, applyImmediately bool) (*elasticache.ModifyReplicationGroupInput, error) {
+func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry) (*elasticache.ModifyReplicationGroupInput, error) {
 	// setup logger.
 	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
 	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
@@ -741,9 +741,6 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 			modifyInput.SnapshotWindow = elasticacheConfig.SnapshotWindow
 			updateFound = true
 		}
-
-		// ApplyImmediately flag is controlled by the redis cr.Spec.applyImmediately flag
-		modifyInput.ApplyImmediately = aws.Bool(applyImmediately)
 	}
 
 	if updateFound {
@@ -1088,91 +1085,96 @@ func replicationGroupStatusIsHealthy(cache *elasticache.ReplicationGroup) bool {
 	return resources.Contains(healthyAWSReplicationGroupStatuses, *cache.Status)
 }
 
-func (p *RedisProvider) applyCriticalSecurityUpdates(cacheSvc elasticacheiface.ElastiCacheAPI, replicationGroupId *string, serviceUpdates *ServiceUpdate, applyImmediately bool) error {
-	logger := p.Logger.WithField("action", "applyCriticalSecurityUpdates")
+//this function is responsible for checking if there are any critical updates which are specified in the config map
+//it gets the updateactions for a given Elasticache from AWS
+//it will loop through them and check if they are specified
+//if they are it will apply service update
+//if the applied update is critical security update, it will apply it immediately
+func (p *RedisProvider) checkSpecifiedSecurityUpdates(cacheSvc elasticacheiface.ElastiCacheAPI, replicationGroup *elasticache.ReplicationGroup, specifiedUpdates *ServiceUpdate) error {
+	logger := p.Logger.WithField("action", "checkSpecifiedSecurityUpdates")
 	ServiceUpdateStatusAvailable := elasticache.ServiceUpdateStatusAvailable
 
 	updateActions, err := cacheSvc.DescribeUpdateActions(&elasticache.DescribeUpdateActionsInput{
-		ReplicationGroupIds: []*string{replicationGroupId},
+		ReplicationGroupIds: []*string{replicationGroup.ReplicationGroupId},
 		ServiceUpdateStatus: []*string{&ServiceUpdateStatusAvailable},
 	})
 
 	if err != nil {
 		logger.Errorf("failed to get elasticache service updates: %v", err)
-		// NOT returning an error to avoid problems with this code until it is sufficiently tested
 		return err
-		// TODO: refactor to bubble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
 	}
 
+	encounteredError := false
 	// Filter list of available updates down to Available Critical Security updates only
-	var acceptableUpdates []*elasticache.UpdateAction
 	for _, update := range updateActions.UpdateActions {
-		// first check if the available update action has not been applied already
-		// if it has been applied log the current status and return if upgrade is in progress
-		// if it wasn't applied and applyImmediately is set to true then check if it's critical security update and add it to the list of acceptable updates
-		// if applyImmediately is false loop through the list of service updates specified in the CRO configuration and add matches to the list of acceptable updates.
+		for _, specifiedUpdate := range specifiedUpdates.updates {
+			if specifiedUpdate == *update.ServiceUpdateName {
+				logger.Infof("found specified ServiceUpdate '%s' which matches '%s' ServiceUpdate in aws", specifiedUpdate, *update.ServiceUpdateName)
+				logger.Infof("Checking status of Update Action = %s ", resources.SafeStringDereference(update.ServiceUpdateName))
+				logger.Infof("UpdateActionStatus = %s ", resources.SafeStringDereference(update.UpdateActionStatus))
+				logger.Infof("ServiceUpdateSeverity = %s ", resources.SafeStringDereference(update.ServiceUpdateSeverity))
+				logger.Infof("ServiceUpdateStatus = %s ", resources.SafeStringDereference(update.ServiceUpdateStatus))
 
-		if *update.UpdateActionStatus != elasticache.UpdateActionStatusNotApplied {
-			if *update.UpdateActionStatus == elasticache.UpdateActionStatusComplete {
-				logrus.Infof("Service update %s complete on the redis instance %s", resources.SafeStringDereference(update.ServiceUpdateName), *replicationGroupId)
-			} else {
-				// Log current status of upgrades that are applied but not completed
-				logger.Warnf("Service update in progress. Redis instance %s Service update name: %s Current status: %s", *replicationGroupId, resources.SafeStringDereference(update.ServiceUpdateName), resources.SafeStringDereference(update.UpdateActionStatus))
-				// TODO: once this code has been proven, add StatusMessage to the return value
-				return nil
-			}
-			continue
-		}
+				if *update.ServiceUpdateStatus == elasticache.ServiceUpdateStatusAvailable &&
+					validServiceUpdateStates(resources.SafeStringDereference(update.UpdateActionStatus)) {
+					logger.Warnf("Commencing service update %s of Elasticache (Redis) instance %s", resources.SafeStringDereference(update.ServiceUpdateName), *replicationGroup.ReplicationGroupId)
+					err := p.applyServiceUpdate(cacheSvc, replicationGroup.ReplicationGroupId, update.ServiceUpdateName)
+					if err != nil {
+						encounteredError = true
+						logger.Errorf("error returned when running batchApplyUpdate function for update %s with err %v", *update.ServiceUpdateName, err)
+						break
+					}
 
-		if applyImmediately {
-			if *update.ServiceUpdateSeverity == elasticache.ServiceUpdateSeverityCritical &&
-				*update.ServiceUpdateType == elasticache.ServiceUpdateTypeSecurityUpdate &&
-				*update.ServiceUpdateStatus == elasticache.ServiceUpdateStatusAvailable {
+					if *update.ServiceUpdateSeverity == elasticache.ServiceUpdateSeverityCritical &&
+						*update.ServiceUpdateType == elasticache.ServiceUpdateTypeSecurityUpdate {
+						// this should push the changes out immediately rather than waiting for the maintenance window.
+						logger.Warnf("Setting 'ApplyImmediately' flag to 'true' on the Elasticache instance %s in order to apply the service update immediately", *replicationGroup.ReplicationGroupId)
+						if _, err := cacheSvc.ModifyReplicationGroup(&elasticache.ModifyReplicationGroupInput{
+							ApplyImmediately:   aws.Bool(true),
+							ReplicationGroupId: replicationGroup.ReplicationGroupId}); err != nil {
+							logger.Errorf("error returned when running ModifyReplicationGroup function for update %s with err %v", *update.ServiceUpdateName, err)
+							encounteredError = true
+							break
+						}
+					}
 
-				acceptableUpdates = append(acceptableUpdates, update)
-				continue
-			}
-		}
-
-		for _, specifiedUpdate := range serviceUpdates.updates {
-			if specifiedUpdate == *update.ServiceUpdateName &&
-				*update.ServiceUpdateStatus == elasticache.ServiceUpdateStatusAvailable {
-
-				logger.Infof("found ServiceUpdate %s which matches %s ServiceUpdate in aws", specifiedUpdate, *update.ServiceUpdateName)
-				acceptableUpdates = append(acceptableUpdates, update)
-				break
+				}
 			}
 		}
 	}
-
-	// Sort by UpdateActionAvailableDate in descending order
-	sort.Slice(acceptableUpdates, func(i, j int) bool {
-		return resources.SafeTimeDereference(acceptableUpdates[i].UpdateActionAvailableDate).After(resources.SafeTimeDereference(acceptableUpdates[j].UpdateActionAvailableDate))
-	})
-
-	if len(acceptableUpdates) > 0 {
-		// Select latest update to be applied
-		update := acceptableUpdates[0]
-		// Available critical security updates need to be applied immediately
-		logger.Warnf("Commencing critical security update of Redis instance %s Service update name: %s", *replicationGroupId, resources.SafeStringDereference(update.ServiceUpdateName))
-		updateOutput, err := cacheSvc.BatchApplyUpdateAction(&elasticache.BatchApplyUpdateActionInput{
-			ReplicationGroupIds: []*string{replicationGroupId},
-			ServiceUpdateName:   update.ServiceUpdateName,
-		})
-		if err != nil {
-			logger.Errorf("Encountered an error when applying Service Update: %v", err)
-			// NOT returning an error to avoid problems with this code until it is sufficiently tested
-			return nil
-			// TODO: refactor to buble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
-		}
-		if len(updateOutput.UnprocessedUpdateActions) > 0 {
-			for _, failure := range updateOutput.UnprocessedUpdateActions {
-				logger.Errorf("Encountered a %s error when applying Service Update: %s", resources.SafeStringDereference(failure.ErrorType), resources.SafeStringDereference(failure.ErrorMessage))
-				// NOT returning an error to avoid problems with this code until it is sufficiently tested
-				return nil
-				// TODO: refactor to buble up error state through return call once this code has been proven in a real upgrade scenario (which we are unable to replica at the moment)
-			}
-		}
+	if encounteredError {
+		return errors.New("encountered an error - check the logs for error messages")
 	}
 	return nil
+}
+
+func (p *RedisProvider) applyServiceUpdate(cacheSvc elasticacheiface.ElastiCacheAPI, replicationgroupid, serviceupdateName *string) error {
+	logger := p.Logger.WithField("action", "applyServiceUpdate")
+
+	logger.Warnf("Commencing critical security update of Redis instance %s Service update name: %s", resources.SafeStringDereference(replicationgroupid), resources.SafeStringDereference(serviceupdateName))
+	updateOutput, err := cacheSvc.BatchApplyUpdateAction(&elasticache.BatchApplyUpdateActionInput{
+		ReplicationGroupIds: []*string{replicationgroupid},
+		ServiceUpdateName:   serviceupdateName,
+	})
+	if err != nil {
+		logger.Errorf("Encountered an error when applying Service Update via BatchApplyUpdateAction: %v", err)
+		return err
+	}
+	if len(updateOutput.UnprocessedUpdateActions) > 0 {
+		for _, failure := range updateOutput.UnprocessedUpdateActions {
+			logger.Errorf("Encountered a %s error when applying Service Update: %s", resources.SafeStringDereference(failure.ErrorType), resources.SafeStringDereference(failure.ErrorMessage))
+		}
+		return errors.New(fmt.Sprintf("Encountered UnprocessedUpdateAction while applying '%s'", resources.SafeStringDereference(serviceupdateName)))
+	}
+	return nil
+}
+
+func validServiceUpdateStates(status string) bool {
+	if status == elasticache.UpdateActionStatusNotApplied ||
+		status == elasticache.UpdateActionStatusStopping ||
+		status == elasticache.UpdateActionStatusStopped ||
+		status == elasticache.UpdateActionStatusScheduling {
+		return true
+	}
+	return false
 }
