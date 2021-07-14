@@ -1,0 +1,120 @@
+# Product declaration file. This file declares the available product operators
+# and how to install them.
+# 
+# Currently supports "local", "index" and "implicit" installations.
+#
+# ------------------------------------------------------------------------------
+#
+# Local:
+#
+# Install the operator by creating a CatalogSource pointing to manifests
+# from a ConfigMap reconciled from a local directory.
+#
+# Example:
+#
+# ```
+# product:
+#   installFrom: "local"
+#   manifestsDir: "integreatly-product"
+#   channel: "rhmi"
+# ```
+#
+# ------------------------------------------------------------------------------
+#
+# Index:
+#
+# Install the operator by creating a CatalogSource pointing to an index image
+#
+# * Example:
+#
+# ```
+# product:
+#   installFrom: "index"
+#   index: "quay.io/org/product-index:latest"
+#   channel: "alpha"
+# ```
+#
+# ------------------------------------------------------------------------------
+#
+# Implicit:
+#
+# Install the operator by creating a Subscription assuming that the operator is
+# provided by the same CatalogSource that installed RHOAM.
+#
+# * Example:
+#
+# ```
+# product:
+#   installFrom: "implicit"
+#   channel: "alpha"
+# ```
+#
+# --------------------------------------------------------------------------------
+#
+# Common fields:
+# * `channel`: Name of the channel to point the Subscription to. Defaults to "rhmi"
+# * `package`: Name of the package. Defaults to the subscription name of each product
+#
+products:
+  3scale:
+    channel: "alpha"
+    installFrom: "implicit"
+    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:ab721f45dd85c53f8e36acdc32424ecf97bd621ae601d9fe4c1c74cf2d6a8eea"
+  amqonline:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-amq-online"
+  amqstreams:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-amq-streams"
+  apicurio-registry:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-apicurio-registry"
+  apicurito:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-apicurito"
+  cloud-resources:
+    channel: "rhmi"
+    installFrom: "index"
+    package: "rhmi-cloud-resources"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.29.0"
+  codeready-workspaces:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-codeready-workspaces"
+  fuse:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-fuse-online"
+  grafana:
+    channel: "rhmi"
+    installFrom: "local"
+    manifestsDir: "integreatly-grafana"
+  marin3r:
+    installFrom: "local"
+    manifestsDir: "integreatly-marin3r"
+    channel: "rhmi"
+  middleware-monitoring:
+    channel: rhmi
+    installFrom: "local"
+    manifestsDir: "integreatly-monitoring"
+  rhsso:
+    installFrom: "local"
+    manifestsDir: "integreatly-rhsso"
+    channel: "rhmi"
+  rhssouser:
+    installFrom: "local"
+    manifestsDir: "integreatly-rhsso"
+    channel: "rhmi"
+  solution-explorer:
+    channel: rhmi
+    installFrom: "local"
+    manifestsDir: "integreatly-solution-explorer"
+  ups:  
+    channel: rhmi
+    installFrom: "local"
+    manifestsDir: "integreatly-unifiedpush"
+  
