@@ -12,7 +12,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			{
 				"datasource": "Prometheus",
 				"enable": true,
-				"expr": "count by (stage,quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
+				"expr": "count by (quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
 				"hide": false,
 				"iconColor": "#FADE2A",
 				"limit": 100,
