@@ -272,8 +272,7 @@ func verifyCRUDLPermissions(t TestingTB, openshiftClient *resources.OpenshiftCli
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedListStatusCode {
-		t.Skip("Skipping due to a flaky behavior on managed-api addon install, JIRA: https://issues.redhat.com/browse/INTLY-10156")
-		// t.Errorf("unexpected response from LIST request, expected %d status but got: %v", expectedPermission.ExpectedListStatusCode, resp)
+		t.Errorf("unexpected response from LIST request, expected %d status but got: %v", expectedPermission.ExpectedListStatusCode, resp)
 	}
 
 	// Perform CREATE Request
