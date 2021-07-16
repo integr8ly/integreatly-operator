@@ -1,0 +1,28 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  labels:
+    app: apicast
+    threescale_component: apicast
+  managedFields:
+  - apiVersion: route.openshift.io/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:status:
+        f:ingress: {}
+    manager: openshift-router
+    operation: Update
+  name: apicast-route
+  namespace: selfmanaged-apicast
+spec:
+  port:
+    targetPort: proxy
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: apicast-example-apicast
+    weight: 100
+  wildcardPolicy: None

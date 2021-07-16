@@ -1,0 +1,27 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIcast
+metadata:
+  annotations:
+    apicast.apps.3scale.net/operator-version: 0.4.0
+  generation: 2
+  managedFields:
+  - apiVersion: apps.3scale.net/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:apicast.apps.3scale.net/operator-version: {}
+      f:spec:
+        f:replicas: {}
+      f:status: {}
+    manager: apicast-operator
+    operation: Update
+  name: example-apicast
+  namespace: selfmanaged-apicast
+spec:
+  adminPortalCredentialsRef:
+    name: adminportal-credentials
+  configurationLoadMode: boot
+  image: registry.access.redhat.com/3scale-amp23/apicast-gateway:latest
+  replicas: 1
