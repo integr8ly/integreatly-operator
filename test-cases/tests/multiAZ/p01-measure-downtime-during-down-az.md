@@ -7,6 +7,7 @@ products:
       - 0.2.0
 estimate: 3h
 tags:
+  - destructive
   - manual-selection
 ---
 

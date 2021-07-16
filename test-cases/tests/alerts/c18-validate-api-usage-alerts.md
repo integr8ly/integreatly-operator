@@ -7,6 +7,7 @@ products:
       - 1.0.0
       - 1.3.0
       - 1.6.0
+      - 1.9.0
 estimate: 90m
 ---
 
@@ -133,11 +134,11 @@ estimate: 90m
 
 13. Trigger API Usage alerts
 
-        | Alert to fire                        | `numRequests` | `recipients`          |
-        | ------------------------------------ | ------------- | --------------------- |
-        | RHOAMApiUsageLevel1ThresholdExceeded | 310            | BU and Customers      |
-        | RHOAMApiUsageLevel2ThresholdExceeded | 320            | BU and Customers      |
-        | RHOAMApiUsageLevel3ThresholdExceeded | 335            | BU, Customers and SRE |
+        | Alert to fire                        | `rpm` (requests per minute) | `recipients`          |
+        | ------------------------------------ | --------------------------- | --------------------- |
+        | RHOAMApiUsageLevel1ThresholdExceeded | 590                         | BU and Customers      |
+        | RHOAMApiUsageLevel2ThresholdExceeded | 640                         | BU and Customers      |
+        | RHOAMApiUsageLevel3ThresholdExceeded | 670                         | BU, Customers and SRE |
 
     Open the Prometheus console:
 
@@ -155,11 +156,11 @@ estimate: 90m
 
     Navigate back to the prometheus console, go to `Alerts` and search for the corresponding alert name in the table above e.g. `RHOAMApiUsageLevel1ThresholdExceeded`
 
-    Run the command `k6 run --iterations $numRequests --duration 1m --vus 5 test-cases/tests/alerts/rate-limit.js`
+    Run the command `RPM=$rpm k6 run test-cases/tests/alerts/rate-limit.js`
 
     After a minute or so the alert should be triggered and displayed in RED
 
-    Wait 1 minute and repeat the above steps again for each remaining alert listed in the table above
+    Interrupt the script (Ctrl+C), wait 1 minute and repeat the above steps again for each remaining alert listed in the table above
 
 14. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent. Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
 
@@ -174,7 +175,7 @@ estimate: 90m
     Run the following command:
 
     ```shell script
-    k6 run --iterations 400 --duration 1m --vus 5 test-cases/tests/alerts/rate-limit.js
+    RPM=750 k6 run test-cases/tests/alerts/rate-limit.js
     ```
 
     _NOTE:_ The above command should eventually result in failing `429 Too Many Requests` status codes. This is to
@@ -183,21 +184,11 @@ estimate: 90m
 
     Please note the time of receiving the first 429 response in order to later verify the `RHOAMApiUsageOverLimit` Alert.
 
-    While the command is running, check that the graphs in the Grafana dashboard are updating every minute. For example, the "Last 1 Minute - Rejected" percentage should be around 90%
+    While the command is running, check that the graphs in the Grafana dashboard are updating every minute. For example, the "Last 1 Minute - Rejected" percentage should be around 10%
 
     See [this example](https://user-images.githubusercontent.com/4881144/99288530-07dced00-283c-11eb-9cba-906151dd7dfb.png)
 
-16. Verify Tier Usage Alerts are not present
-
-    The Tier Usage alerts have been removed as of the 1.6.0 release.
-
-    Navigate to prometheus and verify that there are 3 RHOAMApiUsageSoftLimitReachedTier Alerts NOT present.
-
-    ```shell script
-    open "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o jsonpath='{.spec.host}')/alerts"
-    ```
-
-17. Verify RHOAMApiUsageOverLimit alert triggered.
+16. Verify RHOAMApiUsageOverLimit alert triggered.
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.

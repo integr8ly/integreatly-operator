@@ -9,6 +9,7 @@ products:
     targets:
       - 1.2.0
       - 1.6.0
+      - 1.9.0
 tags:
   - destructive
 estimate: 15m

@@ -9,11 +9,15 @@ products:
       - osd-post-upgrade
 tags:
   - destructive
+  - manual-selection
 ---
 
 # C17B - Verify RHOAM Upgrade alerts are present
 
 ## Description
+
+Obsolete test case
+"...not a valid test case for rhoam since we're not using RHMI config anymore" - note from https://issues.redhat.com/browse/MGDAPI-1664
 
 Verify that RHOAM operator upgrade alerts are in place and firing
 
