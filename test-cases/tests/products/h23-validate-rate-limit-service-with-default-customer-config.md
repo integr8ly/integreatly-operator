@@ -19,6 +19,7 @@ tags:
 - ["libra.pem" private key for ssh to PSI openstack load testing instance](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/keys/libra.pem) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - Logged in to a testing cluster as a `kubeadmin`
 - Access to CSQE OCM ORG https://qaprodauth.cloud.redhat.com/beta/openshift/ (login as <kerberos-username>-csqe user) to view the list of provisioned clusters.
+- RHOAM quota set to 20M (20 million requests per day)
 
 ## Description
 
