@@ -351,7 +351,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 
-		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
+		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
 
 	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
@@ -426,8 +426,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			if installationQuota.IsUpdated() {
 				installation.Status.Quota = installationQuota.GetName()
 				installation.Status.ToQuota = ""
-				metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota,
-					installation.Status.ToQuota)
+				metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 			}
 		}
 	}

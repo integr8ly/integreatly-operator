@@ -85,30 +85,64 @@ type quotaConfigReceiver struct {
 	Resources map[string]ResourceConfig     `json:"resources,omitempty"`
 }
 
-func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, isUpdated bool) error {
+func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota) (string, error) {
 	allQuotas := &[]quotaConfigReceiver{}
 	err := json.Unmarshal([]byte(QuotaConfig.Data[ConfigMapData]), allQuotas)
 	if err != nil {
-		return err
+		return "", err
 	}
 	quotaReceiver := quotaConfigReceiver{}
 
+	//if 10 then 1M
+	//if 50 then 5M
+	//if 100 then 10M
+	//if 20 || 200 then 20M
+	//if 500 then 50M
+	//if 1 then 1k
+	// declare the string mappings
+	quotaMappings := map[string][]string{
+		"1M":   {"10"},
+		"5M":   {"50"},
+		"10M":  {"100"},
+		"20M":  {"200", "20"},
+		"50M":  {"500"},
+		"100K": {"1"},
+		//0 trial option
+		"0T": {"0"},
+	}
+	fmt.Printf("BOOOOP %s", quotaParam)
+
+	quotaValue := ""
+	for configValue, quotaMapping := range quotaMappings {
+		for _, value := range quotaMapping {
+			if value == quotaParam {
+				quotaValue = configValue
+				fmt.Printf("found matching secret param '%s' for config mapping value %s", value, configValue)
+				break
+			}
+		}
+		if quotaValue != "" {
+			break
+		}
+	}
+	if quotaValue == "" {
+		return "", errors.New(fmt.Sprintf("wasn't able to find a quota in the quota mapping which matches the '%s' quota parameter", quotaParam))
+	}
+
 	for _, quota := range *allQuotas {
-		if quota.Name == QuotaId {
+		if quota.Name == quotaValue {
 			quotaReceiver = quota
 			break
 		}
 	}
-
 	// if the quota receiver is empty at this point we haven't found a quota which matches the config
 	// return in progress
 	if quotaReceiver.Name == "" {
-		return errors.New("wasn't able to find a quota in the quota config which matches the Quotaid")
+		return "", errors.New(fmt.Sprintf("wasn't able to find a quota in the quota config which matches the '%s' quota parameter", quotaParam))
 	}
 
 	retQuota.name = quotaReceiver.Name
 	retQuota.productConfigs = map[v1alpha1.ProductName]QuotaProductConfig{}
-	retQuota.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
@@ -125,7 +159,7 @@ func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, is
 
 	//populate rate limit configuration
 	retQuota.rateLimitConfig = quotaReceiver.RateLimit
-	return nil
+	return quotaValue, nil
 }
 
 func (s *Quota) GetProduct(productName v1alpha1.ProductName) QuotaProductConfig {
@@ -139,6 +173,10 @@ func (s *Quota) GetName() string {
 
 func (s *Quota) IsUpdated() bool {
 	return s.isUpdated
+}
+
+func (s *Quota) SetIsUpdated(isUpdated bool) {
+	s.isUpdated = isUpdated
 }
 
 func (p QuotaProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {

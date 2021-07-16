@@ -358,7 +358,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
           "expr": "$perMinuteRequestsPerUnit",
           "instant": false,
           "interval": "30s",
-          "legendFormat": "Active Quota - ` + activeQuota + ` Million Per Day - Rate Limit - ` + requestsPerUnit + ` per minute",
+          "legendFormat": "Active Quota - ` + activeQuota + ` Per Day - Rate Limit - ` + requestsPerUnit + ` per minute",
           "refId": "B"
         }
       ],

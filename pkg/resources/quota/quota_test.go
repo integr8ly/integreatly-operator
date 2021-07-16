@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	TWENTYMILLIONQUOTA = "20"
-	DEVQUOTA           = "1"
+	TWENTYMILLIONQUOTAPARAM      = "200"
+	DEVQUOTAPARAM                = "1"
+	TWENTYMILLIONQUOTACONFIGNAME = "20M"
+	DEVQUOTACONFIGNAME           = "100K"
 )
 
 func TestGetQuota(t *testing.T) {
@@ -48,13 +50,13 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "test successful parsing of config map to quota object for 1 million quota",
 			args: args{
-				QuotaId:     DEVQUOTA,
+				QuotaId:     DEVQUOTAPARAM,
 				QuotaConfig: getQuotaConfig(nil),
 				Quota:       pointerToQuota,
 				isUpdated:   false,
 			},
 			want: &Quota{
-				name: DEVQUOTA,
+				name: DEVQUOTACONFIGNAME,
 				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
@@ -112,18 +114,23 @@ func TestGetQuota(t *testing.T) {
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
 				}
+				gotRequestsPerUnit := quota.GetProduct(v1alpha1.Product3Scale).GetRateLimitConfig().RequestsPerUnit
+				wantRequestsPerUnit := uint32(1)
+				if gotRequestsPerUnit != wantRequestsPerUnit {
+					t.Errorf("Expected requests per unti to be '%v' but got '%v'", wantRequestsPerUnit, gotRequestsPerUnit)
+				}
 			},
 		},
 		{
 			name: "test successful parsing of config map to quota object for TWENTY million Quota",
 			args: args{
-				QuotaId:     TWENTYMILLIONQUOTA,
+				QuotaId:     TWENTYMILLIONQUOTAPARAM,
 				QuotaConfig: getQuotaConfig(nil),
 				Quota:       pointerToQuota,
 				isUpdated:   false,
 			},
 			want: &Quota{
-				name: TWENTYMILLIONQUOTA,
+				name: TWENTYMILLIONQUOTACONFIGNAME,
 				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
 					v1alpha1.Product3Scale: {
 						productName: v1alpha1.Product3Scale,
@@ -182,14 +189,17 @@ func TestGetQuota(t *testing.T) {
 				if gotReplicas != wantReplicas {
 					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
 				}
-				// to do more interrogations
-				// check the rate limit amounts
+				gotRequestsPerUnit := quota.GetProduct(v1alpha1.Product3Scale).GetRateLimitConfig().RequestsPerUnit
+				wantRequestsPerUnit := uint32(347)
+				if gotRequestsPerUnit != wantRequestsPerUnit {
+					t.Errorf("Expected requests per unti to be '%v' but got '%v'", wantRequestsPerUnit, gotRequestsPerUnit)
+				}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, tt.args.isUpdated)
+			_, err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -949,7 +959,7 @@ func getQuotaConfig(modifyFn func(*corev1.ConfigMap)) *corev1.ConfigMap {
 		ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
-		ConfigMapData: "[{\"name\": \"" + DEVQUOTA + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTA + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVQUOTACONFIGNAME + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTACONFIGNAME + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)
