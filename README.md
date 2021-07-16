@@ -105,6 +105,10 @@ IMAGE_FORMAT=<image-registry-address> INSTALLATION_TYPE=managed-api  make cluste
 
 *Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhmi/rhoam`).
 
+| Variable | Options | Type | Default | Details |
+|----------|---------|:----:|---------|-------|
+| PRODUCT_DECLARATION | File path | Optional |`./products/installation.yaml` | Specifies how RHOAM install the product operators, either from a local manifest, an index, or an included bundle. Only applicable to RHOAM |
+
 ### 5. Validate installation 
 
 Use following commands to validate that installation succeeded:
