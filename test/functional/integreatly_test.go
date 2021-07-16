@@ -2,9 +2,10 @@ package functional
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo"
-	"os"
 )
 
 var _ = Describe("integreatly", func() {
@@ -20,6 +21,12 @@ var _ = Describe("integreatly", func() {
 	})
 
 	JustBeforeEach(func() {
+		// If we're running the post uninstall tests, don't wait for the
+		// RHMI to be marked as completed
+		if os.Getenv("POST_UNINSTALL") == "true" {
+			return
+		}
+
 		if err := common.WaitForRHMIStageToComplete(t, restConfig); err != nil {
 			t.Error(err)
 		}
@@ -67,6 +74,17 @@ var _ = Describe("integreatly", func() {
 				Type:      "Destructive Tests",
 				TestCases: common.DESTRUCTIVE_TESTS,
 			})
+		}
+
+		if os.Getenv("POST_UNINSTALL") == "true" {
+			// Note: assign instead of append in order to run **exclusively**
+			// the post uninstall tests
+			tests = []common.Tests{
+				{
+					Type:      "Post Uninstall Tests",
+					TestCases: POST_UNINSTALL_TESTS,
+				},
+			}
 		}
 
 		for _, test := range tests {

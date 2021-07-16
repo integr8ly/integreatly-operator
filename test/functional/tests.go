@@ -13,4 +13,7 @@ var (
 	MULTIAZ_TESTS = []common.TestCase{
 		{Description: "F09 - Verify correct pod distribution on Multi-AZ cluster", Test: TestMultiAZPodDistribution},
 	}
+	POST_UNINSTALL_TESTS = []common.TestCase{
+		{Description: "X99 - Verify that AWS resources have been cleaned", Test: TestAWSResourcesDeleted},
+	}
 )
