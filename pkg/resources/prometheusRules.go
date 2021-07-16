@@ -10,6 +10,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -62,6 +63,39 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 			r.Log.Infof("Operation result", l.Fields{"productName": r.ProductName, "alertName": alert.AlertName, "result": string(or)})
 		}
 	}
+
+	for _, alert := range r.Alerts {
+		var rule = &monitoringv1.PrometheusRule{}
+		if alert.Namespace == "redhat-rhoami-middleware-monitoring-operator" {
+			err := client.Get(ctx, k8sclient.ObjectKey{Name: "ksm-monitoring-alerts", Namespace: alert.Namespace}, rule)
+			if err != nil {
+				if k8serr.IsNotFound(err) {
+					return integreatlyv1alpha1.PhaseCompleted, nil
+				}
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+
+			err = client.Delete(ctx, rule)
+			if err != nil {
+				r.Log.Info("Alert \"ksm-monitoring-alerts\" was deleted")
+			}
+		}
+		if alert.Namespace == "redhat-rhoami-marin3r" {
+			err := client.Get(ctx, k8sclient.ObjectKey{Name: "rate-limit-soft-limits", Namespace: alert.Namespace}, rule)
+			if err != nil {
+				if k8serr.IsNotFound(err) {
+					return integreatlyv1alpha1.PhaseCompleted, nil
+				}
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+
+			err = client.Delete(ctx, rule)
+			if err != nil {
+				r.Log.Info("Alert \"rate-limit-soft-limits\" was deleted")
+			}
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
