@@ -299,6 +299,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcile3ScaleUserNames(ctx, installation, serverClient)
+	r.log.Infof("reconcile3ScaleUserNames", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcile3ScaleUserNames", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileOpenshiftUsers(ctx, installation, serverClient)
 	r.log.Infof("reconcileOpenshiftUsers", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -1159,6 +1166,30 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
+}
+
+// This is a temporary method to overcome the issue where the Keycloak ThreeScale username comparison
+// expects a lower case name. New users are added to 3Scale in lowercase but existing uppercase
+// users will be incompatible. See https://issues.redhat.com/browse/MGDAPI-2008 for recent changes
+// TODO: remove this after all clusters on >= 1.9.0 RHOAM or >= 2.9.2 RHMI
+func (r *Reconciler) reconcile3ScaleUserNames(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	accessToken, err := r.GetAdminToken(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	tsUsers, err := r.tsClient.GetUsers(*accessToken)
+
+	for _, tsUser := range tsUsers.Users {
+		_, err = r.tsClient.UpdateUser(tsUser.UserDetails.Id, strings.ToLower(tsUser.UserDetails.Username), tsUser.UserDetails.Email, *accessToken)
+		if err != nil {
+			r.log.Error("Failed to updating 3scale user details to lowercase: ", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
