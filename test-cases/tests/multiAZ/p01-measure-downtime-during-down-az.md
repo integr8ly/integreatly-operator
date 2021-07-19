@@ -178,6 +178,8 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
     There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
+> Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-sphinx`.
+
 13. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
     ```bash
@@ -188,6 +190,10 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
 - Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 - Take the screenshot of the dashboard and attach it to this ticket
+
+> Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready, see [MGDAPI-1266](https://issues.redhat.com/browse/MGDAPI-1266)
+>
+> Note: Downtime measurement might not be 100% reliable, see [MGDAPI-2333](https://issues.redhat.com/browse/MGDAPI-2333)
 
 15. Consult the results with engineering (especially in case some components have a longer downtime than 30min
     or are not working properly)
