@@ -309,7 +309,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					{
 						Alert: "TestFireCriticalAlert",
 						Annotations: map[string]string{
-							"sop_url": "",
+							"sop_url": resources.SopUrlTestFireAlerts,
 							"message": fmt.Sprintf("This is occasional Test Fire alert from Team SRE"),
 						},
 						Expr:   intstr.FromString("count(kube_secret_info{namespace='" + r.Config.GetOperatorNamespace() + "', secret='cj3cssrec'}) > 0"),
@@ -319,7 +319,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					{
 						Alert: "TestFireWarningAlert",
 						Annotations: map[string]string{
-							"sop_url": "",
+							"sop_url": resources.SopUrlTestFireAlerts,
 							"message": fmt.Sprintf("This is occasional Test Fire alert from Team SRE"),
 						},
 						Expr:   intstr.FromString("count(kube_secret_info{namespace='" + r.Config.GetOperatorNamespace() + "', secret='wj3cssrew'}) > 0"),
