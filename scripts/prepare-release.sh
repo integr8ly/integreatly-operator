@@ -36,6 +36,13 @@ else
   KUSTOMIZE="/usr/local/bin/kustomize"
 fi
 
+# Path to gofmt
+if [[ -z $GOROOT ]]; then
+  GOFMT="/usr/local/go/bin/gofmt"
+else
+  GOFMT="$GOROOT/bin/gofmt"
+fi
+
 create_new_csv() {
 
   if [[ -z "$PREVIOUS_VERSION" ]]
@@ -286,3 +293,6 @@ yq w -i PROJECT projectName $current_project_name
 # package name from the PROJECT file, so in the case of RHMI it will set it
 # incorrectly to `integreatly-operator`
 yq w -i packagemanifests/integreatly-operator/integreatly-operator.package.yaml packageName integreatly
+
+# Ensure code is formatted correctly
+"${GOFMT[@]}" -w `find . -type f -name '*.go' -not -path "./vendor/*"`
