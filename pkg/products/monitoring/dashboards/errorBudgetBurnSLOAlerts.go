@@ -7,7 +7,7 @@ import (
 
 func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName string) string {
 	quota := ``
-	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] {
+	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
 		quota = `, 
 			{
 				"datasource": "Prometheus",
