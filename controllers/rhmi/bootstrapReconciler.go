@@ -124,7 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
 	r.deleteObsoleteService(ctx, serverClient)
 
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 			events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
 			installation.Status.LastError = err.Error()
@@ -159,7 +159,7 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		priorityClass := &schedulingv1.PriorityClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: r.installation.Spec.PriorityClassName,
@@ -202,11 +202,13 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["self-managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 		} else {
 			cloudConfig.Data["managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["self-managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 		}
 		return nil
 	}); err != nil {

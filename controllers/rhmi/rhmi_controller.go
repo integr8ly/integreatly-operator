@@ -406,7 +406,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
 		}
@@ -422,7 +422,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			r.reconcilePodDistribution(installation)
 		}
 
-		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			if installationQuota.IsUpdated() {
 				installation.Status.Quota = installationQuota.GetName()
 				installation.Status.ToQuota = ""
@@ -839,7 +839,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, nil
 	}
 
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) || resources.IsRHMI(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {
@@ -868,7 +868,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		}
 	}
 
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Check if the quota parameter is found from the add-on
 		okParam, err := addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.QuotaParamName)
 		if err != nil {
@@ -1191,7 +1191,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 			installType = string(rhmiv1alpha1.InstallationTypeManaged)
 		}
 
-		if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) && priorityClassName == "" {
+		if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) && priorityClassName == "" {
 			priorityClassName = managedServicePriorityClassName
 		}
 
@@ -1247,7 +1247,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 }
 
 func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
-	if installation.Spec.Type != string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if !resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		return nil
 	}
 
@@ -1279,7 +1279,7 @@ func getRebalancePods() bool {
 }
 
 func getCrName(installType string) string {
-	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		return ManagedApiInstallationName
 	} else {
 		return DefaultInstallationName

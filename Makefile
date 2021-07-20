@@ -85,6 +85,19 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	INSTALLATION_SHORTHAND ?= rhoam
 endif
 
+ifeq ($(INSTALLATION_TYPE), multitenant-managed-api)
+	PROJECT=managed-api-service
+	TAG ?= $(RHOAM_TAG)
+	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	NAMESPACE_PREFIX ?= redhat-rhoam-
+	APPLICATION_REPO ?= managed-api-service
+	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
+	export INSTALLATION_PREFIX ?= redhat-rhoam
+	export OLM_TYPE ?= multitenant-managed-api-service
+	INSTALLATION_NAME ?= rhoam
+	INSTALLATION_SHORTHAND ?= rhoam
+endif
+
 NAMESPACE=$(NAMESPACE_PREFIX)operator
 
 define wait_command

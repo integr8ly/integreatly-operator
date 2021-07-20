@@ -543,7 +543,7 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
 	// If the installation type isn't managed-api, ensure that the ConsoleLink
 	// doesn't exist
-	if r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !resources.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		return nil
 	}
 
