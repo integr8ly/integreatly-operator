@@ -33,8 +33,10 @@ const (
 	prometheusRule2Desc       = "per minute over 2 hours"
 	prometheusRule3           = "api-usage-alert-level3"
 	prometheusRule3Desc       = "per minute over 30 minutes"
-	higherQuotaname           = "20"
-	lowerQuotaname            = "1"
+	higherQuotaParam          = "200"
+	lowerQuotaParam           = "1"
+	higherQuotaName           = "20 Million"
+	lowerQuotaName            = "100K"
 	timeoutWaitingQuotachange = 10
 	new3scaleLimits           = "501Mi"
 	newKeycloakLimits         = "1501Mi"
@@ -42,7 +44,7 @@ const (
 )
 
 func TestQuotaValues(t TestingTB, ctx *TestingContext) {
-	quotaConfig, quotaName, err := getQuotaconfig(t, ctx.Client)
+	quotaConfig, err := getQuotaConfig(t, ctx.Client)
 	if err != nil {
 		t.Fatalf("Error retrieving Quota: %v", err)
 	}
@@ -75,21 +77,21 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatal("toQuota status set after installation")
 	}
 
-	if installation.Status.Quota != quotaName {
+	if installation.Status.Quota != quotaConfig.GetName() {
 		t.Fatal(fmt.Sprintf("quota value set as '%s' but doesn't match the expected value: '%s'",
-			installation.Status.Quota, quotaName))
+			installation.Status.Quota, quotaConfig.GetName()))
 	}
 	verifyConfiguration(t, ctx.Client, quotaConfig)
 
 	// update the quota to a higher configuration
 
-	t.Logf("Changing Quota to %v million", higherQuotaname)
-	installation, err = changeQuota(t, ctx.Client, installation, higherQuotaname)
+	t.Logf("Changing Quota to %v", higherQuotaName)
+	installation, err = changeQuota(t, ctx.Client, installation, higherQuotaParam, higherQuotaName)
 	if err != nil {
 		t.Fatalf("Error changing Quota: %v", err)
 	}
 
-	quotaConfig, _, err = getQuotaconfig(t, ctx.Client)
+	quotaConfig, err = getQuotaConfig(t, ctx.Client)
 	if err != nil {
 		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
@@ -248,14 +250,14 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("ratelimit pod does not have expected memory limits. Expected: %v Got: %v", newRatelimitLimit.String(), ratelimitPods.Items[0].Spec.Containers[0].Resources.Limits.Memory())
 	}
 
-	t.Logf("Changing Quota to %v million", lowerQuotaname)
+	t.Logf("Changing Quota to %v", lowerQuotaName)
 	// update to a lower quota
-	installation, err = changeQuota(t, ctx.Client, installation, lowerQuotaname)
+	installation, err = changeQuota(t, ctx.Client, installation, lowerQuotaParam, lowerQuotaName)
 	if err != nil {
 		t.Fatalf("Error changing Quota: %v", err)
 	}
 
-	quotaConfig, _, err = getQuotaconfig(t, ctx.Client)
+	quotaConfig, err = getQuotaConfig(t, ctx.Client)
 	if err != nil {
 		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
@@ -389,32 +391,32 @@ func checkResources(t TestingTB, productName string, configReplicas, crReplicas 
 	}
 }
 
-func getQuotaconfig(t TestingTB, c k8sclient.Client) (*quota.Quota, string, error) {
+func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 	// verify the config map is in place and can be parsed
 	quotaConfigMap, err := getConfigMap(t, c, quota.ConfigMapName, RHMIOperatorNamespace)
 	if err != nil {
 		t.Fatal(err)
-		return nil, "", err
+		return nil, err
 	}
 
-	quotaName, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
+	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
 	if !found {
 		t.Fatal(fmt.Sprintf("failed to quota parameter '%s' from the parameter secret", addon.QuotaParamName), err)
-		return nil, "", err
+		return nil, err
 	}
 
 	quotaConfig := &quota.Quota{}
-	err = quota.GetQuota(quotaName, quotaConfigMap, quotaConfig, false)
+	err = quota.GetQuota(quotaParam, quotaConfigMap, quotaConfig)
 	if err != nil {
-		t.Fatal("failed to get quota config map, skipping test for now until fully implemented", err)
-		return nil, "", err
+		t.Fatal("failed GetQuota", err)
+		return nil, err
 	}
 
-	return quotaConfig, quotaName, nil
+	return quotaConfig, nil
 }
 
 func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHMI,
-	newQuota string) (*rhmiv1alpha1.RHMI,
+	quotaParam, quotaName string) (*rhmiv1alpha1.RHMI,
 	error) {
 	newSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -427,7 +429,7 @@ func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHM
 			newSecret.Data = make(map[string][]byte, 1)
 		}
 
-		newSecret.Data[addon.QuotaParamName] = []byte(newQuota)
+		newSecret.Data[addon.QuotaParamName] = []byte(quotaParam)
 		return nil
 	})
 	if err != nil {
@@ -443,7 +445,7 @@ func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHM
 	for startTime.Before(endTime) {
 		startTime = time.Now()
 		installation, err = GetRHMI(c, true)
-		if err == nil && installation.Status.ToQuota == "" && installation.Status.Quota == newQuota {
+		if err == nil && installation.Status.ToQuota == "" && installation.Status.Quota == quotaName {
 			break
 		}
 		if endTime.Before(startTime) {
