@@ -26,6 +26,7 @@ If there is not such build (typically if working with post upgrade cluster) then
 
 - provide "ocmAccessToken"
 - provide display name of the cluster to "clusterName"
+- tick multiAZ checkbox if cluster is deployed on multiple Availability Zones
 - make sure only "runFunctionalTests" is ticked for Pipeline steps
 
 2. Check the functional tests were run as part of the pipeline.

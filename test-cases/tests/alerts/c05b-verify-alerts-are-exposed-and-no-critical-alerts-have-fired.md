@@ -70,3 +70,5 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 > Make sure the proper time interval is selected (you can ignore downtimes during automated tests and destructive test-cases).
+> Short initial 3scale downtime is expected, it is a [known issue](https://issues.redhat.com/browse/MGDAPI-1266)
+> Downtime measurement might not be 100% reliable, see [MGDAPI-2333](https://issues.redhat.com/browse/MGDAPI-2333)

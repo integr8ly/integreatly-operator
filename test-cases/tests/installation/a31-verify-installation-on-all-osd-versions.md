@@ -6,7 +6,7 @@ estimate: 1h
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
+      - external
 tags:
   - per-release
 ---

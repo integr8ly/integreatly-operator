@@ -67,6 +67,8 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 7. Select the **Workload App** dashboard
 
 > There should be no downtime recorded for the upgrade
+>
+> Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready, see [MGDAPI-1266](https://issues.redhat.com/browse/MGDAPI-1266)
 
 8. Update the quota for a cluster in OCM to `5 million` and wait for an operator to finish quota configuration
 
