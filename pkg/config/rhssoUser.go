@@ -55,7 +55,7 @@ func (r *RHSSOUser) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) int {
 		return 1
 	}
 
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) || inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi) {
 		return 3
 	}
 
