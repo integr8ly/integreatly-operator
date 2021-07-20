@@ -164,6 +164,8 @@ func (m *Monitoring) GetDashboards(installType integreatlyv1alpha1.InstallationT
 		return rhmiTemplateList
 	case integreatlyv1alpha1.InstallationTypeManagedApi:
 		return managedAPITemplateList
+	case integreatlyv1alpha1.InstallationTypeMultitenantManagedApi:
+		return managedAPITemplateList
 	default:
 		return rhmiTemplateList
 	}

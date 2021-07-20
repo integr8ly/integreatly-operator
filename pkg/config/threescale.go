@@ -118,7 +118,7 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 
 	if resources.RunningInProw(inst) {
 		setDefaultNumberOfReplicas(1, threeScaleComponents)
-	} else if inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	} else if inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) && inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi) {
 		setDefaultNumberOfReplicas(2, threeScaleComponents)
 	}
 
