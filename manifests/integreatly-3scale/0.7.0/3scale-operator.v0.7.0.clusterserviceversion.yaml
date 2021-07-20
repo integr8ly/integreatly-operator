@@ -486,9 +486,9 @@ spec:
                 - name: SYSTEM_MYSQL_IMAGE
                   value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
                 - name: SYSTEM_POSTGRESQL_IMAGE
-                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:ba7713d570c058e61bae1adc1591b1fe834d45fe5e1fba70721c93f4fd64d535
                 - name: ZYNC_POSTGRESQL_IMAGE
-                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:ba7713d570c058e61bae1adc1591b1fe834d45fe5e1fba70721c93f4fd64d535
                 - name: OC_CLI_IMAGE
                   value: registry.redhat.io/openshift4/ose-cli@sha256:353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
                 image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:655062177bc53b155b87876dc1096530c365f18f9be3ceb0d32aa2d343968f9a
@@ -743,7 +743,7 @@ spec:
     name: redis-32-rhel7
   - image: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
     name: mysql-57-rhel7
-  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:ba7713d570c058e61bae1adc1591b1fe834d45fe5e1fba70721c93f4fd64d535
     name: postgresql-10-rhel7
   - image: registry.redhat.io/openshift4/ose-cli@sha256:353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
     name: openshift-cli
