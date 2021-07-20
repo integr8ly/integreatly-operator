@@ -428,7 +428,7 @@ func (r *Reconciler) ReconcileStatefulSet(ctx context.Context, serverClient k8sc
 
 	// Include the PodPriority mutation only if the install type is Managed API
 	mutatePodPriority := resources.NoopMutate
-	if r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if resources.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
 		mutatePodPriority = resources.MutatePodPriority(r.Installation.Spec.PriorityClassName)
 	}
 
