@@ -37,4 +37,5 @@ const (
 	SopUrlPodDistributionIncorrect                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/multi-az/pod_distribution.md"
 	SopUrlSloRhssoAvailabilityAlert                           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/SloRhssoAvailabilityAlert.asciidoc"
 	SopUrlSloUserSsoAvailabilityAlert                         = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/SloUserSsoAvailabilityAlert.asciidoc"
+	SopUrlTestFireAlerts                                      = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/cssre_info/info_test_fire_alerts.md#resolve-test-alerts"
 )
