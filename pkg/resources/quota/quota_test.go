@@ -199,7 +199,7 @@ func TestGetQuota(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
+			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -959,7 +959,7 @@ func getQuotaConfig(modifyFn func(*corev1.ConfigMap)) *corev1.ConfigMap {
 		ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName},
 	}
 	mock.Data = map[string]string{
-		ConfigMapData: "[{\"name\": \"" + DEVQUOTACONFIGNAME + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTACONFIGNAME + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
+		ConfigMapData: "[{\"name\": \"" + DEVQUOTACONFIGNAME + "\",\"param\": \"" + DEVQUOTAPARAM + "\",\"rate-limiting\": {\"unit\": \"minute\",\"requests_per_unit\": 1, \"alert_limits\": []},\"resources\": {\"" + ApicastProductionName + "\": {\"replicas\": 1,\"resources\": {\"requests\": {\"cpu\": \"50m\",\"memory\": \"50Mi\"},\"limits\": {\"cpu\": \"150m\",\"memory\": \"100Mi\"}}}}}, {\"name\": \"" + TWENTYMILLIONQUOTACONFIGNAME + "\",\"param\": \"" + TWENTYMILLIONQUOTAPARAM + "\",\"rate-limiting\": {  \"unit\": \"minute\",  \"requests_per_unit\": 347,  \"alert_limits\": []},\"resources\": {\"" + BackendListenerName + "\": {\"replicas\": 3,\"resources\": {  \"requests\": {\"cpu\": 0.25,\"memory\": 450  },  \"limits\": {\"cpu\": 0.3,\"memory\": 500}}}}}]",
 	}
 	if modifyFn != nil {
 		modifyFn(mock)

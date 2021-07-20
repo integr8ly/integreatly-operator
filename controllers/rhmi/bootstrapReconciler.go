@@ -529,7 +529,7 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 	}
 
 	// Updates the installation quota to the quota param if the quota is updated
-	quotaValue, err := quota.GetQuota(quotaParam, configMap, installationQuota)
+	err = quota.GetQuota(quotaParam, configMap, installationQuota)
 	if err != nil {
 		return err
 	}
@@ -540,8 +540,8 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 	// to an installation which is already using the Quota functionality.
 	// if either case is true set toQuota in the rhmi cr and update the status object and set isQuotaUpdated to true
 	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
-		quotaValue != installation.Status.Quota {
-		installation.Status.ToQuota = quotaValue
+		installationQuota.GetName() != installation.Status.Quota {
+		installation.Status.ToQuota = installationQuota.GetName()
 		isQuotaUpdated = true
 	}
 

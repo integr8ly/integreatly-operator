@@ -4,7 +4,8 @@ import "strings"
 
 var quotaConfig = `
 [{
-	"name": "50M",
+	"name": "50 Million",
+    "param": "500",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 34723,
@@ -79,7 +80,8 @@ var quotaConfig = `
 	}
 },
 {
-	"name": "20M",
+	"name": "20 Million",
+	"param": "200",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 13889,
@@ -154,7 +156,8 @@ var quotaConfig = `
 	}
 },
 	 {
-	"name": "10M",
+	"name": "10 Million",
+    "param": "100",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 6945,
@@ -229,7 +232,8 @@ var quotaConfig = `
 	}
 },
 {
-  "name": "5M",
+  "name": "5 Million",
+  "param": "50",
   "rate-limiting": {
 	  "unit": "minute",
 	  "requests_per_unit": 3473,
@@ -304,7 +308,8 @@ var quotaConfig = `
   }
 },
 {
-	"name": "1M",
+	"name": "1 Million",
+    "param": "10",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 695,
@@ -379,7 +384,8 @@ var quotaConfig = `
 	}
 },
 {
-	"name": "0E",
+	"name": "100K - Evaluation",
+    "param": "0",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 70,
@@ -455,6 +461,7 @@ var quotaConfig = `
 },
 {
 	"name": "100K",
+	"param": "1",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 70,
