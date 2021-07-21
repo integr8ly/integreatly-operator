@@ -18,7 +18,7 @@ $ IMAGE_NAME=registry.svc.ci.openshift.org/integr8ly/intly-operator-base-image:l
 operator-sdk version: "v1.2.0", commit: "215fc50b2d4acc7d92b36828f42d7d1ae212015c", kubernetes version: "v1.18.8", go version: "go1.13.5", GOOS: "linux", GOARCH: "amd64"
 go version go1.13.5 linux/amd64
 jq-1.6
-yq version 3.1.2
+yq version 4.9.8
 git version 1.8.3.1
 v12.16.3
 Delorean CLI
