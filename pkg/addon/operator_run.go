@@ -78,7 +78,7 @@ func OperatorInstalledViaOLM(ctx context.Context, client k8sclient.Client, insta
 // IsClusterRunType checks if the operator is run on a cluster
 func IsClusterRunType(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
 	deploymentPrefix := "rhmi"
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		deploymentPrefix = "rhoam"
 	}
 
