@@ -182,7 +182,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		},
 	}
 
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		ratelimitCR := &k8sappsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.RateLimitName,
@@ -244,7 +244,7 @@ func getClusterStorageDeployments(installationName string, installType string) [
 		},
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiClusterStorageDeployments
 	} else {
 		return rhmi2ClusterStorageDeployments
@@ -293,7 +293,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				continue
 			}
 
-			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && product.Name == "ratelimit" {
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && product.Name == "ratelimit" {
 				pods := &corev1.PodList{}
 				err = ctx.Client.List(context.TODO(), pods, GetListOptions(Marin3rProductNamespace, "app=ratelimit")...)
 				if err != nil {
@@ -354,7 +354,7 @@ func getDeployments(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingCon
 		managedApiDeployments = append(managedApiDeployments, getDeploymentConfiguration(deployment, inst, t, ctx))
 	}
 
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...), managedApiDeployments...)
 	} else {
 		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForRhmi2", inst, t, ctx)}...)
@@ -393,7 +393,7 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				)
 				continue
 			}
-			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 				if product.Name == "apicast-production" {
 					pods := &corev1.PodList{}
 					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=apicast-production")...)
@@ -432,7 +432,7 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 }
 
 func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingContext) []Namespace {
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		return []Namespace{
 			getDeploymentConfiguration("threeScaleDeploymentConfig", inst, t, ctx),
 		}
@@ -459,7 +459,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		rhssoExpectedReplicas = 1
 		rhssoUserExpectedReplicas = 1
 	}
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		keycloakCR := &v1alpha1.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,

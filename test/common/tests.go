@@ -15,7 +15,7 @@ var (
 				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
 				{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 
@@ -33,7 +33,7 @@ var (
 				/*FLAKY on RHOAM*/ {"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
 				{"A32 - Validate SSO config", TestSSOconfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -67,7 +67,7 @@ var (
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 
@@ -83,7 +83,7 @@ var (
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -101,14 +101,14 @@ var (
 				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
 				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 
 		{
 			[]TestCase{
 				{"A34 - Verify Quota values", TestQuotaValues},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 

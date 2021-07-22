@@ -218,7 +218,7 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 }
 
 func getExpectedServices(installType string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonExpectedServices
 	} else {
 		return append(commonExpectedServices, rhmi2ExpectedServices...)
