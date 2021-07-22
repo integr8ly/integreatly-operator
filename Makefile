@@ -16,7 +16,7 @@ IN_PROW ?= "false"
 # DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
 # acceptable values are
 # if 10 then 1M
-# if 50 then 5:wqM
+# if 50 then 5M
 # if 100 then 10M
 # if 200 then 20M
 # if 500 then 50M

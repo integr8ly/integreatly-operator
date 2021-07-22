@@ -6,6 +6,7 @@ products:
       - osd-post-upgrade
     targets:
       - 1.6.0
+      - 1.10.0
 estimate: 15m
 tags:
   - automated
@@ -29,7 +30,7 @@ parameter is as expected and to validate an upgrade scenario. Please also check 
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.toQuota'
 ```
 
-> The output should be `null`, unless the quota configuration is still in progress. Try again in couple of minutes.
+> The output should be `null`, unless the quota configuration is still in progress. Try again in a couple of minutes.
 
 2. Get the Quota value from RHMI CR
 
@@ -43,7 +44,14 @@ oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
 oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o json | jq -r '.data.addon-managed-api-service' | base64 --decode
 ```
 
-> Verify that the quota value matches the parameter from the secret.
+> Verify that the quota value matches the mapped parameter from the secret.
+>
+> if param is == 10 then Quota should be 1 Million
+> if param is == 50 then Quota should be 5 Million
+> if param is == 100 then Quota should be 10 Million
+> if param is == 200 then Quota should be 20 Million
+> if param is == 500 then Quota should be 50 Million
+> if param is == 1 then Quota should be 100k
 
 > If there is no value in the secret, the cluster has been upgraded from a version of rhoam which did not have
 > the quota paramater. aka pre 1.6.0. If this is the case go to step 4.
@@ -54,10 +62,10 @@ oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o j
 oc get $(oc get pods -n redhat-rhoam-operator -o name | grep rhmi-operator) -n redhat-rhoam-operator -o json | jq -r '.spec.containers[0].env[] | select(.name=="QUOTA")'
 ```
 
-> Validate that the value of the status.quota matches the parameter from the secret.
+> Validate that the value of the status.quota matches the parameter from the secret using the mapping above.
 
 5. Go to OpenShift console search for config map `quota-config-managed-api-service` in redhat-rhoam-operator namespace.
-6. Depending on what the current quota value is on the testing cluster, navigate to the section of a quota config where that value is defined (e.g. for 5 million: `"name": "5"`)
+6. Depending on what the current quota value is on the testing cluster, navigate to the section of a quota config where that value is defined (e.g. for 5 million: `"param": "50"`)
 
 7. Compare the values of resources with what you get by running this command from the terminal
 
@@ -97,4 +105,4 @@ echo rate limit replicas: $ratelimit_replicas
 echo rate limit resources: $ratelimit_resources
 ```
 
-8. Go to OCM UI, select the testing cluster and change the quota parameter to a different value and repeat the steps from step 5. Repeat this for all available quota values.
+8. Go to OCM UI, select the testing cluster and change the quota parameter to a different value using the mapping from step 3 and repeat the steps from step 5. Repeat this for all available quota values.
