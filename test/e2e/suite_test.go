@@ -131,7 +131,7 @@ var _ = BeforeSuite(func(done Done) {
 		"apicurito":            "apicurito-operator",
 	}
 
-	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		products = map[string]string{
 			"3scale":   "3scale-operator",
 			"user-sso": "keycloak-operator",

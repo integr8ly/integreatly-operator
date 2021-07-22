@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -80,7 +79,7 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 }
 
 func getPvcNamespaces(installType string) []PersistentVolumeClaim {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPvcNamespaces()
 	} else {
 		return append(commonPvcNamespaces(), rhmi2PvcNamespaces()...)

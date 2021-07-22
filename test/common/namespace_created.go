@@ -2,7 +2,6 @@ package common
 
 import (
 	goctx "context"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,7 +72,7 @@ func getNamespaces(t TestingTB, ctx *TestingContext) []string {
 		t.Errorf("error getting RHMI CR: %v", err)
 	}
 
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		return managedApiNamespaces()
 	} else {
 		return rhmi2Namespaces()

@@ -205,14 +205,14 @@ func verifyExpectedDashboards(t TestingTB, expectedDashboards []dashboardsTestRu
 }
 
 func getExpectedCustomerDashboard(installType string) []dashboardsTestRule {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return customerRHOAMDashboards
 	}
 	return nil
 }
 
 func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonExpectedDashboards
 	} else {
 		return append(commonExpectedDashboards, rhmi2ExpectedDashboards...)
