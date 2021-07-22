@@ -1022,7 +1022,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedAWSRules(installType string, installationName string) []alertsTestRule {
-	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		return append(commonExpectedAWSRules(installationName), managedApiAwsExpectedRules(installationName)...)
 	} else {
 		return append(commonExpectedAWSRules(installationName), rhmi2ExpectedAWSRules(installationName)...)
@@ -1030,7 +1030,7 @@ func getExpectedAWSRules(installType string, installationName string) []alertsTe
 }
 
 func getExpectedRules(installType string, installationName string) []alertsTestRule {
-	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		return append(commonExpectedRules(installationName), managedApiSpecificRules()...)
 	} else {
 		return append(commonExpectedRules(installationName), rhmi2ExpectedRules()...)

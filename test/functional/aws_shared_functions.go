@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/aws/aws-sdk-go/service/ec2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -31,7 +30,7 @@ const (
 )
 
 func getExpectedPostgres(installType string, installationName string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		// expected postgres resources provisioned per product
 		return []string{
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
@@ -62,7 +61,7 @@ func getExpectedRedis(installType string, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonRedis, managedApiRedis...)
 	} else {
 		return commonRedis
@@ -81,7 +80,7 @@ func getExpectedBlobStorage(installType string, installationName string) []strin
 	}
 
 	// Managed API (RHOAM) contains only 3scale blobstorage
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return threescaleBlobStorage
 	}
 	return append(backupsBlobStorage, threescaleBlobStorage...)

@@ -58,7 +58,7 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
-	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		// test rhmi developer projects are as expected
 		t.Log("testing rhmi 2 developer projects")
 		if err := testRHMI2DeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
@@ -72,7 +72,7 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 		}
 	}
 
-	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		// get fuse pods for rhmi developer
 		podlist, err := openshiftClient.ListPods(fuseNamespace)
 		if err != nil {

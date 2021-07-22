@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	goctx "context"
@@ -210,7 +209,7 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiExpectedRoutes
 	} else {
 		return rhmi2ExpectedRoutes

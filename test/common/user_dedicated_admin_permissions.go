@@ -108,7 +108,7 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
-	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 
 		// Verify dedicated admin permissions around StandardInfraConfig
 		verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
@@ -214,7 +214,7 @@ func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resourc
 }
 
 func getProductNamespaces(installType string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonNamespaces
 	} else {
 		return append(commonNamespaces, rhmi2NamespacesPermissions...)
