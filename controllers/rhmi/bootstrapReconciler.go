@@ -124,7 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
 	r.deleteObsoleteService(ctx, serverClient)
 
-	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 			events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
 			installation.Status.LastError = err.Error()
@@ -159,7 +159,7 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if resources.IsRHOAM(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		priorityClass := &schedulingv1.PriorityClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: r.installation.Spec.PriorityClassName,

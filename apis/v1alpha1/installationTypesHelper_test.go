@@ -1,15 +1,13 @@
-package resources
+package v1alpha1
 
 import (
 	"testing"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 )
 
 func TestRHMIInstallType(t *testing.T) {
 	tests := []struct {
 		name            string
-		installType     integreatlyv1alpha1.InstallationType
+		installType     InstallationType
 		expectedOutcome bool
 	}{
 		{
@@ -36,7 +34,7 @@ func TestRHMIInstallType(t *testing.T) {
 func TestRHOAMInstallType(t *testing.T) {
 	tests := []struct {
 		name            string
-		installType     integreatlyv1alpha1.InstallationType
+		installType     InstallationType
 		expectedOutcome bool
 	}{
 		{
@@ -63,7 +61,7 @@ func TestRHOAMInstallType(t *testing.T) {
 func TestIsMultitenant(t *testing.T) {
 	tests := []struct {
 		name            string
-		installType     integreatlyv1alpha1.InstallationType
+		installType     InstallationType
 		expectedOutcome bool
 	}{
 		{
@@ -90,7 +88,7 @@ func TestIsMultitenant(t *testing.T) {
 func TestRHOAMMultitenant(t *testing.T) {
 	tests := []struct {
 		name            string
-		installType     integreatlyv1alpha1.InstallationType
+		installType     InstallationType
 		expectedOutcome bool
 	}{
 		{

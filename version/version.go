@@ -4,7 +4,6 @@ import (
 	"os"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 )
 
@@ -40,7 +39,7 @@ func GetVersion() string {
 }
 
 func GetVersionByType(installType string) string {
-	if resources.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedAPIVersion
 	} else {
 		return version

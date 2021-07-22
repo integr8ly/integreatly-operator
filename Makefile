@@ -60,45 +60,9 @@ export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 export ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
 export BU_ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
 
-ifeq ($(INSTALLATION_TYPE), managed)
-	PROJECT=integreatly-operator
-	TAG ?= $(RHMI_TAG)
-	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
-	NAMESPACE_PREFIX ?= redhat-rhmi-
-	APPLICATION_REPO ?= integreatly
-	export INSTALLATION_PREFIX ?= redhat-rhmi
-	export OLM_TYPE ?= integreatly-operator
-	INSTALLATION_NAME ?= rhmi
-	INSTALLATION_SHORTHAND ?= rhmi
+ifeq ($(shell test -e envs/$(INSTALLATION_TYPE).env && echo -n yes),yes)
+	include envs/$(INSTALLATION_TYPE).env
 endif
-
-ifeq ($(INSTALLATION_TYPE), managed-api)
-	PROJECT=managed-api-service
-	TAG ?= $(RHOAM_TAG)
-	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
-	NAMESPACE_PREFIX ?= redhat-rhoam-
-	APPLICATION_REPO ?= managed-api-service
-	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
-	export INSTALLATION_PREFIX ?= redhat-rhoam
-	export OLM_TYPE ?= managed-api-service
-	INSTALLATION_NAME ?= rhoam
-	INSTALLATION_SHORTHAND ?= rhoam
-endif
-
-ifeq ($(INSTALLATION_TYPE), multitenant-managed-api)
-	PROJECT=managed-api-service
-	TAG ?= $(RHOAM_TAG)
-	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
-	NAMESPACE_PREFIX ?= redhat-rhoam-
-	APPLICATION_REPO ?= managed-api-service
-	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
-	export INSTALLATION_PREFIX ?= redhat-rhoam
-	export OLM_TYPE ?= multitenant-managed-api-service
-	INSTALLATION_NAME ?= rhoam
-	INSTALLATION_SHORTHAND ?= rhoam
-endif
-
-NAMESPACE=$(NAMESPACE_PREFIX)operator
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
