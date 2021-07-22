@@ -260,7 +260,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 	//default prefix
 	csvNamePrefix := "integreatly-operator"
-	if resources.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		csvNamePrefix = "managed-api-service"
 	}
 
