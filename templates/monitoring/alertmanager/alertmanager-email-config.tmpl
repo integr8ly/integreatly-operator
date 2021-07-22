@@ -5,11 +5,11 @@
 {{ define "__intlysubject" }}
 	
 	{{/* declaring variables */}}
-	{{ $lenOfAlerts := ( len .Alerts ) }} {{ $clustername := "${CLUSTER_NAME}"}} {{ $alertname := "" }} {{ $severity := "" }} {{ $ifCritical := "" }}
+  {{ $lenOfAlerts := ( len .Alerts ) }} {{ $clustername := "${CLUSTER_NAME}"}} {{ $alertname := "" }} {{ $severity := "" }} {{ $ifCritical := "" }}
 
   {{/* checking if there is single or multiple alerts */}}
 	{{if eq $lenOfAlerts 1 }} 
-		[{{ $clustername }}] {{ .CommonLabels.alertname  }} ({{ .CommonLabels.severity | title }}) {{ .Status | title }}{{ if eq .Status "firing" }}{{ end }}
+		{{ $clustername }}|{{ .CommonLabels.alertname  }}|({{ .CommonLabels.severity | title }})|{{ .Status | title }}{{ if eq .Status "firing" }}{{ end }}
 	{{ else }}
 		{{if gt $lenOfAlerts 1 }} 
 			{{ $alertname = "Multiple Alerts*" }}
@@ -24,11 +24,12 @@
 	{{/* in case of multiple alerts, checking if the severity of any alert(s) is critical*/}}
 	{{ if eq $alertname "Multiple Alerts*" }}
 		{{ if eq $ifCritical "true" }} 
-			[{{ $clustername }}] {{ $alertname }} (Critical) {{ .Status | title }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}
+			{{ $clustername }}|{{ $alertname }}|(Critical)|{{ .Status | title }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}
 		{{ else }}
-			[{{ $clustername }}] {{ $alertname }} ({{ $severity | title }}) {{ .Status | title }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}
+			{{ $clustername }}|{{ $alertname }}|({{ $severity | title }})|{{ .Status | title }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}
 		{{ end }}
 	{{ end }}
+
 {{ end }}
 
 {{ define "__description" }}{{ end }}
