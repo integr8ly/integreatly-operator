@@ -81,11 +81,12 @@ type ResourceConfig struct {
 
 type quotaConfigReceiver struct {
 	Name      string                        `json:"name,omitempty"`
+	Param     string                        `json:"param"`
 	RateLimit marin3rconfig.RateLimitConfig `json:"rate-limiting,omitempty"`
 	Resources map[string]ResourceConfig     `json:"resources,omitempty"`
 }
 
-func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, isUpdated bool) error {
+func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota) error {
 	allQuotas := &[]quotaConfigReceiver{}
 	err := json.Unmarshal([]byte(QuotaConfig.Data[ConfigMapData]), allQuotas)
 	if err != nil {
@@ -94,21 +95,19 @@ func GetQuota(QuotaId string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, is
 	quotaReceiver := quotaConfigReceiver{}
 
 	for _, quota := range *allQuotas {
-		if quota.Name == QuotaId {
+		if quota.Param == quotaParam {
 			quotaReceiver = quota
 			break
 		}
 	}
-
 	// if the quota receiver is empty at this point we haven't found a quota which matches the config
 	// return in progress
 	if quotaReceiver.Name == "" {
-		return errors.New("wasn't able to find a quota in the quota config which matches the Quotaid")
+		return errors.New(fmt.Sprintf("wasn't able to find a quota in the quota config which matches the '%s' quota parameter", quotaParam))
 	}
 
 	retQuota.name = quotaReceiver.Name
 	retQuota.productConfigs = map[v1alpha1.ProductName]QuotaProductConfig{}
-	retQuota.isUpdated = isUpdated
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
@@ -139,6 +138,10 @@ func (s *Quota) GetName() string {
 
 func (s *Quota) IsUpdated() bool {
 	return s.isUpdated
+}
+
+func (s *Quota) SetIsUpdated(isUpdated bool) {
+	s.isUpdated = isUpdated
 }
 
 func (p QuotaProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {

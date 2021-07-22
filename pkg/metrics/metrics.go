@@ -108,7 +108,6 @@ var (
 			Help: "Status of the current quota config",
 		},
 		[]string{
-			"stage",
 			"quota",
 			"toQuota",
 		},
@@ -158,7 +157,7 @@ func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
 }
 
-func SetQuota(stage string, quota string, toQuota string) {
+func SetQuota(quota string, toQuota string) {
 	Quota.Reset()
-	Quota.WithLabelValues(stage, quota, toQuota).Set(float64(1))
+	Quota.WithLabelValues(quota, toQuota).Set(float64(1))
 }

@@ -60,5 +60,5 @@ spec:
           - name: ALERT_SMTP_FROM
             value: "default@test.com"
           - name: QUOTA
-            value: "20"
+            value: "200"
       terminationGracePeriodSeconds: 10

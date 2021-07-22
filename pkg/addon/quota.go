@@ -2,12 +2,13 @@ package addon
 
 import "strings"
 
-var quotaConfig string = `
+var quotaConfig = `
 [{
-	"name": "50",
+	"name": "50 Million",
+    "param": "500",
 	"rate-limiting": {
 		"unit": "minute",
-		"requests_per_unit": 34722,
+		"requests_per_unit": 34723,
 		"alert_limits": []
 	},
 	"resources": {
@@ -79,7 +80,8 @@ var quotaConfig string = `
 	}
 },
 {
-	"name": "20",
+	"name": "20 Million",
+	"param": "200",
 	"rate-limiting": {
 		"unit": "minute",
 		"requests_per_unit": 13889,
@@ -154,10 +156,11 @@ var quotaConfig string = `
 	}
 },
 	 {
-	"name": "10",
+	"name": "10 Million",
+    "param": "100",
 	"rate-limiting": {
 		"unit": "minute",
-		"requests_per_unit": 6944,
+		"requests_per_unit": 6945,
 		"alert_limits": []
 	},
 	"resources": {
@@ -229,10 +232,11 @@ var quotaConfig string = `
 	}
 },
 {
-  "name": "5",
+  "name": "5 Million",
+  "param": "50",
   "rate-limiting": {
 	  "unit": "minute",
-	  "requests_per_unit": 3472,
+	  "requests_per_unit": 3473,
 	  "alert_limits": []
   },
   "resources": {
@@ -304,10 +308,11 @@ var quotaConfig string = `
   }
 },
 {
-	"name": "1",
+	"name": "1 Million",
+    "param": "10",
 	"rate-limiting": {
 		"unit": "minute",
-		"requests_per_unit": 694,
+		"requests_per_unit": 695,
 		"alert_limits": []
 	},
 	"resources": {
@@ -379,10 +384,87 @@ var quotaConfig string = `
 	}
 },
 {
-	"name": "0",
+	"name": "100K - Evaluation",
+    "param": "0",
 	"rate-limiting": {
 		"unit": "minute",
-		"requests_per_unit": 694,
+		"requests_per_unit": 70,
+		"alert_limits": []
+	},
+	"resources": {
+		"backend_listener": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "450Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "500Mi"
+				}
+			}
+		},
+		"backend_worker": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.03,
+					"memory": "60Mi"
+				},
+				"limits": {
+					"cpu": 0.09,
+					"memory": "100Mi"
+				}
+			}
+		},
+		"apicast_production": {
+			"replicas": 2,
+			"resources": {
+				"requests": {
+					"cpu": 0.06,
+					"memory": "250Mi"
+				},
+				"limits": {
+					"cpu": 0.18,
+					"memory": "300Mi"
+				}
+			}
+		},
+	  "rhssouser": {
+		   "replicas": 2,
+		   "resources": {
+			   "requests": {
+				   "cpu": 0.75,
+				   "memory": "1500Mi"
+			   },
+			   "limits": {
+				   "cpu": 1.5,
+				   "memory": "1500Mi"
+			   }
+		   }
+	   },
+		"ratelimit": {
+			"replicas": 2,
+            "resources": {
+			  "requests": {
+				  "cpu": 0.02,
+				  "memory": "40Mi"
+			  },
+			  "limits": {
+				  "cpu": 0.06,
+				  "memory": "80Mi"
+			  }
+		  }
+		}
+	}
+},
+{
+	"name": "100K",
+	"param": "1",
+	"rate-limiting": {
+		"unit": "minute",
+		"requests_per_unit": 70,
 		"alert_limits": []
 	},
 	"resources": {

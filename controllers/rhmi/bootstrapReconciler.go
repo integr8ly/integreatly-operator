@@ -130,7 +130,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			installation.Status.LastError = err.Error()
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		metrics.SetQuota(string(installation.Status.Stage), installation.Status.Quota, installation.Status.ToQuota)
+		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
@@ -528,23 +528,24 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 		return fmt.Errorf("error getting quota config map %w", err)
 	}
 
+	// Updates the installation quota to the quota param if the quota is updated
+	err = quota.GetQuota(quotaParam, configMap, installationQuota)
+	if err != nil {
+		return err
+	}
+
 	// if both are toQuota and Quota are empty this indicates that it's either
 	// the first reconcile of an installation or it's the first reconcile of an upgrade to 1.6.0
 	// if the secretname is not the same as status.Quota this indicates there has been a quota change
 	// to an installation which is already using the Quota functionality.
 	// if either case is true set toQuota in the rhmi cr and update the status object and set isQuotaUpdated to true
 	if (installation.Status.ToQuota == "" && installation.Status.Quota == "") ||
-		quotaParam != installation.Status.Quota {
-		installation.Status.ToQuota = quotaParam
+		installationQuota.GetName() != installation.Status.Quota {
+		installation.Status.ToQuota = installationQuota.GetName()
 		isQuotaUpdated = true
 	}
 
-	// Updates the installation quota to the quota param if the quota is updated
-	err = quota.GetQuota(quotaParam, configMap, installationQuota, isQuotaUpdated)
-	if err != nil {
-		return err
-	}
-
+	installationQuota.SetIsUpdated(isQuotaUpdated)
 	return nil
 }
 

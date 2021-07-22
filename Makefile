@@ -13,6 +13,14 @@ OPERATOR_SDK_VERSION=1.7.2
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
+# DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
+# acceptable values are
+# if 10 then 1M
+# if 50 then 5:wqM
+# if 100 then 10M
+# if 200 then 20M
+# if 500 then 50M
+# if 1 then 100k
 DEV_QUOTA ?= "1"
 TYPE_OF_MANIFEST ?= master
 
