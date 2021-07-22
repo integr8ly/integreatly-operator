@@ -126,7 +126,7 @@ func TestIntegreatlyStagesStatus(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedStageProducts(installType string) map[string][]string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiExpectedStageProducts
 	} else {
 		return rhmi2ExpectedStageProducts

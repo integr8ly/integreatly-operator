@@ -3,7 +3,6 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
@@ -67,7 +66,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 }
 
 func getTargets(installType string) map[string][]string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return mangedApiTargets()
 	} else {
 		// TODO - return list for managed install type

@@ -3,7 +3,6 @@ package functional
 import (
 	goctx "context"
 	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -43,7 +42,7 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 		t.Fatalf("There should be exactly 2 blob resources for %s install type: actual: %d", rhmi.Spec.Type, len(s3ResourceIDs))
 	}
 
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && len(s3ResourceIDs) != 1 {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && len(s3ResourceIDs) != 1 {
 		t.Fatalf("There should be exactly 1 blob resources for %s install type: actual: %d", rhmi.Spec.Type, len(s3ResourceIDs))
 	}
 
@@ -81,7 +80,7 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 	}
 
 	// Expect just three scale bucket for managed api install
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && *threeScaleFound == false {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && *threeScaleFound == false {
 		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets for managed api install"))
 	}
 
