@@ -202,6 +202,19 @@ test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
 test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
+.PHONY: test/e2e/multitenant-rhoam/prow
+test/e2e/multitenant-rhoam/prow: export component := integreatly-operator
+test/e2e/multitenant-rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
+test/e2e/multitenant-rhoam/prow: export INSTALLATION_TYPE := multitenant-managed-api
+test/e2e/multitenant-rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
+test/e2e/multitenant-rhoam/prow: export WATCH_NAMESPACE := redhat-rhoam-operator
+test/e2e/multitenant-rhoam/prow: export NAMESPACE_PREFIX := redhat-rhoam-
+test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
+test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
+test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
+test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
+test/e2e/multitenant-rhoam/prow: test/e2e
+
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
 test/e2e: cluster/deploy
