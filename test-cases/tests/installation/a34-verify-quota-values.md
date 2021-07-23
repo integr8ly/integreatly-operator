@@ -46,6 +46,7 @@ oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o j
 
 > Verify that the quota value matches the mapped parameter from the secret.
 >
+> if param is == 0 then Quota should be 100K - Evaluation -> (Evaluation option)
 > if param is == 10 then Quota should be 1 Million
 > if param is == 50 then Quota should be 5 Million
 > if param is == 100 then Quota should be 10 Million
