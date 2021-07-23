@@ -54,7 +54,7 @@ oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o j
 > if param is == 1 then Quota should be 100k
 
 > If there is no value in the secret, the cluster has been upgraded from a version of rhoam which did not have
-> the quota paramater. aka pre 1.6.0. If this is the case go to step 4.
+> the quota paramater. aka pre 1.6.0. If this is the case go to step 4. Otherwise skip to step 5.
 
 4. Get the param value from the container Environment Variable.
 
