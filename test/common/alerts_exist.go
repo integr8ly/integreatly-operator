@@ -753,6 +753,12 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 				"RedisCpuUsageHigh",
 			},
 		},
+		{
+			File: NamespacePrefix + "operator-redis-service-maintenance-critical.yaml",
+			Rules: []string{
+				"RedisServiceMaintenanceCritical",
+			},
+		},
 	}
 }
 
