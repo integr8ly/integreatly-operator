@@ -541,7 +541,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-service-maintenance-critical.yaml ",
+			File: NamespacePrefix + "operator-redis-service-maintenance-critical.yaml",
 			Rules: []string{
 				"RedisServiceMaintenanceCritical",
 			},
