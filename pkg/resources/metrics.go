@@ -151,7 +151,7 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus cpu usage high alerts for %s: %w", cr.Name, err)
 	}
 
-	// create Redis Cpu Usage High Alert
+	// create Redis Service Maintenance Alert
 	if err = CreateRedisServiceMaintenanceAlerts(ctx, client, inst, cr, log); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus service maintenance critical alerts for %s: %w", cr.Name, err)
 	}
@@ -730,6 +730,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	return nil
 }
 
+// CreateRedisServiceMaintenanceAlerts creates a PrometheusRule alerts to watch critical security update for Redis cache
 func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) error {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis service maintenance alert creation, useClusterStorage is true")
@@ -744,7 +745,7 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 		"productName": productName,
 	}
 
-	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!='complete',ServiceUpdateSeverity='critical'}"))
+	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!~'complete|waiting-to-start|in-progress|scheduled|stopping',ServiceUpdateSeverity='critical'}"))
 
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisServiceMaintenanceCritical, alertFor15Mins, alertExp, labels)
 	if err != nil {
