@@ -839,7 +839,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, nil
 	}
 
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) || rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+	if rhmiv1alpha1.IsManaged(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {

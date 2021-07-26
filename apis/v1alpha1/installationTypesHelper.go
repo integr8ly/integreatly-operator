@@ -1,11 +1,11 @@
 package v1alpha1
 
 func IsRHOAM(installType InstallationType) bool {
-	return installType == "managed-api" || installType == "multitenant-managed-api"
+	return installType == InstallationTypeManagedApi || installType == InstallationTypeMultitenantManagedApi
 }
 
 func IsRHMI(installType InstallationType) bool {
-	return installType == "managed"
+	return installType == InstallationTypeManaged
 }
 
 func IsRHOAMMultitenant(installType InstallationType) bool {
@@ -13,5 +13,9 @@ func IsRHOAMMultitenant(installType InstallationType) bool {
 }
 
 func isMultitenant(installType InstallationType) bool {
-	return installType == "multitenant-managed-api"
+	return installType == InstallationTypeMultitenantManagedApi
+}
+
+func IsManaged(installType InstallationType) bool {
+	return installType == InstallationTypeManaged || installType == InstallationTypeManagedApi || isMultitenant(installType)
 }
