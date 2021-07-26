@@ -5,7 +5,7 @@
 {{ define "__intlysubject" }}
 	
 	{{/* declaring variables */}}
-  {{ $lenOfAlerts := ( len .Alerts ) }} {{ $clustername := "${CLUSTER_NAME}"}} {{ $alertname := "" }} {{ $severity := "" }} {{ $ifCritical := "" }}
+	{{ $lenOfAlerts := ( len .Alerts ) }} {{ $clustername := "${CLUSTER_NAME}"}} {{ $alertname := "" }} {{ $severity := "" }} {{ $ifCritical := "" }}
 
   {{/* checking if there is single or multiple alerts */}}
 	{{if eq $lenOfAlerts 1 }} 
