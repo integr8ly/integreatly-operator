@@ -12,12 +12,12 @@ func TestRHMIInstallType(t *testing.T) {
 	}{
 		{
 			name:            "test that isRHMI returns true",
-			installType:     "managed",
+			installType:     InstallationTypeManaged,
 			expectedOutcome: true,
 		},
 		{
 			name:            "test that isRHMI returns false",
-			installType:     "managed-api",
+			installType:     InstallationTypeManagedApi,
 			expectedOutcome: false,
 		},
 	}
@@ -39,12 +39,12 @@ func TestRHOAMInstallType(t *testing.T) {
 	}{
 		{
 			name:            "test that isRHOAM returns true",
-			installType:     "managed-api",
+			installType:     InstallationTypeManagedApi,
 			expectedOutcome: true,
 		},
 		{
 			name:            "test that isRHOAM returns false",
-			installType:     "managed",
+			installType:     InstallationTypeManaged,
 			expectedOutcome: false,
 		},
 	}
@@ -66,12 +66,12 @@ func TestIsMultitenant(t *testing.T) {
 	}{
 		{
 			name:            "test that isMultitenant returns true",
-			installType:     "multitenant-managed-api",
+			installType:     InstallationTypeManagedApi,
 			expectedOutcome: true,
 		},
 		{
 			name:            "test that isMultitenant returns false",
-			installType:     "managed",
+			installType:     InstallationTypeManaged,
 			expectedOutcome: false,
 		},
 	}
@@ -93,18 +93,55 @@ func TestRHOAMMultitenant(t *testing.T) {
 	}{
 		{
 			name:            "test that isMultitenant returns true",
-			installType:     "multitenant-managed-api",
+			installType:     InstallationTypeMultitenantManagedApi,
 			expectedOutcome: true,
 		},
 		{
 			name:            "test that isMultitenant returns false",
-			installType:     "managed",
+			installType:     InstallationTypeManaged,
 			expectedOutcome: false,
 		},
 	}
 	for _, c := range tests {
 		t.Run(c.name, func(t *testing.T) {
 			v := IsRHOAMMultitenant(c.installType)
+			if v != c.expectedOutcome {
+				t.Errorf("Outcome does not match expected value - got %v; expecting %v", v, c.expectedOutcome)
+			}
+		})
+	}
+}
+
+func TestManagedInstallType(t *testing.T) {
+	tests := []struct {
+		name            string
+		installType     InstallationType
+		expectedOutcome bool
+	}{
+		{
+			name:            "test that installation is managed for managed-api",
+			installType:     InstallationTypeManagedApi,
+			expectedOutcome: true,
+		},
+		{
+			name:            "test that installation is managed for multitenant managed-api",
+			installType:     InstallationTypeMultitenantManagedApi,
+			expectedOutcome: true,
+		},
+		{
+			name:            "test that installation is managed",
+			installType:     InstallationTypeManaged,
+			expectedOutcome: true,
+		},
+		{
+			name:            "test that installation is not managed",
+			installType:     InstallationTypeSelfManaged,
+			expectedOutcome: false,
+		},
+	}
+	for _, c := range tests {
+		t.Run(c.name, func(t *testing.T) {
+			v := IsManaged(c.installType)
 			if v != c.expectedOutcome {
 				t.Errorf("Outcome does not match expected value - got %v; expecting %v", v, c.expectedOutcome)
 			}
