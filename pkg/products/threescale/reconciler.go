@@ -181,6 +181,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
+	// test do not merge
+
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 			phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
