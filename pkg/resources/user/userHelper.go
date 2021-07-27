@@ -203,3 +203,20 @@ func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client,
 
 	return adminUsers, nil
 }
+
+func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.IdentityList, error) {
+	identities := &usersv1.IdentityList{}
+	err := serverClient.List(ctx, identities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get identities by provider %s", providerName)
+	}
+
+	identitiesByProvider := &usersv1.IdentityList{}
+	for _, identity := range identities.Items {
+		if identity.ProviderName == providerName {
+			identitiesByProvider.Items = append(identitiesByProvider.Items, identity)
+		}
+	}
+
+	return identitiesByProvider, nil
+}
