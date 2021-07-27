@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"net/http"
 	"strconv"
@@ -14,10 +15,9 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	consolev1 "github.com/openshift/api/console/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
@@ -177,7 +177,6 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Reconciling")
-
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
@@ -273,6 +272,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
+	if err != nil {
+		r.log.Error("reconcile3scaleMultiTenancy", err)
+		return phase, err
+	}
 	r.log.Info("Successfully deployed")
 
 	phase, err = r.reconcileOutgoingEmailAddress(ctx, serverClient)
@@ -1334,6 +1338,81 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	providerName := "rhd"
+	identities, err := user.GetIdentitiesByProviderName(ctx, serverClient, providerName)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieving user identities from the MT users %w", err)
+	}
+	r.log.Infof("retrieving user identities to check against the MT accounts", l.Fields{"identities": identities})
+
+	accessToken, err := r.GetMasterToken(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	accounts, err := r.tsClient.ListTenantAccounts(*accessToken)
+	if err != nil {
+		r.log.Error("Failed to get accounts from 3scale API:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.log.Infof("retrieving list of MT accounts available ", l.Fields{"accounts": accounts})
+
+	// creating new MT accounts in 3scale
+	accountsToBeCreated := getMTAccountsToBeCreated(identities.Items, accounts)
+	r.log.Infof("Creating new MT accounts:", l.Fields{"accountsToBeCreated": accountsToBeCreated})
+	r.tsClient.CreateTenants(*accessToken, accountsToBeCreated)
+	if err != nil {
+		r.log.Error("Error creating new tenant accounts:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// deleting MT accounts in 3scale
+	accountsToBeDeleted := getMTAccountsToBeDeleted(identities.Items, accounts)
+	r.log.Infof("Deleting unused MT accounts:", l.Fields{"accountsToBeDeleted": accountsToBeDeleted})
+	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
+	if err != nil {
+		r.log.Error("Error deleting tenant accounts:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []Account) []Account {
+	accountsToBeCreated := []Account{}
+	for _, identity := range usersIdentity {
+		foundAccount := false
+		for _, account := range accounts {
+			if account.Detail.OrgName == identity.User.Name {
+				foundAccount = true
+			}
+		}
+		if !foundAccount {
+			accountsToBeCreated = append(accountsToBeCreated, Account{
+				Detail: AccountDetail{Name: identity.User.Name, OrgName: identity.User.Name},
+			})
+		}
+	}
+	return accountsToBeCreated
+}
+
+func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []Account) []Account {
+	accountsToBeDeleted := []Account{}
+	for _, account := range accounts {
+		foundUser := false
+		for _, identity := range usersIdentity {
+			if account.Detail.OrgName == identity.User.Name {
+				foundUser = true
+			}
+		}
+		if !foundUser {
+			accountsToBeDeleted = append(accountsToBeDeleted, account)
+		}
+	}
+	return accountsToBeDeleted
+}
+
 func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	if r.installation.Spec.UseClusterStorage != "false" {
 		return backup.NewNoopBackupExecutor()
@@ -1552,17 +1631,25 @@ func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient k
 }
 
 func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient k8sclient.Client) (*string, error) {
+	return getToken(ctx, serverClient, r.Config.GetNamespace(), "ADMIN_ACCESS_TOKEN")
+}
+
+func (r *Reconciler) GetMasterToken(ctx context.Context, serverClient k8sclient.Client) (*string, error) {
+	return getToken(ctx, serverClient, r.Config.GetNamespace(), "MASTER_ACCESS_TOKEN")
+}
+
+func getToken(ctx context.Context, serverClient k8sclient.Client, namespace, tokenType string) (*string, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: namespace}, s)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
+	accessToken := string(s.Data[tokenType])
 	return &accessToken, nil
 }
 
