@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -23,18 +24,13 @@ type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
 	Installation    *integreatlyv1alpha1.RHMI
-	StatsdConfig    *StatsdConfig
 	RateLimitConfig marin3rconfig.RateLimitConfig
-}
-
-type StatsdConfig struct {
-	Host string
-	Port string
 }
 
 const (
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
+	rateLimitImage                = "quay.io/3scale/limitador:0.2.0"
 )
 
 func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
@@ -66,6 +62,14 @@ type yamlRoot struct {
 	Descriptors []yamlDescriptor `yaml:"descriptors"`
 }
 
+type limitadorLimit struct {
+	Namespace  string   `yaml:"namespace"`
+	MaxValue   uint32   `yaml:"max_value"`
+	Seconds    uint64   `yaml:"seconds"`
+	Conditions []string `yaml:"conditions"`
+	Variables  []string `yaml:"variables"`
+}
+
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
 // It reconciles a ConfigMap to configure the service, a Deployment to run it, and
 // exposes it as a Service
@@ -83,12 +87,6 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	return r.reconcileService(ctx, client)
 }
 
-// WithStatsdConfig mutates r setting r.StatsdConfig to the value of config
-func (r *RateLimitServiceReconciler) WithStatsdConfig(config StatsdConfig) *RateLimitServiceReconciler {
-	r.StatsdConfig = &config
-	return r
-}
-
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
@@ -97,22 +95,27 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		stagingconfig := yamlRoot{
-			Domain: "apicast-ratelimit",
-			Descriptors: []yamlDescriptor{
-				{
-					Key:   "generic_key",
-					Value: "slowpath",
-					RateLimit: &yamlRateLimit{
-						Unit:            r.RateLimitConfig.Unit,
-						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
-					},
+	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
+		limitadorLimit := []limitadorLimit{
+			{
+				Namespace: "apicast-ratelimit",
+				MaxValue:  r.RateLimitConfig.RequestsPerUnit,
+				Seconds:   unitInSeconds,
+				Conditions: []string{
+					fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+				},
+				Variables: []string{
+					"generic_key",
 				},
 			},
 		}
 
-		stagingConfigYamlMarshalled, err := yaml.Marshal(stagingconfig)
+		limitadorConfigYamlMarshalled, err := yaml.Marshal(limitadorLimit)
 		if err != nil {
 			return fmt.Errorf("failed to marshall rate limit config: %v", err)
 		}
@@ -124,7 +127,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 			cm.Labels = map[string]string{}
 		}
 
-		cm.Data[RateLimitingConfigMapDataName] = string(stagingConfigYamlMarshalled)
+		cm.Data[RateLimitingConfigMapDataName] = string(limitadorConfigYamlMarshalled)
 		cm.Labels["app"] = quota.RateLimitName
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil
@@ -166,6 +169,8 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
+		limitsFile := fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig))
+
 		if deployment.Labels == nil {
 			deployment.Labels = map[string]string{}
 		}
@@ -180,51 +185,21 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}
 
-		useStatsd := "false"
-		if r.StatsdConfig != nil {
-			useStatsd = "true"
-		}
-
 		envs := []corev1.EnvVar{
 			{
-				Name:  "REDIS_SOCKET_TYPE",
-				Value: "tcp",
+				Name:  "RUST_LOG",
+				Value: "info",
 			},
 			{
 				Name:  "REDIS_URL",
-				Value: string(redisSecret.Data["URL"]),
+				Value: fmt.Sprintf("redis://%s", string(redisSecret.Data["URL"])),
 			},
 			{
-				Name:  "USE_STATSD",
-				Value: useStatsd,
-			},
-			{
-				Name:  "RUNTIME_ROOT",
-				Value: "/srv/runtime_data",
-			},
-			{
-				Name:  "RUNTIME_SUBDIRECTORY",
-				Value: "current",
-			},
-			{
-				Name:  "RUNTIME_WATCH_ROOT",
-				Value: "false",
-			},
-			{
-				Name:  "RUNTIME_IGNOREDOTFILES",
-				Value: "true",
+				Name:  "LIMITS_FILE",
+				Value: fmt.Sprintf("/srv/runtime_data/current/config/%s", limitsFile),
 			},
 		}
 
-		if r.StatsdConfig != nil {
-			envs = append(envs, corev1.EnvVar{
-				Name:  "STATSD_PORT",
-				Value: r.StatsdConfig.Port,
-			}, corev1.EnvVar{
-				Name:  "STATSD_HOST",
-				Value: r.StatsdConfig.Host,
-			})
-		}
 		if &deployment.Spec.Template == nil {
 			deployment.Spec.Template = corev1.PodTemplateSpec{}
 		}
@@ -247,8 +222,8 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 						},
 						Items: []corev1.KeyToPath{
 							{
-								Key:  "apicast-ratelimiting.yaml",
-								Path: fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig)),
+								Key:  RateLimitingConfigMapDataName,
+								Path: limitsFile,
 							},
 						},
 					},
@@ -259,8 +234,10 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			deployment.Spec.Template.Spec.Containers = []corev1.Container{{}}
 		}
 		deployment.Spec.Template.Spec.Containers[0].Name = quota.RateLimitName
-		deployment.Spec.Template.Spec.Containers[0].Image = "quay.io/integreatly/ratelimit:v1.4.0"
-		deployment.Spec.Template.Spec.Containers[0].Command = []string{quota.RateLimitName}
+		deployment.Spec.Template.Spec.Containers[0].Image = rateLimitImage
+		// TODO - Remove after next release
+		//Remove command in upgrade scenario
+		deployment.Spec.Template.Spec.Containers[0].Command = nil
 		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/srv/runtime_data/current/config",
@@ -276,12 +253,43 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				Name:          "grpc",
 				ContainerPort: 8081,
 			},
-			{
-				Name:          "debug",
-				ContainerPort: 6070,
-			},
 		}
 		deployment.Spec.Template.Spec.Containers[0].Env = envs
+		deployment.Spec.Template.Spec.Containers[0].LivenessProbe = &corev1.Probe{
+			Handler: corev1.Handler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: "/status",
+					Port: intstr.IntOrString{
+						Type:   intstr.String,
+						StrVal: "http",
+					},
+					Scheme: "HTTP",
+				},
+			},
+			InitialDelaySeconds: 5,
+			TimeoutSeconds:      2,
+			PeriodSeconds:       10,
+			SuccessThreshold:    1,
+			FailureThreshold:    3,
+		}
+
+		deployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
+			Handler: corev1.Handler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: "/status",
+					Port: intstr.IntOrString{
+						Type:   intstr.String,
+						StrVal: "http",
+					},
+					Scheme: "HTTP",
+				},
+			},
+			InitialDelaySeconds: 5,
+			TimeoutSeconds:      5,
+			PeriodSeconds:       10,
+			SuccessThreshold:    1,
+			FailureThreshold:    3,
+		}
 
 		if err := resources.SetPodTemplate(
 			resources.SelectFromDeployment,
@@ -327,19 +335,13 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 				Name:       "http",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       8080,
-				TargetPort: intstr.FromInt(8080),
-			},
-			{
-				Name:       "debug",
-				Protocol:   corev1.ProtocolTCP,
-				Port:       6070,
-				TargetPort: intstr.FromInt(6070),
+				TargetPort: intstr.IntOrString{StrVal: "http"},
 			},
 			{
 				Name:       "grpc",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       8081,
-				TargetPort: intstr.FromInt(8081),
+				TargetPort: intstr.IntOrString{StrVal: "grpc"},
 			},
 		}
 		service.Spec.Selector = map[string]string{
@@ -380,4 +382,18 @@ func GetRateLimitFromConfig(c *corev1.ConfigMap) (*yamlRateLimit, error) {
 		return nil, fmt.Errorf(fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name), err)
 	}
 	return ratelimitconfig.Descriptors[0].RateLimit, nil
+}
+
+func (r *RateLimitServiceReconciler) getUnitInSeconds(rateLimitUnit string) (uint64, error) {
+	if rateLimitUnit == "second" {
+		return 1, nil
+	} else if rateLimitUnit == "minute" {
+		return 60, nil
+	} else if rateLimitUnit == "hour" {
+		return 60 * 60, nil
+	} else if rateLimitUnit == "day" {
+		return 60 * 60 * 24, nil
+	} else {
+		return 0, fmt.Errorf("unexpected Rate Limit Unit %v, while getting unit in seconds", rateLimitUnit)
+	}
 }
