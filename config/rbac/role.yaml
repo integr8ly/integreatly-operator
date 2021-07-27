@@ -291,6 +291,7 @@ rules:
   - identities
   verbs:
   - get
+  - list
 - apiGroups:
   - user.openshift.io
   resources:
