@@ -5,10 +5,13 @@ products:
       - external
 estimate: 4h
 tags:
-  - per-release
+  - manual-selection
 ---
 
 # A38 - installation - verify RHOAM on non-byoc cluster
+
+Obsolete test case
+More information: https://issues.redhat.com/browse/MGDAPI-2397
 
 ## Prerequisites
 
