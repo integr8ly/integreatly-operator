@@ -38,17 +38,22 @@ oc patch rhmi rhoam \
 ```
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status'
 ```
+
 8. Go to OCM UI, select your OSD Trial cluster and select "upgrade", then select "using quota"
 9. Your OSD cluster should now have the type "OSD" (previously it was OSD Trial)
 10. Select your cluster, go to Addons -> RHOAM -> Configuration
 11. Try to change the "Quota" param and click on "Update"
 12. After a while, .toQuota field should be updated to the value you've selected
+
 ```bash
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.toQuota'
 ```
+
 13. Once the new quota has been applied to the RHOAM cluster, `.quota` field should be updated
+
 ```bash
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
 ```
+
 14. Trigger uninstall of the addon via the Cluster OCM UI
 15. Verify uninstall completes successfully
