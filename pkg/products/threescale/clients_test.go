@@ -213,18 +213,13 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				StatusCode: http.StatusOK,
 			}, nil
 		},
-		CreateTenantFunc: func(accessToken string, account Account) (string, error) {
-			accounts = append(accounts, Account{
-				Detail: AccountDetail{
-					Id:      2,
-					Name:    "new_tenant_2",
-					OrgName: "new_tenant_2",
-				},
-			})
-			return "", nil
+		CreateTenantFunc: func(accessToken string, account Account) (*Account, error) {
+			accounts = append(accounts, account)
+			return &account, nil
 		},
-		CreateTenantsFunc: func(accessToken string, accounts []Account) error {
-			return nil
+		CreateTenantsFunc: func(accessToken string, newAccounts []Account) ([]Account, error) {
+			accounts = append(accounts, newAccounts...)
+			return accounts, nil
 		},
 		ListTenantAccountsFunc: func(accessToken string) ([]Account, error) {
 			return accounts, nil

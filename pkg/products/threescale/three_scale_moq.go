@@ -48,10 +48,10 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
 // 				panic("mock out the CreateService method")
 // 			},
-// 			CreateTenantFunc: func(accessToken string, account Account) (string, error) {
+// 			CreateTenantFunc: func(accessToken string, account Account) (*Account, error) {
 // 				panic("mock out the CreateTenant method")
 // 			},
-// 			CreateTenantsFunc: func(accessToken string, accounts []Account) error {
+// 			CreateTenantsFunc: func(accessToken string, accounts []Account) ([]Account, error) {
 // 				panic("mock out the CreateTenants method")
 // 			},
 // 			DeleteAccountFunc: func(accessToken string, accountID string) error {
@@ -146,10 +146,10 @@ type ThreeScaleInterfaceMock struct {
 	CreateServiceFunc func(accessToken string, name string, systemName string) (string, error)
 
 	// CreateTenantFunc mocks the CreateTenant method.
-	CreateTenantFunc func(accessToken string, account Account) (string, error)
+	CreateTenantFunc func(accessToken string, account Account) (*Account, error)
 
 	// CreateTenantsFunc mocks the CreateTenants method.
-	CreateTenantsFunc func(accessToken string, accounts []Account) error
+	CreateTenantsFunc func(accessToken string, accounts []Account) ([]Account, error)
 
 	// DeleteAccountFunc mocks the DeleteAccount method.
 	DeleteAccountFunc func(accessToken string, accountID string) error
@@ -903,7 +903,7 @@ func (mock *ThreeScaleInterfaceMock) CreateServiceCalls() []struct {
 }
 
 // CreateTenant calls CreateTenantFunc.
-func (mock *ThreeScaleInterfaceMock) CreateTenant(accessToken string, account Account) (string, error) {
+func (mock *ThreeScaleInterfaceMock) CreateTenant(accessToken string, account Account) (*Account, error) {
 	if mock.CreateTenantFunc == nil {
 		panic("ThreeScaleInterfaceMock.CreateTenantFunc: method is nil but ThreeScaleInterface.CreateTenant was just called")
 	}
@@ -938,7 +938,7 @@ func (mock *ThreeScaleInterfaceMock) CreateTenantCalls() []struct {
 }
 
 // CreateTenants calls CreateTenantsFunc.
-func (mock *ThreeScaleInterfaceMock) CreateTenants(accessToken string, accounts []Account) error {
+func (mock *ThreeScaleInterfaceMock) CreateTenants(accessToken string, accounts []Account) ([]Account, error) {
 	if mock.CreateTenantsFunc == nil {
 		panic("ThreeScaleInterfaceMock.CreateTenantsFunc: method is nil but ThreeScaleInterface.CreateTenants was just called")
 	}
