@@ -79,7 +79,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if err != nil {
 		return errors.New("Error getting RHSSO config")
 	}
-	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)
+	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken, clientID)
 	if tsIsNotFoundError(err) {
 		return fmt.Errorf("SSO integration was not created")
 	}

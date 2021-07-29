@@ -128,7 +128,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 		AuthProviders: []*AuthProvider{},
 	}
 	return &ThreeScaleInterfaceMock{
-		AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
+		AddAuthenticationProviderFunc: func(data map[string]string, accessToken string, clientId string) (response *http.Response, e error) {
 			testAuthProviders.AuthProviders = append(testAuthProviders.AuthProviders, &AuthProvider{
 				ProviderDetails: AuthProviderDetails{
 					Kind:                           data["kind"],
@@ -144,10 +144,10 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				StatusCode: http.StatusCreated,
 			}, nil
 		},
-		GetAuthenticationProvidersFunc: func(accessToken string) (providers *AuthProviders, e error) {
+		GetAuthenticationProvidersFunc: func(accessToken string, clientID string) (providers *AuthProviders, e error) {
 			return testAuthProviders, nil
 		},
-		GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (provider *AuthProvider, e error) {
+		GetAuthenticationProviderByNameFunc: func(name string, accessToken string, clientID string) (provider *AuthProvider, e error) {
 			for _, ap := range testAuthProviders.AuthProviders {
 				if ap.ProviderDetails.Name == name {
 					return ap, nil

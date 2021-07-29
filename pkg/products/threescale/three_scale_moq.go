@@ -18,7 +18,7 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 //
 // 		// make and configure a mocked ThreeScaleInterface
 // 		mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
-// 			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
+// 			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string, userName string) (*http.Response, error) {
 // 				panic("mock out the AddAuthenticationProvider method")
 // 			},
 // 			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
@@ -48,6 +48,12 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
 // 				panic("mock out the CreateService method")
 // 			},
+// 			CreateTenantFunc: func(accessToken string, account Account) (string, error) {
+// 				panic("mock out the CreateTenant method")
+// 			},
+// 			CreateTenantsFunc: func(accessToken string, accounts []Account) error {
+// 				panic("mock out the CreateTenants method")
+// 			},
 // 			DeleteAccountFunc: func(accessToken string, accountID string) error {
 // 				panic("mock out the DeleteAccount method")
 // 			},
@@ -57,16 +63,22 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			DeleteServiceFunc: func(accessToken string, serviceID string) error {
 // 				panic("mock out the DeleteService method")
 // 			},
+// 			DeleteTenantFunc: func(accessToken string, id int) error {
+// 				panic("mock out the DeleteTenant method")
+// 			},
+// 			DeleteTenantsFunc: func(accessToken string, accounts []Account) error {
+// 				panic("mock out the DeleteTenants method")
+// 			},
 // 			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 				panic("mock out the DeleteUser method")
 // 			},
 // 			DeployProxyFunc: func(accessToken string, serviceID string) error {
 // 				panic("mock out the DeployProxy method")
 // 			},
-// 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
+// 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string, clientID string) (*AuthProvider, error) {
 // 				panic("mock out the GetAuthenticationProviderByName method")
 // 			},
-// 			GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
+// 			GetAuthenticationProvidersFunc: func(accessToken string, clientID string) (*AuthProviders, error) {
 // 				panic("mock out the GetAuthenticationProviders method")
 // 			},
 // 			GetUserFunc: func(username string, accessToken string) (*User, error) {
@@ -74,6 +86,9 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			},
 // 			GetUsersFunc: func(accessToken string) (*Users, error) {
 // 				panic("mock out the GetUsers method")
+// 			},
+// 			ListTenantAccountsFunc: func(accessToken string) ([]Account, error) {
+// 				panic("mock out the ListTenantAccounts method")
 // 			},
 // 			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
 // 				panic("mock out the PromoteProxy method")
@@ -101,7 +116,7 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 	}
 type ThreeScaleInterfaceMock struct {
 	// AddAuthenticationProviderFunc mocks the AddAuthenticationProvider method.
-	AddAuthenticationProviderFunc func(data map[string]string, accessToken string) (*http.Response, error)
+	AddAuthenticationProviderFunc func(data map[string]string, accessToken string, userName string) (*http.Response, error)
 
 	// AddUserFunc mocks the AddUser method.
 	AddUserFunc func(username string, email string, password string, accessToken string) (*http.Response, error)
@@ -130,6 +145,12 @@ type ThreeScaleInterfaceMock struct {
 	// CreateServiceFunc mocks the CreateService method.
 	CreateServiceFunc func(accessToken string, name string, systemName string) (string, error)
 
+	// CreateTenantFunc mocks the CreateTenant method.
+	CreateTenantFunc func(accessToken string, account Account) (string, error)
+
+	// CreateTenantsFunc mocks the CreateTenants method.
+	CreateTenantsFunc func(accessToken string, accounts []Account) error
+
 	// DeleteAccountFunc mocks the DeleteAccount method.
 	DeleteAccountFunc func(accessToken string, accountID string) error
 
@@ -139,6 +160,12 @@ type ThreeScaleInterfaceMock struct {
 	// DeleteServiceFunc mocks the DeleteService method.
 	DeleteServiceFunc func(accessToken string, serviceID string) error
 
+	// DeleteTenantFunc mocks the DeleteTenant method.
+	DeleteTenantFunc func(accessToken string, id int) error
+
+	// DeleteTenantsFunc mocks the DeleteTenants method.
+	DeleteTenantsFunc func(accessToken string, accounts []Account) error
+
 	// DeleteUserFunc mocks the DeleteUser method.
 	DeleteUserFunc func(userID int, accessToken string) (*http.Response, error)
 
@@ -146,16 +173,19 @@ type ThreeScaleInterfaceMock struct {
 	DeployProxyFunc func(accessToken string, serviceID string) error
 
 	// GetAuthenticationProviderByNameFunc mocks the GetAuthenticationProviderByName method.
-	GetAuthenticationProviderByNameFunc func(name string, accessToken string) (*AuthProvider, error)
+	GetAuthenticationProviderByNameFunc func(name string, accessToken string, clientID string) (*AuthProvider, error)
 
 	// GetAuthenticationProvidersFunc mocks the GetAuthenticationProviders method.
-	GetAuthenticationProvidersFunc func(accessToken string) (*AuthProviders, error)
+	GetAuthenticationProvidersFunc func(accessToken string, clientID string) (*AuthProviders, error)
 
 	// GetUserFunc mocks the GetUser method.
 	GetUserFunc func(username string, accessToken string) (*User, error)
 
 	// GetUsersFunc mocks the GetUsers method.
 	GetUsersFunc func(accessToken string) (*Users, error)
+
+	// ListTenantAccountsFunc mocks the ListTenantAccounts method.
+	ListTenantAccountsFunc func(accessToken string) ([]Account, error)
 
 	// PromoteProxyFunc mocks the PromoteProxy method.
 	PromoteProxyFunc func(accessToken string, serviceID string, env string, to string) (string, error)
@@ -183,6 +213,8 @@ type ThreeScaleInterfaceMock struct {
 			Data map[string]string
 			// AccessToken is the accessToken argument value.
 			AccessToken string
+			// UserName is the userName argument value.
+			UserName string
 		}
 		// AddUser holds details about calls to the AddUser method.
 		AddUser []struct {
@@ -281,6 +313,20 @@ type ThreeScaleInterfaceMock struct {
 			// SystemName is the systemName argument value.
 			SystemName string
 		}
+		// CreateTenant holds details about calls to the CreateTenant method.
+		CreateTenant []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// Account is the account argument value.
+			Account Account
+		}
+		// CreateTenants holds details about calls to the CreateTenants method.
+		CreateTenants []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// Accounts is the accounts argument value.
+			Accounts []Account
+		}
 		// DeleteAccount holds details about calls to the DeleteAccount method.
 		DeleteAccount []struct {
 			// AccessToken is the accessToken argument value.
@@ -302,6 +348,20 @@ type ThreeScaleInterfaceMock struct {
 			// ServiceID is the serviceID argument value.
 			ServiceID string
 		}
+		// DeleteTenant holds details about calls to the DeleteTenant method.
+		DeleteTenant []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// ID is the id argument value.
+			ID int
+		}
+		// DeleteTenants holds details about calls to the DeleteTenants method.
+		DeleteTenants []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+			// Accounts is the accounts argument value.
+			Accounts []Account
+		}
 		// DeleteUser holds details about calls to the DeleteUser method.
 		DeleteUser []struct {
 			// UserID is the userID argument value.
@@ -322,11 +382,15 @@ type ThreeScaleInterfaceMock struct {
 			Name string
 			// AccessToken is the accessToken argument value.
 			AccessToken string
+			// ClientID is the clientID argument value.
+			ClientID string
 		}
 		// GetAuthenticationProviders holds details about calls to the GetAuthenticationProviders method.
 		GetAuthenticationProviders []struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
+			// ClientID is the clientID argument value.
+			ClientID string
 		}
 		// GetUser holds details about calls to the GetUser method.
 		GetUser []struct {
@@ -337,6 +401,11 @@ type ThreeScaleInterfaceMock struct {
 		}
 		// GetUsers holds details about calls to the GetUsers method.
 		GetUsers []struct {
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+		}
+		// ListTenantAccounts holds details about calls to the ListTenantAccounts method.
+		ListTenantAccounts []struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
@@ -399,15 +468,20 @@ type ThreeScaleInterfaceMock struct {
 	lockCreateBackendUsage              sync.RWMutex
 	lockCreateMetric                    sync.RWMutex
 	lockCreateService                   sync.RWMutex
+	lockCreateTenant                    sync.RWMutex
+	lockCreateTenants                   sync.RWMutex
 	lockDeleteAccount                   sync.RWMutex
 	lockDeleteBackend                   sync.RWMutex
 	lockDeleteService                   sync.RWMutex
+	lockDeleteTenant                    sync.RWMutex
+	lockDeleteTenants                   sync.RWMutex
 	lockDeleteUser                      sync.RWMutex
 	lockDeployProxy                     sync.RWMutex
 	lockGetAuthenticationProviderByName sync.RWMutex
 	lockGetAuthenticationProviders      sync.RWMutex
 	lockGetUser                         sync.RWMutex
 	lockGetUsers                        sync.RWMutex
+	lockListTenantAccounts              sync.RWMutex
 	lockPromoteProxy                    sync.RWMutex
 	lockSetFromEmailAddress             sync.RWMutex
 	lockSetNamespace                    sync.RWMutex
@@ -417,21 +491,23 @@ type ThreeScaleInterfaceMock struct {
 }
 
 // AddAuthenticationProvider calls AddAuthenticationProviderFunc.
-func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]string, accessToken string) (*http.Response, error) {
+func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]string, accessToken string, userName string) (*http.Response, error) {
 	if mock.AddAuthenticationProviderFunc == nil {
 		panic("ThreeScaleInterfaceMock.AddAuthenticationProviderFunc: method is nil but ThreeScaleInterface.AddAuthenticationProvider was just called")
 	}
 	callInfo := struct {
 		Data        map[string]string
 		AccessToken string
+		UserName    string
 	}{
 		Data:        data,
 		AccessToken: accessToken,
+		UserName:    userName,
 	}
 	mock.lockAddAuthenticationProvider.Lock()
 	mock.calls.AddAuthenticationProvider = append(mock.calls.AddAuthenticationProvider, callInfo)
 	mock.lockAddAuthenticationProvider.Unlock()
-	return mock.AddAuthenticationProviderFunc(data, accessToken)
+	return mock.AddAuthenticationProviderFunc(data, accessToken, userName)
 }
 
 // AddAuthenticationProviderCalls gets all the calls that were made to AddAuthenticationProvider.
@@ -440,10 +516,12 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]s
 func (mock *ThreeScaleInterfaceMock) AddAuthenticationProviderCalls() []struct {
 	Data        map[string]string
 	AccessToken string
+	UserName    string
 } {
 	var calls []struct {
 		Data        map[string]string
 		AccessToken string
+		UserName    string
 	}
 	mock.lockAddAuthenticationProvider.RLock()
 	calls = mock.calls.AddAuthenticationProvider
@@ -834,6 +912,76 @@ func (mock *ThreeScaleInterfaceMock) CreateServiceCalls() []struct {
 	return calls
 }
 
+// CreateTenant calls CreateTenantFunc.
+func (mock *ThreeScaleInterfaceMock) CreateTenant(accessToken string, account Account) (string, error) {
+	if mock.CreateTenantFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateTenantFunc: method is nil but ThreeScaleInterface.CreateTenant was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		Account     Account
+	}{
+		AccessToken: accessToken,
+		Account:     account,
+	}
+	mock.lockCreateTenant.Lock()
+	mock.calls.CreateTenant = append(mock.calls.CreateTenant, callInfo)
+	mock.lockCreateTenant.Unlock()
+	return mock.CreateTenantFunc(accessToken, account)
+}
+
+// CreateTenantCalls gets all the calls that were made to CreateTenant.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateTenantCalls())
+func (mock *ThreeScaleInterfaceMock) CreateTenantCalls() []struct {
+	AccessToken string
+	Account     Account
+} {
+	var calls []struct {
+		AccessToken string
+		Account     Account
+	}
+	mock.lockCreateTenant.RLock()
+	calls = mock.calls.CreateTenant
+	mock.lockCreateTenant.RUnlock()
+	return calls
+}
+
+// CreateTenants calls CreateTenantsFunc.
+func (mock *ThreeScaleInterfaceMock) CreateTenants(accessToken string, accounts []Account) error {
+	if mock.CreateTenantsFunc == nil {
+		panic("ThreeScaleInterfaceMock.CreateTenantsFunc: method is nil but ThreeScaleInterface.CreateTenants was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		Accounts    []Account
+	}{
+		AccessToken: accessToken,
+		Accounts:    accounts,
+	}
+	mock.lockCreateTenants.Lock()
+	mock.calls.CreateTenants = append(mock.calls.CreateTenants, callInfo)
+	mock.lockCreateTenants.Unlock()
+	return mock.CreateTenantsFunc(accessToken, accounts)
+}
+
+// CreateTenantsCalls gets all the calls that were made to CreateTenants.
+// Check the length with:
+//     len(mockedThreeScaleInterface.CreateTenantsCalls())
+func (mock *ThreeScaleInterfaceMock) CreateTenantsCalls() []struct {
+	AccessToken string
+	Accounts    []Account
+} {
+	var calls []struct {
+		AccessToken string
+		Accounts    []Account
+	}
+	mock.lockCreateTenants.RLock()
+	calls = mock.calls.CreateTenants
+	mock.lockCreateTenants.RUnlock()
+	return calls
+}
+
 // DeleteAccount calls DeleteAccountFunc.
 func (mock *ThreeScaleInterfaceMock) DeleteAccount(accessToken string, accountID string) error {
 	if mock.DeleteAccountFunc == nil {
@@ -939,6 +1087,76 @@ func (mock *ThreeScaleInterfaceMock) DeleteServiceCalls() []struct {
 	return calls
 }
 
+// DeleteTenant calls DeleteTenantFunc.
+func (mock *ThreeScaleInterfaceMock) DeleteTenant(accessToken string, id int) error {
+	if mock.DeleteTenantFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeleteTenantFunc: method is nil but ThreeScaleInterface.DeleteTenant was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		ID          int
+	}{
+		AccessToken: accessToken,
+		ID:          id,
+	}
+	mock.lockDeleteTenant.Lock()
+	mock.calls.DeleteTenant = append(mock.calls.DeleteTenant, callInfo)
+	mock.lockDeleteTenant.Unlock()
+	return mock.DeleteTenantFunc(accessToken, id)
+}
+
+// DeleteTenantCalls gets all the calls that were made to DeleteTenant.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeleteTenantCalls())
+func (mock *ThreeScaleInterfaceMock) DeleteTenantCalls() []struct {
+	AccessToken string
+	ID          int
+} {
+	var calls []struct {
+		AccessToken string
+		ID          int
+	}
+	mock.lockDeleteTenant.RLock()
+	calls = mock.calls.DeleteTenant
+	mock.lockDeleteTenant.RUnlock()
+	return calls
+}
+
+// DeleteTenants calls DeleteTenantsFunc.
+func (mock *ThreeScaleInterfaceMock) DeleteTenants(accessToken string, accounts []Account) error {
+	if mock.DeleteTenantsFunc == nil {
+		panic("ThreeScaleInterfaceMock.DeleteTenantsFunc: method is nil but ThreeScaleInterface.DeleteTenants was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+		Accounts    []Account
+	}{
+		AccessToken: accessToken,
+		Accounts:    accounts,
+	}
+	mock.lockDeleteTenants.Lock()
+	mock.calls.DeleteTenants = append(mock.calls.DeleteTenants, callInfo)
+	mock.lockDeleteTenants.Unlock()
+	return mock.DeleteTenantsFunc(accessToken, accounts)
+}
+
+// DeleteTenantsCalls gets all the calls that were made to DeleteTenants.
+// Check the length with:
+//     len(mockedThreeScaleInterface.DeleteTenantsCalls())
+func (mock *ThreeScaleInterfaceMock) DeleteTenantsCalls() []struct {
+	AccessToken string
+	Accounts    []Account
+} {
+	var calls []struct {
+		AccessToken string
+		Accounts    []Account
+	}
+	mock.lockDeleteTenants.RLock()
+	calls = mock.calls.DeleteTenants
+	mock.lockDeleteTenants.RUnlock()
+	return calls
+}
+
 // DeleteUser calls DeleteUserFunc.
 func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) (*http.Response, error) {
 	if mock.DeleteUserFunc == nil {
@@ -1010,21 +1228,23 @@ func (mock *ThreeScaleInterfaceMock) DeployProxyCalls() []struct {
 }
 
 // GetAuthenticationProviderByName calls GetAuthenticationProviderByNameFunc.
-func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string, accessToken string) (*AuthProvider, error) {
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string, accessToken string, clientID string) (*AuthProvider, error) {
 	if mock.GetAuthenticationProviderByNameFunc == nil {
 		panic("ThreeScaleInterfaceMock.GetAuthenticationProviderByNameFunc: method is nil but ThreeScaleInterface.GetAuthenticationProviderByName was just called")
 	}
 	callInfo := struct {
 		Name        string
 		AccessToken string
+		ClientID    string
 	}{
 		Name:        name,
 		AccessToken: accessToken,
+		ClientID:    clientID,
 	}
 	mock.lockGetAuthenticationProviderByName.Lock()
 	mock.calls.GetAuthenticationProviderByName = append(mock.calls.GetAuthenticationProviderByName, callInfo)
 	mock.lockGetAuthenticationProviderByName.Unlock()
-	return mock.GetAuthenticationProviderByNameFunc(name, accessToken)
+	return mock.GetAuthenticationProviderByNameFunc(name, accessToken, clientID)
 }
 
 // GetAuthenticationProviderByNameCalls gets all the calls that were made to GetAuthenticationProviderByName.
@@ -1033,10 +1253,12 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string
 func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []struct {
 	Name        string
 	AccessToken string
+	ClientID    string
 } {
 	var calls []struct {
 		Name        string
 		AccessToken string
+		ClientID    string
 	}
 	mock.lockGetAuthenticationProviderByName.RLock()
 	calls = mock.calls.GetAuthenticationProviderByName
@@ -1045,19 +1267,21 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []st
 }
 
 // GetAuthenticationProviders calls GetAuthenticationProvidersFunc.
-func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken string) (*AuthProviders, error) {
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken string, clientID string) (*AuthProviders, error) {
 	if mock.GetAuthenticationProvidersFunc == nil {
 		panic("ThreeScaleInterfaceMock.GetAuthenticationProvidersFunc: method is nil but ThreeScaleInterface.GetAuthenticationProviders was just called")
 	}
 	callInfo := struct {
 		AccessToken string
+		ClientID    string
 	}{
 		AccessToken: accessToken,
+		ClientID:    clientID,
 	}
 	mock.lockGetAuthenticationProviders.Lock()
 	mock.calls.GetAuthenticationProviders = append(mock.calls.GetAuthenticationProviders, callInfo)
 	mock.lockGetAuthenticationProviders.Unlock()
-	return mock.GetAuthenticationProvidersFunc(accessToken)
+	return mock.GetAuthenticationProvidersFunc(accessToken, clientID)
 }
 
 // GetAuthenticationProvidersCalls gets all the calls that were made to GetAuthenticationProviders.
@@ -1065,9 +1289,11 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken stri
 //     len(mockedThreeScaleInterface.GetAuthenticationProvidersCalls())
 func (mock *ThreeScaleInterfaceMock) GetAuthenticationProvidersCalls() []struct {
 	AccessToken string
+	ClientID    string
 } {
 	var calls []struct {
 		AccessToken string
+		ClientID    string
 	}
 	mock.lockGetAuthenticationProviders.RLock()
 	calls = mock.calls.GetAuthenticationProviders
@@ -1138,6 +1364,37 @@ func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	mock.lockGetUsers.RLock()
 	calls = mock.calls.GetUsers
 	mock.lockGetUsers.RUnlock()
+	return calls
+}
+
+// ListTenantAccounts calls ListTenantAccountsFunc.
+func (mock *ThreeScaleInterfaceMock) ListTenantAccounts(accessToken string) ([]Account, error) {
+	if mock.ListTenantAccountsFunc == nil {
+		panic("ThreeScaleInterfaceMock.ListTenantAccountsFunc: method is nil but ThreeScaleInterface.ListTenantAccounts was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+	}{
+		AccessToken: accessToken,
+	}
+	mock.lockListTenantAccounts.Lock()
+	mock.calls.ListTenantAccounts = append(mock.calls.ListTenantAccounts, callInfo)
+	mock.lockListTenantAccounts.Unlock()
+	return mock.ListTenantAccountsFunc(accessToken)
+}
+
+// ListTenantAccountsCalls gets all the calls that were made to ListTenantAccounts.
+// Check the length with:
+//     len(mockedThreeScaleInterface.ListTenantAccountsCalls())
+func (mock *ThreeScaleInterfaceMock) ListTenantAccountsCalls() []struct {
+	AccessToken string
+} {
+	var calls []struct {
+		AccessToken string
+	}
+	mock.lockListTenantAccounts.RLock()
+	calls = mock.calls.ListTenantAccounts
+	mock.lockListTenantAccounts.RUnlock()
 	return calls
 }
 

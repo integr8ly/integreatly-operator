@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
@@ -68,6 +69,7 @@ const (
 	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
+	multitenantID                = "rhoam-mt"
 	rhssoIntegrationName         = "rhsso"
 
 	s3CredentialsSecretName        = "s3-credentials"
@@ -273,6 +275,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
+		if err != nil {
+			r.log.Error("reconcile3scaleMultiTenancy", err)
+			return phase, err
+		}
+	}
+
 	r.log.Info("Successfully deployed")
 
 	phase, err = r.reconcileOutgoingEmailAddress(ctx, serverClient)
@@ -285,11 +295,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
-	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
-		return phase, err
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err = r.reconcileRHSSOIntegration(ctx, serverClient, clientID, integreatlyv1alpha1.InstallationType(installation.Spec.Type))
+		r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
+			return phase, err
+		}
+	} else {
+
+		// FOR NOW - looping through all users in identities by provider name
+		mtUsers, err := userHelper.GetIdentitiesByProviderName(ctx, serverClient, "rhd")
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get rhd identity %s:", err)
+		}
+		for _, user := range mtUsers.Items {
+			phase, err = r.reconcileMultitenantRHSSOIntegration(ctx, serverClient, user.User.Name, integreatlyv1alpha1.InstallationType(installation.Spec.Type))
+			r.log.Infof("reconcileMultitenantRHSSOIntegration", l.Fields{"phase": phase})
+			if phase == integreatlyv1alpha1.PhaseInProgress {
+				r.log.Infof("Multitenant RHSSO integration in progress", l.Fields{"phase": phase})
+			}
+		}
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
@@ -453,6 +479,25 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
 		return "", fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+	}
+	return string(clientSecretBytes), nil
+}
+
+func (r *Reconciler) getMultitenantOauthClientSecret(ctx context.Context, serverClient k8sclient.Client, clientID string, namespace string) (string, error) {
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("keycloak-client-secret-%s", clientID),
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: namespace}, oauthClientSecrets)
+	if err != nil {
+		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+	}
+
+	clientSecretBytes, ok := oauthClientSecrets.Data["CLIENT_SECRET"]
+	if !ok {
+		return "", fmt.Errorf("Could not find %s key in %s Secret", string(clientID), oauthClientSecrets.Name)
 	}
 	return string(clientSecretBytes), nil
 }
@@ -1082,7 +1127,102 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 
 }
 
-func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileMultitenantRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client, userName string, installation integreatlyv1alpha1.InstallationType) (integreatlyv1alpha1.StatusPhase, error) {
+	clientID := fmt.Sprintf("%s-%s", multitenantID, userName)
+	integration := fmt.Sprintf("%s-%s", rhssoIntegrationName, clientID)
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	rhssoNamespace := rhssoConfig.GetNamespace()
+	rhssoRealm := rhssoConfig.GetRealm()
+	if rhssoNamespace == "" || rhssoRealm == "" {
+		r.log.Warningf("Cannot configure SSO integration without SSO", l.Fields{"ns": rhssoNamespace, "realm": rhssoRealm})
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	kcClient := &keycloak.KeycloakClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clientID,
+			Namespace: rhssoNamespace,
+		},
+	}
+
+	// keycloak-operator sets the spec.client.id, we need to preserve that value
+	apiClientID := ""
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: rhssoNamespace,
+		Name:      clientID,
+	}, kcClient)
+	if err == nil {
+		apiClientID = kcClient.Spec.Client.ID
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, "rhd", userName, installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update %s keycloak client: %w operation: %v", clientID, err, opRes)
+	}
+
+	// It can happen that a secret has not been created yet
+	clientSecret, err := r.getMultitenantOauthClientSecret(ctx, serverClient, clientID, rhssoNamespace)
+	if err != nil && !k8serr.IsNotFound(err) {
+		r.log.Error("Error retrieving client secret", err)
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	// GET RIGHT ACCESS
+	accessToken, err := r.GetMasterToken(ctx, serverClient)
+	if err != nil {
+		r.log.Info("Failed to get tenant admin token: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	phase, err := r.createRHSSOIntegration(ctx, serverClient, clientID, userName, integration, clientSecret, *accessToken)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, fmt.Errorf("Failed to create RHSSO integration %s", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) createRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client, clientID, userName, integration, clientSecret, accessToken string) (integreatlyv1alpha1.StatusPhase, error) {
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	rhssoRealm := rhssoConfig.GetRealm()
+
+	_, err = r.tsClient.GetAuthenticationProviderByName(integration, clientID, accessToken)
+	if err != nil && !tsIsNotFoundError(err) {
+		r.log.Info("Failed to get authentication provider:" + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+	if tsIsNotFoundError(err) {
+		site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
+		res, err := r.tsClient.AddAuthenticationProvider(map[string]string{
+			"kind":                              "keycloak",
+			"name":                              integration,
+			"client_id":                         clientID,
+			"client_secret":                     clientSecret,
+			"site":                              site,
+			"skip_ssl_certificate_verification": "true",
+			"published":                         "true",
+		}, accessToken, userName)
+		if err != nil || res.StatusCode != http.StatusCreated {
+			if err != nil {
+				r.log.Info("Failed to add authentication provider:" + err.Error())
+			}
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client, userName, installation integreatlyv1alpha1.InstallationType) (integreatlyv1alpha1.StatusPhase, error) {
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -1118,7 +1258,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
+		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret, clientID, installation)
 		return nil
 	})
 	if err != nil {
@@ -1130,28 +1270,10 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		r.log.Info("Failed to get admin token: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
-	if err != nil && !tsIsNotFoundError(err) {
-		r.log.Info("Failed to get authentication provider:" + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-	if tsIsNotFoundError(err) {
-		site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
-		res, err := r.tsClient.AddAuthenticationProvider(map[string]string{
-			"kind":                              "keycloak",
-			"name":                              rhssoIntegrationName,
-			"client_id":                         clientID,
-			"client_secret":                     clientSecret,
-			"site":                              site,
-			"skip_ssl_certificate_verification": "true",
-			"published":                         "true",
-		}, *accessToken)
-		if err != nil || res.StatusCode != http.StatusCreated {
-			if err != nil {
-				r.log.Info("Failed to add authentication provider:" + err.Error())
-			}
-			return integreatlyv1alpha1.PhaseInProgress, err
-		}
+
+	phase, err := r.createRHSSOIntegration(ctx, serverClient, clientID, apiManagerName, rhssoIntegrationName, clientSecret, *accessToken)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, fmt.Errorf("Failed to create RHSSO integration %s", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1552,17 +1674,25 @@ func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient k
 }
 
 func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient k8sclient.Client) (*string, error) {
+	return getToken(ctx, serverClient, r.Config.GetNamespace(), "ADMIN_ACCESS_TOKEN")
+}
+
+func (r *Reconciler) GetMasterToken(ctx context.Context, serverClient k8sclient.Client) (*string, error) {
+	return getToken(ctx, serverClient, r.Config.GetNamespace(), "MASTER_ACCESS_TOKEN")
+}
+
+func getToken(ctx context.Context, serverClient k8sclient.Client, namespace, tokenType string) (*string, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: namespace}, s)
 	if err != nil {
 		return nil, err
 	}
 
-	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
+	accessToken := string(s.Data[tokenType])
 	return &accessToken, nil
 }
 
@@ -1701,14 +1831,113 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	return false
 }
 
-func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.KeycloakClientSpec {
+func (r *Reconciler) getKeycloakClientSpec(id, clientSecret, userName string, installation integreatlyv1alpha1.InstallationType) keycloak.KeycloakClientSpec {
 	fullScopeAllowed := true
+	var client *keycloak.KeycloakAPIClient
 
-	return keycloak.KeycloakClientSpec{
-		RealmSelector: &metav1.LabelSelector{
-			MatchLabels: rhsso.GetInstanceLabels(),
+	protocolMappers := []keycloak.KeycloakProtocolMapper{
+		{
+			Name:            "given name",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-usermodel-property-mapper",
+			ConsentRequired: true,
+			ConsentText:     "${givenName}",
+			Config: map[string]string{
+				"userinfo.token.claim": "true",
+				"user.attribute":       "firstName",
+				"id.token.claim":       "true",
+				"access.token.claim":   "true",
+				"claim.name":           "given_name",
+				"jsonType.label":       "String",
+			},
 		},
-		Client: &keycloak.KeycloakAPIClient{
+		{
+			Name:            "email verified",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-usermodel-property-mapper",
+			ConsentRequired: true,
+			ConsentText:     "${emailVerified}",
+			Config: map[string]string{
+				"userinfo.token.claim": "true",
+				"user.attribute":       "emailVerified",
+				"id.token.claim":       "true",
+				"access.token.claim":   "true",
+				"claim.name":           "email_verified",
+				"jsonType.label":       "String",
+			},
+		},
+		{
+			Name:            "full name",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-full-name-mapper",
+			ConsentRequired: true,
+			ConsentText:     "${fullName}",
+			Config: map[string]string{
+				"id.token.claim":     "true",
+				"access.token.claim": "true",
+			},
+		},
+		{
+			Name:            "family name",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-usermodel-property-mapper",
+			ConsentRequired: true,
+			ConsentText:     "${familyName}",
+			Config: map[string]string{
+				"userinfo.token.claim": "true",
+				"user.attribute":       "lastName",
+				"id.token.claim":       "true",
+				"access.token.claim":   "true",
+				"claim.name":           "family_name",
+				"jsonType.label":       "String",
+			},
+		},
+		{
+			Name:            "role list",
+			Protocol:        "saml",
+			ProtocolMapper:  "saml-role-list-mapper",
+			ConsentRequired: false,
+			ConsentText:     "${familyName}",
+			Config: map[string]string{
+				"single":               "false",
+				"attribute.nameformat": "Basic",
+				"attribute.name":       "Role",
+			},
+		},
+		{
+			Name:            "email",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-usermodel-property-mapper",
+			ConsentRequired: true,
+			ConsentText:     "${email}",
+			Config: map[string]string{
+				"userinfo.token.claim": "true",
+				"user.attribute":       "email",
+				"id.token.claim":       "true",
+				"access.token.claim":   "true",
+				"claim.name":           "email",
+				"jsonType.label":       "String",
+			},
+		},
+		{
+			Name:            "org_name",
+			Protocol:        "openid-connect",
+			ProtocolMapper:  "oidc-usermodel-property-mapper",
+			ConsentRequired: false,
+			ConsentText:     "n.a.",
+			Config: map[string]string{
+				"userinfo.token.claim": "true",
+				"user.attribute":       "org_name",
+				"id.token.claim":       "true",
+				"access.token.claim":   "true",
+				"claim.name":           "org_name",
+				"jsonType.label":       "String",
+			},
+		},
+	}
+
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(installation) {
+		client = &keycloak.KeycloakAPIClient{
 			ID:                      id,
 			ClientID:                clientID,
 			Enabled:                 true,
@@ -1725,107 +1954,33 @@ func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.Key
 				"configure": true,
 				"manage":    true,
 			},
-			ProtocolMappers: []keycloak.KeycloakProtocolMapper{
-				{
-					Name:            "given name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${givenName}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "firstName",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "given_name",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "email verified",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${emailVerified}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "emailVerified",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "email_verified",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "full name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-full-name-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${fullName}",
-					Config: map[string]string{
-						"id.token.claim":     "true",
-						"access.token.claim": "true",
-					},
-				},
-				{
-					Name:            "family name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${familyName}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "lastName",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "family_name",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "role list",
-					Protocol:        "saml",
-					ProtocolMapper:  "saml-role-list-mapper",
-					ConsentRequired: false,
-					ConsentText:     "${familyName}",
-					Config: map[string]string{
-						"single":               "false",
-						"attribute.nameformat": "Basic",
-						"attribute.name":       "Role",
-					},
-				},
-				{
-					Name:            "email",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${email}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "email",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "email",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "org_name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: false,
-					ConsentText:     "n.a.",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "org_name",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "org_name",
-						"jsonType.label":       "String",
-					},
-				},
+			ProtocolMappers: protocolMappers,
+		}
+	} else {
+		client = &keycloak.KeycloakAPIClient{
+			ID:       id,
+			ClientID: clientID,
+			Enabled:  true,
+			RedirectUris: []string{
+				fmt.Sprintf("https://%s-admin.%s/*", userName, r.installation.Spec.RoutingSubdomain),
 			},
+			StandardFlowEnabled: true,
+			RootURL:             fmt.Sprintf("https://%s-admin.%s", userName, r.installation.Spec.RoutingSubdomain),
+			FullScopeAllowed:    &fullScopeAllowed,
+			Access: map[string]bool{
+				"view":      true,
+				"configure": true,
+				"manage":    true,
+			},
+			ProtocolMappers: protocolMappers,
+		}
+	}
+
+	return keycloak.KeycloakClientSpec{
+		RealmSelector: &metav1.LabelSelector{
+			MatchLabels: rhsso.GetInstanceLabels(),
 		},
+		Client: client,
 	}
 }
 
@@ -2325,4 +2480,79 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 		return nil, fmt.Errorf("Error getting the backend-listener external route: %v", err)
 	}
 	return backendRoute, nil
+}
+
+func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	providerName := "rhd"
+	identities, err := user.GetIdentitiesByProviderName(ctx, serverClient, providerName)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieving user identities from the MT users %w", err)
+	}
+	r.log.Infof("retrieving user identities to check against the MT accounts", l.Fields{"identities": identities})
+
+	accessToken, err := r.GetMasterToken(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	accounts, err := r.tsClient.ListTenantAccounts(*accessToken)
+	if err != nil {
+		r.log.Error("Failed to get accounts from 3scale API:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.log.Infof("retrieving list of MT accounts available ", l.Fields{"accounts": accounts})
+
+	// creating new MT accounts in 3scale
+	accountsToBeCreated := getMTAccountsToBeCreated(identities.Items, accounts)
+	r.log.Infof("Creating new MT accounts:", l.Fields{"accountsToBeCreated": accountsToBeCreated})
+	r.tsClient.CreateTenants(*accessToken, accountsToBeCreated)
+	if err != nil {
+		r.log.Error("Error creating new tenant accounts:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// deleting MT accounts in 3scale
+	accountsToBeDeleted := getMTAccountsToBeDeleted(identities.Items, accounts)
+	r.log.Infof("Deleting unused MT accounts:", l.Fields{"accountsToBeDeleted": accountsToBeDeleted})
+	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
+	if err != nil {
+		r.log.Error("Error deleting tenant accounts:", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []Account) []Account {
+	accountsToBeCreated := []Account{}
+	for _, identity := range usersIdentity {
+		foundAccount := false
+		for _, account := range accounts {
+			if account.Detail.OrgName == identity.User.Name {
+				foundAccount = true
+			}
+		}
+		if !foundAccount {
+			accountsToBeCreated = append(accountsToBeCreated, Account{
+				Detail: AccountDetail{Name: identity.User.Name, OrgName: identity.User.Name},
+			})
+		}
+	}
+	return accountsToBeCreated
+}
+
+func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []Account) []Account {
+	accountsToBeDeleted := []Account{}
+	for _, account := range accounts {
+		foundUser := false
+		for _, identity := range usersIdentity {
+			if account.Detail.OrgName == identity.User.Name {
+				foundUser = true
+			}
+		}
+		if !foundUser {
+			accountsToBeDeleted = append(accountsToBeDeleted, account)
+		}
+	}
+	return accountsToBeDeleted
 }

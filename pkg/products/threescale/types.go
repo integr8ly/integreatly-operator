@@ -53,6 +53,29 @@ type tsError struct {
 	StatusCode int
 }
 
+type AccountDetail struct {
+	Id      int    `json:"id"`
+	Name    string `json:"name"`
+	OrgName string `json:"org_name"`
+}
+
+type Account struct {
+	Detail AccountDetail `json:"account"`
+}
+
+type AccountList struct {
+	Items []Account `json:"accounts"`
+}
+
+// response := &struct {
+// 	Accounts []struct {
+// 		Account struct {
+// 			Id      int    `json:"id"`
+// 			OrgName string `json:"org_name"`
+// 		} `json:"account"`
+// 	} `json:"accounts"`
+// }{}
+
 func (tse *tsError) Error() string {
 	return tse.message
 }
