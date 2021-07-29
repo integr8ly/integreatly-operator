@@ -42,8 +42,8 @@ type ThreeScaleInterface interface {
 	DeleteBackend(accessToken string, backendID int) error
 	DeleteAccount(accessToken, accountID string) error
 
-	CreateTenant(accessToken string, account Account) (string, error)
-	CreateTenants(accessToken string, accounts []Account) error
+	CreateTenant(accessToken string, account Account) (*Account, error)
+	CreateTenants(accessToken string, accounts []Account) ([]Account, error)
 	DeleteTenant(accessToken string, id int) error
 	DeleteTenants(accessToken string, accounts []Account) error
 	ListTenantAccounts(accessToken string) ([]Account, error)
@@ -558,11 +558,11 @@ func (tsc *threeScaleClient) DeleteAccount(accessToken, accountID string) error 
 	return assertStatusCode(http.StatusOK, res)
 }
 
-func (tsc *threeScaleClient) CreateTenant(accessToken string, account Account) (string, error) {
+func (tsc *threeScaleClient) CreateTenant(accessToken string, account Account) (*Account, error) {
 
 	res, err := tsc.makeRequestToMaster(
 		"POST",
-		"master/api/providers.xml",
+		"master/api/providers.json",
 		withAccessToken(accessToken, map[string]interface{}{
 			"org_name": account.Detail.OrgName,
 			"username": account.Detail.Name,
@@ -571,24 +571,52 @@ func (tsc *threeScaleClient) CreateTenant(accessToken string, account Account) (
 		}),
 	)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := assertStatusCode(http.StatusCreated, res); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return xmlFromResponse(res, "//account/id/text()")
+	if err := jsonFromResponse(res, &account); err != nil {
+		return nil, err
+	}
+	return &account, nil
 }
 
-func (tsc *threeScaleClient) CreateTenants(accessToken string, accounts []Account) error {
-	for _, account := range accounts {
-		_, err := tsc.CreateTenant(accessToken, account)
-		if err == nil {
-			return fmt.Errorf("Error creating new tenant: %s", account.Detail.Name)
+func (tsc *threeScaleClient) CreateTenantAndActivateAccount(accessToken string, account Account) (*Account, error) {
+
+	newAccount, err := tsc.CreateTenant(accessToken, account)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating new tenant: %s, %w", account.Detail.Name, err)
+	}
+
+	accountURL := newAccount.Detail.AdminBaseURL
+	for _, user := range newAccount.Detail.AdminUsers {
+		if user.UserDetails.State == "pending" {
+			makeRequest(accountURL,
+				"POST",
+				fmt.Sprintf("/admin/api/accounts/%d/users/%d/activate.json", account.Detail.Id, user.UserDetails.Id),
+				withAccessToken(accessToken, map[string]interface{}{
+					"account_id": account.Detail.Id,
+					"id":         user.UserDetails.Id,
+				}),
+				tsc,
+			)
 		}
 	}
-	return nil
+
+	return newAccount, nil
+}
+
+func (tsc *threeScaleClient) CreateTenants(accessToken string, accounts []Account) ([]Account, error) {
+	for _, account := range accounts {
+		_, err := tsc.CreateTenantAndActivateAccount(accessToken, account)
+		if err == nil {
+			return accounts, fmt.Errorf("Error creating new tenant: %s", account.Detail.Name)
+		}
+	}
+	return accounts, nil
 }
 
 func (tsc *threeScaleClient) ListTenantAccounts(accessToken string) ([]Account, error) {
