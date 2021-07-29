@@ -54,13 +54,22 @@ type tsError struct {
 }
 
 type AccountDetail struct {
-	Id      int    `json:"id"`
-	Name    string `json:"name"`
-	OrgName string `json:"org_name"`
+	Id           int                `json:"id"`
+	Name         string             `json:"name"`
+	OrgName      string             `json:"org_name"`
+	AccessToken  AccountAccessToken `json:"access_token"`
+	AdminBaseURL string             `json:"admin_base_url"`
+	AdminUsers   []*User            `json:"users"`
 }
 
 type Account struct {
 	Detail AccountDetail `json:"account"`
+}
+
+type AccountAccessToken struct {
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type AccountList struct {
