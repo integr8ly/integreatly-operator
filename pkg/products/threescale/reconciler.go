@@ -289,11 +289,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
-	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
-		return phase, err
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)){
+		phase, err = r.reconcileRHSSOIntegration(r.ConfigManager, ctx, serverClient, *installation)
+		r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
+			return phase, err
+		}
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
@@ -1086,34 +1088,12 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 
 }
 
-func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+func (r *Reconciler) reconcileRHSSOIntegration(configManager config.ConfigReadWriter, ctx context.Context, serverClient k8sclient.Client, installation integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	rhssoNamespace := rhssoConfig.GetNamespace()
 	rhssoRealm := rhssoConfig.GetRealm()
-	if rhssoNamespace == "" || rhssoRealm == "" {
-		r.log.Warningf("Cannot configure SSO integration without SSO", l.Fields{"ns": rhssoNamespace, "realm": rhssoRealm})
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	kcClient := &keycloak.KeycloakClient{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientID,
-			Namespace: rhssoNamespace,
-		},
-	}
-
-	// keycloak-operator sets the spec.client.id, we need to preserve that value
-	apiClientID := ""
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: rhssoNamespace,
-		Name:      clientID,
-	}, kcClient)
-	if err == nil {
-		apiClientID = kcClient.Spec.Client.ID
-	}
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
@@ -1121,14 +1101,13 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
-		return nil
-	})
+	_, err = resources.CreateRHSSOClient(clientID, clientSecret, serverClient, configManager, ctx, installation, r.log)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w operation: %v", err, opRes)
+		r.log.Info("Failed to create keycloak client: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
+	// Integration with RHSSO for RHOAM installation
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
 		r.log.Info("Failed to get admin token: " + err.Error())
@@ -1786,134 +1765,6 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	}
 
 	return false
-}
-
-func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.KeycloakClientSpec {
-	fullScopeAllowed := true
-
-	return keycloak.KeycloakClientSpec{
-		RealmSelector: &metav1.LabelSelector{
-			MatchLabels: rhsso.GetInstanceLabels(),
-		},
-		Client: &keycloak.KeycloakAPIClient{
-			ID:                      id,
-			ClientID:                clientID,
-			Enabled:                 true,
-			Secret:                  clientSecret,
-			ClientAuthenticatorType: "client-secret",
-			RedirectUris: []string{
-				fmt.Sprintf("https://3scale-admin.%s/*", r.installation.Spec.RoutingSubdomain),
-			},
-			StandardFlowEnabled: true,
-			RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
-			FullScopeAllowed:    &fullScopeAllowed,
-			Access: map[string]bool{
-				"view":      true,
-				"configure": true,
-				"manage":    true,
-			},
-			ProtocolMappers: []keycloak.KeycloakProtocolMapper{
-				{
-					Name:            "given name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${givenName}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "firstName",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "given_name",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "email verified",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${emailVerified}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "emailVerified",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "email_verified",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "full name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-full-name-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${fullName}",
-					Config: map[string]string{
-						"id.token.claim":     "true",
-						"access.token.claim": "true",
-					},
-				},
-				{
-					Name:            "family name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${familyName}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "lastName",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "family_name",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "role list",
-					Protocol:        "saml",
-					ProtocolMapper:  "saml-role-list-mapper",
-					ConsentRequired: false,
-					ConsentText:     "${familyName}",
-					Config: map[string]string{
-						"single":               "false",
-						"attribute.nameformat": "Basic",
-						"attribute.name":       "Role",
-					},
-				},
-				{
-					Name:            "email",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: true,
-					ConsentText:     "${email}",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "email",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "email",
-						"jsonType.label":       "String",
-					},
-				},
-				{
-					Name:            "org_name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-					ConsentRequired: false,
-					ConsentText:     "n.a.",
-					Config: map[string]string{
-						"userinfo.token.claim": "true",
-						"user.attribute":       "org_name",
-						"id.token.claim":       "true",
-						"access.token.claim":   "true",
-						"claim.name":           "org_name",
-						"jsonType.label":       "String",
-					},
-				},
-			},
-		},
-	}
 }
 
 func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
