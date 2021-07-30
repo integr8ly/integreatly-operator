@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
