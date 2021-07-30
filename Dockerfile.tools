@@ -1,9 +1,1 @@
-FROM centos:7
-RUN yum -y install git-all
-
 FROM registry.ci.openshift.org/openshift/release:golang-1.16
-
-
-
-
-

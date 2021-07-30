@@ -30,12 +30,11 @@ CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 
-TOOLS_IMAGE=quay.io/integreatly/integreatly-operator-tools
 
-in_container = ${CONTAINER_ENGINE} run --rm -it \
-	-v "${PWD}":/integreatly-operator \
-    -w /integreatly-operator \
-	${TOOLS_IMAGE} make $(1)
+TOOLS_IMAGE=quay.io/integreatly/integreatly-operator-tools
+CONTAINER_COMMAND?=test
+
+
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
@@ -463,11 +462,14 @@ gen/namespaces:
 
 .PHONY: image/build/tools
 image/build/tools:
-	${CONTAINER_ENGINE} build -t ${TOOLS_IMAGE} -f Dockerfile.tools .
+	${CONTAINER_ENGINE} build -t  quay.io/integreatly/integreatly-operator-tools:master -f Dockerfile.tools .
 
-
-local/vendor/check: image/build/tools
-	$(call in_container,vendor/check)
+.Phony: viaContainer
+viaContainer :
+		${CONTAINER_ENGINE} run --rm -it \
+	-v "${PWD}":/integreatly-operator:Z \
+    -w /integreatly-operator \
+	${TOOLS_IMAGE} make  ${CONTAINER_COMMAND}
 
 .PHONY: vendor/check
 vendor/check: vendor/fix
