@@ -24,9 +24,18 @@ IN_PROW ?= "false"
 DEV_QUOTA ?= "1"
 TYPE_OF_MANIFEST ?= master
 
+
+
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
+
+TOOLS_IMAGE=quay.io/integreatly/integreatly-operator-tools
+
+in_container = ${CONTAINER_ENGINE} run --rm -it \
+	-v "${PWD}":/integreatly-operator \
+    -w /integreatly-operator \
+	${TOOLS_IMAGE} make $(1)
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
@@ -451,6 +460,14 @@ gen/namespaces:
 	oc get namespace | \
 	grep redhat-rhmi | \
 	awk -S '{print"- "$$1}' >> namespaces.asciidoc
+
+.PHONY: image/build/tools
+image/build/tools:
+	${CONTAINER_ENGINE} build -t ${TOOLS_IMAGE} -f Dockerfile.tools .
+
+
+local/vendor/check: image/build/tools
+	$(call in_container,vendor/check)
 
 .PHONY: vendor/check
 vendor/check: vendor/fix
