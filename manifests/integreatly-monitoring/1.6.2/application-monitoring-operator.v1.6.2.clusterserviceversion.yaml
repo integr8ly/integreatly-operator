@@ -16,15 +16,32 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: ApplicationMonitoring is the Schema for the applicationmonitorings
-        API
-      kind: ApplicationMonitoring
-      name: applicationmonitorings.applicationmonitoring.integreatly.org
-      version: v1alpha1
-    - description: BlackboxTarget is the Schema for the blackboxtargets API
-      kind: BlackboxTarget
-      name: blackboxtargets.applicationmonitoring.integreatly.org
-      version: v1alpha1
+      - description: Represents an installation of the Integreatly monitoring stack.
+        displayName: Integreatly monitoring stack.
+        kind: ApplicationMonitoring
+        name: applicationmonitorings.applicationmonitoring.integreatly.org
+        version: v1alpha1
+      - description: Represents a group of blackbox targets which prometheus blackbox
+          exporter in the Integreatly monitoring stack will query.
+        displayName: Integreatly monitoring blackbox target.
+        kind: BlackboxTarget
+        name: blackboxtargets.applicationmonitoring.integreatly.org
+        version: v1alpha1
+      - description: Represents an installation of the Integreatly Grafana operator.
+        displayName: Integreatly monitoring Grafana Operator.
+        kind: Grafana
+        name: grafanas.integreatly.org
+        version: v1alpha1
+      - description: Represents an instance of the Integreatly Grafana dashboard.
+        displayName: Integreatly monitoring Grafana dashboard.
+        kind: GrafanaDashboard
+        name: grafanadashboards.integreatly.org
+        version: v1alpha1
+      - description: Represents an instance of the Integreatly Grafana datasource.
+        displayName: Integreatly monitoring Grafana datasource.
+        kind: GrafanaDataSource
+        name: grafanadatasources.integreatly.org
+        version: v1alpha1
   description: Placeholder description
   displayName: Application Monitoring Operator
   icon:
@@ -46,6 +63,7 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
+          - get
         serviceAccountName: alertmanager-service-account
       - rules:
         - apiGroups:
