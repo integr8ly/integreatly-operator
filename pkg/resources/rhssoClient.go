@@ -18,7 +18,7 @@ const (
 	SSOLabelValue = "integreatly"
 )
 
-func CreateRHSSOClient(clientID string, clientSecret string, serverClient k8sclient.Client, configManager config.ConfigReadWriter, ctx context.Context, installation integreatlyv1alpha1.RHMI, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
+func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, serverClient k8sclient.Client, configManager config.ConfigReadWriter, ctx context.Context, installation integreatlyv1alpha1.RHMI, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
@@ -50,7 +50,7 @@ func CreateRHSSOClient(clientID string, clientSecret string, serverClient k8scli
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, &installation)
+		kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
 		return nil
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func CreateRHSSOClient(clientID string, clientSecret string, serverClient k8scli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getKeycloakClientSpec(apiClientID, clientID, clientSecret string, installation *integreatlyv1alpha1.RHMI) keycloak.KeycloakClientSpec {
+func getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL string, installation *integreatlyv1alpha1.RHMI) keycloak.KeycloakClientSpec {
 	fullScopeAllowed := true
 	var client *keycloak.KeycloakAPIClient
 
@@ -187,14 +187,16 @@ func getKeycloakClientSpec(apiClientID, clientID, clientSecret string, installat
 		}
 	} else {
 		client = &keycloak.KeycloakAPIClient{
-			ID:       apiClientID,
-			ClientID: clientID,
-			Enabled:  true,
+			ID:                      apiClientID,
+			ClientID:                clientID,
+			Enabled:                 true,
+			Secret:                  clientSecret,
+			ClientAuthenticatorType: "client-secret",
 			RedirectUris: []string{
-				fmt.Sprintf("https://%s-admin.%s/*", clientID, installation.Spec.RoutingSubdomain),
+				fmt.Sprintf("%s/*", clientURL),
 			},
 			StandardFlowEnabled: true,
-			RootURL:             fmt.Sprintf("https://%s-admin.%s", clientID, installation.Spec.RoutingSubdomain),
+			RootURL:             clientURL,
 			FullScopeAllowed:    &fullScopeAllowed,
 			Access: map[string]bool{
 				"view":      true,

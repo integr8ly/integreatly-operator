@@ -349,7 +349,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Sync keycloak with openshift users
-	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace())
+	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace(), r.Installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to synchronize the users: %w", err)
 	}
@@ -449,20 +449,13 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
+func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string, installation *integreatlyv1alpha1.RHMI) ([]keycloak.KeycloakAPIUser, error) {
 	var openshiftUsers *usersv1.UserList
 	var err error
 
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		openshiftUsers, err = userHelper.GetMultiTenantUsers(ctx, serverClient)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get users in active IDPs")
-		}
-	} else {
-		openshiftUsers, err = userHelper.GetUsersInActiveIDPs(ctx, serverClient)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get users in active IDPs")
-		}
+	openshiftUsers, err = userHelper.GetUsersInActiveIDPs(ctx, serverClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get users in active IDPs")
 	}
 
 	groups := &usersv1.GroupList{}
