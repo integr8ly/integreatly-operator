@@ -203,7 +203,7 @@ This will run for 10 minutes at 15,000 requests per min.
 **10. Go back to Prometheus web page**
 
 - Execute this query:
-  `increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])`
+  `increase(authorized_calls[1m]) + increase(limited_calls[1m])`
 - Click on the `Graph` button
 
   > Ensure that the graph shows the usage reaches 15,000 requests and remains at the level for 10 minutes (until the test completes).

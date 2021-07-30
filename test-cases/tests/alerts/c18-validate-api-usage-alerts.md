@@ -130,7 +130,7 @@ estimate: 90m
 
     Verify that the RHOAMApiUsageOverLimit alert contains `694` at the end of its query. For example:
 
-    `max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[30m:]) / 694`
+    `max_over_time((increase(authorized_calls[1m]) + increase(limited_calls[1m]))[30m:]) / 694`
 
 13. Trigger API Usage alerts
 
@@ -149,7 +149,7 @@ estimate: 90m
     Add the following expression into the `Expression` field in the console:
 
     ```
-    increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])
+    increase(authorized_calls[1m]) + increase(limited_calls[1m]
     ```
 
     Click the `Execute` button. A `0` count should be returned.
