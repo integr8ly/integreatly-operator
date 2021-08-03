@@ -239,16 +239,30 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string) error {
+func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string, tenant string) error {
+	var (
+		clientSecret string
+		clientId     string
+		err          error
+	)
 
-	clientSecret, err := r.getClientSecret(ctx, serverClient, sso)
-	if err != nil {
-		return err
+	if tenant != "" {
+		clientSecret, err = r.getTenantClientSecret(ctx, serverClient, tenant)
+		if err != nil {
+			return err
+		}
+		clientId = tenant
+	} else {
+		clientSecret, err = r.getClientSecret(ctx, serverClient, sso)
+		if err != nil {
+			return err
+		}
+		clientId = r.GetOAuthClientName(sso)
 	}
 
 	oauthClient := &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: r.GetOAuthClientName(sso),
+			Name: clientId,
 		},
 		Secret:       clientSecret,
 		RedirectURIs: redirectUris,
@@ -276,7 +290,7 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 			Config: map[string]string{
 				"hideOnLoginPage": "",
 				"baseUrl":         "https://" + strings.Replace(r.Installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
-				"clientId":        r.GetOAuthClientName(sso),
+				"clientId":        clientId,
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
 				"defaultScope":    "user:full",
@@ -316,6 +330,27 @@ func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverCli
 	r.Log.Infof("Updated Identity Provider with client Secret: ", l.Fields{"idpAlias": idpAlias})
 
 	return nil
+}
+
+func (r *Reconciler) getTenantClientSecret(ctx context.Context, serverClient k8sclient.Client, tenant string) (string, error) {
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "tenant-oauth-client-secrets",
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	if err != nil {
+		r.Log.Errorf("Could not find secret", l.Fields{"secret": oauthClientSecrets.Name}, err)
+		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+	}
+
+	clientSecretBytes, ok := oauthClientSecrets.Data[string(tenant)]
+	if !ok {
+		r.Log.Errorf("Could not find tenant key in secret", l.Fields{"tenant": string(tenant), "secret": oauthClientSecrets.Name}, err)
+		return "", fmt.Errorf("Could not find %s key in %s Secret: %w", string(tenant), oauthClientSecrets.Name, err)
+	}
+	return string(clientSecretBytes), nil
 }
 
 func (r *Reconciler) getClientSecret(ctx context.Context, serverClient k8sclient.Client, sso config.RHSSOInterface) (string, error) {
