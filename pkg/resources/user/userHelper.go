@@ -3,15 +3,14 @@ package user
 import (
 	"context"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"strings"
 
-	v1 "github.com/openshift/api/config/v1"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	v1 "github.com/openshift/api/config/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	"github.com/pkg/errors"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -158,7 +157,7 @@ func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user user
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
 
-	exclusionGroups = append(exclusionGroups, "dedicated-admin")
+	exclusionGroups = append(exclusionGroups, "dedicated-admins", "osd-devaccess", "osd-sre-cluster-admins")
 	adminUsers, err := getUsersFromAdminGroups(ctx, serverClient, exclusionGroups)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list admin users")
@@ -172,23 +171,23 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (*u
 		return nil, errors.Wrap(err, "could not list users")
 	}
 	for _, openshiftUser := range openshiftUsers.Items {
+		found := false
 		for _, adminUser := range adminUsers.Items {
-			if adminUser.Name != openshiftUser.Name {
-				mtUsers.Items = append(mtUsers.Items, openshiftUser)
+			if adminUser.Name == openshiftUser.Name {
+				found = true
+				break
 			}
+		}
+		if !found {
+			mtUsers.Items = append(mtUsers.Items, openshiftUser)
 		}
 	}
 
 	return mtUsers, nil
 }
 
-func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, groups []string) (*usersv1.UserList, error) {
+func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {
 	adminGroups := &usersv1.GroupList{}
-	for _, group := range groups {
-		adminGroups.Items = append(adminGroups.Items, usersv1.Group{
-			ObjectMeta: metav1.ObjectMeta{Name: group}},
-		)
-	}
 	err := serverClient.List(ctx, adminGroups)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list users")
@@ -196,12 +195,25 @@ func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client,
 
 	adminUsers := &usersv1.UserList{}
 	for _, adminGroup := range adminGroups.Items {
-		adminUsers.Items = append(adminUsers.Items, usersv1.User{
-			ObjectMeta: metav1.ObjectMeta{Name: adminGroup.Users.String()}},
-		)
+		if excludeGroup(excludeGroups, adminGroup.Name) {
+			for _, user := range adminGroup.Users {
+				adminUsers.Items = append(adminUsers.Items, usersv1.User{
+					ObjectMeta: metav1.ObjectMeta{Name: user}},
+				)
+			}
+		}
 	}
 
 	return adminUsers, nil
+}
+
+func excludeGroup(groups []string, group string) bool {
+	for _, gr := range groups {
+		if group == gr {
+			return true
+		}
+	}
+	return false
 }
 
 func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.IdentityList, error) {
