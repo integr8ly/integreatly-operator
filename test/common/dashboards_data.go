@@ -244,12 +244,13 @@ func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingCont
 		if err != nil {
 			return nil, fmt.Errorf("failed to query prometheus: %w", err)
 		}
-
+		if queryResult == nil {
+			continue
+		}
 		for _, result := range queryResult {
 			pods[namespaces[i]] = append(pods[namespaces[i]], result.Metric["pod"].(string))
 		}
 	}
-
 	return pods, nil
 }
 
@@ -370,7 +371,7 @@ func getPrometheusQueryResult(output string) ([]prometheusQueryResult, error) {
 	}
 
 	if len(queryResponse.Data.Result) == 0 {
-		return nil, fmt.Errorf("no result")
+		return nil, nil
 	}
 
 	return queryResponse.Data.Result, nil
