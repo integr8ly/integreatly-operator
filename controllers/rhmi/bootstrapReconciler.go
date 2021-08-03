@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	userv1 "github.com/openshift/api/user/v1"
 	"math/rand"
 	"os"
 	"strings"
@@ -46,6 +48,8 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 )
 
+var tenantOauthclientSecretsName = "tenant-oauth-client-secrets"
+
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -78,6 +82,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
 		return phase, errors.Wrap(err, "failed to reconcile oauth secrets")
+	}
+
+	if (integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type))) {
+		phase, err := r.reconcileTenantOauthSecrets(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
+			return phase, errors.Wrap(err, "failed to reconcile oauth secrets")
+		}
 	}
 
 	phase, err = r.reconcilerGithubOauthSecret(ctx, serverClient, installation)
@@ -311,6 +323,75 @@ func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	allTenants, err := userHelper.GetMultiTenantUsers2(ctx, serverClient)
+	if (err != nil) {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting teants for OAuth clients secrets: %w", err)
+	}
+
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tenantOauthclientSecretsName,
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+	if !k8serr.IsNotFound(err) && err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if k8serr.IsNotFound(err) {
+		oauthClientSecrets.Data = map[string][]byte{}
+	}
+
+	for _, tenant := range allTenants.Items {
+		if _, ok := oauthClientSecrets.Data[string(tenant.Name)]; !ok {
+			oauthClient := &oauthv1.OAuthClient{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: r.installation.Spec.NamespacePrefix + string(tenant.Name),
+				},
+			}
+			err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
+			if !k8serr.IsNotFound(err) && err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			} else if k8serr.IsNotFound(err) {
+				oauthClientSecrets.Data[string(tenant.Name)] = []byte(generateSecret(32))
+			} else {
+				// recover secret from existing OAuthClient object in case Secret object was deleted
+				oauthClientSecrets.Data[string(tenant.Name)] = []byte(oauthClient.Secret)
+				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"tenant": string(tenant.Name)})
+			}
+		}
+	}
+
+
+	// Remove redundant tenant secrets
+	for key, _ := range oauthClientSecrets.Data {
+		if (!tenantExists(key, allTenants.Items)) {
+			delete(oauthClientSecrets.Data, key)
+		}
+	}
+
+	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
+	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling OAuth clients secrets: %w", err)
+	}
+
+	r.log.Info("Tenant OAuth client secrets successfully reconciled")
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func tenantExists(user string, tenants []userv1.User) bool {
+	for _, tenant := range tenants {
+		if tenant.Name == user {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// List of products that require secret for OAuthClient
 	productsList := []integreatlyv1alpha1.ProductName{
@@ -375,9 +456,9 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
 	r.installation.Spec.RoutingSubdomain = consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
+	r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(r.installation.Spec.RoutingSubdomain, "router-default.")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-
 }
 
 func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*routev1.Route, error) {
