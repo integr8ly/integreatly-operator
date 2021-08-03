@@ -41,6 +41,12 @@ type ThreeScaleInterface interface {
 	DeleteService(accessToken, serviceID string) error
 	DeleteBackend(accessToken string, backendID int) error
 	DeleteAccount(accessToken, accountID string) error
+
+	CreateTenant(accessToken string, account Account) (string, error)
+	CreateTenants(accessToken string, accounts []Account) error
+	DeleteTenant(accessToken string, id int) error
+	DeleteTenants(accessToken string, accounts []Account) error
+	ListTenantAccounts(accessToken string) ([]Account, error)
 }
 
 const (
@@ -552,13 +558,102 @@ func (tsc *threeScaleClient) DeleteAccount(accessToken, accountID string) error 
 	return assertStatusCode(http.StatusOK, res)
 }
 
-func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[string]interface{}) (*http.Response, error) {
-	dataJSON, err := json.Marshal(parameters)
+func (tsc *threeScaleClient) CreateTenant(accessToken string, account Account) (string, error) {
+
+	res, err := tsc.makeRequestToMaster(
+		"POST",
+		"master/api/providers.xml",
+		withAccessToken(accessToken, map[string]interface{}{
+			"org_name": account.Detail.OrgName,
+			"username": account.Detail.Name,
+			"email":    fmt.Sprintf("%s@rhmi.com", account.Detail.Name),
+			"password": "MT",
+		}),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+		return "", err
+	}
+
+	return xmlFromResponse(res, "//account/id/text()")
+}
+
+func (tsc *threeScaleClient) CreateTenants(accessToken string, accounts []Account) error {
+	for _, account := range accounts {
+		_, err := tsc.CreateTenant(accessToken, account)
+		if err == nil {
+			return fmt.Errorf("Error creating new tenant: %s", account.Detail.Name)
+		}
+	}
+	return nil
+}
+
+func (tsc *threeScaleClient) ListTenantAccounts(accessToken string) ([]Account, error) {
+	// curl -v  -X GET "https://master.apps.jmonteir.edy6.s1.devshift.org/admin/api/accounts.json?access_token=AIjluIOs"
+	res, err := tsc.makeRequestToMaster(
+		"GET",
+		"admin/api/accounts.json",
+		onlyAccessToken(accessToken),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/%s", tsc.wildCardDomain, path)
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
+		return nil, err
+	}
+
+	accountList := AccountList{}
+	if err := jsonFromResponse(res, &accountList); err != nil {
+		return nil, err
+	}
+
+	accounts := []Account{}
+	// removes pre created 3scale accounts
+	for _, account := range accountList.Items {
+		if account.Detail.Id != 1 && account.Detail.Id != 2 {
+			accounts = append(accounts, account)
+		}
+	}
+
+	return accounts, nil
+}
+
+func (tsc *threeScaleClient) DeleteTenants(accessToken string, accounts []Account) error {
+	for _, account := range accounts {
+		err := tsc.DeleteTenant(accessToken, account.Detail.Id)
+		if err == nil {
+			return fmt.Errorf("Error deleting tenant: %s", account.Detail.Name)
+		}
+	}
+	return nil
+}
+
+func (tsc *threeScaleClient) DeleteTenant(accessToken string, accountId int) error {
+	res, err := tsc.makeRequestToMaster(
+		"DELETE",
+		fmt.Sprintf("master/api/providers/%d.xml", accountId),
+		onlyAccessToken(accessToken),
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func makeRequest(url, method, path string, parameters map[string]interface{}, tsc *threeScaleClient) (*http.Response, error) {
+	dataJSON, err := json.Marshal(parameters)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(
 		method,
 		url,
@@ -571,6 +666,16 @@ func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[str
 	req.Header.Set("Content-Type", "application/json")
 
 	return tsc.httpc.Do(req)
+}
+
+func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[string]interface{}) (*http.Response, error) {
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/%s", tsc.wildCardDomain, path)
+	return makeRequest(url, method, path, parameters, tsc)
+}
+
+func (tsc *threeScaleClient) makeRequestToMaster(method, path string, parameters map[string]interface{}) (*http.Response, error) {
+	url := fmt.Sprintf("https://master.%s/%s", tsc.wildCardDomain, path)
+	return makeRequest(url, method, path, parameters, tsc)
 }
 
 func xmlFromResponse(res *http.Response, xpath string) (string, error) {

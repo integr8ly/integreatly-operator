@@ -3,10 +3,11 @@ package threescale
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"

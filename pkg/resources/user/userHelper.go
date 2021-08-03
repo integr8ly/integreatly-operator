@@ -3,10 +3,12 @@ package user
 import (
 	"context"
 	"fmt"
-	v1 "github.com/openshift/api/config/v1"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
+
+	v1 "github.com/openshift/api/config/v1"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -152,4 +154,69 @@ func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user user
 		identities.Items = append(identities.Items, *identity)
 	}
 	return identities, nil
+}
+
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
+
+	exclusionGroups = append(exclusionGroups, "dedicated-admin")
+	adminUsers, err := getUsersFromAdminGroups(ctx, serverClient, exclusionGroups)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list admin users")
+	}
+
+	mtUsers := &usersv1.UserList{}
+
+	openshiftUsers := &usersv1.UserList{}
+	err = serverClient.List(ctx, openshiftUsers)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list users")
+	}
+	for _, openshiftUser := range openshiftUsers.Items {
+		for _, adminUser := range adminUsers.Items {
+			if adminUser.Name != openshiftUser.Name {
+				mtUsers.Items = append(mtUsers.Items, openshiftUser)
+			}
+		}
+	}
+
+	return mtUsers, nil
+}
+
+func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, groups []string) (*usersv1.UserList, error) {
+	adminGroups := &usersv1.GroupList{}
+	for _, group := range groups {
+		adminGroups.Items = append(adminGroups.Items, usersv1.Group{
+			ObjectMeta: metav1.ObjectMeta{Name: group}},
+		)
+	}
+	err := serverClient.List(ctx, adminGroups)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list users")
+	}
+
+	adminUsers := &usersv1.UserList{}
+	for _, adminGroup := range adminGroups.Items {
+		adminUsers.Items = append(adminUsers.Items, usersv1.User{
+			ObjectMeta: metav1.ObjectMeta{Name: adminGroup.Users.String()}},
+		)
+	}
+
+	return adminUsers, nil
+}
+
+func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.IdentityList, error) {
+	identities := &usersv1.IdentityList{}
+	err := serverClient.List(ctx, identities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get identities by provider %s", providerName)
+	}
+
+	identitiesByProvider := &usersv1.IdentityList{}
+	for _, identity := range identities.Items {
+		if identity.ProviderName == providerName {
+			identitiesByProvider.Items = append(identitiesByProvider.Items, identity)
+		}
+	}
+
+	return identitiesByProvider, nil
 }
