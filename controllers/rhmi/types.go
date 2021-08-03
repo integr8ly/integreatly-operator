@@ -12,6 +12,70 @@ type Stage struct {
 }
 
 var (
+	allMultitenantManagedApiStages = &Type{
+		[]Stage{
+			{
+				Name: integreatlyv1alpha1.BootstrapStage,
+			},
+			{
+				Name: integreatlyv1alpha1.CloudResourcesStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductCloudResources: {
+						Name: integreatlyv1alpha1.ProductCloudResources,
+					},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.MonitoringStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.AuthenticationStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductRHSSO: {
+						Name: integreatlyv1alpha1.ProductRHSSO,
+					},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.ProductsStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.Product3Scale:    {Name: integreatlyv1alpha1.Product3Scale},
+					integreatlyv1alpha1.ProductRHSSOUser: {Name: integreatlyv1alpha1.ProductRHSSOUser},
+					integreatlyv1alpha1.ProductMarin3r:   {Name: integreatlyv1alpha1.ProductMarin3r},
+					integreatlyv1alpha1.ProductGrafana:   {Name: integreatlyv1alpha1.ProductGrafana},
+				},
+			},
+		},
+		[]Stage{
+			{
+				Name: integreatlyv1alpha1.UninstallProductsStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductRHSSO:     {Name: integreatlyv1alpha1.ProductRHSSO},
+					integreatlyv1alpha1.Product3Scale:    {Name: integreatlyv1alpha1.Product3Scale},
+					integreatlyv1alpha1.ProductRHSSOUser: {Name: integreatlyv1alpha1.ProductRHSSOUser},
+					integreatlyv1alpha1.ProductMarin3r:   {Name: integreatlyv1alpha1.ProductMarin3r},
+					integreatlyv1alpha1.ProductGrafana:   {Name: integreatlyv1alpha1.ProductGrafana},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.UninstallCloudResourcesStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.UninstallMonitoringStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+				},
+			},
+		},
+	}
 	allManagedApiStages = &Type{
 		[]Stage{
 			{
@@ -328,6 +392,8 @@ func TypeFactory(installationType string) (*Type, error) {
 		return newManagedType(), nil
 	case string(integreatlyv1alpha1.InstallationTypeManagedApi):
 		return newManagedApiType(), nil
+	case string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi):
+		return newMultitenantManagedApiType(), nil
 	case string(integreatlyv1alpha1.InstallationTypeSelfManaged):
 		return newSelfManagedType(), nil
 	default:
@@ -345,6 +411,10 @@ func newManagedType() *Type {
 
 func newManagedApiType() *Type {
 	return allManagedApiStages
+}
+
+func newMultitenantManagedApiType() *Type {
+	return allMultitenantManagedApiStages
 }
 
 func newSelfManagedType() *Type {

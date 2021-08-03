@@ -81,7 +81,7 @@ func getNamespaces(nsPrefix string, installType string) []string {
 		nsPrefix + "user-sso",
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		namespaces = append(namespaces, nsPrefix+"marin3r")
 	}
 	return namespaces

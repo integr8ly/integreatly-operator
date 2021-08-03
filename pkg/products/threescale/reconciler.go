@@ -181,7 +181,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 			phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
@@ -357,7 +357,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 
 		phase, err = r.reconcileRatelimitingTo3scaleComponents(ctx, serverClient, r.installation)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -697,7 +697,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			apim.Spec.Backend.ListenerSpec.Resources = &backendListenerResources
 		}
 
-		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 			err = productConfig.Configure(apim)
 
 			if err != nil {
@@ -2058,7 +2058,7 @@ func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClien
 		}
 
 		podPriorityMutation := resources.NoopMutate
-		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 			podPriorityMutation = resources.MutatePodPriority(r.installation.Spec.PriorityClassName)
 
 		}

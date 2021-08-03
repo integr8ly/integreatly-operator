@@ -192,7 +192,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	// Setting a name for keycloak-edge to "keycloak" for managed-api install type.
 	// This is done as the KCO route has been disabled, but if needs to be enabled in future, we won't have to change the route name.
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		routeName = "keycloak"
 	}
 
@@ -297,7 +297,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Labels = getMasterLabels()
 
 		// Disabling the KCO route for managed-api
-		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
 		} else {
 			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
@@ -321,7 +321,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			}
 		}
 
-		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 			err = productConfig.Configure(kc)
 			if err != nil {
 				return err
@@ -1217,7 +1217,7 @@ func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName stri
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
 	// If the installation type isn't managed-api, ensure that the ConsoleLink
 	// doesn't exist
-	if r.Installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
 		return r.deleteConsoleLink(ctx, serverClient)
 	}
 
