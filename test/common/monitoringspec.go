@@ -2,7 +2,6 @@ package common
 
 import (
 	goctx "context"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -170,7 +169,7 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 }
 
 func getExpectedServiceMonitors(installType string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("managedApiServiceMonitors")...)
 	} else {
 		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("rhmi2ExpectedServiceMonitors")...)

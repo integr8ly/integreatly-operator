@@ -67,7 +67,7 @@ func TestProductOperatorVersions(t TestingTB, ctx *TestingContext) {
 
 func getOperatorVersions(installType string) map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion {
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiProductOperatorVersions
 	} else {
 		return rhmiProductOperatorVersions

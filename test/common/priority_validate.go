@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -86,7 +85,7 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 
-	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		t.Skip("Skipping test as this is not a managed api install")
 	}
 

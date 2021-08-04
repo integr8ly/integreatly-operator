@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -128,7 +127,7 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 }
 
 func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonSubscriptionsToCheck(), managedApiSubscriptionsToCheck()...)
 	} else {
 		return append(commonSubscriptionsToCheck(), rhmi2SubscriptionsToCheck()...)
