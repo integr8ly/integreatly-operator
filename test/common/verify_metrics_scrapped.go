@@ -12,7 +12,7 @@ func mangedApiTargets() map[string][]string {
 	return map[string][]string{
 		// TODO: Should include other expected targets
 		Marin3rProductNamespace: {
-			"/prom-statsd-exporter/0",
+			"/ratelimit/0",
 		},
 	}
 }

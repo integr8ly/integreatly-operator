@@ -257,7 +257,6 @@ func managedApiSpecificRules() []alertsTestRule {
 			File: NamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"Marin3rDiscoveryServiceEndpointDown",
-				"Marin3rPromstatsdExporterServiceEndpointDown",
 				"Marin3rRateLimitServiceEndpointDown",
 			},
 		},
@@ -277,7 +276,6 @@ func managedApiSpecificRules() []alertsTestRule {
 			File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
 			Rules: []string{
 				"Marin3rWebhookPod",
-				"Marin3rPromstatsdExporterPod",
 				"Marin3rRateLimitPod",
 			},
 		},

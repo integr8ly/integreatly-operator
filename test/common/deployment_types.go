@@ -204,7 +204,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		deployment["marin3rDeployment"] = Namespace{
 			Name: Marin3rProductNamespace,
 			Products: []Product{
-				{Name: "prom-statsd-exporter", ExpectedReplicas: 1},
 				{Name: "ratelimit", ExpectedReplicas: *ratelimitCR.Spec.Replicas},
 			},
 		}

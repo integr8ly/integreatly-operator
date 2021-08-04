@@ -42,26 +42,6 @@ func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, install
 	}
 }
 
-// Config types, taken from unexported types in ratelimit service:
-// https://github.com/envoyproxy/ratelimit/blob/master/src/config/config_impl.go#L15-L44
-
-type yamlRateLimit struct {
-	RequestsPerUnit uint32 `yaml:"requests_per_unit"`
-	Unit            string `yaml:"unit"`
-}
-
-type yamlDescriptor struct {
-	Key         string           `yaml:"key"`
-	Value       string           `yaml:"value"`
-	RateLimit   *yamlRateLimit   `yaml:"rate_limit"`
-	Descriptors []yamlDescriptor `yaml:"descriptors"`
-}
-
-type yamlRoot struct {
-	Domain      string           `yaml:"domain"`
-	Descriptors []yamlDescriptor `yaml:"descriptors"`
-}
-
 type limitadorLimit struct {
 	Namespace  string   `yaml:"namespace"`
 	MaxValue   uint32   `yaml:"max_value"`
@@ -236,8 +216,9 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		deployment.Spec.Template.Spec.Containers[0].Name = quota.RateLimitName
 		deployment.Spec.Template.Spec.Containers[0].Image = rateLimitImage
 		// TODO - Remove after next release
-		//Remove command in upgrade scenario
+		// Remove command in upgrade scenario
 		deployment.Spec.Template.Spec.Containers[0].Command = nil
+		// END of removal
 		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/srv/runtime_data/current/config",
@@ -375,13 +356,13 @@ func uniqueKey(r marin3rconfig.RateLimitConfig) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
 
-func GetRateLimitFromConfig(c *corev1.ConfigMap) (*yamlRateLimit, error) {
-	ratelimitconfig := yamlRoot{}
+func GetRateLimitFromConfig(c *corev1.ConfigMap) (*limitadorLimit, error) {
+	var ratelimitconfig []limitadorLimit
 	err := yaml.Unmarshal([]byte(c.Data[RateLimitingConfigMapDataName]), &ratelimitconfig)
 	if err != nil {
 		return nil, fmt.Errorf(fmt.Sprintf("error unmarshalling ratelimiting config from configmap '%s'", c.Name), err)
 	}
-	return ratelimitconfig.Descriptors[0].RateLimit, nil
+	return &ratelimitconfig[0], nil
 }
 
 func (r *RateLimitServiceReconciler) getUnitInSeconds(rateLimitUnit string) (uint64, error) {
@@ -395,5 +376,19 @@ func (r *RateLimitServiceReconciler) getUnitInSeconds(rateLimitUnit string) (uin
 		return 60 * 60 * 24, nil
 	} else {
 		return 0, fmt.Errorf("unexpected Rate Limit Unit %v, while getting unit in seconds", rateLimitUnit)
+	}
+}
+
+func GetSecondsInUnit(seconds uint64) (string, error) {
+	if seconds == 1 {
+		return "second", nil
+	} else if seconds == 60 {
+		return "minute", nil
+	} else if seconds == (60 * 60) {
+		return "hour", nil
+	} else if seconds == (60 * 60 * 24) {
+		return "day", nil
+	} else {
+		return "", fmt.Errorf("unexpected seconds value: %v, while getting seconds in Rate Limit Unit", seconds)
 	}
 }

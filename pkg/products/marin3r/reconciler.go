@@ -40,8 +40,6 @@ const (
 	defaultInstallationNamespace = "marin3r"
 	manifestPackage              = "integreatly-marin3r"
 	statsdHost                   = "prom-statsd-exporter"
-	statsdPort                   = 9125
-	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
 )
@@ -189,6 +187,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter cr"), err)
 		return phase, err
 	}
+	// END of removal
 
 	// TODO - Remove after next release
 	phase, err = r.reconcilePromStatsdExporterService(ctx, client, productNamespace)
@@ -196,6 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter service"), err)
 		return phase, err
 	}
+	// END of removal
 
 	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
 		ReconcileRateLimitService(ctx, client, productConfig)
@@ -449,6 +449,8 @@ func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8s
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+// END of removal
+
 // TODO - Remove after next release
 func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcilePromStatsdExporterService for marin3r")
@@ -468,6 +470,8 @@ func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, cli
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+// END of removal
 
 func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcileServiceMonitor for marin3r")
@@ -518,6 +522,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
+	// END of removal
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

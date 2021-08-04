@@ -75,7 +75,6 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 				return nil, err
 			}
 
-			// TODO not sure how to handle this
 			lowerExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, ">=", requestsAllowedOverTimePeriod, &minRateValue)
 			upperExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, "<=", requestsAllowedOverTimePeriod, maxRateValue)
 
