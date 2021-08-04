@@ -16,7 +16,10 @@ import (
 )
 
 var (
-	totalRequestsMetric = "ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits"
+	totalRequestsMetric = []string{
+		"authorized_calls",
+		"limited_calls",
+	}
 )
 
 func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.AlertReconciler, error) {
@@ -48,7 +51,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 		switch alertConfig.Type {
 		case marin3rconfig.AlertTypeSpike:
 			expr := fmt.Sprintf(
-				"max_over_time(increase(authorized_calls[1m]) + increase(limited_calls[1m]))[%s:]) > %d",
+				"max_over_time((increase(authorized_calls[1m]) + increase(limited_calls[1m]))[%s:]) > %d",
 				alertConfig.Period, rateLimitRequestsPerUnit)
 			annotations := map[string]string{
 				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),
@@ -135,14 +138,21 @@ func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string,
 	}
 }
 
-func increaseExpr(totalRequestsMetric, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
+func increaseExpr(totalRequestsMetric []string, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
 	if percenteageLimit == nil {
 		return nil
 	}
+	totalRequests := ""
+
+	for _, metric := range totalRequestsMetric {
+		totalRequests += fmt.Sprintf("(sum(increase(%s[%s]) or vector(0)) + ", metric, period)
+	}
+
+	totalRequests = strings.TrimSuffix(totalRequests, " + ")
 
 	result := fmt.Sprintf(
-		"(sum(increase(%s[%s]) %s (%f / 100 * %d)))",
-		totalRequestsMetric, period, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
+		"(%s) %s (%f / 100 * %d)))",
+		totalRequests, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
 	)
 
 	return &result

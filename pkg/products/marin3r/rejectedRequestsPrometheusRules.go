@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const rejectedRequestsAlertExpr = "abs(clamp_min(increase(limited_calls[1m])) - %f, 0) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))) - (increase(limited_calls[1m]) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))) > 0.3"
+const rejectedRequestsAlertExpr = "abs(clamp_min(increase(limited_calls[1m]) - %f, 0) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))) - (increase(limited_calls[1m]) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))))) > 0.3"
 
 func (r *Reconciler) newRejectedRequestsAlertsReconciler(logger l.Logger, installType string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]

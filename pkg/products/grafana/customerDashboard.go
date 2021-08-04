@@ -110,7 +110,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))",
+          "expr": "sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0))",
           "instant": true,
           "refId": "A"
         }
@@ -281,7 +281,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "(sum(increase(limited_calls[1m])) > 0 or vector(0))/(sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m])))*100 > 0 or vector(0)",
+          "expr": "(sum(increase(limited_calls[1m])) > 0 or vector(0))/(sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0)))*100 > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -348,7 +348,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))",
+          "expr": "sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0))",
           "instant": false,
           "interval": "30s",
           "legendFormat": "No. of Requests",
@@ -469,7 +469,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(authorized_calls[24h])) + sum(increase(limited_calls[24h])) > 0 or vector(0)",
+          "expr": "sum(increase(authorized_calls[24h]) or vector(0)) + sum(increase(limited_calls[24h]) or vector(0)) > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -554,7 +554,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(limited_calls[24h]))",
+          "expr": "sum(increase(limited_calls[24h]) or vector(0))",
           "format": "time_series",
           "instant": true,
           "refId": "A"
@@ -640,7 +640,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "tableColumn": "",
       "targets": [
         {
-          "expr": "(sum(increase(limited_calls[24h])) > 0 or vector(0))/(sum(increase(authorized_calls[24h])) + sum(increase(limited_calls[24h])))*100 > 0 or vector(0)",
+          "expr": "(sum(increase(limited_calls[24h])) > 0 or vector(0))/(sum(increase(authorized_calls[24h]) or vector(0)) + sum(increase(limited_calls[24h]) or vector(0)))*100 > 0 or vector(0)",
           "instant": true,
           "legendFormat": "",
           "refId": "A"

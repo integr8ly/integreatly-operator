@@ -103,7 +103,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
 		limitadorLimit := []limitadorLimit{
 			{
-				Namespace: "apicast-ratelimit",
+				Namespace: ratelimit.RateLimitDomain,
 				MaxValue:  r.RateLimitConfig.RequestsPerUnit,
 				Seconds:   unitInSeconds,
 				Conditions: []string{
