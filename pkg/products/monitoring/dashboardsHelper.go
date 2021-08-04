@@ -24,13 +24,13 @@ func getSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, 
 		return monitoring.GetMonitoringGrafanaDBEndpointsSummaryJSON(rhmi.ObjectMeta.Name), "endpointssummary.json", nil
 
 	case "resources-by-namespace":
-		return monitoring.GetMonitoringGrafanaDBResourceByNSJSON(rhmi.ObjectMeta.Name), "resources-by-namespace.json", nil
+		return monitoring.GetMonitoringGrafanaDBResourceByNSJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "resources-by-namespace.json", nil
 
 	case "resources-by-pod":
-		return monitoring.GetMonitoringGrafanaDBResourceByPodJSON(rhmi.ObjectMeta.Name), "resources-by-pod.json", nil
+		return monitoring.GetMonitoringGrafanaDBResourceByPodJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "resources-by-pod.json", nil
 
 	case "cluster-resources":
-		return monitoring.GetMonitoringGrafanaDBClusterResourcesJSON(rhmi.ObjectMeta.Name), "cluster-resources-new.json", nil
+		return monitoring.GetMonitoringGrafanaDBClusterResourcesJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "cluster-resources-new.json", nil
 	case "critical-slo-rhmi-alerts":
 		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(rhmi.Spec.NamespacePrefix, installationName), "critical-slo-alerts.json", nil
 
