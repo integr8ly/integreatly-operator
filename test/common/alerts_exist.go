@@ -392,7 +392,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"ClusterSchedulableCPULow",
 				"PVCStorageAvailable",
 				"PVCStorageMetricsAvailable",
-				"KubePersistentVolumeFillingUp",
+				"KubePersistentVolumeFillingUp4h",
 				"KubePersistentVolumeFillingUp",
 				"PersistentVolumeErrors",
 			},
