@@ -10,7 +10,6 @@ import (
 	"time"
 
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
-	userv1 "github.com/openshift/api/user/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -347,29 +346,29 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 		oauthClientSecrets.Data = map[string][]byte{}
 	}
 
-	for _, tenant := range allTenants.Items {
-		if _, ok := oauthClientSecrets.Data[string(tenant.Name)]; !ok {
+	for _, tenant := range allTenants {
+		if _, ok := oauthClientSecrets.Data[tenant.TenantName]; !ok {
 			oauthClient := &oauthv1.OAuthClient{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: r.installation.Spec.NamespacePrefix + string(tenant.Name),
+					Name: r.installation.Spec.NamespacePrefix + tenant.TenantName,
 				},
 			}
 			err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
 			if !k8serr.IsNotFound(err) && err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			} else if k8serr.IsNotFound(err) {
-				oauthClientSecrets.Data[string(tenant.Name)] = []byte(generateSecret(32))
+				oauthClientSecrets.Data[tenant.TenantName] = []byte(generateSecret(32))
 			} else {
 				// recover secret from existing OAuthClient object in case Secret object was deleted
-				oauthClientSecrets.Data[string(tenant.Name)] = []byte(oauthClient.Secret)
-				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"tenant": string(tenant.Name)})
+				oauthClientSecrets.Data[tenant.TenantName] = []byte(oauthClient.Secret)
+				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"tenant": tenant.TenantName})
 			}
 		}
 	}
 
 	// Remove redundant tenant secrets
 	for key, _ := range oauthClientSecrets.Data {
-		if !tenantExists(key, allTenants.Items) {
+		if !tenantExists(key, allTenants) {
 			delete(oauthClientSecrets.Data, key)
 		}
 	}
@@ -385,9 +384,9 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func tenantExists(user string, tenants []userv1.User) bool {
+func tenantExists(user string, tenants []userHelper.MultiTenantUser) bool {
 	for _, tenant := range tenants {
-		if tenant.Name == user {
+		if tenant.TenantName == user {
 			return true
 		}
 	}

@@ -393,14 +393,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		users := &usersv1.UserList{}
+		users := []userHelper.MultiTenantUser{}
 		users, err := userHelper.GetMultiTenantUsers(ctx, serverClient)
 		if err != nil {
 			r.Log.Error("Error getting multi tenant users", err)
 			return integreatlyv1alpha1.PhaseFailed, nil
 		}
 
-		r.reconcileTenants(ctx, serverClient, r.Config.GetNamespace(), *users)
+		r.reconcileTenants(ctx, serverClient, r.Config.GetNamespace(), users)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling multi tenant users: %w", err)
 		}
@@ -469,7 +469,7 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclient.Client, ns string, users usersv1.UserList) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclient.Client, ns string, users []userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
 
 	options := &k8sclient.ListOptions{
 		Namespace: ns,
@@ -480,10 +480,10 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 		return integreatlyv1alpha1.PhaseFailed, nil
 	}
 
-	added, deleted := getTenantDiff(users.Items, realms.Items)
+	added, deleted := getTenantDiff(users, realms.Items)
 
 	for _, user := range added {
-		_, err := r.createTenantRealm(ctx, serverClient, user.Name)
+		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -533,7 +533,7 @@ func (r *Reconciler) deleteTenant(ctx context.Context, serverClient k8sclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getTenantDiff(users []usersv1.User, realms []keycloak.KeycloakRealm) (added []usersv1.User, deleted []keycloak.KeycloakRealm) {
+func getTenantDiff(users []userHelper.MultiTenantUser, realms []keycloak.KeycloakRealm) (added []userHelper.MultiTenantUser, deleted []keycloak.KeycloakRealm) {
 
 	for _, user := range users {
 		if !realmExistsForTenant(realms, user) {
@@ -553,38 +553,29 @@ func getTenantDiff(users []usersv1.User, realms []keycloak.KeycloakRealm) (added
 	return added, deleted
 }
 
-func realmExistsForTenant(realms []keycloak.KeycloakRealm, user usersv1.User) bool {
+func realmExistsForTenant(realms []keycloak.KeycloakRealm, user userHelper.MultiTenantUser) bool {
 	for _, realm := range realms {
-		if realm.Name == user.Name {
+		if realm.Name == user.TenantName {
 			return true
 		}
 	}
 	return false
 }
 
-func userExistsForRealm(users []usersv1.User, realm keycloak.KeycloakRealm) bool {
+func userExistsForRealm(users []userHelper.MultiTenantUser, realm keycloak.KeycloakRealm) bool {
 	for _, user := range users {
-		if realm.Name == user.Name {
+		if realm.Name == user.TenantName {
 			return true
 		}
 	}
 	return false
 }
 
-func (r *Reconciler) createTenantKCUser(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (integreatlyv1alpha1.StatusPhase, error) {
-
-	email, err := userHelper.GetUserEmailFromIdentity(ctx, serverClient, user)
-	if err != nil {
-		r.Log.Errorf("Failed to get email for user", l.Fields{"user": user.Name}, err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get email for user: %w", err)
-	}
-	if email == "" {
-		email = user.Name + "@rhmi.io"
-	}
+func (r *Reconciler) createTenantKCUser(ctx context.Context, serverClient k8sclient.Client, user userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
 
 	kcUser := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      user.Name,
+			Name:      user.TenantName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
@@ -592,22 +583,22 @@ func (r *Reconciler) createTenantKCUser(ctx context.Context, serverClient k8scli
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				masterRealmLabelKey: user.Name,
+				masterRealmLabelKey: user.TenantName,
 			},
 		}
 		kcUser.Labels = map[string]string{
-			"sso": user.Name,
+			"sso": user.TenantName,
 		}
 		kcUser.Spec.User = keycloak.KeycloakAPIUser{
 			Enabled:       true,
-			UserName:      user.Name,
+			UserName:      user.TenantName,
 			EmailVerified: true,
-			Email:         email,
+			Email:         user.Email,
 			FederatedIdentities: []keycloak.FederatedIdentity{
 				{
 					IdentityProvider: idpAlias,
 					UserID:           string(user.UID),
-					UserName:         user.Name,
+					UserName:         user.TenantName,
 				},
 			},
 			ClientRoles: getTenantClientRoles("realm-management"),
@@ -1486,17 +1477,17 @@ func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName stri
 
 func (r *Reconciler) reconcileTenantDashboardLinks(ctx context.Context, serverClient k8sclient.Client) error {
 
-	users := &usersv1.UserList{}
+	users := []userHelper.MultiTenantUser{}
 	users, err := userHelper.GetMultiTenantUsers(ctx, serverClient)
 	if err != nil {
 		r.Log.Error("Error getting multi tenant users", err)
 		return err
 	}
 
-	for _, user := range users.Items {
-		tenantLink := r.Config.GetHost() + "/auth/admin/" + user.Name + "/console/"
-		tenantNs := user.Name + "-dev"
-		if err := r.reconcileDashboardLink(ctx, serverClient, user.Name, tenantLink, tenantNs); err != nil {
+	for _, user := range users {
+		tenantLink := r.Config.GetHost() + "/auth/admin/" + user.TenantName + "/console/"
+		tenantNs := user.TenantName + "-dev"
+		if err := r.reconcileDashboardLink(ctx, serverClient, user.TenantName, tenantLink, tenantNs); err != nil {
 			return err
 		}
 	}
