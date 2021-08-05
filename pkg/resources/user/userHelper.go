@@ -29,6 +29,13 @@ var (
 	}
 )
 
+type MultiTenantUser struct {
+	Username   string
+	TenantName string
+	Email      string
+	UID        string
+}
+
 func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (string, error) {
 	email := ""
 
@@ -155,37 +162,6 @@ func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user user
 	return identities, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
-
-	exclusionGroups = append(exclusionGroups, "dedicated-admins", "osd-devaccess", "osd-sre-cluster-admins")
-	adminUsers, err := getUsersFromAdminGroups(ctx, serverClient, exclusionGroups)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not list admin users")
-	}
-
-	mtUsers := &usersv1.UserList{}
-
-	openshiftUsers := &usersv1.UserList{}
-	err = serverClient.List(ctx, openshiftUsers)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not list users")
-	}
-	for _, openshiftUser := range openshiftUsers.Items {
-		found := false
-		for _, adminUser := range adminUsers.Items {
-			if adminUser.Name == openshiftUser.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			mtUsers.Items = append(mtUsers.Items, openshiftUser)
-		}
-	}
-
-	return mtUsers, nil
-}
-
 func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {
 	adminGroups := &usersv1.GroupList{}
 	err := serverClient.List(ctx, adminGroups)
@@ -231,4 +207,39 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 	}
 
 	return identitiesByProvider, nil
+}
+
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
+	identities, err := GetIdentitiesByProviderName(ctx, serverClient, "testing-idp")
+	if err != nil {
+		return nil, fmt.Errorf("Error getting identity list for multi tenants")
+	}
+	for _, identity := range identities.Items {
+
+		var email = ""
+		if identity.Extra["email"] != "" {
+			email = identity.Extra["email"]
+		} else {
+			email = identity.User.Name + "@rhmi.io"
+		}
+
+		users = append(users, MultiTenantUser{
+			Username:   identity.User.Name,
+			TenantName: SanitiseTenantUserName(identity.User.Name),
+			Email:      email,
+			UID:        string(identity.User.UID),
+		})
+	}
+	return users, nil
+}
+
+func SanitiseTenantUserName(username string) string {
+	// Regex for only alphanumeric values
+	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+
+	// Replace all non-alphanumeric values with the replacement character
+	processedString := reg.ReplaceAllString(strings.ToLower(username), invalidCharacterReplacement)
+
+	// Remove occurrence of replacement character at end of string
+	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
 }
