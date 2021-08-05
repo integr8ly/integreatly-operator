@@ -51,11 +51,11 @@ metadata:
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.10.0-rc4
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.10.0
     operators.operatorframework.io/builder: operator-sdk-v1.7.1+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
-    serviceAffecting: "true"
+    serviceAffecting: "false"
     containerImages: |-
       [
         {"component_name":"3scale-operator.v0.7.0","component_url":"registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:5063f838a8a7649626231edabf47debc3d4e36f69de37675d126b19fdbeb69c3"},{"component_name":"apicast-gateway-rhel8","component_url":"registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:fd22a4f059c691109e098dc47f4a44acecd66e069c89af9eb9630df65074a88d"},{"component_name":"backend-rhel7","component_url":"registry.redhat.io/3scale-amp2/backend-rhel7@sha256:b5975297fb2bc871e2010619308d4eb59744fde96176a5611303222c326576ac"},{"component_name":"system-rhel7","component_url":"registry.redhat.io/3scale-amp2/system-rhel7@sha256:d02e84ca7835e317bbbc2a702ec84cd67cf37ea86b78485f937a1685ea3563f8"},{"component_name":"zync-rhel7","component_url":"registry.redhat.io/3scale-amp2/zync-rhel7@sha256:130f5b62e04eddb55f7a8d677b8c87c8fde9d1553dce122b11c2caeb549e5819"},{"component_name":"memcached-rhel7","component_url":"registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:abb74220a349f3d4b5aac8a28bd5c1ca5e1b141434c05f8b8c58a91edfdeaa55"},{"component_name":"postgresql-10-rhel7","component_url":"registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:ba7713d570c058e61bae1adc1591b1fe834d45fe5e1fba70721c93f4fd64d535"},{"component_name":"cloud-resources.v0.30.0","component_url":"quay.io/integreatly/cloud-resource-operator:v0.30.0"},{"component_name":"grafana-operator.v3.10.2","component_url":"quay.io/integreatly/grafana-operator:v3.10.2"},{"component_name":"marin3r.v0.7.0","component_url":"quay.io/3scale/marin3r:v0.7.0"},{"component_name":"application-monitoring-operator.v1.6.2","component_url":"quay.io/integreatly/application-monitoring-operator:v1.6.2"},{"component_name":"keycloak-operator.v14.0.0","component_url":"quay.io/keycloak/keycloak-operator:14.0.0"},{"component_name":"RELATED_IMAGE_RHSSO_OPENJDK","component_url":"registry.redhat.io/rh-sso-7/sso74-openshift-rhel8:7.4-25.1618434642"}]
@@ -419,7 +419,7 @@ spec:
                   value: default@test.com
                 - name: QUOTA
                   value: "200"
-                image: quay.io/integreatly/managed-api-service:rhoam-v1.10.0-rc4
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.10.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
