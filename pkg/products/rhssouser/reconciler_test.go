@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -245,21 +246,19 @@ func TestReconciler_config(t *testing.T) {
 	}
 }
 
-func getUser(name string) usersv1.User {
-	return usersv1.User{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			UID:  "123",
-		},
+func getUser(name string) userHelper.MultiTenantUser {
+	return userHelper.MultiTenantUser{
+		Username:   name,
+		TenantName: name,
+		Email:      "asdf@bla.com",
+		UID:        "123",
 	}
 }
 
-func getAddedUsers() usersv1.UserList {
-	return usersv1.UserList{
-		Items: []usersv1.User{
-			getUser("user1"),
-			getUser("user2"),
-		},
+func getAddedUsers() []userHelper.MultiTenantUser {
+	return []userHelper.MultiTenantUser{
+		getUser("user1"),
+		getUser("user2"),
 	}
 }
 
@@ -348,7 +347,7 @@ func TestReconciler_reconcileTenants(t *testing.T) {
 		FakeMPM               *marketplace.MarketplaceInterfaceMock
 		Recorder              record.EventRecorder
 		ApiUrl                string
-		Users                 usersv1.UserList
+		Users                 []userHelper.MultiTenantUser
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 		ProductConfig         *quota.ProductConfigMock
 	}{
@@ -401,7 +400,7 @@ func TestReconciler_reconcileTenants(t *testing.T) {
 					Type: "multitenant-managed-api",
 				},
 			},
-			Users: usersv1.UserList{},
+			Users: []userHelper.MultiTenantUser{},
 			AssertFunc: func() {
 				if deleteKcRealmCalls != 2 || deleteKcUserCalls != 2 {
 					t.Fatal("expected deleteKcRealm: ", strconv.Itoa(deleteKcRealmCalls), " and deleteKcUser: ", strconv.Itoa(deleteKcUserCalls), " to be called twice each")
