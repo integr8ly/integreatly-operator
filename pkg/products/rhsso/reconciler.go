@@ -305,7 +305,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		// created because the Keycloak operator does not allow updates to
 		// the realms
 		redirectUris := []string{r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint"}
-		err = r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectUris)
+		err = r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectUris, "")
 		if err != nil {
 			return fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
