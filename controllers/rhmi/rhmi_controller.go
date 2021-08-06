@@ -1124,11 +1124,19 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	client, err := k8sclient.New(kubeConfig, k8sclient.Options{
 		Scheme: mgr.GetScheme(),
 	})
-	installation, err := r.createInstallationCR(context.Background(), client)
+
+	installation, err := getInstallation()
 	if err != nil {
 		return err
 	}
 
+	installedViaOLM, err := addon.OperatorInstalledViaOLM(context.Background(), client, installation)
+	if !installedViaOLM {
+		_, err = r.createInstallationCR(context.Background(), client)
+		if err != nil {
+			return err
+		}
+	}
 	if err := reconcileQuotaConfig(context.TODO(), client, installation); err != nil {
 		return err
 	}
@@ -1360,4 +1368,21 @@ func requiredEnvVar(check func(string) error) func(string, bool) error {
 func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
 	aMinuteAgo := time.Now().Add(-time.Minute)
 	return aMinuteAgo.After(installation.CreationTimestamp.Time)
+}
+
+func getInstallation() (*rhmiv1alpha1.RHMI, error) {
+	namespace, err := resources.GetWatchNamespace()
+	if err != nil {
+		return nil, err
+	}
+
+	installType, _ := os.LookupEnv(installTypeEnvName)
+	return &rhmiv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+		},
+		Spec: rhmiv1alpha1.RHMISpec{
+			Type: installType,
+		},
+	}, nil
 }
