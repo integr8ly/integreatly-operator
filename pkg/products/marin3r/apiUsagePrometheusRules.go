@@ -16,10 +16,7 @@ import (
 )
 
 var (
-	totalRequestsMetric = []string{
-		"authorized_calls",
-		"limited_calls",
-	}
+	totalRequestsMetric = "authorized_calls"
 )
 
 func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.AlertReconciler, error) {
@@ -137,21 +134,14 @@ func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string,
 	}
 }
 
-func increaseExpr(totalRequestsMetric []string, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
+func increaseExpr(totalRequestsMetric, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
 	if percenteageLimit == nil {
 		return nil
 	}
-	totalRequests := ""
-
-	for _, metric := range totalRequestsMetric {
-		totalRequests += fmt.Sprintf("(sum(increase(%s[%s]) or vector(0)) + ", metric, period)
-	}
-
-	totalRequests = strings.TrimSuffix(totalRequests, " + ")
 
 	result := fmt.Sprintf(
-		"(%s) %s (%f / 100 * %d)))",
-		totalRequests, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
+		"(sum(increase(%s[%s]) %s (%f / 100 * %d)))",
+		totalRequestsMetric, period, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
 	)
 
 	return &result
