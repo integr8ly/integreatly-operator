@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
@@ -94,7 +94,7 @@ func NewEnvoyConfig(name, namespace, nodeID string) *EnvoyConfig {
 	nodeID:
 	serialization: yaml
 **/
-func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.Client, clusterResources []*envoyapi.Cluster, listenerResources []*envoyapi.Listener, installation *integreatlyv1alpha1.RHMI) error {
+func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.Client, clusterResources []*envoyclusterv3.Cluster, listenerResources []*envoylistenerv3.Listener, installation *integreatlyv1alpha1.RHMI) error {
 	envoyconfig := &marin3rv1alpha1.EnvoyConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ec.name,
@@ -143,6 +143,8 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 	_, err := controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, installation)
 		serialization := "yaml"
+		envoyAPIVersion := "v3"
+		envoyconfig.Spec.EnvoyAPI = &envoyAPIVersion
 		envoyconfig.Spec.NodeID = ec.nodeID
 		envoyconfig.Spec.Serialization = &serialization
 		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha1.EnvoyResources{
@@ -174,33 +176,33 @@ Creates envoy config cluster resource
 		name: apicast-ratelimit
 		type: STRICT_DNS
 **/
-func CreateClusterResource(containerAddress, clusterName string, containerPort int) *envoyapi.Cluster {
+func CreateClusterResource(containerAddress, clusterName string, containerPort int) *envoyclusterv3.Cluster {
 
 	// Setting up cluster endpoints
-	clusterEndpoint := &envoycore.Address{
-		Address: &envoycore.Address_SocketAddress{
-			SocketAddress: &envoycore.SocketAddress{
+	clusterEndpoint := &envoycorev3.Address{
+		Address: &envoycorev3.Address_SocketAddress{
+			SocketAddress: &envoycorev3.SocketAddress{
 				Address:  containerAddress,
-				Protocol: envoycore.SocketAddress_TCP,
-				PortSpecifier: &envoycore.SocketAddress_PortValue{
+				Protocol: envoycorev3.SocketAddress_TCP,
+				PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 					PortValue: uint32(containerPort),
 				},
 			},
 		},
 	}
 
-	cluster := envoyapi.Cluster{
+	cluster := envoyclusterv3.Cluster{
 		Name:                 clusterName,
 		ConnectTimeout:       ptypes.DurationProto(2 * time.Second),
-		ClusterDiscoveryType: &envoyapi.Cluster_Type{Type: envoyapi.Cluster_STRICT_DNS},
-		LbPolicy:             envoyapi.Cluster_ROUND_ROBIN,
-		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS},
+		LbPolicy:             envoyclusterv3.Cluster_ROUND_ROBIN,
+		LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
 			ClusterName: clusterName,
-			Endpoints: []*envoy_api_v2_endpoint.LocalityLbEndpoints{{
-				LbEndpoints: []*envoy_api_v2_endpoint.LbEndpoint{
+			Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
+				LbEndpoints: []*envoyendpointv3.LbEndpoint{
 					{
-						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
-							Endpoint: &envoy_api_v2_endpoint.Endpoint{
+						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+							Endpoint: &envoyendpointv3.Endpoint{
 								Address: clusterEndpoint,
 							}},
 					},
@@ -222,22 +224,22 @@ func CreateClusterResource(containerAddress, clusterName string, containerPort i
       - filters: &filters
 	name: http
 */
-func CreateListenerResource(listenerName, listenerAddress string, listenerPort int, filters []*listener.Filter) *envoyapi.Listener {
+func CreateListenerResource(listenerName, listenerAddress string, listenerPort int, filters []*envoylistenerv3.Filter) *envoylistenerv3.Listener {
 
-	envoyListener := envoyapi.Listener{
+	envoyListener := envoylistenerv3.Listener{
 		Name: listenerName,
-		Address: &envoycore.Address{
-			Address: &envoycore.Address_SocketAddress{
-				SocketAddress: &envoycore.SocketAddress{
-					Protocol: envoycore.SocketAddress_TCP,
+		Address: &envoycorev3.Address{
+			Address: &envoycorev3.Address_SocketAddress{
+				SocketAddress: &envoycorev3.SocketAddress{
+					Protocol: envoycorev3.SocketAddress_TCP,
 					Address:  listenerAddress,
-					PortSpecifier: &envoycore.SocketAddress_PortValue{
+					PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 						PortValue: uint32(listenerPort),
 					},
 				},
 			},
 		},
-		FilterChains: []*listener.FilterChain{{
+		FilterChains: []*envoylistenerv3.FilterChain{{
 			Filters: filters,
 		}},
 	}

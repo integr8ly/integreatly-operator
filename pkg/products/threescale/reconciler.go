@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"os"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -16,8 +17,8 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	consolev1 "github.com/openshift/api/console/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
@@ -2183,7 +2184,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		ratelimit.RateLimitClusterName,
 		getRatelimitServicePort(ratelimitServiceCR),
 	)
-	ratelimitClusterResource.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+	ratelimitClusterResource.Http2ProtocolOptions = &envoycorev3.Http2ProtocolOptions{}
 
 	// apicast cluster
 	apiCastClusterResource := ratelimit.CreateClusterResource(
@@ -2206,7 +2207,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	// create envoy config for apicast
 	apiCastProxyConfig := ratelimit.NewEnvoyConfig(ApicastClusterName, r.Config.GetNamespace(), ApicastNodeID)
-	err = apiCastProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{apiCastClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{apiCastListenerResource}, installation)
+	err = apiCastProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{apiCastClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{apiCastListenerResource}, installation)
 	if err != nil {
 		r.log.Errorf("Failed to create envoyconfig for apicast", l.Fields{"APICast": ApicastClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -2234,7 +2235,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 
 	// create envoy config for backend listener
 	backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
-	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyapi.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoyapi.Listener{backendListenerResource}, installation)
+	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{backendListenerResource}, installation)
 	if err != nil {
 		r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err

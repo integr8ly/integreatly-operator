@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	EnvoyImage = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0.6-1"
+	EnvoyImage = "envoyproxy/envoy:v1.16.4"
 )
 
 type container struct {
@@ -89,16 +89,18 @@ func (envoyProxy *envoyProxyServer) patchDeploymentConfig(dcName, namespace, env
 
 	envoyProxy.log.Infof(
 		"adding MARIN3R annotations and labels: ", l.Fields{
-			"marin3r.3scale.net/node-id":     envoyNodeID,
-			"marin3r.3scale.net/ports":       envoyPort,
-			"marin3r.3scale.net/envoy-image": EnvoyImage,
-			"marin3r.3scale.net/status":      "enabled",
+			"marin3r.3scale.net/node-id":           envoyNodeID,
+			"marin3r.3scale.net/ports":             envoyPort,
+			"marin3r.3scale.net/envoy-image":       EnvoyImage,
+			"marin3r.3scale.net/status":            "enabled",
+			"marin3r.3scale.net/envoy-api-version": "v3",
 		})
 
 	dc.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
 	dc.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = envoyNodeID
 	dc.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
 	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
+	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = "v3"
 
 	if err := envoyProxy.client.Update(envoyProxy.ctx, dc); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to apply MARIN3R labels to %s deploymentconfig: %v", dcName, err)

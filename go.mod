@@ -46,7 +46,6 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.20.6
 	k8s.io/apiextensions-apiserver v0.20.2
