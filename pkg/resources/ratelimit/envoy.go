@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	EnvoyImage      = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0.6-1"
-	EnvoyAPIVersion = "v2"
+	EnvoyImage      = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.0-1"
+	EnvoyAPIVersion = "v3"
 )
 
 type container struct {
