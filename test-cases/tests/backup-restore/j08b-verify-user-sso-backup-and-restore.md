@@ -76,3 +76,6 @@ NS_PREFIX=redhat-rhoam ./j08-verify-user-sso-backup-and-restore.sh | tee test-ou
 
 4. Wait for the script to finish without errors
 5. Verify in the `test-output.txt` log that the test finished successfully.
+
+**Note**
+Sometimes there could be a difference between the DB dump files, caused by a changed order of lines in these files. That is not considered to be an issue. More details: https://issues.redhat.com/browse/MGDAPI-2380

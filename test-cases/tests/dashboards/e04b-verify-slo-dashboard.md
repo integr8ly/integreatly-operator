@@ -14,6 +14,7 @@ products:
       - 1.2.0
       - 1.4.0
       - 1.7.0
+      - 1.10.0
 estimate: 30m
 tags:
   - destructive
