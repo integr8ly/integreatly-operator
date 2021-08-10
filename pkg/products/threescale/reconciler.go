@@ -2513,11 +2513,19 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		ApicastContainerPort,
 	)
 
+	// apicast filters based on installation type
+	apicastHTTPFilters, err := getAPICastHTTPFilters(installation)
+	if err != nil {
+		r.log.Errorf("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	// apicast listener
 	apiCastFilters, _ := getListenerResourceFilters(
-		getAPICastVirtualHosts(ApicastClusterName),
-		getAPICastHTTPFilters(),
+		getAPICastVirtualHosts(installation, ApicastClusterName),
+		apicastHTTPFilters,
 	)
+
 	apiCastListenerResource := ratelimit.CreateListenerResource(
 		ApicastListenerName,
 		ApicastEnvoyProxyAddress,

@@ -15,9 +15,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	genericKey      = "generic_key"
+	headerMatch     = "header_match"
+	headerKey       = "tenant"
+	mtUnit          = "minute"
+	possibleTenants = 3000
 )
 
 type RateLimitServiceReconciler struct {
@@ -120,6 +129,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 }
 
 func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+	currentRateLimit := ""
+
 	redisSecret, err := r.getRedisSecret(ctx, client)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
@@ -145,6 +156,15 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 	if err != nil {
 		if !k8sError.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		currentRateLimit, err = r.getCurrentLimitPerTenant(client)
+		if err != nil {
+			if !k8sError.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
 		}
 	}
 
@@ -351,8 +371,15 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 
 // uniqueKey generates a unique string for each possible rate limit configuration
 // combination
-func uniqueKey(r marin3rconfig.RateLimitConfig) string {
-	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
+func (r *RateLimitServiceReconciler) uniqueKey(ratelimitConfig marin3rconfig.RateLimitConfig, currentRateLimit string) string {
+	var str string
+
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		str = fmt.Sprintf("%s/%d", ratelimitConfig.Unit, ratelimitConfig.RequestsPerUnit)
+	} else {
+		str = fmt.Sprintf("%s/%d/%s", ratelimitConfig.Unit, ratelimitConfig.RequestsPerUnit, currentRateLimit)
+	}
+
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
 
@@ -391,4 +418,120 @@ func GetSecondsInUnit(seconds uint64) (string, error) {
 	} else {
 		return "", fmt.Errorf("unexpected seconds value: %v, while getting seconds in Rate Limit Unit", seconds)
 	}
+}
+
+func (r *RateLimitServiceReconciler) getConfigMapConfiguration(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*yamlRoot, error) {
+	var stagingconfig yamlRoot
+
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(integreatlyv1alpha1.InstallationType(installation.Spec.Type))) {
+		stagingconfig = yamlRoot{
+			Domain: "apicast-ratelimit",
+			Descriptors: []yamlDescriptor{
+				{
+					Key:   genericKey,
+					Value: "slowpath",
+					RateLimit: &yamlRateLimit{
+						Unit:            r.RateLimitConfig.Unit,
+						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
+					},
+				},
+			},
+		}
+	} else {
+		limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get tenant limit from a config map: %v", err)
+		}
+
+		stagingconfig = yamlRoot{
+			Domain: "apicast-ratelimit",
+			Descriptors: []yamlDescriptor{
+				{
+					Key:   genericKey,
+					Value: "slowpath",
+					RateLimit: &yamlRateLimit{
+						Unit:            r.RateLimitConfig.Unit,
+						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
+					},
+				},
+				{
+					Key:   headerMatch,
+					Value: "per-mt-limit",
+					Descriptors: []yamlDescriptor{
+						{
+							Key: headerKey,
+							RateLimit: &yamlRateLimit{
+								Unit:            r.RateLimitConfig.Unit,
+								RequestsPerUnit: limitPerTenant,
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+	return &stagingconfig, nil
+}
+
+func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8sclient.Client, ctx context.Context) (uint32, error) {
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      multitenantLimitConfigMap,
+			Namespace: r.Namespace,
+		},
+	}
+
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
+	if err != nil {
+		if k8sError.IsNotFound(err) {
+			_, err := controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
+				if configMap.Data == nil {
+					configMap.Data = map[string]string{}
+				}
+				configMap.Data[multitenantRateLimit] = fmt.Sprint(r.getLimitPerTenant())
+
+				return nil
+			})
+			if err != nil {
+				return 0, err
+			}
+		} else {
+			return 0, fmt.Errorf("Error when getting the config map %w", err)
+		}
+	}
+
+	limitPerTenant, err := strconv.ParseInt(configMap.Data[multitenantRateLimit], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("Error converting limit per tenant value %w", err)
+	}
+
+	return uint32(limitPerTenant), nil
+}
+
+func (r *RateLimitServiceReconciler) getLimitPerTenant() uint32 {
+	limitPerTenant := r.RateLimitConfig.RequestsPerUnit / possibleTenants
+	if limitPerTenant == 0 {
+		limitPerTenant = 1
+	}
+
+	return uint32(limitPerTenant)
+}
+
+func (r *RateLimitServiceReconciler) getCurrentLimitPerTenant(client k8sclient.Client) (string, error) {
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      multitenantLimitConfigMap,
+			Namespace: r.Namespace,
+		},
+	}
+
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
+	if err != nil {
+		return "", fmt.Errorf("Error when getting the config map %w", err)
+	}
+
+	currentLimit := configMap.Data[multitenantRateLimit]
+
+	return currentLimit, nil
 }
