@@ -3,9 +3,10 @@ package user
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v1 "github.com/openshift/api/config/v1"
@@ -210,7 +211,7 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 }
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, "testing-idp")
+	identities, err := GetIdentitiesByProviderName(ctx, serverClient, "rhd")
 	if err != nil {
 		return nil, fmt.Errorf("Error getting identity list for multi tenants")
 	}

@@ -70,17 +70,17 @@ const (
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
 
-	s3CredentialsSecretName        = "s3-credentials"
-	externalRedisSecretName        = "system-redis"
-	externalBackendRedisSecretName = "backend-redis"
-	externalPostgresSecretName     = "system-database"
-	apicastStagingDCName           = "apicast-staging"
-	apicastProductionDCName        = "apicast-production"
-	backendListenerDCName          = "backend-listener"
-	systemSeedSecretName           = "system-seed"
-	systemMasterApiCastSecretName  = "system-master-apicast"
-	systemAppDCName                = "system-app"
-
+	s3CredentialsSecretName          = "s3-credentials"
+	externalRedisSecretName          = "system-redis"
+	externalBackendRedisSecretName   = "backend-redis"
+	externalPostgresSecretName       = "system-database"
+	apicastStagingDCName             = "apicast-staging"
+	apicastProductionDCName          = "apicast-production"
+	backendListenerDCName            = "backend-listener"
+	systemSeedSecretName             = "system-seed"
+	systemMasterApiCastSecretName    = "system-master-apicast"
+	systemAppDCName                  = "system-app"
+	multitenantID                    = "rhoam-mt"
 	apicastRatelimiting              = "apicast-ratelimit"
 	backendListenerEnvoyConfigNodeID = "backend-listener-envoyconfig"
 	registrySecretName               = "threescale-registry-auth"
@@ -272,11 +272,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
-	if err != nil {
-		r.log.Error("reconcile3scaleMultiTenancy", err)
-		return phase, err
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
+		if err != nil {
+			r.log.Error("reconcile3scaleMultiTenancy", err)
+			return phase, err
+		}
 	}
+
 	r.log.Info("Successfully deployed")
 
 	phase, err = r.reconcileOutgoingEmailAddress(ctx, serverClient)
@@ -464,7 +467,7 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling smtp credentials")
 
-	// get the secret containing smtp credentials
+	// // get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
@@ -1340,35 +1343,147 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 
 func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	providerName := "rhd"
-	identities, err := user.GetIdentitiesByProviderName(ctx, serverClient, providerName)
+	mtUserIdentities, err := user.GetIdentitiesByProviderName(ctx, serverClient, providerName)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieving user identities from the MT users %w", err)
 	}
-	r.log.Infof("retrieving user identities to check against the MT accounts", l.Fields{"identities": identities})
 
+	r.log.Infof("user identities from MT accounts",
+		l.Fields{"identities": mtUserIdentities},
+	)
+
+	// get 3scale master access token
 	accessToken, err := r.GetMasterToken(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	// list 3scale tenant accounts
 	accounts, err := r.tsClient.ListTenantAccounts(*accessToken)
 	if err != nil {
 		r.log.Error("Failed to get accounts from 3scale API:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	r.log.Infof("retrieving list of MT accounts available ", l.Fields{"accounts": accounts})
+
+	r.log.Infof("retrieving list of MT accounts available ",
+		l.Fields{"accounts": accounts},
+	)
+
+	for _, account := range accounts {
+		if account.State == "approved" {
+			for _, user := range account.Users.User {
+				if user.State == "pending" {
+					r.log.Infof("activating user", l.Fields{"user Activated": user.Username})
+
+					err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
+					if err != nil {
+						r.log.Error("Error activating users in new tenant account:", err)
+						return integreatlyv1alpha1.PhaseFailed, err
+					}
+				}
+			}
+
+			signUpAccountsSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mt-signupaccount-3scale-access-token",
+					Namespace: r.Config.GetNamespace(),
+				},
+			}
+			err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting access token secret: %w", err)
+			}
+
+			if val, ok := signUpAccountsSecret.Data[string(account.OrgName)]; ok {
+				signUpAccount := SignUpAccount{
+					AccountDetail: account,
+					AccountAccessToken: AccountAccessToken{
+						Value: string(val),
+					},
+				}
+				// verify if the account have the auth provider already
+				err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
+				r.log.Infof("Add auth provider for missing account:",
+					l.Fields{"accountsWithProvider": signUpAccount},
+				)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error adding auth provider: %w", err)
+				}
+			}
+			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling console link: %v", err)
+			}
+
+		}
+	}
 
 	// creating new MT accounts in 3scale
-	accountsToBeCreated := getMTAccountsToBeCreated(identities.Items, accounts)
-	r.log.Infof("Creating new MT accounts:", l.Fields{"accountsToBeCreated": accountsToBeCreated})
-	r.tsClient.CreateTenants(*accessToken, accountsToBeCreated)
-	if err != nil {
-		r.log.Error("Error creating new tenant accounts:", err)
-		return integreatlyv1alpha1.PhaseFailed, err
+	accountsToBeCreated := getMTAccountsToBeCreated(mtUserIdentities.Items, accounts)
+	r.log.Infof("retrieving new MT accounts to be created",
+		l.Fields{"accountsToBeCreated": accountsToBeCreated},
+	)
+
+	// TODO: create CM with account state of each account
+
+	for _, account := range accountsToBeCreated {
+		// create account
+		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account)
+		if err != nil {
+			r.log.Error("Error creating new tenant accounts:", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		r.log.Infof("new MT account created",
+			l.Fields{"signupAccount": newSignupAccount},
+		)
+		// TODO: store token in a secret
+		signUpAccountsSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mt-signupaccount-3scale-access-token",
+				Namespace: r.Config.GetNamespace(),
+			},
+		}
+
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
+		if !k8serr.IsNotFound(err) && err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting access token secret: %w", err)
+		} else if k8serr.IsNotFound(err) {
+			signUpAccountsSecret.Data = map[string][]byte{}
+		}
+
+		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
+		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
+		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
+		}
+
+		for _, user := range account.Users.User {
+			if user.State == "pending" {
+				err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
+				if err != nil {
+					r.log.Error("Error activating users in new tenant account:", err)
+					return integreatlyv1alpha1.PhaseFailed, err
+				}
+			}
+		}
+
+		err = r.AddAuthProviderToMTAccount(ctx, serverClient, *newSignupAccount)
+		r.log.Infof("Accounts with AddAuthProviderToMTAccounts:",
+			l.Fields{"accountsWithProvider": newSignupAccount},
+		)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error adding auth provider: %w", err)
+		}
+
+		err = r.reconcileDashboardLink(ctx, serverClient, newSignupAccount.AccountDetail.OrgName, newSignupAccount.AccountDetail.AdminBaseURL)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling console link: %v", err)
+		}
 	}
 
 	// deleting MT accounts in 3scale
-	accountsToBeDeleted := getMTAccountsToBeDeleted(identities.Items, accounts)
+	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities.Items, accounts)
 	r.log.Infof("Deleting unused MT accounts:", l.Fields{"accountsToBeDeleted": accountsToBeDeleted})
 	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
@@ -1379,30 +1494,149 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []Account) []Account {
-	accountsToBeCreated := []Account{}
+func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8sclient.Client, username string, tenantLink string) error {
+	cl := &consolev1.ConsoleLink{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: username + "-3scale",
+		},
+	}
+
+	tenantNamespaces := []string{fmt.Sprintf("%s-stage", username), fmt.Sprintf("%s-dev", username)}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
+		cl.Spec = consolev1.ConsoleLinkSpec{
+			Location: consolev1.NamespaceDashboard,
+			Link: consolev1.Link{
+				Href: tenantLink,
+				Text: "API Management",
+			},
+			NamespaceDashboard: &consolev1.NamespaceDashboardSpec{
+				Namespaces: tenantNamespaces,
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error reconciling console link: %v", err)
+	}
+
+	return nil
+}
+
+func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClient k8sclient.Client, account SignUpAccount) error {
+
+	tenantID := string(account.AccountDetail.OrgName)
+	clientID := fmt.Sprintf("%s-%s", multitenantID, tenantID)
+	integration := fmt.Sprintf("%s-%s", rhssoIntegrationName, clientID)
+
+	isAdded, err := r.tsClient.IsAuthProviderAdded(account.AccountAccessToken.Value,
+		integration, account.AccountDetail)
+	if err != nil {
+		return err
+	}
+	if isAdded {
+		return nil
+	}
+
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tenant-oauth-client-secrets",
+			Namespace: r.installation.GetNamespace(),
+		},
+	}
+
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      oauthClientSecrets.Name,
+		Namespace: oauthClientSecrets.Namespace},
+		oauthClientSecrets,
+	)
+	if err != nil {
+		r.log.Errorf("could not find secret", l.Fields{"secret": oauthClientSecrets.Name, "operatorNamespace": oauthClientSecrets.Namespace}, err)
+		return fmt.Errorf("could not find %s Secret: %w", oauthClientSecrets.Name, err)
+	}
+
+	secret, ok := oauthClientSecrets.Data[tenantID]
+	if !ok {
+		r.log.Errorf("could not find tenant key in secret", l.Fields{"tenant": tenantID, "secret": oauthClientSecrets.Name}, err)
+		return fmt.Errorf("Could not find %s key in %s Secret: %w", tenantID, oauthClientSecrets.Name, err)
+	}
+
+	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
+	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
+	if err != nil {
+		return fmt.Errorf("Error creating or updating RHSSO secret clients : %w", err)
+	}
+
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return fmt.Errorf("Error getting RHSSO config: %w", err)
+	}
+
+	r.log.Infof("Add auth provider to new account", l.Fields{"SignUpAccount": account})
+
+	site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoConfig.GetRealm()
+	_, err = resources.CreateRHSSOClient(
+		clientID,
+		string(secret),
+		account.AccountDetail.AdminBaseURL,
+		serverClient,
+		r.ConfigManager,
+		ctx,
+		*r.installation,
+		r.log,
+	)
+	if err != nil {
+		r.log.Errorf("failed to create RHSSO client", l.Fields{"tenant": tenantID, "clientID": clientID}, err)
+		return fmt.Errorf("failed to create RHSSO client: %w", err)
+	}
+	authProviderDetails := AuthProviderDetails{
+		Kind:                           "keycloak",
+		Name:                           integration,
+		ClientId:                       clientID,
+		ClientSecret:                   string(secret),
+		Site:                           site,
+		SkipSSLCertificateVerification: true,
+		Published:                      true,
+		SystemName:                     clientID,
+	}
+	r.log.Infof("auth provider", l.Fields{"authProviderDetails": authProviderDetails})
+
+	err = r.tsClient.AddAuthProviderToAccount(account.AccountAccessToken.Value,
+		account.AccountDetail, authProviderDetails,
+	)
+	if err != nil {
+		r.log.Errorf("failed to add auth provider to tenant account", l.Fields{"tenant": tenantID, "authProviderDetails": authProviderDetails}, err)
+		return fmt.Errorf("failed to add auth provider to account %w", err)
+	}
+
+	return nil
+}
+
+func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []AccountDetail) []AccountDetail {
+	accountsToBeCreated := []AccountDetail{}
 	for _, identity := range usersIdentity {
 		foundAccount := false
 		for _, account := range accounts {
-			if account.Detail.OrgName == identity.User.Name {
+			if account.OrgName == identity.User.Name {
 				foundAccount = true
 			}
 		}
 		if !foundAccount {
-			accountsToBeCreated = append(accountsToBeCreated, Account{
-				Detail: AccountDetail{Name: identity.User.Name, OrgName: identity.User.Name},
+			accountsToBeCreated = append(accountsToBeCreated, AccountDetail{
+				Name:    identity.User.Name,
+				OrgName: identity.User.Name,
 			})
 		}
 	}
 	return accountsToBeCreated
 }
 
-func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []Account) []Account {
-	accountsToBeDeleted := []Account{}
+func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []AccountDetail) []AccountDetail {
+	accountsToBeDeleted := []AccountDetail{}
 	for _, account := range accounts {
 		foundUser := false
 		for _, identity := range usersIdentity {
-			if account.Detail.OrgName == identity.User.Name {
+			if account.OrgName == identity.User.Name {
 				foundUser = true
 			}
 		}

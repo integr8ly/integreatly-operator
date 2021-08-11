@@ -53,28 +53,47 @@ type tsError struct {
 	StatusCode int
 }
 
-type AccountDetail struct {
-	Id      int    `json:"id"`
-	Name    string `json:"name"`
-	OrgName string `json:"org_name"`
+type SignUpAccount struct {
+	AccountDetail      AccountDetail      `xml:"account"`
+	AccountAccessToken AccountAccessToken `xml:"access_token"`
 }
 
 type Account struct {
-	Detail AccountDetail `json:"account"`
+	Id      int    `xml:"id"`
+	Name    string `xml:"name"`
+	OrgName string `xml:"org_name"`
 }
 
-type AccountList struct {
-	Items []Account `json:"accounts"`
+type AccountDetail struct {
+	Id           int      `xml:"id"`
+	Name         string   `xml:"name"`
+	OrgName      string   `xml:"org_name"`
+	AdminBaseURL string   `xml:"admin_base_url"`
+	State        string   `xml:"state"`
+	Users        XMLUsers `xml:"users"`
 }
 
-// response := &struct {
-// 	Accounts []struct {
-// 		Account struct {
-// 			Id      int    `json:"id"`
-// 			OrgName string `json:"org_name"`
-// 		} `json:"account"`
-// 	} `json:"accounts"`
-// }{}
+type AccountAccessToken struct {
+	Id    int    `xml:"id"`
+	Name  string `xml:"name"`
+	Value string `xml:"value"`
+}
+
+type XMLAccountList struct {
+	Accounts []AccountDetail `xml:"account"`
+}
+
+type XMLUserDetails struct {
+	Id       int    `xml:"id"`
+	State    string `xml:"state"`
+	Role     string `xml:"role"`
+	Username string `xml:"username"`
+	Email    string `xml:"email"`
+}
+
+type XMLUsers struct {
+	User []XMLUserDetails `xml:"user"`
+}
 
 func (tse *tsError) Error() string {
 	return tse.message

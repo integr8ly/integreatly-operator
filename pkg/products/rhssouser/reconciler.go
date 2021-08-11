@@ -3,11 +3,12 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 
@@ -1498,9 +1499,11 @@ func (r *Reconciler) reconcileTenantDashboardLinks(ctx context.Context, serverCl
 func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8sclient.Client, username string, tenantLink string, tenantNs string) error {
 	cl := &consolev1.ConsoleLink{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: username,
+			Name: username + "-usersso",
 		},
 	}
+
+	tenantNamespaces := []string{fmt.Sprintf("%s-stage", username), fmt.Sprintf("%s-dev", username)}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
 		cl.Spec = consolev1.ConsoleLinkSpec{
@@ -1510,7 +1513,7 @@ func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8
 				Text: "API Management SSO",
 			},
 			NamespaceDashboard: &consolev1.NamespaceDashboardSpec{
-				Namespaces: []string{tenantNs},
+				Namespaces: tenantNamespaces,
 			},
 		}
 
