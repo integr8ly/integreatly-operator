@@ -51,7 +51,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: unifiedpush-operator
-                image: quay.io/integreatly/aerogear-unifiedpush-operator:v0.5.1
+                image: quay.io/integreatly/aerogear-unifiedpush-operator:0.5.1
                 imagePullPolicy: Always
                 name: unifiedpush-operator
                 resources:
