@@ -2,7 +2,6 @@ package marin3r
 
 import (
 	"fmt"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -11,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const rejectedRequestsAlertExpr = "abs(clamp_min(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) - %f, 0) / increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) - (increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]) / increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))) > 0.3"
+const rejectedRequestsAlertExpr = "abs(clamp_min(increase(limited_calls[1m]) - %f, 0) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))) - (increase(limited_calls[1m]) / (sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))))) > 0.3"
 
 func (r *Reconciler) newRejectedRequestsAlertsReconciler(logger l.Logger, installType string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]

@@ -124,23 +124,27 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 
 	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		switch inst.Status.Quota {
-		case "1":
+		case "100K":
 			threeScaleComponents["apicastProd"] = 2
 			threeScaleComponents["backendListener"] = 2
 			threeScaleComponents["backendWorker"] = 2
-		case "5":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
 		case "10":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
-		case "20":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
+			threeScaleComponents["apicastProd"] = 2
+			threeScaleComponents["backendListener"] = 2
+			threeScaleComponents["backendWorker"] = 2
 		case "50":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "100":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "200":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		case "500":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendWorker"] = 4
 			threeScaleComponents["backendListener"] = 5

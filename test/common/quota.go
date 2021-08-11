@@ -291,14 +291,20 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 
 	configRateLimitUnit := quotaConfig.GetRateLimitConfig().Unit
 
-	if ratelimit.RequestsPerUnit != configRateLimitRequestPerUnit {
+	if ratelimit.MaxValue != configRateLimitRequestPerUnit {
 		t.Fatal(fmt.Sprintf("rate limit requests per unit '%v' does not match the quota config requests per unit '%v'",
-			ratelimit.RequestsPerUnit, configRateLimitRequestPerUnit))
+			ratelimit.MaxValue, configRateLimitRequestPerUnit))
 	}
 
-	if ratelimit.Unit != configRateLimitUnit {
+	rateLimitUnit, err := marin3r.GetSecondsInUnit(ratelimit.Seconds)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rateLimitUnit != configRateLimitUnit {
 		t.Fatal(fmt.Sprintf("rate limit unit value '%s' does not match the quota config unit value '%s'",
-			ratelimit.Unit, configRateLimitUnit))
+			rateLimitUnit, configRateLimitUnit))
 	}
 
 	// verify that promethues rules for alerting get update with rate limiting configuration
@@ -313,15 +319,15 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 		expr := prometheusRule.Spec.Groups[0].Rules[0].Expr.StrVal
 		rateLimitCheck := strconv.Itoa(int(configRateLimitRequestPerUnit * 60 * 4))
 		if strings.Contains(prometheusRule.Name, prometheusRule1) != strings.Contains(expr, rateLimitCheck) {
-			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule1, prometheusRule1Desc, ratelimit.RequestsPerUnit))
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule1, prometheusRule1Desc, ratelimit.MaxValue))
 		}
 		rateLimitCheck = strconv.Itoa(int(configRateLimitRequestPerUnit * 60 * 2))
 		if strings.Contains(prometheusRule.Name, prometheusRule2) != strings.Contains(expr, rateLimitCheck) {
-			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule2, prometheusRule2Desc, ratelimit.RequestsPerUnit))
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule2, prometheusRule2Desc, ratelimit.MaxValue))
 		}
 		rateLimitCheck = strconv.Itoa(int(configRateLimitRequestPerUnit * 30))
 		if strings.Contains(prometheusRule.Name, prometheusRule3) != strings.Contains(expr, rateLimitCheck) {
-			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule3, prometheusRule3Desc, ratelimit.RequestsPerUnit))
+			t.Fatalf(prometheusRateLimitError(rateLimitCheck, prometheusRule3, prometheusRule3Desc, ratelimit.MaxValue))
 		}
 	}
 

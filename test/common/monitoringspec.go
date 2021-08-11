@@ -36,7 +36,7 @@ func getServiceMonitorsByType(monitorsType string) []string {
 			NamespacePrefix + "ups-unifiedpush",
 		},
 		"managedApiServiceMonitors": []string{
-			Marin3rProductNamespace + "-prom-statsd-exporter",
+			Marin3rProductNamespace + "-ratelimit",
 		},
 		"commonExpectedServiceMonitors": []string{
 			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",

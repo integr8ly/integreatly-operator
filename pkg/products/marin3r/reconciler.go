@@ -3,8 +3,6 @@ package marin3r
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -17,7 +15,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	marin3roperator "github.com/3scale/marin3r/apis/operator/v1alpha1"
@@ -34,7 +31,6 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,8 +40,6 @@ const (
 	defaultInstallationNamespace = "marin3r"
 	manifestPackage              = "integreatly-marin3r"
 	statsdHost                   = "prom-statsd-exporter"
-	statsdPort                   = 9125
-	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
 )
@@ -187,24 +181,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
+	// TODO - Remove after next release
 	phase, err = r.reconcilePromStatsdExporter(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter cr"), err)
 		return phase, err
 	}
-	statsdConfig := StatsdConfig{
-		Host: statsdHost,
-		Port: strconv.Itoa(statsdPort),
-	}
+	// END of removal
 
+	// TODO - Remove after next release
 	phase, err = r.reconcilePromStatsdExporterService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter service"), err)
 		return phase, err
 	}
+	// END of removal
 
 	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
-		WithStatsdConfig(statsdConfig).
 		ReconcileRateLimitService(ctx, client, productConfig)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rate limit service", err)
@@ -436,6 +429,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
+// TODO - Remove after next release
 func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcilePromStatsdExporter for marin3r")
 
@@ -446,65 +440,18 @@ func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8s
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
-		if deployment.Labels == nil {
-			deployment.Labels = map[string]string{}
+	if err := client.Delete(ctx, deployment); err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		deployment.Labels["app"] = statsdHost
-
-		var replicas int32 = 1
-		deployment.Spec.Replicas = &replicas
-		deployment.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				"app": statsdHost,
-			},
-		}
-		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
-			Type: appsv1.RecreateDeploymentStrategyType,
-		}
-		deployment.Spec.Template = corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{
-					"app": statsdHost,
-				},
-			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:  statsdHost,
-						Image: "quay.io/integreatly/statsd-exporter:v0.18.0",
-						Ports: []corev1.ContainerPort{
-							{
-								Name:          "prom-statsd",
-								ContainerPort: statsdPort,
-							},
-							{
-								Name:          "metrics",
-								ContainerPort: metricsPort,
-							},
-						},
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    k8sresource.MustParse("3m"),
-								corev1.ResourceMemory: k8sresource.MustParse("40Mi")},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    k8sresource.MustParse("3m"),
-								corev1.ResourceMemory: k8sresource.MustParse("40Mi")},
-						},
-					},
-				},
-			},
-		}
-		return nil
-	})
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+// END of removal
+
+// TODO - Remove after next release
 func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcilePromStatsdExporterService for marin3r")
 
@@ -515,46 +462,23 @@ func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, cli
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, service, func() error {
-		if service.Labels == nil {
-			service.Labels = map[string]string{}
+	if err := client.Delete(ctx, service); err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-
-		service.Labels["app"] = statsdHost
-		service.Spec.Ports = []corev1.ServicePort{
-			{
-				Name:       "prom-statsd",
-				Protocol:   corev1.ProtocolTCP,
-				Port:       statsdPort,
-				TargetPort: intstr.FromInt(statsdPort),
-			},
-			{
-				Name:       "metrics",
-				Protocol:   corev1.ProtocolTCP,
-				Port:       metricsPort,
-				TargetPort: intstr.FromInt(metricsPort),
-			},
-		}
-		service.Spec.Selector = map[string]string{
-			"app": statsdHost,
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+// END of removal
 
 func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcileServiceMonitor for marin3r")
 
 	serviceMonitor := &prometheus.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      statsdHost,
+			Name:      quota.RateLimitName,
 			Namespace: namespace,
 		},
 	}
@@ -569,12 +493,12 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 					BearerTokenSecret: corev1.SecretKeySelector{
 						Key: "",
 					},
-					Port: "metrics",
+					Port: "http",
 				},
 			},
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": statsdHost,
+					"app": quota.RateLimitName,
 				},
 			},
 		}
@@ -584,6 +508,21 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
+	// TODO - Remove after next release
+	previousServiceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      statsdHost,
+			Namespace: namespace,
+		},
+	}
+
+	if err := client.Delete(ctx, previousServiceMonitor); err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+	// END of removal
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -39,7 +39,7 @@ Note: Apicasts might not call backend-listeners for each request so in case of S
 Note: to check the rate limit counter use Rate Limiting Grafana Dashboard or following promQL:
 
 ```
-sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[5m]))
+sum(increase(authorized_calls[5m])) + sum(increase(limited_calls[5m]))
 ```
 
 Other approach might be to check backend-listeners logs. For each request there should be similar log entry to:

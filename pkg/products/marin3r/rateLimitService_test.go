@@ -71,15 +71,8 @@ func TestRateLimitService(t *testing.T) {
 							return errors.Errorf("REDIS_URL not found in environment variables")
 						}
 
-						if url != "test-url" {
+						if url != "redis://test-url" {
 							return fmt.Errorf("unexpected value for REDIS_URL: %s", url)
-						}
-
-						return nil
-					},
-					"USE_STATSD": func(s string) error {
-						if s != "false" {
-							return fmt.Errorf("unexpected value for USE_STATSD variable. Expected true, got %s", s)
 						}
 
 						return nil
@@ -120,11 +113,7 @@ func TestRateLimitService(t *testing.T) {
 				&integreatlyv1alpha1.RHMI{},
 				"redhat-test-marin3r",
 				"ratelimit-redis",
-			).
-				WithStatsdConfig(StatsdConfig{
-					Host: "test-host",
-					Port: "9092",
-				}),
+			),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
@@ -134,23 +123,31 @@ func TestRateLimitService(t *testing.T) {
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
 				assertDeployment(assertEnvs(map[string]func(string) error{
-					"STATSD_PORT": func(s string) error {
-						if s != "9092" {
-							return fmt.Errorf("unexpected value for STATSD_PORT variable. Expected 9092, got %s", s)
+					"REDIS_URL": func(url string) error {
+						if url == "" {
+							return errors.Errorf("REDIS_URL not found in environment variables")
+						}
+
+						if url != "redis://test-url" {
+							return fmt.Errorf("unexpected value for REDIS_URL: %s", url)
 						}
 
 						return nil
 					},
-					"STATSD_HOST": func(s string) error {
-						if s != "test-host" {
-							return fmt.Errorf("unexpected value for STATSD_HOST variable. Expected test-host, got %s", s)
+					"RUST_LOG": func(level string) error {
+						if level == "" {
+							return errors.Errorf("RUST_LOG not found in environment variables")
+						}
+
+						if level != "info" {
+							return fmt.Errorf("unexpected value for RUST_LOG: %s", level)
 						}
 
 						return nil
 					},
-					"USE_STATSD": func(s string) error {
-						if s != "true" {
-							return fmt.Errorf("unexpected value for USE_STATSD variable. Expected true, got %s", s)
+					"LIMITS_FILE": func(path string) error {
+						if path == "" {
+							return errors.Errorf("LIMITS_FILE not found in environment variables")
 						}
 
 						return nil
@@ -209,11 +206,7 @@ func TestRateLimitService(t *testing.T) {
 				},
 				"redhat-test-marin3r",
 				"ratelimit-redis",
-			).
-				WithStatsdConfig(StatsdConfig{
-					Host: "test-host",
-					Port: "9092",
-				}),
+			),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
