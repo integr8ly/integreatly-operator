@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
+	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -22,11 +23,14 @@ import (
 )
 
 const (
-	genericKey      = "generic_key"
-	headerMatch     = "header_match"
-	headerKey       = "tenant"
-	mtUnit          = "minute"
-	possibleTenants = 3000
+	genericKey                 = "generic_key"
+	headerMatch                = "header_match"
+	headerKey                  = "tenant"
+	mtUnit                     = "minute"
+	possibleTenants            = 3000
+	multitenantLimitConfigMap  = "multitenant-config"
+	multitenantRateLimit       = "mulitenantLimit"
+	multitenantDescriptorValue = "per-mt-limit"
 )
 
 type RateLimitServiceReconciler struct {
@@ -77,7 +81,6 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	var configMapConfiguration *yamlRoot
 	var err error
 
 	cm := &corev1.ConfigMap{
@@ -87,24 +90,19 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 		},
 	}
 
-	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		limitadorLimit := []limitadorLimit{
-			{
-				Namespace: ratelimit.RateLimitDomain,
-				MaxValue:  r.RateLimitConfig.RequestsPerUnit,
-				Seconds:   unitInSeconds,
-				Conditions: []string{
-					fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
-				},
-				Variables: []string{
-					"generic_key",
-				},
-			},
+		var limitadorLimit []limitadorLimit
+
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+			limitadorLimit, err = r.getRHOAMLimitadorSetting()
+			if err != nil {
+				return fmt.Errorf("failed to marshall rate limit config: %v", err)
+			}
+		} else {
+			limitadorLimit, err = r.getMultitenantRHOAMLimitadorSetting(ctx, client)
+			if err != nil {
+				return fmt.Errorf("failed to marshall rate limit config: %v", err)
+			}
 		}
 
 		limitadorConfigYamlMarshalled, err := yaml.Marshal(limitadorLimit)
@@ -172,7 +170,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
-		limitsFile := fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig))
+		limitsFile := fmt.Sprintf("apicast-ratelimiting-%s.yaml", r.uniqueKey(r.RateLimitConfig, currentRateLimit))
 
 		if deployment.Labels == nil {
 			deployment.Labels = map[string]string{}
@@ -423,62 +421,6 @@ func GetSecondsInUnit(seconds uint64) (string, error) {
 	}
 }
 
-func (r *RateLimitServiceReconciler) getConfigMapConfiguration(ctx context.Context, client k8sclient.Client) *yamlRoot {
-
-	stagingconfig := yamlRoot{
-		Domain: "apicast-ratelimit",
-		Descriptors: []yamlDescriptor{
-			{
-				Key:   genericKey,
-				Value: "slowpath",
-				RateLimit: &yamlRateLimit{
-					Unit:            r.RateLimitConfig.Unit,
-					RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
-				},
-			},
-		},
-	}
-
-	return &stagingconfig
-}
-
-func (r *RateLimitServiceReconciler) getMultitenantConfigMapConfiguration(ctx context.Context, client k8sclient.Client) (*yamlRoot, error) {
-
-	limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get tenant limit from a config map: %v", err)
-	}
-
-	stagingconfig := yamlRoot{
-		Domain: "apicast-ratelimit",
-		Descriptors: []yamlDescriptor{
-			{
-				Key:   genericKey,
-				Value: "slowpath",
-				RateLimit: &yamlRateLimit{
-					Unit:            r.RateLimitConfig.Unit,
-					RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
-				},
-			},
-			{
-				Key:   headerMatch,
-				Value: "per-mt-limit",
-				Descriptors: []yamlDescriptor{
-					{
-						Key: headerKey,
-						RateLimit: &yamlRateLimit{
-							Unit:            r.RateLimitConfig.Unit,
-							RequestsPerUnit: limitPerTenant,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return &stagingconfig, nil
-}
-
 func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8sclient.Client, ctx context.Context) (uint32, error) {
 
 	configMap := &corev1.ConfigMap{
@@ -532,4 +474,63 @@ func (r *RateLimitServiceReconciler) getCurrentLimitPerTenant(client k8sclient.C
 	currentLimit := configMap.Data[multitenantRateLimit]
 
 	return currentLimit, nil
+}
+
+func (r *RateLimitServiceReconciler) getRHOAMLimitadorSetting() ([]limitadorLimit, error) {
+	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
+	if err != nil {
+		return nil, err
+	}
+
+	return []limitadorLimit{
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+			},
+			Variables: []string{
+				"generic_key",
+			},
+		},
+	}, nil
+}
+
+func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx context.Context, client k8sclient.Client) ([]limitadorLimit, error) {
+
+	limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
+	if err != nil {
+		return nil, err
+	}
+
+	return []limitadorLimit{
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+			},
+			Variables: []string{
+				"generic_key",
+			},
+		},
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  limitPerTenant,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("header_match == %s", multitenantDescriptorValue),
+			},
+			Variables: []string{
+				"tenant",
+			},
+		},
+	}, nil
 }
