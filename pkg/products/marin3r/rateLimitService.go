@@ -77,6 +77,9 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	var configMapConfiguration *yamlRoot
+	var err error
+
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      RateLimitingConfigMapName,
@@ -420,56 +423,59 @@ func GetSecondsInUnit(seconds uint64) (string, error) {
 	}
 }
 
-func (r *RateLimitServiceReconciler) getConfigMapConfiguration(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*yamlRoot, error) {
-	var stagingconfig yamlRoot
+func (r *RateLimitServiceReconciler) getConfigMapConfiguration(ctx context.Context, client k8sclient.Client) *yamlRoot {
 
-	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(integreatlyv1alpha1.InstallationType(installation.Spec.Type))) {
-		stagingconfig = yamlRoot{
-			Domain: "apicast-ratelimit",
-			Descriptors: []yamlDescriptor{
-				{
-					Key:   genericKey,
-					Value: "slowpath",
-					RateLimit: &yamlRateLimit{
-						Unit:            r.RateLimitConfig.Unit,
-						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
-					},
+	stagingconfig := yamlRoot{
+		Domain: "apicast-ratelimit",
+		Descriptors: []yamlDescriptor{
+			{
+				Key:   genericKey,
+				Value: "slowpath",
+				RateLimit: &yamlRateLimit{
+					Unit:            r.RateLimitConfig.Unit,
+					RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
 				},
 			},
-		}
-	} else {
-		limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get tenant limit from a config map: %v", err)
-		}
+		},
+	}
 
-		stagingconfig = yamlRoot{
-			Domain: "apicast-ratelimit",
-			Descriptors: []yamlDescriptor{
-				{
-					Key:   genericKey,
-					Value: "slowpath",
-					RateLimit: &yamlRateLimit{
-						Unit:            r.RateLimitConfig.Unit,
-						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
-					},
+	return &stagingconfig
+}
+
+func (r *RateLimitServiceReconciler) getMultitenantConfigMapConfiguration(ctx context.Context, client k8sclient.Client) (*yamlRoot, error) {
+
+	limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get tenant limit from a config map: %v", err)
+	}
+
+	stagingconfig := yamlRoot{
+		Domain: "apicast-ratelimit",
+		Descriptors: []yamlDescriptor{
+			{
+				Key:   genericKey,
+				Value: "slowpath",
+				RateLimit: &yamlRateLimit{
+					Unit:            r.RateLimitConfig.Unit,
+					RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
 				},
-				{
-					Key:   headerMatch,
-					Value: "per-mt-limit",
-					Descriptors: []yamlDescriptor{
-						{
-							Key: headerKey,
-							RateLimit: &yamlRateLimit{
-								Unit:            r.RateLimitConfig.Unit,
-								RequestsPerUnit: limitPerTenant,
-							},
+			},
+			{
+				Key:   headerMatch,
+				Value: "per-mt-limit",
+				Descriptors: []yamlDescriptor{
+					{
+						Key: headerKey,
+						RateLimit: &yamlRateLimit{
+							Unit:            r.RateLimitConfig.Unit,
+							RequestsPerUnit: limitPerTenant,
 						},
 					},
 				},
 			},
-		}
+		},
 	}
+
 	return &stagingconfig, nil
 }
 
@@ -483,22 +489,14 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 	}
 
 	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
-	if err != nil {
-		if k8sError.IsNotFound(err) {
-			_, err := controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
-				if configMap.Data == nil {
-					configMap.Data = map[string]string{}
-				}
-				configMap.Data[multitenantRateLimit] = fmt.Sprint(r.getLimitPerTenant())
-
-				return nil
-			})
-			if err != nil {
-				return 0, err
-			}
-		} else {
-			return 0, fmt.Errorf("Error when getting the config map %w", err)
-		}
+	if err != nil && !k8sError.IsNotFound(err) {
+		return 0, fmt.Errorf("Error when getting the config map %w", err)
+	} else if k8sError.IsNotFound(err) {
+		configMap.Data = map[string]string{}
+		_, err = controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
+			configMap.Data[multitenantRateLimit] = fmt.Sprint(r.getLimitPerTenant())
+			return nil
+		})
 	}
 
 	limitPerTenant, err := strconv.ParseInt(configMap.Data[multitenantRateLimit], 10, 64)

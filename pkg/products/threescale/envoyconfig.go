@@ -175,52 +175,55 @@ var tsHTTPRateLimitFilter = hcm.HttpFilter{
 	- &tsHTTPRateLimitFilter
 	- name: envoy.router
 **/
-func getAPICastHTTPFilters(installation *integreatlyv1alpha1.RHMI) ([]*hcm.HttpFilter, error) {
-	var httpFilters []*hcm.HttpFilter
+func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
+	httpFilters := []*hcm.HttpFilter{
+		&tsHTTPRateLimitFilter,
+		{
+			Name: "envoy.router",
+		},
+	}
 
-	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		httpFilters = []*hcm.HttpFilter{
-			&tsHTTPRateLimitFilter,
-			{
-				Name: "envoy.router",
-			},
-		}
-	} else {
-		// function envoy_on_request(request_handle)
-		// host = request_handle:headers():get('Host')
-		// local headers = request_handle:headers()
-		// split_string = Split(host, "-apicast")
-		// headers:add('tenant',split_string[1])
-		// end
-		// function Split(s, delimiter)
-		// result = {};
-		// for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-		// table.insert(result, match);
-		// end
-		// return result;
-		// end
-		luaFunctionToAddTSHeaders := "function envoy_on_request(request_handle) host = request_handle:headers():get('Host') local headers = request_handle:headers() split_string = Split(host, '-apicast') headers:add('tenant', split_string[1]) end function Split(s, delimiter) result = {}; for match in (s..delimiter):gmatch('(.-)'..delimiter) do table.insert(result, match); end return result; end"
+	return httpFilters, nil
+}
 
-		luaFilter := &lua.Lua{
-			InlineCode: luaFunctionToAddTSHeaders,
-		}
-		pbst, err := ptypes.MarshalAny(luaFilter)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
-		}
+/*
+	function envoy_on_request(request_handle)
+	host = request_handle:headers():get('Host')
+	local headers = request_handle:headers()
+	split_string = Split(host, "-apicast")
+	headers:add('tenant',split_string[1])
+	end
+	function Split(s, delimiter)
+	result = {};
+	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+	table.insert(result, match);
+	end
+	return result;
+	end
+*/
+func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 
-		httpFilters = []*hcm.HttpFilter{
-			{
-				Name: "envoy.filters.http.lua",
-				ConfigType: &hcm.HttpFilter_TypedConfig{
-					TypedConfig: pbst,
-				},
+	luaFunctionToAddTSHeaders := "function envoy_on_request(request_handle) host = request_handle:headers():get('Host') local headers = request_handle:headers() split_string = Split(host, '-apicast') headers:add('tenant', split_string[1]) end function Split(s, delimiter) result = {}; for match in (s..delimiter):gmatch('(.-)'..delimiter) do table.insert(result, match); end return result; end"
+
+	luaFilter := &lua.Lua{
+		InlineCode: luaFunctionToAddTSHeaders,
+	}
+	pbst, err := ptypes.MarshalAny(luaFilter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
+	}
+
+	httpFilters := []*hcm.HttpFilter{
+		{
+			Name: "envoy.filters.http.lua",
+			ConfigType: &hcm.HttpFilter_TypedConfig{
+				TypedConfig: pbst,
 			},
-			&tsHTTPRateLimitFilter,
-			{
-				Name: "envoy.router",
-			},
-		}
+		},
+		&tsHTTPRateLimitFilter,
+		{
+			Name: "envoy.router",
+		},
 	}
 
 	return httpFilters, nil
