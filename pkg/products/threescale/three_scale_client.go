@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/antchfx/xmlquery"
+	"github.com/sirupsen/logrus"
 )
 
 //go:generate moq -out three_scale_moq.go . ThreeScaleInterface
@@ -41,6 +43,16 @@ type ThreeScaleInterface interface {
 	DeleteService(accessToken, serviceID string) error
 	DeleteBackend(accessToken string, backendID int) error
 	DeleteAccount(accessToken, accountID string) error
+
+	CreateTenant(accessToken string, account AccountDetail) (*SignUpAccount, error)
+	ListTenantAccounts(accessToken string) ([]AccountDetail, error)
+	GetTenantAccount(accessToken string, id int) (*SignUpAccount, error)
+	DeleteTenant(accessToken string, id int) error
+	DeleteTenants(accessToken string, accounts []AccountDetail) error
+
+	ActivateUser(accessToken string, accountId, userId int) error
+	AddAuthProviderToAccount(accessToken string, account AccountDetail, authProviderDetail AuthProviderDetails) error
+	IsAuthProviderAdded(accessToken string, authProviderName string, account AccountDetail) (bool, error)
 }
 
 const (
@@ -552,13 +564,194 @@ func (tsc *threeScaleClient) DeleteAccount(accessToken, accountID string) error 
 	return assertStatusCode(http.StatusOK, res)
 }
 
-func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[string]interface{}) (*http.Response, error) {
-	dataJSON, err := json.Marshal(parameters)
+func (tsc *threeScaleClient) ListTenantAccounts(accessToken string) ([]AccountDetail, error) {
+	// curl -v  -X GET "https://master.apps.jmonteir.edy6.s1.devshift.org/admin/api/accounts.json?access_token=AIjluIOs"
+	res, err := tsc.makeRequestToMaster(
+		"GET",
+		"admin/api/accounts.xml",
+		onlyAccessToken(accessToken),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/%s", tsc.wildCardDomain, path)
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
+		return nil, err
+	}
+
+	accountList := XMLAccountList{}
+	if err := responseFromXML(res, &accountList); err != nil {
+		return nil, err
+	}
+
+	accounts := []AccountDetail{}
+	// removes pre created 3scale accounts
+	for _, account := range accountList.Accounts {
+		if account.Id != 1 && account.Id != 2 {
+			accounts = append(accounts, account)
+		}
+	}
+
+	return accounts, nil
+}
+
+func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDetail) (*SignUpAccount, error) {
+	res, err := tsc.makeRequestToMaster(
+		"POST",
+		"master/api/providers.xml",
+		withAccessToken(accessToken, map[string]interface{}{
+			"org_name": account.OrgName,
+			"username": account.Name,
+			"email":    fmt.Sprintf("%s@rhmi.io", account.Name),
+			"password": "MT",
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+		return nil, err
+	}
+
+	signupAccount := &SignUpAccount{}
+	if err := responseFromXML(res, signupAccount); err != nil {
+		return nil, err
+	}
+
+	return signupAccount, nil
+}
+
+func (tsc *threeScaleClient) GetTenantAccount(accessToken string, id int) (*SignUpAccount, error) {
+	res, err := tsc.makeRequestToMaster(
+		"GET",
+		fmt.Sprintf("master/api/providers/{%v}.xml", id),
+		onlyAccessToken(accessToken),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
+		return nil, err
+	}
+
+	signupAccount := SignUpAccount{}
+	if err := responseFromXML(res, &signupAccount); err != nil {
+		return nil, err
+	}
+
+	return &signupAccount, nil
+}
+
+func (tsc *threeScaleClient) ActivateUser(accessToken string, accountId, userId int) error {
+	res, err := tsc.makeRequestToMaster(
+		"PUT",
+		fmt.Sprintf("admin/api/accounts/%d/users/%d/activate.xml", accountId, userId),
+		onlyAccessToken(accessToken),
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tsc *threeScaleClient) AddAuthProviderToAccount(accessToken string, account AccountDetail, authProviderDetail AuthProviderDetails) error {
+
+	url := fmt.Sprintf("%s/%s", account.AdminBaseURL, "admin/api/account/authentication_providers.json")
+	res, err := makeRequest(url,
+		"POST",
+		withAccessToken(accessToken, map[string]interface{}{
+			"kind":                              authProviderDetail.Kind,
+			"name":                              authProviderDetail.Name,
+			"client_id":                         authProviderDetail.ClientId,
+			"client_secret":                     authProviderDetail.ClientSecret,
+			"site":                              authProviderDetail.Site,
+			"skip_ssl_certificate_verification": authProviderDetail.SkipSSLCertificateVerification,
+			"published":                         authProviderDetail.Published,
+			"system_name":                       authProviderDetail.SystemName,
+		}),
+		tsc,
+	)
+	if err != nil {
+		return fmt.Errorf("Error creating new authentication provider for %s tenant account: , %w", account.OrgName, err)
+	}
+
+	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tsc *threeScaleClient) IsAuthProviderAdded(accessToken string, authProviderName string, account AccountDetail) (bool, error) {
+	isAuthProviderAdded := false
+	url := fmt.Sprintf("%s/%s", account.AdminBaseURL, "admin/api/account/authentication_providers.json")
+	res, err := makeRequest(url,
+		"GET",
+		onlyAccessToken(accessToken),
+		tsc,
+	)
+	if err != nil {
+		return isAuthProviderAdded, err
+	}
+
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
+		return isAuthProviderAdded, err
+	}
+
+	authProviders := &AuthProviders{}
+	if err := jsonFromResponse(res, &authProviders); err != nil {
+		return isAuthProviderAdded, err
+	}
+
+	for _, authProvider := range authProviders.AuthProviders {
+		if authProvider.ProviderDetails.Name == authProviderName {
+			isAuthProviderAdded = true
+			break
+		}
+	}
+
+	return isAuthProviderAdded, nil
+}
+
+func (tsc *threeScaleClient) DeleteTenants(accessToken string, accounts []AccountDetail) error {
+	for _, account := range accounts {
+		err := tsc.DeleteTenant(accessToken, account.Id)
+		if err == nil {
+			return fmt.Errorf("Error deleting tenant: %s", account.Name)
+		}
+	}
+	return nil
+}
+
+func (tsc *threeScaleClient) DeleteTenant(accessToken string, accountId int) error {
+	res, err := tsc.makeRequestToMaster(
+		"DELETE",
+		fmt.Sprintf("master/api/providers/%d.xml", accountId),
+		onlyAccessToken(accessToken),
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func makeRequest(url, method string, parameters map[string]interface{}, tsc *threeScaleClient) (*http.Response, error) {
+	dataJSON, err := json.Marshal(parameters)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(
 		method,
 		url,
@@ -571,6 +764,16 @@ func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[str
 	req.Header.Set("Content-Type", "application/json")
 
 	return tsc.httpc.Do(req)
+}
+
+func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[string]interface{}) (*http.Response, error) {
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/%s", tsc.wildCardDomain, path)
+	return makeRequest(url, method, parameters, tsc)
+}
+
+func (tsc *threeScaleClient) makeRequestToMaster(method, path string, parameters map[string]interface{}) (*http.Response, error) {
+	url := fmt.Sprintf("https://master.%s/%s", tsc.wildCardDomain, path)
+	return makeRequest(url, method, parameters, tsc)
 }
 
 func xmlFromResponse(res *http.Response, xpath string) (string, error) {
@@ -588,7 +791,12 @@ func xmlFromResponse(res *http.Response, xpath string) (string, error) {
 }
 
 func jsonFromResponse(res *http.Response, target interface{}) error {
+	logrus.Infof("body %v", res.Body)
 	return json.NewDecoder(res.Body).Decode(target)
+}
+
+func responseFromXML(res *http.Response, target interface{}) error {
+	return xml.NewDecoder(res.Body).Decode(target)
 }
 
 func onlyAccessToken(accessToken string) map[string]interface{} {

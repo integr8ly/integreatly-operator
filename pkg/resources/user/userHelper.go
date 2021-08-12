@@ -3,13 +3,15 @@ package user
 import (
 	"context"
 	"fmt"
-	v1 "github.com/openshift/api/config/v1"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	v1 "github.com/openshift/api/config/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	"github.com/pkg/errors"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,6 +29,13 @@ var (
 		"osd-sre-admins",
 	}
 )
+
+type MultiTenantUser struct {
+	Username   string
+	TenantName string
+	Email      string
+	UID        string
+}
 
 func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (string, error) {
 	email := ""
@@ -152,4 +161,86 @@ func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user user
 		identities.Items = append(identities.Items, *identity)
 	}
 	return identities, nil
+}
+
+func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {
+	adminGroups := &usersv1.GroupList{}
+	err := serverClient.List(ctx, adminGroups)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list users")
+	}
+
+	adminUsers := &usersv1.UserList{}
+	for _, adminGroup := range adminGroups.Items {
+		if excludeGroup(excludeGroups, adminGroup.Name) {
+			for _, user := range adminGroup.Users {
+				adminUsers.Items = append(adminUsers.Items, usersv1.User{
+					ObjectMeta: metav1.ObjectMeta{Name: user}},
+				)
+			}
+		}
+	}
+
+	return adminUsers, nil
+}
+
+func excludeGroup(groups []string, group string) bool {
+	for _, gr := range groups {
+		if group == gr {
+			return true
+		}
+	}
+	return false
+}
+
+func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.IdentityList, error) {
+	identities := &usersv1.IdentityList{}
+	err := serverClient.List(ctx, identities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get identities by provider %s", providerName)
+	}
+
+	identitiesByProvider := &usersv1.IdentityList{}
+	for _, identity := range identities.Items {
+		if identity.ProviderName == providerName {
+			identitiesByProvider.Items = append(identitiesByProvider.Items, identity)
+		}
+	}
+
+	return identitiesByProvider, nil
+}
+
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
+	identities, err := GetIdentitiesByProviderName(ctx, serverClient, "rhd")
+	if err != nil {
+		return nil, fmt.Errorf("Error getting identity list for multi tenants")
+	}
+	for _, identity := range identities.Items {
+
+		var email = ""
+		if identity.Extra["email"] != "" {
+			email = identity.Extra["email"]
+		} else {
+			email = identity.User.Name + "@rhmi.io"
+		}
+
+		users = append(users, MultiTenantUser{
+			Username:   identity.User.Name,
+			TenantName: SanitiseTenantUserName(identity.User.Name),
+			Email:      email,
+			UID:        string(identity.User.UID),
+		})
+	}
+	return users, nil
+}
+
+func SanitiseTenantUserName(username string) string {
+	// Regex for only alphanumeric values
+	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+
+	// Replace all non-alphanumeric values with the replacement character
+	processedString := reg.ReplaceAllString(strings.ToLower(username), invalidCharacterReplacement)
+
+	// Remove occurrence of replacement character at end of string
+	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
 }

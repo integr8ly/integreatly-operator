@@ -54,8 +54,7 @@ func (r *RHSSOUser) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) int {
 	if testResources.RunningInProw(inst) {
 		return 1
 	}
-
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		return 3
 	}
 

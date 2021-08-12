@@ -21,10 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-openapi/strfmt"
-	routev1 "github.com/openshift/api/route/v1"
-	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"github.com/prometheus/alertmanager/api/v2/models"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -32,6 +28,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-openapi/strfmt"
+	routev1 "github.com/openshift/api/route/v1"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"github.com/prometheus/alertmanager/api/v2/models"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
@@ -178,7 +179,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;create;update;delete
 
 // Permission to fetch identity to get email for created Keycloak users in openshift realm
-// +kubebuilder:rbac:groups=user.openshift.io,resources=identities,verbs=get
+// +kubebuilder:rbac:groups=user.openshift.io,resources=identities,verbs=get;list
 
 // Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations;mutatingwebhookconfigurations,verbs=get;watch;list;create;update;delete
@@ -406,7 +407,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
 		}
@@ -422,7 +423,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			r.reconcilePodDistribution(installation)
 		}
 
-		if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			if installationQuota.IsUpdated() {
 				installation.Status.Quota = installationQuota.GetName()
 				installation.Status.ToQuota = ""
@@ -838,7 +839,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, nil
 	}
 
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsManaged(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {
@@ -867,7 +868,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		}
 	}
 
-	if installation.Spec.Type == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Check if the quota parameter is found from the add-on
 		okParam, err := addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.QuotaParamName)
 		if err != nil {
@@ -1190,7 +1191,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 			installType = string(rhmiv1alpha1.InstallationTypeManaged)
 		}
 
-		if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) && priorityClassName == "" {
+		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) && priorityClassName == "" {
 			priorityClassName = managedServicePriorityClassName
 		}
 
@@ -1246,7 +1247,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 }
 
 func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
-	if installation.Spec.Type != string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if !rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		return nil
 	}
 
@@ -1278,7 +1279,7 @@ func getRebalancePods() bool {
 }
 
 func getCrName(installType string) string {
-	if installType == string(rhmiv1alpha1.InstallationTypeManagedApi) {
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		return ManagedApiInstallationName
 	} else {
 		return DefaultInstallationName

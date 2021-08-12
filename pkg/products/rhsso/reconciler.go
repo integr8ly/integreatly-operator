@@ -305,14 +305,16 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		// created because the Keycloak operator does not allow updates to
 		// the realms
 		redirectUris := []string{r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint"}
-		err = r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectUris)
+		err = r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectUris, "")
 		if err != nil {
 			return fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
 
-		err = r.setupGithubIDP(ctx, kc, kcr, serverClient, installation)
-		if err != nil {
-			return fmt.Errorf("failed to setup Github IDP: %w", err)
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+			err = r.setupGithubIDP(ctx, kc, kcr, serverClient, installation)
+			if err != nil {
+				return fmt.Errorf("failed to setup Github IDP: %w", err)
+			}
 		}
 		return nil
 	})
@@ -347,7 +349,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Sync keycloak with openshift users
-	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace())
+	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace(), r.Installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to synchronize the users: %w", err)
 	}
@@ -447,8 +449,11 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
-	openshiftUsers, err := userHelper.GetUsersInActiveIDPs(ctx, serverClient)
+func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string, installation *integreatlyv1alpha1.RHMI) ([]keycloak.KeycloakAPIUser, error) {
+	var openshiftUsers *usersv1.UserList
+	var err error
+
+	openshiftUsers, err = userHelper.GetUsersInActiveIDPs(ctx, serverClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get users in active IDPs")
 	}
@@ -499,7 +504,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 		return nil, err
 	}
 	for index := range keycloakUsers {
-		keycloakUsers[index].ClientRoles = getKeycloakRoles()
+		keycloakUsers[index].ClientRoles = getKeycloakRoles(integreatlyv1alpha1.InstallationType(installation.Spec.Type))
 	}
 
 	return keycloakUsers, nil
@@ -602,15 +607,24 @@ func createAuthDelayAuthenticationFlow(authenticated keycloakCommon.KeycloakInte
 	return nil
 }
 
-func getKeycloakRoles() map[string][]string {
-	roles := map[string][]string{
-		"account": {
-			"manage-account",
-			"view-profile",
-		},
-		"broker": {
-			"read-token",
-		},
+func getKeycloakRoles(installationType integreatlyv1alpha1.InstallationType) map[string][]string {
+	var roles map[string][]string
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installationType)) {
+		roles = map[string][]string{
+			"account": {
+				"view-profile",
+			},
+		}
+	} else {
+		roles = map[string][]string{
+			"account": {
+				"manage-account",
+				"view-profile",
+			},
+			"broker": {
+				"read-token",
+			},
+		}
 	}
 	return roles
 }

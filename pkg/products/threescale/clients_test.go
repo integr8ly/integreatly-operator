@@ -127,6 +127,13 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 	testAuthProviders := &AuthProviders{
 		AuthProviders: []*AuthProvider{},
 	}
+	accounts := []AccountDetail{
+		AccountDetail{
+			Id:      1,
+			Name:    "new_tenant",
+			OrgName: "new_tenant_account",
+		},
+	}
 	return &ThreeScaleInterfaceMock{
 		AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
 			testAuthProviders.AuthProviders = append(testAuthProviders.AuthProviders, &AuthProvider{
@@ -203,6 +210,25 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 			}, nil
+		},
+		CreateTenantFunc: func(accessToken string, account AccountDetail) (*SignUpAccount, error) {
+
+			return &SignUpAccount{
+				AccountDetail: AccountDetail{
+					Id:      1,
+					Name:    "new_tenant",
+					OrgName: "new_tenant_account",
+				},
+			}, nil
+		},
+		ListTenantAccountsFunc: func(accessToken string) ([]AccountDetail, error) {
+			return accounts, nil
+		},
+		DeleteTenantsFunc: func(accessToken string, accounts []AccountDetail) error {
+			return nil
+		},
+		DeleteTenantFunc: func(accessToken string, id int) error {
+			return nil
 		},
 	}
 }

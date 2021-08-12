@@ -36,7 +36,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 		}
 
 		if resourceName == "" {
-			if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 				resourceName = "rhoam"
 			} else {
 				resourceName = "rhmi"

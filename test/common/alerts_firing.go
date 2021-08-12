@@ -194,7 +194,7 @@ func podLogs(t TestingTB, ctx *TestingContext) {
 }
 
 func getPodNamespaces(installType string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonPodNamespaces, rhoamExpectedPodNamespaces...)
 	} else {
 		return append(commonPodNamespaces, rhmi2PodNamespaces...)

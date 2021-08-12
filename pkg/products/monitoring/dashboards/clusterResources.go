@@ -9,7 +9,7 @@ import (
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
 func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName string) string {
 	quota := ``
-	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] {
+	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
 		quota = `, 
 			{
 				"datasource": "Prometheus",

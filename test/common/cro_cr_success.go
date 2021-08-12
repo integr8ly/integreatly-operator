@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -34,7 +33,7 @@ func getPostgres(installType string, installationName string) []string {
 		constants.AMQAuthServicePostgres,
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPostgresToCheck
 	} else {
 		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
@@ -51,7 +50,7 @@ func getRedisToCheck(installType string, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonRedis, managedApiRedis...)
 	} else {
 		return commonRedis
@@ -67,7 +66,7 @@ func getBlobStorageToCheck(installType, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return common
 	}
 

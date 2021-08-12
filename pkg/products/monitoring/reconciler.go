@@ -611,7 +611,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			SelfSignedCerts:                  r.installation.Spec.SelfSignedCerts,
 		}
 
-		if isMultiAZCluster && r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		if isMultiAZCluster && integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 			m.Spec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 				"prometheus":   "application-monitoring",
 				"alertmanager": "application-monitoring",

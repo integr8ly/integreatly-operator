@@ -118,11 +118,11 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 
 	if resources.RunningInProw(inst) {
 		setDefaultNumberOfReplicas(1, threeScaleComponents)
-	} else if inst.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	} else if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		setDefaultNumberOfReplicas(2, threeScaleComponents)
 	}
 
-	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		switch inst.Status.Quota {
 		case "100K":
 			threeScaleComponents["apicastProd"] = 2
