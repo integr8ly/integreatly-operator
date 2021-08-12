@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
+	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -15,9 +16,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	genericKey                 = "generic_key"
+	headerMatch                = "header_match"
+	headerKey                  = "tenant"
+	mtUnit                     = "minute"
+	possibleTenants            = 3000
+	multitenantLimitConfigMap  = "multitenant-config"
+	multitenantRateLimit       = "mulitenantLimit"
+	multitenantDescriptorValue = "per-mt-limit"
 )
 
 type RateLimitServiceReconciler struct {
@@ -68,6 +81,8 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	var err error
+
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      RateLimitingConfigMapName,
@@ -75,24 +90,19 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 		},
 	}
 
-	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		limitadorLimit := []limitadorLimit{
-			{
-				Namespace: ratelimit.RateLimitDomain,
-				MaxValue:  r.RateLimitConfig.RequestsPerUnit,
-				Seconds:   unitInSeconds,
-				Conditions: []string{
-					fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
-				},
-				Variables: []string{
-					"generic_key",
-				},
-			},
+		var limitadorLimit []limitadorLimit
+
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+			limitadorLimit, err = r.getRHOAMLimitadorSetting()
+			if err != nil {
+				return fmt.Errorf("failed to marshall rate limit config: %v", err)
+			}
+		} else {
+			limitadorLimit, err = r.getMultitenantRHOAMLimitadorSetting(ctx, client)
+			if err != nil {
+				return fmt.Errorf("failed to marshall rate limit config: %v", err)
+			}
 		}
 
 		limitadorConfigYamlMarshalled, err := yaml.Marshal(limitadorLimit)
@@ -120,6 +130,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 }
 
 func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+	currentRateLimit := ""
+
 	redisSecret, err := r.getRedisSecret(ctx, client)
 	if err != nil {
 		if k8sError.IsNotFound(err) {
@@ -148,8 +160,17 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		}
 	}
 
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		currentRateLimit, err = r.getCurrentLimitPerTenant(client)
+		if err != nil {
+			if !k8sError.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+		}
+	}
+
 	_, err = controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
-		limitsFile := fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig))
+		limitsFile := fmt.Sprintf("apicast-ratelimiting-%s.yaml", r.uniqueKey(r.RateLimitConfig, currentRateLimit))
 
 		if deployment.Labels == nil {
 			deployment.Labels = map[string]string{}
@@ -351,8 +372,15 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 
 // uniqueKey generates a unique string for each possible rate limit configuration
 // combination
-func uniqueKey(r marin3rconfig.RateLimitConfig) string {
-	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
+func (r *RateLimitServiceReconciler) uniqueKey(ratelimitConfig marin3rconfig.RateLimitConfig, currentRateLimit string) string {
+	var str string
+
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		str = fmt.Sprintf("%s/%d", ratelimitConfig.Unit, ratelimitConfig.RequestsPerUnit)
+	} else {
+		str = fmt.Sprintf("%s/%d/%s", ratelimitConfig.Unit, ratelimitConfig.RequestsPerUnit, currentRateLimit)
+	}
+
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
 
@@ -391,4 +419,118 @@ func GetSecondsInUnit(seconds uint64) (string, error) {
 	} else {
 		return "", fmt.Errorf("unexpected seconds value: %v, while getting seconds in Rate Limit Unit", seconds)
 	}
+}
+
+func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8sclient.Client, ctx context.Context) (uint32, error) {
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      multitenantLimitConfigMap,
+			Namespace: r.Namespace,
+		},
+	}
+
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
+	if err != nil && !k8sError.IsNotFound(err) {
+		return 0, fmt.Errorf("Error when getting the config map %w", err)
+	} else if k8sError.IsNotFound(err) {
+		configMap.Data = map[string]string{}
+		_, err = controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
+			configMap.Data[multitenantRateLimit] = fmt.Sprint(r.getLimitPerTenant())
+			return nil
+		})
+	}
+
+	limitPerTenant, err := strconv.ParseInt(configMap.Data[multitenantRateLimit], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("Error converting limit per tenant value %w", err)
+	}
+
+	return uint32(limitPerTenant), nil
+}
+
+func (r *RateLimitServiceReconciler) getLimitPerTenant() uint32 {
+	limitPerTenant := r.RateLimitConfig.RequestsPerUnit / possibleTenants
+	if limitPerTenant == 0 {
+		limitPerTenant = 1
+	}
+
+	return uint32(limitPerTenant)
+}
+
+func (r *RateLimitServiceReconciler) getCurrentLimitPerTenant(client k8sclient.Client) (string, error) {
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      multitenantLimitConfigMap,
+			Namespace: r.Namespace,
+		},
+	}
+
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
+	if err != nil {
+		return "", fmt.Errorf("Error when getting the config map %w", err)
+	}
+
+	currentLimit := configMap.Data[multitenantRateLimit]
+
+	return currentLimit, nil
+}
+
+func (r *RateLimitServiceReconciler) getRHOAMLimitadorSetting() ([]limitadorLimit, error) {
+	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
+	if err != nil {
+		return nil, err
+	}
+
+	return []limitadorLimit{
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+			},
+			Variables: []string{
+				"generic_key",
+			},
+		},
+	}, nil
+}
+
+func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx context.Context, client k8sclient.Client) ([]limitadorLimit, error) {
+
+	limitPerTenant, err := r.getLimitPerTenantFromConfigMap(client, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	unitInSeconds, err := r.getUnitInSeconds(r.RateLimitConfig.Unit)
+	if err != nil {
+		return nil, err
+	}
+
+	return []limitadorLimit{
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+			},
+			Variables: []string{
+				"generic_key",
+			},
+		},
+		{
+			Namespace: ratelimit.RateLimitDomain,
+			MaxValue:  limitPerTenant,
+			Seconds:   unitInSeconds,
+			Conditions: []string{
+				fmt.Sprintf("header_match == %s", multitenantDescriptorValue),
+			},
+			Variables: []string{
+				"tenant",
+			},
+		},
+	}, nil
 }
