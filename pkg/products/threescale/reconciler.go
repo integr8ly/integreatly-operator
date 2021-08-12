@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
+	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
-
 	"net/http"
 	"strconv"
 	"strings"
@@ -2513,11 +2513,28 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		ApicastContainerPort,
 	)
 
+	var apicastHTTPFilters []*hcm.HttpFilter
+	// apicast filters based on installation type
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		apicastHTTPFilters, err = getAPICastHTTPFilters()
+		if err != nil {
+			r.log.Errorf("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	} else {
+		apicastHTTPFilters, err = getMultitenantAPICastHTTPFilters()
+		if err != nil {
+			r.log.Errorf("Failed to create envoyconfig filters for multitenant RHOAM", l.Fields{"APICast": ApicastClusterName}, err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	// apicast listener
 	apiCastFilters, _ := getListenerResourceFilters(
-		getAPICastVirtualHosts(ApicastClusterName),
-		getAPICastHTTPFilters(),
+		getAPICastVirtualHosts(installation, ApicastClusterName),
+		apicastHTTPFilters,
 	)
+
 	apiCastListenerResource := ratelimit.CreateListenerResource(
 		ApicastListenerName,
 		ApicastEnvoyProxyAddress,
