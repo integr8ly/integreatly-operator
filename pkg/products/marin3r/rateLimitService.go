@@ -439,6 +439,9 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 			configMap.Data[multitenantRateLimit] = fmt.Sprint(r.getLimitPerTenant())
 			return nil
 		})
+		if err != nil {
+			return 0, fmt.Errorf("Error when creating config map %w", err)
+		}
 	}
 
 	limitPerTenant, err := strconv.ParseInt(configMap.Data[multitenantRateLimit], 10, 64)
