@@ -120,7 +120,6 @@ func rhmi2ExpectedRules() []alertsTestRule {
 			Rules: []string{
 				"UnifiedPushDown",
 				"UnifiedPushConsoleDown",
-				"UnifiedPushJavaHeapThresholdExceeded",
 				"UnifiedPushJavaNonHeapThresholdExceeded",
 				"UnifiedPushJavaGCTimePerMinuteScavenge",
 				"UnifiedPushJavaDeadlockedThreads",
