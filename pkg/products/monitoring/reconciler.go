@@ -1043,6 +1043,12 @@ func (r *Reconciler) updateGrafanaImage(operatorNamespace string, ctx context.Co
 	}
 
 	grafana.Spec.BaseImage = fmt.Sprintf("%s:%s", constants.GrafanaImage, constants.GrafanaVersion)
+
+	// Hotfix to unblock 1.10. TODO: improve this solution by the next release
+	if len(grafana.Spec.Containers) > 0 {
+		grafana.Spec.Containers[0].Image = "quay.io/openshift/origin-oauth-proxy:4.8"
+	}
+
 	err = serverClient.Update(ctx, grafana)
 	if err != nil {
 		return err

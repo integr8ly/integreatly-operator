@@ -12,7 +12,7 @@ require (
 	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
-	github.com/aws/aws-sdk-go v1.35.24
+	github.com/aws/aws-sdk-go v1.39.2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
@@ -27,7 +27,7 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
-	github.com/integr8ly/cloud-resource-operator v0.29.0
+	github.com/integr8ly/cloud-resource-operator v0.30.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.1
 	github.com/integr8ly/keycloak-client v0.1.4
@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
-	golang.org/x/net v0.0.0-20210421230115-4e50805a0758
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0

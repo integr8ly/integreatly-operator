@@ -7,7 +7,7 @@ import (
 
 // This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
-func GetMonitoringGrafanaDBResourceByPodJSON(installationName string) string {
+func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName string) string {
 	quota := ``
 	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] {
 		quota = `,
@@ -789,7 +789,7 @@ func GetMonitoringGrafanaDBResourceByPodJSON(installationName string) string {
 				"multi": false,
 				"name": "namespace",
 				"options": [],
-				"query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
+				"query": "query_result(count(kube_namespace_labels{namespace=~'` + namespacePrefix + `.*'}) by (namespace))",
 				"refresh": 1,
 				"regex": "/\"(.*?)\"/",
 				"skipUrlSync": false,

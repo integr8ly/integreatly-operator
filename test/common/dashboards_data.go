@@ -158,7 +158,7 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 	}
 	expectedServices := getExpectedServices(rhmi.Spec.Type)
 
-	rhmiNamespaces, err := getRHMINamespaces(prometheusPodName, ctx)
+	rhmiNamespaces, err := getRHMINamespaces(rhmi.Spec.NamespacePrefix, prometheusPodName, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RHMI namespaces: %w", err)
 	}
@@ -244,17 +244,18 @@ func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingCont
 		if err != nil {
 			return nil, fmt.Errorf("failed to query prometheus: %w", err)
 		}
-
+		if queryResult == nil {
+			continue
+		}
 		for _, result := range queryResult {
 			pods[namespaces[i]] = append(pods[namespaces[i]], result.Metric["pod"].(string))
 		}
 	}
-
 	return pods, nil
 }
 
-func getRHMINamespaces(prometheusPodName string, ctx *TestingContext) ([]string, error) {
-	queryResult, err := queryPrometheus("kube_namespace_labels{label_monitoring_key='middleware'}", prometheusPodName, ctx)
+func getRHMINamespaces(namespacePrefix, prometheusPodName string, ctx *TestingContext) ([]string, error) {
+	queryResult, err := queryPrometheus(fmt.Sprintf("kube_namespace_labels{namespace=~'%s.*'}", namespacePrefix), prometheusPodName, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query prometheus: %w", err)
 	}
@@ -370,7 +371,7 @@ func getPrometheusQueryResult(output string) ([]prometheusQueryResult, error) {
 	}
 
 	if len(queryResponse.Data.Result) == 0 {
-		return nil, fmt.Errorf("no result")
+		return nil, nil
 	}
 
 	return queryResponse.Data.Result, nil

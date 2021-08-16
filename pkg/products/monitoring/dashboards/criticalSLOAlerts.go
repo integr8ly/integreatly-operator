@@ -3973,7 +3973,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 					"value": ""
 				},
 				"datasource": "Prometheus",
-				"definition": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
+				"definition": "query_result(count(kube_namespace_labels{namespace=~'` + nsPrefix + `.*'}) by (namespace))",
 				"hide": 2,
 				"includeAll": false,
 				"label": "namespace",
@@ -4080,7 +4080,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 						"value": "` + nsPrefix + `user-sso-operator"
 					}
 				],
-				"query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
+				"query": "query_result(count(kube_namespace_labels{namespace=~'` + nsPrefix + `.*'}) by (namespace))",
 				"refresh": 0,
 				"regex": "/\"(.*?)\"/",
 				"skipUrlSync": false,
@@ -6048,7 +6048,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
           "value": ""
         },
         "datasource": "Prometheus",
-        "definition": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
+        "definition": "query_result(count(kube_namespace_labels{namespace=~'` + nsPrefix + `.*'}) by (namespace))",
         "hide": 2,
         "includeAll": false,
         "label": "namespace",
@@ -6101,7 +6101,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
             "value": "` + nsPrefix + `user-sso-operator"
           }
         ],
-        "query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
+        "query": "query_result(count(kube_namespace_labels{namespace=~'` + nsPrefix + `.*'}) by (namespace))",
         "refresh": 0,
         "regex": "/\"(.*?)\"/",
         "skipUrlSync": false,

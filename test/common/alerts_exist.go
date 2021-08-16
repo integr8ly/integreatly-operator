@@ -120,7 +120,6 @@ func rhmi2ExpectedRules() []alertsTestRule {
 			Rules: []string{
 				"UnifiedPushDown",
 				"UnifiedPushConsoleDown",
-				"UnifiedPushJavaHeapThresholdExceeded",
 				"UnifiedPushJavaNonHeapThresholdExceeded",
 				"UnifiedPushJavaGCTimePerMinuteScavenge",
 				"UnifiedPushJavaDeadlockedThreads",
@@ -392,7 +391,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"ClusterSchedulableCPULow",
 				"PVCStorageAvailable",
 				"PVCStorageMetricsAvailable",
-				"KubePersistentVolumeFillingUp",
+				"KubePersistentVolumeFillingUp4h",
 				"KubePersistentVolumeFillingUp",
 				"PersistentVolumeErrors",
 			},
