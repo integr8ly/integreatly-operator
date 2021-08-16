@@ -332,5 +332,7 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  replaces: application-monitoring-operator.v1.6.2
+  replaces: application-monitoring-operator.v1.6.0
+  skips:
+    - application-monitoring-operator.v1.6.2
   version: 1.6.3
