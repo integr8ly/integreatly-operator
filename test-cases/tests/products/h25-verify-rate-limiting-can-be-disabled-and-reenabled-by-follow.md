@@ -38,11 +38,13 @@ open "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 
 4. Select the **Workload App** dashboard
    > Validate that requests to 3scale application are not failing after rate limiting service was disabled
+   > Note: Downtime of up to 5 minutes is acceptable as per the service definition
 5. Search for alerts in `cloud-services-qe-reporting@redhat.com` mailing list
    > Make sure no critical alert is firing (you might see some alerts with severity "warning")
 6. Follow and validate the steps in SOP for re-enabling rate limit service
 7. Go back to **Workload App** dashboard
    > Validate that requests to 3scale application are not failing after rate limiting service was enabled again
+   > Note: Downtime of up to 5 minutes is acceptable as per the service definition
 8. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
 
 ```bash
