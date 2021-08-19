@@ -1,5 +1,5 @@
-# JIRA link
-<!-- insert a link to the JIRA ticket -->
+# Issue link
+<!-- insert a link to the JIRA ticket, GitHub issue or discussion thread -->
 
 # What
 <!-- describe a summary of the change, add any additional motivation and context as needed -->
