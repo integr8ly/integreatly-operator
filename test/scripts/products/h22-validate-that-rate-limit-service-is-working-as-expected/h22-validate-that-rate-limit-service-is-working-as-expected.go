@@ -107,15 +107,12 @@ func main() {
 		Namespace: namespace,
 		RedisHost: redisHost,
 	}
-	if err := redisCounter.Flush(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 
 	// Perform repeated tests where a random number of requests is made
 	// and assert that the counter is *at least* greater or equal than the
 	// previous count + the number of requests made
 	overallSuccess := true
+	fmt.Printf("[%s] Starting test run\n", time.Now().Format("15:04:05"))
 	for i := 0; i < iterations; i++ {
 		numRequests := rand.IntnRange(5, 15)
 		success, err := testCountIncreases(redisCounter, api.Endpoint, numRequests)
@@ -131,6 +128,7 @@ func main() {
 
 	if !overallSuccess {
 		fmt.Println("Test failed, not all iterations succeeded")
+		fmt.Println("Note: Counter reset can cause false failures due to current count being higher than previous count")
 		os.Exit(1)
 	}
 }
@@ -237,7 +235,10 @@ func cleanupRedis(ctx context.Context, client k8sclient.Client, namespace string
 // true with no error if the test succeeds. false with no error if the test failed
 // and an error if an unexpected error occurred when performing the test
 func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) (bool, error) {
-	currentCount, err := r.GetCount()
+	// call endpoint for rate limiting key to show in redis
+	requestEndpoint(endpoint)
+
+	initialCount, err := r.GetCount()
 	if err != nil {
 		return false, err
 	}
@@ -261,13 +262,13 @@ func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) 
 
 	status := "[FAIL] ❌"
 	success := false
-	if newCount >= currentCount+numberOfRequests {
+	if newCount <= initialCount-numberOfRequests {
 		status = "[PASS] 🎉"
 		success = true
 	}
 
-	fmt.Printf("Previous count: %d | Number of requests: %d | Current count: %d | %s\n",
-		currentCount, numberOfRequests, newCount, status)
+	fmt.Printf("[%s] Previous count: %d | Number of requests: %d | Current count: %d | %s\n",
+		time.Now().Format("15:04:05"), initialCount, numberOfRequests, newCount, status)
 	return success, nil
 }
 
@@ -507,16 +508,30 @@ func (r *redisCounter) GetCount() (int, error) {
 	}
 
 	keys = strings.TrimSpace(strings.ReplaceAll(keys, "liveness-probe", ""))
-
 	if keys == "" {
 		return 0, nil
 	}
 
-	keyList := strings.Fields(keys)
+	keyList := strings.Split(keys, "\n")
 	total := 0
 	for _, key := range keyList {
-		count, err := testcommon.ExecToPod(r.client, r.config,
-			fmt.Sprintf("/opt/rh/rh-redis32/root/usr/bin/redis-cli -c -h %s -p 6379 GET %s", r.RedisHost, key),
+
+		isString, err := r.keyIsString(key)
+		if !isString || err != nil {
+			continue
+		}
+
+		count, err := testcommon.ExecToPodArgs(r.client, r.config,
+			[]string{
+				"/opt/rh/rh-redis32/root/usr/bin/redis-cli",
+				"-c",
+				"-h",
+				r.RedisHost,
+				"-p",
+				"6379",
+				"GET",
+				key,
+			},
 			r.PodName,
 			r.Namespace,
 			"redis",
@@ -537,17 +552,11 @@ func (r *redisCounter) GetCount() (int, error) {
 		total += countInt
 	}
 
-	if len(keyList) > 2 {
-		if err := r.Flush(); err != nil {
-			return total, err
-		}
-	}
-
 	return total, nil
 }
 
-func (r *redisCounter) Flush() error {
-	_, err := testcommon.ExecToPodArgs(r.client, r.config,
+func (r *redisCounter) keyIsString(key string) (bool, error) {
+	keyType, err := testcommon.ExecToPodArgs(r.client, r.config,
 		[]string{
 			"/opt/rh/rh-redis32/root/usr/bin/redis-cli",
 			"-c",
@@ -555,13 +564,22 @@ func (r *redisCounter) Flush() error {
 			r.RedisHost,
 			"-p",
 			"6379",
-			"FLUSHALL",
+			"TYPE",
+			key,
 		},
 		r.PodName,
 		r.Namespace,
 		"redis",
 	)
-	return err
+	if err != nil {
+		return false, err
+	}
+
+	if strings.Contains(keyType, "string") {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func newThreescaleClient(installation *integreatlyv1alpha1.RHMI, accessToken string) threescale.ThreeScaleInterface {
