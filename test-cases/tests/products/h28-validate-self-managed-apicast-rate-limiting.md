@@ -2,11 +2,13 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
     targets:
       - 1.8.0
+      - 1.11.0
 estimate: 30m
+tags:
+  - destructive
 ---
 
 # H28 - Validate Self Managed Apicast rate limiting

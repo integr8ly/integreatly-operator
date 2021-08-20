@@ -3,11 +3,13 @@ products:
   - name: rhoam
     environments:
       - external
+      - rc1
     targets:
       - 1.0.0
       - 1.3.0
       - 1.6.0
       - 1.9.0
+      - 1.11.0
 estimate: 90m
 ---
 

@@ -5,14 +5,13 @@ products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-      - osd-fresh-install
-      - osd-private-post-upgrade
     targets:
       - 1.0.0
       - 1.3.0
       - 1.6.0
       - 1.7.0
       - 1.10.0
+      - 1.11.0
 estimate: 1h
 ---
 
