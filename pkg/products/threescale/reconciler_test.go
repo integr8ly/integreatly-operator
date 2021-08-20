@@ -939,7 +939,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Test - Get 3scale User failed - PhaseInProgress",
+			name: "Test - Get 3scale User failed - Continued - PhaseCompleted",
 			fields: fields{
 				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
 					return config.NewRHSSO(config.ProductConfig{
@@ -964,8 +964,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 				accessToken: &accessToken,
 			},
-			want:    integreatlyv1alpha1.PhaseInProgress,
-			wantErr: true,
+			want: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			name: "Test - Update Keycloak User failed - PhaseInProgress",
