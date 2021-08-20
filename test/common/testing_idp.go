@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/rest"
-
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v12 "github.com/openshift/api/authorization/v1"
@@ -16,9 +14,11 @@ import (
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -49,18 +49,35 @@ type TestUser struct {
 
 // creates testing idp
 func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
-
-	// checks if the IDP is created already
-	if hasIDPCreated(ctx, client, t) {
-		t.Log("not creating IDP, it's already created")
-		return nil
-	}
+	var tempTestingIDPRealm string
+	var tempKeycloakClientName string
+	var tempClusterOauthClientSecretName string
+	var tempIdpCAName string
 
 	rhmiCR, err := GetRHMI(client, true)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
 	}
 	masterURL := rhmiCR.Spec.MasterURL
+
+	// Temporary setup - to be deleted once IDP for multitenancy is set via envar.
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmiCR.Spec.Type)) {
+		tempTestingIDPRealm = "rhd"
+		tempKeycloakClientName = fmt.Sprintf("%s-client", TestingIDPRealm)
+		tempClusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
+		tempIdpCAName = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+	} else {
+		tempTestingIDPRealm = TestingIDPRealm
+		tempKeycloakClientName = keycloakClientName
+		tempClusterOauthClientSecretName = clusterOauthClientSecretName
+		tempIdpCAName = idpCAName
+	}
+
+	// checks if the IDP is created already
+	if hasIDPCreated(ctx, client, t, tempTestingIDPRealm) {
+		t.Log("not creating IDP, it's already created")
+		return nil
+	}
 
 	// create dedicated admins group is it doesnt exist
 	if !hasDedicatedAdminGroup(ctx, client) {
@@ -75,42 +92,53 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		return fmt.Errorf("error occurred while getting Openshift Oauth Route: %w ", err)
 	}
 	// create keycloak client secret
-	if err := createClientSecret(ctx, client, []byte(defaultSecret)); err != nil {
+	if err := createClientSecret(ctx, client, []byte(defaultSecret), tempClusterOauthClientSecretName); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
 	}
 
 	// create keycloak realm
-	if err := createKeycloakRealm(ctx, client, rhmiCR.Name); err != nil {
+	if err := createKeycloakRealm(ctx, client, rhmiCR.Name, tempTestingIDPRealm); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
 
 	// Delete current client to ensure new created client secret is correct
-	if err := deleteKeycloakClient(ctx, client); err != nil {
+	if err := deleteKeycloakClient(ctx, client, tempKeycloakClientName); err != nil {
 		return err
 	}
 
 	// create keycloak client
-	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, rhmiCR.Name); err != nil {
+	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, rhmiCR.Name, tempTestingIDPRealm, tempKeycloakClientName); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
-	if err := ensureKeycloakClientIsReady(ctx, client); err != nil {
+	if err := ensureKeycloakClientIsReady(ctx, client, tempKeycloakClientName); err != nil {
 		return fmt.Errorf("error occurred while waiting on keycloak client: %w", err)
 	}
 
+	var amountOfTestUsers int
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmiCR.Spec.Type)) {
+		multitenantUsers, err := getRegisteredTenantsNumber(t)
+		if err != nil {
+			t.Fatalf("Failed to get tenants to be created")
+		}
+		amountOfTestUsers = multitenantUsers
+	} else {
+		amountOfTestUsers = defaultNumberOfTestUsers
+	}
+
 	// create keycloak rhmi developer users
-	if err := createKeycloakUsers(ctx, client, rhmiCR.Name); err != nil {
+	if err := createKeycloakUsers(ctx, client, rhmiCR, amountOfTestUsers, tempTestingIDPRealm); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
 	if hasSelfSignedCerts {
-		if err := setupIDPConfig(ctx, client); err != nil {
+		if err := setupIDPConfig(ctx, client, tempIdpCAName); err != nil {
 			return fmt.Errorf("error occurred while updating openshift config: %w", err)
 		}
 	}
 
 	// create idp in cluster oauth
-	if err := addIDPToOauth(ctx, client, hasSelfSignedCerts); err != nil {
+	if err := addIDPToOauth(ctx, client, hasSelfSignedCerts, tempTestingIDPRealm, tempClusterOauthClientSecretName, tempIdpCAName); err != nil {
 		return fmt.Errorf("error occurred while adding testing idp to cluster config: %w", err)
 	}
 
@@ -124,23 +152,26 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
 	// ensure the IDP is available in OpenShift
-	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
-		// Use a temporary HTTP client to avoid polluting testing client
-		tempHTTPClient, err := NewTestingHTTPClient(kubeConfig)
-		if err != nil {
-			return false, fmt.Errorf("failed to create temporary client for idp setup: %w", err)
-		}
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmiCR.Spec.Type)) {
+		err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+			// Use a temporary HTTP client to avoid polluting testing client
+			tempHTTPClient, err := NewTestingHTTPClient(kubeConfig)
+			if err != nil {
+				return false, fmt.Errorf("failed to create temporary client for idp setup: %w", err)
+			}
 
-		dedicatedAdminUsername := fmt.Sprintf("%s%02d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins)
-		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
-		if authErr != nil {
-			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
-			return false, nil
+			dedicatedAdminUsername := fmt.Sprintf("%s%02d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins)
+			authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, tempTestingIDPRealm, t)
+			if authErr != nil {
+				t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
+				return false, nil
+			}
+			return true, nil
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to check for openshift idp: %w", err)
 		}
-		return true, nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to check for openshift idp: %w", err)
 	}
 	return nil
 }
@@ -205,7 +236,7 @@ func createOrUpdateDedicatedAdminGroupCR(ctx context.Context, client dynclient.C
 }
 
 // create idp config with self signed cert
-func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
+func setupIDPConfig(ctx context.Context, client dynclient.Client, tempIdpCAName string) error {
 	routerSecret := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{Name: "router-ca", Namespace: "openshift-ingress-operator"}, routerSecret); err != nil {
 		return fmt.Errorf("error occurred while getting router ca: %w", err)
@@ -214,7 +245,7 @@ func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 
 	idpConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      idpCAName,
+			Name:      tempIdpCAName,
 			Namespace: "openshift-config",
 		},
 	}
@@ -231,11 +262,11 @@ func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 }
 
 // add idp to cluster oauth
-func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCerts bool) error {
+func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCerts bool, tempTestingIDPRealm, tempClusterOauthClientSecretName, tempIdpCAName string) error {
 	// setup identity provider ca name
 	identityProviderCA := ""
 	if hasSelfSignedCerts {
-		identityProviderCA = idpCAName
+		identityProviderCA = tempIdpCAName
 	}
 
 	clusterOauth := &configv1.OAuth{}
@@ -247,7 +278,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	if err := client.Get(ctx, types.NamespacedName{Name: "keycloak-edge", Namespace: RHSSOProductNamespace}, keycloakRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Keycloak Edge Route: %w ", err)
 	}
-	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/%s", keycloakRoute.Spec.Host, TestingIDPRealm)
+	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/%s", keycloakRoute.Spec.Host, tempTestingIDPRealm)
 
 	// check if identity providers is nil or contains testing IDP
 	identityProviders := clusterOauth.Spec.IdentityProviders
@@ -255,7 +286,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	idpIndex := 0
 	if identityProviders != nil {
 		for index, providers := range identityProviders {
-			if providers.Name == TestingIDPRealm {
+			if providers.Name == tempTestingIDPRealm {
 				idpAlreadySetUpByScript = true
 				idpIndex = index
 				break
@@ -265,14 +296,14 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 
 	// create identity provider
 	testingIdentityProvider := &configv1.IdentityProvider{
-		Name:          TestingIDPRealm,
+		Name:          tempTestingIDPRealm,
 		MappingMethod: "claim",
 		IdentityProviderConfig: configv1.IdentityProviderConfig{
 			Type: configv1.IdentityProviderTypeOpenID,
 			OpenID: &configv1.OpenIDIdentityProvider{
 				ClientID: "openshift",
 				ClientSecret: configv1.SecretNameReference{
-					Name: clusterOauthClientSecretName,
+					Name: tempClusterOauthClientSecretName,
 				},
 				CA: configv1.ConfigMapNameReference{
 					Name: identityProviderCA,
@@ -299,7 +330,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 		}
 		// If idp is already set up - ensure using the correct client secret generated from test
 		if idpAlreadySetUpByScript {
-			clusterOauth.Spec.IdentityProviders[idpIndex].OpenID.ClientSecret.Name = clusterOauthClientSecretName
+			clusterOauth.Spec.IdentityProviders[idpIndex].OpenID.ClientSecret.Name = tempClusterOauthClientSecretName
 		} else {
 			clusterOauth.Spec.IdentityProviders = append(clusterOauth.Spec.IdentityProviders, *testingIdentityProvider)
 		}
@@ -311,10 +342,10 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 }
 
 // creates secret to be used by keycloak client
-func createClientSecret(ctx context.Context, client dynclient.Client, clientSecret []byte) error {
+func createClientSecret(ctx context.Context, client dynclient.Client, clientSecret []byte, tempClusterOauthClientSecretName string) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterOauthClientSecretName,
+			Name:      tempClusterOauthClientSecretName,
 			Namespace: "openshift-config",
 		},
 	}
@@ -332,7 +363,7 @@ func createClientSecret(ctx context.Context, client dynclient.Client, clientSecr
 }
 
 // create rhmi developer keycloak users
-func createKeycloakUsers(ctx context.Context, client dynclient.Client, installationName string) error {
+func createKeycloakUsers(ctx context.Context, client dynclient.Client, installation *integreatlyv1alpha1.RHMI, defaultNumberOfTestUsers int, tempTestingIDPRealm string) error {
 	// populate users to be created
 	var testUsers []TestUser
 	postfix := 1
@@ -358,7 +389,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, installat
 		postfix++
 	}
 
-	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers, installationName)
+	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers, installation, tempTestingIDPRealm)
 	if err != nil {
 		return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
 	}
@@ -366,25 +397,33 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, installat
 	return nil
 }
 
-func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser, installationName string) error {
+func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser, installation *integreatlyv1alpha1.RHMI, tempTestingIDPRealm string) error {
+
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
+		var email string
 		keycloakUser := &v1alpha1.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, user.UserName),
+				Name:      fmt.Sprintf("%s-%s", tempTestingIDPRealm, user.UserName),
 				Namespace: RHSSOProductNamespace,
 			},
+		}
+
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+			email = fmt.Sprintf("%s@example.com", user.UserName)
+		} else {
+			email = fmt.Sprintf("%s@rhmi.io", user.UserName)
 		}
 
 		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Annotations = map[string]string{
 				"integreatly-namespace": RHMIOperatorNamespace,
-				"integreatly-name":      installationName,
+				"integreatly-name":      installation.Name,
 			}
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						"sso": TestingIDPRealm,
+						"sso": tempTestingIDPRealm,
 					},
 				},
 				User: v1alpha1.KeycloakAPIUser{
@@ -392,7 +431,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 					FirstName: user.FirstName,
 					LastName:  user.LastName,
 					UserName:  user.UserName,
-					Email:     fmt.Sprintf("%s@example.com", user.UserName),
+					Email:     email,
 					ClientRoles: map[string][]string{
 						"account": {
 							"manage-account",
@@ -422,11 +461,11 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 }
 
 // polls the keycloak client until it is ready
-func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) error {
+func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client, tempKeycloakClientName string) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		keycloakClient := &v1alpha1.KeycloakClient{}
 
-		if err := client.Get(ctx, types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClient); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: tempKeycloakClientName, Namespace: RHSSOProductNamespace}, keycloakClient); err != nil {
 			return false, fmt.Errorf("error occurred while getting keycloak client")
 		}
 		if keycloakClient.Status.Ready {
@@ -441,12 +480,12 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) e
 }
 
 // creates keycloak client
-func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName string) error {
+func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName, tempTestingIDPRealm, tempKeycloakClientName string) error {
 	fullScopeAllowed := true
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakClientName,
-			Namespace: keycloakClientNamespace,
+			Name:      tempKeycloakClientName,
+			Namespace: RHSSOProductNamespace,
 			Annotations: map[string]string{
 				"integreatly-namespace": RHMIOperatorNamespace,
 				"integreatly-name":      installationName,
@@ -455,7 +494,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 		Spec: v1alpha1.KeycloakClientSpec{
 			RealmSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"sso": TestingIDPRealm,
+					"sso": tempTestingIDPRealm,
 				},
 			},
 			Client: &v1alpha1.KeycloakAPIClient{
@@ -466,7 +505,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 				Secret:                  defaultSecret,
 				RootURL:                 fmt.Sprintf("https://%s", oauthURL),
 				RedirectUris: []string{
-					fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, TestingIDPRealm),
+					fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, tempTestingIDPRealm),
 				},
 				WebOrigins: []string{
 					fmt.Sprintf("https://%s", oauthURL),
@@ -574,12 +613,12 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 	return nil
 }
 
-func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
+func deleteKeycloakClient(ctx context.Context, client dynclient.Client, tempKeycloakClientName string) error {
 	err := wait.PollImmediate(time.Second*2, time.Minute*2, func() (done bool, err error) {
 		if err := client.Delete(ctx, &v1alpha1.KeycloakClient{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      keycloakClientName,
-				Namespace: keycloakClientNamespace,
+				Name:      tempKeycloakClientName,
+				Namespace: RHSSOProductNamespace,
 			},
 		}); err != nil {
 			if !k8errors.IsNotFound(err) {
@@ -602,13 +641,13 @@ func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
 }
 
 // create keycloak realm
-func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName string) error {
+func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName, tempTestingIDPRealm string) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      TestingIDPRealm,
+			Name:      tempTestingIDPRealm,
 			Namespace: RHSSOProductNamespace,
 			Labels: map[string]string{
-				"sso": TestingIDPRealm,
+				"sso": tempTestingIDPRealm,
 			},
 		},
 	}
@@ -620,8 +659,8 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 			},
 		},
 		Realm: &v1alpha1.KeycloakAPIRealm{
-			ID:          TestingIDPRealm,
-			Realm:       TestingIDPRealm,
+			ID:          tempTestingIDPRealm,
+			Realm:       tempTestingIDPRealm,
 			Enabled:     true,
 			DisplayName: "Testing IDP",
 		},
@@ -669,7 +708,7 @@ func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) erro
 	return nil
 }
 
-func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB) bool {
+func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB, tempTestingIDPRealm string) bool {
 	clusterOauth := &configv1.OAuth{}
 	if err := client.Get(ctx, types.NamespacedName{Name: clusterOauthName}, clusterOauth); err != nil {
 		t.Logf("error occurred while getting cluster oauth: %w", err)
@@ -679,7 +718,7 @@ func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB) bo
 	identityProviders := clusterOauth.Spec.IdentityProviders
 	if identityProviders != nil {
 		for _, providers := range identityProviders {
-			if providers.Name == TestingIDPRealm {
+			if providers.Name == tempTestingIDPRealm {
 				idpExists = true
 			}
 		}

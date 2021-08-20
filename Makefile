@@ -225,6 +225,8 @@ test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export IDENTITY_PROVIDER_NAME ?= DevSandbox
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
+test/e2e/multitenant-rhoam/prow: export NUMBER_OF_TENANTS := 2
+test/e2e/multitenant-rhoam/prow: export TENANTS_CREATION_TIMEOUT := 3
 test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
@@ -250,6 +252,14 @@ test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test ./test/osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
+
+.PHONY: test/multitenancy/reconcile
+test/multitenancy/reconcile: export WATCH_NAMESPACE := $(NAMESPACE)
+test/multitenancy/reconcile: export NUMBER_OF_TENANTS ?= $(NUMBER_OF_TENANTS)
+test/multitenancy/reconcile: export TENANTS_CREATION_TIMEOUT ?= $(TENANTS_CREATION_TIMEOUT)
+test/multitenancy/reconcile:
+	# Run the multitenancy reconciler performance test against an existing cluster. Make sure you have logged in to the cluster.
+	go clean -testcache && go test ./test/multitenant -test.v -ginkgo.v -ginkgo.progress -timeout=3000m
 
 ############ E2E TEST COMMANDS ############
 
