@@ -31,6 +31,7 @@ const (
 	defaultSecret                  = "rhmiForeva"
 	DefaultTestUserName            = "test-user"
 	DefaultPassword                = "Password1"
+	clusterOauthName               = "cluster"
 )
 
 var (
@@ -238,7 +239,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	}
 
 	clusterOauth := &configv1.OAuth{}
-	if err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: clusterOauthName}, clusterOauth); err != nil {
 		return fmt.Errorf("error occurred while getting cluster oauth: %w", err)
 	}
 
@@ -670,7 +671,7 @@ func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) erro
 
 func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB) bool {
 	clusterOauth := &configv1.OAuth{}
-	if err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: clusterOauthName}, clusterOauth); err != nil {
 		t.Logf("error occurred while getting cluster oauth: %w", err)
 	}
 
@@ -771,4 +772,17 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func deleteIDPsFromOauth(ctx context.Context, client dynclient.Client) error {
+	clusterOauth := &configv1.OAuth{ObjectMeta: metav1.ObjectMeta{Name: clusterOauthName}}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, clusterOauth, func() error {
+		clusterOauth.Spec.IdentityProviders = []configv1.IdentityProvider{}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error occurred while creating or updating openshift cluster oauth: %w", err)
+	}
+
+	return nil
 }
