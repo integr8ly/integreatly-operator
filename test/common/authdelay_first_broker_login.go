@@ -42,7 +42,7 @@ func TestAuthDelayFirstBrokerLogin(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	testUser, err := getRandomKeycloakUser(ctx, rhmi.Name)
+	testUser, err := getRandomKeycloakUser(ctx, rhmi)
 
 	if err != nil {
 		t.Fatalf("error getting test user: %v", err)
@@ -70,7 +70,7 @@ func TestAuthDelayFirstBrokerLogin(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestUser, error) {
+func getRandomKeycloakUser(ctx *TestingContext, installation *v1alpha1.RHMI) (*TestUser, error) {
 	// create random keycloak user
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -82,7 +82,7 @@ func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestU
 			UserName:  fmt.Sprintf("%s-%d", TestAuthThreeScaleUsername, userNamePostfix),
 		},
 	}
-	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installationName)
+	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installation, TestingIDPRealm)
 	if err != nil {
 		return nil, fmt.Errorf("error creating test user: %v", err)
 	}
@@ -141,7 +141,7 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 	tsLoginURL := fmt.Sprintf("%v/p/login", tsHost)
 	tsDashboardURL := fmt.Sprintf("%v/%s", tsHost, threeScaleDashboardURI)
 
-	t.Logf("Attempting to open threescale login page with url: %s", tsLoginURL)
+	t.Logf("Attempting to open threescale login page")
 
 	browser := surf.NewBrowser()
 	browser.SetCookieJar(client.Jar)
@@ -151,7 +151,7 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 	// open threescale login page
 	err = browser.Open(tsLoginURL)
 	if err != nil {
-		return fmt.Errorf("failed to open browser url: %w", err)
+		return fmt.Errorf("failed to open browser url")
 	}
 
 	// check if user is already authenticated
@@ -159,12 +159,11 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 		return nil
 	}
 
-	t.Logf("User is not authenticated yet, going to authenticate through rhsso url  %s", browser.Url().String())
+	t.Log("User is not authenticated yet, going to authenticate through rhsso url")
 
 	// click on authenticate through rhsso
 	err = authenticateThroughRHSSO(browser)
 	if err != nil {
-		t.Logf("response %s", browser.Body())
 		return err
 	}
 
@@ -173,7 +172,7 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 		return nil
 	}
 
-	t.Logf("User is not authenticated through rhsso yet, going to select the IDP %s", browser.Url().String())
+	t.Logf("User is not authenticated through rhsso yet, going to select the IDP")
 
 	selectIDPURL := browser.Url().String()
 	// select the IDP to authenticate through RHSSO

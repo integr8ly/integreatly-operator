@@ -69,6 +69,12 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
+		{
+			[]TestCase{
+				{"MT01 - Verify tenant creation and integration with RHSSO", TestMultitenancyLoad},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeMultitenantManagedApi},
+		},
 	}
 
 	IDP_BASED_TESTS = []TestSuite{
@@ -122,5 +128,9 @@ var (
 	DESTRUCTIVE_TESTS = []TestCase{
 		// Add all destructive tests here that should not be executed as part of the happy path tests
 		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
+	}
+	MULTITENANCY_LOAD_TESTS = []TestCase{
+		// Multitenancy success test (can take between 20 - 50 hours depending on amount of tenants)
+		{"MT01 - Verify multitenancy reconcile time", TestMultitenancyLoad},
 	}
 )
