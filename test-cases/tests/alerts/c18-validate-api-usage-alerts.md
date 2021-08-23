@@ -27,7 +27,7 @@ estimate: 90m
    - ocmClusterLifespan: 36
    - openshiftVersion: (search for the version in the test plan document)
    - useByoc: false
-   - quota: 1
+   - quota: 10
    - multiAZ: false
    - patchCloudResAwsStrCM: false
    - clusterID: api-usage-alerts
@@ -66,7 +66,7 @@ estimate: 90m
     If the quota is not set to "1", then update it using:
 
     ```shell script
-    make cluster/prepare/quota DEV_QUOTA="1"
+    INSTALLATION_TYPE=managed-api make cluster/prepare/quota DEV_QUOTA="10"
     ```
 
     This updates the per minute rate limit to 694
@@ -149,7 +149,7 @@ estimate: 90m
     Add the following expression into the `Expression` field in the console:
 
     ```
-    increase(authorized_calls[1m]) + increase(limited_calls[1m]
+    increase(authorized_calls[1m]) + increase(limited_calls[1m])
     ```
 
     Click the `Execute` button. A `0` count should be returned.
