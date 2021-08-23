@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo"
 	"os"
@@ -25,35 +26,15 @@ var _ = Describe("integreatly", func() {
 		}
 	})
 
+	rhmi, err := common.GetRHMI(k8sClient, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
 	RunTests := func() {
 
 		// get all automated tests
-		tests := []common.Tests{
-			{
-				Type:      fmt.Sprintf("%s ALL TESTS", installType),
-				TestCases: common.GetAllTestCases(installType),
-			},
-			{
-				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
-				TestCases: common.GetHappyPathTestCases(installType),
-			},
-			{
-				Type:      fmt.Sprintf("%s IDP BASED", installType),
-				TestCases: common.GetIDPBasedTestCases(installType),
-			},
-			{
-				Type:      fmt.Sprintf("%s Functional", installType),
-				TestCases: FUNCTIONAL_TESTS,
-			},
-			{
-				Type:      fmt.Sprintf("%s SCALABILITY TESTS", installType),
-				TestCases: common.GetScalabilityTestCases(installType),
-			},
-			{
-				Type:      "FAILURE TESTS",
-				TestCases: common.FAILURE_TESTS,
-			},
-		}
+		tests := getTestsBasedOnInstallType(*rhmi)
 
 		if os.Getenv("MULTIAZ") == "true" {
 			tests = append(tests, common.Tests{
@@ -89,3 +70,41 @@ var _ = Describe("integreatly", func() {
 	RunTests()
 
 })
+
+func getTestsBasedOnInstallType(rhmi rhmiv1alpha1.RHMI) []common.Tests {
+	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(rhmi.Spec.Type)) {
+		return []common.Tests{
+			{
+				Type:      "MULTITENANCY LOAD TESTS",
+				TestCases: common.MULTITENANCY_LOAD_TESTS,
+			},
+		}
+	} else {
+		return []common.Tests{
+			{
+				Type:      fmt.Sprintf("%s ALL TESTS", installType),
+				TestCases: common.GetAllTestCases(installType),
+			},
+			{
+				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
+				TestCases: common.GetHappyPathTestCases(installType),
+			},
+			{
+				Type:      fmt.Sprintf("%s IDP BASED", installType),
+				TestCases: common.GetIDPBasedTestCases(installType),
+			},
+			{
+				Type:      fmt.Sprintf("%s Functional", installType),
+				TestCases: FUNCTIONAL_TESTS,
+			},
+			{
+				Type:      fmt.Sprintf("%s SCALABILITY TESTS", installType),
+				TestCases: common.GetScalabilityTestCases(installType),
+			},
+			{
+				Type:      "FAILURE TESTS",
+				TestCases: common.FAILURE_TESTS,
+			},
+		}
+	}
+}
