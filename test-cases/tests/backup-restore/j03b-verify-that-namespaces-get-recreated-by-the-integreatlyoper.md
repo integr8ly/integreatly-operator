@@ -2,7 +2,6 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
     targets:
       - 0.1.0
@@ -10,6 +9,7 @@ products:
       - 1.0.0
       - 1.5.0
       - 1.8.0
+      - 1.11.0
 estimate: 120m
 tags:
   - destructive
