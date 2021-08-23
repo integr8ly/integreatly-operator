@@ -55,19 +55,23 @@ func TestAPIs(t *testing.T) {
 		Groups:   []string{"system:authenticated"},
 	}
 
+	context, err := common.NewTestingContext(cfg)
+	if err != nil {
+		t.Fatalf("\"failed to create testing context: %s", err)
+	}
+	k8sClient = context.Client
+
 	// Allow overriding via environment variable
 	if os.Getenv("BYPASS_STORAGE_TYPE_CHECK") != "true" {
-		// get RMI CR and if cluster storage set to true, skip the suite
-		context, err := common.NewTestingContext(cfg)
-		if err != nil {
-			t.Fatalf("\"failed to create testing context: %s", err)
-		}
-		rhmi, err := common.GetRHMI(context.Client, true)
+		rhmi, err := common.GetRHMI(k8sClient, true)
 		if err != nil {
 			t.Fatalf("error getting RHMI CR: %v", err)
 		}
-		if rhmi.Spec.UseClusterStorage == "true" {
-			t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
+		// For now, we want to allow RHOAM multitenant to be tested on "on-cluster" storage
+		if !rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(rhmi.Spec.Type)) {
+			if rhmi.Spec.UseClusterStorage == "true" {
+				t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
+			}
 		}
 	}
 

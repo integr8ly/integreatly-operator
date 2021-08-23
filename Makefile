@@ -242,6 +242,8 @@ test/e2e/single:
 
 .PHONY: test/functional
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
+test/functional: export NUMBER_OF_TENANTS ?= $(NUMBER_OF_TENANTS)
+test/functional: export TENANTS_CREATION_TIMEOUT ?= $(TENANTS_CREATION_TIMEOUT)
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
@@ -252,14 +254,6 @@ test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test ./test/osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
-
-.PHONY: test/multitenancy/reconcile
-test/multitenancy/reconcile: export WATCH_NAMESPACE := $(NAMESPACE)
-test/multitenancy/reconcile: export NUMBER_OF_TENANTS ?= $(NUMBER_OF_TENANTS)
-test/multitenancy/reconcile: export TENANTS_CREATION_TIMEOUT ?= $(TENANTS_CREATION_TIMEOUT)
-test/multitenancy/reconcile:
-	# Run the multitenancy reconciler performance test against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test ./test/multitenant -test.v -ginkgo.v -ginkgo.progress -timeout=3000m
 
 ############ E2E TEST COMMANDS ############
 

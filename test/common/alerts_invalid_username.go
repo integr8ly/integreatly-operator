@@ -69,7 +69,7 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 	validateUserNotListedInKeyCloakCR(t, ctx, goCtx, userLongName.Name)
 
 	// Create User in RHSSO
-	if err := createOrUpdateKeycloakUserCR(goCtx, ctx.Client, usersToCreateInTestingIDP, rhmi.Name); err != nil {
+	if err := createOrUpdateKeycloakUserCR(goCtx, ctx.Client, usersToCreateInTestingIDP, rhmi, TestingIDPRealm); err != nil {
 		t.Fatalf("Failed to created keycloak user cr: %s with err: %s", err)
 	}
 	t.Logf("Created keycloak cr %s on %s", userLong2, TestingIDPRealm)
