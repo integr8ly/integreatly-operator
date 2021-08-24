@@ -121,7 +121,7 @@ var (
 	OperatorVersion3Scale              OperatorVersion = "0.7.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.30.0"
-	OperatorVersionUPS                 OperatorVersion = "0.5.1"
+	OperatorVersionUPS                 OperatorVersion = "0.5.2"
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"

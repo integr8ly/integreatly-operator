@@ -1,4 +1,4 @@
 packageName: rhmi-unifiedpush
 channels:
-- currentCSV: unifiedpush-operator.v0.5.1
+- currentCSV: unifiedpush-operator.v0.5.2
   name: rhmi
