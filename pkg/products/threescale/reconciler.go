@@ -1309,8 +1309,8 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 	for _, user := range kcu {
 		tsUser, err := r.tsClient.GetUser(strings.ToLower(user.UserName), *accessToken)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseInProgress,
-				fmt.Errorf("failed to get 3scale user with keycloak username %s, err: %s", user.UserName, err)
+			// Continue installation to not block for when users could not be created in 3scale (i.e. too many characters in username)
+			continue
 		}
 
 		if user.Attributes == nil {
