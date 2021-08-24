@@ -53,6 +53,14 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		isClusterLoggedIn := false
 		routeFound := false
 		isThreeScaleLoggedIn := false
+		var testTimeout time.Duration
+
+		// First user needs more time due to the time IDP takes to be created and available
+		if postfix == 1 {
+			testTimeout = 10
+		} else {
+			testTimeout = tenantCreationTime
+		}
 
 		// Create client for current tenant
 		tenantClient, err := createTenantClient(t, ctx)
@@ -67,7 +75,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 			testUser = fmt.Sprintf("%v%v", DefaultTestUserName, postfix)
 		}
 
-		err = wait.Poll(pollingTime, tenantCreationTime, func() (done bool, err error) {
+		err = wait.Poll(pollingTime, testTimeout, func() (done bool, err error) {
 
 			// Let user login to the cluster
 			if !isClusterLoggedIn {
