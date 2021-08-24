@@ -9,11 +9,14 @@ import (
 	"net/http/httputil"
 	"os"
 	"strings"
+	"time"
 
 	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -118,32 +121,46 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	token := ""
-	secrets, err := ctx.KubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		t.Fatal("failed to get secrets", err)
-	}
-	for _, secretsItem := range secrets.Items {
-		if strings.HasPrefix(secretsItem.Name, "test-token-") {
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      secretsItem.Name,
-					Namespace: MonitoringOperatorNamespace,
-				},
-			}
-			err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretsItem.Name, Namespace: MonitoringOperatorNamespace}, secret)
-			if err != nil {
-				t.Fatal("failed to get secret", err)
+	if err := wait.PollImmediate(time.Second, time.Second*10, func() (bool, error) {
+		// Poll the Service Account
+		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
+			Name:      serviceAccountName,
+			Namespace: MonitoringOperatorNamespace,
+		}, serviceAccount); err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
 			}
 
-			if _, ok := secret.Annotations["kubernetes.io/created-by"]; !ok {
-				token = string(secret.Data["token"])
-				break
+			return false, err
+		}
+
+		// Iterate through the SA secrets to find the token
+		var saSecret *corev1.ObjectReference = nil
+		for _, secret := range serviceAccount.Secrets {
+			if strings.HasPrefix(secret.Name, fmt.Sprintf("%s-token", serviceAccountName)) {
+				saSecret = &secret
 			}
 		}
-	}
-	if token == "" {
-		t.Skip("skipping test due to flakyness on osde2e - Jira: https://issues.redhat.com/browse/INTLY-10316")
-		//t.Fatal("failed to find token for serviceAccount")
+
+		// The token secret hasn't been created yet
+		if saSecret == nil {
+			return false, nil
+		}
+
+		// Get the secret
+		secret := &corev1.Secret{}
+		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
+			Name:      saSecret.Name,
+			Namespace: MonitoringOperatorNamespace,
+		}, secret); err != nil {
+			return false, err
+		}
+
+		// Assign the token and finish polling
+		token = string(secret.Data["token"])
+		return true, nil
+	}); err != nil {
+		t.Fatal("unexpected error while waiting for SA token", err)
 	}
 
 	//create new http client
