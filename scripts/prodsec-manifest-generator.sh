@@ -25,18 +25,19 @@ manifest_compare() {
 # Generates the manifest, it can be either master or production manifest
 manifest_generate() {
     FILEPATH="${CURRENT_DIR}/products/products.yaml"
-    PRODUCTS=$(yq r -j ./products/products.yaml | jq -r '.products' | jq length)
+    PRODUCTS=$(
+    yq e -j ./products/products.yaml | jq -r '.products' | jq length)
     # Generation manifest file
     GENERATION_FILE="${CURRENT_DIR}/prodsec-manifests/generation-file.txt"
 
     # Scan repos from the products.yaml file
     for (( i=0; i<=$PRODUCTS; i++))
     do
-        PRODUCT_NAME=$(yq r ${FILEPATH} "products[$i].name")
-        PRODUCT_VERSION=$(yq r ${FILEPATH} "products[$i].version")
-        PRODUCT_URL=$(yq r ${FILEPATH} "products[$i].url")
+        PRODUCT_NAME=$(yq e ".products[$i].name" ${FILEPATH} )
+        PRODUCT_VERSION=$(yq e  ".products[$i].version" ${FILEPATH})
+        PRODUCT_URL=$(yq e  ".products[$i].url" ${FILEPATH} )
 
-        if [[ $(yq r ${FILEPATH} "products[$i].installType") == *"$OLM_TYPE"* ]]; then
+        if [[ $(yq e ".products[$i].installType" ${FILEPATH}) == *"$OLM_TYPE"* ]]; then
           TMP_DIR=$(mktemp -d)
           echo "Generating manifest for ${PRODUCT_NAME} - version ${PRODUCT_VERSION}"
           git clone -c advice.detachedHead=false --quiet --depth 1 -b ${PRODUCT_VERSION} ${PRODUCT_URL} ${TMP_DIR}

@@ -1,11 +1,11 @@
 
 .PHONY: test-containers/check/format
 test-containers/check/format:
-	yq v test-containers.yaml
+	yq e 'true' test-containers.yaml > /dev/null
 
 .PHONY: test-containers/check/images
 test-containers/check/images:
-	yq r test-containers.yaml 'tests[*].image' | xargs -i skopeo inspect --config docker://'{}'
+	yq e  '.tests[].image' test-containers.yaml | xargs -i skopeo inspect --config docker://'{}'
 
 .PHONY: test-containers/check
 test-containers/check: test-containers/check/format test-containers/check/images
