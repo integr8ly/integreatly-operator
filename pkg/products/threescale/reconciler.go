@@ -1348,8 +1348,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieving user identities from the MT users %w", err)
 	}
 
-	r.log.Infof("user identities from MT accounts",
-		l.Fields{"identities": mtUserIdentities},
+	r.log.Infof("Found user identities from MT accounts",
+		l.Fields{"identities": len(mtUserIdentities.Items)},
 	)
 
 	// get 3scale master access token
@@ -1435,8 +1435,15 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	)
 
 	for _, account := range accountsToBeCreated {
+
+		pw, err := r.getTenantAccountPassword(ctx, serverClient, account)
+		if err != nil {
+			r.log.Error("Failed to get account tenant password:", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
 		// create account
-		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account)
+		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, pw)
 		if err != nil {
 			r.log.Errorf("Error creating new tenant account",
 				l.Fields{"tenantAccount": newSignupAccount},
@@ -1471,6 +1478,11 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		if ok {
 			delete(signUpAccountsSecret.Data, string(account.OrgName))
 		}
+		err := r.removeTenantAccountPassword(ctx, serverClient, account)
+		if err != nil {
+			r.log.Error("Error deleting tenant account password:", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1491,6 +1503,75 @@ func getAccessTokenSecret(ctx context.Context, serverClient k8sclient.Client, na
 	}
 
 	return signUpAccountsSecret, nil
+}
+
+func (r *Reconciler) removeTenantAccountPassword(ctx context.Context, serverClient k8sclient.Client, account AccountDetail) error {
+
+	r.log.Infof("Remove Tenant Account Password", l.Fields{"tenant": account.Name})
+
+	tenantAccountSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      "tenant-account-passwords",
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: tenantAccountSecret.Name, Namespace: tenantAccountSecret.Namespace}, tenantAccountSecret)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			r.log.Error("Failed to get tenantAccountPasswords secret", err)
+			return err
+		}
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantAccountSecret, func() error {
+		if tenantAccountSecret.Data == nil || tenantAccountSecret.Data[account.OrgName] == nil {
+			r.log.Infof("Tenant Account Password not found", l.Fields{"tenant": account.OrgName})
+			return nil
+		} else {
+			delete(tenantAccountSecret.Data, account.OrgName)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error occurred while removing tenant Account password: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Reconciler) getTenantAccountPassword(ctx context.Context, serverClient k8sclient.Client, account AccountDetail) (string, error) {
+	var pw = ""
+	tenantAccountSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      "tenant-account-passwords",
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: tenantAccountSecret.Name, Namespace: tenantAccountSecret.Namespace}, tenantAccountSecret)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			r.log.Error("Failed to get tenantAccountPasswords secret", err)
+			return "", err
+		}
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantAccountSecret, func() error {
+		if tenantAccountSecret.Data == nil {
+			tenantAccountSecret.Data = map[string][]byte{}
+		}
+		if tenantAccountSecret.Data[account.Name] == nil {
+			pw = resources.GenerateRandomPassword(20, 2, 2, 2)
+			tenantAccountSecret.Data[account.Name] = []byte(pw)
+		} else {
+			pw = string(tenantAccountSecret.Data[account.Name])
+		}
+		return nil
+	}); err != nil {
+		return "", fmt.Errorf("error occurred while creating or updating tenant Account Secret: %w", err)
+	}
+
+	return pw, nil
 }
 
 func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8sclient.Client, username string, tenantLink string) error {

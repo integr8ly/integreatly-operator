@@ -44,7 +44,7 @@ type ThreeScaleInterface interface {
 	DeleteBackend(accessToken string, backendID int) error
 	DeleteAccount(accessToken, accountID string) error
 
-	CreateTenant(accessToken string, account AccountDetail) (*SignUpAccount, error)
+	CreateTenant(accessToken string, account AccountDetail, password string) (*SignUpAccount, error)
 	ListTenantAccounts(accessToken string) ([]AccountDetail, error)
 	GetTenantAccount(accessToken string, id int) (*SignUpAccount, error)
 	DeleteTenant(accessToken string, id int) error
@@ -595,7 +595,7 @@ func (tsc *threeScaleClient) ListTenantAccounts(accessToken string) ([]AccountDe
 	return accounts, nil
 }
 
-func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDetail) (*SignUpAccount, error) {
+func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDetail, password string) (*SignUpAccount, error) {
 	res, err := tsc.makeRequestToMaster(
 		"POST",
 		"master/api/providers.xml",
@@ -603,7 +603,7 @@ func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDet
 			"org_name": account.OrgName,
 			"username": account.Name,
 			"email":    fmt.Sprintf("%s@rhmi.io", account.Name),
-			"password": "MT",
+			"password": password,
 		}),
 	)
 	if err != nil {
