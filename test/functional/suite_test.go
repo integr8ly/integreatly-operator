@@ -60,7 +60,7 @@ func TestAPIs(t *testing.T) {
 	}
 	k8sClient = context.Client
 
-	// Allow overriding via environment variable
+	//Allow overriding via environment variable
 	if os.Getenv("BYPASS_STORAGE_TYPE_CHECK") != "true" {
 		rhmi, err := common.GetRHMI(k8sClient, true)
 		if err != nil {
@@ -72,12 +72,6 @@ func TestAPIs(t *testing.T) {
 				t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
 			}
 		}
-	}
-
-	// get install type
-	installType, err = common.GetInstallType(cfg)
-	if err != nil {
-		t.Fatalf("could not get install type %s", err)
 	}
 
 	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("%s/%s", testResultsDirectory, utils.JUnitFileName(testSuiteName)))

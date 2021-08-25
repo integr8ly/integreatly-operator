@@ -42,9 +42,13 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	}
 	masterURL := rhmi.Spec.MasterURL
 
-	// Create testing IDP with the amount of tenants set by MutlitenantUsers
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Fatalf("error while creating testing idp: %v", err)
+	if !hasIDPCreated(goctx.TODO(), ctx.Client, t, realmName) {
+		t.Fatalf("IDP is not present on the cluster")
+	}
+
+	err = createKeycloakUsers(goctx.TODO(), ctx.Client, rhmi, multitenantUsers, realmName)
+	if err != nil {
+		t.Fatalf("error while creating keycloak users")
 	}
 
 	// Creation of tenants
@@ -57,7 +61,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 
 		// First user needs more time due to the time IDP takes to be created and available
 		if postfix == 1 {
-			testTimeout = 10
+			testTimeout = time.Minute * 10
 		} else {
 			testTimeout = tenantCreationTime
 		}
@@ -143,7 +147,7 @@ func getRegisteredTenantsNumber(t TestingTB) (int, error) {
 	multitenantUsersEnvar, ok = os.LookupEnv("NUMBER_OF_TENANTS")
 	if ok != true {
 		t.Log("NUMBER_OF_TENANTS envvar not found, setting to default 10")
-		multitenantUsersEnvar = "10"
+		multitenantUsersEnvar = "2"
 	}
 	multitenantUsers, err := strconv.ParseInt(multitenantUsersEnvar, 10, 64)
 	if err != nil {
