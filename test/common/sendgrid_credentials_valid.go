@@ -1,26 +1,26 @@
 package common
 
 import (
-	"context"
 	"crypto/tls"
 	"net/smtp"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 )
 
 func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
+
 	// Get SMTP secret from rhmi-operator namespace
 	kc := ctx.KubeClient
-	smtpSecret, err := kc.CoreV1().Secrets(RHMIOperatorNamespace).Get(context.TODO(), NamespacePrefix+"smtp", metav1.GetOptions{})
+	smtpSecret, err := resources.GetSMTPSecret(kc, RHMIOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		t.Fatal("Failed to get an SMTP secret", err)
 	}
 
 	username, password, host, port :=
-		string(smtpSecret.Data["username"]),
-		string(smtpSecret.Data["password"]),
-		string(smtpSecret.Data["host"]),
-		string(smtpSecret.Data["port"])
+		string(smtpSecret["username"]),
+		string(smtpSecret["password"]),
+		string(smtpSecret["host"]),
+		string(smtpSecret["port"])
 
 	if host != "smtp.sendgrid.net" {
 		if host != "smtp.example.com" {
@@ -29,10 +29,10 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 		if port != "587" {
 			t.Fatal("Dummy port values have changed. Expected: 587, Actual: ", port)
 		}
-		if username != "dummy" {
+		if username != "" && username != "dummy" {
 			t.Fatal("Dummy uesrname values have changed. Expected: dummy, Actual: ", username)
 		}
-		if password != "dummy" {
+		if password != "" && password != "dummy" {
 			t.Fatal("Dummy password values have changed. Expected: dummy, Actual: %s", password)
 		}
 

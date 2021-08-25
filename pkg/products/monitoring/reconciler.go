@@ -831,6 +831,13 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	clusterName := clusterInfra.Status.InfrastructureName
 	clusterID := string(clusterVersion.Spec.ClusterID)
 
+	if string(smtpSecret.Data["host"]) == "" {
+		smtpSecret.Data["host"] = []byte("smtp.example.com")
+	}
+	if string(smtpSecret.Data["port"]) == "" {
+		smtpSecret.Data["port"] = []byte("587")
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),

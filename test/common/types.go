@@ -23,6 +23,7 @@ var (
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
 	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
+	SMTPSecretName                    = NamespacePrefix + "smtp"
 	ApicurioRegistryOperatorNamespace = ApicurioRegistryProductNamespace + "-operator"
 	ApicuritoProductNamespace         = NamespacePrefix + "apicurito"
 	ApicuritoOperatorNamespace        = ApicuritoProductNamespace + "-operator"

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"os"
 
-	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"net/http"
 	"strconv"
 	"strings"
+
+	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 
@@ -1364,56 +1365,66 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	r.log.Infof("retrieving list of MT accounts available ",
-		l.Fields{"accounts": accounts},
+	r.log.Infof("Retrieving list of MT accounts available ",
+		l.Fields{"Accounts": accounts},
 	)
 
+	signUpAccountsSecret, err := getAccessTokenSecret(ctx, serverClient, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// looping through the accounts to reconcile default config back
 	for _, account := range accounts {
 		if account.State == "approved" {
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
-					r.log.Infof("activating user", l.Fields{"user Activated": user.Username})
+					r.log.Infof("Activating user account",
+						l.Fields{"userAccount": user.Username},
+					)
 
 					err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
 					if err != nil {
-						r.log.Error("Error activating users in new tenant account:", err)
-						return integreatlyv1alpha1.PhaseFailed, err
+						r.log.Errorf("Error activating users in new tenant account:",
+							l.Fields{"userAccount": user.Username},
+							err,
+						)
 					}
 				}
 			}
 
-			signUpAccountsSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "mt-signupaccount-3scale-access-token",
-					Namespace: r.Config.GetNamespace(),
+			val, ok := signUpAccountsSecret.Data[string(account.OrgName)]
+			if !ok || string(val) == "" {
+				r.log.Infof("Tenant Account does not have access token created",
+					l.Fields{"tenantAccount": account},
+				)
+				continue
+			}
+			signUpAccount := SignUpAccount{
+				AccountDetail: account,
+				AccountAccessToken: AccountAccessToken{
+					Value: string(val),
 				},
 			}
-			err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
+			r.log.Infof("Adding authentication provider to MT 3scale account",
+				l.Fields{"tenantAccount": signUpAccount},
+			)
+			// verify if the account have the auth provider already
+			err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting access token secret: %w", err)
+				r.log.Errorf("Error adding authentication provider to 3scale account",
+					l.Fields{"tenantAccount": signUpAccount},
+					err,
+				)
 			}
 
-			if val, ok := signUpAccountsSecret.Data[string(account.OrgName)]; ok {
-				signUpAccount := SignUpAccount{
-					AccountDetail: account,
-					AccountAccessToken: AccountAccessToken{
-						Value: string(val),
-					},
-				}
-				// verify if the account have the auth provider already
-				err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
-				r.log.Infof("Add auth provider for missing account:",
-					l.Fields{"accountsWithProvider": signUpAccount},
-				)
-				if err != nil {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error adding auth provider: %w", err)
-				}
-			}
 			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling console link: %v", err)
+				r.log.Errorf("Error reconciling console link for the MT account",
+					l.Fields{"tenantAccount": signUpAccount},
+					err,
+				)
 			}
-
 		}
 	}
 
@@ -1423,61 +1434,25 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		l.Fields{"accountsToBeCreated": accountsToBeCreated},
 	)
 
-	// TODO: create CM with account state of each account
-
 	for _, account := range accountsToBeCreated {
 		// create account
 		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account)
 		if err != nil {
-			r.log.Error("Error creating new tenant accounts:", err)
-			return integreatlyv1alpha1.PhaseFailed, err
+			r.log.Errorf("Error creating new tenant account",
+				l.Fields{"tenantAccount": newSignupAccount},
+				err,
+			)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating new tenant account: %v", err)
 		}
-		r.log.Infof("new MT account created",
-			l.Fields{"signupAccount": newSignupAccount},
+		r.log.Infof("New 3scale MT account created",
+			l.Fields{"tenantAccount": newSignupAccount},
 		)
-		// TODO: store token in a secret
-		signUpAccountsSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "mt-signupaccount-3scale-access-token",
-				Namespace: r.Config.GetNamespace(),
-			},
-		}
 
-		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
-		if !k8serr.IsNotFound(err) && err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting access token secret: %w", err)
-		} else if k8serr.IsNotFound(err) {
-			signUpAccountsSecret.Data = map[string][]byte{}
-		}
-
-		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
+		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
-		}
-
-		for _, user := range account.Users.User {
-			if user.State == "pending" {
-				err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
-				if err != nil {
-					r.log.Error("Error activating users in new tenant account:", err)
-					return integreatlyv1alpha1.PhaseFailed, err
-				}
-			}
-		}
-
-		err = r.AddAuthProviderToMTAccount(ctx, serverClient, *newSignupAccount)
-		r.log.Infof("Accounts with AddAuthProviderToMTAccounts:",
-			l.Fields{"accountsWithProvider": newSignupAccount},
-		)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error adding auth provider: %w", err)
-		}
-
-		err = r.reconcileDashboardLink(ctx, serverClient, newSignupAccount.AccountDetail.OrgName, newSignupAccount.AccountDetail.AdminBaseURL)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling console link: %v", err)
 		}
 	}
 
@@ -1490,7 +1465,32 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	// Remove redundant access token secrets
+	for _, account := range accountsToBeDeleted {
+		_, ok := signUpAccountsSecret.Data[string(account.OrgName)]
+		if ok {
+			delete(signUpAccountsSecret.Data, string(account.OrgName))
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func getAccessTokenSecret(ctx context.Context, serverClient k8sclient.Client, namespace string) (*corev1.Secret, error) {
+	signUpAccountsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mt-signupaccount-3scale-access-token",
+			Namespace: namespace,
+		},
+	}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
+	if !k8serr.IsNotFound(err) && err != nil {
+		return nil, fmt.Errorf("Error getting access token secret: %w", err)
+	} else if k8serr.IsNotFound(err) {
+		signUpAccountsSecret.Data = map[string][]byte{}
+	}
+
+	return signUpAccountsSecret, nil
 }
 
 func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8sclient.Client, username string, tenantLink string) error {

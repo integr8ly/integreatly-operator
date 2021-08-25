@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,11 +122,10 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("secret key is undefined in pager duty secret")
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"smtp", metav1.GetOptions{})
+	smtp, err := resources.GetSMTPSecret(kubeClient, RHMIOperatorNamespace, SMTPSecretName)
 	if err != nil {
-		return fmt.Errorf("failed to get secret: %w", err)
+		return err
 	}
-	smtp := res.Data
 
 	res, err = kubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
 	if err != nil {
