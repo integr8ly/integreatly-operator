@@ -105,7 +105,7 @@ products:
     channel: alpha
     package: observability-operator
     installFrom: "index"
-    index: "quay.io/bf2fc6cc711aee1a0c2a82e312df7f2e6b37baa12bd9b1f2fd752e260d93a6f8144ac730947f25caa2bfe6ad0f410da360940ee6d28d6c1688d3822c4055650e/observability-operator-index:v3.0.2"
+    index: "quay.io/bf2fc6cc711aee1a0c2a82e312df7f2e6b37baa12bd9b1f2fd752e260d93a6f8144ac730947f25caa2bfe6ad0f410da360940ee6d28d6c1688d3822c4055650e/observability-operator-index:v3.0.3"
   rhsso:
     installFrom: "local"
     manifestsDir: "integreatly-rhsso"
