@@ -13,6 +13,7 @@ require (
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.39.2
+	github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
@@ -59,7 +60,7 @@ require (
 
 replace (
 	github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
-	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
