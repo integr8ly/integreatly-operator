@@ -150,7 +150,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
 			ConfigurationSelector: &metav1.LabelSelector{
@@ -168,8 +168,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "observability-stack", Namespace: fmt.Sprintf("%s%s-operator", common.NamespacePrefix, defaultInstallationNamespace)}, oo)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if oo.Status.StageStatus == observability.ResultFailed {
+		return integreatlyv1alpha1.PhaseFailed, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

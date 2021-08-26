@@ -115,8 +115,9 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.2
+# github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.3
 ## explicit
+github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1
 # github.com/blang/semver v3.5.1+incompatible
 ## explicit
 github.com/blang/semver
@@ -592,6 +593,9 @@ github.com/otiai10/copy
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.43.0
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/alertmanager v0.22.0
 ## explicit
 github.com/prometheus/alertmanager/api/v2/models
