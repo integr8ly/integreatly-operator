@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	TestingIDPRealm                = "testing-idp"
 	defaultDedicatedAdminName      = "customer-admin"
 	defaultNumberOfTestUsers       = 2
 	defaultNumberOfDedicatedAdmins = 2
@@ -35,6 +34,7 @@ const (
 )
 
 var (
+	TestingIDPRealm              = "testing-idp"
 	keycloakClientName           = fmt.Sprintf("%s-client", TestingIDPRealm)
 	keycloakClientNamespace      = RHSSOProductNamespace
 	clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)

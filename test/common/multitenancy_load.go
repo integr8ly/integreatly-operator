@@ -5,6 +5,7 @@ import (
 	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 	routev1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
@@ -20,6 +21,8 @@ const (
 	realmName   = "rhd"
 )
 
+var multitenantUsers int
+
 func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	var testUser string
 	var timeOfLogin time.Time
@@ -30,7 +33,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error while getting TENANTS_CREATION_TIMEOUT: %v", err)
 	}
 	// get amount of tenants to be created
-	multitenantUsers, err := getRegisteredTenantsNumber(t)
+	multitenantUsers, err = getRegisteredTenantsNumber(t)
 	if err != nil {
 		t.Fatalf("error while getting NUMBER_OF_TENANTS")
 	}
@@ -42,13 +45,10 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	}
 	masterURL := rhmi.Spec.MasterURL
 
-	if !hasIDPCreated(goctx.TODO(), ctx.Client, t, realmName) {
-		t.Fatalf("IDP is not present on the cluster")
-	}
-
-	err = createKeycloakUsers(goctx.TODO(), ctx.Client, rhmi, multitenantUsers, realmName)
+	// Either setup IDP and create users if in PROW, or just create users if in pipeline
+	err = setupIDP(t, ctx, rhmi)
 	if err != nil {
-		t.Fatalf("error while creating keycloak users")
+		t.Fatal("error while setting up IDP or users %s", err)
 	}
 
 	// Creation of tenants
@@ -209,4 +209,28 @@ func createTenantClient(t TestingTB, ctx *TestingContext) (*http.Client, error) 
 	}
 
 	return tenantClient, nil
+}
+
+func setupIDP(t TestingTB, ctx *TestingContext, rhmi *rhmiv1alpha1.RHMI) error {
+
+	// If not running in PROW we need to skip IDP creation as it will be added manually
+	if !testResources.RunningInProw(rhmi) {
+		if !hasIDPCreated(goctx.TODO(), ctx.Client, t, realmName) {
+			return fmt.Errorf("IDP is not present on the cluster")
+		}
+
+		err := createKeycloakUsers(goctx.TODO(), ctx.Client, rhmi, multitenantUsers, realmName)
+		if err != nil {
+			return fmt.Errorf("error while creating keycloak users: %s", err)
+		}
+	} else {
+		// settign TestingIDPRealm to realmName required by Multitenant
+		TestingIDPRealm = realmName
+		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, true)
+		if err != nil {
+			return fmt.Errorf("error while creating rhd testing IDP: %s", err)
+		}
+	}
+
+	return nil
 }
