@@ -1,7 +1,7 @@
 FROM registry.ci.openshift.org/openshift/release:golang-1.16
 
 # OPERATOR_SDK should match the version of operator-sdk version in go.mod
-ENV OPERATOR_SDK_VERSION=v1.7.2 \
+ENV OPERATOR_SDK_VERSION=v1.10.0 \
     DELOREAN_VERSION=master \
     GOFLAGS=""
 
