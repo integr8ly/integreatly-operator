@@ -69,6 +69,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 // 			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
 // 				panic("mock out the ReadMonitoringSpec method")
 // 			},
+// 			ReadObservabilityFunc: func() (*Observability, error) {
+// 				panic("mock out the ReadObservability method")
+// 			},
 // 			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
 // 				panic("mock out the ReadProduct method")
 // 			},
@@ -151,6 +154,9 @@ type ConfigReadWriterMock struct {
 	// ReadMonitoringSpecFunc mocks the ReadMonitoringSpec method.
 	ReadMonitoringSpecFunc func() (*MonitoringSpec, error)
 
+	// ReadObservabilityFunc mocks the ReadObservability method.
+	ReadObservabilityFunc func() (*Observability, error)
+
 	// ReadProductFunc mocks the ReadProduct method.
 	ReadProductFunc func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 
@@ -228,6 +234,9 @@ type ConfigReadWriterMock struct {
 		// ReadMonitoringSpec holds details about calls to the ReadMonitoringSpec method.
 		ReadMonitoringSpec []struct {
 		}
+		// ReadObservability holds details about calls to the ReadObservability method.
+		ReadObservability []struct {
+		}
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
 			// Product is the product argument value.
@@ -276,6 +285,7 @@ type ConfigReadWriterMock struct {
 	lockReadMarin3r                 sync.RWMutex
 	lockReadMonitoring              sync.RWMutex
 	lockReadMonitoringSpec          sync.RWMutex
+	lockReadObservability           sync.RWMutex
 	lockReadProduct                 sync.RWMutex
 	lockReadRHSSO                   sync.RWMutex
 	lockReadRHSSOUser               sync.RWMutex
@@ -725,6 +735,32 @@ func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
 	mock.lockReadMonitoringSpec.RLock()
 	calls = mock.calls.ReadMonitoringSpec
 	mock.lockReadMonitoringSpec.RUnlock()
+	return calls
+}
+
+// ReadObservability calls ReadObservabilityFunc.
+func (mock *ConfigReadWriterMock) ReadObservability() (*Observability, error) {
+	if mock.ReadObservabilityFunc == nil {
+		panic("ConfigReadWriterMock.ReadObservabilityFunc: method is nil but ConfigReadWriter.ReadObservability was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockReadObservability.Lock()
+	mock.calls.ReadObservability = append(mock.calls.ReadObservability, callInfo)
+	mock.lockReadObservability.Unlock()
+	return mock.ReadObservabilityFunc()
+}
+
+// ReadObservabilityCalls gets all the calls that were made to ReadObservability.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadObservabilityCalls())
+func (mock *ConfigReadWriterMock) ReadObservabilityCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockReadObservability.RLock()
+	calls = mock.calls.ReadObservability
+	mock.lockReadObservability.RUnlock()
 	return calls
 }
 
