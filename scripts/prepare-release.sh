@@ -36,6 +36,13 @@ else
   KUSTOMIZE="/usr/local/bin/kustomize"
 fi
 
+# Path to gofmt
+if [[ -z $GOROOT ]]; then
+  GOFMT="/usr/local/go/bin/gofmt"
+else
+  GOFMT="$GOROOT/bin/gofmt"
+fi
+
 create_new_csv() {
 
   if [[ -z "$PREVIOUS_VERSION" ]]
@@ -143,13 +150,13 @@ set_images() {
   case $OLM_TYPE in
    "integreatly-operator")
   : "${IMAGE_TAG:=v${SEMVER}}"
-  yq e -i  '.spec.install.spec.deployments.[0].spec.template.spec.containers[0].image="quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i  '.metadata.annotations.containerImage="quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i  ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i  ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
   ;;
   "managed-api-service")
    : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
-  yq e -i '.spec.install.spec.deployments.[0].spec.template.spec.containers[0].image="quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i '.metadata.annotations.containerImage="quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
   ;;
   esac
 }
