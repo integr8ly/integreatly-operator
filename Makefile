@@ -228,7 +228,7 @@ test/e2e/multitenant-rhoam/prow: export IDENTITY_PROVIDER_NAME ?= DevSandbox
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
 test/e2e/multitenant-rhoam/prow: export NUMBER_OF_TENANTS := 2
-test/e2e/multitenant-rhoam/prow: export TENANTS_CREATION_TIMEOUT := 3
+test/e2e/multitenant-rhoam/prow: export TENANTS_CREATION_TIMEOUT := 10
 test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
