@@ -36,7 +36,6 @@ const (
 	GrafanaConfiguration     ObservabilityStageName = "GrafanaConfiguration"
 	PrometheusInstallation   ObservabilityStageName = "Prometheus"
 	PrometheusConfiguration  ObservabilityStageName = "PrometheusConfiguration"
-	PrometheusRules          ObservabilityStageName = "PrometheusRules"
 	CsvRemoval               ObservabilityStageName = "CsvRemoval"
 	TokenRequest             ObservabilityStageName = "TokenRequest"
 	PromtailInstallation     ObservabilityStageName = "PromtailInstallation"
@@ -51,14 +50,9 @@ const (
 )
 
 const (
-	AuthTypeDex ObservabilityAuthType = "dex"
+	AuthTypeDex    ObservabilityAuthType = "dex"
+	AuthTypeRedhat ObservabilityAuthType = "redhat"
 )
-
-type DexConfig struct {
-	Url                       string `json:"url"`
-	CredentialSecretNamespace string `json:"credentialSecretNamespace"`
-	CredentialSecretName      string `json:"credentialSecretName"`
-}
 
 type DashboardSource struct {
 	Url  string `json:"url"`
@@ -68,19 +62,6 @@ type DashboardSource struct {
 type GrafanaConfig struct {
 	// How often to refetch the dashboards?
 	ResyncPeriod string `json:"resyncPeriod,omitempty"`
-}
-
-type ObservatoriumConfig struct {
-	// Observatorium Gateway API URL
-	Gateway string `json:"gateway"`
-	// Observatorium tenant name
-	Tenant string `json:"tenant"`
-
-	// Auth type. Currently only dex is supported
-	AuthType ObservabilityAuthType `json:"authType,omitempty"`
-
-	// Dex configuration
-	AuthDex *DexConfig `json:"dexConfig,omitempty"`
 }
 
 type AlertmanagerConfig struct {

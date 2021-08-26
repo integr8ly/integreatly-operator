@@ -17,18 +17,51 @@ type GrafanaIndex struct {
 	Dashboards []string `json:"dashboards"`
 }
 
-type DexIndex struct {
-	Url                       string `json:"url"`
-	CredentialSecretName      string `json:"credentialSecretName"`
+type DexConfig struct {
+	Url      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Secret   string `json:"secret"`
+
+	// Kept for backwards compatibility
+	// TODO: remove after v3.0.3
 	CredentialSecretNamespace string `json:"credentialSecretNamespace"`
+	CredentialSecretName      string `json:"credentialSecretName"`
+}
+
+type RedhatSsoConfig struct {
+	Url           string `json:"redHatSsoAuthServerUrl"`
+	Realm         string `json:"redHatSsoRealm"`
+	MetricsClient string `json:"metricsClientId"`
+	MetricsSecret string `json:"metricsSecret"`
+	LogsClient    string `json:"logsClientId"`
+	LogsSecret    string `json:"logsSecret"`
+}
+
+func (in *RedhatSsoConfig) HasAuthServer() bool {
+	return in.Url != "" && in.Realm != ""
+}
+
+func (in *RedhatSsoConfig) HasMetrics() bool {
+	return in.HasAuthServer() && in.MetricsClient != "" && in.MetricsSecret != ""
+}
+
+func (in *RedhatSsoConfig) HasLogs() bool {
+	return in.HasAuthServer() && in.LogsClient != "" && in.LogsSecret != ""
 }
 
 type ObservatoriumIndex struct {
-	Id        string                `json:"id"`
-	Gateway   string                `json:"gateway"`
-	Tenant    string                `json:"tenant"`
-	AuthType  ObservabilityAuthType `json:"authType"`
-	DexConfig *DexConfig            `json:"dexConfig,omitempty"`
+	Id              string                `json:"id"`
+	SecretName      string                `json:"secretName,omitempty"`
+	Gateway         string                `json:"gateway"`
+	Tenant          string                `json:"tenant"`
+	AuthType        ObservabilityAuthType `json:"authType"`
+	DexConfig       *DexConfig            `json:"dexConfig,omitempty"`
+	RedhatSsoConfig *RedhatSsoConfig      `json:"redhatSsoConfig,omitempty"`
+}
+
+func (in *ObservatoriumIndex) IsValid() bool {
+	return in.Gateway != "" && in.Tenant != ""
 }
 
 type RemoteWriteIndex struct {
@@ -36,9 +69,6 @@ type RemoteWriteIndex struct {
 	RemoteTimeout       string              `json:"remoteTimeout,omitempty"`
 	ProxyUrl            string              `json:"proxyUrl,omitempty"`
 	WriteRelabelConfigs []v12.RelabelConfig `json:"writeRelabelConfigs,omitempty"`
-
-	// for v2.0.0 backwards compatibility
-	Patterns []string `json:"patterns,omitempty"`
 }
 
 type AlertmanagerIndex struct {

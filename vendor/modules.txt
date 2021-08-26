@@ -111,7 +111,7 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.2
+# github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.3
 ## explicit
 github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1
 # github.com/blang/semver v3.5.1+incompatible
