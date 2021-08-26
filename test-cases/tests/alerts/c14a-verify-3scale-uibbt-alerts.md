@@ -24,5 +24,5 @@ More info: <https://issues.redhat.com/browse/INTLY-9043>
 2. Check that all `ThreeScale**UIBBT` alerts are firing
    1. **Networking > Routes**
    2. Select `redhat-rhmi-middleware-monitoring-operator` project
-   3. Open route for `alertmanager-route`
+   3. Open route for `alertmanager`
       > `ThreeScale**UIBBT` should be firing

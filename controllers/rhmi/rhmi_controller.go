@@ -444,7 +444,7 @@ func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest
 
 	var alertingNamespaces = map[string]string{
 		"openshift-monitoring": "alertmanager-main",
-		installation.Spec.NamespacePrefix + "middleware-monitoring-operator": "alertmanager-route",
+		installation.Spec.NamespacePrefix + "middleware-monitoring-operator": "alertmanager",
 	}
 
 	for namespace, route := range alertingNamespaces {

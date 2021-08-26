@@ -21,7 +21,7 @@ estimate: 15m
 Verify `rhoam_version` metric is present in Prometheus
 
 1. Login into openshift console as kubeadmin
-2. Navigate to `redhat-rhoam-observability` namespace, then under Networking >> Routes, click on the link for `prometheus-route`
+2. Navigate to `redhat-rhoam-observability` namespace, then under Networking >> Routes, click on the link for `prometheus` route
 3. Login into Prometheus using Openshift by clicking on the button Log in with OpenShift
 4. Look for `rhoam_version` metric in the Expression (press Shift+Enter for newlines) field and verify if metric is available
 5. Select the metric and click in the Execute button

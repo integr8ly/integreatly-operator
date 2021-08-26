@@ -99,7 +99,7 @@ estimate: 90m
     Open the Alert Manager console and login via Openshift:
 
     ```shell script
-    open "https://$(oc get route alertmanager-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
     ```
 
     Go to `Status -> Config` and check that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
@@ -126,7 +126,7 @@ estimate: 90m
     Navigate to the Prometheus Alert Console
 
     ```shell script
-    open "https://$(oc get route prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
+    open "https://$(oc get route prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
     ```
 
     Verify that the RHOAMApiUsageOverLimit alert contains `694` at the end of its query. For example:
@@ -144,7 +144,7 @@ estimate: 90m
     Open the Prometheus console:
 
     ```shell script
-    open "https://$(oc get routes prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
     ```
 
     Add the following expression into the `Expression` field in the console:

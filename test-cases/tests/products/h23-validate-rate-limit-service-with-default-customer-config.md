@@ -60,7 +60,7 @@ You can verify that the email will be redirected by checking the status in _Aler
 - Open alert manager with the command (on your testing cluster)
 
 ```
-open "https://$(oc get route alertmanager-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
 ```
 
 - Login with kube admin and select the **Status** option from the nav menu.
@@ -178,7 +178,7 @@ const url = "https://api-3scale-apicast-production.apps.mgdapi-84-trdoy.ro2p.s1.
 **8. Access Prometheus route (from your terminal on local machine)**
 
 ```bash
- open "https://$(oc get routes prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+ open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
 ```
 
 and login to Prometheus as _Kubeadmin_.

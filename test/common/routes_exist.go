@@ -83,7 +83,7 @@ var (
 
 	middlewareMonitoringRoutes = []ExpectedRoute{
 		ExpectedRoute{
-			Name:  "alertmanager-route",
+			Name:  "alertmanager",
 			isTLS: true,
 		},
 		ExpectedRoute{
@@ -91,7 +91,7 @@ var (
 			isTLS: true,
 		},
 		ExpectedRoute{
-			Name:  "prometheus-route",
+			Name:  "prometheus",
 			isTLS: true,
 		},
 	}
