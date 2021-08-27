@@ -1,0 +1,3 @@
+registry-proxy.engineering.redhat.com/rh-osbs/rh-sso-7-tech-preview-sso75-init-container-rhel8:7.5 quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-init-container-rhel8_7.5
+registry-proxy.engineering.redhat.com/rh-osbs/rh-sso-7-tech-preview-sso75-rhel8-operator:7.5 quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-rhel8-operator_7.5
+registry-proxy.engineering.redhat.com/rh-osbs/rhel8-postgresql-10:1 quay.io/integreatly/delorean:rhel8-postgresql-10_1
