@@ -1,0 +1,163 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: unifiedpushservers.push.aerogear.org
+spec:
+  group: push.aerogear.org
+  names:
+    kind: UnifiedPushServer
+    listKind: UnifiedPushServerList
+    plural: unifiedpushservers
+    shortNames:
+    - ups
+    singular: unifiedpushserver
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            affinity:
+              type: object
+            backups:
+              description: Backups is an array of configs that will be used to create
+                CronJob resource instances
+              items:
+                properties:
+                  backendSecretName:
+                    description: BackendSecretName is the name of a secret containing
+                      storage backend details, such as "AWS_S3_BUCKET_NAME", "AWS_ACCESS_KEY_ID",
+                      and "AWS_SECRET_ACCESS_KEY"
+                    type: string
+                  backendSecretNamespace:
+                    description: BackendSecretNamespace is the name of the namespace
+                      that the secret referenced in BackendSecretName resides in
+                    type: string
+                  encryptionKeySecretName:
+                    description: EncryptionKeySecretName is the name of a secret containing
+                      PGP/GPG details, including "GPG_PUBLIC_KEY", "GPG_TRUST_MODEL",
+                      and "GPG_RECIPIENT"
+                    type: string
+                  encryptionKeySecretNamespace:
+                    description: EncryptionKeySecretNamespace is the name of the namespace
+                      that the secret referenced in EncryptionKeySecretName resides
+                      in
+                    type: string
+                  name:
+                    description: Name is the name that will be given to the resulting
+                      CronJob
+                    type: string
+                  schedule:
+                    description: Schedule is the schedule that the job will be run
+                      at, in cron format
+                    type: string
+                required:
+                - name
+                - schedule
+                - backendSecretName
+                type: object
+              type: array
+            database:
+              description: Database allows specifying the external PostgreSQL details
+                directly in the CR. Only one of Database or DatabaseSecret should
+                be specified, and ExternalDB must be true, otherwise a new PostgreSQL
+                instance will be created (and deleted) on the cluster automatically.
+              properties:
+                host:
+                  description: Host for external database support
+                  type: string
+                name:
+                  description: Name for external database support
+                  type: string
+                password:
+                  description: Password for external database support
+                  type: string
+                port:
+                  anyOf:
+                  - type: string
+                  - type: integer
+                  description: Port for external database support
+                user:
+                  description: User for external database support
+                  type: string
+              type: object
+            databaseSecret:
+              description: 'DatabaseSecret allows reading the external PostgreSQL
+                details from a pre-existing Secret (ExternalDB must be true for it
+                to be used). Only one of Database or DatabaseSecret should be specified,
+                and ExternalDB must be true, otherwise a new PostgreSQL instance will
+                be created (and deleted) on the cluster automatically.  Here''s an
+                example of all of the fields that the secret must contain:  POSTGRES_DATABASE:
+                sampledb POSTGRES_HOST: 172.30.139.148 POSTGRES_PORT: "5432" POSTGRES_USERNAME:
+                userMSM POSTGRES_PASSWORD: RmwWKKIM7or7oJig POSTGRES_SUPERUSER: "false"
+                POSTGRES_VERSION: "10"'
+              type: string
+            externalDB:
+              description: ExternalDB can be set to true to use details from Database
+                and connect to external db
+              type: boolean
+            oAuthResourceRequirements:
+              type: object
+            postgresPVCSize:
+              description: PVC size for Postgres service
+              type: string
+            postgresResourceRequirements:
+              type: object
+            tolerations:
+              items:
+                type: object
+              type: array
+            unifiedPushResourceRequirements:
+              type: object
+            useMessageBroker:
+              description: UseMessageBroker can be set to true to use managed queues,
+                if you are using enmasse. Defaults to false.
+              type: boolean
+          type: object
+        status:
+          properties:
+            message:
+              description: Message is a more human-readable message indicating details
+                about current phase or error.
+              type: string
+            phase:
+              description: Phase indicates whether the CR is reconciling(good), failing(bad),
+                or initializing.
+              type: string
+            ready:
+              description: Ready is True if all resources are in a ready state and
+                all work is done (phase should be "reconciling"). The type in the
+                Go code here is deliberately a pointer so that we can distinguish
+                between false and "not set", since it's an optional field.
+              type: boolean
+            secondaryResources:
+              additionalProperties:
+                items:
+                  type: string
+                type: array
+              description: 'SecondaryResources is a map of all the secondary resources
+                types and names created for this CR.  e.g "Deployment": [ "DeploymentName1",
+                "DeploymentName2" ]'
+              type: object
+          required:
+          - phase
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
