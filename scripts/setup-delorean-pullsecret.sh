@@ -31,7 +31,7 @@ DELOREAN_PASSWORD="$(jq -r '.auths|to_entries[0].value.auth' $DELOREAN_PULLSECRE
 DELOREAN_USERNAME="$(jq -r '.auths|to_entries[0].value.auth' $DELOREAN_PULLSECRET | base64 --decode | awk -F : '{print $1}')"
 
 oc get secret pull-secret -n openshift-config -o yaml > "$CONFIG_PULLSECRET"
-yq r $CONFIG_PULLSECRET 'data' | awk '{print $2}' | base64 -d > $DECODED_PULLSECRET
+yq e '.data' $CONFIG_PULLSECRET | awk '{print $2}' | base64 -d > $DECODED_PULLSECRET
 combine_and_deploy_cluster_secret() {
     jq -s -c '{auths: map(.auths) | add}' $DECODED_PULLSECRET $DELOREAN_PULLSECRET | base64 > $STAGED_PULLSECRET
     awk '{ printf "%s", $0 }' $STAGED_PULLSECRET  > $COMBINED_PULLSECRET

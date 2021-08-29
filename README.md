@@ -34,6 +34,8 @@ The operator installs the following products:
 - [go](https://golang.org/dl/) version 1.16.2+
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/latest/cli_reference/openshift_cli/getting-started-cli.html) version v4.6+
+- [yq](https://github.com/mikefarah/yq) version v4+
+- [jq](https://github.com/stedolan/jq)   
 - Access to an Openshift v4.6.0+ cluster
 - A user with administrative privileges in the OpenShift cluster
 

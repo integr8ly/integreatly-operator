@@ -32,7 +32,7 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
 RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
     && chmod +x ./jq \
     && cp jq /usr/bin \
-    && curl -Lo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.1.2/yq_linux_amd64 \
+    && curl -Lo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.8/yq_linux_amd64 \
     && chmod +x /usr/local/bin/yq
 
 # install nodejs
