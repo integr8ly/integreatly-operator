@@ -164,7 +164,7 @@ set_images() {
 set_csv_service_affecting_field() {
   local value=$1
   echo "Update CSV for release $SEMVER to be 'serviceAffecting: $value'"
-  yq e -i   ".metadata.annotations.serviceAffecting= $value "  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml}
+  yq e -i   ".metadata.annotations.serviceAffecting= $value "  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 # Due to a quirk in operator-sdk v1.2.0, the `replaces` field in the generated CSV is taken from the current version in
@@ -240,4 +240,3 @@ yq e -i  '.packageName="integreatly"' packagemanifests/integreatly-operator/inte
 
 # Ensure code is formatted correctly
 "${GOFMT[@]}" -w `find . -type f -name '*.go' -not -path "./vendor/*"`
-
