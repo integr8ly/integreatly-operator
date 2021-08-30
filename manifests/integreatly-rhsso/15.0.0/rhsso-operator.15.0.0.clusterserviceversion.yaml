@@ -373,3 +373,4 @@ spec:
   - image: registry.redhat.io/rhel8/postgresql-10:1
     name: postgresql
   version: 15.0.0
+  replaces: keycloak-operator.v14.0.0
