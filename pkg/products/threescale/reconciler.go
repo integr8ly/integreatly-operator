@@ -1429,14 +1429,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	// creating new MT accounts in 3scale
-	accountsToBeCreated := getMTAccountsToBeCreated(mtUserIdentities.Items, accounts)
+	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities.Items, accounts)
 	r.log.Infof("retrieving new MT accounts to be created",
 		l.Fields{"accountsToBeCreated": accountsToBeCreated},
 	)
 
-	for _, account := range accountsToBeCreated {
+	for idx, account := range accountsToBeCreated {
 		// create account
-		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account)
+		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, emailAddrs[idx])
 		if err != nil {
 			r.log.Errorf("Error creating new tenant account",
 				l.Fields{"tenantAccount": newSignupAccount},
@@ -1611,8 +1611,8 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 	return nil
 }
 
-func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []AccountDetail) []AccountDetail {
-	accountsToBeCreated := []AccountDetail{}
+func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string) {
+	email := ""
 	for _, identity := range usersIdentity {
 		foundAccount := false
 		for _, account := range accounts {
@@ -1625,9 +1625,16 @@ func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []Accou
 				Name:    identity.User.Name,
 				OrgName: identity.User.Name,
 			})
+			// Get first identity with email and break loop
+			if identity.Extra["email"] != "" {
+				email = identity.Extra["email"]
+			} else {
+				email = fmt.Sprintf("%s@rhmi.io", identity.User.Name)
+			}
+			emailAddrs = append(emailAddrs, email)
 		}
 	}
-	return accountsToBeCreated
+	return accountsToBeCreated, emailAddrs
 }
 
 func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []AccountDetail) []AccountDetail {
