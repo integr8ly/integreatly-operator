@@ -160,7 +160,7 @@ func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string) {
 
 		return false, nil
 	}); err != nil {
-		t.Fatalf("%s alert was not firing: %s", err)
+		t.Fatalf("%s alert was not firing: %s", alertName, err)
 	}
 
 	t.Logf("%s alert is firing", alertName)
@@ -182,13 +182,13 @@ func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string
 		// Other alerts are firing but specified alert is no longer firing
 		return true, nil
 	}); err != nil {
-		t.Fatalf("%s alert was still firing: %s", err)
+		t.Fatalf("%s alert was still firing: %s", alertName, err)
 	}
 
 	t.Logf("%s alerts is no longer firing", alertName)
 }
 
-func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, customerAdminUsername string) {
+func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, threeScaleUsername string) {
 	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
@@ -197,15 +197,15 @@ func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, custom
 		}
 
 		for _, user := range users.Users {
-			if user.UserDetails.Username == customerAdminUsername {
-				t.Logf("Found %s user in 3scale", customerAdminUsername)
+			if user.UserDetails.Username == threeScaleUsername {
+				t.Logf("Found %s user in 3scale", threeScaleUsername)
 				return true, nil
 			}
 		}
 
 		return false, nil
 	}); err != nil {
-		t.Fatalf("Could not find %s user in 3scale", customerAdminUsername)
+		t.Fatalf("Could not find %s user in 3scale", threeScaleUsername)
 	}
 }
 
@@ -213,7 +213,7 @@ func validateUserIsNotListedIn3scale(t TestingTB, ctx *TestingContext, host, cus
 	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
-			t.Logf("Error gettting 3scale users: %s", err)
+			t.Logf("Error getting 3scale users: %s", err)
 			return false, nil
 		}
 
