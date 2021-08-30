@@ -84,33 +84,9 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 
 func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, userName string) {
 	err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
-		systemSeedSecret := &corev1.Secret{}
-
-		err = ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "system-seed", Namespace: ThreeScaleProductNamespace}, systemSeedSecret)
+		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
-			t.Logf("unable to get system seed secret")
-			return false, nil
-		}
-
-		adminAccessToken := string(systemSeedSecret.Data["ADMIN_ACCESS_TOKEN"])
-
-		resp, err := ctx.HttpClient.Get(fmt.Sprintf("%s/admin/api/users.json?access_token=%s", host, adminAccessToken))
-		if err != nil {
-			t.Logf("unable to get list of users via api: %s", err)
-			return false, nil
-		}
-		defer resp.Body.Close()
-
-		bytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Logf("unable to read api response: %s", err)
-			return false, nil
-		}
-
-		users := threescale.Users{}
-		err = json.Unmarshal(bytes, &users)
-		if err != nil {
-			t.Logf("unable to marshal json response to struct: %s", err)
+			t.Logf("Error getting 3scale users: %s", err)
 			return false, nil
 		}
 
@@ -129,4 +105,33 @@ func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, user
 		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
 		//t.Fatalf("timout asserting 3scale user, %s, is admin for performing test: %s", userName, err)
 	}
+}
+
+func getUsersIn3scale(ctx *TestingContext, host string) (*threescale.Users, error) {
+	systemSeedSecret := &corev1.Secret{}
+
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "system-seed", Namespace: ThreeScaleProductNamespace}, systemSeedSecret); err != nil {
+		return nil, fmt.Errorf("unable to get system seed secret")
+	}
+
+	adminAccessToken := string(systemSeedSecret.Data["ADMIN_ACCESS_TOKEN"])
+
+	resp, err := ctx.HttpClient.Get(fmt.Sprintf("%s/admin/api/users.json?access_token=%s", host, adminAccessToken))
+	if err != nil {
+		return nil, fmt.Errorf("unable to get list of users via api: %s", err)
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read api response: %s", err)
+	}
+
+	users := threescale.Users{}
+	err = json.Unmarshal(bytes, &users)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal json response to struct: %s", err)
+	}
+
+	return &users, nil
 }

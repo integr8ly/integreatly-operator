@@ -338,11 +338,11 @@ cluster/check/operator/deployment:
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
 	@-oc create secret generic $(NAMESPACE_PREFIX)smtp -n $(NAMESPACE) \
-		--from-literal=host=smtp.example.com \
-		--from-literal=username=dummy \
-		--from-literal=password=dummy \
-		--from-literal=port=587 \
-		--from-literal=tls=true
+		--from-literal=host= \
+		--from-literal=username= \
+		--from-literal=password= \
+		--from-literal=port= \
+		--from-literal=tls=
 
 .PHONY: cluster/prepare/pagerduty
 cluster/prepare/pagerduty:
@@ -413,7 +413,8 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > config/samples/integreatly-rhmi-cr.yml
 	# Workaround until in_prow annotation can be removed from prow
-	yq w -i config/samples/integreatly-rhmi-cr.yml metadata.annotations.in_prow "IN_PROW"
+	yq e -i '.metadata.annotations.in_prow="IN_PROW"' config/samples/integreatly-rhmi-cr.yml
+
 	$(SED_INLINE) "s/IN_PROW/'$(IN_PROW)'/g" config/samples/integreatly-rhmi-cr.yml
 	@-oc create -f config/samples/integreatly-rhmi-cr.yml
 

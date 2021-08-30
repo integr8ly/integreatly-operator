@@ -3,6 +3,7 @@ package functional
 import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/utils"
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -53,17 +54,20 @@ func TestAPIs(t *testing.T) {
 		Groups:   []string{"system:authenticated"},
 	}
 
-	// get RMI CR and if cluster storage set to true, skip the suite
-	context, err := common.NewTestingContext(cfg)
-	if err != nil {
-		t.Fatalf("\"failed to create testing context: %s", err)
-	}
-	rhmi, err := common.GetRHMI(context.Client, true)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
-	}
-	if rhmi.Spec.UseClusterStorage == "true" {
-		t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
+	// Allow overriding via environment variable
+	if os.Getenv("BYPASS_STORAGE_TYPE_CHECK") != "true" {
+		// get RMI CR and if cluster storage set to true, skip the suite
+		context, err := common.NewTestingContext(cfg)
+		if err != nil {
+			t.Fatalf("\"failed to create testing context: %s", err)
+		}
+		rhmi, err := common.GetRHMI(context.Client, true)
+		if err != nil {
+			t.Fatalf("error getting RHMI CR: %v", err)
+		}
+		if rhmi.Spec.UseClusterStorage == "true" {
+			t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
+		}
 	}
 
 	// get install type

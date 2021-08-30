@@ -82,6 +82,7 @@ var (
 				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
+				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},

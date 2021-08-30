@@ -92,7 +92,7 @@ usersso_resources=$(oc get statefulset keycloak -n redhat-rhoam-user-sso -o json
 ratelimit_replicas=$(oc get deployment ratelimit -n redhat-rhoam-marin3r --no-headers=true | awk '{print $2}')
 ratelimit_resources=$(oc get deployment ratelimit -n redhat-rhoam-marin3r -o json | jq -r .spec.template.spec.containers[0].resources)
 
-ratelimit_value=$(oc get configmap ratelimit-config -n redhat-rhoam-marin3r -o json | jq -r '.data["apicast-ratelimiting.yaml"]' | yq r - 'descriptors[0].rate_limit.requests_per_unit')
+ratelimit_value=$(oc get configmap ratelimit-config -n redhat-rhoam-marin3r -o json | jq -r '.data["apicast-ratelimiting.yaml"]' | yq e '.descriptors[0].rate_limit.requests_per_unit' - )
 
 echo backend-listener replicas: $backend_listener_replicas
 echo backend-listener resources: $backend_listener_resources
