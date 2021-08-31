@@ -73,11 +73,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		}
 
 		// Build username string eg test-user01, test-user02, test-user100
-		if postfix < 10 {
-			testUser = fmt.Sprintf("%v0%v", DefaultTestUserName, postfix)
-		} else {
-			testUser = fmt.Sprintf("%v%v", DefaultTestUserName, postfix)
-		}
+		testUser = fmt.Sprintf("%v%02v", DefaultTestUserName, postfix)
 
 		err = wait.Poll(pollingTime, testTimeout, func() (done bool, err error) {
 
