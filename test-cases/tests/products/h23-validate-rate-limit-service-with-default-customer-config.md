@@ -18,6 +18,7 @@ tags:
 
 ## Prerequisites
 
+- Cluster must be configured for 20M Quota
 - ["libra.pem" private key for ssh to PSI openstack load testing instance](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/keys/libra.pem) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - Logged in to a testing cluster as a `kubeadmin`
 - Access to CSQE OCM ORG https://qaprodauth.cloud.redhat.com/beta/openshift/ (login as <kerberos-username>-csqe user) to view the list of provisioned clusters.
@@ -123,28 +124,16 @@ The script.js file should now be downloaded.
 - Execute the following command
 
 ```bash
-oc get configmap sku-limits-managed-api-service -n redhat-rhoam-operator -o json | jq -r .data.rate_limit
+oc get configmap ratelimit-config -n redhat-rhoam-marin3r -o json | jq -r .data
 ```
 
-Ensure that the values are as follows:
+Ensure that the values are as follows (should be so if 20M Quota is used):
 
-_"unit":"minute"_
+_"seconds":60_
 
-_"requests_per_unit":13860"_
+_"max_value":13860"_
 
-If the values are **not** correct, edit the config map using the command (Otherwise move on to step 5.)
-
-`oc edit configmap sku-limits-managed-api-service -n redhat-rhoam-operator -o json`
-
-change the values to match the following
-
-```bash
-{"RHOAM SERVICE SKU":{
-  "unit":"minute",
-  "requests_per_unit":13860,
-  "soft_daily_limits":
-  [5000000,10000000,15000000]}}
-```
+If the values are **not** correct make sure the 20M Quota is used. If not, change the Quota via editing the RHOAM addon config via OCM.
 
 **5. Check that there are no critical alerts firing:**
 
@@ -172,6 +161,8 @@ To
 ```
 https://api-3scale-apicast-production.apps.mgdapi-84-trdoy.ro2p.s1.devshift.org:443/?user_key=7e9c1ef1c9c156af05fa7894f4a3529f
 ```
+
+Note: this is required because there are 3scale internal limitations on load that Staging Apicast is allowed to process.
 
 This URL will get added to the script.js (next step).
 
@@ -212,6 +203,7 @@ This will run for 10 minutes at 15,000 requests per min.
 
 - You may need to refresh the graph to see full results over time.
 - Whent testing is complete, view the output in the terminal. The first value (under status) is the number of passed requests.
+- If experiencing issues with the query, go to Customer Grafana, Ratelimit dashboard and use the query that is being used there
 
 **Example:**
 _↳ 93% — ✓ 140021 / ✗ 10195_\*

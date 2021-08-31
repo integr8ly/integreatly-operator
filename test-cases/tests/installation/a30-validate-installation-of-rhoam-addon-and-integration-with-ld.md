@@ -32,24 +32,29 @@ We want to validate that customer is able to install RHOAM via OCM UI and can us
 2. Look for AWS account ID that is free (doesn't have anything specified in 'Note'). If no account is free, you can use account that is used by nightly pipelines (but don't forget to clean it up for night)
 3. Open the [AWS secrets file from 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) locally and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
 4. Go to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/) and log in
-5. Click on `Create cluster` and select `OpenShift Dedicated`
-6. Select AWS and click on `Customer cloud subscription` (and close the pop up notification)
-7. Insert AWS account ID, access key ID and secret access key from the SECRETS.md file (from the step above)
-8. Also fill in the following parameters:
+5. Click on `Create cluster` and again `Create cluster` in `Red Hat OpenShift Dedicated` row (not Trial)
+6. Click on `Customer cloud subscription` and click `Next`
+7. Click on `AWS`, insert AWS account ID, access key ID and secret access key from the SECRETS.md file (from the step above), click on `Validate` and then `Next`
+8. Fill in the following parameters and click `Next`:
 
 ```
 Cluster name: test-ldap-idp
 Availability: Multizone
-Worker node count (per zone): 3
-Networking: Advanced
+Region: (of your choice, the region must support multi-AZ)
+```
 
+9. Fill in 3 (three) for `Worker node count (per zone)` and click `Next`
+10. Click `Advanced` for Network configuration, fill in follwing and click `Next`
+
+```
 Machine CIDR: 10.11.128.0/24
 Service CIDR: 10.11.0.0/18
 Pod CIDR: 10.11.64.0/18
 Host prefix: /26
 ```
 
-9. Click on `Create cluster` (cluster creation takes ~40 minutes)
+11. On the "Cluster updates" page just click `Next`
+12. Click on `Create cluster` (cluster creation takes ~40 minutes)
 
 Run following command:
 
@@ -72,7 +77,7 @@ The command should eventually return `healthy`. After cluster is marked as `read
 ```
 CIDR range: "10.1.0.0/26" (note this down to use it later for another verification step)
 Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.com"
-Quota: 1 million requests per day
+Quota: 1 Million requests per day
 ```
 
 4. You should now login to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
@@ -126,7 +131,7 @@ The scenario with **default CIDR range**, when user doesn't specify any CIDR, so
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.quota
 ```
 
-> The output should be 1
+> The output should be `1 Million`
 
 **Verify that LDAP IDP can be configured**
 
