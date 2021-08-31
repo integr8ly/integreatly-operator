@@ -86,7 +86,7 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
-	VersionMonitoring          ProductVersion = "1.7.0"
+	VersionMonitoring          ProductVersion = "1.8.0"
 	Version3Scale              ProductVersion = "2.10.0"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.30.0"
@@ -113,7 +113,7 @@ var (
 	// Operator image tags
 	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline        OperatorVersion = "1.4"
-	OperatorVersionMonitoring       OperatorVersion = "1.7.0"
+	OperatorVersionMonitoring       OperatorVersion = "1.8.0"
 	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
 	OperatorVersionRHSSO            OperatorVersion = "14.0.0"
 	OperatorVersionRHSSOUser        OperatorVersion = "14.0.0"

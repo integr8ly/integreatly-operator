@@ -37,7 +37,7 @@ products:
     manifestsDir: "integreatly-marin3r"
     quayScan: true
   - name: application-monitoring-operator
-    version: v1.7.0
+    version: v1.8.0
     url: "https://github.com/integr8ly/application-monitoring-operator"
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-monitoring"
