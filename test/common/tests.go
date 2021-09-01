@@ -60,7 +60,7 @@ var (
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
-				// /*FLAKY on RHMI/RHOAM*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
+				/*FLAKY on RHMI/RHOAM*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
