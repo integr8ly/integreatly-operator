@@ -75,6 +75,9 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		// Build username string eg test-user01, test-user02, test-user100
 		testUser = fmt.Sprintf("%v%02v", DefaultTestUserName, postfix)
 
+		// 3scale route for tenant
+		host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
+
 		err = wait.Poll(pollingTime, testTimeout, func() (done bool, err error) {
 
 			// Let user login to the cluster
@@ -100,7 +103,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 
 			//Login tenant to 3scale
 			if !isThreeScaleLoggedIn {
-				err = loginTenantToThreeScale(t, ctx, testUser, rhmi, tenantClient)
+				err := loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, realmName, tenantClient)
 				if err != nil {
 					t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
 					return false, nil
@@ -125,15 +128,6 @@ func loginToCluster(t TestingTB, tenantClient *http.Client, masterURL, testUser 
 		return err
 	}
 	t.Log(fmt.Sprintf("%s has logged in successfully", testUser))
-	return nil
-}
-
-func loginTenantToThreeScale(t TestingTB, ctx *TestingContext, testUser string, rhmi *rhmiv1alpha1.RHMI, tenantClient *http.Client) error {
-	host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
-	err := loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, realmName, tenantClient)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
