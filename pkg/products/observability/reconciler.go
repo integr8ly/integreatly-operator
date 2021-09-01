@@ -59,7 +59,10 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	if config.GetNamespace() == "" {
 		config.SetNamespace(ns)
-		configManager.WriteConfig(config)
+		err := configManager.WriteConfig(config)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if config.GetOperatorNamespace() == "" {
 		config.SetOperatorNamespace(config.GetNamespace())
@@ -126,7 +129,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionObservability) {
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionObservability))
-		r.ConfigManager.WriteConfig(r.Config)
+		err := r.ConfigManager.WriteConfig(r.Config)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	product.Version = r.Config.GetProductVersion()
@@ -173,6 +179,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+		//return integreatlyv1alpha1.PhaseInProgress, nil
+		r.log.Info(string(integreatlyv1alpha1.PhaseCompleted))
+	}else{
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
