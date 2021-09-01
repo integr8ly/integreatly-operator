@@ -246,9 +246,10 @@ test/e2e/single:
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
 test/functional: export NUMBER_OF_TENANTS ?= $(NUMBER_OF_TENANTS)
 test/functional: export TENANTS_CREATION_TIMEOUT ?= $(TENANTS_CREATION_TIMEOUT)
+test/functional: export TEST_TIMEOUT ?= 80m
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/functional -timeout=15000m
+	go clean -testcache && go test -v ./test/functional -timeout=$(TEST_TIMEOUT) >> test.txt
 
 .PHONY: test/osde2e
 test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)

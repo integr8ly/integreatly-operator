@@ -45,7 +45,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	}
 	masterURL := rhmi.Spec.MasterURL
 
-	// Either setup IDP and create users if in PROW, or just create users if in pipeline
+	// Either setup IDP and create users if in PROW, or create users if in pipeline
 	err = setupIDP(t, ctx, rhmi)
 	if err != nil {
 		t.Fatal("error while setting up IDP or users %s", err)
@@ -89,7 +89,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 			}
 
 			// Check if 3scale route is available
-			if !routeFound && isClusterLoggedIn {
+			if !routeFound {
 				err = getTenant3scaleRoute(t, ctx, testUser)
 				if err != nil {
 					return false, nil
@@ -99,7 +99,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 			}
 
 			//Login tenant to 3scale
-			if !isThreeScaleLoggedIn && routeFound && isClusterLoggedIn {
+			if !isThreeScaleLoggedIn {
 				err = loginTenantToThreeScale(t, ctx, testUser, rhmi, tenantClient)
 				if err != nil {
 					t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
@@ -142,7 +142,7 @@ func getRegisteredTenantsNumber(t TestingTB) (int, error) {
 	var ok bool
 	multitenantUsersEnvar, ok = os.LookupEnv("NUMBER_OF_TENANTS")
 	if ok != true {
-		t.Log("NUMBER_OF_TENANTS envvar not found, setting to default 10")
+		t.Log("NUMBER_OF_TENANTS envvar not found, setting to default 2")
 		multitenantUsersEnvar = "2"
 	}
 	multitenantUsers, err := strconv.ParseInt(multitenantUsersEnvar, 10, 64)
@@ -157,7 +157,7 @@ func getTenantCreationTime(t TestingTB) (time.Duration, error) {
 	var err error
 	duration, ok := os.LookupEnv("TENANTS_CREATION_TIMEOUT")
 	if ok != true {
-		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 3 minutes")
+		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 10 minutes")
 		tenantCreationTime, err = time.ParseDuration("10m")
 	} else {
 		tenantCreationTime, err = time.ParseDuration(fmt.Sprintf("%sm", duration))
@@ -184,9 +184,9 @@ func getTenant3scaleRoute(t TestingTB, ctx *TestingContext, testUser string) err
 		if route.Spec.To.Kind != "Service" {
 			continue
 		}
-		generatedName := route.Spec.Host
+		tenantHostRoute := route.Spec.Host
 
-		if strings.Contains(generatedName, testUser) {
+		if strings.Contains(tenantHostRoute, testUser) {
 			routeFound = true
 		}
 	}
@@ -220,7 +220,7 @@ func setupIDP(t TestingTB, ctx *TestingContext, rhmi *rhmiv1alpha1.RHMI) error {
 			return fmt.Errorf("error while creating keycloak users: %s", err)
 		}
 	} else {
-		// settign TestingIDPRealm to realmName required by Multitenant
+		// setting TestingIDPRealm to realmName required by Multitenant
 		TestingIDPRealm = realmName
 		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, true)
 		if err != nil {
