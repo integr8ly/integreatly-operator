@@ -180,10 +180,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
-		//return integreatlyv1alpha1.PhaseInProgress, nil
-		r.log.Info(string(integreatlyv1alpha1.PhaseCompleted))
-	}else{
 		return integreatlyv1alpha1.PhaseInProgress, nil
+	//	r.log.Info(string(integreatlyv1alpha1.PhaseCompleted))
+	//} else {
+	//	return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "observability-stack", Namespace: fmt.Sprintf("%s%s-operator", common.NamespacePrefix, defaultInstallationNamespace)}, oo)

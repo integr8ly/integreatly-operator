@@ -391,7 +391,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
@@ -414,11 +413,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
-
-
-
 	installation := basicInstallation()
-
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -433,8 +428,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			//ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			//ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
 			FakeConfig: &config.ConfigReadWriterMock{
 				WriteConfigFunc: func(config config.ConfigReadable) error {
