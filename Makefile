@@ -249,7 +249,7 @@ test/functional: export TENANTS_CREATION_TIMEOUT ?= $(TENANTS_CREATION_TIMEOUT)
 test/functional: export TEST_TIMEOUT ?= 80m
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/functional -timeout=$(TEST_TIMEOUT) >> test.txt
+	go clean -testcache && go test -v ./test/functional -timeout=$(TEST_TIMEOUT)
 
 .PHONY: test/osde2e
 test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)
