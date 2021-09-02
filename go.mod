@@ -13,7 +13,7 @@ require (
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.39.2
-	github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.3
+	github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
@@ -30,7 +30,7 @@ require (
 	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.30.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
-	github.com/integr8ly/grafana-operator/v3 v3.10.2
+	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.4
 	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
 	github.com/onsi/ginkgo v1.15.0
