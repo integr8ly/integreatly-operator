@@ -13,6 +13,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -21,17 +22,15 @@ const (
 	realmName   = "rhd"
 )
 
-var multitenantUsers int
+var (
+	testUser               string
+	multitenantUsers       int
+	err                    error
+	waitgroup              sync.WaitGroup
+	clusterLoginSuccessful = true
+)
 
 func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
-	var testUser string
-	var timeOfLogin time.Time
-
-	// get tenant creation time limit
-	tenantCreationTime, err := getTenantCreationTime(t)
-	if err != nil {
-		t.Fatalf("error while getting TENANTS_CREATION_TIMEOUT: %v", err)
-	}
 	// get amount of tenants to be created
 	multitenantUsers, err = getRegisteredTenantsNumber(t)
 	if err != nil {
@@ -51,76 +50,150 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		t.Fatal("error while setting up IDP or users %s", err)
 	}
 
-	// Creation of tenants
+	// Skip mass login to cluster if running in PROW, instead login as 1st and 2nd user only.
+	if !testResources.RunningInProw(rhmi) {
+		// Cluster login all users apart from last one
+		clusterLoginSuccess := loginUsersToCluster(t, ctx, masterURL)
+		if !clusterLoginSuccess {
+			t.Errorf("Loggin in of users has failed")
+		}
+	}
+
+	// Verify that last user created can login to 3scale
+	err = loginTo3scaleAsCertainUser(t, ctx, masterURL, rhmi.Spec.RoutingSubdomain, multitenantUsers-1)
+	if err != nil {
+		t.Errorf("User login to 3scale failed: %v", err)
+	}
+
+	// Meassure the time it takes for a newly logged in tenant to be created + logged in to 3scale
+	err = loginTo3scaleAsCertainUser(t, ctx, masterURL, rhmi.Spec.RoutingSubdomain, multitenantUsers)
+	if err != nil {
+		t.Errorf("User login to 3scale failed: %v", err)
+	}
+}
+
+func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, routingDomain string, userID int) error {
+	var timeOfLogin time.Time
+	var tenantCreationTime time.Duration
+	isClusterLoggedIn := false
+	routeFound := false
+	isThreeScaleLoggedIn := false
+
+	/* get tenant creation time limit, if it's the last user from group of users that's logging in,
+	   give it more time, else, use time set by the envvar for final user
+	*/
+	if userID == multitenantUsers-1 {
+		tenantCreationTime, err = time.ParseDuration("20m")
+	} else {
+		tenantCreationTime, err = getTenantCreationTime(t)
+	}
+	if err != nil {
+		return fmt.Errorf("error while setting tenantCreationTime timeout: %v", err)
+	}
+
+	// Create client for current tenant
+	tenantClient, err := createTenantClient(t, ctx)
+	if err != nil {
+		return fmt.Errorf("error while creating client for tenant: %v", err)
+	}
+
+	// Build username for final user
+	testUser := fmt.Sprintf("%v%02v", DefaultTestUserName, userID)
+
+	// 3scale route for tenant
+	host := fmt.Sprintf("https://%v-admin.%v", testUser, routingDomain)
+
+	err = wait.Poll(pollingTime, tenantCreationTime, func() (done bool, err error) {
+
+		// Let user login to the cluster
+		if !isClusterLoggedIn {
+			err = loginToCluster(t, tenantClient, masterURL, testUser)
+			if err != nil {
+				return false, nil
+			} else {
+				timeOfLogin = time.Now()
+				isClusterLoggedIn = true
+			}
+		}
+
+		// Check if 3scale route is available
+		if !routeFound {
+			err = getTenant3scaleRoute(t, ctx, testUser)
+			if err != nil {
+				return false, nil
+			} else {
+				routeFound = true
+			}
+		}
+
+		//Login tenant to 3scale
+		if !isThreeScaleLoggedIn {
+			err := loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, realmName, tenantClient)
+			if err != nil {
+				t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
+				return false, nil
+			} else {
+				timeSinceLoginToRoutesFound := time.Since(timeOfLogin).Seconds()
+				t.Log(fmt.Sprintf("User logged in to 3scale %s after %v", testUser, timeSinceLoginToRoutesFound))
+				isThreeScaleLoggedIn = true
+			}
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("User %s login and creation of tenant failed with: %v", testUser, err)
+	} else {
+		return nil
+	}
+}
+
+func loginUsersToCluster(t TestingTB, ctx *TestingContext, masterURL string) bool {
 	postfix := 1
-	for postfix <= multitenantUsers {
-		isClusterLoggedIn := false
-		routeFound := false
-		isThreeScaleLoggedIn := false
-		var testTimeout time.Duration
+	for postfix < multitenantUsers {
+		waitgroup.Add(1)
+		testUser := fmt.Sprintf("%v%02v", DefaultTestUserName, postfix)
 
-		// First user needs more time due to the time IDP takes to be created and available
-		if postfix == 1 {
-			testTimeout = time.Minute * 10
-		} else {
-			testTimeout = tenantCreationTime
-		}
+		// Add sleep in between starting new go routines to avoid spamming cluster sso instantly
+		time.Sleep(100 * time.Millisecond)
 
-		// Create client for current tenant
-		tenantClient, err := createTenantClient(t, ctx)
-		if err != nil {
-			t.Fatalf("error while creating client for tenant: %v", err)
-		}
+		go func() {
+			var tenantClient *http.Client
+			isClusterLoggedIn := false
+			isClientReady := false
+			timeoutForInitialUsersClusterLogin := time.Minute * 10
 
-		// Build username string eg test-user01, test-user02, test-user100
-		testUser = fmt.Sprintf("%v%02v", DefaultTestUserName, postfix)
-
-		// 3scale route for tenant
-		host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
-
-		err = wait.Poll(pollingTime, testTimeout, func() (done bool, err error) {
-
-			// Let user login to the cluster
-			if !isClusterLoggedIn {
-				err = loginToCluster(t, tenantClient, masterURL, testUser)
-				if err != nil {
-					return false, nil
-				} else {
-					timeOfLogin = time.Now()
-					isClusterLoggedIn = true
+			err := wait.Poll(pollingTime, timeoutForInitialUsersClusterLogin, func() (done bool, err error) {
+				if !isClientReady {
+					tenantClient, err = createTenantClient(t, ctx)
+					if err != nil {
+						return false, nil
+					} else {
+						isClientReady = true
+					}
 				}
-			}
-
-			// Check if 3scale route is available
-			if !routeFound {
-				err = getTenant3scaleRoute(t, ctx, testUser)
-				if err != nil {
-					return false, nil
-				} else {
-					routeFound = true
+				if !isClusterLoggedIn {
+					err = loginToCluster(t, tenantClient, masterURL, testUser)
+					if err != nil {
+						return false, nil
+					} else {
+						isClusterLoggedIn = true
+					}
 				}
-			}
+				return true, nil
+			})
 
-			//Login tenant to 3scale
-			if !isThreeScaleLoggedIn {
-				err := loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, realmName, tenantClient)
-				if err != nil {
-					t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
-					return false, nil
-				} else {
-					timeSinceLoginToRoutesFound := time.Since(timeOfLogin).Seconds()
-					t.Log(fmt.Sprintf("User logged in to 3scale %s after %v", testUser, timeSinceLoginToRoutesFound))
-					isThreeScaleLoggedIn = true
-				}
+			if err != nil {
+				// Log the error but continue
+				t.Logf("User %s login to the cluster failed: %v", testUser, err)
+				clusterLoginSuccessful = false
 			}
-			return true, nil
-		})
-
-		if err != nil {
-			t.Errorf("User %s login and creation of tenant failed with: %v", testUser, err)
-		}
+			waitgroup.Done()
+		}()
 		postfix++
 	}
+	waitgroup.Wait()
+	return clusterLoginSuccessful
 }
 
 func loginToCluster(t TestingTB, tenantClient *http.Client, masterURL, testUser string) error {
