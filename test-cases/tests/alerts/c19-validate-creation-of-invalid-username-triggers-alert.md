@@ -30,6 +30,18 @@ estimate: 15m
 
 ## Steps
 
+### Automated Test
+
+- To run the automated test manually that performs the manual steps below:
+
+```
+INSTALLATION_TYPE=managed-api BYPASS_STORAGE_TYPE_CHECK=true TEST="C19" make test/e2e/single | tee c19-test.log
+```
+
+- Verify test completes successfully
+
+### Manual Steps
+
 1. Create a new user with long name (more than 40 characters)
 
 ```bash
