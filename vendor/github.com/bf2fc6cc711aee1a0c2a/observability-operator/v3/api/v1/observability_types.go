@@ -36,7 +36,7 @@ const (
 	GrafanaConfiguration     ObservabilityStageName = "GrafanaConfiguration"
 	PrometheusInstallation   ObservabilityStageName = "Prometheus"
 	PrometheusConfiguration  ObservabilityStageName = "PrometheusConfiguration"
-	CsvRemoval               ObservabilityStageName = "CsvRemoval"
+	Csv                      ObservabilityStageName = "Csv"
 	TokenRequest             ObservabilityStageName = "TokenRequest"
 	PromtailInstallation     ObservabilityStageName = "PromtailInstallation"
 	AlertmanagerInstallation ObservabilityStageName = "AlertmanagerInstallation"
@@ -54,33 +54,27 @@ const (
 	AuthTypeRedhat ObservabilityAuthType = "redhat"
 )
 
-type DashboardSource struct {
-	Url  string `json:"url"`
-	Name string `json:"name"`
-}
-
-type GrafanaConfig struct {
-	// How often to refetch the dashboards?
-	ResyncPeriod string `json:"resyncPeriod,omitempty"`
-}
-
-type AlertmanagerConfig struct {
-	PagerDutySecretName           string `json:"pagerDutySecretName"`
-	PagerDutySecretNamespace      string `json:"pagerDutySecretNamespace,omitempty"`
-	DeadMansSnitchSecretName      string `json:"deadMansSnitchSecretName"`
-	DeadMansSnitchSecretNamespace string `json:"deadMansSnitchSecretNamespace,omitempty"`
-}
-
 type Storage struct {
 	PrometheusStorageSpec *prometheusv1.StorageSpec `json:"prometheus,omitempty"`
 }
 
 type SelfContained struct {
-	DisableRepoSync       *bool    `json:"disableRepoSync,omitempty"`
-	DisableObservatorium  *bool    `json:"disableObservatorium,omitempty"`
-	DisablePagerDuty      *bool    `json:"disablePagerDuty,omitempty"`
-	DisableDeadmansSnitch *bool    `json:"disableDeadmansSnitch,omitempty"`
-	FederatedMetrics      []string `json:"federatedMetrics,omitempty"`
+	DisableRepoSync                 *bool                 `json:"disableRepoSync,omitempty"`
+	DisableObservatorium            *bool                 `json:"disableObservatorium,omitempty"`
+	DisablePagerDuty                *bool                 `json:"disablePagerDuty,omitempty"`
+	DisableDeadmansSnitch           *bool                 `json:"disableDeadmansSnitch,omitempty"`
+	DisableBlackboxExporter         *bool                 `json:"disableBlackboxExporter,omitempty"`
+	SelfSignedCerts                 *bool                 `json:"selfSignedCerts,omitempty"`
+	FederatedMetrics                []string              `json:"federatedMetrics,omitempty"`
+	PodMonitorLabelSelector         *metav1.LabelSelector `json:"podMonitorLabelSelector,omitempty"`
+	PodMonitorNamespaceSelector     *metav1.LabelSelector `json:"podMonitorNamespaceSelector,omitempty"`
+	ServiceMonitorLabelSelector     *metav1.LabelSelector `json:"serviceMonitorLabelSelector,omitempty"`
+	ServiceMonitorNamespaceSelector *metav1.LabelSelector `json:"serviceMonitorNamespaceSelector,omitempty"`
+	RuleLabelSelector               *metav1.LabelSelector `json:"ruleLabelSelector,omitempty"`
+	RuleNamespaceSelector           *metav1.LabelSelector `json:"ruleNamespaceSelector,omitempty"`
+	ProbeLabelSelector              *metav1.LabelSelector `json:"probeSelector,omitempty"`
+	ProbeNamespaceSelector          *metav1.LabelSelector `json:"probeNamespaceSelector,omitempty"`
+	AlertManagerConfigSecret        string                `json:"alertManagerConfigSecret,omitempty"`
 }
 
 // ObservabilitySpec defines the desired state of Observability
@@ -140,6 +134,22 @@ func (in *Observability) PagerDutyDisabled() bool {
 
 func (in *Observability) DeadMansSnitchDisabled() bool {
 	return in.Spec.SelfContained != nil && in.Spec.SelfContained.DisableDeadmansSnitch != nil && *in.Spec.SelfContained.DisableDeadmansSnitch
+}
+
+func (in *Observability) BlackboxExporterDisabled() bool {
+	return in.Spec.SelfContained != nil && in.Spec.SelfContained.DisableBlackboxExporter != nil && *in.Spec.SelfContained.DisableBlackboxExporter
+}
+
+func (in *Observability) SelfSignedCerts() bool {
+	return in.Spec.SelfContained != nil && in.Spec.SelfContained.SelfSignedCerts != nil && *in.Spec.SelfContained.SelfSignedCerts
+}
+
+func (in *Observability) HasAlertmanagerConfigSecret() (bool, string) {
+	if in.Spec.SelfContained != nil && in.Spec.SelfContained.AlertManagerConfigSecret != "" {
+		return true, in.Spec.SelfContained.AlertManagerConfigSecret
+	}
+
+	return false, ""
 }
 
 func init() {
