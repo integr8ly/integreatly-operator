@@ -166,9 +166,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				MatchExpressions: nil,
 			},
 			SelfContained: &observability.SelfContained{
-				DisableRepoSync:      &disabled,
-				DisableObservatorium: &disabled,
-				DisablePagerDuty:     &disabled,
+				DisableRepoSync:       &disabled,
+				DisableObservatorium:  &disabled,
+				DisableDeadmansSnitch: &disabled,
+				DisablePagerDuty:      &disabled,
 			},
 			ResyncPeriod: "1h",
 		}
