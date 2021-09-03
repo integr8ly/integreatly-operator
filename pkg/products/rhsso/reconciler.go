@@ -3,7 +3,6 @@ package rhsso
 import (
 	"context"
 	"fmt"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/pkg/errors"
 
@@ -60,6 +59,7 @@ type Reconciler struct {
 	Config *config.RHSSO
 	Log    l.Logger
 	*rhssocommon.Reconciler
+	isUpgrade bool
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
@@ -78,6 +78,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Config:     config,
 		Log:        logger,
 		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, APIURL, keycloakClientFactory, *productDeclaration),
+		isUpgrade:  rhssocommon.IsUpgrade(config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSO),
 	}, nil
 }
 
@@ -147,6 +148,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace, r.Log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
+		return phase, err
+	}
+
+	phase, err = r.SetRollingStrategyForUpgrade(r.isUpgrade, ctx, serverClient, r.Config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSO, keycloakName)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to set rolling strategy for upgrade", err)
 		return phase, err
 	}
 
@@ -247,9 +254,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("650m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
 
-		//Set keycloak Update Strategy to Rolling as default
-		//Keycloak operator should make decision based on the image, and can change update strategy
-		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+		// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps
+		// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
+		// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
+		if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSO) {
+			//Set keycloak Update Strategy to Rolling as default
+			r.Log.Info("Setting keycloak migration strategy to rolling")
+			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+		}
 
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)

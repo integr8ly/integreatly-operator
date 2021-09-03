@@ -3,6 +3,7 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"github.com/Masterminds/semver"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"strings"
 
@@ -615,4 +616,56 @@ func (r *Reconciler) RemovePodMonitors(ctx context.Context, client k8sclient.Cli
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// IsUpgrade Is current version from config compared to constant an upgrade
+func IsUpgrade(config *config.RHSSOCommon, productVersion integreatlyv1alpha1.ProductVersion) bool {
+	return config.GetProductVersion() != ("") && config.GetProductVersion() != productVersion
+}
+
+func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon, productVersion integreatlyv1alpha1.ProductVersion, keycloakName string) (integreatlyv1alpha1.StatusPhase, error) {
+	// If is not an upgrade, return early and continue using the current migration strategy
+	if !isUpgrade {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	// Get previous version from config
+	preVersion, err := semver.NewVersion(string(config.GetProductVersion()))
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Current version from constant
+	currentVersion, err := semver.NewVersion(string(productVersion))
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// If there is a minor or major version bump, use recreate strategy
+	if currentVersion.Minor() > preVersion.Minor() || currentVersion.Major() > preVersion.Major() {
+		r.Log.Info("Major / Minor sso upgrade detected, setting keycloak migration strategy to recreate")
+		kc := &keycloak.Keycloak{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      keycloakName,
+				Namespace: config.GetNamespace(),
+			},
+		}
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
+			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRecreate
+
+			return nil
+		})
+		if err != nil && !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
+		}
+	}
+
+	// Otherwise, keep the current migration strategy
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) IsOperatorInstallComplete(kc *keycloak.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
+	return kc.Status.Version == string(operatorVersion) && kc.Status.Ready
 }
