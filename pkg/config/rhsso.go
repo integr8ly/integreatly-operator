@@ -39,5 +39,9 @@ func (r *RHSSO) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) int {
 	if testResources.RunningInProw(inst) {
 		return 1
 	}
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
+		return 3
+	}
 	return 2
 }

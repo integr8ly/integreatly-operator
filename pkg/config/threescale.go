@@ -150,6 +150,14 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 			threeScaleComponents["backendListener"] = 5
 		}
 	}
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
+		switch inst.Status.Quota {
+		case "10":
+			threeScaleComponents["apicastProd"] = 3
+			threeScaleComponents["backendListener"] = 3
+			threeScaleComponents["backendWorker"] = 3
+		}
+	}
 
 	return threeScaleComponents
 }
