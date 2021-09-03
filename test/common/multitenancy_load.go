@@ -19,7 +19,7 @@ import (
 
 const (
 	pollingTime = time.Second * 5
-	realmName   = "rhd"
+	realmName   = "DevSandbox"
 )
 
 var (
@@ -79,14 +79,7 @@ func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, rou
 	routeFound := false
 	isThreeScaleLoggedIn := false
 
-	/* get tenant creation time limit, if it's the last user from group of users that's logging in,
-	   give it more time, else, use time set by the envvar for final user
-	*/
-	if userID == multitenantUsers-1 {
-		tenantCreationTime, err = time.ParseDuration("20m")
-	} else {
-		tenantCreationTime, err = getTenantCreationTime(t)
-	}
+	tenantCreationTime, err = getTenantCreationTime(t)
 	if err != nil {
 		return fmt.Errorf("error while setting tenantCreationTime timeout: %v", err)
 	}
@@ -291,7 +284,7 @@ func setupIDP(t TestingTB, ctx *TestingContext, rhmi *rhmiv1alpha1.RHMI) error {
 		TestingIDPRealm = realmName
 		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, true)
 		if err != nil {
-			return fmt.Errorf("error while creating rhd testing IDP: %s", err)
+			return fmt.Errorf("error while creating DevSandbox testing IDP: %s", err)
 		}
 	}
 
