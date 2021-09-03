@@ -177,8 +177,11 @@ func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8
 			},
 		}
 		if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, priorityClass, func() error {
-
-			priorityClass.Value = 1000000000
+			if integreatlyv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
+				priorityClass.Value = 0
+			} else {
+				priorityClass.Value = 1000000000
+			}
 			priorityClass.GlobalDefault = false
 			priorityClass.Description = "Priority Class for managed-api"
 

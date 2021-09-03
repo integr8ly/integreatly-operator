@@ -211,7 +211,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				StatusCode: http.StatusOK,
 			}, nil
 		},
-		CreateTenantFunc: func(accessToken string, account AccountDetail, pw string) (*SignUpAccount, error) {
+		CreateTenantFunc: func(accessToken string, account AccountDetail, pw string, email string) (*SignUpAccount, error) {
 			return &SignUpAccount{
 				AccountDetail: AccountDetail{
 					Id:      1,
