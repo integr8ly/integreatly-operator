@@ -178,7 +178,7 @@ func TestReconciler_VerifyVersion(t *testing.T) {
 			args: args{
 				installation:  basicInstallation(),
 			},
-			want:    false,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
@@ -427,10 +427,10 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name:           "test successful reconcile",
+			Name: "test successful reconcile",
 			//ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
 			FakeConfig: &config.ConfigReadWriterMock{
 				WriteConfigFunc: func(config config.ConfigReadable) error {
 					return nil
@@ -521,7 +521,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			//SMTPSecret:           mockSMTPSecretName,
 			//PagerDutySecret:      mockPagerdutySecretName,
 			//DeadMansSnitchSecret: mockDMSSecretName,
-			Type:                 string(integreatlyv1alpha1.InstallationTypeManaged),
+			Type: string(integreatlyv1alpha1.InstallationTypeManaged),
 		},
 	}
 }
