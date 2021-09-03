@@ -1694,7 +1694,7 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 
 func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string) {
 	accountsToBeCreated = []AccountDetail{}
-	email := ""	
+	email := ""
 	for _, identity := range usersIdentity {
 		foundAccount := false
 		for _, account := range accounts {
