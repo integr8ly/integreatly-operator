@@ -254,7 +254,7 @@ func SanitiseTenantUserName(username string) string {
 func getIdpName() (string, error) {
 	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
 	if ok != true {
-		return "", fmt.Errorf("error when findign IDENTITY_PROVIDER_NAME")
+		return "DevSandbox", nil
 	}
 
 	return idpName, nil
