@@ -231,7 +231,7 @@ set_related_images() {
 
   containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
   containerImageField="$containerImageRemovedLastCharacter]"
-  yq e -i  ".metadata.annotations.containerImages= $containerImageField "  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  printf -v m "$containerImageField" ; m="$m" yq e -i  ".metadata.annotations.containerImages= strenv(m)"  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 if [[ -z "$SEMVER" ]]; then
