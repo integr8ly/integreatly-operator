@@ -128,23 +128,23 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 			threeScaleComponents["apicastProd"] = 2
 			threeScaleComponents["backendListener"] = 2
 			threeScaleComponents["backendWorker"] = 2
-		case "10":
+		case "1 Million":
 			threeScaleComponents["apicastProd"] = 2
 			threeScaleComponents["backendListener"] = 2
 			threeScaleComponents["backendWorker"] = 2
-		case "50":
+		case "5 Million":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendListener"] = 3
 			threeScaleComponents["backendWorker"] = 3
-		case "100":
+		case "10 Million":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendListener"] = 3
 			threeScaleComponents["backendWorker"] = 3
-		case "200":
+		case "20 Million":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendListener"] = 3
 			threeScaleComponents["backendWorker"] = 3
-		case "500":
+		case "50 Million":
 			threeScaleComponents["apicastProd"] = 3
 			threeScaleComponents["backendWorker"] = 4
 			threeScaleComponents["backendListener"] = 5
