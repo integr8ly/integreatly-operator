@@ -5,22 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	configv1 "github.com/openshift/api/config/v1"
-	routev1 "github.com/openshift/api/route/v1"
-
 	"strings"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	rbac "k8s.io/api/rbac/v1"
 
-	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -40,7 +34,6 @@ import (
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -261,8 +254,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 	*/
-
-	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
+	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation, r.Config.GetOperatorNamespace(), alertManagerRouteName)
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -485,7 +477,7 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 // Create the integreatly additional scrape config secret which is reconciled
 // by the application monitoring operator and passed to prometheus
 func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	templateHelper := NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading config: %w", err)
@@ -663,7 +655,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetOperatorNamespace()
 
-	templateHelper := NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
@@ -740,173 +732,6 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.Log.Info("reconciling alertmanager configuration secret")
-	rhmiOperatorNs := r.installation.Namespace
-
-	// handle alert manager route
-	alertmanagerRoute := &v1.Route{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerRouteName, Namespace: r.Config.GetOperatorNamespace()}, alertmanagerRoute); err != nil {
-		if k8serr.IsNotFound(err) {
-			r.Log.Infof("alert manager route not available, cannot create alert manager config secret", l.Fields{"route": alertManagerRouteName})
-			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain alert manager route: %w", err)
-	}
-
-	// handle smtp credentials
-	smtpSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: rhmiOperatorNs}, smtpSecret); err != nil {
-		r.Log.Warningf("Could not obtain smtp credentials secret", l.Fields{"error": err.Error()})
-	}
-
-	//Get pagerduty credentials
-	pagerDutySecret, err := r.getPagerDutySecret(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	//Get dms credentials
-	dmsSecret, err := r.getDMSSecret(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// only set the to address to a real value for managed deployments
-	smtpToSREAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToSREAddressCRVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
-	if smtpToSREAddressCRVal != "" {
-		smtpToSREAddress = smtpToSREAddressCRVal
-	}
-
-	smtpToBUAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToBUAddressCRVal := r.installation.Spec.AlertingEmailAddresses.BusinessUnit
-	if smtpToBUAddressCRVal != "" {
-		smtpToBUAddress = smtpToBUAddressCRVal
-	}
-
-	smtpToCustomerAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToCustomerAddressCRVal := r.installation.Spec.AlertingEmailAddress
-	if smtpToCustomerAddressCRVal != "" {
-		smtpToCustomerAddress = prepareEmailAddresses(smtpToCustomerAddressCRVal)
-	}
-
-	var existingSMTPFromAddress = ""
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, r.Config.GetOperatorNamespace())
-		if err != nil {
-			if !apiErrors.IsNotFound(err) {
-				r.Log.Error("Error getting application monitoring secret", err)
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch get application monitoring secret: %w", err)
-			}
-		}
-	}
-
-	smtpAlertFromAddress := os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
-
-	// If SMTPFromAddress already set for RHMI prod customers, do not reset
-
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		smtpAlertFromAddress = "noreply-test@rhmw.io"
-	} else if integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) && existingSMTPFromAddress != "" {
-		r.Log.Infof("setting smtpAlertFromAddress to existing value ", l.Fields{"FromAddress": existingSMTPFromAddress})
-		smtpAlertFromAddress = existingSMTPFromAddress
-	} else if r.installation.Spec.AlertFromAddress != "" {
-		smtpAlertFromAddress = r.installation.Spec.AlertFromAddress
-	}
-
-	clusterInfra := &configv1.Infrastructure{}
-	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterInfraName}, clusterInfra); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster infra details for alertmanager config: %w", err)
-	}
-
-	clusterVersion := &configv1.ClusterVersion{}
-	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterIDValue}, clusterVersion); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster ID details for alertmanager config: %w", err)
-	}
-
-	clusterRoute := &routev1.Route{}
-	if err := serverClient.Get(context.TODO(), types.NamespacedName{Name: openShiftConsoleRoute, Namespace: openShiftConsoleNamespace}, clusterRoute); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch OpenShift console URL details for alertmanager config: %w", err)
-	}
-
-	clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
-	clusterName := clusterInfra.Status.InfrastructureName
-	clusterID := string(clusterVersion.Spec.ClusterID)
-
-	if string(smtpSecret.Data["host"]) == "" {
-		smtpSecret.Data["host"] = []byte("smtp.example.com")
-	}
-	if string(smtpSecret.Data["port"]) == "" {
-		smtpSecret.Data["port"] = []byte("587")
-	}
-
-	// parse the config template into a secret object
-	templateUtil := NewTemplateHelper(map[string]string{
-		"SMTPHost":              string(smtpSecret.Data["host"]),
-		"SMTPPort":              string(smtpSecret.Data["port"]),
-		"SMTPFrom":              smtpAlertFromAddress,
-		"SMTPUsername":          string(smtpSecret.Data["username"]),
-		"SMTPPassword":          string(smtpSecret.Data["password"]),
-		"SMTPToCustomerAddress": smtpToCustomerAddress,
-		"SMTPToSREAddress":      smtpToSREAddress,
-		"SMTPToBUAddress":       smtpToBUAddress,
-		"PagerDutyServiceKey":   pagerDutySecret,
-		"DeadMansSnitchURL":     dmsSecret,
-		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
-		"clusterID":             clusterID,
-		"clusterName":           clusterName,
-		"clusterConsole":        clusterConsoleRoute,
-		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
-	})
-
-	templatePath := GetTemplatePath()
-	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
-
-	// generate alertmanager custom email template
-	emailConfigContents, err := ioutil.ReadFile(path)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read alertmanager custom email template file: %w", err)
-	}
-
-	emailConfigContentsStr := string(emailConfigContents)
-	cluster_vars := map[string]string{
-		"${CLUSTER_NAME}":    clusterName,
-		"${CLUSTER_ID}":      clusterID,
-		"${CLUSTER_CONSOLE}": clusterConsoleRoute,
-	}
-
-	for name, val := range cluster_vars {
-		emailConfigContentsStr = strings.ReplaceAll(emailConfigContentsStr, name, val)
-	}
-
-	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
-	}
-	configSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerConfigSecretName,
-			Namespace: r.Config.GetOperatorNamespace(),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	// create the config secret
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, configSecret, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(configSecret, r.installation)
-		configSecret.Data = map[string][]byte{
-			alertManagerConfigSecretFileName:        configSecretData,
-			alertManagerEmailTemplateSecretFileName: []byte(emailConfigContentsStr),
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create or update alert manager secret: %w", err)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) error {
 	if cfg.GetOperatorNamespace() == "" {
 		// Retry later
@@ -934,7 +759,7 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.Bl
 		"module":        module,
 	}
 
-	templateHelper := NewTemplateHelper(extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(extraParams)
 	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return fmt.Errorf("error creating resource from template: %w", err)

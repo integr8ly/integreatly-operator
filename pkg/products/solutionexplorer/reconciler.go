@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -289,7 +290,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
