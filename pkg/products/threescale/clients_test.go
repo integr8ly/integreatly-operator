@@ -3,10 +3,9 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"math/rand"
 	"net/http"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -68,7 +67,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 }
 
 func getMockAlertManagerSecret() map[string][]byte {
-	templateUtil := monitoring.NewTemplateHelper(map[string]string{
+	templateUtil := monitoringcommon.NewTemplateHelper(map[string]string{
 		"SMTPHost":              "SMTPHost",
 		"SMTPPort":              "SMTPPort",
 		"SMTPFrom":              "test@test.com",
