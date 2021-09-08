@@ -18,7 +18,6 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -176,7 +175,7 @@ func TestReconciler_VerifyVersion(t *testing.T) {
 		{
 			name: "test TestReconciler_VerifyVersion - negative",
 			args: args{
-				installation:  basicInstallation(),
+				installation: basicInstallation(),
 			},
 			want: false,
 		},
@@ -274,7 +273,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.args.in2)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.args.in2, defaultInstallationNamespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -427,8 +426,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name: "test successful reconcile",
-			//ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
 			FakeConfig: &config.ConfigReadWriterMock{
@@ -511,7 +509,6 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
-			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",

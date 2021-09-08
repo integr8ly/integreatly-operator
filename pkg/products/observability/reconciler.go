@@ -52,7 +52,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
 
-	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace + "-operator"
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	config, err := configManager.ReadObservability()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve observability config: %w", err)
@@ -65,7 +65,11 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 	if config.GetOperatorNamespace() == "" {
-		config.SetOperatorNamespace(config.GetNamespace())
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
 	}
 
 	return &Reconciler{
@@ -109,7 +113,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileSecrets(ctx, client, installation)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -117,11 +121,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ObservabilitySubscriptionName), err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, client, installation)
+	phase, err = r.reconcileComponents(ctx, client, installation, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
 		return phase, err
@@ -147,12 +151,12 @@ func (r *Reconciler) reconcileSecrets(_ context.Context, _ k8sclient.Client, _ *
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "observability-stack",
-			Namespace: fmt.Sprintf("%s%s-operator", common.NamespacePrefix, defaultInstallationNamespace),
+			Namespace: productNamespace,
 		},
 	}
 
