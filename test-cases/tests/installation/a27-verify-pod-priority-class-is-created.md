@@ -26,4 +26,5 @@ This test case should verify that the pod priority class is for RHOAM with corre
 ```bash
 oc get priorityclass rhoam-pod-priority -o json | jq -r .value | grep 1000000000 ; echo $?
 ```
+
 > Verify that you get "0" on the output
