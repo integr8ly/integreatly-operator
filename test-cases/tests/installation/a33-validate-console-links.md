@@ -42,3 +42,9 @@ estimate: 15m
    > You should see the dashboard and data (and no errors)
 5. Back in OpenShift console, click on `API Management SSO` link and try to login using SSO IDP (testing-idp)
    > You should successfully log into User SSO
+
+**Validate RHOAM icons**
+
+1. Open this url to see the current RHOAM icon https://issues.redhat.com/secure/projectavatar?pid=12324822. Validate that the same icon is used in following places in OpenShift console:
+   > In OpenShift console, click on the dashboard icon on the top right corner -> see OpenShift Managed Services icons
+   > Operators -> OperatorHub -> search for "rhoam"
