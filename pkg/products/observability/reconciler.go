@@ -3,28 +3,32 @@ package observability
 import (
 	"context"
 	"fmt"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/test/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	observability "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/test/common"
 	"github.com/integr8ly/integreatly-operator/version"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
 	defaultInstallationNamespace = "observability"
+
+	// alert manager configuration
+	alertManagerRouteName        = "kafka-alertmanager"
+	alertManagerConfigSecretName = "alertmanager-application-monitoring"
 )
 
 type Reconciler struct {
@@ -131,6 +135,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, client, r.installation, r.Config.GetNamespace(), alertManagerRouteName)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
+		return phase, err
+	}
+
 	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionObservability) {
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionObservability))
 		err := r.ConfigManager.WriteConfig(r.Config)
@@ -144,10 +154,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Reconciled successfully")
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileSecrets(_ context.Context, _ k8sclient.Client, _ *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -217,7 +223,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"monitoring-key": r.Config.GetLabelSelector(),
 					},
 				},
-				AlertManagerConfigSecret: "",
+				AlertManagerConfigSecret: alertManagerConfigSecretName,
 			},
 			ResyncPeriod: "1h",
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"io/ioutil"
 	"os"
 
@@ -261,8 +262,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 	*/
-
-	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
+	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation, r.Config.GetOperatorNamespace(), alertManagerRouteName)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", defaultInstallationNamespace), err)
+		return phase, err
+	}
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -485,7 +489,7 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 // Create the integreatly additional scrape config secret which is reconciled
 // by the application monitoring operator and passed to prometheus
 func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	templateHelper := NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading config: %w", err)
@@ -663,7 +667,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetOperatorNamespace()
 
-	templateHelper := NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
@@ -839,7 +843,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	}
 
 	// parse the config template into a secret object
-	templateUtil := NewTemplateHelper(map[string]string{
+	templateUtil := monitoringcommon.NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
 		"SMTPPort":              string(smtpSecret.Data["port"]),
 		"SMTPFrom":              smtpAlertFromAddress,
@@ -857,7 +861,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
 	})
 
-	templatePath := GetTemplatePath()
+	templatePath := monitoringcommon.GetTemplatePath()
 	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
@@ -931,7 +935,7 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.Bl
 		"module":        module,
 	}
 
-	templateHelper := NewTemplateHelper(extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(extraParams)
 	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return fmt.Errorf("error creating resource from template: %w", err)

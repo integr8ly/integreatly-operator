@@ -285,55 +285,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}
 }
 
-func TestReconciler_reconcileSecrets(t *testing.T) {
-	type fields struct {
-		Reconciler    *resources.Reconciler
-		ConfigManager config.ConfigReadWriter
-		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
-		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
-		extraParams   map[string]string
-		recorder      record.EventRecorder
-	}
-	type args struct {
-		in0 context.Context
-		in1 client.Client
-		in2 *integreatlyv1alpha1.RHMI
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    v1alpha1.StatusPhase
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				Reconciler:    tt.fields.Reconciler,
-				ConfigManager: tt.fields.ConfigManager,
-				Config:        tt.fields.Config,
-				installation:  tt.fields.installation,
-				mpm:           tt.fields.mpm,
-				log:           tt.fields.log,
-				extraParams:   tt.fields.extraParams,
-				recorder:      tt.fields.recorder,
-			}
-			got, err := r.reconcileSecrets(tt.args.in0, tt.args.in1, tt.args.in2)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reconcileSecrets() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("reconcileSecrets() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestReconciler_reconcileSubscription(t *testing.T) {
 	type fields struct {
 		Reconciler    *resources.Reconciler
