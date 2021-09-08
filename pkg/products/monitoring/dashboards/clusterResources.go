@@ -158,7 +158,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
+				"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -418,7 +418,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+				"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='cpu'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -548,7 +548,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
+				"expr": "sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -678,7 +678,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
+				"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*', resource='cpu'}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})\n",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -808,7 +808,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "(1 - sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores))\n",
+				"expr": "(1 - sum(kube_pod_container_resource_requests{resource='cpu'} * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'}))\n",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -1012,7 +1012,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(kube_pod_container_resource_requests{resource='cpu'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -1142,7 +1142,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
+				"expr": "sum(kube_pod_container_resource_requests{resource='cpu'} * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})\n",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -1458,7 +1458,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='cpu'}) by (namespace)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1467,7 +1467,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests_cpu_cores) by (namespace))",
+					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests{resource='cpu'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1476,7 +1476,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_limits_cpu_cores{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+					"expr": "sum(kube_pod_container_resource_limits{namespace=~'` + nsPrefix + `.*',resource='cpu'}) by (namespace)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1485,7 +1485,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits_cpu_cores) by (namespace))",
+					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits{resource='cpu'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1625,7 +1625,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(container_memory_rss{container!='',container!='POD',namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_node_status_capacity_memory_bytes  * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(container_memory_rss{container!='',container!='POD',namespace=~'` + nsPrefix + `.*'}) / sum(kube_node_status_capacity{resource='memory'}  * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -1885,7 +1885,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+				"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='memory'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2015,7 +2015,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(kube_node_status_allocatable{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2146,7 +2146,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='memory'}) / sum(kube_node_status_allocatable{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2276,7 +2276,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "1 - sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "1 - sum(kube_pod_container_resource_requests{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2536,7 +2536,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(kube_pod_container_resource_requests{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2666,7 +2666,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
+				"expr": "sum(kube_pod_container_resource_requests{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable{resource='memory'} * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -2981,7 +2981,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='memory'})",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -2990,7 +2990,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(container_memory_rss{container!='',namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests_memory_bytes) by (namespace))",
+					"expr": "(sum(container_memory_rss{container!='',namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests{resource='memory'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -2999,7 +2999,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_limits_memory_bytes{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+					"expr": "sum(kube_pod_container_resource_limits{namespace=~'` + nsPrefix + `.*',resource='memory'}) by (namespace)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -3008,7 +3008,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(container_memory_rss{container!='', namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits_memory_bytes) by (namespace))",
+					"expr": "(sum(container_memory_rss{container!='', namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits{resource='memory'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,

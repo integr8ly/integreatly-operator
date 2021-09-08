@@ -146,7 +146,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "The {{  $labels.container  }} Container in the {{ $labels.pod  }} Pod has been using {{  $value }}% of available memory for longer than 15 minutes.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='',namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits_memory_bytes{namespace='%[1]v'}) * 100 > 90", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='',namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_requests{namespace='%[1]v', resource='memory'}) * 100 > 90", r.Config.GetNamespace())),
 						For:    "15m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
