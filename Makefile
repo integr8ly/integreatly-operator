@@ -411,6 +411,7 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanadashboards.integreatly.org
 	@-oc delete crd grafanadatasources.integreatly.org
 	@-oc delete crd grafanas.integreatly.org
+	@-oc delete crd observabilities.observability.redhat.com
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 	@-oc delete crd rhmiconfigs.integreatly.org

@@ -57,6 +57,7 @@ var (
 	SolutionExplorerStage        StageName = "solution-explorer"
 	UninstallProductsStage       StageName = "uninstall - products"
 	UninstallMonitoringStage     StageName = "uninstall - monitoring"
+	UninstallObservabilityStage  StageName = "uninstall - observability"
 	UninstallCloudResourcesStage StageName = "uninstall - cloud-resources"
 
 	ProductAMQStreams          ProductName = "amqstreams"

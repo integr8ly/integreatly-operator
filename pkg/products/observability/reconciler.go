@@ -14,9 +14,9 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/test/common"
 	"github.com/integr8ly/integreatly-operator/version"
 	v1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -95,17 +95,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+		// Check if productNamespace is still present before trying to delete it resources
+		_, err := resources.GetNS(ctx, productNamespace, client)
+		if !k8serr.IsNotFound(err) {
+			// Mark OO CR for deletion.
+			phase, err := r.deleteObservabilityCR(ctx, client, installation, productNamespace)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+			phase, err = resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
-
-		return integreatlyv1alpha1.PhaseCompleted, nil
+		// Check if operatorNamespace is still present before trying to delete it resources
+		_, err = resources.GetNS(ctx, operatorNamespace, client)
+		if !k8serr.IsNotFound(err) {
+			phase, err := resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+		}
+		// If both namespaces are deleted, return complete
+		_, operatorNSErr := resources.GetNS(ctx, operatorNamespace, client)
+		_, productNSErr := resources.GetNS(ctx, productNamespace, client)
+		if k8serr.IsNotFound(operatorNSErr) && k8serr.IsNotFound(productNSErr) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
@@ -261,7 +279,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		//	return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "observability-stack", Namespace: fmt.Sprintf("%s%s-operator", common.NamespacePrefix, defaultInstallationNamespace)}, oo)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "observability-stack", Namespace: productNamespace}, oo)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -305,4 +323,35 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 
 func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	return backup.NewNoopBackupExecutor()
+}
+
+func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, targetNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	// If the installation is NOT marked for deletion, return without deleting observability CR
+	if inst.DeletionTimestamp == nil {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	oo := &observability.Observability{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "observability-stack",
+			Namespace: targetNamespace,
+		},
+	}
+
+	// Get the observability CR; return if not found
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oo.Name, Namespace: oo.Namespace}, oo)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Mark the observability CR for deletion
+	err = serverClient.Delete(ctx, oo)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, nil
+	}
+
+	return integreatlyv1alpha1.PhaseInProgress, nil
 }
