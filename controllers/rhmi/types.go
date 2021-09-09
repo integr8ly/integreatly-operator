@@ -76,6 +76,12 @@ var (
 				},
 			},
 			{
+				Name: integreatlyv1alpha1.UninstallObservabilityStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
+				},
+			},
+			{
 				Name: integreatlyv1alpha1.UninstallMonitoringStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
@@ -145,6 +151,12 @@ var (
 				Name: integreatlyv1alpha1.UninstallCloudResourcesStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.UninstallObservabilityStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
 				},
 			},
 			{

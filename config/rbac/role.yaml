@@ -194,6 +194,16 @@ rules:
   - get
   - update
 - apiGroups:
+  - observability.redhat.com
+  resources:
+  - observabilities
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+- apiGroups:
   - operator.marin3r.3scale.net
   resources:
   - discoveryservices
