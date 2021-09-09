@@ -136,6 +136,13 @@ func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userNam
 			return false, nil
 		}
 
+		// Additional check for User CR successfully created if user logged into cluster successfully
+		user := &userv1.User{ObjectMeta: metav1.ObjectMeta{Name: userName}}
+		if err := ctx.Client.Get(context.TODO(), types.NamespacedName{Name: userName}, user); err != nil {
+			t.Logf("Failed to find User CR with name %s: %s", userName, err)
+			return false, nil
+		}
+
 		t.Logf("Logged into openshift using %s user", userName)
 		return true, nil
 	}); err != nil {
