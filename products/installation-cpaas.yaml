@@ -59,7 +59,7 @@ products:
   3scale:
     channel: "alpha"
     installFrom: "implicit"
-    bundle: "registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:5063f838a8a7649626231edabf47debc3d4e36f69de37675d126b19fdbeb69c3"
+    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:ab721f45dd85c53f8e36acdc32424ecf97bd621ae601d9fe4c1c74cf2d6a8eea"
   amqonline:
     channel: "rhmi"
     installFrom: "local"
