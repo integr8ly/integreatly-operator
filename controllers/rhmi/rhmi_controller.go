@@ -283,7 +283,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	)
 	if err != nil {
 		log.Error("failed while retrieving addon parameter", err)
-	} else if ok && customerAlertingEmailAddress != "" && installation.Spec.AlertingEmailAddress != customerAlertingEmailAddress {
+	} else if ok && installation.Spec.AlertingEmailAddress != customerAlertingEmailAddress {
 		log.Info("Updating customer email address from parameter")
 		installation.Spec.AlertingEmailAddress = customerAlertingEmailAddress
 		if err := r.Update(context.TODO(), installation); err != nil {
