@@ -125,7 +125,7 @@ func validateUserNotListedInKeyCloakCR(t TestingTB, ctx *TestingContext, goCtx c
 }
 
 func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userName string) {
-	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		tempHttpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 		if err != nil {
 			return false, nil
@@ -151,7 +151,7 @@ func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userNam
 }
 
 func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string) {
-	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		getAlertErr := getFiringAlerts(t, ctx)
 
 		// getAlertErr should not be nil as DeadMansSwitch & at least specific alert should be firing
@@ -175,7 +175,7 @@ func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string) {
 }
 
 func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string) {
-	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		// getAlertErr will be nil if only DeadMansSwitch alert is firing
 		getAlertErr := getFiringAlerts(t, ctx)
 		if getAlertErr == nil {
@@ -197,7 +197,7 @@ func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string
 }
 
 func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, threeScaleUsername string) {
-	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
 			t.Logf("Error gettting 3scale users: %s", err)
@@ -218,7 +218,7 @@ func validateUserIsListedIn3scale(t TestingTB, ctx *TestingContext, host, threeS
 }
 
 func validateUserIsNotListedIn3scale(t TestingTB, ctx *TestingContext, host, customerAdminUsername string) {
-	if err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
 			t.Logf("Error getting 3scale users: %s", err)
