@@ -499,7 +499,7 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 
 	for idx, user := range added {
 		// Break after 100 tenants created to help with load on Keycloak
-		if (idx > 100) {
+		if idx > 100 {
 			r.Log.Info("Breaking from tenant creation")
 			break
 		}
