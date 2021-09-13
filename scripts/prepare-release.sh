@@ -97,7 +97,7 @@ set_installation_type() {
           echo "using default INSTALLATION_TYPE found in deploy/operator.yaml"
           ;;
         "managed-api-service")
-          yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "managed-api" '  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+          yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "managed-api" ' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
           ;;
         *)
           echo "No INSTALLATION_TYPE found for install type : $(OLM_TYPE)"
@@ -140,8 +140,8 @@ set_clusterPermissions() {
       ;;
     "managed-api-service")
       echo "Updating permissions"
-      yq e -i  '.spec.maintainers[0].email="rhoam-support@redhat.com"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-      yq e -i   '.spec.maintainers[0].name="rhoam"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.maintainers[0].email="rhoam-support@redhat.com"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.maintainers[0].name="rhoam"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
       ;;
   esac
 }
@@ -150,8 +150,8 @@ set_images() {
   case $OLM_TYPE in
    "integreatly-operator")
   : "${IMAGE_TAG:=v${SEMVER}}"
-  yq e -i  ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i  ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
   ;;
   "managed-api-service")
    : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
@@ -164,7 +164,7 @@ set_images() {
 set_csv_service_affecting_field() {
   local value=$1
   echo "Update CSV for release $SEMVER to be 'serviceAffecting: $value'"
-  yq e -i   ".metadata.annotations.serviceAffecting= \"$value\" "  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.serviceAffecting= \"$value\" " packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 # Due to a quirk in operator-sdk v1.2.0, the `replaces` field in the generated CSV is taken from the current version in
@@ -174,8 +174,8 @@ set_csv_service_affecting_field() {
 # version in the base CSV is the same as the new version, so operator-sdk generates a CSV without the `replaces` field.
 # This function addresses that by adding the `replaces` field if it was removed.
 check_csv_replaces_field() {
-  if [[ -z $(yq e  '.spec.replaces' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml) ]]; then
-    yq e -i ".spec.replaces=${PREVIOUS_REPLACES_VALUE}"  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  if [[ $(yq e '.spec.replaces' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml) == null ]]; then
+    yq e -i ".spec.replaces=\"${PREVIOUS_REPLACES_VALUE}\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
   fi
 }
 
@@ -190,15 +190,15 @@ set_related_images() {
   for (( i=0; i<${length}; i++))
   do
     product_dir=$(yq e ".products[$i].manifestsDir" ./products/products.yaml)
-    if [[ $(yq e ".products[$i].installType" ./products/products.yaml) == *"rhoam"* && $(yq e  ".products[$i].quayScan" ./products/products.yaml ) == true ]]; then
+    if [[ $(yq e ".products[$i].installType" ./products/products.yaml) == *"rhoam"* && $(yq e ".products[$i].quayScan" ./products/products.yaml ) == true ]]; then
       # Read component version
       component_version=$(grep currentCSV manifests/$product_dir/*.package.yaml | awk -F v '{print $2}')
 
       # Read component name
-      component_name=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' |  tr -d '"')
+      component_name=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' | tr -d '"')
 
       # Read image from the component version but only select quay.io or redhat.registry
-      component_image=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select((.image|test("quay.")) or (.image|test("registry.redhat"))) | .image' |  tr -d '"')
+      component_image=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq '.[] | select((.image|test("quay.")) or (.image|test("registry.redhat"))) | .image' | tr -d '"')
 
       containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
       position=$((position+1))
@@ -221,8 +221,8 @@ set_related_images() {
 
       # Adding KC related image
       if [[ "$component_name" == *"keycloak-operator"* ]]; then
-        kcRelatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].name' |  tr -d '"')
-        kcRelatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].value' |  tr -d '"')
+        kcRelatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].name' | tr -d '"')
+        kcRelatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].value' | tr -d '"')
         containerImageField="$containerImageField{\"component_name\":\"${kcRelatedImageName}\",\"component_url\":\"${kcRelatedImageURL}\"},"
       fi
     fi
@@ -231,7 +231,7 @@ set_related_images() {
 
   containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
   containerImageField="$containerImageRemovedLastCharacter]"
-  printf -v m "$containerImageField" ; m="$m" yq e -i  ".metadata.annotations.containerImages= strenv(m)"  packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  printf -v m "$containerImageField" ; m="$m" yq e -i ".metadata.annotations.containerImages= strenv(m)" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 if [[ -z "$SEMVER" ]]; then
@@ -294,7 +294,7 @@ yq e -i ".projectName=\"$current_project_name\"" PROJECT
 # Ensure the RHMI package is `integreatly`: The operator-sdk CLI will take the
 # package name from the PROJECT file, so in the case of RHMI it will set it
 # incorrectly to `integreatly-operator`
-yq e -i  '.packageName="integreatly"' packagemanifests/integreatly-operator/integreatly-operator.package.yaml
+yq e -i '.packageName="integreatly"' packagemanifests/integreatly-operator/integreatly-operator.package.yaml
 
 # Ensure code is formatted correctly
 "${GOFMT[@]}" -w `find . -type f -name '*.go' -not -path "./vendor/*"`
