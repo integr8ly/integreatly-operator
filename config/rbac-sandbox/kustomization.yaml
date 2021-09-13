@@ -1,0 +1,10 @@
+bases:
+  - ../rbac
+
+namespace: sandbox-rhoam-operator
+namePrefix: rhoam-
+
+patchesStrategicMerge:
+  - patches/leader_election_role_binding.yaml
+  # - patches/auth_proxy_role_binding.yaml
+  - patches/role_binding.yaml

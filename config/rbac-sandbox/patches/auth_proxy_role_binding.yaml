@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: proxy-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: rhmi-operator
+  namespace: sandbox-rhoam-operator
