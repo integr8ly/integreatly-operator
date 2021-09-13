@@ -6,6 +6,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/test/common"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -152,6 +153,22 @@ func (r *Reconciler) reconcileSecrets(_ context.Context, _ k8sclient.Client, _ *
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	// Create a ConfigMap in the operator namespace to prevent observability CR from being created in the operator ns.
+	cfgMap := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "observability-operator-no-init",
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, cfgMap, func() error {
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
@@ -160,7 +177,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		},
 	}
 
-	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+	op, err = controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
 			ConfigurationSelector: &metav1.LabelSelector{
