@@ -306,11 +306,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileOpenshiftUsers(ctx, installation, serverClient)
-	r.log.Infof("reconcileOpenshiftUsers", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile openshift users", err)
-		return phase, err
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err = r.reconcileOpenshiftUsers(ctx, installation, serverClient)
+		r.log.Infof("reconcileOpenshiftUsers", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile openshift users", err)
+			return phase, err
+		}
 	}
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
