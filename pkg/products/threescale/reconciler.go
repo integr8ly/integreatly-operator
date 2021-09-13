@@ -1342,14 +1342,13 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 }
 
 func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	providerName := "rhd"
-	mtUserIdentities, err := user.GetIdentitiesByProviderName(ctx, serverClient, providerName)
+	mtUserIdentities, err := user.GetMultiTenantUsers(ctx, serverClient)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieving user identities from the MT users %w", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	r.log.Infof("Found user identities from MT accounts",
-		l.Fields{"identities": len(mtUserIdentities.Items)},
+		l.Fields{"identities": len(mtUserIdentities)},
 	)
 
 	// get 3scale master access token
@@ -1429,7 +1428,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	// creating new MT accounts in 3scale
-	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities.Items, accounts)
+	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, accounts)
 	r.log.Infof("retrieving new MT accounts to be created",
 		l.Fields{"accountsToBeCreated": accountsToBeCreated},
 	)
@@ -1465,7 +1464,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	// deleting MT accounts in 3scale
-	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities.Items, accounts)
+	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities, accounts)
 	r.log.Infof("Deleting unused MT accounts:", l.Fields{"accountsToBeDeleted": accountsToBeDeleted})
 	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
@@ -1693,24 +1692,25 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 	return nil
 }
 
-func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string) {
+func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string) {
+	accountsToBeCreated = []AccountDetail{}
 	email := ""
 	for _, identity := range usersIdentity {
 		foundAccount := false
 		for _, account := range accounts {
-			if account.OrgName == identity.User.Name {
+			if account.OrgName == identity.TenantName {
 				foundAccount = true
 			}
 		}
 		if !foundAccount {
 			accountsToBeCreated = append(accountsToBeCreated, AccountDetail{
-				Name:    identity.User.Name,
-				OrgName: identity.User.Name,
+				Name:    identity.TenantName,
+				OrgName: identity.TenantName,
 			})
-			if identity.Extra["email"] != "" {
-				email = identity.Extra["email"]
+			if identity.Email != "" {
+				email = identity.Email
 			} else {
-				email = fmt.Sprintf("%s@rhmi.io", identity.User.Name)
+				email = fmt.Sprintf("%s@rhmi.io", identity.TenantName)
 			}
 			emailAddrs = append(emailAddrs, email)
 		}
@@ -1718,12 +1718,12 @@ func getMTAccountsToBeCreated(usersIdentity []usersv1.Identity, accounts []Accou
 	return accountsToBeCreated, emailAddrs
 }
 
-func getMTAccountsToBeDeleted(usersIdentity []usersv1.Identity, accounts []AccountDetail) []AccountDetail {
+func getMTAccountsToBeDeleted(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) []AccountDetail {
 	accountsToBeDeleted := []AccountDetail{}
 	for _, account := range accounts {
 		foundUser := false
 		for _, identity := range usersIdentity {
-			if account.OrgName == identity.User.Name {
+			if account.OrgName == identity.TenantName {
 				foundUser = true
 			}
 		}

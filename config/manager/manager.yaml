@@ -61,4 +61,6 @@ spec:
             value: "default@test.com"
           - name: QUOTA
             value: "200"
+          - name: IDENTITY_PROVIDER_NAME
+            value: "DevSandbox"
       terminationGracePeriodSeconds: 10

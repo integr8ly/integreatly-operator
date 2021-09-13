@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -211,7 +212,12 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 }
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, "rhd")
+	requiredIdp, err := getIdpName()
+	if err != nil {
+		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
+	}
+
+	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting identity list for multi tenants")
 	}
@@ -243,4 +249,13 @@ func SanitiseTenantUserName(username string) string {
 
 	// Remove occurrence of replacement character at end of string
 	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
+}
+
+func getIdpName() (string, error) {
+	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
+	if ok != true {
+		return "DevSandbox", nil
+	}
+
+	return idpName, nil
 }
