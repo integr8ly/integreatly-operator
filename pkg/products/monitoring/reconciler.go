@@ -805,7 +805,10 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	smtpAlertFromAddress := os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
 
 	// If SMTPFromAddress already set for RHMI prod customers, do not reset
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && existingSMTPFromAddress != "" {
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		smtpAlertFromAddress = "noreply-test@rhmw.io"
+	} else if integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) && existingSMTPFromAddress != "" {
 		r.Log.Infof("setting smtpAlertFromAddress to existing value ", l.Fields{"FromAddress": existingSMTPFromAddress})
 		smtpAlertFromAddress = existingSMTPFromAddress
 	} else if r.installation.Spec.AlertFromAddress != "" {

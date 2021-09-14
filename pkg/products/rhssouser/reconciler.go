@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -496,7 +497,14 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 
 	added, deleted := getTenantDiff(users, realms.Items)
 
-	for _, user := range added {
+	for idx, user := range added {
+		// Break after 100 tenants created to help with load on Keycloak
+		if idx > 100 {
+			r.Log.Info("Breaking from tenant creation")
+			break
+		}
+		// Sleep between tenant creation to help with load on Keycloak
+		time.Sleep(500 * time.Millisecond)
 		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
