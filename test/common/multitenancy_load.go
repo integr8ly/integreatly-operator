@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 	routev1 "github.com/openshift/api/route/v1"
@@ -19,7 +20,6 @@ import (
 
 const (
 	pollingTime = time.Second * 5
-	realmName   = "DevSandbox"
 )
 
 var (
@@ -28,6 +28,7 @@ var (
 	err                    error
 	waitgroup              sync.WaitGroup
 	clusterLoginSuccessful = true
+	realmName, _           = user.GetIdpName()
 )
 
 func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {

@@ -215,9 +215,9 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 }
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
-	requiredIdp, err := getIdpName()
+	requiredIdp, err := GetIdpName()
 	if err != nil {
-		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
+		return nil, err
 	}
 
 	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
@@ -270,10 +270,10 @@ func SanitiseTenantUserName(username string) string {
 	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
 }
 
-func getIdpName() (string, error) {
+func GetIdpName() (string, error) {
 	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
 	if ok != true {
-		return "devsandbox", nil
+		return "DevSandbox", fmt.Errorf("error retrieving IDENTITY_PROVIDER_NAME from envar")
 	}
 
 	return idpName, nil

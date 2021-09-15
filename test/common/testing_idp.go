@@ -379,12 +379,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 				Namespace: RHSSOProductNamespace,
 			},
 		}
-
-		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-			email = fmt.Sprintf("%s@example.com", user.UserName)
-		} else {
-			email = fmt.Sprintf("%s@rhmi.io", user.UserName)
-		}
+		email = fmt.Sprintf("%s@example.com", user.UserName)
 
 		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Annotations = map[string]string{
