@@ -1714,7 +1714,7 @@ func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accoun
 			if identity.Email != "" {
 				email = identity.Email
 			} else {
-				email = fmt.Sprintf("%s@rhmi.io", identity.TenantName)
+				email = userHelper.SetUserNameAsEmail(identity.TenantName)
 			}
 			emailAddrs = append(emailAddrs, email)
 		}

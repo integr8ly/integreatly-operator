@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"net/mail"
 	"os"
 	"regexp"
 	"strings"
@@ -22,6 +23,7 @@ const (
 	updateProfileAction         = "UPDATE_PROFILE"
 	invalidCharacterReplacement = "-"
 	GeneratedNamePrefix         = "generated-"
+	defaultEmailDomain          = "@rhmi.io"
 )
 
 var (
@@ -227,7 +229,7 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 		if identity.Extra["email"] != "" {
 			email = identity.Extra["email"]
 		} else {
-			email = identity.User.Name + "@rhmi.io"
+			email = SetUserNameAsEmail(identity.User.Name)
 		}
 
 		users = append(users, MultiTenantUser{
@@ -258,4 +260,15 @@ func getIdpName() (string, error) {
 	}
 
 	return idpName, nil
+}
+
+func SetUserNameAsEmail(userName string) string {
+	// If username is a valid email address
+	_, err := mail.ParseAddress(userName)
+	if err == nil {
+		return userName
+	}
+
+	// Otherwise sanitise and append default domain
+	return fmt.Sprintf("%s%s", SanitiseTenantUserName(userName), defaultEmailDomain)
 }
