@@ -390,12 +390,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 
-	phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
-		return phase, err
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.Recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
+			return phase, err
+		}
 	}
-
 	_, err = r.reconcileFirstLoginAuthFlow(kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile first broker login authentication flow: %w", err)

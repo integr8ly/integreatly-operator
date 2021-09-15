@@ -383,11 +383,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileConsoleLink(ctx, serverClient)
-	r.log.Infof("reconcileConsoleLink", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
-		return phase, err
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		phase, err = r.reconcileConsoleLink(ctx, serverClient)
+		r.log.Infof("reconcileConsoleLink", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
+			return phase, err
+		}
 	}
 
 	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)
