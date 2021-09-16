@@ -179,6 +179,8 @@ spec:
             spec:
               containers:
               - env:
+                - name: RELATED_IMAGE_RHSSO_OPENJDK
+                  value: quay.io/jfitzpat/delorean:rh-sso-7-sso75-openshift-rhel8_7.5
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
