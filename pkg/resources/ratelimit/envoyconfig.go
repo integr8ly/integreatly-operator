@@ -15,7 +15,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	marin3rv1alpha1 "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
+	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	"github.com/golang/protobuf/ptypes"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -143,7 +143,9 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 	_, err := controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, installation)
 		serialization := "yaml"
+		envoyAPIVersion := EnvoyAPIVersion
 		envoyconfig.Spec.NodeID = ec.nodeID
+		envoyconfig.Spec.EnvoyAPI = &envoyAPIVersion
 		envoyconfig.Spec.Serialization = &serialization
 		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha1.EnvoyResources{
 			Clusters:  envoyClusterResource,

@@ -3,8 +3,8 @@ module github.com/integr8ly/integreatly-operator
 go 1.16
 
 require (
+	github.com/3scale-ops/marin3r v0.8.0
 	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
-	github.com/3scale/marin3r v0.7.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -16,7 +16,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
-	github.com/envoyproxy/go-control-plane v0.9.7
+	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.20.3
 	github.com/go-openapi/strfmt v0.20.1

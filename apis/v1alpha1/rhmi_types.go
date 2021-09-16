@@ -96,7 +96,7 @@ var (
 	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
-	VersionMarin3r             ProductVersion = "0.7.0"
+	VersionMarin3r             ProductVersion = "0.8.0"
 	VersionGrafana             ProductVersion = "3.10.2"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
@@ -126,7 +126,7 @@ var (
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
-	OperatorVersionMarin3r             OperatorVersion = "0.7.0"
+	OperatorVersionMarin3r             OperatorVersion = "0.8.0"
 	OperatorVersionGrafana             OperatorVersion = "3.10.2"
 
 	// Event reasons to be used when emitting events
