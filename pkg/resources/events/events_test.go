@@ -103,8 +103,8 @@ func TestHandleProductComplete(t *testing.T) {
 							Phase: integreatlyv1alpha1.PhaseInProgress,
 							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								productName: integreatlyv1alpha1.RHMIProductStatus{
-									Name:   productName,
-									Status: integreatlyv1alpha1.PhaseInProgress,
+									Name:  productName,
+									Phase: integreatlyv1alpha1.PhaseInProgress,
 								},
 							},
 						},
@@ -123,8 +123,8 @@ func TestHandleProductComplete(t *testing.T) {
 							Phase: integreatlyv1alpha1.PhaseInProgress,
 							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								productName: integreatlyv1alpha1.RHMIProductStatus{
-									Name:   productName,
-									Status: integreatlyv1alpha1.PhaseCompleted,
+									Name:  productName,
+									Phase: integreatlyv1alpha1.PhaseCompleted,
 								},
 							},
 						},

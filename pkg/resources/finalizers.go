@@ -69,7 +69,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 	}
 
 	if ns.Status.Phase == corev1.NamespaceTerminating {
-		return integreatlyv1alpha1.PhaseInProgress, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
 	nsProject := &projectv1.Project{

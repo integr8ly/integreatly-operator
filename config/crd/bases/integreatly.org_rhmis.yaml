@@ -141,6 +141,8 @@ spec:
                             type: string
                           type:
                             type: string
+                          uninstall:
+                            type: boolean
                           version:
                             type: string
                         required:

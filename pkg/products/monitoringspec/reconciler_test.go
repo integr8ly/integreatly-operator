@@ -273,6 +273,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -313,6 +314,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: basicInstallation(),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -325,7 +327,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			ctx := context.TODO()
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -420,6 +422,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile with cleanup",
@@ -460,6 +463,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			Installation: basicInstallation(),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -494,7 +498,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			}
 
 			//Verify that reconcilation was completed successfuly
-			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}

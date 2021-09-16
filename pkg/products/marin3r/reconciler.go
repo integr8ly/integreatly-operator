@@ -101,13 +101,13 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start marin3r reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
@@ -135,10 +135,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
+
+	if uninstall {
+		return phase, nil
+	}
+
 	r.RateLimitConfig = productConfig.GetRateLimitConfig()
 
 	alertsConfig, err := marin3rconfig.GetAlertConfig(ctx, client, r.installation.Namespace)
@@ -236,9 +241,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Installation successful")
@@ -254,7 +259,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 				grafanaProduct, grafanaProductExists := productsStage.Products[integreatlyv1alpha1.ProductGrafana]
 				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
 				if !grafanaProductExists ||
-					(grafanaProduct.Status != integreatlyv1alpha1.PhaseCompleted &&
+					(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&
 						(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
 
 					r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")

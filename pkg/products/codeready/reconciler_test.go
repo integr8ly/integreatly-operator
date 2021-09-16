@@ -146,6 +146,7 @@ func TestReconciler_config(t *testing.T) {
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 		Logger         l.Logger
+		Uninstall      bool
 	}{
 		{
 			Name:           "test error on failed config",
@@ -159,9 +160,10 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read che config")
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
-			Logger:   l.NewLogger(),
+			Product:   &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:  setupRecorder(),
+			Logger:    l.NewLogger(),
+			Uninstall: false,
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -179,6 +181,7 @@ func TestReconciler_config(t *testing.T) {
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
 			Logger:     l.NewLogger(),
+			Uninstall:  false,
 		},
 	}
 
@@ -205,7 +208,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -329,8 +332,8 @@ func TestCodeready_reconcileClient(t *testing.T) {
 							Name: "codeready-stage",
 							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
-									Status: integreatlyv1alpha1.PhaseCreatingSubscription,
+									Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+									Phase: integreatlyv1alpha1.PhaseCreatingSubscription,
 								},
 							},
 						},
@@ -366,8 +369,8 @@ func TestCodeready_reconcileClient(t *testing.T) {
 							Name: "codeready-stage",
 							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
-									Status: integreatlyv1alpha1.PhaseCreatingSubscription,
+									Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+									Phase: integreatlyv1alpha1.PhaseCreatingSubscription,
 								},
 							},
 						},
@@ -643,6 +646,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		Product             *integreatlyv1alpha1.RHMIProductStatus
 		Recorder            record.EventRecorder
 		Logger              l.Logger
+		Uninstall           bool
 	}{
 		{
 			Name:           "test successful installation without errors",
@@ -689,9 +693,10 @@ func TestCodeready_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
-			Logger:   l.NewLogger(),
+			Product:   &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:  setupRecorder(),
+			Logger:    l.NewLogger(),
+			Uninstall: false,
 		},
 	}
 
@@ -718,7 +723,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), scenario.Installation, scenario.Product, scenario.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), scenario.Installation, scenario.Product, scenario.FakeClient, &quota.ProductConfigMock{}, scenario.Uninstall)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}

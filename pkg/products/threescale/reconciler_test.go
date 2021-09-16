@@ -92,6 +92,7 @@ type ThreeScaleTestScenario struct {
 	MPM                  marketplace.MarketplaceInterface
 	Product              *integreatlyv1alpha1.RHMIProductStatus
 	Recorder             record.EventRecorder
+	Uninstall            bool
 }
 
 func getTestInstallation() *integreatlyv1alpha1.RHMI {
@@ -166,6 +167,7 @@ func TestThreeScale(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Uninstall:      false,
 		},
 	}
 	for _, scenario := range scenarios {
@@ -185,7 +187,7 @@ func TestThreeScale(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
-			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient, &quota.ProductConfigMock{})
+			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient, &quota.ProductConfigMock{}, scenario.Uninstall)
 			if err != nil {
 				t.Fatalf("Error reconciling %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}

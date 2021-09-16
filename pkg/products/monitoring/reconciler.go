@@ -135,9 +135,9 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		r.Log.Info("Phase: Monitoring ReconcileFinalizer")
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, operatorNamespace, serverClient)
@@ -200,7 +200,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.Log)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace(), r.Log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -208,9 +208,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}, r.Log)
 
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
 	}
 
 	isMultiAZCluster, err := resources.IsMultiAZCluster(ctx, serverClient)
@@ -242,13 +246,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	/*phase, err = r.reconcilePodPriority(ctx, serverClient)
-	r.Log.Infof("reconcileComponents", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
-		return phase, err
-	}
-	*/
 	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation, r.Config.GetOperatorNamespace(), alertManagerRouteName)
 	r.Log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -312,9 +309,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
@@ -357,39 +354,6 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-/*
-func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	alertmanagerStatefulSet := &k8sappsv1.StatefulSet{}
-	_, err :=  resources.ReconcilePodPriority(
-		ctx,
-		serverClient,
-		k8sclient.ObjectKey{
-			Name:      "alertmanager-application-monitoring",
-			Namespace: r.Config.GetNamespace(),
-		},
-		resources.SelectFromStatefulSet,
-		alertmanagerStatefulSet,
-	)
-
-	prometheusStatefulSet := &k8sappsv1.StatefulSet{}
-	_, err =  resources.ReconcilePodPriority(
-		ctx,
-		serverClient,
-		k8sclient.ObjectKey{
-			Name:      "alertmanager-application-monitoring",
-			Namespace: r.Config.GetNamespace(),
-		},
-		resources.SelectFromStatefulSet,
-		prometheusStatefulSet,
-	)
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-*/
 // Creates a service monitor that federates metrics about alerts to the cluster
 // monitoring stack
 func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

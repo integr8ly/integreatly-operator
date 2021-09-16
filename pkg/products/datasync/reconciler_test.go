@@ -36,6 +36,7 @@ type DataSyncScenario struct {
 	Installation   *integreatlyv1alpha1.RHMI
 	Product        *integreatlyv1alpha1.RHMIProductStatus
 	Recorder       record.EventRecorder
+	Uninstall      bool
 }
 
 func getFakeConfig() *config.ConfigReadWriterMock {
@@ -84,8 +85,9 @@ func TestDataSync(t *testing.T) {
 					return nil, fmt.Errorf("could not read %s config", integreatlyv1alpha1.ProductDataSync)
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			Product:   &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:  setupRecorder(),
+			Uninstall: false,
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
@@ -95,6 +97,7 @@ func TestDataSync(t *testing.T) {
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Uninstall:      false,
 		},
 		{
 			Name:           "test successful reconcile",
@@ -105,6 +108,7 @@ func TestDataSync(t *testing.T) {
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Uninstall:      false,
 		},
 	}
 
@@ -131,7 +135,7 @@ func TestDataSync(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}

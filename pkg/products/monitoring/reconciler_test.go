@@ -410,6 +410,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -443,17 +444,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 								Kind:       "ApplicationMonitoring",
 								APIVersion: monitoringv1.SchemeGroupVersion.String(),
 							},
-							// Items: []operatorsv1alpha1.InstallPlan{
-							// 	{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "monitoring-install-plan",
 							},
 							Status: operatorsv1alpha1.InstallPlanStatus{
 								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 							},
-							// },
-							// },
-							// ListMeta: metav1.ListMeta{},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
@@ -466,6 +462,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: basicInstallation(),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -476,7 +473,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -549,9 +546,56 @@ func TestReconciler_testPhases(t *testing.T) {
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.RHMI
-		Product        *integreatlyv1alpha1.RHMIProductStatus
+		ProductStatus  *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
+		{
+			Name:           "test uninstall - Namespace already removed should result in PhaseUninstallCompleted",
+			Installation:   basicInstallation(),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			Name:         "test uninstall - Namespace present returns PhaseInProgress",
+			Installation: basicInstallation(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.ApplicationMonitoring{
+				ObjectMeta: metav1.ObjectMeta{Name: defaultMonitoringName, Namespace: operatorNS.Name},
+			}),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
+		{
+			Name:           "test uninstall - Namespace present with blackbox targets already removed should result in PhaseUninstallInProgress",
+			Installation:   basicInstallation(),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
+		{
+			Name:         "test uninstall - Namespace present with blackbox targets are still present should result in PhaseUninstallInProgress",
+			Installation: basicInstallation(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.BlackboxTarget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "blackbox-target",
+					Namespace: operatorNS.Name,
+					Labels: map[string]string{
+						"monitoring-key": "middleware",
+					},
+				},
+			}),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
 		{
 			Name:           "test namespace terminating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
@@ -573,8 +617,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     true,
 		},
 		{
 			Name:           "test subscription creating returns phase in progress",
@@ -590,8 +635,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     false,
 		},
 		{
 			Name:           "test components creating returns phase in progress",
@@ -613,8 +659,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     false,
 		},
 	}
 
@@ -625,7 +672,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				t.Fatalf("unexpected error : '%v'", err)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.ProductStatus, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -637,5 +684,5 @@ func TestReconciler_testPhases(t *testing.T) {
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductMonitoring})
 }

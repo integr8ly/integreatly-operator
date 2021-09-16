@@ -83,7 +83,7 @@ type Interface interface {
 	//This is how we can communicate to the user via the status block of the RHMI CR what is causing a product to
 	//enter a failed state, and is written into the `status.lastError` of the CR along with any other errors from
 	//other reconcilers.
-	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (newPhase integreatlyv1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 
 	//GetPreflightObjects informs the operator of what object it should look for, to check if the product is already installed. The
 	//namespace argument is the namespace currently being scanned for existing installations.
@@ -221,11 +221,11 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *integreatlyv1alpha1.RHMIProductStatus, _ k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *integreatlyv1alpha1.RHMIProductStatus, _ k8sclient.Client, _ quota.ProductConfig, _ bool) (integreatlyv1alpha1.StatusPhase, error) {
 	return integreatlyv1alpha1.PhaseNone, nil
 }
 
-func (n *NoOp) GetPreflightObject(ns string) runtime.Object {
+func (n *NoOp) GetPreflightObject(_ string) runtime.Object {
 	return &appsv1.Deployment{}
 }
 

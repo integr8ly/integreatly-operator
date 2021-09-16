@@ -3,6 +3,8 @@ package observability
 import (
 	"context"
 	"fmt"
+
+	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -78,6 +80,10 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		} else {
 			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
 		}
+		err := configManager.WriteConfig(config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Reconciler{
@@ -91,13 +97,14 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
+
 	r.log.Info("Start Observability reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if productNamespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, productNamespace, client)
 		if !k8serr.IsNotFound(err) {
@@ -128,9 +135,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
@@ -149,6 +160,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s configmap which is required to disable observability operator initilisting it's own cr", configMapNoInit), err)
 		return phase, err
+	}
+
+	monitoringConfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	r.log.Info("check AMO is uninstalled before progressing with Observability Installation")
+	amo := &v1alpha1.ApplicationMonitoringList{}
+
+	err = client.List(ctx, amo, &k8sclient.ListOptions{
+		Namespace: monitoringConfg.GetOperatorNamespace(),
+	})
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to check AMO is uninstalled"), err)
 	}
 
 	phase, err = r.reconcileSubscription(ctx, client, productNamespace, operatorNamespace)
@@ -191,8 +217,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Reconciled successfully")

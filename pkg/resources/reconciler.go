@@ -159,7 +159,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, uninstall bool, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := productName + ".integreatly.org" + "/finalizer"
 
 	// Replace finalizers with the new format finalizers
@@ -178,7 +178,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 
 	// Run finalization logic. If it fails, don't remove the finalizer
 	// so that we can retry during the next reconciliation
-	if inst.GetDeletionTimestamp() != nil {
+	if uninstall {
 		if Contains(inst.GetFinalizers(), finalizer) {
 			phase, err := finalFunc()
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -189,8 +189,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 			log.Infof("Removing finalizer", l.Fields{"finalizer": finalizer})
 			inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 		}
-		// Don't continue reconciling the product
-		return integreatlyv1alpha1.PhaseNone, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

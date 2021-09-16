@@ -240,7 +240,8 @@ type RHMIProductStatus struct {
 	Host            string          `json:"host"`
 	Type            string          `json:"type,omitempty"`
 	Mobile          bool            `json:"mobile,omitempty"`
-	Status          StatusPhase     `json:"status"`
+	Phase           StatusPhase     `json:"status"`
+	Uninstall       bool            `json:"uninstall,omitempty"`
 }
 
 // +kubebuilder:object:root=true
