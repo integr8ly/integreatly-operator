@@ -218,8 +218,8 @@ func getTenantCreationTime(t TestingTB) (time.Duration, error) {
 	var err error
 	duration, ok := os.LookupEnv("TENANTS_CREATION_TIMEOUT")
 	if ok != true {
-		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 10 minutes")
-		tenantCreationTime, err = time.ParseDuration("10m")
+		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 20 minutes")
+		tenantCreationTime, err = time.ParseDuration("20m")
 	} else {
 		tenantCreationTime, err = time.ParseDuration(fmt.Sprintf("%sm", duration))
 	}
