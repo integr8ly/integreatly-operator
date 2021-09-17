@@ -27,6 +27,7 @@ TYPE_OF_MANIFEST ?= master
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
+SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
@@ -112,6 +113,17 @@ setup/service_account: kustomize
 .PHONY: setup/git/hooks
 setup/git/hooks:
 	git config core.hooksPath .githooks
+
+.PHONY: install/sandboxrhoam/operator
+install/sandboxrhoam/operator:
+	@-oc new-project $(SANDBOX_NAMESPACE)
+	@-oc process -p RHOAM_NAMESPACE=$(SANDBOX_NAMESPACE) -f config/developer-sandbox/sandbox-operator-template.yml | oc create -f - -n $(SANDBOX_NAMESPACE)
+
+.PHONY: install/sandboxrhoam/config
+install/sandboxrhoam/config:
+	@-oc process -p RHOAM_OPERATOR_NAMESPACE=$(SANDBOX_NAMESPACE) -f config/developer-sandbox/sandbox-config-template.yml | oc create -f - -n $(SANDBOX_NAMESPACE)
+	@oc label namespace $(SANDBOX_NAMESPACE) monitoring-key=middleware --overwrite
+	@-oc process -f config/developer-sandbox/sandbox-rhoam-quickstart.yml | oc create -f -
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account

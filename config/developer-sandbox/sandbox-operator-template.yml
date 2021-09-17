@@ -1,0 +1,57 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: install-sandbox-rhoam-operator
+objects:
+  - apiVersion: operators.coreos.com/v1alpha1
+    kind: CatalogSource
+    metadata:
+      name: rhmi-operator
+      namespace: ${RHOAM_NAMESPACE}
+    spec:
+      displayName: RHOAM Operators
+      image: ${INDEX_IMAGE}
+      sourceType: grpc
+      updateStrategy:
+        registryPoll:
+          interval: 5m0s
+  - apiVersion: operators.coreos.com/v1
+    kind: OperatorGroup
+    metadata:
+      name: ${OPERATOR_GROUP_NAME}
+      namespace: ${RHOAM_NAMESPACE}
+    spec:
+      targetNamespaces:
+        - ${RHOAM_NAMESPACE}
+  - apiVersion: operators.coreos.com/v1alpha1
+    kind: Subscription
+    metadata:
+      name: ${SUBSCRIPTION_NAME}
+      namespace: ${RHOAM_NAMESPACE}
+    spec:
+      channel: ${CHANNEL}
+      installPlanApproval: Automatic
+      name: integreatly
+      source: ${CATALOG_SOURCE_CONFIG_NAME}
+      sourceNamespace: ${CATALOG_SOURCE_CONFIG_NAMESPACE}
+parameters:
+  - name: RHOAM_NAMESPACE
+    value: sandbox-rhoam-operator
+  - name: INDEX_IMAGE
+    value: quay.io/integreatly/managed-api-service-index:v1.12
+  - name: OPERATOR_GROUP_NAME
+    value: sandbox-rhoam-operator
+  - name: SUBSCRIPTION_NAME
+    value: managed-api-service
+  - description: The name of the channel
+    displayName: Channel Name
+    name: CHANNEL
+    value: alpha
+  - description: The name of the catalog source config
+    displayName: Catalog Source Config Name
+    name: CATALOG_SOURCE_CONFIG_NAME
+    value: rhmi-operator
+  - description: The name of the catalog source config namespace
+    displayName: Catalog Source Config Namespace
+    name: CATALOG_SOURCE_CONFIG_NAMESPACE
+    value: sandbox-rhoam-operator

@@ -7,6 +7,7 @@ import (
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -89,6 +90,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile tenant oauth secrets", err)
 			return phase, errors.Wrap(err, "failed to reconcile tenant oauth secrets")
 		}
+		err = r.setTenantMetrics(ctx, serverClient)
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, "Error setting tenant metrics", err)
+			return phase, errors.Wrap(err, "failed to set tenant metrics")
+		}
 	}
 
 	phase, err = r.reconcilerGithubOauthSecret(ctx, serverClient, installation)
@@ -167,6 +173,16 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 			}
 		}
 	}
+}
+
+func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclient.Client) error {
+	num, err := userHelper.GetMultiTenantUsersCount(ctx, serverClient, r.log)
+	if err != nil {
+		return err
+	}
+	r.log.Info("Setting tenant metrics")
+	metrics.SetNumTenants(strconv.FormatInt(int64(num), 10))
+	return nil
 }
 
 func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

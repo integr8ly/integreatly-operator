@@ -675,7 +675,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			"threescale_component_element": "zync-que",
 		})
 
-		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+		if integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 			if *apim.Spec.Apicast.ProductionSpec.Replicas < replicas["apicastProd"] {
 				*apim.Spec.Apicast.ProductionSpec.Replicas = replicas["apicastProd"]
 			}
@@ -1368,6 +1368,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	setTenantMetrics(mtUserIdentities, accounts)
+
 	r.log.Infof("Retrieving list of MT accounts available ",
 		l.Fields{"Accounts": accounts},
 	)
@@ -1490,6 +1492,25 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func setTenantMetrics(users []userHelper.MultiTenantUser, accounts []AccountDetail) {
+	metrics.ResetNoActivated3ScaleTenantAccount()
+
+	for _, user := range users {
+		if !accountExists(user.TenantName, accounts) {
+			metrics.SetNoActivated3ScaleTenantAccount(user.Username)
+		}
+	}
+}
+
+func accountExists(tenant string, accounts []AccountDetail) bool {
+	for _, acc := range accounts {
+		if tenant == acc.OrgName && acc.State == "approved" {
+			return true
+		}
+	}
+	return false
 }
 
 func getAccessTokenSecret(ctx context.Context, serverClient k8sclient.Client, namespace string) (*corev1.Secret, error) {

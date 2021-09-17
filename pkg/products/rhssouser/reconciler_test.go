@@ -433,7 +433,15 @@ func TestReconciler_reconcileTenants(t *testing.T) {
 			if err != nil {
 				t.Fatal("unexpected err ", err)
 			}
-			reconciler.reconcileTenants(context.TODO(), tc.FakeClient, "redhat-rhoam-user-sso", tc.Users)
+
+			kc := &keycloak.Keycloak{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      keycloakName,
+					Namespace: "ns",
+				},
+			}
+
+			reconciler.reconcileTenants(context.TODO(), tc.FakeClient, "redhat-rhoam-user-sso", tc.Users, kc)
 			tc.AssertFunc()
 		})
 	}
