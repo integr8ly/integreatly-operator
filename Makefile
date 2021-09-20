@@ -35,7 +35,7 @@ RHOAM_TAG ?= 1.12.0
 
 export SKIP_FLAKES := true
 export NUMBER_OF_TENANTS ?= 2
-export TENANTS_CREATION_TIMEOUT ?= 3
+export TENANTS_CREATION_TIMEOUT ?= 20
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
