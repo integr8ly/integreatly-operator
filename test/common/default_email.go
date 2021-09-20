@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	goctx "context"
@@ -14,9 +15,12 @@ import (
 )
 
 const (
-	usernameNoEmail   = "autotest-user01"
-	usernameWithEmail = "autotest-user02"
-	existingEmail     = "autotest-nondefault-user02@hotmail.com"
+	usernameNoEmail              = "autotest-user01"
+	usernameWithEmail            = "autotest-user02"
+	usernameUsingEmail           = "autotest-user03@test.com"
+	usernameRequireSanitiseEmail = "autotest$user04"
+	existingEmail                = "autotest-nondefault-user02@hotmail.com"
+	defaultDomain                = "@rhmi.io"
 )
 
 // TestDefaultUserEmail verifies that a user syncronized from the IDP have a
@@ -52,6 +56,24 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	// Cleanup the user resource
 	defer deleteUser(ctx, userWithEmail, identityWithEmail)
 
+	// Create user that uses email as username
+	userUsingEmailAsUsername, identityWithEmailAsUserName, err := createUserTestingIDP(ctx, usernameUsingEmail, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error creating User: %v", err)
+	}
+
+	// Cleanup the user resource
+	defer deleteUser(ctx, userUsingEmailAsUsername, identityWithEmailAsUserName)
+
+	// Create user with username that requires sanitization
+	userRequireSanitiseEmail, identityRequireSanitiseEmail, err := createUserTestingIDP(ctx, usernameRequireSanitiseEmail, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error creating User: %v", err)
+	}
+
+	// Cleanup the user resource
+	defer deleteUser(ctx, userRequireSanitiseEmail, identityRequireSanitiseEmail)
+
 	rhssoNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
 
 	// Get the keycloak CR for each user
@@ -66,8 +88,20 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 		return
 	}
 
+	keycloakUser3, err := waitForKeycloakUser(ctx, 5*time.Minute, rhssoNamespace, usernameUsingEmail)
+	if err != nil {
+		t.Fatalf("Unexpected error querying KeycloakUser %s: %v", usernameUsingEmail, err)
+		return
+	}
+
+	keycloakUser4, err := waitForKeycloakUser(ctx, 5*time.Minute, rhssoNamespace, usernameRequireSanitiseEmail)
+	if err != nil {
+		t.Fatalf("Unexpected error querying KeycloakUser %s: %v", usernameRequireSanitiseEmail, err)
+		return
+	}
+
 	// Assert that the user with no email has the default generated email
-	expectedEmail := fmt.Sprintf("%s@rhmi.io", usernameNoEmail)
+	expectedEmail := fmt.Sprintf("%s%s", usernameNoEmail, defaultDomain)
 	if keycloakUser1.Spec.User.Email != expectedEmail {
 		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", expectedEmail, keycloakUser1.Spec.User.Email)
 	}
@@ -75,6 +109,16 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	// Assert that the user with email has its own email
 	if keycloakUser2.Spec.User.Email != existingEmail {
 		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", existingEmail, keycloakUser2.Spec.User.Email)
+	}
+
+	// Assert that the user using email as username does not get appended with default domain and just uses username
+	if keycloakUser3.Spec.User.Email != usernameUsingEmail {
+		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", usernameUsingEmail, keycloakUser3.Spec.User.Email)
+	}
+
+	// Assert that the username is sanitised when using as email
+	if keycloakUser4.Spec.User.Email != fmt.Sprintf("%s%s", strings.Replace(usernameRequireSanitiseEmail, "$", "-", -1), defaultDomain) {
+		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", usernameUsingEmail, keycloakUser3.Spec.User.Email)
 	}
 }
 

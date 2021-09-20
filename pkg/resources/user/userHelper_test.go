@@ -254,3 +254,37 @@ func TestGetValidGeneratedUserName(t *testing.T) {
 		})
 	}
 }
+
+func TestSetUserNameAsEmail(t *testing.T) {
+	type args struct {
+		userName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test: username returned if already contains @ character",
+			args: args{userName: "test@test.com"},
+			want: "test@test.com",
+		},
+		{
+			name: "Test: username with default domain appended if does not contain @ character",
+			args: args{userName: "test"},
+			want: fmt.Sprintf("test%s", defaultEmailDomain),
+		},
+		{
+			name: "Test: sanitise of user name with default domain",
+			args: args{userName: "test&sanitise"},
+			want: fmt.Sprintf("test-sanitise%s", defaultEmailDomain),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SetUserNameAsEmail(tt.args.userName); got != tt.want {
+				t.Errorf("SetUserNameAsEmail() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

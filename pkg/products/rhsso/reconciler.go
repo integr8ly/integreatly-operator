@@ -3,15 +3,13 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/pkg/errors"
-
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/version"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/version"
+	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -491,7 +489,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 		}
 
 		if email == "" {
-			email = osUser.Name + "@rhmi.io"
+			email = userHelper.SetUserNameAsEmail(osUser.Name)
 		}
 
 		newKeycloakUser := keycloak.KeycloakAPIUser{
