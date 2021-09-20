@@ -2,6 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
+    operatorframework.io/suggested-namespace: redhat-rhoam-operator
     alm-examples: '[]'
     capabilities: Basic Install
     categories: RHOAM integration
