@@ -98,7 +98,7 @@ chmod 400 /path/to/vault/libra.pem
 Then SSH to the load testing instance (using the key-file):
 
 ```bash
-ssh -i /path/to/libra.pem fedora@10.0.76.255
+ssh -i /path/to/libra.pem fedora@10.0.77.22
 ```
 
 you should now be logged into [fedora@rate-limit-testing ~]
