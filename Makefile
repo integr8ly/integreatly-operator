@@ -73,6 +73,7 @@ export BU_ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
 
 ifeq ($(shell test -e envs/$(INSTALLATION_TYPE).env && echo -n yes),yes)
 	include envs/$(INSTALLATION_TYPE).env
+	export $(shell sed 's/=.*//' envs/$(INSTALLATION_TYPE).env)
 endif
 
 define wait_command
