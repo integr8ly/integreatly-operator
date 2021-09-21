@@ -244,7 +244,7 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 }
 
 func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
-	requiredIdp, err := getIdpName()
+	requiredIdp, err := GetIdpName()
 	if err != nil {
 		return 0, fmt.Errorf("error when pulling IDP name from the envvar")
 	}
