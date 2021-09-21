@@ -3,6 +3,8 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
@@ -397,6 +399,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			return phase, err
 		}
 	}
+
 	_, err = r.reconcileFirstLoginAuthFlow(kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile first broker login authentication flow: %w", err)
@@ -416,7 +419,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			return integreatlyv1alpha1.PhaseFailed, nil
 		}
 
-		r.reconcileTenants(ctx, serverClient, r.Config.GetNamespace(), users)
+		r.reconcileTenants(ctx, serverClient, r.Config.GetNamespace(), users, kc)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling multi tenant users: %w", err)
 		}
@@ -485,7 +488,7 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclient.Client, ns string, users []userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclient.Client, ns string, users []userHelper.MultiTenantUser, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 
 	options := &k8sclient.ListOptions{
 		Namespace: ns,
@@ -523,7 +526,38 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 		}
 	}
 
+	return r.setMetrics(ctx, serverClient, kc, users)
+}
+
+func (r *Reconciler) setMetrics(ctx context.Context, serverClient k8sclient.Client, kc *keycloak.Keycloak, users []userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	realms, err := kcClient.ListRealms()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrapf(err, "Failed to get keycloak client")
+	}
+
+	metrics.ResetNoTenantRealms()
+
+	for _, user := range users {
+		if !realmExistsForUser(user, realms) {
+			metrics.SetNoTenantRealm(user.Username)
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func realmExistsForUser(user userHelper.MultiTenantUser, realms []*keycloak.KeycloakAPIRealm) bool {
+	for _, realm := range realms {
+		if realm.Realm == user.TenantName {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reconciler) deleteTenant(ctx context.Context, serverClient k8sclient.Client, realm keycloak.KeycloakRealm) (integreatlyv1alpha1.StatusPhase, error) {

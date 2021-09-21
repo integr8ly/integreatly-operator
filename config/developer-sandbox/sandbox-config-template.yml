@@ -1,0 +1,87 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: sandbox-rhoam-operator-config
+objects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+      name: sandbox-rhoam-deadmanssnitch
+    stringData:
+      SNITCH_URL: ${DMS_URL}
+    type: Opaque
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+      name: sandbox-rhoam-pagerduty
+    stringData:
+      PAGERDUTY_KEY: ${PAGER_DUTY_KEY}
+    type: Opaque
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+      name: sandbox-rhoam-smtp
+    stringData:
+      host: ${SMTP_HOST}
+      password: ${SMTP_PASSWORD}
+      port: ${SMTP_PORT}
+      tls: ${SMTP_TLS}
+      username: ${SMTP_USERNAME}
+    type: Opaque
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+      name: addon-managed-api-service-parameters
+    stringData:
+      addon-managed-api-service: ${QUOTA}
+    type: Opaque
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+      name: cloud-resources-aws-strategies
+    data:
+      blobstorage: >-
+        { "production": { "createStrategy": {}, "deleteStrategy": {} } }
+  - apiVersion: integreatly.org/v1alpha1
+    kind: RHMI
+    metadata:
+      name: rhoam
+      namespace: ${RHOAM_OPERATOR_NAMESPACE}
+    spec:
+      type: multitenant-managed-api
+      namespacePrefix: sandbox-rhoam-
+      selfSignedCerts: true
+      useClusterStorage: ${USE_CLUSTER_STORAGE}
+      operatorsInProductNamespace: false
+      smtpSecret: sandbox-rhoam-smtp
+      deadMansSnitchSecret: sandbox-rhoam-deadmanssnitch
+      pagerDutySecret: sandbox-rhoam-pagerduty
+      priorityClassName: sandbox-pod-priority
+parameters:
+  - name: RHOAM_OPERATOR_NAMESPACE
+    value: "sandbox-rhoam-operator"
+  - name: DMS_URL
+    value: "https://dms.example.com"
+  - name: PAGER_DUTY_KEY
+    value: "DUMMY"
+  - name: SMTP_HOST
+    value: ""
+  - name: SMTP_PASSWORD
+    value: ""
+  - name: SMTP_PORT
+    value: ""
+  - name: SMTP_TLS
+    value: ""
+  - name: SMTP_USERNAME
+    value: ""
+  - name: QUOTA
+    value: "10"
+  - name: USE_CLUSTER_STORAGE
+    value: "true"
+
+

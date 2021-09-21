@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
 	"os"
 	"regexp"
@@ -240,6 +241,22 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 		})
 	}
 	return users, nil
+}
+
+func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
+	requiredIdp, err := getIdpName()
+	if err != nil {
+		return 0, fmt.Errorf("error when pulling IDP name from the envvar")
+	}
+
+	log.Infof("Looking for identities from", l.Fields{"idp": requiredIdp})
+
+	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
+	if err != nil {
+		return 0, fmt.Errorf("Error getting identity list for multi tenants")
+	}
+
+	return len(identities.Items), nil
 }
 
 func SanitiseTenantUserName(username string) string {

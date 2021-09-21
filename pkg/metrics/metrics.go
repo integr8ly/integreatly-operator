@@ -112,6 +112,36 @@ var (
 			"toQuota",
 		},
 	)
+
+	NumTenants = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "num_tenants",
+			Help: "Total number of tenants on the cluster",
+		},
+		[]string{
+			"num_tenants",
+		},
+	)
+
+	NoTenantRealm = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "no_tenant_realm",
+			Help: "Users/Tenants whose realm has not yet provisioned",
+		},
+		[]string{
+			"username",
+		},
+	)
+
+	NoActivated3ScaleTenantAccount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "no_activated_3scale_tenant_account",
+			Help: "Users/Tenants who do not have an activated 3Scale account",
+		},
+		[]string{
+			"username",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -155,6 +185,27 @@ func SetThreeScaleUserAction(httpStatus int, username, action string) {
 
 func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
+}
+
+func SetNumTenants(numTenants string) {
+	NumTenants.Reset()
+	NumTenants.WithLabelValues(numTenants).Set(float64(1))
+}
+
+func ResetNoTenantRealms() {
+	NoTenantRealm.Reset()
+}
+
+func SetNoTenantRealm(username string) {
+	NoTenantRealm.WithLabelValues(username).Set(float64(1))
+}
+
+func ResetNoActivated3ScaleTenantAccount() {
+	NoActivated3ScaleTenantAccount.Reset()
+}
+
+func SetNoActivated3ScaleTenantAccount(username string) {
+	NoActivated3ScaleTenantAccount.WithLabelValues(username).Set(float64(1))
 }
 
 func SetQuota(quota string, toQuota string) {
