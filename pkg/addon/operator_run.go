@@ -72,7 +72,17 @@ func OperatorInstalledViaOLM(ctx context.Context, client k8sclient.Client, insta
 		return false, err
 	}
 
-	return runType == AddonRunType || runType == OLMRunType, nil
+	return runType == OLMRunType, nil
+}
+
+// OperatorInstalledViaAddon checks if the operator was installed via Add-on flow
+func OperatorInstalledViaAddon(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
+	runType, err := InferOperatorRunType(ctx, client, installation)
+	if err != nil {
+		return false, err
+	}
+
+	return runType == AddonRunType, nil
 }
 
 // IsClusterRunType checks if the operator is run on a cluster
