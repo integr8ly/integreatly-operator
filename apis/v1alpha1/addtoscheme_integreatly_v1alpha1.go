@@ -5,8 +5,8 @@ import (
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	envoyconfigv1 "github.com/3scale/marin3r/apis/marin3r/v1alpha1"
-	discoveryservicev1 "github.com/3scale/marin3r/apis/operator/v1alpha1"
+	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
+	discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
