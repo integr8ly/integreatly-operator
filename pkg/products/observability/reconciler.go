@@ -30,6 +30,7 @@ const (
 	// alert manager configuration
 	alertManagerRouteName        = "kafka-alertmanager"
 	alertManagerConfigSecretName = "alertmanager-application-monitoring"
+	ConfigMapNoInit              = "observability-operator-no-init"
 )
 
 type Reconciler struct {
@@ -142,13 +143,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileConfigMap(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s configmap which is required to disable observability operator initilisting it's own cr", ConfigMapNoInit), err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ObservabilitySubscriptionName), err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, client, installation, productNamespace)
+	phase, err = r.reconcileComponents(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
 		return phase, err
@@ -180,11 +187,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Create a ConfigMap in the operator namespace to prevent observability CR from being created in the operator ns.
 	cfgMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "observability-operator-no-init",
+			Name:      ConfigMapNoInit,
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
@@ -197,6 +204,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
+}
+
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
@@ -205,7 +217,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		},
 	}
 
-	op, err = controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
 			ConfigurationSelector: &metav1.LabelSelector{
