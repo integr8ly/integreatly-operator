@@ -4,9 +4,9 @@ import (
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 

@@ -32,9 +32,9 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )

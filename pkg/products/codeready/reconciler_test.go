@@ -7,7 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
-	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 

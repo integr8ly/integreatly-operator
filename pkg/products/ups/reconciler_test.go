@@ -8,9 +8,9 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"

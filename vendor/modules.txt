@@ -133,8 +133,7 @@ github.com/che-incubator/kubernetes-image-puller-operator/pkg/apis/che/v1alpha1
 # github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403
 github.com/cncf/udpa/go/udpa/annotations
 github.com/cncf/udpa/go/xds/core/v3
-# github.com/coreos/prometheus-operator v0.40.0 => github.com/coreos/prometheus-operator v0.38.3
-## explicit
+# github.com/coreos/prometheus-operator v0.40.0
 github.com/coreos/prometheus-operator/pkg/apis/monitoring
 github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/davecgh/go-spew v1.1.1
@@ -593,7 +592,8 @@ github.com/otiai10/copy
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.43.0
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
+## explicit
 github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
 github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/alertmanager v0.22.0
@@ -1095,7 +1095,6 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit
 sigs.k8s.io/yaml
-# github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
 # github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47

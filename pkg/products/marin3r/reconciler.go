@@ -8,11 +8,11 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
 
-	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"

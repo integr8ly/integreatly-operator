@@ -247,9 +247,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
 		return phase, err
 	}
-	phase, err = r.ReconcileBlackboxTargets(ctx, installation, serverClient, "integreatly-rhssouser", r.Config.GetHost(), "rhssouser-ui")
+	phase, err = r.ReconcileBlackboxTargets(ctx, serverClient, "integreatly-rhssouser", r.Config.GetHost(), "rhssouser-ui")
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.ReconcilePrometheusProbes(ctx, serverClient, "integreatly-rhssouser", r.Config.GetHost(), "rhssouser-ui")
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile prometheus probes", err)
 		return phase, err
 	}
 

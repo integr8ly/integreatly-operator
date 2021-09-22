@@ -18,8 +18,8 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -80,6 +80,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		ReadMonitoringFunc: func() (*config.Monitoring, error) {
 			return config.NewMonitoring(config.ProductConfig{
 				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE": "observability",
 			}), nil
 		},
 	}

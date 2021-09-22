@@ -12,7 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	configv1 "github.com/openshift/api/config/v1"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
