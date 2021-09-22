@@ -15,7 +15,6 @@ require (
 	github.com/aws/aws-sdk-go v1.39.2
 	github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.5
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
 	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -41,6 +40,7 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/operator-framework/operator-registry v1.17.4
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
@@ -59,7 +59,6 @@ require (
 )
 
 replace (
-	github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.38.3
 	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47

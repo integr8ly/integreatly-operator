@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"os"
 
 	"net/http"
@@ -299,10 +301,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, serverClient)
 	r.log.Infof("reconcileBlackboxTargets", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilePrometheusProbes(ctx, serverClient)
+	r.log.Infof("reconcilePrometheusProbes", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus probes", err)
 		return phase, err
 	}
 
@@ -1990,52 +1999,109 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadMonitoring()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if !integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		cfg, err := r.ConfigManager.ReadMonitoring()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
 
-	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
-		Service: "3scale-admin-ui",
-	}, cfg, installation, client)
-	if err != nil {
-		r.log.Error("Error creating threescale blackbox target", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
-	}
+		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
+			Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
+			Service: "3scale-admin-ui",
+		}, cfg, r.installation, client)
+		if err != nil {
+			r.log.Error("Error creating threescale blackbox target", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
+		}
 
-	// Create a blackbox target for the developer console ui
-	threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
-		return strings.HasPrefix(r.Spec.Host, "3scale.")
-	})
-	if err != nil {
-		r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + threescaleRoute.Spec.Host,
-		Service: "3scale-developer-console-ui",
-	}, cfg, installation, client)
-	if err != nil {
-		r.log.Error("Error creating blackbox target (system-developer)", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
-	}
+		// Create a blackbox target for the developer console ui
+		threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+			return strings.HasPrefix(r.Spec.Host, "3scale.")
+		})
+		if err != nil {
+			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
+			Url:     "https://" + threescaleRoute.Spec.Host,
+			Service: "3scale-developer-console-ui",
+		}, cfg, r.installation, client)
+		if err != nil {
+			r.log.Error("Error creating blackbox target (system-developer)", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
+		}
 
-	// Create a blackbox target for the master console ui
-	threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
+		// Create a blackbox target for the master console ui
+		threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
+			Url:     "https://" + threescaleRoute.Spec.Host,
+			Service: "3scale-system-admin-ui",
+		}, cfg, r.installation, client)
+		if err != nil {
+			r.log.Error("Error creating blackbox target (system-master)", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
+		}
 	}
-	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + threescaleRoute.Spec.Host,
-		Service: "3scale-system-admin-ui",
-	}, cfg, installation, client)
-	if err != nil {
-		r.log.Error("Error creating blackbox target (system-master)", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
-	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
 
+func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		cfg, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-admin-ui", "http_2xx", prometheus.ProbeTargetStaticConfig{
+			Targets: []string{r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI()},
+			Labels: map[string]string{
+				"service": "3scale-admin-ui",
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			r.log.Error("Error creating threescale prometheus probe", err)
+			return phase, fmt.Errorf("error creating threescale prometheus probe: %w", err)
+		}
+
+		// Create a prometheus probe for the developer console ui
+		threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+			return strings.HasPrefix(r.Spec.Host, "3scale.")
+		})
+		if err != nil {
+			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-developer", "http_2xx", prometheus.ProbeTargetStaticConfig{
+			Targets: []string{"https://" + threescaleRoute.Spec.Host},
+			Labels: map[string]string{
+				"service": "3scale-developer-console-ui",
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			r.log.Error("Error creating prometheus probe (system-developer)", err)
+			return phase, fmt.Errorf("error creating threescale prometheus probe (system-developer): %w", err)
+		}
+
+		// Create a prometheus probe for the master console ui
+		threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-master", "http_2xx", prometheus.ProbeTargetStaticConfig{
+			Targets: []string{"https://" + threescaleRoute.Spec.Host},
+			Labels: map[string]string{
+				"service": "3scale-system-admin-ui",
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			r.log.Error("Error creating prometheus probe (system-master)", err)
+			return phase, fmt.Errorf("error creating threescale prometheus probe (system-master): %w", err)
+		}
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

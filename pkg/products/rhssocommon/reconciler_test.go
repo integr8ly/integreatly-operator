@@ -12,7 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	controllerruntime "sigs.k8s.io/controller-runtime"
 

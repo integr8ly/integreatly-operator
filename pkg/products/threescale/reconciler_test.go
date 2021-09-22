@@ -17,9 +17,9 @@ import (
 	openshiftv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"

@@ -11,8 +11,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"strings"
 
-	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	rbac "k8s.io/api/rbac/v1"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -167,7 +167,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 					continue
 				}
 				if err != nil {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get %s blackbox target: %w", bbt.Name, err)
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s blackbox target: %w", bbt.Name, err)
 				}
 
 				err = serverClient.Delete(ctx, b)
