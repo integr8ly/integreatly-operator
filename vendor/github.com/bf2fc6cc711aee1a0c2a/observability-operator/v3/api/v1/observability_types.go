@@ -74,7 +74,12 @@ type SelfContained struct {
 	RuleNamespaceSelector           *metav1.LabelSelector `json:"ruleNamespaceSelector,omitempty"`
 	ProbeLabelSelector              *metav1.LabelSelector `json:"probeSelector,omitempty"`
 	ProbeNamespaceSelector          *metav1.LabelSelector `json:"probeNamespaceSelector,omitempty"`
+	GrafanaDashboardLabelSelector   *metav1.LabelSelector `json:"grafanaDashboardLabelSelector,omitempty"`
 	AlertManagerConfigSecret        string                `json:"alertManagerConfigSecret,omitempty"`
+	AlertManagerRoute               string                `json:"alertManagerRoute,omitempty"`
+	PrometheusRoute                 string                `json:"prometheusRoute,omitempty"`
+	AlertManagerVersion             string                `json:"alertManagerVersion,omitempty"`
+	PrometheusVersion               string                `json:"prometheusVersion,omitempty"`
 }
 
 // ObservabilitySpec defines the desired state of Observability
@@ -87,6 +92,7 @@ type ObservabilitySpec struct {
 	Tolerations           []v1.Toleration       `json:"tolerations,omitempty"`
 	Affinity              *v1.Affinity          `json:"affinity,omitempty"`
 	SelfContained         *SelfContained        `json:"selfContained,omitempty"`
+	Retention             string                `json:"retention,omitempty"`
 }
 
 // ObservabilityStatus defines the observed state of Observability
