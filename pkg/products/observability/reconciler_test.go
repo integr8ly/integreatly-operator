@@ -250,7 +250,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		serverClient client.Client
-		in2          *integreatlyv1alpha1.RHMI
 	}
 	tests := []struct {
 		name    string
@@ -273,7 +272,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.args.in2, defaultInstallationNamespace)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, defaultInstallationNamespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
