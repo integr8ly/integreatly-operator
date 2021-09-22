@@ -461,6 +461,11 @@ vendor/check: vendor/fix
 	git diff --exit-code vendor/
 	git diff --exit-code go.sum
 
+.PHONY: vendor/check/prow
+vendor/check/prow:
+	sh scripts/setup-private-git-access.sh
+	make vendor/check
+
 .PHONY: vendor/fix
 vendor/fix:
 	go mod tidy
