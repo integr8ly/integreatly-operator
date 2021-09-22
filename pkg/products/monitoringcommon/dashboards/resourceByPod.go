@@ -1,4 +1,4 @@
-package monitoring
+package monitoringcommon
 
 import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -7,7 +7,7 @@ import (
 
 // This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
-func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) string {
+func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName string) string {
 	quota := ``
 	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
 		quota = `,
@@ -111,14 +111,30 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace'}) by (pod)",
-				"format": "time_series",
-				"intervalFactor": 2,
-				"legendFormat": "{{pod}}",
-				"legendLink": null,
-				"step": 10,
-				"refId": "A"
-			}],
+					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (pod)",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}}",
+					"legendLink": null,
+					"step": 10
+				},
+				{
+					"expr": "kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='cpu'}",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}}",
+					"legendLink": null,
+					"step": 10
+				},
+				{
+					"expr": "kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod', resource='cpu'}",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}} Limit",
+					"legendLink": null,
+					"step": 10
+				}
+			],
 			"thresholds": [],
 			"timeFrom": null,
 			"timeRegions": [],
@@ -211,8 +227,8 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 			"seriesOverrides": [],
 			"showHeader": true,
 			"sort": {
-				"col": 1,
-				"desc": false
+				"col": 0,
+				"desc": true
 			},
 			"spaceLength": 10,
 			"stack": false,
@@ -294,15 +310,15 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"unit": "percentunit"
 				},
 				{
-					"alias": "Pod",
+					"alias": "Container",
 					"colorMode": null,
 					"colors": [],
 					"dateFormat": "YYYY-MM-DD HH:mm:ss",
 					"decimals": 2,
-					"link": true,
+					"link": false,
 					"linkTooltip": "Drill down",
-					"linkUrl": "/d/c84ae905b9f54268be6be82c9a5b7dd6/resources-by-pod?var-namespace=$namespace&var-pod=$__cell",
-					"pattern": "pod",
+					"linkUrl": "",
+					"pattern": "container",
 					"thresholds": [],
 					"type": "number",
 					"unit": "short"
@@ -320,7 +336,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 				}
 			],
 			"targets": [{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace'}) by (pod)",
+					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -329,7 +345,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_requests{namespace=~'$namespace',resource='cpu'}) by (pod)",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -338,7 +354,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace'}) by (pod) / sum(kube_pod_container_resource_requests{namespace=~'$namespace',resource='cpu'}) by (pod)",
+					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -347,7 +363,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_limits{namespace=~'$namespace',resource='cpu'}) by (pod)",
+					"expr": "sum(kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod', resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -356,7 +372,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace'}) by (pod) / sum(kube_pod_container_resource_limits{namespace=~'$namespace',resource='cpu'}) by (pod)",
+					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod', resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -451,14 +467,30 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', container=''}) by (pod)",
-				"format": "time_series",
-				"intervalFactor": 2,
-				"legendFormat": "{{pod}}",
-				"legendLink": null,
-				"step": 10,
-				"refId": "A"
-			}],
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container !='',container !='POD'}) by (pod)",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}}",
+					"legendLink": null,
+					"step": 10
+				},
+				{
+					"expr": "kube_node_status_allocatable{namespace=~'$namespace', pod=~'$pod', resource='memory'}",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}} Request",
+					"legendLink": null,
+					"step": 10
+				},
+				{
+					"expr": "kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod',resource='memory'}",
+					"format": "time_series",
+					"intervalFactor": 2,
+					"legendFormat": "{{pod}} Limit",
+					"legendLink": null,
+					"step": 10
+				}
+			],
 			"thresholds": [],
 			"timeFrom": null,
 			"timeRegions": [],
@@ -551,7 +583,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 			"seriesOverrides": [],
 			"showHeader": true,
 			"sort": {
-				"col": 1,
+				"col": 0,
 				"desc": true
 			},
 			"spaceLength": 10,
@@ -634,15 +666,15 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"unit": "percentunit"
 				},
 				{
-					"alias": "Pod",
+					"alias": "Container",
 					"colorMode": null,
 					"colors": [],
 					"dateFormat": "YYYY-MM-DD HH:mm:ss",
 					"decimals": 2,
-					"link": true,
+					"link": false,
 					"linkTooltip": "Drill down",
-					"linkUrl": "/d/c84ae905b9f54268be6be82c9a5b7dd6/resources-by-pod?var-namespace=$namespace&var-pod=$__cell",
-					"pattern": "pod",
+					"linkUrl": "",
+					"pattern": "container",
 					"thresholds": [],
 					"type": "number",
 					"unit": "short"
@@ -660,7 +692,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 				}
 			],
 			"targets": [{
-					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container !=''}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -669,7 +701,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_requests{namespace=~'$namespace',resource='memory'}) by (pod)",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='memory'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -678,7 +710,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod) / sum(kube_pod_container_resource_requests{namespace=~'$namespace',resource='memory'}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='memory'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -687,7 +719,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_limits{namespace=~'$namespace',resource='memory'}) by (pod)",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod', resource='memory'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -696,7 +728,7 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod) / sum(kube_pod_container_resource_limits{namespace=~'$namespace',resource='memory'}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container!=''}) by (container) / sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod', resource='memory'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -748,26 +780,48 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 	"tags": [],
 	"templating": {
 		"list": [{
-			"allValue": null,
-			"datasource": "Prometheus",
-			"definition": "",
-			"hide": 0,
-			"includeAll": false,
-			"label": "namespace",
-			"multi": false,
-			"name": "namespace",
-			"options": [],
-			"query": "query_result(count(kube_namespace_labels{namespace=~'` + nsPrefix + `.*'}) by (namespace))",
-			"refresh": 1,
-			"regex": "/\"(.*?)\"/",
-			"skipUrlSync": false,
-			"sort": 1,
-			"tagValuesQuery": "",
-			"tags": [],
-			"tagsQuery": "",
-			"type": "query",
-			"useTags": false
-		}]
+				"allValue": null,
+				"datasource": "Prometheus",
+				"definition": "",
+				"hide": 0,
+				"includeAll": false,
+				"label": "namespace",
+				"multi": false,
+				"name": "namespace",
+				"options": [],
+				"query": "query_result(count(kube_namespace_labels{namespace=~'` + namespacePrefix + `.*'}) by (namespace))",
+				"refresh": 1,
+				"regex": "/\"(.*?)\"/",
+				"skipUrlSync": false,
+				"sort": 1,
+				"tagValuesQuery": "",
+				"tags": [],
+				"tagsQuery": "",
+				"type": "query",
+				"useTags": false
+			},
+			{
+				"allValue": null,
+				"datasource": "Prometheus",
+				"definition": "",
+				"hide": 0,
+				"includeAll": false,
+				"label": "pod",
+				"multi": false,
+				"name": "pod",
+				"options": [],
+				"query": "label_values(kube_pod_info{namespace=~'$namespace'}, pod)",
+				"refresh": 1,
+				"regex": "",
+				"skipUrlSync": false,
+				"sort": 1,
+				"tagValuesQuery": "",
+				"tags": [],
+				"tagsQuery": "",
+				"type": "query",
+				"useTags": false
+			}
+		]
 	},
 	"time": {
 		"from": "now-1h",
@@ -799,8 +853,8 @@ func GetMonitoringGrafanaDBResourceByNSJSON(nsPrefix, installationName string) s
 		]
 	},
 	"timezone": "",
-	"uid": "a9ce5290ba1d485ca67e05c0a63aa2d8",
-	"title": "Resource Usage By Namespace",
+	"title": "Resource Usage By Pod",
+	"uid": "c84ae905b9f54268be6be82c9a5b7dd6",
 	"version": 2
 }`
 }

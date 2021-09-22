@@ -56,6 +56,10 @@ func (m *Observability) GetLabelSelector() string {
 	return "middleware"
 }
 
+func (m *Observability) GetLabelSelectorKey() string {
+	return "monitoring-key"
+}
+
 func (m *Observability) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionObservability
 }
@@ -76,5 +80,16 @@ func (m *Observability) GetWatchableCRDs() []runtime.Object {
 				APIVersion: oo.GroupVersion.String(),
 			},
 		},
+	}
+}
+
+func (m *Observability) GetDashboards(installType integreatlyv1alpha1.InstallationType) []string {
+	switch installType {
+	case integreatlyv1alpha1.InstallationTypeManaged, integreatlyv1alpha1.InstallationTypeSelfManaged, integreatlyv1alpha1.InstallationTypeWorkshop:
+		return rhmiTemplateList
+	case integreatlyv1alpha1.InstallationTypeManagedApi, integreatlyv1alpha1.InstallationTypeMultitenantManagedApi:
+		return managedAPITemplateList
+	default:
+		return rhmiTemplateList
 	}
 }

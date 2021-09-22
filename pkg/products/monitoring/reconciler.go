@@ -542,12 +542,12 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
-	specJSON, _, err := getSpecDetailsForDashboard(dashboard, r.installation)
+	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation)
 	if err != nil {
 		return err
 	}
 
-	pluginList := getPluginsForGrafanaDashboard(dashboard)
+	pluginList := monitoringcommon.GetPluginsForGrafanaDashboard(dashboard)
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
 		grafanaDB.Labels = map[string]string{

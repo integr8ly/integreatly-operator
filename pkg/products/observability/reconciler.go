@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	observability "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
@@ -179,6 +180,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
+	phase, err = r.reconcileDashboards(ctx, client)
+	r.log.Infof("reconcileDashboards", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("Failure reconciling dashboards " + err.Error())
+		}
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
+		return phase, err
+	}
+
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
@@ -274,6 +285,17 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"monitoring-key": r.Config.GetLabelSelector(),
 					},
 				},
+				GrafanaDashboardLabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      r.Config.GetLabelSelectorKey(),
+							Operator: metav1.LabelSelectorOpIn,
+							Values: []string{
+								r.Config.GetLabelSelector(),
+							},
+						},
+					},
+				},
 				AlertManagerConfigSecret: config.AlertManagerConfigSecretName,
 			},
 			ResyncPeriod: "1h",
@@ -363,4 +385,52 @@ func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8s
 	}
 
 	return integreatlyv1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	for _, dashboard := range r.Config.GetDashboards(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
+		}
+		r.log.Infof("Reconcile successful", l.Fields{"grafanaDashboard": dashboard})
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (err error) {
+
+	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dashboard,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation)
+	if err != nil {
+		return err
+	}
+
+	pluginList := monitoringcommon.GetPluginsForGrafanaDashboard(dashboard)
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
+		grafanaDB.Labels = map[string]string{
+			"monitoring-key": r.Config.GetLabelSelector(),
+		}
+		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
+			Json: specJSON,
+		}
+		if len(pluginList) > 0 {
+			grafanaDB.Spec.Plugins = pluginList
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"grafanaDashboard": grafanaDB.Name, "result": opRes})
+	}
+	return err
 }

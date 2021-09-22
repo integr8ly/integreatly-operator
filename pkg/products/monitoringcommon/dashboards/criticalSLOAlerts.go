@@ -1,4 +1,4 @@
-package monitoring
+package monitoringcommon
 
 //GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
 func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product string) string {

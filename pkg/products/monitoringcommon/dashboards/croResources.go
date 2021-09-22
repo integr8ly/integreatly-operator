@@ -1,4 +1,4 @@
-package monitoring
+package monitoringcommon
 
 const MonitoringGrafanaDBCROResourcesJSON = `{
   "annotations": {

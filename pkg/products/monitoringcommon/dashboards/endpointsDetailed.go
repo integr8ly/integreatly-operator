@@ -1,4 +1,4 @@
-package monitoring
+package monitoringcommon
 
 import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
