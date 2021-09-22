@@ -49,6 +49,13 @@ type TestUser struct {
 
 // creates testing idp
 func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
+	// update vars if TestingIDPReal was changed
+	if TestingIDPRealm != "testing-idp" {
+		keycloakClientName = fmt.Sprintf("%s-client", TestingIDPRealm)
+		clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
+		idpCAName = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+	}
+
 	// checks if the IDP is created already
 	if hasIDPCreated(ctx, client, t, TestingIDPRealm) {
 		t.Log("not creating IDP, it's already created")
