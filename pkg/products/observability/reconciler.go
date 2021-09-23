@@ -28,9 +28,9 @@ const (
 	defaultInstallationNamespace = "observability"
 
 	// alert manager configuration
-	alertManagerRouteName        = "kafka-alertmanager"
-	alertManagerConfigSecretName = "alertmanager-application-monitoring"
-	ConfigMapNoInit              = "observability-operator-no-init"
+	alertManagerRouteName = "kafka-alertmanager"
+	configMapNoInit       = "observability-operator-no-init"
+	observabilityName     = "observability-stack"
 )
 
 type Reconciler struct {
@@ -145,11 +145,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileConfigMap(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s configmap which is required to disable observability operator initilisting it's own cr", ConfigMapNoInit), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s configmap which is required to disable observability operator initilisting it's own cr", configMapNoInit), err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
+	phase, err = r.reconcileSubscription(ctx, client, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ObservabilitySubscriptionName), err)
 		return phase, err
@@ -175,7 +175,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionObservability))
 		err := r.ConfigManager.WriteConfig(r.Config)
 		if err != nil {
-			return "", err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 
@@ -191,7 +191,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 	// Create a ConfigMap in the operator namespace to prevent observability CR from being created in the operator ns.
 	cfgMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConfigMapNoInit,
+			Name:      configMapNoInit,
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
@@ -212,7 +212,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "observability-stack",
+			Name:      observabilityName,
 			Namespace: productNamespace,
 		},
 	}
@@ -274,7 +274,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"monitoring-key": r.Config.GetLabelSelector(),
 					},
 				},
-				AlertManagerConfigSecret: alertManagerConfigSecretName,
+				AlertManagerConfigSecret: config.AlertManagerConfigSecretName,
 			},
 			ResyncPeriod: "1h",
 		}
@@ -286,12 +286,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
 		return integreatlyv1alpha1.PhaseInProgress, nil
-		//	r.log.Info(string(integreatlyv1alpha1.PhaseCompleted))
-		//} else {
-		//	return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "observability-stack", Namespace: productNamespace}, oo)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oo.Name, Namespace: oo.Namespace}, oo)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -304,7 +301,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling subscription")
 
 	target := marketplace.Target{
@@ -345,7 +342,7 @@ func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8s
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "observability-stack",
+			Name:      observabilityName,
 			Namespace: targetNamespace,
 		},
 	}

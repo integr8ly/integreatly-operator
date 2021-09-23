@@ -198,11 +198,7 @@ rules:
   resources:
   - observabilities
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
+  - '*'
 - apiGroups:
   - operator.marin3r.3scale.net
   resources:
