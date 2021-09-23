@@ -796,6 +796,48 @@ func (c *Client) FindGroupByName(groupName string, realmName string) (*Group, er
 	return findInList(groups.([]*Group)), nil
 }
 
+func (c *Client) FindGroupByPath(groupPath, realmName string) (*Group, error) {
+	// Given a path "root/sub1/sub2", convert into ["root", "sub1", "sub2"]
+	paths := strings.Split(groupPath, "/")
+
+	// Find the "root" group
+	rootGroup, err := c.FindGroupByName(paths[0], realmName)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the path is "root", there's no need to keep looking, return the
+	// group
+	if len(paths) == 1 {
+		return rootGroup, nil
+	}
+
+	// Iterate through the subpaths ["sub1", "sub2"] and look for the next
+	// path in the current group level
+	currentGroup := rootGroup
+	for level := 1; level < len(paths); level++ {
+		currentPath := paths[level]
+		foundInLevel := false
+		for _, subGroup := range currentGroup.SubGroups {
+			if subGroup.Name != currentPath {
+				continue
+			}
+
+			currentGroup = subGroup
+			foundInLevel = true
+		}
+
+		// We iterated through all the subgroups and didn't find
+		// the subpath, return nil as the group is not in the expected
+		// hierarchy
+		if !foundInLevel {
+			return nil, nil
+		}
+	}
+
+	return currentGroup, nil
+}
+
 func (c *Client) CreateGroup(groupName string, realmName string) (string, error) {
 	group := Group{
 		Name: groupName,
@@ -1132,6 +1174,7 @@ type KeycloakInterface interface {
 	DeleteUserFromGroup(realmName, userID, groupID string) error
 
 	FindGroupByName(groupName string, realmName string) (*Group, error)
+	FindGroupByPath(groupPath, realmName string) (*Group, error)
 	CreateGroup(group string, realmName string) (string, error)
 	MakeGroupDefault(groupID string, realmName string) error
 	ListDefaultGroups(realmName string) ([]*Group, error)

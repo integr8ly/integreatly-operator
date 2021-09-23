@@ -96,6 +96,9 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 // 			FindGroupByNameFunc: func(groupName string, realmName string) (*Group, error) {
 // 				panic("mock out the FindGroupByName method")
 // 			},
+// 			FindGroupByPathFunc: func(groupPath string, realmName string) (*Group, error) {
+// 				panic("mock out the FindGroupByPath method")
+// 			},
 // 			FindGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
 // 				panic("mock out the FindGroupClientRole method")
 // 			},
@@ -300,6 +303,9 @@ type KeycloakInterfaceMock struct {
 
 	// FindGroupByNameFunc mocks the FindGroupByName method.
 	FindGroupByNameFunc func(groupName string, realmName string) (*Group, error)
+
+	// FindGroupByPathFunc mocks the FindGroupByPath method.
+	FindGroupByPathFunc func(groupPath string, realmName string) (*Group, error)
 
 	// FindGroupClientRoleFunc mocks the FindGroupClientRole method.
 	FindGroupClientRoleFunc func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error)
@@ -637,6 +643,13 @@ type KeycloakInterfaceMock struct {
 			// RealmName is the realmName argument value.
 			RealmName string
 		}
+		// FindGroupByPath holds details about calls to the FindGroupByPath method.
+		FindGroupByPath []struct {
+			// GroupPath is the groupPath argument value.
+			GroupPath string
+			// RealmName is the realmName argument value.
+			RealmName string
+		}
 		// FindGroupClientRole holds details about calls to the FindGroupClientRole method.
 		FindGroupClientRole []struct {
 			// RealmName is the realmName argument value.
@@ -946,6 +959,7 @@ type KeycloakInterfaceMock struct {
 	lockFindAuthenticationFlowByAlias        sync.RWMutex
 	lockFindAvailableGroupClientRole         sync.RWMutex
 	lockFindGroupByName                      sync.RWMutex
+	lockFindGroupByPath                      sync.RWMutex
 	lockFindGroupClientRole                  sync.RWMutex
 	lockFindUserByEmail                      sync.RWMutex
 	lockFindUserByUsername                   sync.RWMutex
@@ -1959,6 +1973,41 @@ func (mock *KeycloakInterfaceMock) FindGroupByNameCalls() []struct {
 	mock.lockFindGroupByName.RLock()
 	calls = mock.calls.FindGroupByName
 	mock.lockFindGroupByName.RUnlock()
+	return calls
+}
+
+// FindGroupByPath calls FindGroupByPathFunc.
+func (mock *KeycloakInterfaceMock) FindGroupByPath(groupPath string, realmName string) (*Group, error) {
+	if mock.FindGroupByPathFunc == nil {
+		panic("KeycloakInterfaceMock.FindGroupByPathFunc: method is nil but KeycloakInterface.FindGroupByPath was just called")
+	}
+	callInfo := struct {
+		GroupPath string
+		RealmName string
+	}{
+		GroupPath: groupPath,
+		RealmName: realmName,
+	}
+	mock.lockFindGroupByPath.Lock()
+	mock.calls.FindGroupByPath = append(mock.calls.FindGroupByPath, callInfo)
+	mock.lockFindGroupByPath.Unlock()
+	return mock.FindGroupByPathFunc(groupPath, realmName)
+}
+
+// FindGroupByPathCalls gets all the calls that were made to FindGroupByPath.
+// Check the length with:
+//     len(mockedKeycloakInterface.FindGroupByPathCalls())
+func (mock *KeycloakInterfaceMock) FindGroupByPathCalls() []struct {
+	GroupPath string
+	RealmName string
+} {
+	var calls []struct {
+		GroupPath string
+		RealmName string
+	}
+	mock.lockFindGroupByPath.RLock()
+	calls = mock.calls.FindGroupByPath
+	mock.lockFindGroupByPath.RUnlock()
 	return calls
 }
 
