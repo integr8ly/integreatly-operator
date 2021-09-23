@@ -2,9 +2,10 @@ package functional
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo"
-	"os"
 )
 
 var _ = Describe("integreatly", func() {
