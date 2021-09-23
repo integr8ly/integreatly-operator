@@ -203,7 +203,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=delete;get;list
 
 // Observability
-// +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=get;list;create;update;delete
+// +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=*
 
 // Role permissions
 

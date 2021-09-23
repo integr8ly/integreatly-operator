@@ -53,12 +53,7 @@ const (
 	manifestPackage              = "integreatly-monitoring"
 
 	// alert manager configuration
-	alertManagerRouteName                   = "alertmanager-route"
-	alertManagerConfigSecretName            = "alertmanager-application-monitoring"
-	alertManagerConfigSecretFileName        = "alertmanager.yaml"
-	alertManagerEmailTemplateSecretFileName = "alertmanager-email-config.tmpl"
-	alertManagerConfigTemplatePath          = "alertmanager/alertmanager-application-monitoring.yaml"
-	alertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
+	alertManagerRouteName = "alertmanager-route"
 
 	// cluster monitoring federation
 	federationServiceMonitorName              = "rhmi-alerts-federate"

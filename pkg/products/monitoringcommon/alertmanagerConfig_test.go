@@ -8,6 +8,7 @@ import (
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	configv1 "github.com/openshift/api/config/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -152,7 +153,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	}
 	alertmanagerConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerConfigSecretName,
+			Name:      config.AlertManagerConfigSecretName,
 			Namespace: defaultInstallationNamespace,
 		},
 		Data: map[string][]byte{},
@@ -219,7 +220,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	})
 
 	templatePath := GetTemplatePath()
-	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+	path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
 	testEmailConfigContents, err := ioutil.ReadFile(path)
@@ -235,7 +236,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
 	}
 
-	testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
+	testSecretData, err := templateUtil.LoadTemplate(config.AlertManagerConfigTemplatePath)
 
 	tests := []struct {
 		name         string
@@ -315,14 +316,14 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
 					return err
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				if !bytes.Equal(configSecret.Data[config.AlertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerConfigSecretFileName]), string(testSecretData))
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				if !bytes.Equal(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
 				}
 				return nil
 			},
@@ -335,14 +336,14 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
 					return err
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				if !bytes.Equal(configSecret.Data[config.AlertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerConfigSecretFileName]), string(testSecretData))
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				if !bytes.Equal(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
 				}
 				return nil
 			},
@@ -355,7 +356,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
 					return err
 				}
 
@@ -382,7 +383,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 				})
 
 				templatePath := GetTemplatePath()
-				path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+				path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 				// generate alertmanager custom email template
 				testEmailConfigContents, err := ioutil.ReadFile(path)
@@ -398,15 +399,15 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 					testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
 				}
 
-				testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
+				testSecretData, err := templateUtil.LoadTemplate(config.AlertManagerConfigTemplatePath)
 				if err != nil {
 					return err
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				if !bytes.Equal(configSecret.Data[config.AlertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerConfigSecretFileName]), string(testSecretData))
 				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
+				if !bytes.Equal(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[config.AlertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
 				}
 
 				return nil

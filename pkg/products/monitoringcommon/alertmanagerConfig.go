@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -23,13 +24,6 @@ import (
 )
 
 const (
-	// alert manager configuration
-	alertManagerConfigSecretName            = "alertmanager-application-monitoring"
-	alertManagerConfigSecretFileName        = "alertmanager.yaml"
-	alertManagerEmailTemplateSecretFileName = "alertmanager-email-config.tmpl"
-	alertManagerConfigTemplatePath          = "alertmanager/alertmanager-application-monitoring.yaml"
-	alertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
-
 	// Cluster infrastructure
 	clusterInfraName = "cluster"
 
@@ -162,7 +156,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	})
 
 	templatePath := GetTemplatePath()
-	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
+	path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
 	emailConfigContents, err := ioutil.ReadFile(path)
@@ -181,13 +175,13 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 		emailConfigContentsStr = strings.ReplaceAll(emailConfigContentsStr, name, val)
 	}
 
-	configSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
+	configSecretData, err := templateUtil.LoadTemplate(config.AlertManagerConfigTemplatePath)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
 	}
 	configSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerConfigSecretName,
+			Name:      config.AlertManagerConfigSecretName,
 			Namespace: productNamespace,
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -197,8 +191,8 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, configSecret, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(configSecret, installation)
 		configSecret.Data = map[string][]byte{
-			alertManagerConfigSecretFileName:        configSecretData,
-			alertManagerEmailTemplateSecretFileName: []byte(emailConfigContentsStr),
+			config.AlertManagerConfigSecretFileName:        configSecretData,
+			config.AlertManagerEmailTemplateSecretFileName: []byte(emailConfigContentsStr),
 		}
 		return nil
 	})

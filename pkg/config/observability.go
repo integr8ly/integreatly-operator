@@ -7,6 +7,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const (
+	// Alert manager configuration
+	AlertManagerConfigSecretName            = "alertmanager-application-monitoring"
+	AlertManagerConfigSecretFileName        = "alertmanager.yaml"
+	AlertManagerEmailTemplateSecretFileName = "alertmanager-email-config.tmpl"
+	AlertManagerConfigTemplatePath          = "alertmanager/alertmanager-application-monitoring.yaml"
+	AlertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
+)
+
 type Observability struct {
 	Config ProductConfig
 }

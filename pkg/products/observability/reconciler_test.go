@@ -323,7 +323,7 @@ func TestReconciler_reconcileSubscription(t *testing.T) {
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.reconcileSubscription(tt.args.ctx, tt.args.serverClient, tt.args.in2, tt.args.productNamespace, tt.args.operatorNamespace)
+			got, err := r.reconcileSubscription(tt.args.ctx, tt.args.serverClient, tt.args.productNamespace, tt.args.operatorNamespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileSubscription() error = %v, wantErr %v", err, tt.wantErr)
 				return
