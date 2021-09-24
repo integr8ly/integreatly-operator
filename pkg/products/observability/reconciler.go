@@ -365,46 +365,44 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					"'{ __name__=~\":node_memory_.*\" }'",
 					"'{ __name__=~\"csv_.*\" }'",
 				},
-				PodMonitorLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
+				PodMonitorLabelSelector: nil,
 				PodMonitorNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "monitoring-key",
+							Operator: metav1.LabelSelectorOpIn,
+							Values: []string{
+								r.Config.GetLabelSelector(),
+							},
+						},
 					},
 				},
-				ServiceMonitorLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
+				ServiceMonitorLabelSelector: nil,
 				ServiceMonitorNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "monitoring-key",
+							Operator: metav1.LabelSelectorOpIn,
+							Values: []string{
+								r.Config.GetLabelSelector(),
+							},
+						},
 					},
 				},
-				RuleLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
+				RuleLabelSelector: nil,
 				RuleNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "monitoring-key",
+							Operator: metav1.LabelSelectorOpIn,
+							Values: []string{
+								r.Config.GetLabelSelector(),
+							},
+						},
 					},
 				},
-				ProbeLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				ProbeNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
+				ProbeLabelSelector:     nil,
+				ProbeNamespaceSelector: nil,
 				GrafanaDashboardLabelSelector: &metav1.LabelSelector{
 					MatchExpressions: []metav1.LabelSelectorRequirement{
 						{
