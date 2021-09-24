@@ -34,9 +34,9 @@ const (
 )
 
 var (
+	displayIDPName               = "Testing IDP"
 	TestingIDPRealm              = "testing-idp"
 	keycloakClientName           = fmt.Sprintf("%s-client", TestingIDPRealm)
-	keycloakClientNamespace      = RHSSOProductNamespace
 	clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
 	idpCAName                    = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
 )
@@ -54,6 +54,7 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		keycloakClientName = fmt.Sprintf("%s-client", TestingIDPRealm)
 		clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
 		idpCAName = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+		displayIDPName = "devsanbox"
 	}
 
 	// checks if the IDP is created already
@@ -635,7 +636,7 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 			ID:          TestingIDPRealm,
 			Realm:       TestingIDPRealm,
 			Enabled:     true,
-			DisplayName: "Testing IDP",
+			DisplayName: displayIDPName,
 		},
 	}
 
