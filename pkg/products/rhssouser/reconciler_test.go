@@ -532,7 +532,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret,credentialRhsso),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{

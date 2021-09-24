@@ -63,7 +63,7 @@ func ReconcileSecretToProductNamespace(ctx context.Context, client k8sclient.Cli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secretName string, namespace string, kc keycloak.Keycloak,log l.Logger ) error{
+func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secretName string, namespace string, kc keycloak.Keycloak, log l.Logger) error {
 	srcSecret := corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, &srcSecret)
 	if err != nil {
@@ -79,10 +79,10 @@ func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secret
 		Controller:         &istrue,
 		BlockOwnerDeletion: &istrue,
 	}
-    ownerRef := []metav1.OwnerReference{
+	ownerRef := []metav1.OwnerReference{
 		owner,
 	}
-	_ , err = controllerutil.CreateOrUpdate(ctx, client, &srcSecret, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, &srcSecret, func() error {
 		if srcSecret.OwnerReferences == nil {
 			srcSecret.OwnerReferences = ownerRef
 		}

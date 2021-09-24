@@ -263,8 +263,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	// Patching the OwnerReference on the admin credentials secret
-	err = resources.AddOwnerRefToSSOSecret(ctx,serverClient, adminCredentialSecretName,r.Config.GetNamespace(),*kc , r.Log )
-	if err != nil  {
+	err = resources.AddOwnerRefToSSOSecret(ctx, serverClient, adminCredentialSecretName, r.Config.GetNamespace(), *kc, r.Log)
+	if err != nil {
 		events.HandleError(r.Recorder, installation, integreatlyv1alpha1.PhaseFailed, "Failed to add ownerReferance admin credentials secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
