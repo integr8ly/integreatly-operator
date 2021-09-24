@@ -283,7 +283,7 @@ func setupIDP(t TestingTB, ctx *TestingContext, rhmi *rhmiv1alpha1.RHMI) error {
 	} else {
 		// setting TestingIDPRealm to realmName required by Multitenant
 		TestingIDPRealm = realmName
-		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, true)
+		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)
 		if err != nil {
 			return fmt.Errorf("error while creating DevSandbox testing IDP: %s", err)
 		}
