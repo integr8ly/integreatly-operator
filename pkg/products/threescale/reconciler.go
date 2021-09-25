@@ -1351,8 +1351,9 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	totalIdentities := len(mtUserIdentities)
 	r.log.Infof("Found user identities from MT accounts",
-		l.Fields{"identities": len(mtUserIdentities)},
+		l.Fields{"totalIdentities": totalIdentities},
 	)
 
 	// get 3scale master access token
@@ -1361,37 +1362,76 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// list 3scale tenant accounts
-	accounts, err := r.tsClient.ListTenantAccounts(*accessToken)
-	if err != nil {
-		r.log.Error("Failed to get accounts from 3scale API:", err)
-		return integreatlyv1alpha1.PhaseFailed, err
+	defaultPageSize := 500
+	totalPages := 1
+	if totalIdentities > defaultPageSize {
+		totalPages = totalIdentities / defaultPageSize
 	}
 
-	setTenantMetrics(mtUserIdentities, accounts)
+	// adding an extra page in case of accounts set to be deleted
+	totalPages++
 
-	r.log.Infof("Retrieving list of MT accounts available ",
-		l.Fields{"Accounts": accounts},
+	allAccounts := []AccountDetail{}
+	for page := 1; page <= totalPages; page++ {
+		// list 3scale tenant accounts
+
+		r.log.Infof("Retrieving list of MT accounts available ",
+			l.Fields{"Page": page},
+		)
+		accounts, err := r.tsClient.ListTenantAccounts(*accessToken, page)
+		if err != nil {
+			r.log.Error("Failed to get accounts from 3scale API:", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		allAccounts = append(allAccounts, accounts...)
+	}
+
+	r.log.Infof("Total of accounts available",
+		l.Fields{
+			"totalPages":                totalPages,
+			"totalOpenshiftUsers":       totalIdentities,
+			"total3scaleTenantAccounts": len(allAccounts),
+		},
 	)
+
+	setTenantMetrics(mtUserIdentities, allAccounts)
 
 	signUpAccountsSecret, err := getAccessTokenSecret(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	tenantsCreated, err := getAccountsCreatedCM(ctx, serverClient, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	// looping through the accounts to reconcile default config back
-	for _, account := range accounts {
+	for index, account := range allAccounts {
+
+		state, created := tenantsCreated.Data[account.OrgName]
+		if created && state == "true" {
+			continue
+		}
+
 		if account.State == "approved" {
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
-					r.log.Infof("Activating user account",
-						l.Fields{"userAccount": user.Username},
+					r.log.Infof("Activating user access to new tenant account",
+						l.Fields{
+							"userName":           user.Username,
+							"tenantAccountName":  account.OrgName,
+							"tenantAccountState": account.State,
+						},
 					)
 
 					err = r.tsClient.ActivateUser(*accessToken, account.Id, user.Id)
 					if err != nil {
-						r.log.Errorf("Error activating users in new tenant account:",
-							l.Fields{"userAccount": user.Username},
+						r.log.Errorf("Error activating user access to new tenant account",
+							l.Fields{
+								"userName":          user.Username,
+								"tenantAccountName": account.OrgName,
+							},
 							err,
 						)
 					}
@@ -1400,43 +1440,99 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 			val, ok := signUpAccountsSecret.Data[string(account.OrgName)]
 			if !ok || string(val) == "" {
-				r.log.Infof("Tenant Account does not have access token created",
-					l.Fields{"tenantAccount": account},
+				r.log.Infof("Tenant account does not have access token created",
+					l.Fields{
+						"tenantAccountId":    account.Id,
+						"tenantAccountName":  account.Name,
+						"tenantAccountState": account.State,
+					},
 				)
+				//TODO: delete account?
 				continue
 			}
+
 			signUpAccount := SignUpAccount{
 				AccountDetail: account,
 				AccountAccessToken: AccountAccessToken{
 					Value: string(val),
 				},
 			}
-			r.log.Infof("Adding authentication provider to MT 3scale account",
-				l.Fields{"tenantAccount": signUpAccount},
+
+			r.log.Infof("Adding authentication provider to tenant account",
+				l.Fields{
+					"tenantAccountId":    account.Id,
+					"tenantAccountName":  account.Name,
+					"tenantAccountState": account.State,
+				},
 			)
+
 			// verify if the account have the auth provider already
 			err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
 			if err != nil {
-				r.log.Errorf("Error adding authentication provider to 3scale account",
-					l.Fields{"tenantAccount": signUpAccount},
+				r.log.Errorf("Error adding authentication provider to tenant account",
+					l.Fields{
+						"tenantAccountId":    account.Id,
+						"tenantAccountName":  account.Name,
+						"tenantAccountState": account.State,
+					},
 					err,
 				)
 			}
 
 			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
 			if err != nil {
-				r.log.Errorf("Error reconciling console link for the MT account",
-					l.Fields{"tenantAccount": signUpAccount},
+				r.log.Errorf("Error reconciling console link for the tenant account",
+					l.Fields{
+						"tenantAccountId":   account.Id,
+						"tenantAccountName": account.Name,
+					},
 					err,
 				)
 			}
+
+			tenantsCreated.Data[string(account.OrgName)] = "true"
+			tenantsCreated.ObjectMeta.ResourceVersion = ""
+			err = resources.CreateOrUpdate(ctx, serverClient, tenantsCreated)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating/updating tenant created CM: %w", err)
+			}
+
+		} else if account.State != "scheduled_for_deletion" {
+			r.log.Infof("Deleting broke account for recreation",
+				l.Fields{
+					"tenantAccountId":    account.Id,
+					"tenantAccountName":  account.Name,
+					"tenantAccountState": account.State,
+				},
+			)
+
+			err = r.tsClient.DeleteTenant(*accessToken, account.Id)
+			if err != nil {
+				r.log.Errorf("Error deleting broken account",
+					l.Fields{
+						"tenantAccountId":    account.Id,
+						"tenantAccountName":  account.Name,
+						"tenantAccountState": account.State,
+					},
+					err,
+				)
+			}
+
+			//remove account from the list of accounts so it can be recreated
+			r.log.Infof("Account removed to be recreated",
+				l.Fields{"tenantAccountRemoved": allAccounts[index]},
+			)
+			allAccounts = append(allAccounts[:index], allAccounts[index+1:]...)
 		}
 	}
 
 	// creating new MT accounts in 3scale
-	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, accounts)
-	r.log.Infof("retrieving new MT accounts to be created",
-		l.Fields{"accountsToBeCreated": accountsToBeCreated},
+	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
+	r.log.Infof("Retrieving tenant accounts to be created",
+		l.Fields{
+			"accountsToBeCreated": accountsToBeCreated,
+			"totalAccounts":       len(accountsToBeCreated),
+		},
 	)
 
 	for idx, account := range accountsToBeCreated {
@@ -1449,16 +1545,21 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 		// create account
 		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, pw, emailAddrs[idx])
-
 		if err != nil {
-			r.log.Errorf("Error creating new tenant account",
-				l.Fields{"tenantAccount": newSignupAccount},
+			r.log.Errorf("Error creating tenant account",
+				l.Fields{"tenantAccountName": account.OrgName},
 				err,
 			)
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating new tenant account: %v", err)
+
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating tenant account: %s, Error=[%v]", account.OrgName, err)
 		}
-		r.log.Infof("New 3scale MT account created",
-			l.Fields{"tenantAccount": newSignupAccount},
+
+		r.log.Infof("New tenant account created",
+			l.Fields{
+				"tenantAccountId":    newSignupAccount.AccountDetail.Id,
+				"tenantAccountName":  newSignupAccount.AccountDetail.OrgName,
+				"tenantAccountState": newSignupAccount.AccountDetail.State,
+			},
 		)
 
 		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
@@ -1470,8 +1571,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	// deleting MT accounts in 3scale
-	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities, accounts)
-	r.log.Infof("Deleting unused MT accounts:", l.Fields{"accountsToBeDeleted": accountsToBeDeleted})
+	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities, allAccounts)
+	r.log.Infof(
+		"Deleting unused tenant accounts",
+		l.Fields{
+			"accountsToBeDeleted": accountsToBeDeleted,
+			"totalAccounts":       len(accountsToBeDeleted),
+		},
+	)
 	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
 		r.log.Error("Error deleting tenant accounts:", err)
@@ -1486,9 +1593,21 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 		err := r.removeTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
-			r.log.Error("Error deleting tenant account password:", err)
-			return integreatlyv1alpha1.PhaseFailed, err
+			r.log.Errorf("Error deleting tenant account password",
+				l.Fields{
+					"tenantAccount": account,
+				},
+				err,
+			)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error deleting tenant account password: %s, Error=[%v]", account.OrgName, err)
 		}
+	}
+
+	if len(accountsToBeCreated) > 0 {
+		r.log.Infof("Returning in progess as there were accounts created and users need to be activated",
+			l.Fields{"totalAccountsCreated": len(accountsToBeCreated)},
+		)
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1528,6 +1647,23 @@ func getAccessTokenSecret(ctx context.Context, serverClient k8sclient.Client, na
 	}
 
 	return signUpAccountsSecret, nil
+}
+
+func getAccountsCreatedCM(ctx context.Context, serverClient k8sclient.Client, namespace string) (*corev1.ConfigMap, error) {
+	accountsCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tenants-created",
+			Namespace: namespace,
+		},
+	}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: accountsCM.Name, Namespace: accountsCM.Namespace}, accountsCM)
+	if !k8serr.IsNotFound(err) && err != nil {
+		return nil, fmt.Errorf("Error getting accounts created configmap: %w", err)
+	} else if k8serr.IsNotFound(err) {
+		accountsCM.Data = map[string]string{}
+	}
+
+	return accountsCM, nil
 }
 
 func (r *Reconciler) removeTenantAccountPassword(ctx context.Context, serverClient k8sclient.Client, account AccountDetail) error {

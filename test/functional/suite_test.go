@@ -2,9 +2,10 @@ package functional
 
 import (
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"os"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"

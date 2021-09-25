@@ -45,7 +45,7 @@ type ThreeScaleInterface interface {
 	DeleteAccount(accessToken, accountID string) error
 
 	CreateTenant(accessToken string, account AccountDetail, password string, email string) (*SignUpAccount, error)
-	ListTenantAccounts(accessToken string) ([]AccountDetail, error)
+	ListTenantAccounts(accessToken string, page int) ([]AccountDetail, error)
 	GetTenantAccount(accessToken string, id int) (*SignUpAccount, error)
 	DeleteTenant(accessToken string, id int) error
 	DeleteTenants(accessToken string, accounts []AccountDetail) error
@@ -564,12 +564,14 @@ func (tsc *threeScaleClient) DeleteAccount(accessToken, accountID string) error 
 	return assertStatusCode(http.StatusOK, res)
 }
 
-func (tsc *threeScaleClient) ListTenantAccounts(accessToken string) ([]AccountDetail, error) {
+func (tsc *threeScaleClient) ListTenantAccounts(accessToken string, page int) ([]AccountDetail, error) {
 	// curl -v  -X GET "https://master.apps.jmonteir.edy6.s1.devshift.org/admin/api/accounts.json?access_token=AIjluIOs"
 	res, err := tsc.makeRequestToMaster(
 		"GET",
 		"admin/api/accounts.xml",
-		onlyAccessToken(accessToken),
+		withAccessToken(accessToken, map[string]interface{}{
+			"page": page,
+		}),
 	)
 	if err != nil {
 		return nil, err
@@ -740,7 +742,7 @@ func (tsc *threeScaleClient) DeleteTenant(accessToken string, accountId int) err
 		return err
 	}
 
-	if err := assertStatusCode(http.StatusCreated, res); err != nil {
+	if err := assertStatusCode(http.StatusOK, res); err != nil {
 		return err
 	}
 
