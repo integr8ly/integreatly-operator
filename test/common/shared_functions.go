@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
@@ -164,7 +163,7 @@ func GetInstallType(config *rest.Config) (string, error) {
 func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, error) {
 	installationList := &rhmiv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(RHMIOperatorNamespace),
+		k8sclient.InNamespace("sandbox-rhoam-operator"),
 	}
 	err := client.List(context.TODO(), installationList, listOpts...)
 	if err != nil {
@@ -392,19 +391,19 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 }
 
 func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Config) error {
-	testingContext, _ := NewTestingContext(restConfig)
-	err := wait.Poll(time.Second*1, time.Minute*10, func() (done bool, err error) {
-		rhmi, _ := GetRHMI(testingContext.Client, true)
-		if rhmi.Status.Stage == "complete" {
-			return true, nil
-		}
-		t.Logf("RHMI CR status.stage is: \"%s\". Waiting for: \"complete\"", rhmi.Status.Stage)
-		time.Sleep(time.Second * 10)
-		return false, nil
-
-	})
-	if err != nil {
-		return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
-	}
+	//testingContext, _ := NewTestingContext(restConfig)
+	//err := wait.Poll(time.Second*1, time.Minute*10, func() (done bool, err error) {
+	//	rhmi, _ := GetRHMI(testingContext.Client, true)
+	//	if rhmi.Status.Stage == "complete" {
+	//		return true, nil
+	//	}
+	//	t.Logf("RHMI CR status.stage is: \"%s\". Waiting for: \"complete\"", rhmi.Status.Stage)
+	//	time.Sleep(time.Second * 10)
+	//	return false, nil
+	//
+	//})
+	//if err != nil {
+	//	return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
+	//}
 	return nil
 }
