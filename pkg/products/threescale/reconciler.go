@@ -712,6 +712,26 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			}
 		}
 
+		apim.Spec.System.AppSpec.DeveloperContainerResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1000m"), corev1.ResourceMemory: k8sresource.MustParse("1050Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("5000m"), corev1.ResourceMemory: k8sresource.MustParse("5000Mi")},
+		}
+		apim.Spec.System.AppSpec.MasterContainerResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1000m"), corev1.ResourceMemory: k8sresource.MustParse("1050Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("5000m"), corev1.ResourceMemory: k8sresource.MustParse("5000Mi")},
+		}
+		apim.Spec.System.AppSpec.ProviderContainerResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1000m"), corev1.ResourceMemory: k8sresource.MustParse("1050Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("5000m"), corev1.ResourceMemory: k8sresource.MustParse("5000Mi")},
+		}
+		apim.Spec.System.SidekiqSpec.Resources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1000m"), corev1.ResourceMemory: k8sresource.MustParse("1050Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("5000m"), corev1.ResourceMemory: k8sresource.MustParse("5000Mi")},
+		}
+
+
+
+
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
 		return nil

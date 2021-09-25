@@ -80,8 +80,8 @@ parameters:
   - name: SMTP_USERNAME
     value: ""
   - name: QUOTA
-    value: "10"
+    value: "500"
   - name: USE_CLUSTER_STORAGE
-    value: "true"
+    value: "false"
 
 

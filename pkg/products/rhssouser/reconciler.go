@@ -503,12 +503,12 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 
 	for idx, user := range added {
 		// Break after 100 tenants created to help with load on Keycloak
-		if idx > 100 {
+		if idx > 50 {
 			r.Log.Info("Breaking from tenant creation")
 			break
 		}
 		// Sleep between tenant creation to help with load on Keycloak
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err

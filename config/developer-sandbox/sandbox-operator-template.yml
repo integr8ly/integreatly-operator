@@ -38,7 +38,7 @@ parameters:
   - name: RHOAM_NAMESPACE
     value: sandbox-rhoam-operator
   - name: INDEX_IMAGE
-    value: quay.io/integreatly/managed-api-service-index:v1.12
+    value: quay.io/bgallagher/managed-api-service-index:v1.12
   - name: OPERATOR_GROUP_NAME
     value: sandbox-rhoam-operator
   - name: SUBSCRIPTION_NAME
