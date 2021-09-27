@@ -1351,6 +1351,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	boop, _ := userHelper.GetIdpName()
+	r.log.Infof("Here is what i have for IDENTITY_PROVIDER_NAME envar: %s", l.Fields{"IDENTITY_PROVIDER_NAME": boop})
 	r.log.Infof("Found user identities from MT accounts",
 		l.Fields{"identities": len(mtUserIdentities)},
 	)
