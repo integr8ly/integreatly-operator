@@ -303,7 +303,7 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 	return nil
 }
 
-func (r *Reconciler) SetupOpenshiftIDPTenant(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string, tenant string) error {
+func (r *Reconciler) SetupOpenshiftIDPTenant(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, redirectUris []string, tenant string) error {
 	var (
 		clientSecret string
 		clientId     string

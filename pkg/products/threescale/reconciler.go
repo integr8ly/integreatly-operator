@@ -272,7 +272,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
 		if err != nil {
 			r.log.Error("reconcile3scaleMultiTenancy", err)

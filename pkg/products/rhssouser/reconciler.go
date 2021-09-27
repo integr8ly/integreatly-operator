@@ -490,43 +490,61 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 
 func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclient.Client, ns string, users []userHelper.MultiTenantUser, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 
-	options := &k8sclient.ListOptions{
-		Namespace: ns,
-	}
-	realms := &keycloak.KeycloakRealmList{}
-	err := serverClient.List(ctx, realms, options)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
-	}
+	//options := &k8sclient.ListOptions{
+	//	Namespace: ns,
+	//}
+	//realms := &keycloak.KeycloakRealmList{}
+	//err := serverClient.List(ctx, realms, options)
+	//if err != nil {
+	//	return integreatlyv1alpha1.PhaseFailed, nil
+	//}
+	//added, deleted := getTenantDiff(users, realms.Items)
 
-	added, deleted := getTenantDiff(users, realms.Items)
+	realms, err := r.getAllRealms(ctx, serverClient, kc)
+	if err != nil {
+		r.Log.Error("Error Listing Realms", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.Log.Infof("Found Realms", l.Fields{"num": len(realms)})
+	added, _ := getTenantDiff2(users, realms)
+	r.Log.Infof("Found Realms added", l.Fields{"num": len(added)})
 
 	for idx, user := range added {
 		// Break after 100 tenants created to help with load on Keycloak
-		if idx > 100 {
+		if idx > 50 {
 			r.Log.Info("Breaking from tenant creation")
 			break
 		}
 		// Sleep between tenant creation to help with load on Keycloak
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName, kc)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		_, err = r.createTenantKCUser(ctx, serverClient, user)
+		_, err = r.createTenantKCUser(ctx, serverClient, user, kc)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 
-	for _, realm := range deleted {
-		_, err := r.deleteTenant(ctx, serverClient, realm)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
+	//for _, realm := range deleted {
+	//	_, err := r.deleteTenant(ctx, serverClient, realm)
+	//	if err != nil {
+	//		return integreatlyv1alpha1.PhaseFailed, err
+	//	}
+	//}
 
 	return r.setMetrics(ctx, serverClient, kc, users)
+}
+
+func (r *Reconciler) getAllRealms(ctx context.Context, serverClient k8sclient.Client, kc *keycloak.Keycloak) ([]*keycloak.KeycloakAPIRealm, error) {
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		r.Log.Error("Error getting AuthenticatedClient in getAllRealms", err)
+		return nil, err
+	}
+
+	return kcClient.ListRealms()
 }
 
 func (r *Reconciler) setMetrics(ctx context.Context, serverClient k8sclient.Client, kc *keycloak.Keycloak, users []userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
@@ -590,17 +608,17 @@ func (r *Reconciler) deleteTenant(ctx context.Context, serverClient k8sclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getTenantDiff(users []userHelper.MultiTenantUser, realms []keycloak.KeycloakRealm) (added []userHelper.MultiTenantUser, deleted []keycloak.KeycloakRealm) {
+func getTenantDiff2(users []userHelper.MultiTenantUser, realms []*keycloak.KeycloakAPIRealm) (added []userHelper.MultiTenantUser, deleted []*keycloak.KeycloakAPIRealm) {
 
 	for _, user := range users {
-		if !realmExistsForTenant(realms, user) {
+		if !realmExistsForTenant2(realms, user) {
 			// If the user exists but the realm does not, then its a new tenant that needs a realm in KC
 			added = append(added, user)
 		}
 	}
 	for _, realm := range realms {
-		if realm.Name != "master" {
-			if !userExistsForRealm(users, realm) {
+		if realm.Realm != "master" {
+			if !userExistsForRealm2(users, realm) {
 				// If the user has been removed from openshift but there is still a realm we need to clean up
 				deleted = append(deleted, realm)
 			}
@@ -610,7 +628,36 @@ func getTenantDiff(users []userHelper.MultiTenantUser, realms []keycloak.Keycloa
 	return added, deleted
 }
 
-func realmExistsForTenant(realms []keycloak.KeycloakRealm, user userHelper.MultiTenantUser) bool {
+//func getTenantDiff(users []userHelper.MultiTenantUser, realms []keycloak.KeycloakRealm) (added []userHelper.MultiTenantUser, deleted []keycloak.KeycloakRealm) {
+//
+//	for _, user := range users {
+//		if !realmExistsForTenant(realms, user) {
+//			// If the user exists but the realm does not, then its a new tenant that needs a realm in KC
+//			added = append(added, user)
+//		}
+//	}
+//	for _, realm := range realms {
+//		if realm.Name != "master" {
+//			if !userExistsForRealm(users, realm) {
+//				// If the user has been removed from openshift but there is still a realm we need to clean up
+//				deleted = append(deleted, realm)
+//			}
+//		}
+//	}
+//
+//	return added, deleted
+//}
+
+func realmExistsForTenant2(realms []*keycloak.KeycloakAPIRealm, user userHelper.MultiTenantUser) bool {
+	for _, realm := range realms {
+		if realm.Realm == user.TenantName {
+			return true
+		}
+	}
+	return false
+}
+
+func realmExistsForTenant(realms []*keycloak.KeycloakRealm, user userHelper.MultiTenantUser) bool {
 	for _, realm := range realms {
 		if realm.Name == user.TenantName {
 			return true
@@ -619,7 +666,7 @@ func realmExistsForTenant(realms []keycloak.KeycloakRealm, user userHelper.Multi
 	return false
 }
 
-func userExistsForRealm(users []userHelper.MultiTenantUser, realm keycloak.KeycloakRealm) bool {
+func userExistsForRealm(users []userHelper.MultiTenantUser, realm *keycloak.KeycloakRealm) bool {
 	for _, user := range users {
 		if realm.Name == user.TenantName {
 			return true
@@ -628,49 +675,96 @@ func userExistsForRealm(users []userHelper.MultiTenantUser, realm keycloak.Keycl
 	return false
 }
 
-func (r *Reconciler) createTenantKCUser(ctx context.Context, serverClient k8sclient.Client, user userHelper.MultiTenantUser) (integreatlyv1alpha1.StatusPhase, error) {
-
-	kcUser := &keycloak.KeycloakUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      user.TenantName,
-			Namespace: r.Config.GetNamespace(),
-		},
+func userExistsForRealm2(users []userHelper.MultiTenantUser, realm *keycloak.KeycloakAPIRealm) bool {
+	for _, user := range users {
+		if realm.Realm == user.TenantName {
+			return true
+		}
 	}
+	return false
+}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
-		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				masterRealmLabelKey: user.TenantName,
-			},
-		}
-		kcUser.Labels = map[string]string{
-			"sso": user.TenantName,
-		}
-		kcUser.Spec.User = keycloak.KeycloakAPIUser{
-			Enabled:       true,
-			UserName:      user.TenantName,
-			EmailVerified: true,
-			Email:         user.Email,
-			FederatedIdentities: []keycloak.FederatedIdentity{
-				{
-					IdentityProvider: idpAlias,
-					UserID:           string(user.UID),
-					UserName:         user.TenantName,
-				},
-			},
-			ClientRoles: getTenantClientRoles("realm-management"),
-			RealmRoles:  []string{"offline_access", "uma_authorization"},
-		}
+func (r *Reconciler) createTenantKCUser(ctx context.Context, serverClient k8sclient.Client, user userHelper.MultiTenantUser, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 
-		return nil
-	})
+	//bgbg
+	r.Log.Info("Create tenant user in keycloak")
 
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak tenant user: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	r.Log.Infof("Operation result", l.Fields{"keycloak user": kcUser.Name, "res": or})
 
+	kcUser := &keycloak.KeycloakAPIUser{
+		UserName:            user.TenantName,
+		Email:               user.Email,
+		EmailVerified:       false,
+		Enabled:             true,
+		RealmRoles:          []string{"offline_access", "uma_authorization"},
+		ClientRoles:         getTenantClientRoles("realm-management"),
+		RequiredActions:     nil,
+		Groups:              nil,
+		FederatedIdentities: []keycloak.FederatedIdentity{
+			{
+				IdentityProvider: idpAlias,
+				UserID:           string(user.UID),
+				UserName:         user.TenantName,
+			},
+		},
+		Credentials:         nil,
+		Attributes:          nil,
+	}
+
+	kcUserName, err := kcClient.CreateUser(kcUser, user.TenantName)
+	if (err != nil) {
+		r.Log.Error("Failed KC User Created ", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+	} else {
+		r.Log.Infof("KC User ", l.Fields{"user ": kcUserName})
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+
+
+	//kcUser := &keycloak.KeycloakUser{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:      user.TenantName,
+	//		Namespace: r.Config.GetNamespace(),
+	//	},
+	//}
+
+	//or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+	//	kcUser.Spec.RealmSelector = &metav1.LabelSelector{
+	//		MatchLabels: map[string]string{
+	//			masterRealmLabelKey: user.TenantName,
+	//		},
+	//	}
+	//	kcUser.Labels = map[string]string{
+	//		"sso": user.TenantName,
+	//	}
+	//	kcUser.Spec.User = keycloak.KeycloakAPIUser{
+	//		Enabled:       true,
+	//		UserName:      user.TenantName,
+	//		EmailVerified: true,
+	//		Email:         user.Email,
+	//		FederatedIdentities: []keycloak.FederatedIdentity{
+	//			{
+	//				IdentityProvider: idpAlias,
+	//				UserID:           string(user.UID),
+	//				UserName:         user.TenantName,
+	//			},
+	//		},
+	//		ClientRoles: getTenantClientRoles("realm-management"),
+	//		RealmRoles:  []string{"offline_access", "uma_authorization"},
+	//	}
+	//
+	//	return nil
+	//})
+	//
+	//if err != nil {
+	//	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak tenant user: %w", err)
+	//}
+	//r.Log.Infof("Operation result", l.Fields{"keycloak user": kcUser.Name, "res": or})
+	//
+	//return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func getTenantClientRoles(realm string) map[string][]string {
@@ -706,7 +800,7 @@ func (r *Reconciler) createTenantRealm(ctx context.Context, serverClient k8sclie
 	}
 
 	redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + username + "/broker/openshift-v4/endpoint"}
-	r.SetupOpenshiftIDPTenant(ctx, serverClient, r.installation, r.Config, kcr, redirectURIs, username)
+	r.SetupOpenshiftIDPTenant(ctx, serverClient, r.Installation, redirectURIs, username)
 
 	clientSecret, err := r.GetTenantClientSecret(ctx, serverClient, username)
 	if (err != nil) {
@@ -799,63 +893,64 @@ func (r *Reconciler) createTenantRealm(ctx context.Context, serverClient k8sclie
 
 	// Do this after realm created
 	r.configureBrowserRedirector(idpAlias,"browser", &realm, kc)
-
+	if (err != nil) {
+		r.Log.Error("Failed configureBrowserRedirector ", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to configureBrowserRedirector realm: %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 	// Stop here
 
 
-	r.Log.Infof("Creating tenant realm", l.Fields{"tenant": username})
-	kcr := &keycloak.KeycloakRealm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      username,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
-		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
-			{
-				IdentityProvider: idpAlias,
-				ForFlow:          "browser",
-			},
-		}
-
-		kcr.Spec.InstanceSelector = &metav1.LabelSelector{
-			MatchLabels: getMasterLabels(),
-		}
-
-		kcr.Labels = map[string]string{
-			"sso": username,
-		}
-
-		kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
-			ID:          username,
-			Realm:       username,
-			Enabled:     true,
-			DisplayName: username,
-		}
-
-		// The identity providers need to be set up before the realm CR gets
-		// created because the Keycloak operator does not allow updates to
-		// the realms
-		redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + username + "/broker/openshift-v4/endpoint"}
-		err := r.SetupOpenshiftIDP(ctx, serverClient, r.Installation, r.Config, kcr, redirectURIs, username)
-		if err != nil {
-			return fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		r.Log.Errorf("Failed create/update", l.Fields{"realm": username}, err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
-	}
-	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "result": or})
-
-
-
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	//r.Log.Infof("Creating tenant realm", l.Fields{"tenant": username})
+	//kcr := &keycloak.KeycloakRealm{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:      username,
+	//		Namespace: r.Config.GetNamespace(),
+	//	},
+	//}
+	//
+	//or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
+	//	kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
+	//		{
+	//			IdentityProvider: idpAlias,
+	//			ForFlow:          "browser",
+	//		},
+	//	}
+	//
+	//	kcr.Spec.InstanceSelector = &metav1.LabelSelector{
+	//		MatchLabels: getMasterLabels(),
+	//	}
+	//
+	//	kcr.Labels = map[string]string{
+	//		"sso": username,
+	//	}
+	//
+	//	kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
+	//		ID:          username,
+	//		Realm:       username,
+	//		Enabled:     true,
+	//		DisplayName: username,
+	//	}
+	//
+	//	// The identity providers need to be set up before the realm CR gets
+	//	// created because the Keycloak operator does not allow updates to
+	//	// the realms
+	//	redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + username + "/broker/openshift-v4/endpoint"}
+	//	err := r.SetupOpenshiftIDP(ctx, serverClient, r.Installation, r.Config, kcr, redirectURIs, username)
+	//	if err != nil {
+	//		return fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
+	//	}
+	//
+	//	return nil
+	//})
+	//
+	//if err != nil {
+	//	r.Log.Errorf("Failed create/update", l.Fields{"realm": username}, err)
+	//	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+	//}
+	//r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "result": or})
+	//
+	//return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 

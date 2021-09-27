@@ -59,8 +59,8 @@ var quotaConfig = `
 				"memory": "2000Mi"
 			},
 			"limits": {
-				"cpu": 2,
-				"memory": "2000Mi"
+				"cpu": 8,
+				"memory": "8000Mi"
 			}
 		}
 	},
