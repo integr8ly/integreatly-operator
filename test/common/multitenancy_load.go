@@ -53,7 +53,7 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	//}
 
 	// Skip mass login to cluster if running in PROW, instead login as 1st and 2nd user only.
-	if !testResources.RunningInProw(rhmi) {
+	if testResources.RunningInProw(rhmi) {
 		t.Logf("Mass login")
 		// Cluster login all users apart from last one
 		clusterLoginSuccess := loginUsersToCluster(t, ctx, masterURL)
