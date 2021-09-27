@@ -827,8 +827,8 @@ github.com/integr8ly/grafana-operator/v3 v3.5.0/go.mod h1:nie1yDLaWkgUjW+EBTLUjD
 github.com/integr8ly/grafana-operator/v3 v3.6.0/go.mod h1:pWWg9RerCkkwmTcmaygmfhkjjGilEN30han1yq2MAsA=
 github.com/integr8ly/grafana-operator/v3 v3.10.2 h1:CUZIS8kkCHJNO7WEeCqhbkGDiLtjgPzgidR8VlgOpQg=
 github.com/integr8ly/grafana-operator/v3 v3.10.2/go.mod h1:5D8+MTrFKiwxz4kz2Oc36MxQu4EOHnJKaStSFAOukz0=
-github.com/integr8ly/keycloak-client v0.1.4 h1:pUrfh0Q4IhvKoJ90S76oxbcxmy9+eJCv2hCOsprJTls=
-github.com/integr8ly/keycloak-client v0.1.4/go.mod h1:UyM3uRRR5kpq/6xGCEvVPpneduPoPQ7hgMp+Mv9VvXs=
+github.com/integr8ly/keycloak-client v1.1.1 h1:a+0DaoPws9b0Cjc0WWuLaoLeDT+qO4UZ53OQcOksLeg=
+github.com/integr8ly/keycloak-client v1.1.1/go.mod h1:UyM3uRRR5kpq/6xGCEvVPpneduPoPQ7hgMp+Mv9VvXs=
 github.com/jackc/fake v0.0.0-20150926172116-812a484cc733/go.mod h1:WrMFNQdiFJ80sQsxDoMokWK1W5TQtxBFNpzWTD84ibQ=
 github.com/jackc/pgx v3.2.0+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGkVEFm4TeybAXq+I=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=

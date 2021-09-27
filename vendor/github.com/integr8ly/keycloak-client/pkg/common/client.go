@@ -1160,6 +1160,8 @@ func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (
 		return nil, err
 	}
 
+	config.Timeout =  time.Second * 180
+
 	secretClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err

@@ -227,6 +227,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 
+	logrus.Info("This is version 1")
+
 	// your logic here
 	installInProgress := false
 	installation := &rhmiv1alpha1.RHMI{}

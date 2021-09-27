@@ -503,6 +503,7 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 	realms, err := r.getAllRealms(ctx, serverClient, kc)
 	if err != nil {
 		r.Log.Error("Error Listing Realms", err)
+		r.Log.Error("error List Realm 2" + time.Now().String(), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	r.Log.Infof("Found Realms", l.Fields{"num": len(realms)})
@@ -516,7 +517,7 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 			break
 		}
 		// Sleep between tenant creation to help with load on Keycloak
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(5000 * time.Millisecond)
 		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName, kc)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -543,7 +544,7 @@ func (r *Reconciler) getAllRealms(ctx context.Context, serverClient k8sclient.Cl
 		r.Log.Error("Error getting AuthenticatedClient in getAllRealms", err)
 		return nil, err
 	}
-
+	r.Log.Info("starting List Realm 2" + time.Now().String())
 	return kcClient.ListRealms()
 }
 
@@ -553,8 +554,10 @@ func (r *Reconciler) setMetrics(ctx context.Context, serverClient k8sclient.Clie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	r.Log.Info("starting List Realm 3 " + time.Now().String())
 	realms, err := kcClient.ListRealms()
 	if err != nil {
+		r.Log.Info("error List Realm 3 " + time.Now().String())
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrapf(err, "Failed to get keycloak client")
 	}
 
@@ -1496,8 +1499,10 @@ func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integ
 	}
 
 	// Get all the realms
+	r.Log.Info("starting List Realm 1 " + time.Now().String())
 	realms, err := kcClient.ListRealms()
 	if err != nil {
+		r.Log.Error("starting List Realm 1 " + time.Now().String(), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
