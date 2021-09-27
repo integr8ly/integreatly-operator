@@ -45,12 +45,12 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	}
 	masterURL := rhmi.Spec.MasterURL
 
-	t.Logf("Setting up IDP")
-	// Either setup IDP and create users if in PROW, or create users if in pipeline
-	err = setupIDP(t, ctx, rhmi)
-	if err != nil {
-		t.Fatal("error while setting up IDP or users %s", err)
-	}
+	//t.Logf("Setting up IDP")
+	//// Either setup IDP and create users if in PROW, or create users if in pipeline
+	//err = setupIDP(t, ctx, rhmi)
+	//if err != nil {
+	//	t.Fatal("error while setting up IDP or users %s", err)
+	//}
 
 	// Skip mass login to cluster if running in PROW, instead login as 1st and 2nd user only.
 	if !testResources.RunningInProw(rhmi) {

@@ -88,37 +88,37 @@ var _ = BeforeSuite(func(done Done) {
 
 	ctx, err := common.NewTestingContext(cfg)
 
-	// wait for operator deployment to deploy
-	err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
-	Expect(err).NotTo(HaveOccurred())
+	//// wait for operator deployment to deploy
+	//err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
+	//Expect(err).NotTo(HaveOccurred())
 
-	// wait for cloud resource to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for cloud resource phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, bootStrapStageTimeout, string(rhmiv1alpha1.BootstrapStage))
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for middleware-monitoring to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for middleware-monitoring to deploy
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for keycloak-operator to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for authentication phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
-	Expect(err).NotTo(HaveOccurred())
+	//// wait for cloud resource to deploy
+	//err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for cloud resource phase to complete (10 minutes timeout)
+	//err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for bootstrap phase to complete (5 minutes timeout)
+	//err = waitForInstallationStageCompletion(ctx.Client, retryInterval, bootStrapStageTimeout, string(rhmiv1alpha1.BootstrapStage))
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for middleware-monitoring to deploy
+	//err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for middleware-monitoring to deploy
+	//err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for keycloak-operator to deploy
+	//err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//// wait for authentication phase to complete (10 minutes timeout)
+	//err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
+	//Expect(err).NotTo(HaveOccurred())
 
 	//Product Stage - verify operators deploy
 	products := map[string]string{
