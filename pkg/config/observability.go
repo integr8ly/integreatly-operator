@@ -101,3 +101,11 @@ func (m *Observability) GetAlertManagerVersion() string {
 func (m *Observability) GetPrometheusVersion() string {
 	return "v2.29.2"
 }
+
+func (m *Observability) GetPrometheusRouteName() string {
+	return "prometheus-route"
+}
+
+func (m *Observability) GetAlertManagerRouteName() string {
+	return "alertmanager-route"
+}
