@@ -93,3 +93,11 @@ func (m *Observability) GetDashboards(installType integreatlyv1alpha1.Installati
 		return rhmiTemplateList
 	}
 }
+
+func (m *Observability) GetAlertManagerVersion() string {
+	return "v0.22.2"
+}
+
+func (m *Observability) GetPrometheusVersion() string {
+	return "v2.29.2"
+}
