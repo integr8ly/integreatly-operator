@@ -120,10 +120,15 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
+	l.Log("clicking idp link at")
+	l.Log(browser.Url())
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		l.Log("Error clicking IDP link")
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
+	l.Log("clicked IDP link")
+	l.Log("Now at :")
+	l.Log(browser.Url())
 
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {

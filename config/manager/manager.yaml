@@ -62,5 +62,5 @@ spec:
           - name: QUOTA
             value: "200"
           - name: IDENTITY_PROVIDER_NAME
-            value: "DevSandbox"
+            value: "devsandbox"
       terminationGracePeriodSeconds: 10
