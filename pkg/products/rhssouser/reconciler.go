@@ -509,7 +509,7 @@ func (r *Reconciler) reconcileTenants(ctx context.Context, serverClient k8sclien
 		}
 		// Sleep between tenant creation to help with load on Keycloak
 		time.Sleep(500 * time.Millisecond)
-		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName)
+		_, err := r.createTenantRealm(ctx, serverClient, user.TenantName, kc)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -697,7 +697,112 @@ func getTenantClientRoles(realm string) map[string][]string {
 	}
 }
 
-func (r *Reconciler) createTenantRealm(ctx context.Context, serverClient k8sclient.Client, username string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) createTenantRealm(ctx context.Context, serverClient k8sclient.Client, username string, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	r.Log.Infof("Creating tenant realm", l.Fields{"tenant": username})
+
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + username + "/broker/openshift-v4/endpoint"}
+	r.SetupOpenshiftIDPTenant(ctx, serverClient, r.installation, r.Config, kcr, redirectURIs, username)
+
+	clientSecret, err := r.GetTenantClientSecret(ctx, serverClient, username)
+	if (err != nil) {
+		r.Log.Infof("Creating tenant realm", l.Fields{"tenant": username})
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	idps := []*keycloak.KeycloakIdentityProvider{}
+
+	idps = append(idps, &keycloak.KeycloakIdentityProvider{
+		Alias:                     idpAlias,
+		ProviderID:                "openshift-v4",
+		Enabled:                   true,
+		TrustEmail:                true,
+		StoreToken:                true,
+		AddReadTokenRoleOnCreate:  true,
+		FirstBrokerLoginFlowAlias: "first broker login",
+		Config: map[string]string{
+			"hideOnLoginPage": "",
+			"baseUrl":         "https://" + strings.Replace(r.Installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
+			"clientId":        username,
+			"disableUserInfo": "",
+			"clientSecret":    clientSecret,
+			"defaultScope":    "user:full",
+			"useJwksUrl":      "true",
+		},
+	})
+
+	realm := keycloak.KeycloakRealm{
+		Spec:       keycloak.KeycloakRealmSpec{
+			Realm: &keycloak.KeycloakAPIRealm{
+				ID:                                 username,
+				Realm:                              username,
+				Enabled:                            true,
+				DisplayName:                        username,
+				//DisplayNameHTML:                    "",
+				//PasswordPolicy:                     "",
+				//Users:                              nil,
+				Clients:                            nil,
+				IdentityProviders:					idps,
+				//EventsListeners:                    nil,
+				//EventsEnabled:                      nil,
+				AdminEventsEnabled:                 nil,
+				AdminEventsDetailsEnabled:          nil,
+				ClientScopes:                       nil,
+				AuthenticationFlows:                nil,
+				AuthenticatorConfig:                nil,
+				UserFederationProviders:            nil,
+				UserFederationMappers:              nil,
+				RegistrationAllowed:                nil,
+				RegistrationEmailAsUsername:        nil,
+				EditUsernameAllowed:                nil,
+				ResetPasswordAllowed:               nil,
+				RememberMe:                         nil,
+				VerifyEmail:                        nil,
+				LoginWithEmailAllowed:              nil,
+				DuplicateEmailsAllowed:             nil,
+				SslRequired:                        "",
+				BruteForceProtected:                nil,
+				PermanentLockout:                   nil,
+				FailureFactor:                      nil,
+				WaitIncrementSeconds:               nil,
+				QuickLoginCheckMilliSeconds:        nil,
+				MinimumQuickLoginWaitSeconds:       nil,
+				MaxFailureWaitSeconds:              nil,
+				MaxDeltaTimeSeconds:                nil,
+				SMTPServer:                         nil,
+				LoginTheme:                         "",
+				AccountTheme:                       "",
+				AdminTheme:                         "",
+				EmailTheme:                         "",
+				InternationalizationEnabled:        nil,
+				SupportedLocales:                   nil,
+				DefaultLocale:                      "",
+				Roles:                              nil,
+				ScopeMappings:                      nil,
+				ClientScopeMappings:                nil,
+				AccessTokenLifespanForImplicitFlow: nil,
+				AccessTokenLifespan:                nil,
+			},
+		},
+	}
+	//*v1alpha1.KeycloakRealm
+	realmName, err := kcClient.CreateRealm(&realm)
+	if (err != nil) {
+		r.Log.Error("Failed Realm Created ", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+	} else {
+		r.Log.Infof("Realm Created ", l.Fields{"realm ": realmName})
+	}
+
+	// Do this after realm created
+	r.configureBrowserRedirector(idpAlias,"browser", &realm, kc)
+
+	// Stop here
+
+
 	r.Log.Infof("Creating tenant realm", l.Fields{"tenant": username})
 	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
@@ -747,8 +852,61 @@ func (r *Reconciler) createTenantRealm(ctx context.Context, serverClient k8sclie
 	}
 	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "result": or})
 
+
+
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+
+func (r *Reconciler) configureBrowserRedirector(provider, flow string, obj *keycloak.KeycloakRealm, kc *keycloak.Keycloak) error {
+
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return err
+	}
+
+	realmName := obj.Spec.Realm.Realm
+	authenticationExecutionInfo, err := kcClient.ListAuthenticationExecutionsForFlow(flow, realmName)
+	if err != nil {
+		return err
+	}
+
+	authenticationConfigID := ""
+	redirectorExecutionID := ""
+	for _, execution := range authenticationExecutionInfo {
+		if execution.ProviderID == "identity-provider-redirector" {
+			authenticationConfigID = execution.AuthenticationConfig
+			redirectorExecutionID = execution.ID
+		}
+	}
+	if redirectorExecutionID == "" {
+		return errors.Errorf("'identity-provider-redirector' was not found in the list of executions of the 'browser' flow")
+	}
+
+	var authenticatorConfig *keycloak.AuthenticatorConfig
+	if authenticationConfigID != "" {
+		authenticatorConfig, err = kcClient.GetAuthenticatorConfig(authenticationConfigID, realmName)
+		if err != nil {
+			return err
+		}
+	}
+
+	if authenticatorConfig == nil && provider != "" {
+		config := &keycloak.AuthenticatorConfig{
+			Alias:  "keycloak-operator-browser-redirector",
+			Config: map[string]string{"defaultProvider": provider},
+		}
+
+		if _, err := kcClient.CreateAuthenticatorConfig(config, realmName, redirectorExecutionID); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return nil
+}
+
 
 func getUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	var users keycloak.KeycloakUserList

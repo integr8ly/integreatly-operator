@@ -248,7 +248,7 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 	)
 
 	if tenant != "" {
-		clientSecret, err = r.getTenantClientSecret(ctx, serverClient, tenant)
+		clientSecret, err = r.GetTenantClientSecret(ctx, serverClient, tenant)
 		if err != nil {
 			return err
 		}
@@ -303,6 +303,37 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 	return nil
 }
 
+func (r *Reconciler) SetupOpenshiftIDPTenant(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string, tenant string) error {
+	var (
+		clientSecret string
+		clientId     string
+		err          error
+	)
+
+	clientSecret, err = r.GetTenantClientSecret(ctx, serverClient, tenant)
+	if err != nil {
+		return err
+	}
+	clientId = tenant
+
+	oauthClient := &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clientId,
+		},
+		Secret:       clientSecret,
+		RedirectURIs: redirectUris,
+		GrantMethod:  oauthv1.GrantHandlerAuto,
+	}
+
+	_, err = r.ReconcileOauthClient(ctx, installation, oauthClient, serverClient)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // Sync the secret to cover the scenario where the secret is changed through the Keycloak GUI.
 func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverClient k8sclient.Client, authenticated keycloakCommon.KeycloakInterface, sso config.RHSSOInterface, keycloakRealmName string) error {
 
@@ -333,7 +364,7 @@ func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverCli
 	return nil
 }
 
-func (r *Reconciler) getTenantClientSecret(ctx context.Context, serverClient k8sclient.Client, tenant string) (string, error) {
+func (r *Reconciler) GetTenantClientSecret(ctx context.Context, serverClient k8sclient.Client, tenant string) (string, error) {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "tenant-oauth-client-secrets",
