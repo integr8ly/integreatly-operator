@@ -297,6 +297,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					},
 				},
 				AlertManagerConfigSecret: config.AlertManagerConfigSecretName,
+				PrometheusVersion:        r.Config.GetPrometheusVersion(),
+				AlertManagerVersion:      r.Config.GetAlertManagerVersion(),
 			},
 			ResyncPeriod: "1h",
 		}
