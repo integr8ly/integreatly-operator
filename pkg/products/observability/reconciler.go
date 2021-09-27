@@ -29,9 +29,8 @@ const (
 	defaultInstallationNamespace = "observability"
 
 	// alert manager configuration
-	alertManagerRouteName = "kafka-alertmanager"
-	configMapNoInit       = "observability-operator-no-init"
-	observabilityName     = "observability-stack"
+	configMapNoInit   = "observability-operator-no-init"
+	observabilityName = "observability-stack"
 )
 
 type Reconciler struct {
@@ -162,7 +161,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, client, r.installation, r.Config.GetNamespace(), alertManagerRouteName)
+	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, client, r.installation, r.Config.GetNamespace(), r.Config.GetAlertManagerRouteName())
 	r.log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -299,6 +298,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				AlertManagerConfigSecret: config.AlertManagerConfigSecretName,
 				PrometheusVersion:        r.Config.GetPrometheusVersion(),
 				AlertManagerVersion:      r.Config.GetAlertManagerVersion(),
+				PrometheusRoute:          r.Config.GetPrometheusRouteName(),
+				AlertManagerRoute:        r.Config.GetAlertManagerRouteName(),
 			},
 			ResyncPeriod: "1h",
 		}
