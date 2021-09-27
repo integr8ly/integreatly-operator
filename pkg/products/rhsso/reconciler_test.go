@@ -272,6 +272,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		Phase: keycloak.PhaseReconciling,
 	})
 
+	credentialRhsso := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      adminCredentialSecretName,
+			Namespace: "rhsso",
+		},
+		Data: map[string][]byte{
+			"rhsso": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
@@ -334,7 +344,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{

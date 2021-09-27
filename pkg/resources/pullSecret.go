@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -60,6 +61,35 @@ func ReconcileSecretToProductNamespace(ctx context.Context, client k8sclient.Cli
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secretName string, namespace string, kc keycloak.Keycloak, log l.Logger) error {
+	srcSecret := corev1.Secret{}
+	err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, &srcSecret)
+	if err != nil {
+		return err
+	}
+	istrue := true
+
+	owner := metav1.OwnerReference{
+		APIVersion:         "keycloak.org/v1alpha1",
+		Kind:               "Keycloak",
+		Name:               kc.Name,
+		UID:                kc.UID,
+		Controller:         &istrue,
+		BlockOwnerDeletion: &istrue,
+	}
+	ownerRef := []metav1.OwnerReference{
+		owner,
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, client, &srcSecret, func() error {
+		if srcSecret.OwnerReferences == nil {
+			srcSecret.OwnerReferences = ownerRef
+		}
+		return nil
+	})
+
+	return err
 }
 
 // Copies a secret from a target namespace to the RHMI operator namespace
