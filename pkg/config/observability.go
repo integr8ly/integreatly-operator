@@ -1,8 +1,8 @@
 package config
 
 import (
-	oo "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	oo "github.com/redhat-developer/observability-operator/v3/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )

@@ -115,9 +115,6 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.5
-## explicit
-github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1
 # github.com/blang/semver v3.5.1+incompatible
 ## explicit
 github.com/blang/semver
@@ -616,6 +613,9 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/redhat-developer/observability-operator/v3 v3.0.6-0.20210927202215-4687979d3103
+## explicit
+github.com/redhat-developer/observability-operator/v3/api/v1
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
