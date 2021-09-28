@@ -234,11 +234,11 @@ test/e2e/multitenant-rhoam/prow: setup-mt-idp
 test/e2e/multitenant-rhoam/prow: test/e2e-multitenant
 
 .PHONY: setup-mt-idp
+setup-mt-idp: export SURF_DEBUG_HEADERS=1
 setup-mt-idp: cluster/deploy
 	NUM_REGULAR_USER=$(NUMBER_OF_TENANTS) NUM_ADMIN=0 PASSWORD=Password1 REALM_DISPLAY_NAME=devsandbox REALM=devsandbox ./scripts/setup-sso-idp.sh
 
 .PHONY: test/e2e-multitenant
-test/e2e-multitenant: export SURF_DEBUG_HEADERS=1
 test/e2e-multitenant:
 	go clean -testcache && go test -v ./test/e2e -timeout=120m -ginkgo.v
 
