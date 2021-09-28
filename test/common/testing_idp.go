@@ -81,19 +81,16 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 	if err := client.Get(ctx, types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Openshift Oauth Route: %w ", err)
 	}
-	t.Logf("Creating secret")
 	// create keycloak client secret
 	if err := createClientSecret(ctx, client, []byte(defaultSecret)); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
 	}
 
-	t.Logf("creating realm")
 	// create keycloak realm
 	if err := createKeycloakRealm(ctx, client, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
 
-	t.Logf("creating client")
 	// Delete current client to ensure new created client secret is correct
 	if err := deleteKeycloakClient(ctx, client); err != nil {
 		return err
@@ -104,37 +101,31 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
-	t.Logf("client is ready")
 	if err := ensureKeycloakClientIsReady(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while waiting on keycloak client: %w", err)
 	}
 
-	t.Logf("creating users")
 	// create keycloak rhmi developer users
 	if err := createKeycloakUsers(ctx, client, rhmiCR, defaultNumberOfTestUsers, TestingIDPRealm); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
-	t.Logf("has self signed certificates: %s", hasSelfSignedCerts)
 	if hasSelfSignedCerts {
 		if err := setupIDPConfig(ctx, client); err != nil {
 			return fmt.Errorf("error occurred while updating openshift config: %w", err)
 		}
 	}
 
-	t.Logf("adding IDP to OAUTH")
 	// create idp in cluster oauth
 	if err := addIDPToOauth(ctx, client, hasSelfSignedCerts); err != nil {
 		return fmt.Errorf("error occurred while adding testing idp to cluster config: %w", err)
 	}
 
-	t.Logf("adding dedicated admins")
 	// add users to dedicated admin users
 	if err := addDedicatedAdminUsers(ctx, client, defaultNumberOfDedicatedAdmins); err != nil {
 		return fmt.Errorf("error occurred while adding users to dedicated admin group: %w", err)
 	}
 
-	t.Logf("waiting for OAUTH")
 	// ensure oauth has redeployed
 	if err := waitForOauthDeployment(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
@@ -160,7 +151,6 @@ func createTestingIDP(t TestingTB, ctx context.Context, client dynclient.Client,
 		return fmt.Errorf("failed to check for openshift idp: %w", err)
 	}
 
-	t.Logf("IDP CREATED!!!!!!")
 	return nil
 }
 
