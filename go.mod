@@ -13,7 +13,6 @@ require (
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.39.2
-	github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3 v3.0.5
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
 	github.com/envoyproxy/go-control-plane v0.9.8
@@ -43,6 +42,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.11.0
+	github.com/redhat-developer/observability-operator/v3 v3.0.6-0.20210927202215-4687979d3103
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e

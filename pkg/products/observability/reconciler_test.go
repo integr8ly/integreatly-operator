@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
-	observability "github.com/bf2fc6cc711aee1a0c2a/observability-operator/v3/api/v1"
+	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
