@@ -47,10 +47,10 @@ Verify quota is set correctly.
 
    There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 
-3. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
+3. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
 ```
 
 4. Select the **Workload App** dashboard
@@ -59,10 +59,10 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring
 
 5. Go to OpenShift console and approve the upgrade
 
-6. After upgrade is done, open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace again
+6. After upgrade is done, open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace again
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
 ```
 
 7. Select the **Workload App** dashboard

@@ -43,7 +43,7 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 4. Check there are no currently firing alerts.
 
-   - Get the prometheus route `oc get routes -n redhat-rhoam-middleware-monitoring-operator | grep prometheus-route`
+   - Get the prometheus route `oc get routes -n redhat-rhoam-observability | grep prometheus-route`
    - Login to Prometheus using kubeadmin credentials
    - Allow permissions
    - In the alerts tab in the prometheus ui confirm that only one alert DeadMansSwitch is firing
@@ -60,10 +60,10 @@ Testcase should not be performed on a cluster that has been used for destructive
    > 2. Create a followup bug JIRA and inform release coordinators. Example JIRA: https://issues.redhat.com/browse/INTLY-9443
    > 3. Request that cluster lifespan be extended to allow time for cluster to be investigated (ask release coordinator).
 
-6. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
+6. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
 ```
 
 7. Select the **Workload App** dashboard

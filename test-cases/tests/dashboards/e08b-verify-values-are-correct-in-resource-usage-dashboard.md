@@ -26,7 +26,7 @@ More info: <https://issues.redhat.com/browse/INTLY-7869>
 ## Steps
 
 1. Login into OpenShift console as kubeadmin
-2. Navigate to `redhat-rhoam-middleware-monitoring-operator` namespace
+2. Navigate to `redhat-rhoam-observability` namespace
 3. Open **Networking > Routes**
 4. Click on **Grafana** route
 5. Open `resource usage by pod` dashboard
