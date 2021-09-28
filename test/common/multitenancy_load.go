@@ -45,7 +45,6 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 	}
 	masterURL := rhmi.Spec.MasterURL
 
-	t.Logf("Setting up IDP")
 	// Either setup IDP and create users if in PROW, or create users if in pipeline
 	err = setupIDP(t, ctx, rhmi)
 	if err != nil {
@@ -54,7 +53,6 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 
 	// Skip mass login to cluster if running in PROW, instead login as 1st and 2nd user only.
 	if !testResources.RunningInProw(rhmi) {
-		t.Logf("Mass login")
 		// Cluster login all users apart from last one
 		clusterLoginSuccess := loginUsersToCluster(t, ctx, masterURL)
 		if !clusterLoginSuccess {
@@ -62,14 +60,12 @@ func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
 		}
 	}
 
-	t.Logf("Log in user 1")
 	// Verify that last user created can login to 3scale
 	err = loginTo3scaleAsCertainUser(t, ctx, masterURL, rhmi.Spec.RoutingSubdomain, multitenantUsers-1)
 	if err != nil {
 		t.Errorf("User login to 3scale failed: %v", err)
 	}
 
-	t.Logf("Log in user 2")
 	// Meassure the time it takes for a newly logged in tenant to be created + logged in to 3scale
 	err = loginTo3scaleAsCertainUser(t, ctx, masterURL, rhmi.Spec.RoutingSubdomain, multitenantUsers)
 	if err != nil {
@@ -101,7 +97,6 @@ func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, rou
 	// 3scale route for tenant
 	host := fmt.Sprintf("https://%v-admin.%v", testUser, routingDomain)
 
-	t.Logf("trying to log client into 3scale")
 	err = wait.Poll(pollingTime, tenantCreationTime, func() (done bool, err error) {
 
 		// Let user login to the cluster
@@ -114,7 +109,6 @@ func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, rou
 				isClusterLoggedIn = true
 			}
 		}
-		t.Logf("is Cluster loged in: %s at %s", isClusterLoggedIn, time.Now())
 
 		// Check if 3scale route is available
 		if !routeFound {
@@ -125,17 +119,14 @@ func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, rou
 				routeFound = true
 			}
 		}
-		t.Logf("3scale rout is found: %s at %s", routeFound, time.Now())
 
 		//Login tenant to 3scale
 		if !isThreeScaleLoggedIn {
 			err := loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, realmName, tenantClient)
 			if err != nil {
-				t.Logf("user failed to login to 3scale at %s", time.Now())
 				t.Log(fmt.Sprintf("User failed to login to 3scale %s", testUser))
 				return false, nil
 			} else {
-				t.Logf("user loged to 3scale at %s", time.Now())
 				timeSinceLoginToRoutesFound := time.Since(timeOfLogin).Seconds()
 				t.Log(fmt.Sprintf("User logged in to 3scale %s after %v", testUser, timeSinceLoginToRoutesFound))
 				isThreeScaleLoggedIn = true
@@ -143,7 +134,6 @@ func loginTo3scaleAsCertainUser(t TestingTB, ctx *TestingContext, masterURL, rou
 		}
 		return true, nil
 	})
-	t.Logf("user succeeded to login to 3scale at %s", time.Now())
 	if err != nil {
 		return fmt.Errorf("User %s login and creation of tenant failed with: %v", testUser, err)
 	} else {
@@ -227,8 +217,8 @@ func getTenantCreationTime(t TestingTB) (time.Duration, error) {
 	var err error
 	duration, ok := os.LookupEnv("TENANTS_CREATION_TIMEOUT")
 	if ok != true {
-		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 20 minutes")
-		tenantCreationTime, err = time.ParseDuration("20m")
+		t.Log("TENANTS_CREATION_TIMEOUT not found, setting to default value of 10 minutes")
+		tenantCreationTime, err = time.ParseDuration("10m")
 	} else {
 		tenantCreationTime, err = time.ParseDuration(fmt.Sprintf("%sm", duration))
 	}
@@ -290,7 +280,6 @@ func setupIDP(t TestingTB, ctx *TestingContext, rhmi *rhmiv1alpha1.RHMI) error {
 			return fmt.Errorf("error while creating keycloak users: %s", err)
 		}
 	} else {
-		t.Logf("devsandbox IDP")
 		// setting TestingIDPRealm to realmName required by Multitenant
 		TestingIDPRealm = realmName
 		err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)

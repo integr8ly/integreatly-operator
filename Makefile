@@ -35,7 +35,7 @@ RHOAM_TAG ?= 1.13.0
 
 export SKIP_FLAKES := true
 export NUMBER_OF_TENANTS ?= 2
-export TENANTS_CREATION_TIMEOUT ?= 20
+export TENANTS_CREATION_TIMEOUT ?= 10
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -228,7 +228,7 @@ test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
 test/e2e/multitenant-rhoam/prow: export NUMBER_OF_TENANTS := 2
-test/e2e/multitenant-rhoam/prow: export TENANTS_CREATION_TIMEOUT := 20
+test/e2e/multitenant-rhoam/prow: export TENANTS_CREATION_TIMEOUT := 10
 test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
