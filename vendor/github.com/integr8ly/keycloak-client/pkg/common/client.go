@@ -952,6 +952,41 @@ func (c *Client) CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName
 	)
 }
 
+func (c *Client) UpdateEventsConfig(realmName string, enabledEventTypes, eventsListeners []string) error {
+	add := map[string]interface{}{
+		"eventsEnabled":     "true",
+		"eventsListeners":   eventsListeners,
+		"enabledEventTypes": enabledEventTypes,
+	}
+	path := fmt.Sprintf("realms/%s/events/config", realmName)
+
+	return c.update(add, path, "events-config")
+}
+
+func (c *Client) ListOfActivesUsersPerRealm(realmName, dateFrom string, max int) ([]Users, error) {
+	filter := "type=LOGIN"
+	if max != 0 {
+		filter = fmt.Sprintf("%s&max=%d", filter, max)
+	}
+	if dateFrom != "" {
+		filter = fmt.Sprintf("%s&dateFrom=%s", filter, dateFrom)
+	}
+
+	path := fmt.Sprintf("realms/%s/events?%s", realmName, filter)
+	objects, err := c.list(path, "listActiveUsers", func(body []byte) (t T, e error) {
+		var users []Users
+		err := json.Unmarshal(body, &users)
+		return users, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if objects == nil {
+		return nil, nil
+	}
+	return objects.([]Users), err
+}
+
 func (c *Client) ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm", realmName, groupID)
 	objects, err := c.list(path, "groupRealmRoles", func(body []byte) (t T, e error) {
@@ -1141,6 +1176,9 @@ type KeycloakInterface interface {
 	GetAuthenticatorConfig(configID, realmName string) (*v1alpha1.AuthenticatorConfig, error)
 	UpdateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error
 	DeleteAuthenticatorConfig(configID, realmName string) error
+
+	ListOfActivesUsersPerRealm(realmName, dateFrom string, max int) ([]Users, error)
+	UpdateEventsConfig(realmName string, enabledEventTypes, eventsListeners []string) error
 }
 
 //go:generate moq -out keycloakClientFactory_moq.go . KeycloakClientFactory

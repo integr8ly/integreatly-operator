@@ -36,3 +36,7 @@ type UserAttributes struct {
 	User      v1alpha1.KeycloakAPIUser `json:"user,omitempty"`
 	Attribute map[string]string        `json:"attribute,omitempty"`
 }
+
+type Users struct {
+	UserID string `json:"userId"`
+}
