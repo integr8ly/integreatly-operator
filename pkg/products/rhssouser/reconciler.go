@@ -1632,3 +1632,6 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 
 	return nil
 }
+
+
+
