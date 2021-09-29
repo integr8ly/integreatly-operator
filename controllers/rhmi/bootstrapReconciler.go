@@ -79,6 +79,29 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, installationQuota *quota.Quota, request ctrl.Request) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling bootstrap stage")
 
+	if integreatlyv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return rhmiv1alpha1.PhaseFailed, err
+		}
+
+		uninstall := false
+		if installation.DeletionTimestamp != nil {
+			uninstall = true
+		}
+
+		phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(observabilityConfig.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, observabilityConfig.GetNamespace(), r.log)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}, r.log)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+			return phase, err
+		}
+	}
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
@@ -139,6 +162,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
+
+	if integreatlyv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return rhmiv1alpha1.PhaseFailed, err
+		}
+		phase, err = r.ReconcileNamespace(ctx, observabilityConfig.GetNamespace(), installation, serverClient, log)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to create observability operand namespace", err)
+			return phase, errors.Wrap(err, "failed to create observability operand namespace")
+		}
+	}
+
 	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
 	r.deleteObsoleteService(ctx, serverClient)
 

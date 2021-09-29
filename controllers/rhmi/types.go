@@ -88,6 +88,9 @@ var (
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
 				},
 			},
+			{
+				Name: integreatlyv1alpha1.UninstallBootstrap,
+			},
 		},
 	}
 	allManagedApiStages = &Type{

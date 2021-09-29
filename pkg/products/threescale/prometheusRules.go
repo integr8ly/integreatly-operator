@@ -2,6 +2,7 @@ package threescale
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
@@ -14,15 +15,33 @@ import (
 func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
+	namespace := r.Config.GetNamespace()
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	alertNamePrefix := ""
+	operatorAlertNamePrefix := ""
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			logger.Warning("failed to get observability config")
+			return nil
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+		operatorNamespace = observabilityConfig.GetNamespace()
+		alertNamePrefix = "3scale-"
+		operatorAlertNamePrefix = "3scale-operator-"
+	}
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
 		ProductName:  "3scale",
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "ksm-endpoint-alerts",
+				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: " 3scale-endpoint.rules",
-				Namespace: r.Config.GetNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "RHMIThreeScaleApicastProductionServiceEndpointDown",
@@ -128,9 +147,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 			},
 
 			{
-				AlertName: "ksm-endpoint-alerts",
+				AlertName: operatorAlertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: " 3scale-operator-endpoint.rules",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: operatorNamespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
@@ -155,9 +174,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				},
 			},
 			{
-				AlertName: "ksm-3scale-user-alerts",
+				AlertName: alertNamePrefix + "ksm-3scale-user-alerts",
 				GroupName: "general.rules",
-				Namespace: r.Config.GetNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "ThreeScaleUserCreationFailed",
@@ -179,9 +198,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 			},
 
 			{
-				AlertName: "ksm-3scale-alerts",
+				AlertName: alertNamePrefix + "ksm-3scale-alerts",
 				GroupName: "general.rules",
-				Namespace: r.Config.GetNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "ThreeScaleApicastStagingPod",

@@ -34,6 +34,7 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -174,8 +175,13 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 		"severity": "warning",
 		"product":  installationName,
 	}
+
 	// create the rule
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
+	namespace := cr.Namespace
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(cr.Spec.Type)) {
+		namespace = "redhat-rhoam-observability"
+	}
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, namespace, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
 	}

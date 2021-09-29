@@ -2,6 +2,7 @@ package cloudresources
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -12,14 +13,28 @@ import (
 func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
+	namespace := r.Config.GetOperatorNamespace()
+	alertName := "ksm-endpoint-alerts"
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			logger.Warning("failed to get observability config")
+			return nil
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+		alertName = "cro-ksm-endpoint-alerts"
+	}
+
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "Cloud Resources Operator",
 		Installation: r.installation,
 		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "ksm-endpoint-alerts",
-				Namespace: r.Config.GetOperatorNamespace(),
+				AlertName: alertName,
+				Namespace: namespace,
 				GroupName: "cloud-resources-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{

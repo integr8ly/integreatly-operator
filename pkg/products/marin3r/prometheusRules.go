@@ -2,6 +2,7 @@ package marin3r
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -12,15 +13,33 @@ import (
 func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
+	namespace := r.Config.GetNamespace()
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	alertNamePrefix := ""
+	operatorAlertNamePrefix := ""
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			logger.Warning("failed to get observability config")
+			return nil
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+		operatorNamespace = observabilityConfig.GetNamespace()
+		alertNamePrefix = "marin3r-"
+		operatorAlertNamePrefix = "marin3r-operator-"
+	}
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
 		ProductName:  "Marin3r",
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "ksm-endpoint-alerts",
+				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: "marin3r-endpoint.rules",
-				Namespace: r.Config.GetNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "Marin3rDiscoveryServiceEndpointDown",
@@ -45,9 +64,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				},
 			},
 			{
-				AlertName: "ksm-endpoint-alerts",
+				AlertName: operatorAlertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: "marin3r-operator-endpoint.rules",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: operatorNamespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
@@ -62,9 +81,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				},
 			},
 			{
-				AlertName: "ksm-marin3r-alerts",
+				AlertName: operatorAlertNamePrefix + "ksm-marin3r-alerts",
 				GroupName: "general.rules",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: operatorNamespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "Marin3rOperatorPod",
@@ -79,9 +98,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				},
 			},
 			{
-				AlertName: "ksm-marin3r-alerts",
+				AlertName: alertNamePrefix + "ksm-marin3r-alerts",
 				GroupName: "general.rules",
-				Namespace: r.Config.GetNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "Marin3rWebhookPod",

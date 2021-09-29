@@ -33,9 +33,10 @@ import (
 const (
 	defaultInstallationNamespace = "observability"
 
-	configMapNoInit    = "observability-operator-no-init"
-	observabilityName  = "observability-stack"
-	defaultProbeModule = "http_2xx"
+	configMapNoInit              = "observability-operator-no-init"
+	observabilityName            = "observability-stack"
+	defaultProbeModule           = "http_2xx"
+	OpenshiftMonitoringNamespace = "openshift-monitoring"
 )
 
 type Reconciler struct {
@@ -68,6 +69,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve observability config: %w", err)
 	}
+
+	config.SetNamespacePrefix(installation.Spec.NamespacePrefix)
+
 	if config.GetNamespace() == "" {
 		config.SetNamespace(ns)
 		err := configManager.WriteConfig(config)
@@ -215,6 +219,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			r.log.Warning("Failure reconciling dashboards " + err.Error())
 		}
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
+		return phase, err
+	}
+
+	phase, err = r.newAlertsReconciler(r.log, r.installation.Spec.Type).ReconcileAlerts(ctx, client)
+	r.log.Infof("reconcilePrometheusRule", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
+	// creates an alert to check for the presents of sendgrid smtp secret
+	phase, err = resources.CreateSmtpSecretExists(ctx, client, installation)
+	r.log.Infof("CreateSmtpSecretExistsRule", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile SendgridSmtpSecretExists alert", err)
 		return phase, err
 	}
 
@@ -398,6 +417,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						},
 					},
 				},
+
 				AlertManagerConfigSecret: config.AlertManagerConfigSecretName,
 				PrometheusVersion:        r.Config.GetPrometheusVersion(),
 				AlertManagerVersion:      r.Config.GetAlertManagerVersion(),

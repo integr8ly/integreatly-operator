@@ -338,7 +338,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
-		return r.handleUninstall(installation, installType)
+		return r.handleUninstall(installation, installType, request)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
@@ -639,7 +639,7 @@ func (r *RHMIReconciler) updateStatusAndObject(original, installation *rhmiv1alp
 	return nil
 }
 
-func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, installationType *Type) (ctrl.Result, error) {
+func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, installationType *Type, request ctrl.Request) (ctrl.Result, error) {
 	retryRequeue := ctrl.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
@@ -704,38 +704,11 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
-		for product := range stage.Products {
-			productName := string(product)
-			log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
-			productStatus := installation.GetProductStatusObject(product)
-			//if the finalizer for this product is not present, move to the next product
-			for _, productFinalizer := range finalizers {
-				if !strings.Contains(productFinalizer, productName) {
-					continue
-				}
-				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
-				}
-				serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
-					Scheme: r.mgr.GetScheme(),
-				})
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
-				}
-				uninstall := false
-				if productStatus.Uninstall || installation.DeletionTimestamp != nil {
-					uninstall = true
-				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient,
-					quota.QuotaProductConfig{}, uninstall)
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
-				}
-				if phase != rhmiv1alpha1.PhaseCompleted {
-					pendingUninstalls = true
-				}
-				log.Infof("Current phase ", l.Fields{"productName": productName, "phase": phase})
+		if stage.Name == rhmiv1alpha1.BootstrapStage {
+			pendingUninstalls = r.handleUninstallBootstrap(installation, finalizers, stage, configManager, merr, request)
+		} else {
+			for product := range stage.Products {
+				pendingUninstalls = r.handleUninstallProduct(installation, product, stage, finalizers, configManager, merr)
 			}
 		}
 		//don't move to next stage until all products in this stage are removed
@@ -798,6 +771,73 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	// no finalizers left, update object
 	err = r.Update(context.TODO(), installation)
 	return retryRequeue, err
+}
+
+func (r *RHMIReconciler) handleUninstallProduct(installation *rhmiv1alpha1.RHMI, product rhmiv1alpha1.ProductName, stage Stage, finalizers []string, configManager *config.Manager, merr *resources.MultiErr) bool {
+	productName := string(product)
+	log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
+	productStatus := installation.GetProductStatusObject(product)
+	//if the finalizer for this product is not present, move to the next product
+	for _, productFinalizer := range finalizers {
+		if !strings.Contains(productFinalizer, productName) {
+			continue
+		}
+		reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
+		}
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
+			Scheme: r.mgr.GetScheme(),
+		})
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
+		}
+		uninstall := false
+		if productStatus.Uninstall || installation.DeletionTimestamp != nil {
+			uninstall = true
+		}
+		phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, quota.QuotaProductConfig{}, uninstall)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
+		}
+		if phase != rhmiv1alpha1.PhaseCompleted {
+			return true
+		}
+		log.Infof("Current phase ", l.Fields{"productName": productName, "phase": phase})
+	}
+	return false
+}
+
+func (r *RHMIReconciler) handleUninstallBootstrap(installation *rhmiv1alpha1.RHMI, finalizers []string, stage Stage, configManager *config.Manager, merr *resources.MultiErr, request ctrl.Request) bool {
+	for _, productFinalizer := range finalizers {
+		if !strings.Contains(productFinalizer, "observability") {
+			continue
+		}
+		log.Infof("Uninstalling ", l.Fields{"stage": stage.Name})
+
+		mpm := marketplace.NewManager()
+		reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(rhmiv1alpha1.BootstrapStage)), log)
+		if err != nil {
+			merr.Add(fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err))
+		}
+
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
+			Scheme: r.mgr.GetScheme(),
+		})
+		if err != nil {
+			merr.Add(fmt.Errorf("could not create server client: %w", err))
+		}
+
+		phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, &quota.Quota{}, request)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to reconcile bootstrap: %w", err))
+		}
+		if phase != rhmiv1alpha1.PhaseCompleted {
+			return true
+		}
+		log.Infof("Current phase ", l.Fields{"phase": phase})
+	}
+	return false
 }
 
 func firstInstallFirstReconcile(installation *rhmiv1alpha1.RHMI) bool {
@@ -1014,6 +1054,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	if err != nil {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
+
 	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, quota, request)
 	if err != nil || phase == rhmiv1alpha1.PhaseFailed {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)

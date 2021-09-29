@@ -44,6 +44,14 @@ func (m *Observability) SetNamespace(newNamespace string) {
 	m.Config["NAMESPACE"] = newNamespace
 }
 
+func (m *Observability) GetNamespacePrefix() string {
+	return m.Config["NAMESPACE_PREFIX"]
+}
+
+func (m *Observability) SetNamespacePrefix(newNamespacePrefix string) {
+	m.Config["NAMESPACE_PREFIX"] = newNamespacePrefix
+}
+
 func (m *Observability) Read() ProductConfig {
 	return m.Config
 }
