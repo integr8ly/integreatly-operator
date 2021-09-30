@@ -694,3 +694,43 @@ func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Co
 func (r *Reconciler) IsOperatorInstallComplete(kc *keycloak.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
 	return kc.Status.Version == string(operatorVersion) && kc.Status.Ready
 }
+
+func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Client, productName string, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		ssoAlert := &monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "keycloak",
+				Namespace: productNamespace,
+			},
+		}
+
+		err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: ssoAlert.Name, Namespace: ssoAlert.Namespace}, ssoAlert)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		observabilityAlert := &monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      productName,
+				Namespace: observabilityConfig.GetNamespace(),
+			},
+		}
+		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
+			observabilityAlert.Labels = ssoAlert.Labels
+			observabilityAlert.Spec = ssoAlert.Spec
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if opRes != controllerutil.OperationResultNone {
+			r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": observabilityAlert.Name, "result": opRes})
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}

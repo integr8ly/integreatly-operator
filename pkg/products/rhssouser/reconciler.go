@@ -277,6 +277,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
+	phase, err = r.ExportAlerts(ctx, serverClient, string(r.Config.GetProductName()), r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to export alerts to the observability namespace", err)
+		return phase, err
+	}
+
 	productStatus.Host = r.Config.GetHost()
 	productStatus.Version = r.Config.GetProductVersion()
 	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
