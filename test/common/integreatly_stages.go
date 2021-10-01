@@ -138,7 +138,7 @@ func checkStageStatus(stage v1alpha1.RHMIStageStatus) string {
 }
 
 func checkProductStatus(product v1alpha1.RHMIProductStatus) string {
-	return checkStatus(product.Status)
+	return checkStatus(product.Phase)
 }
 
 // checkStatus verifies that the status is complete. If it is, returns the empty
