@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -313,6 +314,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				},
 				MatchExpressions: nil,
 			},
+			Storage: &observability.Storage{PrometheusStorageSpec: &prometheus.StorageSpec{
+				VolumeClaimTemplate: prometheus.EmbeddedPersistentVolumeClaim{
+					Spec: v1.PersistentVolumeClaimSpec{
+						Resources: v1.ResourceRequirements{
+							Requests: v1.ResourceList{
+								"storage": resource.MustParse(r.Config.GetPrometheusStorageRequest()),
+							},
+						},
+					},
+				},
+			}},
+			Retention: r.Config.GetPrometheusRetention(),
 			SelfContained: &observability.SelfContained{
 				DisableRepoSync:         &disabled,
 				DisableObservatorium:    &disabled,

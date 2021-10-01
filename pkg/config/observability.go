@@ -109,3 +109,11 @@ func (m *Observability) GetPrometheusRouteName() string {
 func (m *Observability) GetAlertManagerRouteName() string {
 	return "alertmanager-route"
 }
+
+func (m *Observability) GetPrometheusRetention() string {
+	return "45d"
+}
+
+func (m *Observability) GetPrometheusStorageRequest() string {
+	return "50Gi"
+}
