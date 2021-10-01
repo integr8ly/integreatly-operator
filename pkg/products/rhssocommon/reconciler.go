@@ -581,7 +581,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	if !integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
 		cfg, err := r.ConfigManager.ReadMonitoring()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -599,7 +599,7 @@ func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, client k8scli
 }
 
 func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
 		cfg, err := r.ConfigManager.ReadObservability()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)

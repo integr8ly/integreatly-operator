@@ -2004,7 +2004,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 }
 
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if !integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		cfg, err := r.ConfigManager.ReadMonitoring()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress, nil
@@ -2054,7 +2054,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 }
 
 func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		cfg, err := r.ConfigManager.ReadObservability()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress, nil
