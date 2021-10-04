@@ -15,6 +15,7 @@ spec:
   version: v1alpha1
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         apiVersion:
           type: string
@@ -23,6 +24,7 @@ spec:
         metadata:
           type: object
         spec:
+          type: object
           required: ["datasources", "name"]
           properties:
             name:
@@ -33,3 +35,4 @@ spec:
               items:
                 description: Grafana Datasource Object
                 type: object
+  preserveUnknownFields: false

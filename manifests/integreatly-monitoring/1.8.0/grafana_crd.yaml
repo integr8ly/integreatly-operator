@@ -15,9 +15,11 @@ spec:
   version: v1alpha1
   validation:
     openAPIV3Schema:
+      type: object
       required: ["spec"]
       properties:
         spec:
+          type: object
           properties:
             containers:
               type: array
@@ -111,13 +113,17 @@ spec:
                   description: Additional labels for the running grafana pods in a labeled node.
                 tolerations:
                   type: array
-                  description: Additonal labels for running grafana pods in tained nodes.
+                  items:
+                    type: string
+                    description: Additonal labels for running grafana pods in tained nodes.
                 affinity:
                   type: object
                   description: Additonal labels for running grafana pods with affinity properties.
                 envFrom:
                   type: array
-                  description: Environment variables from Secret or ConfigMap.
+                  items:
+                    type: string
+                    description: Environment variables from Secret or ConfigMap.
                 skipCreateAdminAccount:
                   type: boolean
                   description: Disable creating a random admin user
@@ -150,3 +156,4 @@ spec:
             jsonnet:
               type: object
               description: Jsonnet library configuration
+  preserveUnknownFields: false

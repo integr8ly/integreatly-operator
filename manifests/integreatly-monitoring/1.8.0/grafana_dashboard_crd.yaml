@@ -15,8 +15,10 @@ spec:
   version: v1alpha1
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
+          type: object
           properties:
             name:
               type: string
@@ -41,3 +43,4 @@ spec:
             customFolderName:
               description: Folder name that this dashboard will be assigned to.
               type: string
+  preserveUnknownFields: false
