@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"math/rand"
 	"os"
@@ -365,27 +366,15 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 	}
 
 	for _, tenant := range allTenants {
-		if _, ok := oauthClientSecrets.Data[tenant.TenantName]; !ok {
-			oauthClient := &oauthv1.OAuthClient{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: r.installation.Spec.NamespacePrefix + tenant.TenantName,
-				},
-			}
-			err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
-			if !k8serr.IsNotFound(err) && err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			} else if k8serr.IsNotFound(err) {
-				oauthClientSecrets.Data[tenant.TenantName] = []byte(generateSecret(32))
-			} else {
-				// recover secret from existing OAuthClient object in case Secret object was deleted
-				oauthClientSecrets.Data[tenant.TenantName] = []byte(oauthClient.Secret)
-				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"tenant": tenant.TenantName})
-			}
-		}
+		r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
 	}
+	r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, rhssouser.StagingRealmName)
 
 	// Remove redundant tenant secrets
 	for key, _ := range oauthClientSecrets.Data {
+		if key == rhssouser.StagingRealmName {
+			continue
+		}
 		if !tenantExists(key, allTenants) {
 			delete(oauthClientSecrets.Data, key)
 		}
@@ -400,6 +389,28 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 	r.log.Info("Tenant OAuth client secrets successfully reconciled")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileOauthSecretData(ctx context.Context, serverClient k8sclient.Client, oauthClientSecret *corev1.Secret, key string) error {
+	if _, ok := oauthClientSecret.Data[key]; !ok {
+		oauthClient := &oauthv1.OAuthClient{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: r.installation.Spec.NamespacePrefix + key,
+			},
+		}
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecret.Name}, oauthClient)
+		if !k8serr.IsNotFound(err) && err != nil {
+			r.log.Error("Error getting oauth client secret", err)
+			return err
+		} else if k8serr.IsNotFound(err) {
+			oauthClientSecret.Data[key] = []byte(generateSecret(32))
+		} else {
+			// recover secret from existing OAuthClient object in case Secret object was deleted
+			oauthClientSecret.Data[key] = []byte(oauthClient.Secret)
+			r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"key": key})
+		}
+	}
+	return nil
 }
 
 func tenantExists(user string, tenants []userHelper.MultiTenantUser) bool {

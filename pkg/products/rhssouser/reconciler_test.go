@@ -6,14 +6,12 @@ import (
 	"errors"
 	"fmt"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"strconv"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -259,191 +257,6 @@ func getAddedUsers() []userHelper.MultiTenantUser {
 	return []userHelper.MultiTenantUser{
 		getUser("user1"),
 		getUser("user2"),
-	}
-}
-
-func TestReconciler_reconcileTenants(t *testing.T) {
-
-	var createKcRealmCalls = 0
-	var createKcUserCalls = 0
-	var deleteKcRealmCalls = 0
-	var deleteKcUserCalls = 0
-
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	getSigClient := func(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
-		sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
-		sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
-			switch obj.(type) {
-			case *keycloak.KeycloakRealm:
-				createKcRealmCalls++
-				return nil
-			case *keycloak.KeycloakUser:
-				createKcUserCalls++
-				return nil
-			}
-			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-		}
-		sigsFakeClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
-			switch obj.(type) {
-			case *keycloak.KeycloakRealm:
-				deleteKcRealmCalls++
-				return nil
-			case *keycloak.KeycloakUser:
-				deleteKcUserCalls++
-				return nil
-			}
-			return sigsFakeClient.GetSigsClient().Delete(ctx, obj)
-		}
-		return sigsFakeClient
-	}
-
-	oauthClientSecrets := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tenant-oauth-client-secrets",
-			Namespace: defaultOperatorNamespace,
-		},
-		Data: map[string][]byte{
-			"user2": bytes.NewBufferString("test").Bytes(),
-			"user1": bytes.NewBufferString("test").Bytes(),
-		},
-	}
-
-	var kcr1 = getKcr(keycloak.KeycloakRealmStatus{
-		Phase: keycloak.PhaseReconciling,
-	}, "user1", "redhat-rhoam-user-sso")
-	var kcr2 = getKcr(keycloak.KeycloakRealmStatus{
-		Phase: keycloak.PhaseReconciling,
-	}, "user2", "redhat-rhoam-user-sso")
-
-	kcrs := keycloak.KeycloakRealmList{
-		Items: []keycloak.KeycloakRealm{},
-	}
-
-	kcrs2 := keycloak.KeycloakRealmList{
-		Items: []keycloak.KeycloakRealm{
-			*kcr1,
-			*kcr2,
-		},
-	}
-
-	kc := &keycloak.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakName,
-			Namespace: defaultNamespace,
-		},
-	}
-
-	cases := []struct {
-		Name                  string
-		FakeClient            k8sclient.Client
-		FakeOauthClient       oauthClient.OauthV1Interface
-		FakeConfig            *config.ConfigReadWriterMock
-		Installation          *integreatlyv1alpha1.RHMI
-		AssertFunc            func()
-		FakeMPM               *marketplace.MarketplaceInterfaceMock
-		Recorder              record.EventRecorder
-		ApiUrl                string
-		Users                 []userHelper.MultiTenantUser
-		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
-		ProductConfig         *quota.ProductConfigMock
-	}{
-		{
-			Name:            "Test reconcile tenant kcrealm and kcuser creation",
-			FakeClient:      getSigClient([]runtime.Object{oauthClientSecrets, &kcrs, kc}, scheme),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation: &integreatlyv1alpha1.RHMI{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "RHMI",
-					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-				},
-				ObjectMeta: controllerruntime.ObjectMeta{
-					Namespace: defaultOperatorNamespace,
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					Type: "multitenant-managed-api",
-				},
-			},
-			Users: getAddedUsers(),
-			AssertFunc: func() {
-				if createKcRealmCalls != 2 || createKcUserCalls != 2 {
-					t.Fatal("expected createKcRealm: ", strconv.Itoa(createKcRealmCalls), " and createKcUser: ", strconv.Itoa(createKcUserCalls), " to be called twice each")
-				}
-			},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &quota.ProductConfigMock{
-				ConfigureFunc: func(obj metav1.Object) error {
-					return nil
-				},
-			},
-		},
-		{
-			Name:            "Test reconcile tenant kcrealm and kcuser deletion",
-			FakeClient:      getSigClient([]runtime.Object{oauthClientSecrets, &kcrs2, kc}, scheme),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation: &integreatlyv1alpha1.RHMI{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "RHMI",
-					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-				},
-				ObjectMeta: controllerruntime.ObjectMeta{
-					Namespace: defaultOperatorNamespace,
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					Type: "multitenant-managed-api",
-				},
-			},
-			Users: []userHelper.MultiTenantUser{},
-			AssertFunc: func() {
-				if deleteKcRealmCalls != 2 || deleteKcUserCalls != 2 {
-					t.Fatal("expected deleteKcRealm: ", strconv.Itoa(deleteKcRealmCalls), " and deleteKcUser: ", strconv.Itoa(deleteKcUserCalls), " to be called twice each")
-				}
-			},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &quota.ProductConfigMock{
-				ConfigureFunc: func(obj metav1.Object) error {
-					return nil
-				},
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(
-				tc.FakeConfig,
-				tc.Installation,
-				tc.FakeOauthClient,
-				tc.FakeMPM,
-				tc.Recorder,
-				tc.ApiUrl,
-				tc.KeycloakClientFactory,
-				getLogger(),
-				localProductDeclaration,
-			)
-			if err != nil {
-				t.Fatal("unexpected err ", err)
-			}
-
-			kc := &keycloak.Keycloak{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      keycloakName,
-					Namespace: "ns",
-				},
-			}
-
-			reconciler.reconcileTenants(context.TODO(), tc.FakeClient, "redhat-rhoam-user-sso", tc.Users, kc)
-			tc.AssertFunc()
-		})
 	}
 }
 
@@ -1144,6 +957,7 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 			FindAuthenticationExecutionForFlowFunc:   keycloakInterfaceMock.FindAuthenticationExecutionForFlow,
 			UpdateAuthenticationExecutionForFlowFunc: keycloakInterfaceMock.UpdateAuthenticationExecutionForFlow,
 			ListClientsFunc:                          keycloakInterfaceMock.ListClients,
+			ListOfActivesUsersPerRealmFunc:           keycloakInterfaceMock.ListOfActivesUsersPerRealm,
 		}, nil
 	}}
 }
@@ -1512,6 +1326,19 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil
 	}
 
+	listOfActivesUsersPerRealmFunc := func(realmName, dateFrom string, max int) ([]keycloakCommon.Users, error) {
+		users := []keycloakCommon.Users{
+			{
+				UserID: "test-user1",
+			},
+			{
+				UserID: "test-user2",
+			},
+		}
+
+		return users, nil
+	}
+
 	return &keycloakCommon.KeycloakInterfaceMock{
 		ListRealmsFunc:                           listRealmsFunc,
 		FindGroupByNameFunc:                      findGroupByNameFunc,
@@ -1532,6 +1359,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		FindAuthenticationExecutionForFlowFunc:   findAuthenticationExecutionForFlowFunc,
 		UpdateAuthenticationExecutionForFlowFunc: updateAuthenticationExecutionForFlowFunc,
 		ListClientsFunc:                          listClientsFunc,
+		ListOfActivesUsersPerRealmFunc:           listOfActivesUsersPerRealmFunc,
 	}, &context
 }
 
