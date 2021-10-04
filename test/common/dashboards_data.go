@@ -78,15 +78,25 @@ var (
 	}
 )
 
+func TestDashboardsData(t TestingTB, ctx *TestingContext){
+	execToPodCommand := "curl "
+	testDashboardsData(t, ctx, MonitoringOperatorNamespace, execToPodCommand)
+}
+
+func TestDashboardsDataObservability(t TestingTB, ctx *TestingContext){
+	execToPodCommand := "wget -qO - "
+	testDashboardsData(t, ctx, ObservabilityProductNamespace, execToPodCommand)
+}
+
 // TestDashboardsData verifies that all dashboards are installed and all the graphs are filled with data
-func TestDashboardsData(t TestingTB, ctx *TestingContext) {
+func testDashboardsData(t TestingTB, ctx *TestingContext, monitoringNamespace string, execToPodCommand string) {
 	// Get grafana pod ip to curl
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, monitoringNamespace)
 	grafanaPodIP := monitoringGrafanaPods.Items[0].Status.PodIP
 
 	// Pod and container name to perform curls from
 	curlContainerName := "prometheus"
-	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
+	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx, monitoringNamespace)
 	if err != nil {
 		t.Fatal("failed to get prometheus pod name", err)
 	}
@@ -95,12 +105,14 @@ func TestDashboardsData(t TestingTB, ctx *TestingContext) {
 	monitoringTimeout := 10 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err = wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		expressions, err := getDashboardExpressions(grafanaPodIP, prometheusPodName, curlContainerName, prometheusPodName, ctx, t)
+		expressions, err := getDashboardExpressions(grafanaPodIP, prometheusPodName, curlContainerName, prometheusPodName,
+													ctx, t, monitoringNamespace, execToPodCommand)
 		if err != nil {
 			return false, fmt.Errorf("failed to get dashboard expressions: %w", err)
 		}
 
-		queryOutputs, err := queryPrometheusMany(expressions, prometheusPodName, ctx)
+		queryOutputs, err := queryPrometheusMany(expressions, prometheusPodName, ctx,
+												monitoringNamespace, execToPodCommand)
 		if err != nil {
 			return false, fmt.Errorf("failed to query prometheus many: %w", err)
 		}
@@ -149,7 +161,9 @@ func TestDashboardsData(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string, ctx *TestingContext, t TestingTB) ([]string, error) {
+func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string,
+										ctx *TestingContext, t TestingTB, monitoringNamespace string,
+										execToPodCommand string) ([]string, error) {
 
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -158,12 +172,16 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 	}
 	expectedServices := getExpectedServices(rhmi.Spec.Type)
 
-	rhmiNamespaces, err := getRHMINamespaces(rhmi.Spec.NamespacePrefix, prometheusPodName, ctx)
+	rhmiNamespaces, err := getRHMINamespaces(rhmi.Spec.NamespacePrefix, prometheusPodName, ctx,
+												monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RHMI namespaces: %w", err)
 	}
+	if len(rhmiNamespaces) == 0 {
+		return nil, fmt.Errorf("failed to get RHMI namespaces - namespaces not found")
+	}
 
-	rhmiPods, err := getRHMIPods(rhmiNamespaces, prometheusPodName, ctx)
+	rhmiPods, err := getRHMIPods(rhmiNamespaces, prometheusPodName, ctx, monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RHMI pods: %w", err)
 	}
@@ -172,7 +190,8 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 	expressions := make(map[string]struct{})
 
 	for _, dashboardName := range dashboardsNames {
-		panels, err := getDashboardPanels(dashboardName, grafanaPodIp, curlPodName, curlContainerName, ctx)
+		panels, err := getDashboardPanels(dashboardName, grafanaPodIp, curlPodName, curlContainerName, ctx,
+											monitoringNamespace, execToPodCommand)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get dashboard panels: %w", err)
 		}
@@ -225,16 +244,15 @@ func getExpectedServices(installType string) []string {
 	}
 }
 
-func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingContext) (map[string][]string, error) {
+func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingContext,
+					monitoringNamespace string, execToPodCommand string) (map[string][]string, error) {
 	pods := make(map[string][]string)
 
 	var queries []string
-
 	for _, namespace := range namespaces {
 		queries = append(queries, "kube_pod_info{namespace=~'"+namespace+"'}")
 	}
-
-	queryOutputs, err := queryPrometheusMany(queries, prometheusPodName, ctx)
+	queryOutputs, err := queryPrometheusMany(queries, prometheusPodName, ctx, monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +272,10 @@ func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingCont
 	return pods, nil
 }
 
-func getRHMINamespaces(namespacePrefix, prometheusPodName string, ctx *TestingContext) ([]string, error) {
-	queryResult, err := queryPrometheus(fmt.Sprintf("kube_namespace_labels{namespace=~'%s.*'}", namespacePrefix), prometheusPodName, ctx)
+func getRHMINamespaces(namespacePrefix, prometheusPodName string, ctx *TestingContext,
+							monitoringNamespace string, execToPodCommand string) ([]string, error) {
+	queryResult, err := queryPrometheus(fmt.Sprintf("kube_namespace_labels{namespace=~'%s.*'}", namespacePrefix),
+										prometheusPodName, ctx, monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query prometheus: %w", err)
 	}
@@ -269,9 +289,12 @@ func getRHMINamespaces(namespacePrefix, prometheusPodName string, ctx *TestingCo
 	return namespaces, nil
 }
 
-func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName string, curlContainerName string, ctx *TestingContext) ([]panelDefinition, error) {
+func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName string, curlContainerName string,
+								ctx *TestingContext, monitoringNamespace string,
+								execToPodCommand string) ([]panelDefinition, error) {
 	query := url.QueryEscape(dashboardName)
-	searchOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/search?query=%s", query), curlPodName, curlContainerName, ctx)
+	searchOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/search?query=%s", query), curlPodName, curlContainerName,
+										ctx, monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to curl grafana search: %w, dashboard name: %s, grafanaPodIp: %s, curlPodName: %s, curlContainerName: %s", err, dashboardName, grafanaPodIp, curlPodName, curlContainerName)
 	}
@@ -286,7 +309,8 @@ func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName s
 		return nil, fmt.Errorf(dashboardName + " dashboard not found")
 	}
 
-	dashboardOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/dashboards/uid/%s", dashboardSearch[0].UID), curlPodName, curlContainerName, ctx)
+	dashboardOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/dashboards/uid/%s", dashboardSearch[0].UID),
+										curlPodName, curlContainerName, ctx, monitoringNamespace, execToPodCommand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to curl grafana dashboard: %w, grafanaPodIp: %s, curlPodName: %s, curlContainerName: %s, dashboard uuid: %s", err, grafanaPodIp, curlPodName, curlContainerName, dashboardSearch[0].UID)
 	}
@@ -300,10 +324,10 @@ func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName s
 	return dashboardDetail.Dashboard.Panels, nil
 }
 
-func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
+func getMonitoringAppPodName(app string, ctx *TestingContext, monitoringNamespace string) (string, error) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(MonitoringOperatorNamespace),
+		k8sclient.InNamespace(monitoringNamespace),
 		k8sclient.MatchingLabels{"app": app},
 	}
 
@@ -319,17 +343,21 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 	return pods.Items[0].ObjectMeta.Name, nil
 }
 
-func curlGrafana(grafanaPodIp string, path string, curlPodName string, curlContainerName string, ctx *TestingContext) (string, error) {
-	return execToPod(fmt.Sprintf("curl %s:3000", grafanaPodIp)+path,
+func curlGrafana(grafanaPodIp string, path string, curlPodName string, curlContainerName string,
+					ctx *TestingContext, monitoringNamespace string, execToPodCommand string) (string, error) {
+	//return execToPod(fmt.Sprintf("curl %s:3000", grafanaPodIp)+path,
+	return execToPod(execToPodCommand + fmt.Sprintf(" %s:3000", grafanaPodIp)+path,
 		curlPodName,
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		curlContainerName, ctx)
 }
 
-func queryPrometheus(query string, podName string, ctx *TestingContext) ([]prometheusQueryResult, error) {
-	queryOutput, err := execToPod("curl localhost:9090/api/v1/query?query="+url.QueryEscape(query),
+func queryPrometheus(query string, podName string, ctx *TestingContext,
+						monitoringNamespace string, execToPodCommand string) ([]prometheusQueryResult, error) {
+	//queryOutput, err := execToPod("curl localhost:9090/api/v1/query?query="+url.QueryEscape(query),
+	queryOutput, err := execToPod(execToPodCommand + " localhost:9090/api/v1/query?query="+url.QueryEscape(query),
 		podName,
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec to prometheus pod: %w", err)
@@ -338,16 +366,21 @@ func queryPrometheus(query string, podName string, ctx *TestingContext) ([]prome
 	return getPrometheusQueryResult(queryOutput)
 }
 
-func queryPrometheusMany(queries []string, podName string, ctx *TestingContext) ([]string, error) {
-	command := ""
+func queryPrometheusMany(queries []string, podName string, ctx *TestingContext,
+							monitoringNamespace string, execToPodCommand string) ([]string, error) {
+	if (len(queries) == 0) {
+		return nil, fmt.Errorf("queries list is empty")
+	}
 
+	command := ""
 	for _, query := range queries {
-		command += "curl localhost:9090/api/v1/query?query=" + url.QueryEscape(query) + ";"
+		//command += "curl localhost:9090/api/v1/query?query=" + url.QueryEscape(query) + ";"
+		command += execToPodCommand + " localhost:9090/api/v1/query?query=" + url.QueryEscape(query) + ";"
 	}
 
 	output, err := execToPod(command,
 		podName,
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec to prometheus pod: %w", err)

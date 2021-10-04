@@ -45,6 +45,7 @@ var (
 		RHMIOperatorNamespace,
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
+		ObservabilityOperatorNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,
@@ -103,20 +104,29 @@ func (e *alertsFiringError) isValid() bool {
 	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
 }
 
-// This test ensures that no alerts are firing during or after installation
 func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsFiring(t, ctx, MonitoringOperatorNamespace)
+}
+
+func TestIntegreatlyAlertsFiringObservability(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsFiring(t, ctx, ObservabilityOperatorNamespace)
+}
+
+
+// This test ensures that no alerts are firing during or after installation
+func testIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
 	//fail immediately if one or more alerts have fired
-	if err := getFiringAlerts(t, ctx); err != nil {
+	if err := getFiringAlerts(t, ctx, monitoringNamespace); err != nil {
 		podLogs(t, ctx)
 		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/INTLY-7481")
 		//t.Fatal(err.Error())
 	}
 
 }
-func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
+func getFiringAlerts(t TestingTB, ctx *TestingContext, monitoringNamespace string) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
@@ -201,15 +211,23 @@ func getPodNamespaces(installType string) []string {
 	}
 }
 
-// TestIntegreatlyAlertsFiring reports any firing or pending alerts
 func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsPendingOrFiring(t, ctx, MonitoringOperatorNamespace)
+}
+func TestIntegreatlyAlertsPendingOrFiringObservability(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsPendingOrFiring(t, ctx, ObservabilityOperatorNamespace)
+}
+
+
+// TestIntegreatlyAlertsFiring reports any firing or pending alerts
+func testIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		if newErr := getFiringOrPendingAlerts(ctx); newErr != nil {
+		if newErr := getFiringOrPendingAlerts(ctx, monitoringNamespace); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {
 				t.Log("Waiting 1 minute for alerts to normalise before retrying")
@@ -227,10 +245,10 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getFiringOrPendingAlerts(ctx *TestingContext) error {
+func getFiringOrPendingAlerts(ctx *TestingContext, monitoringNamespace string) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {

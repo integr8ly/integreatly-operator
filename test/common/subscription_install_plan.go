@@ -20,6 +20,10 @@ func commonSubscriptionsToCheck() []SubscriptionCheck {
 			Namespace: MonitoringOperatorNamespace,
 		},
 		{
+			Name:      constants.ObservabilitySubscriptionName,
+			Namespace: ObservabilityOperatorNamespace,
+		},
+		{
 			Name:      constants.RHSSOSubscriptionName,
 			Namespace: RHSSOUserOperatorNamespace,
 		},

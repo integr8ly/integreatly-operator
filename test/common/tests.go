@@ -30,6 +30,7 @@ var (
 		{
 			[]TestCase{
 				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
+				{"EOO9 - Verify customer dashboards exist - Observability", TestIntegreatlyCustomerDashboardsExistObservability},
 				/*FLAKY on RHOAM*/ {"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
 				{"A32 - Validate SSO config", TestSSOconfig},
 			},
@@ -56,14 +57,21 @@ var (
 				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
+				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiringObservability},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
+				{"COO4 - Verify Alerts exist", TestIntegreatlyAlertsExistObservability},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
+				{"EOO1 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessibleObservability},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
+				{"EOO2 - Verify that all dashboards are installed and all the graphs are filled with data - Observability", TestDashboardsDataObservability},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
+				{"EOO3 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExistObservability},
 				/*FLAKY on RHMI/RHOAM*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
+				/*FLAKY on RHMI/RHOAM*/ {"EOO5 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch - Observability", TestIntegreatlyAlertsFiringObservability},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
@@ -82,6 +90,7 @@ var (
 				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
+				{"COO19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlertObservability},
 				// Keep H11 as last 3scale IDP Test as test causes 3scale deployments to be rescaled at the end of test
 				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},

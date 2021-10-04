@@ -99,6 +99,16 @@ var customerRHOAMDashboards = []dashboardsTestRule{
 }
 
 func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
+	execToPodCommand := "curl "
+	testIntegreatlyCustomerDashboardsExist(t, ctx, MonitoringOperatorNamespace, execToPodCommand)
+}
+
+func TestIntegreatlyCustomerDashboardsExistObservability(t TestingTB, ctx *TestingContext) {
+	execToPodCommand := "wget -qO - "
+	testIntegreatlyCustomerDashboardsExist(t, ctx, ObservabilityProductNamespace, execToPodCommand)
+}
+
+func testIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext, monitoringNamespace string, execToPodCommand string) {
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -106,7 +116,7 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Pod and container to perform curls from
-	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
+	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx, monitoringNamespace)
 	if err != nil {
 		t.Fatal("failed to get prometheus pod name", err)
 	}
@@ -114,12 +124,13 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
-	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	//output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(execToPodCommand + fmt.Sprintf(" %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		curlContainerName, ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", monitoringNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule
@@ -137,6 +148,17 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 }
 
 func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext) {
+	execToPodCommand := "curl "
+	testIntegreatlyMiddelewareDashboardsExist(t, ctx, MonitoringOperatorNamespace, execToPodCommand)
+}
+
+func TestIntegreatlyMiddelewareDashboardsExistObservability(t TestingTB, ctx *TestingContext) {
+	execToPodCommand := "wget -qO - "
+	testIntegreatlyMiddelewareDashboardsExist(t, ctx, ObservabilityProductNamespace, execToPodCommand)
+}
+
+func testIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext,
+													monitoringNamespace string, execToPodCommand string) {
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -144,20 +166,21 @@ func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext)
 	}
 
 	// Pod and container to perform curls from
-	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
+	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx, monitoringNamespace)
 	if err != nil {
 		t.Fatal("failed to get prometheus pod name", err)
 	}
 	curlContainerName := "prometheus"
 
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, monitoringNamespace)
 
-	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
+	//output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(execToPodCommand + fmt.Sprintf(" %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		curlContainerName, ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", monitoringNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule

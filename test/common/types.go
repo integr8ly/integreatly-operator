@@ -21,6 +21,8 @@ var (
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
+	ObservabilityOperatorNamespace    = NamespacePrefix + "observability-operator"
+	ObservabilityProductNamespace     = NamespacePrefix + "observability"
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
 	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
 	SMTPSecretName                    = NamespacePrefix + "smtp"

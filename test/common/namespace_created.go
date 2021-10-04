@@ -11,6 +11,8 @@ func rhmi2Namespaces() []string {
 	return []string{
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
+		ObservabilityOperatorNamespace,
+		ObservabilityProductNamespace,
 		AMQOnlineOperatorNamespace,
 		ApicuritoProductNamespace,
 		ApicuritoOperatorNamespace,
@@ -36,6 +38,8 @@ func managedApiNamespaces() []string {
 	return []string{
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
+		ObservabilityOperatorNamespace,
+		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,

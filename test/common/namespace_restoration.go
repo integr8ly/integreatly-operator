@@ -61,6 +61,16 @@ var (
 				return removeMonitoringFinalizers(ctx, MonitoringOperatorNamespace)
 			},
 		},
+		{
+			productStageName: integreatlyv1alpha1.ObservabilityStage,
+			namespaces: []string{
+				ObservabilityOperatorNamespace,
+				ObservabilityProductNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				return removeObservabilityFinalizers(ctx, ObservabilityOperatorNamespace)
+			},
+		},
 	}
 
 	rhmiSpecificStages = []StageDeletion{
@@ -316,6 +326,31 @@ func removeMonitoringFinalizers(ctx *TestingContext, nameSpace string) error {
 		return err
 	}
 
+	return nil
+}
+
+func removeObservabilityFinalizers(ctx *TestingContext, nameSpace string) error {
+
+	err := removeBlackBoxTargetObservabilityFinalizers(ctx, nameSpace)
+	if err != nil {
+		return err
+	}
+
+	err = removAppObservabilityFinalizers(ctx, nameSpace)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removAppObservabilityFinalizers(ctx *TestingContext, nameSpace string) error {
+	//TODO
+	return nil
+}
+
+func removeBlackBoxTargetObservabilityFinalizers(ctx *TestingContext, nameSpace string) error {
+	//TODO
 	return nil
 }
 
