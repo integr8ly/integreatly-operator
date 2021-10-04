@@ -502,6 +502,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
+			File: ObservabilityOperatorNamespace + "-install-upgrade-alerts.yaml",
+			Rules: []string{
+				"RHMICSVRequirementsNotMet",
+			},
+		},
+		{
 			File: NamespacePrefix + "operator-sendgrid-smtp-secret-exists-rule.yaml",
 			Rules: []string{
 				"SendgridSmtpSecretExists",
@@ -895,6 +901,14 @@ func managedApiAwsExpectedRules(installtionName string) []alertsTestRule {
 }
 
 func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsExist(t, ctx, MonitoringOperatorNamespace)
+}
+
+func TestIntegreatlyAlertsExistObservability(t TestingTB, ctx *TestingContext) {
+	testIntegreatlyAlertsExist(t, ctx, ObservabilityOperatorNamespace)
+}
+
+func testIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
@@ -919,7 +933,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	// exec into the prometheus pod
 	output, err := execToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)

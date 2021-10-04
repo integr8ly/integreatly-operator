@@ -38,8 +38,18 @@ var keycloakAlertsToTest = map[string]string{
 	"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
 }
 
+func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext){
+	prometheusPod := "prometheus-application-monitoring-0"
+	testIntegreatlyAlertsMechanism(t, ctx, MonitoringOperatorNamespace, prometheusPod)
+}
+
+func TestIntegreatlyAlertsMechanismObservability(t TestingTB, ctx *TestingContext){
+	prometheusPod := "prometheus-kafka-prometheus-0"
+	testIntegreatlyAlertsMechanism(t, ctx, ObservabilityProductNamespace, prometheusPod)
+}
+
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
-func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
+func testIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext, monitoringNamespace string, prometheusPod string) {
 
 	originalOperatorReplicas, err := getNumOfReplicasDeployment(keycloakOperatorDeploymentName, ctx.KubeClient)
 	if err != nil {
@@ -47,7 +57,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	}
 
 	// verify that alert to be tested is not firing before starting the test
-	err = getKeycloakAlertState(ctx)
+	err = getKeycloakAlertState(ctx, monitoringNamespace, prometheusPod)
 	if err != nil {
 		t.Fatal("failed to get keycloak alert state", err)
 	}
@@ -67,7 +77,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	}
 
 	t.Log("Keycloak alerts are not firing - scaling down keycloak operator deployemnt and performing tests")
-	err = performTest(t, ctx, originalOperatorReplicas)
+	err = performTest(t, ctx, originalOperatorReplicas, monitoringNamespace, prometheusPod)
 	if err != nil {
 		t.Fatal("Error during testing keycloak operator alerts: %s", err)
 	}
@@ -80,14 +90,14 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	t.Log("Keycloak operator deployment scaled back up and ready")
 
 	// verify that keycloak alert is not firing
-	err = waitForKeycloakAlertState("none", ctx, t)
+	err = waitForKeycloakAlertState("none", ctx, t, monitoringNamespace, prometheusPod)
 	if err != nil {
 		t.Fatal("Keycloak alerts failed to recover back to non-firing state with error: %s", err)
 	}
 	t.Log("Keycloak alerts are not firing")
 
 	// verify alertmanager-application-monitoring secret
-	err = verifySecrets(ctx.KubeClient)
+	err = verifySecrets(ctx.KubeClient, monitoringNamespace)
 	if err != nil {
 		t.Fatal("failed to verify alertmanager-application-monitoring secret", err)
 	}
@@ -95,7 +105,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	t.Log("Alert mechanism test successful")
 }
 
-func verifySecrets(kubeClient kubernetes.Interface) error {
+func verifySecrets(kubeClient kubernetes.Interface, monitoringNamespace string) error {
 	var pagerdutyKey, dmsURL string
 	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
@@ -127,7 +137,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return err
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(monitoringNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -167,23 +177,24 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 	return nil
 }
 
-func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32) error {
+func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32,
+						monitoringNamespace string, prometheusPod string) error {
 	scaleDeployment(t, keycloakOperatorDeploymentName, 0, ctx.KubeClient)
 
 	defer scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
-	err := waitForKeycloakAlertState("firing", ctx, t)
+	err := waitForKeycloakAlertState("firing", ctx, t, monitoringNamespace, prometheusPod)
 	if err != nil {
 		return err
 	}
-	err = checkAlertManager(ctx, t)
+	err = checkAlertManager(ctx, t, monitoringNamespace)
 	return err
 }
 
-func checkAlertManager(ctx *TestingContext, t TestingTB) error {
+func checkAlertManager(ctx *TestingContext, t TestingTB, monitoringNamespace string) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
 		"alertmanager-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		monitoringNamespace,
 		"alertmanager",
 		ctx)
 	if err != nil {
@@ -205,9 +216,10 @@ func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	return nil
 }
 
-func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t TestingTB) error {
+func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t TestingTB,
+									monitoringNamespace string, prometheusPod string) error {
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		err = getKeycloakAlertState(ctx)
+		err = getKeycloakAlertState(ctx, monitoringNamespace, prometheusPod)
 		if err != nil {
 			t.Log("failed to get keycloak alert state:", err)
 			t.Log("waiting 1 minute before retrying")
@@ -233,10 +245,10 @@ func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t Test
 	return err
 }
 
-func getKeycloakAlertState(ctx *TestingContext) error {
+func getKeycloakAlertState(ctx *TestingContext, monitoringNamespace string, prometheusPod string) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		prometheusPod,
+		monitoringNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
