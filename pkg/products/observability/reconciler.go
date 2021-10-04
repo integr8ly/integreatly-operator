@@ -64,7 +64,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
 
-	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
+	ns := GetDefaultNamespace(installation.Spec.NamespacePrefix)
 	config, err := configManager.ReadObservability()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve observability config: %w", err)
@@ -559,4 +559,9 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		r.log.Infof("Operation result", l.Fields{"grafanaDashboard": grafanaDB.Name, "result": opRes})
 	}
 	return err
+}
+
+
+func GetDefaultNamespace(installationPrefix string) string {
+	return installationPrefix + defaultInstallationNamespace
 }

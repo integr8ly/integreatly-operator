@@ -29,6 +29,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -167,6 +169,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		observabilityConfig, err := r.ConfigManager.ReadObservability()
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, err
+		}
+		ns := observability.GetDefaultNamespace(r.installation.Spec.NamespacePrefix)
+		if observabilityConfig.GetNamespace() == "" {
+			observabilityConfig.SetNamespace(ns)
+			err := r.ConfigManager.WriteConfig(observabilityConfig)
+			if err != nil {
+				return rhmiv1alpha1.PhaseFailed, err
+			}
 		}
 		phase, err = r.ReconcileNamespace(ctx, observabilityConfig.GetNamespace(), installation, serverClient, log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
