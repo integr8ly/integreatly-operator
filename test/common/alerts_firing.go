@@ -46,6 +46,7 @@ var (
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
 		ObservabilityOperatorNamespace,
+		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,
@@ -105,27 +106,32 @@ func (e *alertsFiringError) isValid() bool {
 }
 
 func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
-	testIntegreatlyAlertsFiring(t, ctx, MonitoringOperatorNamespace)
+	prometheusPod := "prometheus-application-monitoring-0"
+	execToPodCommand := "curl localhost:9090/api/v1/alerts"
+	testIntegreatlyAlertsFiring(t, ctx, MonitoringOperatorNamespace, prometheusPod, execToPodCommand)
 }
 
 func TestIntegreatlyAlertsFiringObservability(t TestingTB, ctx *TestingContext) {
-	testIntegreatlyAlertsFiring(t, ctx, ObservabilityOperatorNamespace)
+	prometheusPod := "prometheus-kafka-prometheus-0"
+	execToPodCommand := "wget -qO - localhost:9090/api/v1/alerts"
+	testIntegreatlyAlertsFiring(t, ctx, ObservabilityProductNamespace, prometheusPod, execToPodCommand)
 }
 
-
 // This test ensures that no alerts are firing during or after installation
-func testIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
+func testIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string,
+	prometheusPod string, command string) {
 	//fail immediately if one or more alerts have fired
-	if err := getFiringAlerts(t, ctx, monitoringNamespace); err != nil {
+	if err := getFiringAlerts(t, ctx, monitoringNamespace, prometheusPod, command); err != nil {
 		podLogs(t, ctx)
 		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/INTLY-7481")
 		//t.Fatal(err.Error())
 	}
 
 }
-func getFiringAlerts(t TestingTB, ctx *TestingContext, monitoringNamespace string) error {
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
+func getFiringAlerts(t TestingTB, ctx *TestingContext, monitoringNamespace string,
+	prometheusPod string, command string) error {
+	output, err := execToPod(command,
+		prometheusPod,
 		monitoringNamespace,
 		"prometheus",
 		ctx)
@@ -212,22 +218,26 @@ func getPodNamespaces(installType string) []string {
 }
 
 func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
-	testIntegreatlyAlertsPendingOrFiring(t, ctx, MonitoringOperatorNamespace)
+	prometheusPod := "prometheus-application-monitoring-0"
+	execToPodCommand := "curl localhost:9090/api/v1/alerts"
+	testIntegreatlyAlertsPendingOrFiring(t, ctx, MonitoringOperatorNamespace, prometheusPod, execToPodCommand)
 }
 func TestIntegreatlyAlertsPendingOrFiringObservability(t TestingTB, ctx *TestingContext) {
-	testIntegreatlyAlertsPendingOrFiring(t, ctx, ObservabilityOperatorNamespace)
+	prometheusPod := "prometheus-kafka-prometheus-0"
+	execToPodCommand := "wget -qO - localhost:9090/api/v1/alerts"
+	testIntegreatlyAlertsPendingOrFiring(t, ctx, ObservabilityProductNamespace, prometheusPod, execToPodCommand)
 }
 
-
 // TestIntegreatlyAlertsFiring reports any firing or pending alerts
-func testIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
+func testIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext, monitoringNamespace string,
+	prometheusPod string, command string) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		if newErr := getFiringOrPendingAlerts(ctx, monitoringNamespace); newErr != nil {
+		if newErr := getFiringOrPendingAlerts(ctx, monitoringNamespace, prometheusPod, command); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {
 				t.Log("Waiting 1 minute for alerts to normalise before retrying")
@@ -245,9 +255,10 @@ func testIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext, moni
 	}
 }
 
-func getFiringOrPendingAlerts(ctx *TestingContext, monitoringNamespace string) error {
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
+func getFiringOrPendingAlerts(ctx *TestingContext, monitoringNamespace string,
+	prometheusPod string, command string) error {
+	output, err := execToPod(command,
+		prometheusPod,
 		monitoringNamespace,
 		"prometheus",
 		ctx)

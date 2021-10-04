@@ -3,6 +3,9 @@ package common
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -13,8 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
-	"time"
 )
 
 const (
@@ -40,14 +41,19 @@ var (
 )
 
 func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
-	testInvalidUserNameAlert(t, ctx, MonitoringOperatorNamespace)
+	prometheusPod := "prometheus-application-monitoring-0"
+	execToPodCommand := "curl localhost:9090/api/v1/alerts"
+	testInvalidUserNameAlert(t, ctx, MonitoringOperatorNamespace, prometheusPod, execToPodCommand)
 }
 
 func TestInvalidUserNameAlertObservability(t TestingTB, ctx *TestingContext) {
-	testInvalidUserNameAlert(t, ctx, ObservabilityProductNamespace)
+	prometheusPod := "prometheus-kafka-prometheus-0"
+	execToPodCommand := "wget -qO - localhost:9090/api/v1/rules"
+	testInvalidUserNameAlert(t, ctx, ObservabilityProductNamespace, prometheusPod, execToPodCommand)
 }
 
-func testInvalidUserNameAlert(t TestingTB, ctx *TestingContext, monitoringNamespace string) {
+func testInvalidUserNameAlert(t TestingTB, ctx *TestingContext, monitoringNamespace string,
+	prometheusPod string, command string) {
 	goCtx := context.TODO()
 
 	// Get resources before test execution and always try to restore cluster to pre test state
@@ -87,7 +93,7 @@ func testInvalidUserNameAlert(t TestingTB, ctx *TestingContext, monitoringNamesp
 	pollOpenshiftUserLogin(t, ctx, masterURL, userLong2)
 
 	// Validate ThreeScaleUserCreationFailed alerts is firing
-	validateAlertIsFiring(t, ctx, userFailedCreateAlertName, monitoringNamespace)
+	validateAlertIsFiring(t, ctx, userFailedCreateAlertName, monitoringNamespace, prometheusPod, command)
 
 	// Delete user from Openshift
 	if err := ctx.Client.Delete(goCtx, &userv1.User{ObjectMeta: metav1.ObjectMeta{Name: userLong2}}); err != nil {
@@ -96,7 +102,7 @@ func testInvalidUserNameAlert(t TestingTB, ctx *TestingContext, monitoringNamesp
 	t.Logf("Deleted %s openshift user", userLong2)
 
 	// Validate ThreeScaleUserCreationFailed alert is no longer firing
-	validateAlertIsNotFiring(t, ctx, userFailedCreateAlertName)
+	validateAlertIsNotFiring(t, ctx, userFailedCreateAlertName, prometheusPod, command)
 
 	// Login as dedicated admin user
 	customerAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
@@ -158,9 +164,10 @@ func pollOpenshiftUserLogin(t TestingTB, ctx *TestingContext, masterURL, userNam
 	}
 }
 
-func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string, monitoringNamespace string) {
+func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string, monitoringNamespace string,
+	prometheusPod string, command string) {
 	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
-		getAlertErr := getFiringAlerts(t, ctx, monitoringNamespace)
+		getAlertErr := getFiringAlerts(t, ctx, monitoringNamespace, prometheusPod, command)
 
 		// getAlertErr should not be nil as DeadMansSwitch & at least specific alert should be firing
 		if getAlertErr == nil {
@@ -182,10 +189,11 @@ func validateAlertIsFiring(t TestingTB, ctx *TestingContext, alertName string, m
 	t.Logf("%s alert is firing", alertName)
 }
 
-func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string) {
+func validateAlertIsNotFiring(t TestingTB, ctx *TestingContext, alertName string,
+	prometheusPod string, command string) {
 	if err := wait.PollImmediate(time.Second*10, time.Minute*8, func() (done bool, err error) {
 		// getAlertErr will be nil if only DeadMansSwitch alert is firing
-		getAlertErr := getFiringAlerts(t, ctx, ObservabilityProductNamespace)
+		getAlertErr := getFiringAlerts(t, ctx, ObservabilityProductNamespace, prometheusPod, command)
 		if getAlertErr == nil {
 			return true, nil
 		}
