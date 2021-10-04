@@ -41,7 +41,7 @@ func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext
 }
 
 func TestGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, MonitoringOperatorNamespace)
+	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
@@ -82,7 +82,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	//create service account - its token will be used to call grafana api
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: MonitoringOperatorNamespace,
+			Namespace: ObservabilityProductNamespace,
 			Name:      serviceAccountName,
 		},
 	}
@@ -101,7 +101,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 				Kind:       "ServiceAccount",
 				APIVersion: "rbac.authorization.k8s.io/v1",
 				Name:       serviceAccountName,
-				Namespace:  MonitoringOperatorNamespace,
+				Namespace:  ObservabilityProductNamespace,
 			},
 		},
 		RoleRef: corev1.ObjectReference{
@@ -117,7 +117,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	}
 	defer ctx.Client.Delete(goctx.TODO(), binding)
 
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, MonitoringOperatorNamespace)
+	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
 	if err != nil {
 		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
 		// t.Fatal("failed to get grafana route", err)
@@ -128,7 +128,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		// Poll the Service Account
 		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
 			Name:      serviceAccountName,
-			Namespace: MonitoringOperatorNamespace,
+			Namespace: ObservabilityProductNamespace,
 		}, serviceAccount); err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -154,7 +154,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		secret := &corev1.Secret{}
 		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
 			Name:      saSecret.Name,
-			Namespace: MonitoringOperatorNamespace,
+			Namespace: ObservabilityProductNamespace,
 		}, secret); err != nil {
 			return false, err
 		}

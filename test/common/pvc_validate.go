@@ -42,9 +42,9 @@ func commonPvcNamespaces() []PersistentVolumeClaim {
 	return []PersistentVolumeClaim{
 		{
 
-			Namespace: NamespacePrefix + "middleware-monitoring-operator",
+			Namespace: NamespacePrefix + "observability",
 			PersistentVolumeClaimNames: []string{
-				"prometheus-application-monitoring-db-prometheus-application-monitoring-0",
+				"prometheus-kafka-prometheus-db-prometheus-kafka-prometheus-0",
 			},
 		},
 	}

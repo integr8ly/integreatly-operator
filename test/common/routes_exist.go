@@ -81,7 +81,7 @@ var (
 		},
 	}
 
-	middlewareMonitoringRoutes = []ExpectedRoute{
+	observabilityRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "alertmanager-route",
 			isTLS: true,
@@ -158,24 +158,24 @@ var (
 )
 
 var rhmi2ExpectedRoutes = map[string][]ExpectedRoute{
-	"3scale":                         threeScaleRoutes,
-	"amq-online":                     amqOnlineRoutes,
-	"codeready-workspaces":           codeReadyRoutes,
-	"fuse":                           fuseRoutes,
-	"middleware-monitoring-operator": middlewareMonitoringRoutes,
-	"rhsso":                          rhssoRoutes,
-	"solution-explorer":              solutionExplorerRoutes,
-	"ups":                            upsRoutes,
-	"user-sso":                       userSsoRoutes,
-	"apicurito":                      apicuritoRoutes,
+	"3scale":               threeScaleRoutes,
+	"amq-online":           amqOnlineRoutes,
+	"codeready-workspaces": codeReadyRoutes,
+	"fuse":                 fuseRoutes,
+	"observability":        observabilityRoutes,
+	"rhsso":                rhssoRoutes,
+	"solution-explorer":    solutionExplorerRoutes,
+	"ups":                  upsRoutes,
+	"user-sso":             userSsoRoutes,
+	"apicurito":            apicuritoRoutes,
 }
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
-	"3scale":                         threeScaleRoutes,
-	"middleware-monitoring-operator": middlewareMonitoringRoutes,
-	"rhsso":                          rhssoRoutes,
-	"user-sso":                       rhoamUserSsoRoutes,
-	"customer-monitoring-operator":   customerGrafanaRoutes,
+	"3scale":                       threeScaleRoutes,
+	"observability":                observabilityRoutes,
+	"rhsso":                        rhssoRoutes,
+	"user-sso":                     rhoamUserSsoRoutes,
+	"customer-monitoring-operator": customerGrafanaRoutes,
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created

@@ -103,6 +103,8 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	common.RHMIOperatorNamespace = common.NamespacePrefix + "operator"
 	common.MonitoringOperatorNamespace = common.NamespacePrefix + "middleware-monitoring-operator"
 	common.MonitoringFederateNamespace = common.NamespacePrefix + "middleware-monitoring-federate"
+	common.ObservabilityOperatorNamespace = common.NamespacePrefix + "observability-operator"
+	common.ObservabilityProductNamespace = common.NamespacePrefix + "observability"
 	common.AMQOnlineOperatorNamespace = common.NamespacePrefix + "amq-online"
 	common.ApicurioRegistryProductNamespace = common.NamespacePrefix + "apicurio-registry"
 	common.ApicurioRegistryOperatorNamespace = common.ApicurioRegistryProductNamespace + "-operator"

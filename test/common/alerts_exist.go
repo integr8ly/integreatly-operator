@@ -254,84 +254,84 @@ func managedApiSpecificRules() []alertsTestRule {
 
 	return []alertsTestRule{
 		{
-			File: NamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"Marin3rDiscoveryServiceEndpointDown",
 				"Marin3rRateLimitServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
 			Rules: []string{
 				"Marin3rOperatorPod",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
 			Rules: []string{
 				"Marin3rWebhookPod",
 				"Marin3rRateLimitPod",
 			},
 		},
 		{
-			File: NamespacePrefix + "3scale-ksm-marin3r-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "3scale-ksm-marin3r-alerts.yaml",
 			Rules: []string{
 				"Marin3rEnvoyApicastStagingContainerDown",
 				"Marin3rEnvoyApicastProductionContainerDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "customer-monitoring-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "customer-monitoring-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
 				"GrafanaServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "customer-monitoring-operator-ksm-grafana-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "customer-monitoring-ksm-grafana-alerts.yaml",
 			Rules: []string{
 				"GrafanaOperatorPod",
 				"GrafanaServicePod",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-api-usage-alert-level1.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-api-usage-alert-level1.yaml",
 			Rules: []string{
 				"RHOAMApiUsageLevel1ThresholdExceeded",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-api-usage-alert-level2.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-api-usage-alert-level2.yaml",
 			Rules: []string{
 				"RHOAMApiUsageLevel2ThresholdExceeded",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-api-usage-alert-level3.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-api-usage-alert-level3.yaml",
 			Rules: []string{
 				"RHOAMApiUsageLevel3ThresholdExceeded",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-rate-limit-spike.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-rate-limit-spike.yaml",
 			Rules: []string{
 				"RHOAMApiUsageOverLimit",
 			},
 		},
 		{
-			File: NamespacePrefix + "marin3r-rejected-requests.yaml",
+			File: ObservabilityNamespacePrefix + "marin3r-rejected-requests.yaml",
 			Rules: []string{
 				"RHOAMApiUsageRejectedRequestsMismatch",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-rhoam-installation-controller-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhoam-installation-controller-alerts.yaml",
 			Rules: []string{
 				"RHOAMInstallationControllerIsInReconcilingErrorState",
 			},
@@ -344,7 +344,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 	titledName := strings.Title(installationName)
 	return []alertsTestRule{
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-backup-monitoring-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "backup-monitoring-alerts.yaml",
 			Rules: []string{
 				"JobRunningTimeExceeded",
 				"JobRunningTimeExceeded",
@@ -353,7 +353,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "rhsso-keycloak.yaml",
+			File: ObservabilityNamespacePrefix + "rhsso.yaml",
 			Rules: []string{
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
@@ -366,7 +366,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "user-sso-keycloak.yaml",
+			File: ObservabilityNamespacePrefix + "rhssouser.yaml",
 			Rules: []string{
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
@@ -379,7 +379,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-ksm-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "ksm-alerts.yaml",
 			Rules: []string{
 				"KubePodCrashLooping",
 				"KubePodNotReady",
@@ -396,7 +396,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "3scale-ksm-3scale-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "3scale-ksm-3scale-alerts.yaml",
 			Rules: []string{
 				"ThreeScaleApicastStagingPod",
 				"ThreeScaleApicastProductionPod",
@@ -414,13 +414,13 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-prometheus-application-monitoring-rules.yaml",
+			File: ObservabilityNamespacePrefix + "generated-deadmansswitch.yaml",
 			Rules: []string{
 				"DeadMansSwitch",
 			},
 		},
 		{
-			File: NamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIThreeScaleApicastProductionServiceEndpointDown",
 				"RHMIThreeScaleApicastStagingServiceEndpointDown",
@@ -435,28 +435,28 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "3scale-ksm-3scale-user-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "3scale-ksm-3scale-user-alerts.yaml",
 			Rules: []string{
 				"ThreeScaleUserCreationFailed",
 				"ThreeScaleUserDeletionFailed",
 			},
 		},
 		{
-			File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIUserRhssoKeycloakServiceEndpointDown",
 				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "cloud-resources-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "cro-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
 				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
 				"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
@@ -468,53 +468,53 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIRhssoKeycloakServiceEndpointDown",
 				"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
 				"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
 				"RHMIThreeScaleOperatorServiceEndpointDown",
 			},
 		},
 		{
-			File: NamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
 				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
-			File: MonitoringOperatorNamespace + "-install-upgrade-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "install-upgrade-alerts.yaml",
 			Rules: []string{
 				"RHMICSVRequirementsNotMet",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-sendgrid-smtp-secret-exists-rule.yaml",
+			File: ObservabilityNamespacePrefix + "sendgrid-smtp-secret-exists-rule.yaml",
 			Rules: []string{
 				"SendgridSmtpSecretExists",
 			},
 		},
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-multi-az-pod-distribution.yaml",
+			File: ObservabilityNamespacePrefix + "multi-az-pod-distribution.yaml",
 			Rules: []string{
 				"MultiAZPodDistribution",
 			},
 		},
 		{
-			File: NamespacePrefix + "rhsso-operator-rhsso-slo-availability-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhsso-slo-availability-alerts.yaml",
 			Rules: []string{
 				fmt.Sprintf("%sRhssoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
 				fmt.Sprintf("%sRhssoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
@@ -523,7 +523,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "user-sso-operator-user-sso-slo-availability-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "user-sso-slo-availability-alerts.yaml",
 			Rules: []string{
 				fmt.Sprintf("%sUserSsoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
 				fmt.Sprintf("%sUserSsoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
@@ -532,7 +532,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "middleware-monitoring-operator-test-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "test-alerts.yaml",
 			Rules: []string{
 				"TestFireCriticalAlert",
 				"TestFireWarningAlert",
@@ -917,9 +917,9 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	// exec into the prometheus pod
-	output, err := execToPod("curl localhost:9090/api/v1/rules",
-		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
+		"prometheus-kafka-prometheus-0",
+		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)

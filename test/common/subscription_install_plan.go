@@ -16,8 +16,8 @@ const (
 func commonSubscriptionsToCheck() []SubscriptionCheck {
 	return []SubscriptionCheck{
 		{
-			Name:      constants.MonitoringSubscriptionName,
-			Namespace: MonitoringOperatorNamespace,
+			Name:      constants.ObservabilitySubscriptionName,
+			Namespace: ObservabilityOperatorNamespace,
 		},
 		{
 			Name:      constants.RHSSOSubscriptionName,

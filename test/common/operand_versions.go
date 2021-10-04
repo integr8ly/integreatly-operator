@@ -9,8 +9,8 @@ var (
 		integreatlyv1alpha1.AuthenticationStage: {
 			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
 		},
-		integreatlyv1alpha1.MonitoringStage: {
-			integreatlyv1alpha1.ProductMonitoring: integreatlyv1alpha1.VersionMonitoring,
+		integreatlyv1alpha1.ObservabilityStage: {
+			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.VersionObservability,
 		},
 		integreatlyv1alpha1.CloudResourcesStage: {
 			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
@@ -33,8 +33,8 @@ var (
 		integreatlyv1alpha1.AuthenticationStage: {
 			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
 		},
-		integreatlyv1alpha1.MonitoringStage: {
-			integreatlyv1alpha1.ProductMonitoring: integreatlyv1alpha1.VersionMonitoring,
+		integreatlyv1alpha1.ObservabilityStage: {
+			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.VersionObservability,
 		},
 		integreatlyv1alpha1.CloudResourcesStage: {
 			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
