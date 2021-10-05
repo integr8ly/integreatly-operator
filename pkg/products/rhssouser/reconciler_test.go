@@ -1329,10 +1329,13 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 	listOfActivesUsersPerRealmFunc := func(realmName, dateFrom string, max int) ([]keycloakCommon.Users, error) {
 		users := []keycloakCommon.Users{
 			{
-				UserID: "test-user1",
+				UserID: "1",
 			},
 			{
-				UserID: "test-user2",
+				UserID: "2",
+			},
+			{
+				UserID: "3",
 			},
 		}
 
