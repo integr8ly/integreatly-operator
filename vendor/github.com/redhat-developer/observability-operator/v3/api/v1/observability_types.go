@@ -59,27 +59,32 @@ type Storage struct {
 }
 
 type SelfContained struct {
-	DisableRepoSync                 *bool                 `json:"disableRepoSync,omitempty"`
-	DisableObservatorium            *bool                 `json:"disableObservatorium,omitempty"`
-	DisablePagerDuty                *bool                 `json:"disablePagerDuty,omitempty"`
-	DisableDeadmansSnitch           *bool                 `json:"disableDeadmansSnitch,omitempty"`
-	DisableBlackboxExporter         *bool                 `json:"disableBlackboxExporter,omitempty"`
-	SelfSignedCerts                 *bool                 `json:"selfSignedCerts,omitempty"`
-	FederatedMetrics                []string              `json:"federatedMetrics,omitempty"`
-	PodMonitorLabelSelector         *metav1.LabelSelector `json:"podMonitorLabelSelector,omitempty"`
-	PodMonitorNamespaceSelector     *metav1.LabelSelector `json:"podMonitorNamespaceSelector,omitempty"`
-	ServiceMonitorLabelSelector     *metav1.LabelSelector `json:"serviceMonitorLabelSelector,omitempty"`
-	ServiceMonitorNamespaceSelector *metav1.LabelSelector `json:"serviceMonitorNamespaceSelector,omitempty"`
-	RuleLabelSelector               *metav1.LabelSelector `json:"ruleLabelSelector,omitempty"`
-	RuleNamespaceSelector           *metav1.LabelSelector `json:"ruleNamespaceSelector,omitempty"`
-	ProbeLabelSelector              *metav1.LabelSelector `json:"probeSelector,omitempty"`
-	ProbeNamespaceSelector          *metav1.LabelSelector `json:"probeNamespaceSelector,omitempty"`
-	GrafanaDashboardLabelSelector   *metav1.LabelSelector `json:"grafanaDashboardLabelSelector,omitempty"`
-	AlertManagerConfigSecret        string                `json:"alertManagerConfigSecret,omitempty"`
-	AlertManagerRoute               string                `json:"alertManagerRoute,omitempty"`
-	PrometheusRoute                 string                `json:"prometheusRoute,omitempty"`
-	AlertManagerVersion             string                `json:"alertManagerVersion,omitempty"`
-	PrometheusVersion               string                `json:"prometheusVersion,omitempty"`
+	DisableRepoSync                       *bool                    `json:"disableRepoSync,omitempty"`
+	DisableObservatorium                  *bool                    `json:"disableObservatorium,omitempty"`
+	DisablePagerDuty                      *bool                    `json:"disablePagerDuty,omitempty"`
+	DisableDeadmansSnitch                 *bool                    `json:"disableDeadmansSnitch,omitempty"`
+	DisableBlackboxExporter               *bool                    `json:"disableBlackboxExporter,omitempty"`
+	SelfSignedCerts                       *bool                    `json:"selfSignedCerts,omitempty"`
+	FederatedMetrics                      []string                 `json:"federatedMetrics,omitempty"`
+	PodMonitorLabelSelector               *metav1.LabelSelector    `json:"podMonitorLabelSelector,omitempty"`
+	PodMonitorNamespaceSelector           *metav1.LabelSelector    `json:"podMonitorNamespaceSelector,omitempty"`
+	ServiceMonitorLabelSelector           *metav1.LabelSelector    `json:"serviceMonitorLabelSelector,omitempty"`
+	ServiceMonitorNamespaceSelector       *metav1.LabelSelector    `json:"serviceMonitorNamespaceSelector,omitempty"`
+	RuleLabelSelector                     *metav1.LabelSelector    `json:"ruleLabelSelector,omitempty"`
+	RuleNamespaceSelector                 *metav1.LabelSelector    `json:"ruleNamespaceSelector,omitempty"`
+	ProbeLabelSelector                    *metav1.LabelSelector    `json:"probeSelector,omitempty"`
+	ProbeNamespaceSelector                *metav1.LabelSelector    `json:"probeNamespaceSelector,omitempty"`
+	GrafanaDashboardLabelSelector         *metav1.LabelSelector    `json:"grafanaDashboardLabelSelector,omitempty"`
+	AlertManagerConfigSecret              string                   `json:"alertManagerConfigSecret,omitempty"`
+	AlertManagerRoute                     string                   `json:"alertManagerRoute,omitempty"`
+	PrometheusRoute                       string                   `json:"prometheusRoute,omitempty"`
+	AlertManagerVersion                   string                   `json:"alertManagerVersion,omitempty"`
+	PrometheusVersion                     string                   `json:"prometheusVersion,omitempty"`
+	AlertManagerResourceRequirement       v1.ResourceRequirements  `json:"alertManagerResourceRequirement,omitempty"`
+	PrometheusResourceRequirement         v1.ResourceRequirements  `json:"prometheusResourceRequirement,omitempty"`
+	PrometheusOperatorResourceRequirement v1.ResourceRequirements  `json:"prometheusOperatorResourceRequirement,omitempty"`
+	GrafanaResourceRequirement            *v1.ResourceRequirements `json:"grafanaResourceRequirement,omitempty"`
+	GrafanaOperatorResourceRequirement    v1.ResourceRequirements  `json:"grafanaOperatorResourceRequirement,omitempty"`
 }
 
 // ObservabilitySpec defines the desired state of Observability
