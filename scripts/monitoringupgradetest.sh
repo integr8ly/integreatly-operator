@@ -23,14 +23,17 @@ while true
 do
   oc get statefulsets prometheus-application-monitoring -n redhat-rhoam-middleware-monitoring-operator
   if [ "$?" == "1" ]; then
-    echo "Prometheus is removed"
-    oc get statefulsets alertmanager-application-monitoring -n redhat-rhoam-middleware-monitoring-operator
-    if [ "$?" == "1" ]; then
-      date +"%T"
-      echo "both AMO prometheus and alertmanager are now unavailable, moving on"
-      START=$(date +%s);
-      break
-    fi
+    echo "Prometheus is removed - moving on as either prometheus or alertmanager down means the stack has begun to uninstall"
+    date +"%T"
+    START=$(date +%s);
+    break
+  fi
+  oc get statefulsets alertmanager-application-monitoring -n redhat-rhoam-middleware-monitoring-operator
+  if [ "$?" == "1" ]; then
+    date +"%T"
+    echo "AlertManager is removed - moving on as either prometheus or alertmanager down means the stack has begun to uninstall"
+    START=$(date +%s);
+    break
   fi
   sleep 15
 done
