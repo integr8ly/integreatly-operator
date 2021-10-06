@@ -325,6 +325,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+		overrideSelectors := true
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
 			ConfigurationSelector: &metav1.LabelSelector{
@@ -346,6 +347,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			}},
 			Retention: r.Config.GetPrometheusRetention(),
 			SelfContained: &observability.SelfContained{
+				OverrideSelectors:       &overrideSelectors,
 				DisableRepoSync:         &disabled,
 				DisableObservatorium:    &disabled,
 				DisablePagerDuty:        &disabled,

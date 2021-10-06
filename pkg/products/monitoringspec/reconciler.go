@@ -79,7 +79,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	// to handle upgrade cases where monitoring is uninstalled and observability is installed we also need to update the config
 	// if the defaultInstallationNamespace set above based on install type doesn't match what's currently set in the config
-	if config.GetNamespace() == "" || strings.Compare(config.GetNamespace(), installation.Spec.NamespacePrefix + defaultInstallationNamespace) != 0 {
+	if config.GetNamespace() == "" || strings.Compare(config.GetNamespace(), installation.Spec.NamespacePrefix+defaultInstallationNamespace) != 0 {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	configManager.WriteConfig(config)
