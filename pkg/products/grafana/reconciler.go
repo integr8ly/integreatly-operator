@@ -281,7 +281,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 			BaseImage: fmt.Sprintf("%s:%s", constants.GrafanaImage, constants.GrafanaVersion),
 			Containers: []v1.Container{
 				{Name: "grafana-proxy",
-					Image: "quay.io/openshift/origin-oauth-proxy:4.2",
+					Image: "quay.io/openshift/origin-oauth-proxy:4.8",
 					VolumeMounts: []v1.VolumeMount{
 						{MountPath: "/etc/tls/private",
 							Name:     "secret-grafana-k8s-tls",
