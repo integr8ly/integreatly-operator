@@ -4241,7 +4241,7 @@ services-rhoam:master/github.com/integr8ly/grafana-operator-v2.0.0+incompatible
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.10.2
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.5.0
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.6.0
-services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.4
+services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.5
 services-rhoam:master/github.com/jackc/fake-v0.0.0-20150926172116-812a484cc733
 services-rhoam:master/github.com/jackc/pgx-v3.2.0+incompatible
 services-rhoam:master/github.com/jbenet/go-context-v0.0.0-20150711004518-d14ea06fba99
