@@ -125,6 +125,16 @@ aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" 
 
 The scenario with **default CIDR range**, when user doesn't specify any CIDR, so it is automatically created by CRO, is covered by [the installation pipeline](https://github.com/integr8ly/delorean/blob/0cd8e05a49540c0c505c3c291629dd737d7cc818/scripts/ocm/ocm.sh#L144) - it doesn't provide any addon params, so CIDR block has to be created by CRO. If the pipeline finishes successfully, it means that the CIDR block was correct.
 
+**Verify Notification e-mail can be changed to empty string**
+
+1. In OCM UI, select your cluster -> Add-ons -> RHOAM and click the button for configuring parameters
+2. Delete the Notification email value in the form and save it
+3. After a while (give it ~1 minute), run this command
+```
+oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o json | jq -r '.data["notification-email"]' | base64 --decode
+```
+> The output should be empty string
+
 **Verify RHOAM quota was applied correctly**
 
 ```bash
