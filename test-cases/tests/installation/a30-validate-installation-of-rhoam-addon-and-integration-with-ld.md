@@ -130,9 +130,11 @@ The scenario with **default CIDR range**, when user doesn't specify any CIDR, so
 1. In OCM UI, select your cluster -> Add-ons -> RHOAM and click the button for configuring parameters
 2. Delete the Notification email value in the form and save it
 3. After a while (give it ~1 minute), run this command
+
 ```
 oc get secret addon-managed-api-service-parameters -n redhat-rhoam-operator -o json | jq -r '.data["notification-email"]' | base64 --decode
 ```
+
 > The output should be empty string
 
 **Verify RHOAM quota was applied correctly**
