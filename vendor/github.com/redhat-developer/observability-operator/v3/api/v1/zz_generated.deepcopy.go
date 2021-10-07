@@ -598,6 +598,11 @@ func (in *SelfContained) DeepCopyInto(out *SelfContained) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.OverrideSelectors != nil {
+		in, out := &in.OverrideSelectors, &out.OverrideSelectors
+		*out = new(bool)
+		**out = **in
+	}
 	if in.FederatedMetrics != nil {
 		in, out := &in.FederatedMetrics, &out.FederatedMetrics
 		*out = make([]string, len(*in))

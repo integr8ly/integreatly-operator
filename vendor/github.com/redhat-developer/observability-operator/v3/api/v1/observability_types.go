@@ -65,6 +65,7 @@ type SelfContained struct {
 	DisableDeadmansSnitch                 *bool                    `json:"disableDeadmansSnitch,omitempty"`
 	DisableBlackboxExporter               *bool                    `json:"disableBlackboxExporter,omitempty"`
 	SelfSignedCerts                       *bool                    `json:"selfSignedCerts,omitempty"`
+	OverrideSelectors                     *bool                    `json:"overrideSelectors,omitempty"`
 	FederatedMetrics                      []string                 `json:"federatedMetrics,omitempty"`
 	PodMonitorLabelSelector               *metav1.LabelSelector    `json:"podMonitorLabelSelector,omitempty"`
 	PodMonitorNamespaceSelector           *metav1.LabelSelector    `json:"podMonitorNamespaceSelector,omitempty"`
@@ -133,6 +134,10 @@ type ObservabilityList struct {
 
 func (in *Observability) ExternalSyncDisabled() bool {
 	return in.Spec.SelfContained != nil && in.Spec.SelfContained.DisableRepoSync != nil && *in.Spec.SelfContained.DisableRepoSync
+}
+
+func (in *Observability) OverrideSelectors() bool {
+	return in.Spec.SelfContained != nil && in.Spec.SelfContained.OverrideSelectors != nil && *in.Spec.SelfContained.OverrideSelectors
 }
 
 func (in *Observability) ObservatoriumDisabled() bool {

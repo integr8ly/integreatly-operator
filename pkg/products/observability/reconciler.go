@@ -565,7 +565,6 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	return err
 }
 
-
 func GetDefaultNamespace(installationPrefix string) string {
 	return installationPrefix + defaultInstallationNamespace
 }
