@@ -963,4 +963,5 @@ spec:
     name: zync_postgresql
   - image: registry.redhat.io/openshift4/ose-cli@sha256:279e04b357bde2f8045fd2c3a859cdfffe107cd6b4f91effe64e5b11cc30561e
     name: oc_cli
+  replaces: 3scale-operator.v0.7.0
   version: 0.8.0
