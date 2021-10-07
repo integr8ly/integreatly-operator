@@ -2617,6 +2617,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 				if deploymentConfig.Spec.Strategy.RollingParams != nil {
 					for i, env := range deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env {
 						if env.Name == envVarName {
+							deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env[i].Value = ""
 							deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env[i].ValueFrom = &envVarValue
 						}
 					}
@@ -2627,6 +2628,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 						if env.Name == envVarName {
 							foundEnv = true
 							r.log.Infof("updating env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
+							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].Value = ""
 							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].ValueFrom = &envVarValue
 						}
 					}
