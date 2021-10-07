@@ -291,6 +291,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
+	credentialRhsso := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      adminCredentialSecretName,
+			Namespace: "user-sso",
+		},
+		Data: map[string][]byte{
+			"rhsso": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
@@ -343,7 +353,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
