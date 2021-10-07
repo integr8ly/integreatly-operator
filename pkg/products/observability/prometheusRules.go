@@ -330,21 +330,6 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				},
 			},
 			{
-				AlertName: "prometheus-application-monitoring-rules",
-				GroupName: "general.rules",
-				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
-					{
-						Alert: "DeadMansSwitch",
-						Annotations: map[string]string{
-							"message": " This is a DeadMansSwitch meant to ensure that the entire Alerting pipeline is functional.",
-						},
-						Expr:   intstr.FromString("vector(1)"),
-						Labels: map[string]string{"severity": "none"},
-					},
-				},
-			},
-			{
 				AlertName: fmt.Sprintf("%s-installation-controller-alerts", installationName),
 				Namespace: namespace,
 				GroupName: fmt.Sprintf("%s-installation.rules", installationName),
