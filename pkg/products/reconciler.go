@@ -13,8 +13,6 @@ import (
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
-	"net/http"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqstreams"
@@ -27,6 +25,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
@@ -34,6 +33,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
@@ -83,7 +83,7 @@ type Interface interface {
 	//This is how we can communicate to the user via the status block of the RHMI CR what is causing a product to
 	//enter a failed state, and is written into the `status.lastError` of the CR along with any other errors from
 	//other reconcilers.
-	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig) (newPhase integreatlyv1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 
 	//GetPreflightObjects informs the operator of what object it should look for, to check if the product is already installed. The
 	//namespace argument is the namespace currently being scanned for existing installations.
@@ -208,6 +208,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductGrafana:
 		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
+	case integreatlyv1alpha1.ProductObservability:
+		reconciler, err = observability.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
@@ -219,11 +221,11 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *integreatlyv1alpha1.RHMIProductStatus, _ k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *integreatlyv1alpha1.RHMIProductStatus, _ k8sclient.Client, _ quota.ProductConfig, _ bool) (integreatlyv1alpha1.StatusPhase, error) {
 	return integreatlyv1alpha1.PhaseNone, nil
 }
 
-func (n *NoOp) GetPreflightObject(ns string) runtime.Object {
+func (n *NoOp) GetPreflightObject(_ string) runtime.Object {
 	return &appsv1.Deployment{}
 }
 

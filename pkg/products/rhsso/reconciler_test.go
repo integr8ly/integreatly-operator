@@ -12,7 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	configv1 "github.com/openshift/api/config/v1"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
@@ -191,6 +191,7 @@ func TestReconciler_config(t *testing.T) {
 		Recorder              record.EventRecorder
 		APIURL                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		Uninstall             bool
 	}{
 		{
 			Name:            "test error on failed config",
@@ -209,6 +210,7 @@ func TestReconciler_config(t *testing.T) {
 			Recorder:              setupRecorder(),
 			APIURL:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			Uninstall:             false,
 		},
 	}
 
@@ -238,7 +240,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)
 			}
@@ -446,8 +448,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					Name: "codeready-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
-							Status: integreatlyv1alpha1.PhaseCreatingComponents,
+							Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
 				},
@@ -574,6 +576,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		Uninstall             bool
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -608,6 +611,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			Uninstall:             false,
 		},
 	}
 
@@ -628,7 +632,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)

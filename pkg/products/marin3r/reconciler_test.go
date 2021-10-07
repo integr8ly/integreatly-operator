@@ -6,13 +6,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
-	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,8 +125,8 @@ func getBasicInstallation() *integreatlyv1alpha1.RHMI {
 					Phase: integreatlyv1alpha1.PhaseInProgress,
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductGrafana: {
-							Name:   integreatlyv1alpha1.ProductGrafana,
-							Status: integreatlyv1alpha1.PhaseInProgress,
+							Name:  integreatlyv1alpha1.ProductGrafana,
+							Phase: integreatlyv1alpha1.PhaseInProgress,
 						},
 					},
 				},

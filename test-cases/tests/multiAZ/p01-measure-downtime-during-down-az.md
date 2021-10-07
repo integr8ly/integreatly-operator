@@ -52,7 +52,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
    > Note: do not re-deploy if the workload-web-app is already present in the cluster - check if `workload-web-app` namespace exists in the cluster or not.
 
-4. Record the pod distribution from 3scale, user-sso, rhsso, marin3r, and middleware-monitoring-operator namespaces using [podsAZ](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) script
+4. Record the pod distribution from 3scale, user-sso, rhsso, marin3r, and observability namespaces using [podsAZ](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) script
 
    ```bash
    # ./script/podsAZ.sh without arg will return all namespaces
@@ -174,17 +174,17 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
     ```
     cd delorean
     make build/cli
-    ./delorean pipeline query-report --namespace redhat-rhoam-middleware-monitoring-operator --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
+    ./delorean pipeline query-report --namespace redhat-rhoam-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
     ```
 
     There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
 > Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-sphinx`.
 
-13. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
+13. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
 
     ```bash
-    echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+    echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
     ```
 
 14. Select the **Workload App** dashboard

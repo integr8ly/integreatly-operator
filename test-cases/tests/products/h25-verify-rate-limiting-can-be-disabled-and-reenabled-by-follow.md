@@ -31,10 +31,10 @@ This test case should prove that it is possible for SRE to disable/enable rate l
 
 1. Go to https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/rate-limit/disable.md
 2. Follow and validate the steps in SOP for disabling rate limit service
-3. Open the RHOAM Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+3. Open the RHOAM Grafana Console in the `redhat-rhmi-observability` namespace
 
 ```bash
-open "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+open "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
 ```
 
 4. Select the **Workload App** dashboard

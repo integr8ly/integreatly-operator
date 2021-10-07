@@ -10,7 +10,7 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -709,6 +709,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -740,6 +741,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -757,7 +759,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("unexpected error: %v", err)

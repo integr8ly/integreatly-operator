@@ -7,6 +7,8 @@ import (
 	"fmt"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -97,13 +99,13 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Grafana reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -120,9 +122,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
@@ -143,7 +149,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, client, installation)
+	phase, err = r.reconcileComponents(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
 		return phase, err
@@ -178,14 +184,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	if phase, err = r.reconcileBlackboxTargets(ctx, installation, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana blackbox target", err)
+	if phase, err = r.reconcileBlackboxTargets(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana blackbox targets", err)
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	if phase, err = r.reconcilePrometheusProbes(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus probes", err)
+		return phase, err
+	}
+
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Reconciled successfully")
@@ -243,7 +254,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling grafana custom resource")
 
 	var annotations = map[string]string{}
@@ -361,11 +372,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
-	prometheusNamespace := fmt.Sprintf("%smiddleware-monitoring-operator", installation.Spec.NamespacePrefix)
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	prometheusService := &corev1.Service{}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: "prometheus-service", Namespace: prometheusNamespace}, prometheusService)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: "kafka-prometheus", Namespace: observabilityConfig.GetNamespace()}, prometheusService)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -575,19 +589,43 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	return nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadMonitoring()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		cfg, err := r.ConfigManager.ReadMonitoring()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-grafana", monitoringv1alpha1.BlackboxtargetData{
+			Url:     r.Config.GetHost(),
+			Service: "grafana-ui",
+		}, cfg, r.installation, client)
+		if err != nil {
+			r.log.Error("Error creating grafana blackbox target", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating grafana blackbox target: %w", err)
+		}
 	}
 
-	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-grafana", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
-		Service: "grafana-ui",
-	}, cfg, installation, client)
-	if err != nil {
-		r.log.Error("Error creating grafana blackbox target", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating grafana blackbox target: %w", err)
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		cfg, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-grafana", "http_2xx", prometheus.ProbeTargetStaticConfig{
+			Targets: []string{r.Config.GetHost()},
+			Labels: map[string]string{
+				"service": "grafana-ui",
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			r.log.Error("Error creating grafana prometheus probe", err)
+			return phase, fmt.Errorf("error creating grafana prometheus probe: %w", err)
+		}
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

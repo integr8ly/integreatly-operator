@@ -104,6 +104,7 @@ func TestReconciler_config(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test error on failed config",
@@ -134,6 +135,7 @@ func TestReconciler_config(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Uninstall:  false,
 		},
 	}
 
@@ -160,7 +162,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -312,6 +314,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -342,6 +345,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -359,7 +363,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

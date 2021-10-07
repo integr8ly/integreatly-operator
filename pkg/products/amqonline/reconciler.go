@@ -3,6 +3,7 @@ package amqonline
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"strconv"
@@ -109,11 +110,11 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace(), r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -124,9 +125,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -208,9 +213,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -224,7 +229,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
+	templateHelper := monitoringcommon.NewTemplateHelper(r.extraParams)
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {

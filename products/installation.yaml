@@ -101,6 +101,11 @@ products:
     channel: rhmi
     installFrom: "local"
     manifestsDir: "integreatly-monitoring"
+  observability:
+    channel: alpha
+    package: observability-operator
+    installFrom: "index"
+    index: "quay.io/rhoas/observability-operator-index:v3.0.7"
   rhsso:
     installFrom: "local"
     manifestsDir: "integreatly-rhsso"

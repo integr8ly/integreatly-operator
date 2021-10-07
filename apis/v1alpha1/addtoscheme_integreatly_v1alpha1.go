@@ -3,11 +3,12 @@ package v1alpha1
 import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
-	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
@@ -92,5 +93,6 @@ func init() {
 		discoveryservicev1.SchemeBuilder.AddToScheme,
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
+		observabilityoperator.SchemeBuilder.AddToScheme,
 	)
 }

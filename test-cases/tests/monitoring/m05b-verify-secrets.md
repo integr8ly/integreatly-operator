@@ -23,7 +23,7 @@ Obsolete - secrets are managed by 3rd party (Hive, OCM) now.
 ### Verify pagerduty secret
 
 1. Login into OpenShift console as kubeadmin
-2. Navigate to `redhat-rhoam-middleware-monitoring-operator` namespace
+2. Navigate to `redhat-rhoam-observability` namespace
 3. Open **Workloads > Secrets**
 4. Click on `alertmanager-application-monitoring` secret
 5. **Reveal Values**
@@ -32,11 +32,11 @@ Obsolete - secrets are managed by 3rd party (Hive, OCM) now.
 8. Open **Workloads > Secrets**
 9. Click on `redhat-rhoam-pagerduty` secret
 10. **Reveal Values**
-11. Compare that the `redhat-rhoam-pagerduty` secret matches the value for `receivers[1].pagerduty_configs.service_key` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace
+11. Compare that the `redhat-rhoam-pagerduty` secret matches the value for `receivers[1].pagerduty_configs.service_key` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-observability` namespace
 
 ### Verify deadmanssnitch secret
 
-1. Navigate to `redhat-rhoam-middleware-monitoring-operator` namespace
+1. Navigate to `redhat-rhoam-observability` namespace
 2. Open **Workloads > Secrets**
 3. Click on `alertmanager-application-monitoring` secret
 4. **Reveal Values**
@@ -45,4 +45,4 @@ Obsolete - secrets are managed by 3rd party (Hive, OCM) now.
 7. Open **Workloads > Secrets**
 8. Click on `redhat-rhoam-deadmanssnitch` secret
 9. **Reveal Values**
-10. Compare that the `redhat-rhoam-deadmanssnitch` secret matches the value for `receivers[2].webhook_configs.url` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace
+10. Compare that the `redhat-rhoam-deadmanssnitch` secret matches the value for `receivers[2].webhook_configs.url` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-observability` namespace

@@ -7,7 +7,7 @@ type MultiErr struct {
 }
 
 func (mer *MultiErr) Error() string {
-	return "product installation errors : " + strings.Join(mer.Errors, ":  ")
+	return "product reconcilation errors : " + strings.Join(mer.Errors, ":  ")
 }
 
 //Add an error to the collection

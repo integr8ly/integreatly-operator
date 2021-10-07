@@ -2,24 +2,40 @@ package grafana
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
+
+	namespace := r.Config.GetOperatorNamespace()
+	alertNamePrefix := ""
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			logger.Warning("failed to get observability config")
+			return nil
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+		alertNamePrefix = "customer-monitoring-"
+	}
+
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
 		ProductName:  "Grafana",
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "ksm-endpoint-alerts",
+				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: "grafana-operator-endpoint.rules",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
@@ -44,9 +60,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				},
 			},
 			{
-				AlertName: "ksm-grafana-alerts",
+				AlertName: alertNamePrefix + "ksm-grafana-alerts",
 				GroupName: "general.rules",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "GrafanaOperatorPod",

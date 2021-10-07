@@ -202,6 +202,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Permission to remove crd for the marin3r operator upgrade from 0.5.1 to 0.7.0
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=delete;get;list
 
+// Observability
+// +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=*
+
 // Role permissions
 
 // +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator
@@ -245,10 +248,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		RequeueAfter: 10 * time.Second,
 	}
 
-	installType, err := TypeFactory(installation.Spec.Type)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
 	if installationCfgMap == "" {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
@@ -291,6 +290,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	installType, err := TypeFactory(installation.Spec.Type)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	// gets the products from the install type to expose rhmi status metric
 	stages := make([]rhmiv1alpha1.RHMIStageStatus, 0)
 	for _, stage := range installType.GetInstallStages() {
@@ -335,7 +338,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
-		return r.handleUninstall(installation, installType)
+		return r.handleUninstall(installation, installType, request)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
@@ -636,7 +639,7 @@ func (r *RHMIReconciler) updateStatusAndObject(original, installation *rhmiv1alp
 	return nil
 }
 
-func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, installationType *Type) (ctrl.Result, error) {
+func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, installationType *Type, request ctrl.Request) (ctrl.Result, error) {
 	retryRequeue := ctrl.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
@@ -701,34 +704,11 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
-		for product := range stage.Products {
-			productName := string(product)
-			log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
-			productStatus := installation.GetProductStatusObject(product)
-			//if the finalizer for this product is not present, move to the next product
-			for _, productFinalizer := range finalizers {
-				if !strings.Contains(productFinalizer, productName) {
-					continue
-				}
-				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
-				}
-				serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
-					Scheme: r.mgr.GetScheme(),
-				})
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
-				}
-				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient,
-					quota.QuotaProductConfig{})
-				if err != nil {
-					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
-				}
-				if phase != rhmiv1alpha1.PhaseCompleted {
-					pendingUninstalls = true
-				}
-				log.Infof("Current phase ", l.Fields{"productName": productName, "phase": phase})
+		if stage.Name == rhmiv1alpha1.BootstrapStage {
+			pendingUninstalls = r.handleUninstallBootstrap(installation, finalizers, stage, configManager, merr, request)
+		} else {
+			for product := range stage.Products {
+				pendingUninstalls = r.handleUninstallProduct(installation, product, stage, finalizers, configManager, merr)
 			}
 		}
 		//don't move to next stage until all products in this stage are removed
@@ -791,6 +771,73 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	// no finalizers left, update object
 	err = r.Update(context.TODO(), installation)
 	return retryRequeue, err
+}
+
+func (r *RHMIReconciler) handleUninstallProduct(installation *rhmiv1alpha1.RHMI, product rhmiv1alpha1.ProductName, stage Stage, finalizers []string, configManager *config.Manager, merr *resources.MultiErr) bool {
+	productName := string(product)
+	log.Infof("Uninstalling ", l.Fields{"product": productName, "stage": stage.Name})
+	productStatus := installation.GetProductStatusObject(product)
+	//if the finalizer for this product is not present, move to the next product
+	for _, productFinalizer := range finalizers {
+		if !strings.Contains(productFinalizer, productName) {
+			continue
+		}
+		reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
+		}
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
+			Scheme: r.mgr.GetScheme(),
+		})
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
+		}
+		uninstall := false
+		if productStatus.Uninstall || installation.DeletionTimestamp != nil {
+			uninstall = true
+		}
+		phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, quota.QuotaProductConfig{}, uninstall)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
+		}
+		if phase != rhmiv1alpha1.PhaseCompleted {
+			return true
+		}
+		log.Infof("Current phase ", l.Fields{"productName": productName, "phase": phase})
+	}
+	return false
+}
+
+func (r *RHMIReconciler) handleUninstallBootstrap(installation *rhmiv1alpha1.RHMI, finalizers []string, stage Stage, configManager *config.Manager, merr *resources.MultiErr, request ctrl.Request) bool {
+	for _, productFinalizer := range finalizers {
+		if !strings.Contains(productFinalizer, "observability") {
+			continue
+		}
+		log.Infof("Uninstalling ", l.Fields{"stage": stage.Name})
+
+		mpm := marketplace.NewManager()
+		reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(rhmiv1alpha1.BootstrapStage)), log)
+		if err != nil {
+			merr.Add(fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err))
+		}
+
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
+			Scheme: r.mgr.GetScheme(),
+		})
+		if err != nil {
+			merr.Add(fmt.Errorf("could not create server client: %w", err))
+		}
+
+		phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, &quota.Quota{}, request)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to reconcile bootstrap: %w", err))
+		}
+		if phase != rhmiv1alpha1.PhaseCompleted {
+			return true
+		}
+		log.Infof("Current phase ", l.Fields{"phase": phase})
+	}
+	return false
 }
 
 func firstInstallFirstReconcile(installation *rhmiv1alpha1.RHMI) bool {
@@ -1007,6 +1054,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 	if err != nil {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
+
 	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, quota, request)
 	if err != nil || phase == rhmiv1alpha1.PhaseFailed {
 		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
@@ -1024,13 +1072,13 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 	productsAux := make(map[rhmiv1alpha1.ProductName]rhmiv1alpha1.RHMIProductStatus)
 	installation.Status.Stage = stage.Name
 
-	for productName, product := range stage.Products {
-		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: product.Name})
+	for productName, productStatus := range stage.Products {
+		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: productStatus.Name})
 
-		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
+		reconciler, err := products.NewReconciler(productStatus.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
 
 		if err != nil {
-			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
+			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", productStatus.Name, err)
 		}
 
 		if !reconciler.VerifyVersion(installation) {
@@ -1043,22 +1091,27 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		if err != nil {
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient, quotaconfig.GetProduct(productName))
+
+		uninstall := false
+		if productStatus.Uninstall || installation.DeletionTimestamp != nil {
+			uninstall = true
+		}
+		productStatus.Phase, err = reconciler.Reconcile(context.TODO(), installation, &productStatus, serverClient, quotaconfig.GetProduct(productName), uninstall)
 
 		if err != nil {
 			if mErr == nil {
 				mErr = &resources.MultiErr{}
 			}
-			mErr.(*resources.MultiErr).Add(fmt.Errorf("failed installation of %s: %w", product.Name, err))
+			mErr.(*resources.MultiErr).Add(fmt.Errorf("failed installation of %s: %w", productStatus.Name, err))
 		}
 
-		// Verify that watches for this product CRDs have been created
-		config, err := configManager.ReadProduct(product.Name)
+		// Verify that watches for this productStatus CRDs have been created
+		config, err := configManager.ReadProduct(productStatus.Name)
 		if err != nil {
-			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to read product config for %s: %v", string(product.Name), err)
+			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
-		if product.Status == rhmiv1alpha1.PhaseCompleted {
+		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
 			for _, crd := range config.GetWatchableCRDs() {
 				namespace := config.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()
@@ -1068,19 +1121,19 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 				if r.customInformers[gvk][config.GetNamespace()] == nil {
 					err = r.addCustomInformer(crd, namespace)
 					if err != nil {
-						return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to create a %s CRD watch for %s: %v", gvk, string(product.Name), err)
+						return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to create a %s CRD watch for %s: %v", gvk, string(productStatus.Name), err)
 					}
 				} else if !(*r.customInformers[gvk][config.GetNamespace()]).HasSynced() {
-					return rhmiv1alpha1.PhaseFailed, fmt.Errorf("A %s CRD Informer for %s has not synced", gvk, string(product.Name))
+					return rhmiv1alpha1.PhaseFailed, fmt.Errorf("A %s CRD Informer for %s has not synced", gvk, string(productStatus.Name))
 				}
 			}
 		}
 
-		//found an incomplete product
-		if product.Status != rhmiv1alpha1.PhaseCompleted {
+		//found an incomplete productStatus
+		if productStatus.Phase != rhmiv1alpha1.PhaseCompleted {
 			incompleteStage = true
 		}
-		productsAux[product.Name] = product
+		productsAux[productStatus.Name] = productStatus
 		*stage = Stage{Name: stage.Name, Products: productsAux}
 	}
 

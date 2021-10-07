@@ -3,13 +3,14 @@ package marin3r
 import (
 	"errors"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"regexp"
 	"strconv"
 	"strings"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -25,7 +26,18 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	if err != nil {
 		return nil, err
 	}
-	alerts, err := mapAlertsConfiguration(r.log, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
+	namespace := r.Config.GetNamespace()
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get observability config: %e", err)
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+	}
+
+	alerts, err := mapAlertsConfiguration(r.log, namespace, r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -45,6 +57,11 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
+
+		if installationName == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			alertName = "marin3r-" + alertName
+		}
+
 		switch alertConfig.Type {
 		case marin3rconfig.AlertTypeSpike:
 			expr := fmt.Sprintf(

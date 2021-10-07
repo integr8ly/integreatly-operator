@@ -16,8 +16,8 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
@@ -78,6 +78,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		ReadMonitoringFunc: func() (*config.Monitoring, error) {
 			return config.NewMonitoring(config.ProductConfig{
 				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE": "observability",
 			}), nil
 		},
 	}
@@ -181,6 +186,7 @@ func TestReconciler_config(t *testing.T) {
 		Recorder              record.EventRecorder
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+		Uninstall             bool
 	}{
 		{
 			Name:            "test error on failed config",
@@ -199,6 +205,7 @@ func TestReconciler_config(t *testing.T) {
 			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			Uninstall:             false,
 		},
 	}
 
@@ -228,7 +235,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -465,8 +472,8 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 					Name: "codeready-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
-							Status: integreatlyv1alpha1.PhaseCreatingComponents,
+							Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
 				},
@@ -596,6 +603,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 		ProductConfig         *quota.ProductConfigMock
+		Uninstall             bool
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -635,6 +643,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 					return nil
 				},
 			},
+			Uninstall: false,
 		},
 	}
 
@@ -655,7 +664,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)
@@ -695,8 +704,8 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 					Name: "rhsso-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:   integreatlyv1alpha1.ProductRHSSO,
-							Status: integreatlyv1alpha1.PhaseCreatingComponents,
+							Name:  integreatlyv1alpha1.ProductRHSSO,
+							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
 				},
@@ -814,6 +823,14 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
+	// prometheus rule created by the SSO operator that is exported to the observability operator namespace
+	ssoAlert := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: defaultNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -829,11 +846,12 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		ApiUrl                string
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 		ProductConfig         *quota.ProductConfigMock
+		Uninstall             bool
 	}{
 		{
 			Name:            "RHOAM - test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -868,6 +886,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 					return nil
 				},
 			},
+			Uninstall: false,
 		},
 	}
 
@@ -888,7 +907,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, tc.ProductConfig, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)

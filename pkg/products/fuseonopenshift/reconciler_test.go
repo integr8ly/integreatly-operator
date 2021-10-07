@@ -49,6 +49,7 @@ type FuseOnOpenShiftScenario struct {
 	Recorder       record.EventRecorder
 	Client         *http.Client
 	Url            string
+	Uninstall      bool
 }
 
 func getFakeConfig() *config.ConfigReadWriterMock {
@@ -152,10 +153,11 @@ func TestFuseOnOpenShift(t *testing.T) {
 					return nil, fmt.Errorf("could not read %s config", integreatlyv1alpha1.ProductFuseOnOpenshift)
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
-			Client:   server.Client(),
-			Url:      server.URL + "/",
+			Product:   &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:  setupRecorder(),
+			Client:    server.Client(),
+			Url:       server.URL + "/",
+			Uninstall: false,
 		},
 		{
 			Name:           "test error on invalid image stream file content",
@@ -172,6 +174,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:   setupRecorder(),
 			Client:     server.Client(),
 			Url:        server.URL + "/",
+			Uninstall:  false,
 		},
 		{
 			Name:           "test error on invalid image stream",
@@ -188,6 +191,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:   setupRecorder(),
 			Client:     server.Client(),
 			Url:        server.URL + "/",
+			Uninstall:  false,
 		},
 		{
 			Name:           "test pass on invalid template file content set to required state",
@@ -208,6 +212,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:   setupRecorder(),
 			Client:     server.Client(),
 			Url:        server.URL + "/",
+			Uninstall:  false,
 		},
 		{
 			Name:           "test pass on invalid template object set to required state",
@@ -230,6 +235,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:   setupRecorder(),
 			Client:     server.Client(),
 			Url:        server.URL + "/",
+			Uninstall:  false,
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
@@ -241,6 +247,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:       setupRecorder(),
 			Client:         server.Client(),
 			Url:            server.URL + "/",
+			Uninstall:      false,
 		},
 		{
 			Name:           "test successful reconcile without sample cluster operator installed",
@@ -253,6 +260,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:       setupRecorder(),
 			Client:         server.Client(),
 			Url:            server.URL + "/",
+			Uninstall:      false,
 		},
 		{
 			Name:           "test successful reconcile with sample cluster operator installed",
@@ -265,6 +273,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:       setupRecorder(),
 			Client:         server.Client(),
 			Url:            server.URL + "/",
+			Uninstall:      false,
 		},
 	}
 
@@ -293,7 +302,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}

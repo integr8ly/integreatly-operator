@@ -123,7 +123,7 @@ func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, ti
 		}
 
 		host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
-		status := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Status
+		status := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Phase
 		if host == "" || status == "in progress" {
 			t.Log("3scale host URL not ready yet.")
 			return false, nil

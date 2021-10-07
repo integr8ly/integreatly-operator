@@ -27,7 +27,7 @@ This test case should verify that all SOP links in alerts point to correct SOPs.
 
 1. Open OpenShift console in your browser
 2. Login as admin
-3. Find route for Prometheus in `redhat-rhoam-middleware-monitoring-operator` namespace
+3. Find route for Prometheus in `redhat-rhoam-observability` namespace
 4. Open its URL
 5. Change URL path to `/api/v1/rules`
 6. Download json from the `/api/v1/rules` API endpoint from previous step

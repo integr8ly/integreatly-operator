@@ -2,24 +2,45 @@ package rhsso
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"strings"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
+
+	namespace := r.Config.GetNamespace()
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	alertName := "ksm-endpoint-alerts"
+	operatorAlertName := "ksm-endpoint-alerts"
+
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			logger.Warning("failed to get observability config")
+			return nil
+		}
+
+		namespace = observabilityConfig.GetNamespace()
+		operatorNamespace = observabilityConfig.GetNamespace()
+
+		alertName = "rhsso-ksm-endpoint-alerts"
+		operatorAlertName = "rhsso-operator-ksm-endpoint-alerts"
+	}
+
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "rhsso",
 		Installation: r.Installation,
 		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "ksm-endpoint-alerts",
-				Namespace: r.Config.GetNamespace(),
+				AlertName: alertName,
+				Namespace: namespace,
 				GroupName: "rhsso-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
@@ -46,8 +67,8 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			},
 
 			{
-				AlertName: "ksm-endpoint-alerts",
-				Namespace: r.Config.GetOperatorNamespace(),
+				AlertName: operatorAlertName,
+				Namespace: operatorNamespace,
 				GroupName: "rhsso-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
@@ -78,7 +99,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			//https://promtools.dev/alerts/errors
 			{
 				AlertName: "rhsso-slo-availability-alerts",
-				Namespace: r.Config.GetOperatorNamespace(),
+				Namespace: operatorNamespace,
 				GroupName: "rhsso-slo-availability.rules",
 				Rules: []monitoringv1.Rule{
 					{

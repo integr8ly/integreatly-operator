@@ -6,10 +6,10 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	rbac "k8s.io/api/rbac/v1"
 
@@ -89,8 +89,8 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 // Reconcile method for monitorspec
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI,
-	product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()),
+	productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall,
 		func() (integreatlyv1alpha1.StatusPhase, error) {
 			r.Log.Info("Phase: Monitoringspec ReconcileFinalizer")
 
@@ -112,12 +112,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		},
 		r.Log)
 
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		if err != nil {
-			r.Log.Warning("failed to reconcile finalizer: " + err.Error())
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
-		}
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
 	}
 
 	phase, err = r.createNamespace(ctx, serverClient, installation)
@@ -140,8 +141,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {

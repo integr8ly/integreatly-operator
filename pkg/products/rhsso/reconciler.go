@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -10,7 +11,6 @@ import (
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/pkg/errors"
-
 	corev1 "k8s.io/api/core/v1"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
@@ -90,10 +90,10 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
@@ -127,11 +127,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}, r.Log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
+	if uninstall {
+		return phase, nil
+	}
 	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.Log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
@@ -195,9 +198,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhsso cluster reconciler: %w", err)
 	}
 
-	phase, err = r.ReconcileBlackboxTargets(ctx, installation, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
+	phase, err = r.ReconcileBlackboxTargets(ctx, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.ReconcilePrometheusProbes(ctx, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile prometheus probes", err)
 		return phase, err
 	}
 
@@ -219,9 +228,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	product.Host = r.Config.GetHost()
-	product.Version = r.Config.GetProductVersion()
-	product.OperatorVersion = r.Config.GetOperatorVersion()
+	phase, err = r.exportDashboard(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to export dashboard to the observability namespace", err)
+		return phase, err
+	}
+
+	phase, err = r.ExportAlerts(ctx, serverClient, string(r.Config.GetProductName()), r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to export alerts to the observability namespace", err)
+		return phase, err
+	}
+
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.AuthenticationStage, r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -552,6 +573,49 @@ func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keyclo
 		kcUser.Spec.User = user
 		return nil
 	})
+}
+
+func (r *Reconciler) exportDashboard(ctx context.Context, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		dashboard := "keycloak"
+
+		ssoDB := &grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dashboard,
+				Namespace: r.Config.GetNamespace(),
+			},
+		}
+
+		err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: ssoDB.Name, Namespace: ssoDB.Namespace}, ssoDB)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		observabilityConfig, err := r.ConfigManager.ReadObservability()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		observabilityDB := &grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dashboard,
+				Namespace: observabilityConfig.GetNamespace(),
+			},
+		}
+
+		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityDB, func() error {
+			observabilityDB.Labels = ssoDB.Labels
+			observabilityDB.Spec = ssoDB.Spec
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if opRes != controllerutil.OperationResultNone {
+			r.Log.Infof("Operation result grafana ssoDB", l.Fields{"grafanaDashboard": observabilityDB.Name, "result": opRes})
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {

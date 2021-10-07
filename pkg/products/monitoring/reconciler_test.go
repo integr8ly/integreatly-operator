@@ -1,12 +1,8 @@
 package monitoring
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"strings"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -18,7 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	v1 "github.com/openshift/api/route/v1"
 
-	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	monitoringv1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -74,15 +70,6 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			Type:                 string(integreatlyv1alpha1.InstallationTypeManaged),
 		},
 	}
-}
-
-func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
-	installation := basicInstallation()
-	installation.Spec.AlertFromAddress = mockAlertFromAddress
-	installation.Spec.AlertingEmailAddress = mockCustomerAlertingEmailAddress
-	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
-	installation.Spec.AlertingEmailAddresses.BusinessUnit = mockBUAlertingEmailAddress
-	return installation
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -423,6 +410,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -456,17 +444,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 								Kind:       "ApplicationMonitoring",
 								APIVersion: monitoringv1.SchemeGroupVersion.String(),
 							},
-							// Items: []operatorsv1alpha1.InstallPlan{
-							// 	{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "monitoring-install-plan",
 							},
 							Status: operatorsv1alpha1.InstallPlanStatus{
 								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 							},
-							// },
-							// },
-							// ListMeta: metav1.ListMeta{},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
@@ -479,6 +462,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: basicInstallation(),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -489,7 +473,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -562,9 +546,56 @@ func TestReconciler_testPhases(t *testing.T) {
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.RHMI
-		Product        *integreatlyv1alpha1.RHMIProductStatus
+		ProductStatus  *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
+		{
+			Name:           "test uninstall - Namespace already removed should result in PhaseUninstallCompleted",
+			Installation:   basicInstallation(),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			Name:         "test uninstall - Namespace present returns PhaseInProgress",
+			Installation: basicInstallation(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.ApplicationMonitoring{
+				ObjectMeta: metav1.ObjectMeta{Name: defaultMonitoringName, Namespace: operatorNS.Name},
+			}),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
+		{
+			Name:           "test uninstall - Namespace present with blackbox targets already removed should result in PhaseUninstallInProgress",
+			Installation:   basicInstallation(),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
+		{
+			Name:         "test uninstall - Namespace present with blackbox targets are still present should result in PhaseUninstallInProgress",
+			Installation: basicInstallation(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.BlackboxTarget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "blackbox-target",
+					Namespace: operatorNS.Name,
+					Labels: map[string]string{
+						"monitoring-key": "middleware",
+					},
+				},
+			}),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+		},
 		{
 			Name:           "test namespace terminating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
@@ -586,8 +617,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     true,
 		},
 		{
 			Name:           "test subscription creating returns phase in progress",
@@ -603,8 +635,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					return nil, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     false,
 		},
 		{
 			Name:           "test components creating returns phase in progress",
@@ -626,8 +659,9 @@ func TestReconciler_testPhases(t *testing.T) {
 					}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder: setupRecorder(),
+			ProductStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:      setupRecorder(),
+			Uninstall:     false,
 		},
 	}
 
@@ -638,7 +672,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				t.Fatalf("unexpected error : '%v'", err)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.ProductStatus, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -649,612 +683,6 @@ func TestReconciler_testPhases(t *testing.T) {
 	}
 }
 
-func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
-	basicScheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	basicLogger := getLogger()
-	basicReconciler := func() *Reconciler {
-		return &Reconciler{
-			installation: basicInstallation(),
-			Log:          basicLogger,
-			Config: &config.Monitoring{
-				Config: map[string]string{
-					"OPERATOR_NAMESPACE": defaultInstallationNamespace,
-				},
-			},
-		}
-	}
-
-	installation := basicInstallation()
-
-	smtpSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mockSMTPSecretName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{
-			"host":     []byte("smtp.sendgrid.com"),
-			"port":     []byte("587"),
-			"username": []byte("test"),
-			"password": []byte("test"),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	pagerdutySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mockPagerdutySecretName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{
-			"serviceKey": []byte("test"),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	dmsSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mockDMSSecretName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{
-			"url": []byte("https://example.com"),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-	alertmanagerConfigSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerConfigSecretName,
-			Namespace: defaultInstallationNamespace,
-		},
-		Data: map[string][]byte{},
-		Type: corev1.SecretTypeOpaque,
-	}
-	alertmanagerRoute := &v1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerRouteName,
-			Namespace: defaultInstallationNamespace,
-		},
-		Spec: v1.RouteSpec{
-			Host: "example.com",
-		},
-	}
-
-	clusterInfra := &configv1.Infrastructure{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterInfraName,
-		},
-		Status: configv1.InfrastructureStatus{
-			InfrastructureName: "cluster-infra",
-		},
-	}
-
-	clusterVersion := &configv1.ClusterVersion{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterIDValue,
-		},
-		Spec: configv1.ClusterVersionSpec{
-			ClusterID: "cluster-id",
-		},
-	}
-
-	clusterRoute := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      openShiftConsoleRoute,
-			Namespace: openShiftConsoleNamespace,
-		},
-		Spec: routev1.RouteSpec{
-			Host: "example-console.com",
-		},
-	}
-
-	clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
-	clusterName := clusterInfra.Status.InfrastructureName
-	clusterID := string(clusterVersion.Spec.ClusterID)
-
-	templateUtil := NewTemplateHelper(map[string]string{
-		"SMTPHost":              string(smtpSecret.Data["host"]),
-		"SMTPPort":              string(smtpSecret.Data["port"]),
-		"SMTPFrom":              mockAlertFromAddress,
-		"SMTPUsername":          string(smtpSecret.Data["username"]),
-		"SMTPPassword":          string(smtpSecret.Data["password"]),
-		"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
-		"DeadMansSnitchURL":     string(dmsSecret.Data["url"]),
-		"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
-		"SMTPToSREAddress":      mockAlertingEmailAddress,
-		"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
-		"clusterID":             clusterID,
-		"clusterName":           clusterName,
-		"clusterConsole":        clusterConsoleRoute,
-		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
-	})
-
-	templatePath := GetTemplatePath()
-	path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
-
-	// generate alertmanager custom email template
-	testEmailConfigContents, err := ioutil.ReadFile(path)
-
-	testEmailConfigContentsStr := string(testEmailConfigContents)
-	cluster_vars := map[string]string{
-		"${CLUSTER_NAME}":    clusterName,
-		"${CLUSTER_ID}":      clusterID,
-		"${CLUSTER_CONSOLE}": clusterConsoleRoute,
-	}
-
-	for name, val := range cluster_vars {
-		testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
-	}
-
-	testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
-
-	tests := []struct {
-		name         string
-		serverClient func() k8sclient.Client
-		reconciler   func() *Reconciler
-		setup        func() error
-		want         integreatlyv1alpha1.StatusPhase
-		wantFn       func(c k8sclient.Client) error
-		wantErr      string
-	}{
-		{
-			name: "fails when pager duty secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "fails when pager duty service key is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
-				emptyPagerdutySecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			wantErr: "secret key is undefined in pager duty secret",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "fails when dead mans snitch secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "fails when dead mans snitch url is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyDMSSecret := dmsSecret.DeepCopy()
-				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			wantErr: "url is undefined in dead mans snitch secret",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "awaiting components when alert manager route cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			want: integreatlyv1alpha1.PhaseAwaitingComponents,
-		},
-		{
-			name: "fails when alert manager route fails to be retrieved",
-			serverClient: func() k8sclient.Client {
-				return &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-						return fmt.Errorf("test")
-					},
-				}
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			wantErr: "could not obtain alert manager route: test",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "fails cluster infra cannot  be retrieved",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler()
-			},
-			want: integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name: "secret created successfully",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
-			},
-			reconciler: func() *Reconciler {
-				rec := basicReconciler()
-				rec.installation = basicInstallationWithAlertEmailAddress()
-				return rec
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-			wantFn: func(c k8sclient.Client) error {
-				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
-					return err
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
-				}
-				return nil
-			},
-		},
-		{
-			name: "secret data is overridden if already exists",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
-			},
-			reconciler: func() *Reconciler {
-				rec := basicReconciler()
-				rec.installation = basicInstallationWithAlertEmailAddress()
-				return rec
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-			wantFn: func(c k8sclient.Client) error {
-				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
-					return err
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
-				}
-				return nil
-			},
-		},
-		{
-			name: "alert address env override is successful",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
-			},
-			reconciler: func() *Reconciler {
-				reconciler := basicReconciler()
-				reconciler.installation = basicInstallationWithAlertEmailAddress()
-				return reconciler
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-			wantFn: func(c k8sclient.Client) error {
-				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
-					return err
-				}
-
-				clusterConsoleRoute := fmt.Sprintf(`https://%v`, clusterRoute.Spec.Host)
-				clusterName := clusterInfra.Status.InfrastructureName
-				clusterID := string(clusterVersion.Spec.ClusterID)
-
-				templateUtil := NewTemplateHelper(map[string]string{
-					"SMTPHost":              string(smtpSecret.Data["host"]),
-					"SMTPPort":              string(smtpSecret.Data["port"]),
-					"SMTPFrom":              mockAlertFromAddress,
-					"SMTPUsername":          string(smtpSecret.Data["username"]),
-					"SMTPPassword":          string(smtpSecret.Data["password"]),
-					"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
-					"DeadMansSnitchURL":     string(dmsSecret.Data["url"]),
-					"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
-					"SMTPToSREAddress":      mockAlertingEmailAddress,
-					"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-					"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
-					"clusterID":             clusterID,
-					"clusterName":           clusterName,
-					"clusterConsole":        clusterConsoleRoute,
-					"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
-				})
-
-				templatePath := GetTemplatePath()
-				path := fmt.Sprintf("%s/%s", templatePath, alertManagerCustomTemplatePath)
-
-				// generate alertmanager custom email template
-				testEmailConfigContents, err := ioutil.ReadFile(path)
-
-				testEmailConfigContentsStr := string(testEmailConfigContents)
-				cluster_vars := map[string]string{
-					"${CLUSTER_NAME}":    clusterName,
-					"${CLUSTER_ID}":      clusterID,
-					"${CLUSTER_CONSOLE}": clusterConsoleRoute,
-				}
-
-				for name, val := range cluster_vars {
-					testEmailConfigContentsStr = strings.ReplaceAll(testEmailConfigContentsStr, name, val)
-				}
-
-				testSecretData, err := templateUtil.LoadTemplate(alertManagerConfigTemplatePath)
-				if err != nil {
-					return err
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
-				}
-				if !bytes.Equal(configSecret.Data[alertManagerEmailTemplateSecretFileName], []byte(testEmailConfigContentsStr)) {
-					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerEmailTemplateSecretFileName]), testEmailConfigContentsStr)
-				}
-
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			reconciler := tt.reconciler()
-			serverClient := tt.serverClient()
-
-			got, err := reconciler.reconcileAlertManagerConfigSecret(context.TODO(), serverClient)
-			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("reconcileAlertManagerConfigSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("reconcileAlertManagerConfigSecret() got = %v, want %v", got, tt.want)
-			}
-			if tt.wantFn != nil {
-				if err := tt.wantFn(serverClient); err != nil {
-					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
-				}
-			}
-		})
-	}
-}
-
-func TestReconciler_getPagerDutySecret(t *testing.T) {
-	basicScheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	basicReconciler := &Reconciler{
-		installation: basicInstallation(),
-		Log:          getLogger(),
-		Config: &config.Monitoring{
-			Config: map[string]string{
-				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
-			},
-		},
-	}
-
-	installation := basicInstallation()
-
-	pagerdutySecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mockPagerdutySecretName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{
-			"PAGERDUTY_KEY": []byte("test"),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	tests := []struct {
-		name         string
-		serverClient func() k8sclient.Client
-		reconciler   func() *Reconciler
-		setup        func() error
-		want         string
-		wantErr      string
-	}{
-		{
-			name: "fails when pager duty secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
-		},
-		{
-			name: "fails when pager duty service key is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
-				emptyPagerdutySecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "secret key is undefined in pager duty secret",
-		},
-
-		{
-			name: "fails when pager duty service key - value is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
-				emptyPagerdutySecret.Data = map[string][]byte{}
-				emptyPagerdutySecret.Data["serviceKey"] = []byte("")
-				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "secret key is undefined in pager duty secret",
-		},
-		{
-			name: "secret read successfully - from pager duty operator secret",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, pagerdutySecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			want: "test",
-		},
-		{
-			name: "secret read successfully - from cssre pager duty operator secret",
-			serverClient: func() k8sclient.Client {
-				cssrePagerDutySecret := pagerdutySecret.DeepCopy()
-				cssrePagerDutySecret.Data = make(map[string][]byte, 0)
-				cssrePagerDutySecret.Data["serviceKey"] = []byte("cssre-pg-secret")
-				return fakeclient.NewFakeClientWithScheme(basicScheme, cssrePagerDutySecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			want: "cssre-pg-secret",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			reconciler := tt.reconciler()
-			serverClient := tt.serverClient()
-
-			got, err := reconciler.getPagerDutySecret(context.TODO(), serverClient)
-			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("getPagerDutySecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getPagerDutySecret() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReconciler_getDMSSecret(t *testing.T) {
-	basicScheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	basicReconciler := &Reconciler{
-		installation: basicInstallation(),
-		Log:          getLogger(),
-		Config: &config.Monitoring{
-			Config: map[string]string{
-				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
-			},
-		},
-	}
-
-	installation := basicInstallation()
-
-	dmsSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mockDMSSecretName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{
-			"SNITCH_URL": []byte("https://example.com"),
-		},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	tests := []struct {
-		name         string
-		serverClient func() k8sclient.Client
-		reconciler   func() *Reconciler
-		setup        func() error
-		want         string
-		wantErr      string
-	}{
-		{
-			name: "fails when dead man switch secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
-		},
-		{
-			name: "fails when dead man switch secret url is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyDMSSecret := dmsSecret.DeepCopy()
-				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyDMSSecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "url is undefined in dead mans snitch secret",
-		},
-
-		{
-			name: "fails when dead man switch secret SNITCHH_URL - value is not defined",
-			serverClient: func() k8sclient.Client {
-				emptyDMSSecret := dmsSecret.DeepCopy()
-				emptyDMSSecret.Data = map[string][]byte{}
-				emptyDMSSecret.Data["SNITCH_URL"] = []byte("")
-				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyDMSSecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "url is undefined in dead mans snitch secret",
-		},
-		{
-			name: "secret read successfully - from dead man switch operator secret",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, dmsSecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			want: "https://example.com",
-		},
-		{
-			name: "secret read successfully - from cssre dead man switch operator secret",
-			serverClient: func() k8sclient.Client {
-				cssreDMSSecret := dmsSecret.DeepCopy()
-				cssreDMSSecret.Data = make(map[string][]byte, 0)
-				cssreDMSSecret.Data["url"] = []byte("https://example-cssredms-secret.com")
-				return fakeclient.NewFakeClientWithScheme(basicScheme, cssreDMSSecret)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			want: "https://example-cssredms-secret.com",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			reconciler := tt.reconciler()
-			serverClient := tt.serverClient()
-
-			got, err := reconciler.getDMSSecret(context.TODO(), serverClient)
-			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("getDMSSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getDMSSecret() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductMonitoring})
 }

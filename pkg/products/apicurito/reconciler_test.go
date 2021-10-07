@@ -9,7 +9,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -20,6 +19,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -80,6 +80,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -110,6 +111,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 		{
 			Name:           "test failed reconcile, no namespace created",
@@ -121,6 +123,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation:   installation,
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Uninstall:      false,
 		},
 		{
 			Name:           "test failed reconcile, no pull secret",
@@ -132,6 +135,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation:   installation,
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Uninstall:      false,
 		},
 		{
 			Name:           "test failed reconcile, no install plans",
@@ -151,6 +155,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					return nil, nil, k8serr.NewNotFound(schema.GroupResource{}, "subs")
 				},
 			},
+			Uninstall: false,
 		},
 	}
 
@@ -168,7 +173,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{}, tc.Uninstall)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected no errors, but got one: %v", err)
@@ -466,8 +471,8 @@ func getInstallation() *integreatlyv1alpha1.RHMI {
 					Name: "apicurito-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductApicurito: {
-							Name:   integreatlyv1alpha1.ProductApicurito,
-							Status: integreatlyv1alpha1.PhaseCreatingComponents,
+							Name:  integreatlyv1alpha1.ProductApicurito,
+							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
 				},

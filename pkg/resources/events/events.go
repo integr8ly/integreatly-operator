@@ -19,7 +19,7 @@ func HandleStageComplete(recorder record.EventRecorder, installation *integreatl
 // Emits a normal event upon successful completion of product installation
 func HandleProductComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, stageName integreatlyv1alpha1.StageName, productName integreatlyv1alpha1.ProductName) {
 	stage := installation.Status.Stages[stageName]
-	if stage.Products[productName].Status != integreatlyv1alpha1.PhaseCompleted {
+	if stage.Products[productName].Phase != integreatlyv1alpha1.PhaseCompleted {
 		recorder.Event(installation, "Normal", integreatlyv1alpha1.EventInstallationCompleted, fmt.Sprintf("%s was installed successfully", productName))
 	}
 }

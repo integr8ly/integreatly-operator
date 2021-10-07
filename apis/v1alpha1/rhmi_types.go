@@ -50,13 +50,16 @@ var (
 	BootstrapStage               StageName = "bootstrap"
 	CloudResourcesStage          StageName = "cloud-resources"
 	MonitoringStage              StageName = "monitoring"
+	ObservabilityStage           StageName = "observability"
 	AuthenticationStage          StageName = "authentication"
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	SolutionExplorerStage        StageName = "solution-explorer"
 	UninstallProductsStage       StageName = "uninstall - products"
 	UninstallMonitoringStage     StageName = "uninstall - monitoring"
+	UninstallObservabilityStage  StageName = "uninstall - observability"
 	UninstallCloudResourcesStage StageName = "uninstall - cloud-resources"
+	UninstallBootstrap           StageName = "uninstall - bootstrap"
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"
@@ -71,6 +74,7 @@ var (
 	ProductApicurioRegistry    ProductName = "apicurio-registry"
 	ProductApicurito           ProductName = "apicurito"
 	ProductMonitoring          ProductName = "middleware-monitoring"
+	ProductObservability       ProductName = "observability"
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
 	ProductMonitoringSpec      ProductName = "monitoring-spec"
@@ -98,6 +102,7 @@ var (
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
 	VersionMarin3r             ProductVersion = "0.8.0"
 	VersionGrafana             ProductVersion = "3.10.4"
+	VersionObservability       ProductVersion = "3.0.7"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -128,6 +133,7 @@ var (
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 	OperatorVersionMarin3r             OperatorVersion = "0.8.0"
 	OperatorVersionGrafana             OperatorVersion = "3.10.4"
+	OperatorVersionObservability       OperatorVersion = "3.0.7"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
@@ -234,7 +240,8 @@ type RHMIProductStatus struct {
 	Host            string          `json:"host"`
 	Type            string          `json:"type,omitempty"`
 	Mobile          bool            `json:"mobile,omitempty"`
-	Status          StatusPhase     `json:"status"`
+	Phase           StatusPhase     `json:"status"`
+	Uninstall       bool            `json:"uninstall,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -45,6 +45,7 @@ type SolutionExplorerScenario struct {
 	Validate        func(t *testing.T, mock interface{})
 	Product         *integreatlyv1alpha1.RHMIProductStatus
 	Recorder        record.EventRecorder
+	Uninstall       bool
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -106,7 +107,8 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 					t.Fatal("expected 1 call to GetOauthEndPointCalls but got  ", len(m.GetOauthEndPointCalls()))
 				}
 			},
-			Recorder: setupRecorder(),
+			Recorder:  setupRecorder(),
+			Uninstall: false,
 		},
 	}
 
@@ -177,6 +179,7 @@ func TestSolutionExplorer(t *testing.T) {
 			client:       fake.NewFakeClientWithScheme(scheme, webappNS, operatorNS, webappCR, installation, webappRoute),
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
+			Uninstall:    false,
 		},
 	}
 
@@ -196,7 +199,7 @@ func TestSolutionExplorer(t *testing.T) {
 				return
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client, &quota.ProductConfigMock{})
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.client, &quota.ProductConfigMock{}, tc.Uninstall)
 			if err != nil && !tc.ExpectErr {
 				t.Fatalf("expected error but got one: %v", err)
 			}
