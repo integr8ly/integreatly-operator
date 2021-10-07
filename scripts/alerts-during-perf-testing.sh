@@ -13,7 +13,7 @@ RHSSO="rhsso"
 USER_SSO="user-sso"
 THREESCALE="3scale"
 TOKEN=$(oc whoami --show-token)
-MONITORING_ROUTE=$(echo "https://$(oc get route prometheus-route -n ${NAMESPACE_PREFIX}middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts
+MONITORING_ROUTE=$(echo "https://$(oc get route prometheus-route -n ${NAMESPACE_PREFIX}observability -o=jsonpath='{.spec.host}')")/api/v1/alerts
 
 # remove tmp files on ctrl-c
 trap "rm tmp-alert-firing-during-perf-testing-report.csv tmp-alert-pending-during-perf-testing-report.csv" EXIT
