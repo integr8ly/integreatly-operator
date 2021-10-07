@@ -28,7 +28,7 @@ var (
 			{
 				Name: integreatlyv1alpha1.MonitoringStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring, Uninstall: true},
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
 				},
 			},
@@ -168,6 +168,9 @@ var (
 					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
 				},
+			},
+			{
+				Name: integreatlyv1alpha1.UninstallBootstrap,
 			},
 		},
 	}
