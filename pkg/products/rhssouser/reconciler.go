@@ -271,10 +271,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		if err := r.reconcileConsoleLink(ctx, serverClient); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	if err := r.reconcileConsoleLink(ctx, serverClient); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ExportAlerts(ctx, serverClient, string(r.Config.GetProductName()), r.Config.GetNamespace())
@@ -406,12 +404,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 
-	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.Recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
-			return phase, err
-		}
+	phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
+		return phase, err
 	}
 
 	_, err = r.reconcileFirstLoginAuthFlow(kc)
@@ -425,24 +421,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list the keycloak users: %w", err)
 	}
 
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		phase, err := r.ReconcileMultiTenantUserSSO(ctx, serverClient, kc)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			if err != nil {
-				events.HandleError(r.Recorder, installation, phase, "Failed to reconcile components", err)
-			}
-			return phase, err
-		}
-	} else {
-		// single tenant
-		r.reconcileGroups(ctx, serverClient, kc)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-		r.reconcileAdminUsers(ctx, serverClient, keycloakUsers)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	r.reconcileGroups(ctx, serverClient, kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.reconcileAdminUsers(ctx, serverClient, keycloakUsers)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -1283,8 +1268,7 @@ func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName stri
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
 	// If the installation type isn't managed-api, ensure that the ConsoleLink
 	// doesn't exist
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) ||
-		integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
 		return r.deleteConsoleLink(ctx, serverClient, userSsoConsoleLink)
 	}
 
