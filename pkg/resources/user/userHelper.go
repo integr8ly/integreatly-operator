@@ -215,10 +215,7 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 }
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) ([]MultiTenantUser, error) {
-	requiredIdp, err := GetIdpName()
-	if err != nil {
-		return nil, err
-	}
+	requiredIdp := GetIdpName()
 	var users []MultiTenantUser
 
 	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
@@ -245,10 +242,7 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) ([]
 }
 
 func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
-	requiredIdp, err := GetIdpName()
-	if err != nil {
-		return 0, fmt.Errorf("error when pulling IDP name from the envvar")
-	}
+	requiredIdp := GetIdpName()
 
 	log.Infof("Looking for identities from", l.Fields{"idp": requiredIdp})
 
@@ -271,13 +265,12 @@ func SanitiseTenantUserName(username string) string {
 	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
 }
 
-func GetIdpName() (string, error) {
+func GetIdpName() string {
 	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
 	if !ok {
-		return "devsandbox", fmt.Errorf("error retrieving IDENTITY_PROVIDER_NAME from envar")
+		return "devsandbox"
 	}
-
-	return idpName, nil
+	return idpName
 }
 
 func SetUserNameAsEmail(userName string) string {

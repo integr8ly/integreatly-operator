@@ -28,7 +28,7 @@ var (
 	err                    error
 	waitgroup              sync.WaitGroup
 	clusterLoginSuccessful = true
-	realmName, _           = user.GetIdpName()
+	realmName              = user.GetIdpName()
 )
 
 func TestMultitenancyLoad(t TestingTB, ctx *TestingContext) {
