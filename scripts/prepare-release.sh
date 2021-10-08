@@ -200,43 +200,30 @@ set_related_images() {
       # Read component name
       component_name=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' | tr -d '"')
 
-      # Read containers length
+      # Read containers section length
       containerLength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq length)
       for (( y=0; y<$containerLength; y++))
       do
         # Read image from the component version but only select quay.io or redhat.registry
         component_image=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[$y].image" | jq -r 'select((test("quay.")) or (test("registry.redhat")))' | tr -d '"')
 
-        containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
-        position=$((position+1))
+        if [[ ! -z "$component_image" ]]; then
+          containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
+          position=$((position+1))
+        fi
       done
 
       # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
       relatedImagesLength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r '.spec.relatedImages' | jq length)
-
       # Adding generic related images
       if [[ $relatedImagesLength != 0 ]]; then
         for (( y=0; y<$relatedImagesLength; y++))
         do
           relatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
           relatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
-          if [[ "$relatedImageName" != "oc_cli" ]] && [[ "$relatedImageName" != "zync_postgresql" ]] && [[ "$relatedImageName" != "system_postgresql" ]] && [[ "$relatedImageName" != "system_mysql" ]] && [[ "$relatedImageName" != "system_redis" ]] && [[ "$relatedImageName" != "backend_redis" ]]; then
+          if [[ "$relatedImageName" != "oc_cli" ]] && [[ "$relatedImageName" != "zync_postgresql" ]] && [[ "$relatedImageName" != "system_postgresql" ]] && [[ "$relatedImageName" != "system_mysql" ]] && [[ "$relatedImageName" != "system_redis" ]] && [[ "$relatedImageName" != "backend_redis" ]] && [[ "$relatedImageName" != "postgresql" ]]; then
             containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
             position=$((position+1))
-          fi
-        done
-      fi
-
-      # Adding KC related image
-      if [[ "$component_name" == *"rhsso-operator"* ]]; then
-
-        kcRelatedImageslength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env' | jq length)
-        for (( k=0; k<${kcRelatedImageslength}; k++))
-        do
-          kcRelatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env[$k].name" | tr -d '"')
-          kcRelatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env[$k].value" | tr -d '"')
-          if [[ "$kcRelatedImageName" == "RELATED_IMAGE_KEYCLOAK_INIT_CONTAINER" ]] || [[ "$kcRelatedImageName" == "RELATED_IMAGE_RHSSO_INIT_CONTAINER" ]]; then
-            containerImageField="$containerImageField{\"component_name\":\"${kcRelatedImageName}\",\"component_url\":\"${kcRelatedImageURL}\"},"
           fi
         done
       fi
