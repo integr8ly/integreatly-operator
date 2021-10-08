@@ -105,7 +105,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: Security
     certified: "False"
-    containerImage: quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-rhel8-operator_7.5
+    containerImage: registry.redhat.io/rh-sso-7-tech-preview/sso75-rhel8-operator:7.5
     createdAt: "2021-08-09 00:00:00"
     description: An Operator for installing and managing Red Hat Single Sign-On
     repository: https://github.com/keycloak/keycloak-operator
@@ -192,12 +192,12 @@ spec:
                 - name: OPERATOR_NAME
                   value: rhsso-operator
                 - name: RELATED_IMAGE_KEYCLOAK_INIT_CONTAINER
-                  value: quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-init-container-rhel8_7.5
+                  value: registry.redhat.io/rh-sso-7-tech-preview/sso75-init-container-rhel8:7.5
                 - name: RELATED_IMAGE_RHSSO_INIT_CONTAINER
-                  value: quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-init-container-rhel8_7.5
+                  value: registry.redhat.io/rh-sso-7-tech-preview/sso75-init-container-rhel8:7.5
                 - name: RELATED_IMAGE_POSTGRESQL
-                  value: quay.io/integreatly/delorean:rhel8-postgresql-10_1
-                image: quay.io/integreatly/delorean:rh-sso-7-tech-preview-sso75-rhel8-operator_7.5
+                  value: registry.redhat.io/rhel8/postgresql-10:1
+                image: registry.redhat.io/rh-sso-7-tech-preview/sso75-rhel8-operator:7.5
                 imagePullPolicy: Always
                 name: rhsso-operator
                 resources: {}
