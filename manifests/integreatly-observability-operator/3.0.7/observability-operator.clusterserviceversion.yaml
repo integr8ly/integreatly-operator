@@ -1,0 +1,363 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "observability.redhat.com/v1",
+          "kind": "Observability",
+          "metadata": {
+            "name": "observability-sample"
+          },
+          "spec": {
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "node-role.kubernetes.io/infra",
+                          "operator": "Exists"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "configurationSelector": {
+              "matchLabels": {
+                "configures": "observability-operator"
+              }
+            },
+            "resyncPeriod": "30s",
+            "storage": {
+              "prometheus": {
+                "volumeClaimTemplate": {
+                  "spec": {
+                    "resources": {
+                      "requests": {
+                        "storage": "40Gi"
+                      }
+                    },
+                    "storageClassName": "ssd"
+                  }
+                }
+              }
+            },
+            "tolerations": [
+              {
+                "effect": "NoSchedule",
+                "key": "node-role.kubernetes.io/infra",
+                "operator": "Exists"
+              }
+            ]
+          }
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.3.2
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+  name: observability-operator.v3.0.7
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Observability is the Schema for the observabilities API
+      displayName: Observability
+      kind: Observability
+      name: observabilities.observability.redhat.com
+      version: v1
+  description: Managed Services On-Cluster Observability Stack
+  displayName: observability-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - nonResourceURLs:
+          - /metrics
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - endpoints
+          - nodes/proxy
+          - secrets
+          - serviceaccounts
+          - services
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          - nodes
+          - nodes/proxy
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
+          - deployments
+          - statefulsets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - corev1
+          resources:
+          - configmaps
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - grafanadashboards
+          - grafanadatasources
+          - grafanas
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - alertmanagers
+          - alertmanagers/finalizers
+          - podmonitors
+          - prometheuses
+          - prometheuses/finalizers
+          - prometheusrules
+          - servicemonitors
+          - thanosrulers
+          - thanosrulers/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - networkpolicies
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - observability.redhat.com
+          resources:
+          - observabilities
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - observability.redhat.com
+          resources:
+          - observabilities/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - catalogsources
+          - clusterserviceversions
+          - operatorgroups
+          - subscriptions
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - clusterroles
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - privileged
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: default
+      deployments:
+      - name: observability-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --enable-leader-election
+                command:
+                - /manager
+                image: quay.io/rhoas/observability-operator:v3.0.7
+                imagePullPolicy: Always
+                name: manager
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 500Mi
+                  requests:
+                    cpu: 100m
+                    memory: 50Mi
+              priorityClassName: observability-operator-priority-class
+              terminationGracePeriodSeconds: 10
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: default
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: false
+    type: AllNamespaces
+  keywords:
+  - monitoring
+  - metrics
+  - logs
+  links:
+  - name: Observability Operator
+    url: https://observability-operator.domain
+  maintainers:
+  - email: mas-users@redhat.com
+    name: rhosak
+  maturity: alpha
+  provider:
+    name: Red Hat
+  version: 3.0.7
