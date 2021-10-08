@@ -433,9 +433,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+	if op == controllerutil.OperationResultCreated {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

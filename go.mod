@@ -42,7 +42,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.11.0
-	github.com/redhat-developer/observability-operator/v3 v3.0.6-0.20211006092740-09ec21470e33
+	github.com/redhat-developer/observability-operator/v3 v3.0.8-0.20211012103707-b8bf725833e1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
