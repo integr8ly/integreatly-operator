@@ -81,11 +81,11 @@ func testRoute(t TestingTB, ctx *TestingContext, grafanaRootHostname string) {
 	}
 }
 
-func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext){
+func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	testGrafanaExternalRouteDashboardExist(t, ctx, MonitoringOperatorNamespace)
 }
 
-func TestGrafanaExternalRouteDashboardExistObservability(t TestingTB, ctx *TestingContext){
+func TestGrafanaExternalRouteDashboardExistObservability(t TestingTB, ctx *TestingContext) {
 	testGrafanaExternalRouteDashboardExist(t, ctx, ObservabilityProductNamespace)
 }
 

@@ -125,7 +125,7 @@ func testIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext, mo
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
 	//output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
-	output, err := execToPod(execToPodCommand + fmt.Sprintf(" %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(execToPodCommand+fmt.Sprintf(" %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
 		monitoringNamespace,
 		curlContainerName, ctx)
@@ -158,7 +158,7 @@ func TestIntegreatlyMiddelewareDashboardsExistObservability(t TestingTB, ctx *Te
 }
 
 func testIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext,
-													monitoringNamespace string, execToPodCommand string) {
+	monitoringNamespace string, execToPodCommand string) {
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
@@ -175,7 +175,7 @@ func testIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext,
 	monitoringGrafanaPods := getGrafanaPods(t, ctx, monitoringNamespace)
 
 	//output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
-	output, err := execToPod(execToPodCommand + fmt.Sprintf(" %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(execToPodCommand+fmt.Sprintf(" %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
 		monitoringNamespace,
 		curlContainerName, ctx)

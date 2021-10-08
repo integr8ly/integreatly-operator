@@ -38,12 +38,12 @@ var keycloakAlertsToTest = map[string]string{
 	"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
 }
 
-func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext){
+func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	prometheusPod := "prometheus-application-monitoring-0"
 	testIntegreatlyAlertsMechanism(t, ctx, MonitoringOperatorNamespace, prometheusPod)
 }
 
-func TestIntegreatlyAlertsMechanismObservability(t TestingTB, ctx *TestingContext){
+func TestIntegreatlyAlertsMechanismObservability(t TestingTB, ctx *TestingContext) {
 	prometheusPod := "prometheus-kafka-prometheus-0"
 	testIntegreatlyAlertsMechanism(t, ctx, ObservabilityProductNamespace, prometheusPod)
 }
@@ -178,7 +178,7 @@ func verifySecrets(kubeClient kubernetes.Interface, monitoringNamespace string) 
 }
 
 func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int32,
-						monitoringNamespace string, prometheusPod string) error {
+	monitoringNamespace string, prometheusPod string) error {
 	scaleDeployment(t, keycloakOperatorDeploymentName, 0, ctx.KubeClient)
 
 	defer scaleDeployment(t, keycloakOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
@@ -217,7 +217,7 @@ func checkAlertManager(ctx *TestingContext, t TestingTB, monitoringNamespace str
 }
 
 func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t TestingTB,
-									monitoringNamespace string, prometheusPod string) error {
+	monitoringNamespace string, prometheusPod string) error {
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		err = getKeycloakAlertState(ctx, monitoringNamespace, prometheusPod)
 		if err != nil {
