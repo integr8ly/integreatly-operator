@@ -201,7 +201,7 @@ spec:
                 imagePullPolicy: Always
                 name: rhsso-operator
                 resources: {}
-              serviceAccountName: rhsso-operator
+              serviceAccountName: keycloak-operator
       permissions:
       - rules:
         - apiGroups:
@@ -335,7 +335,7 @@ spec:
           - list
           - update
           - watch
-        serviceAccountName: rhsso-operator
+        serviceAccountName: keycloak-operator
     strategy: deployment
   installModes:
   - supported: true
