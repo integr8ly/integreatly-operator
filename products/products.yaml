@@ -39,7 +39,7 @@ products:
   - name: application-monitoring-operator
     version: v1.8.0
     url: "https://github.com/integr8ly/application-monitoring-operator"
-    installType: "rhmi/rhoam"
+    installType: "rhmi"
     manifestsDir: "integreatly-monitoring"
     quayScan: true
   - name: keycloak-operator
@@ -60,3 +60,9 @@ products:
     installType: "rhmi"
     manifestsDir: "integreatly-uninfedpush"
     quayScan: false
+  - name: observability-operator
+    version: v3.0.7
+    url: "https://github.com/redhat-developer/observability-operator"
+    installType: "rhoam"
+    manifestsDir: "integreatly-observability-operator"
+    quayScan: true
