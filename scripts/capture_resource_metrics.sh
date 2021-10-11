@@ -11,7 +11,7 @@
 START_TIME_FILENAME=${START_TIME_FILENAME:-perf-test-start-time.txt}
 END_TIME_FILENAME=${END_TIME_FILENAME:-perf-test-end-time.txt}
 TOKEN=$(oc whoami --show-token)
-RHOAM_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")
+RHOAM_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')")
 CLUSTER_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-k8s -n openshift-monitoring -o=jsonpath='{.spec.host}')")
 PROM_QUERY_ROUTE="$CLUSTER_PROMETHEUS_ROUTE/api/v1/query"
 PROM_QUERY_ROUTE_RHOAM="$RHOAM_PROMETHEUS_ROUTE/api/v1/query"
@@ -54,13 +54,13 @@ IDLE_QUERIES=(\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-marin3r', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-user-sso', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-rhsso', pod!='', container=''}) [15m:10s])/1024/1024"\
-  "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-middleware-monitoring-operator', pod!='', container=''}) [15m:10s])/1024/1024"\
+  "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-observability', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace=~'redhat-rhoam-.*', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-3scale'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-marin3r'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-user-sso'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-rhsso'} [15m])"\
-  "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-middleware-monitoring-operator'} [15m])"\
+  "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-observability'} [15m])"\
   "sum(avg_over_time(namespace:container_cpu_usage:sum{namespace=~'redhat-rhoam-.*'} [15m]))"\
 )
 
@@ -70,13 +70,13 @@ LOAD_QUERIES=(\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-marin3r',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-user-sso',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-rhsso',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
-  "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-middleware-monitoring-operator',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
+  "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhoam-observability',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace=~'redhat-rhoam-.*',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-3scale'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-marin3r'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-user-sso'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-rhsso'} [${testDuration}s])"\
-  "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-middleware-monitoring-operator'} [${testDuration}s])"\
+  "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhoam-observability'} [${testDuration}s])"\
   "sum(max_over_time(namespace:container_cpu_usage:sum{namespace=~'redhat-rhoam-.*'} [${testDuration}s]))"\
 )
 
