@@ -194,6 +194,10 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
+                      - name: RELATED_IMAGE_RHSSO_OPENJDK
+                        value: registry.redhat.io/rh-sso-7/sso75-openshift-rhel8@sha256:b92b2180440481827745c29857875f1169f0f5373efe07a447bd67909e70f601
+                      - name: RELATED_IMAGE_RHSSO_OPENJ9
+                        value: registry.redhat.io/rh-sso-7/sso75-openj9-openshift-rhel8@sha256:31bf3937c4cd8d00555bf00f4fc6e42b02796da72165c3f0245e62fc199664e8
                     image: quay.io/keycloak/keycloak-operator:15.0.2
                     imagePullPolicy: Always
                     name: keycloak-operator
@@ -362,3 +366,12 @@ spec:
     name: Red Hat
   version: 15.0.2
   replaces: keycloak-operator.v14.0.0
+  relatedImages:
+    - name: sso7-rhel8-operator-9bea517542d1b0a5bcc872b7ea7564662ccb29fa240fcd52519385928e9f42e3-annotation
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:9bea517542d1b0a5bcc872b7ea7564662ccb29fa240fcd52519385928e9f42e3
+    - name: rhsso-operator
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:9bea517542d1b0a5bcc872b7ea7564662ccb29fa240fcd52519385928e9f42e3
+    - name: rhsso_openjdk
+      image: registry.redhat.io/rh-sso-7/sso75-openshift-rhel8@sha256:b92b2180440481827745c29857875f1169f0f5373efe07a447bd67909e70f601
+    - name: rhsso_openj9
+      image: registry.redhat.io/rh-sso-7/sso75-openj9-openshift-rhel8@sha256:31bf3937c4cd8d00555bf00f4fc6e42b02796da72165c3f0245e62fc199664e8
