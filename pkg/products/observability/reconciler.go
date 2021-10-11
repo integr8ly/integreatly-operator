@@ -327,6 +327,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
+			AlertManagerDefaultName: "rhoam-alertmanager",
+			GrafanaDefaultName:      "rhoam-grafana",
+			PrometheusDefaultName:   "rhoam-prometheus",
 			ConfigurationSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"monitoring-key": r.Config.GetLabelSelector(),
@@ -420,8 +423,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				AlertManagerConfigSecret:              config.AlertManagerConfigSecretName,
 				PrometheusVersion:                     r.Config.GetPrometheusVersion(),
 				AlertManagerVersion:                   r.Config.GetAlertManagerVersion(),
-				PrometheusRoute:                       r.Config.GetPrometheusRouteName(),
-				AlertManagerRoute:                     r.Config.GetAlertManagerRouteName(),
 				AlertManagerResourceRequirement:       r.Config.GetAlertManagerResourceRequirements(),
 				GrafanaResourceRequirement:            r.Config.GetGrafanaResourceRequirements(),
 				PrometheusResourceRequirement:         r.Config.GetPrometheusResourceRequirements(),
