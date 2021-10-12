@@ -331,16 +331,17 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			if &oo.Spec == nil {
 				oo.Spec = observability.ObservabilitySpec{}
 			}
+
+			oo.Spec.AlertManagerDefaultName = r.Config.GetAlertManagerOverride()
+			oo.Spec.GrafanaDefaultName =      r.Config.GetGrafanaOverride()
+			oo.Spec.PrometheusDefaultName =   r.Config.GetPrometheusOverride()
+
 			oo.Spec.ConfigurationSelector = &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"monitoring-key": r.Config.GetLabelSelector(),
 				},
 				MatchExpressions: nil,
 			}
-
-			oo.Spec.AlertManagerDefaultName = "rhoam-alertmanager"
-			oo.Spec.GrafanaDefaultName = "rhoam-grafana"
-			oo.Spec.PrometheusDefaultName = "rhoam-prometheus"
 
 			oo.Spec.Storage = &observability.Storage{
 				PrometheusStorageSpec: &prometheus.StorageSpec{

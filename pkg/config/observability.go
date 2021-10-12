@@ -16,6 +16,11 @@ const (
 	AlertManagerEmailTemplateSecretFileName = "alertmanager-email-config.tmpl"
 	AlertManagerConfigTemplatePath          = "alertmanager/alertmanager-application-monitoring.yaml"
 	AlertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
+
+	// CR Overrides
+	AlertManagerOverride = "rhoam-alertmanager"
+	GrafanaOverride      = "rhoam-grafana"
+	PrometheusOverride   = "rhoam-prometheus"
 )
 
 type Observability struct {
@@ -108,16 +113,32 @@ func (m *Observability) GetAlertManagerVersion() string {
 	return "v0.22.2"
 }
 
+func (m *Observability) GetAlertManagerRouteName() string {
+	return AlertManagerOverride
+}
+
+func (m *Observability) GetAlertManagerOverride() string {
+	return AlertManagerOverride
+}
+
+func (m *Observability) GetAlertManagerServiceName() string {
+	return AlertManagerOverride
+}
+
 func (m *Observability) GetPrometheusVersion() string {
 	return "v2.29.2"
 }
 
 func (m *Observability) GetPrometheusRouteName() string {
-	return "prometheus-route"
+	return PrometheusOverride
 }
 
-func (m *Observability) GetAlertManagerRouteName() string {
-	return "alertmanager-route"
+func (m *Observability) GetPrometheusOverride() string {
+	return PrometheusOverride
+}
+
+func (m *Observability) GetPrometheusServiceName() string {
+	return PrometheusOverride
 }
 
 func (m *Observability) GetPrometheusRetention() string {
@@ -126,6 +147,18 @@ func (m *Observability) GetPrometheusRetention() string {
 
 func (m *Observability) GetPrometheusStorageRequest() string {
 	return "50Gi"
+}
+
+func (m *Observability) GetGrafanaRouteName() string {
+	return "grafana-route"
+}
+
+func (m *Observability) GetGrafanaOverride() string {
+	return GrafanaOverride
+}
+
+func (m *Observability) GetGrafanaServiceName() string {
+	return "grafana-service"
 }
 
 func (m *Observability) GetAlertManagerResourceRequirements() corev1.ResourceRequirements {
