@@ -57,9 +57,10 @@
 #
 products:
   3scale:
-    channel: "alpha"
+    channel: "threescale-2.11"
     installFrom: "implicit"
-    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:18027c4dc2d031b283b82884669b10d27b166333329ae2c10a49e0b9e0e3bfd4"
+    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:6c916f91899e1c280859ccc49aea9c16554d92e33857151b1050bffc905cb872"
+    package: 3scale-operator
   amqonline:
     channel: "rhmi"
     installFrom: "local"
@@ -101,6 +102,11 @@ products:
     channel: rhmi
     installFrom: "local"
     manifestsDir: "integreatly-monitoring"
+  observability:
+    channel: alpha
+    package: observability-operator
+    installFrom: "index"
+    index: "quay.io/rhoas/observability-operator-index:v3.0.7"
   rhsso:
     installFrom: "local"
     manifestsDir: "integreatly-rhsso"
