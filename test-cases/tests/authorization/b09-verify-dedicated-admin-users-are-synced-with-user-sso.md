@@ -36,9 +36,9 @@ EOF
 3. Create the testing user in the Keycloak console
 
 ```
-Username: test-user01
+Username: test-user99
 First name: Test
-Last name: User 01
+Last name: User 99
 User enabled: true
 Email Verified: true
 ```
