@@ -327,9 +327,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
 		disabled := true
 		oo.Spec = observability.ObservabilitySpec{
-			AlertManagerDefaultName: "rhoam-alertmanager",
-			GrafanaDefaultName:      "rhoam-grafana",
-			PrometheusDefaultName:   "rhoam-prometheus",
+			AlertManagerDefaultName: r.Config.GetAlertManagerOverride(),
+			GrafanaDefaultName:      r.Config.GetGrafanaOverride(),
+			PrometheusDefaultName:   r.Config.GetPrometheusOverride(),
 			ConfigurationSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"monitoring-key": r.Config.GetLabelSelector(),
@@ -434,9 +434,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+	if op == controllerutil.OperationResultCreated {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
