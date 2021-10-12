@@ -192,7 +192,7 @@ set_related_images() {
     product_dir=$(yq e ".products[$i].manifestsDir" ./products/products.yaml)
     if [[ $(yq e ".products[$i].installType" ./products/products.yaml) == *"rhoam"* && $(yq e ".products[$i].quayScan" ./products/products.yaml ) == true ]]; then
       # Read component version
-      if [[ "$product_dir" == *"integreatly-rhsso"* ]] || [[ "$product_dir" == *"observability-operator"* ]]; then
+      if [[ "$product_dir" == *"observability-operator"* ]]; then
       component_version=$(grep currentCSV manifests/$product_dir/*.package.yaml | awk -F  "operator." '{print $2}')
       else
       component_version=$(grep currentCSV manifests/$product_dir/*.package.yaml | awk -F v '{print $2}')
