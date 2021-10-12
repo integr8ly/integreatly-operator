@@ -188,7 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, client, productNamespace)
+	phase, err = r.reconcileComponents(ctx, client, productNamespace, r.installation.Spec.NamespacePrefix)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
 		return phase, err
@@ -315,7 +315,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productNamespace string, nsPrefix string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
@@ -351,12 +351,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				DisablePagerDuty:        &disabled,
 				DisableDeadmansSnitch:   &disabled,
 				DisableBlackboxExporter: nil,
-				SelfSignedCerts:         nil,
 				FederatedMetrics: []string{
-					"'kubelet_volume_stats_used_bytes{endpoint=\"https-metrics\",namespace=~\"redhat-rhoam-.*\"}'",
-					"'kubelet_volume_stats_available_bytes{endpoint=\"https-metrics\",namespace=~\"redhat-rhoam-.*\"}'",
-					"'kubelet_volume_stats_capacity_bytes{endpoint=\"https-metrics\",namespace=~\"redhat-rhoam-.*\"}'",
-					"'haproxy_backend_http_responses_total{route=~\"^keycloak.*\",exported_namespace=~\"redhat-rhoam-.*sso$\"}'",
+					"'kubelet_volume_stats_used_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+					"'kubelet_volume_stats_available_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+					"'kubelet_volume_stats_capacity_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+					"'haproxy_backend_http_responses_total{route=~\"^keycloak.*\",exported_namespace=~\"" + nsPrefix + ".*sso$\"}'",
 					"'{ service=\"kube-state-metrics\" }'",
 					"'{ service=\"node-exporter\" }'",
 					"'{ __name__=~\"node_namespace_pod_container:.*\" }'",

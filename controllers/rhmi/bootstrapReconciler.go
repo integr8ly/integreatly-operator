@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"math/rand"
 	"os"
@@ -413,13 +412,9 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 	for _, tenant := range allTenants {
 		r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
 	}
-	r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, rhssouser.StagingRealmName)
 
 	// Remove redundant tenant secrets
 	for key, _ := range oauthClientSecrets.Data {
-		if key == rhssouser.StagingRealmName {
-			continue
-		}
 		if !tenantExists(key, allTenants) {
 			delete(oauthClientSecrets.Data, key)
 		}

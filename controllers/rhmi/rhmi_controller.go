@@ -1324,7 +1324,7 @@ func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, in
 			quotaConfigMap.Data = map[string]string{}
 		}
 
-		quotaConfigMap.Data[quota.ConfigMapData] = addon.GetQuotaConfig()
+		quotaConfigMap.Data[quota.ConfigMapData] = addon.GetQuotaConfig(installation.Spec.Type)
 		return nil
 	})
 

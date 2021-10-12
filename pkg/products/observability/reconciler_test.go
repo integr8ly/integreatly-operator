@@ -273,7 +273,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, defaultInstallationNamespace)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, defaultInstallationNamespace, "redhat-rhoam-")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -8,6 +8,9 @@ STAGED_PULLSECRET="$(pwd)/staged-pullsecret"
 COMBINED_PULLSECRET="$(pwd)/combined-pullsecret"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 
+if [ "$INSTALLATION_TYPE" = "multitenant-managed-api" ]; then
+  NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-sandbox-rhoam-}"
+fi
 if [ "$INSTALLATION_TYPE" = "managed-api" ]; then
   NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-redhat-rhoam-}"
 fi
