@@ -202,7 +202,7 @@ spec:
                         value: quay.io/integreatly/keycloak-operator:rh-sso-7-tech-preview-sso75-init-container-rhel8_7_5
                       - name: RELATED_IMAGE_RHSSO_INIT_CONTAINER
                         value: quay.io/integreatly/keycloak-operator:rh-sso-7-tech-preview-sso75-init-container-rhel8_7_5
-                    image: quay.io/keycloak/keycloak-operator:15.0.2
+                    image: quay.io/integreatly/keycloak-operator:v15.0.2
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
