@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
-func GetSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, string, error) {
+func GetSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI, containerCpuMetric string) (string, string, error) {
 	installationName := resources.InstallationNames[rhmi.Spec.Type]
 
 	switch dashboard {
@@ -23,13 +23,13 @@ func GetSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI) (string, 
 		return monitoringcommon.GetMonitoringGrafanaDBEndpointsSummaryJSON(rhmi.ObjectMeta.Name), "endpointssummary.json", nil
 
 	case "resources-by-namespace":
-		return monitoringcommon.GetMonitoringGrafanaDBResourceByNSJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "resources-by-namespace.json", nil
+		return monitoringcommon.GetMonitoringGrafanaDBResourceByNSJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name, containerCpuMetric), "resources-by-namespace.json", nil
 
 	case "resources-by-pod":
-		return monitoringcommon.GetMonitoringGrafanaDBResourceByPodJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "resources-by-pod.json", nil
+		return monitoringcommon.GetMonitoringGrafanaDBResourceByPodJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name, containerCpuMetric), "resources-by-pod.json", nil
 
 	case "cluster-resources":
-		return monitoringcommon.GetMonitoringGrafanaDBClusterResourcesJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name), "cluster-resources-new.json", nil
+		return monitoringcommon.GetMonitoringGrafanaDBClusterResourcesJSON(rhmi.Spec.NamespacePrefix, rhmi.ObjectMeta.Name, containerCpuMetric), "cluster-resources-new.json", nil
 	case "critical-slo-rhmi-alerts":
 		return monitoringcommon.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(rhmi.Spec.NamespacePrefix, installationName), "critical-slo-alerts.json", nil
 

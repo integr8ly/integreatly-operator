@@ -1,12 +1,16 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/prometheus/client_golang/prometheus"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Custom metrics
@@ -211,4 +215,17 @@ func SetNoActivated3ScaleTenantAccount(username string) {
 func SetQuota(quota string, toQuota string) {
 	Quota.Reset()
 	Quota.WithLabelValues(quota, toQuota).Set(float64(1))
+}
+
+// node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate was renamed in 4.9
+func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l l.Logger) (string, error) {
+	before49, err := resources.ClusterVersionBefore49(ctx, serverClient, l)
+	if err != nil {
+		return "", err
+	}
+	if before49 {
+		return "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate", nil
+	} else {
+		return "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate", nil
+	}
 }

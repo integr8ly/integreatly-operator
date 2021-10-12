@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -542,13 +543,19 @@ func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8scl
 
 func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (err error) {
 
+	//clusterVersion
+	containerCpuMetric, err := metrics.GetContainerCPUMetric(ctx, serverClient, r.log)
+	if err != nil {
+		return err
+	}
+
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dashboard,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation)
+	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation, containerCpuMetric)
 	if err != nil {
 		return err
 	}

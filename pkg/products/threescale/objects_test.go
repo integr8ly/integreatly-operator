@@ -17,6 +17,7 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 
+	v12 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -703,6 +704,24 @@ var threescale = &threescalev1.APIManager{
 	},
 }
 
+var clusterVersion = &v12.ClusterVersion{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "version",
+	},
+	Status: v12.ClusterVersionStatus{
+		History: []v12.UpdateHistory{
+			{
+				State:          "",
+				StartedTime:    metav1.Time{},
+				CompletionTime: nil,
+				Version:        "4.9.0-rc123",
+				Image:          "",
+				Verified:       false,
+			},
+		},
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -773,5 +792,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		zyncDatabase,
 		zyncQue,
 		threescale,
+		clusterVersion,
 	}
 }
