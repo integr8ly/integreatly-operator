@@ -6,10 +6,6 @@
       "client_secret": "CLIENT_SECRET",
       "issuer": "KEYCLOAK_URL/auth/realms/REALM",
       "client_id": "openshift",
-      "extra_scopes": [
-        "email",
-        "profile"
-      ],
       "claims": {
          "email": [
             "email"
