@@ -58,7 +58,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    operators.operatorframework.io/builder: operator-sdk-v1.3.2
+    operators.operatorframework.io/builder: operator-sdk-v1.1.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
   name: observability-operator.v3.0.7
   namespace: placeholder
@@ -298,6 +298,10 @@ spec:
                 image: quay.io/rhoas/observability-operator:v3.0.7
                 imagePullPolicy: Always
                 name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
                 resources:
                   limits:
                     cpu: 100m
@@ -305,8 +309,17 @@ spec:
                   requests:
                     cpu: 100m
                     memory: 50Mi
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
               priorityClassName: observability-operator-priority-class
               terminationGracePeriodSeconds: 10
+              volumes:
+              - name: cert
+                secret:
+                  defaultMode: 420
+                  secretName: webhook-server-cert
       permissions:
       - rules:
         - apiGroups:
@@ -360,4 +373,25 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
+  replaces: observability-operator.v3.0.6
   version: 3.0.7
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1beta1
+    containerPort: 443
+    deploymentName: observability-operator-controller-manager
+    failurePolicy: Fail
+    generateName: vobservability.kb.io
+    rules:
+    - apiGroups:
+      - observability.redhat.com
+      apiVersions:
+      - v1
+      operations:
+      - UPDATE
+      resources:
+      - observabilities
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-observability-redhat-com-v1-observability
