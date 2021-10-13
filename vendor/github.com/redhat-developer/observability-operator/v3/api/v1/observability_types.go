@@ -77,8 +77,6 @@ type SelfContained struct {
 	ProbeNamespaceSelector                *metav1.LabelSelector    `json:"probeNamespaceSelector,omitempty"`
 	GrafanaDashboardLabelSelector         *metav1.LabelSelector    `json:"grafanaDashboardLabelSelector,omitempty"`
 	AlertManagerConfigSecret              string                   `json:"alertManagerConfigSecret,omitempty"`
-	AlertManagerRoute                     string                   `json:"alertManagerRoute,omitempty"`
-	PrometheusRoute                       string                   `json:"prometheusRoute,omitempty"`
 	AlertManagerVersion                   string                   `json:"alertManagerVersion,omitempty"`
 	PrometheusVersion                     string                   `json:"prometheusVersion,omitempty"`
 	AlertManagerResourceRequirement       v1.ResourceRequirements  `json:"alertManagerResourceRequirement,omitempty"`
@@ -91,14 +89,17 @@ type SelfContained struct {
 // ObservabilitySpec defines the desired state of Observability
 type ObservabilitySpec struct {
 	// Cluster ID. If not provided, the operator tries to obtain it.
-	ClusterID             string                `json:"clusterId,omitempty"`
-	ConfigurationSelector *metav1.LabelSelector `json:"configurationSelector,omitempty"`
-	ResyncPeriod          string                `json:"resyncPeriod,omitempty"`
-	Storage               *Storage              `json:"storage,omitempty"`
-	Tolerations           []v1.Toleration       `json:"tolerations,omitempty"`
-	Affinity              *v1.Affinity          `json:"affinity,omitempty"`
-	SelfContained         *SelfContained        `json:"selfContained,omitempty"`
-	Retention             string                `json:"retention,omitempty"`
+	ClusterID               string                `json:"clusterId,omitempty"`
+	ConfigurationSelector   *metav1.LabelSelector `json:"configurationSelector,omitempty"`
+	ResyncPeriod            string                `json:"resyncPeriod,omitempty"`
+	Storage                 *Storage              `json:"storage,omitempty"`
+	Tolerations             []v1.Toleration       `json:"tolerations,omitempty"`
+	Affinity                *v1.Affinity          `json:"affinity,omitempty"`
+	SelfContained           *SelfContained        `json:"selfContained,omitempty"`
+	Retention               string                `json:"retention,omitempty"`
+	AlertManagerDefaultName string                `json:"alertManagerDefaultName,omitempty"`
+	PrometheusDefaultName   string                `json:"prometheusDefaultName,omitempty"`
+	GrafanaDefaultName      string                `json:"grafanaDefaultName,omitempty"`
 }
 
 // ObservabilityStatus defines the observed state of Observability
