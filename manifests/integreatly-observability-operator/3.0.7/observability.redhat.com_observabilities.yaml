@@ -371,6 +371,8 @@ spec:
                         type: array
                     type: object
                 type: object
+              alertManagerDefaultName:
+                type: string
               clusterId:
                 description: Cluster ID. If not provided, the operator tries to obtain it.
                 type: string
@@ -404,6 +406,10 @@ spec:
                     description: matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
                     type: object
                 type: object
+              grafanaDefaultName:
+                type: string
+              prometheusDefaultName:
+                type: string
               resyncPeriod:
                 type: string
               retention:
@@ -434,8 +440,6 @@ spec:
                         description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                         type: object
                     type: object
-                  alertManagerRoute:
-                    type: string
                   alertManagerVersion:
                     type: string
                   disableBlackboxExporter:
@@ -692,8 +696,6 @@ spec:
                         description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                         type: object
                     type: object
-                  prometheusRoute:
-                    type: string
                   prometheusVersion:
                     type: string
                   ruleLabelSelector:
