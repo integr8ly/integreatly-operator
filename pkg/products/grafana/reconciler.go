@@ -379,7 +379,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	prometheusService := &corev1.Service{}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: "kafka-prometheus", Namespace: observabilityConfig.GetNamespace()}, prometheusService)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: observabilityConfig.GetPrometheusOverride(), Namespace: observabilityConfig.GetNamespace()}, prometheusService)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err

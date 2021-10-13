@@ -325,15 +325,26 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, oo, func() error {
+		overrideSelectors := true
 		disabled := true
-		oo.Spec = observability.ObservabilitySpec{
-			ConfigurationSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"monitoring-key": r.Config.GetLabelSelector(),
-				},
-				MatchExpressions: nil,
+
+		if &oo.Spec == nil {
+			oo.Spec = observability.ObservabilitySpec{}
+		}
+
+		oo.Spec.AlertManagerDefaultName = r.Config.GetAlertManagerOverride()
+		oo.Spec.GrafanaDefaultName = r.Config.GetGrafanaOverride()
+		oo.Spec.PrometheusDefaultName = r.Config.GetPrometheusOverride()
+
+		oo.Spec.ConfigurationSelector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"monitoring-key": r.Config.GetLabelSelector(),
 			},
-			Storage: &observability.Storage{PrometheusStorageSpec: &prometheus.StorageSpec{
+			MatchExpressions: nil,
+		}
+
+		oo.Spec.Storage = &observability.Storage{
+			PrometheusStorageSpec: &prometheus.StorageSpec{
 				VolumeClaimTemplate: prometheus.EmbeddedPersistentVolumeClaim{
 					Spec: v1.PersistentVolumeClaimSpec{
 						Resources: v1.ResourceRequirements{
@@ -343,99 +354,100 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						},
 					},
 				},
-			}},
-			Retention: r.Config.GetPrometheusRetention(),
-			SelfContained: &observability.SelfContained{
-				DisableRepoSync:         &disabled,
-				DisableObservatorium:    &disabled,
-				DisablePagerDuty:        &disabled,
-				DisableDeadmansSnitch:   &disabled,
-				DisableBlackboxExporter: nil,
-				FederatedMetrics: []string{
-					"'kubelet_volume_stats_used_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
-					"'kubelet_volume_stats_available_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
-					"'kubelet_volume_stats_capacity_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
-					"'haproxy_backend_http_responses_total{route=~\"^keycloak.*\",exported_namespace=~\"" + nsPrefix + ".*sso$\"}'",
-					"'{ service=\"kube-state-metrics\" }'",
-					"'{ service=\"node-exporter\" }'",
-					"'{ __name__=~\"node_namespace_pod_container:.*\" }'",
-					"'{ __name__=~\"node:.*\" }'",
-					"'{ __name__=~\"instance:.*\" }'",
-					"'{ __name__=~\"container_memory_.*\" }'",
-					"'{ __name__=~\":node_memory_.*\" }'",
-					"'{ __name__=~\"csv_.*\" }'",
-				},
-				PodMonitorLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				PodMonitorNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				ServiceMonitorLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				ServiceMonitorNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				RuleLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				RuleNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				ProbeLabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				ProbeNamespaceSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"monitoring-key": r.Config.GetLabelSelector(),
-					},
-				},
-				GrafanaDashboardLabelSelector: &metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{
-							Key:      r.Config.GetLabelSelectorKey(),
-							Operator: metav1.LabelSelectorOpIn,
-							Values: []string{
-								r.Config.GetLabelSelector(),
-							},
-						},
-					},
-				},
-
-				AlertManagerConfigSecret:              config.AlertManagerConfigSecretName,
-				PrometheusVersion:                     r.Config.GetPrometheusVersion(),
-				AlertManagerVersion:                   r.Config.GetAlertManagerVersion(),
-				PrometheusRoute:                       r.Config.GetPrometheusRouteName(),
-				AlertManagerRoute:                     r.Config.GetAlertManagerRouteName(),
-				AlertManagerResourceRequirement:       r.Config.GetAlertManagerResourceRequirements(),
-				GrafanaResourceRequirement:            r.Config.GetGrafanaResourceRequirements(),
-				PrometheusResourceRequirement:         r.Config.GetPrometheusResourceRequirements(),
-				PrometheusOperatorResourceRequirement: r.Config.GetPrometheusOperatorResourceRequirements(),
 			},
-			ResyncPeriod: "1h",
 		}
 
+		oo.Spec.Retention = r.Config.GetPrometheusRetention()
+
+		if oo.Spec.SelfContained == nil {
+			oo.Spec.SelfContained = &observability.SelfContained{}
+		}
+
+		oo.Spec.SelfContained.OverrideSelectors = &overrideSelectors
+		oo.Spec.SelfContained.DisableRepoSync = &disabled
+		oo.Spec.SelfContained.DisableObservatorium = &disabled
+		oo.Spec.SelfContained.DisablePagerDuty = &disabled
+		oo.Spec.SelfContained.DisableDeadmansSnitch = &disabled
+		oo.Spec.SelfContained.DisableBlackboxExporter = nil
+		oo.Spec.SelfContained.FederatedMetrics = []string{
+			"'kubelet_volume_stats_used_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+			"'kubelet_volume_stats_available_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+			"'kubelet_volume_stats_capacity_bytes{endpoint=\"https-metrics\",namespace=~\"" + nsPrefix + ".*\"}'",
+			"'haproxy_backend_http_responses_total{route=~\"^keycloak.*\",exported_namespace=~\"" + nsPrefix + ".*sso$\"}'",
+			"'{ service=\"kube-state-metrics\" }'",
+			"'{ service=\"node-exporter\" }'",
+			"'{ __name__=~\"node_namespace_pod_container:.*\" }'",
+			"'{ __name__=~\"node:.*\" }'",
+			"'{ __name__=~\"instance:.*\" }'",
+			"'{ __name__=~\"container_memory_.*\" }'",
+			"'{ __name__=~\":node_memory_.*\" }'",
+			"'{ __name__=~\"csv_.*\" }'",
+		}
+		oo.Spec.SelfContained.PodMonitorLabelSelector = nil
+		oo.Spec.SelfContained.PodMonitorNamespaceSelector = &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      "monitoring-key",
+					Operator: metav1.LabelSelectorOpIn,
+					Values: []string{
+						r.Config.GetLabelSelector(),
+					},
+				},
+			},
+		}
+		oo.Spec.SelfContained.ServiceMonitorLabelSelector = nil
+		oo.Spec.SelfContained.ServiceMonitorNamespaceSelector = &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      "monitoring-key",
+					Operator: metav1.LabelSelectorOpIn,
+					Values: []string{
+						r.Config.GetLabelSelector(),
+					},
+				},
+			},
+		}
+		oo.Spec.SelfContained.RuleLabelSelector = nil
+		oo.Spec.SelfContained.RuleNamespaceSelector = &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      "monitoring-key",
+					Operator: metav1.LabelSelectorOpIn,
+					Values: []string{
+						r.Config.GetLabelSelector(),
+					},
+				},
+			},
+		}
+		oo.Spec.SelfContained.ProbeLabelSelector = nil
+		oo.Spec.SelfContained.ProbeNamespaceSelector = nil
+		oo.Spec.SelfContained.GrafanaDashboardLabelSelector = &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      r.Config.GetLabelSelectorKey(),
+					Operator: metav1.LabelSelectorOpIn,
+					Values: []string{
+						r.Config.GetLabelSelector(),
+					},
+				},
+			},
+		}
+		oo.Spec.SelfContained.AlertManagerConfigSecret = config.AlertManagerConfigSecretName
+		oo.Spec.SelfContained.PrometheusVersion = r.Config.GetPrometheusVersion()
+		oo.Spec.SelfContained.AlertManagerVersion = r.Config.GetAlertManagerVersion()
+		oo.Spec.SelfContained.AlertManagerResourceRequirement = r.Config.GetAlertManagerResourceRequirements()
+		oo.Spec.SelfContained.GrafanaResourceRequirement = r.Config.GetGrafanaResourceRequirements()
+		oo.Spec.SelfContained.PrometheusResourceRequirement = r.Config.GetPrometheusResourceRequirements()
+		oo.Spec.SelfContained.PrometheusOperatorResourceRequirement = r.Config.GetPrometheusOperatorResourceRequirements()
+		oo.Spec.ResyncPeriod = "1h"
+
 		return nil
-	})
+	},
+	)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if op == controllerutil.OperationResultUpdated || op == controllerutil.OperationResultCreated {
+	if op == controllerutil.OperationResultCreated {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

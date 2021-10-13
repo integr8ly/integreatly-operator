@@ -39,11 +39,12 @@ const (
 	mockDMSSecretName       = "test-dms"
 )
 
-func basicInstallation() *integreatlyv1alpha1.RHMI {
+func basicInstallation(installationType integreatlyv1alpha1.InstallationType) *integreatlyv1alpha1.RHMI {
+
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
-			Namespace: defaultInstallationNamespace,
+			Namespace: getNamespaceByInstallType(installationType),
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -54,6 +55,30 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			SMTPSecret:           mockSMTPSecretName,
 			PagerDutySecret:      mockPagerdutySecretName,
 			DeadMansSnitchSecret: mockDMSSecretName,
+			Type:                 string(installationType),
+		},
+	}
+}
+
+func getNamespaceByInstallType(installationType integreatlyv1alpha1.InstallationType) string {
+	defaultInstallationNamespace := "observability"
+	if !integreatlyv1alpha1.IsRHOAM(installationType) {
+		defaultInstallationNamespace = "monitoring"
+	}
+	return defaultInstallationNamespace
+}
+
+func getMonitoringNamespaceByInstallType(installationType integreatlyv1alpha1.InstallationType) *corev1.Namespace {
+	installation := basicInstallation(installationType)
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: installation.Namespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
 		},
 	}
 }
@@ -179,7 +204,7 @@ func TestReconciler_config(t *testing.T) {
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name:           "test error on failed config",
+			Name:           "test error on failed read config",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not read monitoring config",
@@ -188,6 +213,9 @@ func TestReconciler_config(t *testing.T) {
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return nil, errors.New("could not read monitoring config")
+				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return nil
 				},
 			},
 			Recorder: setupRecorder(),
@@ -201,6 +229,9 @@ func TestReconciler_config(t *testing.T) {
 					return config.NewMonitoringSpec(config.ProductConfig{
 						"NAMESPACE": "",
 					}), nil
+				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return nil
 				},
 			},
 			Recorder: setupRecorder(),
@@ -232,35 +263,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 	// initialise runtime objects
 
-	//Monitoring namespace
-	monitoringns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultInstallationNamespace,
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
-	//Fuse namespace
-	fusens := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "fuse",
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
-				"monitoring-key":        "middleware",
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
 	//Service monitor inside fuse namespace
-	fusesm := createServicemonitor("fuse-servicemon", "fuse")
+	fusesm := createServicemonitor("fuse-fuse-servicemon", "fuse")
 
-	installation := basicInstallation()
+	managedInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManaged)
+	managedApiInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi)
 
 	cases := []struct {
 		Name           string
@@ -276,14 +283,35 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Uninstall      bool
 	}{
 		{
-			Name:           "test successful reconcile",
+			Name:           "test successful reconcile for installationtypemanaged",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, installation, monitoringns, fusens, fusesm),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedInstallation, fusesm, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged),
+					Labels: map[string]string{
+						resources.OwnerLabelKey: string(managedInstallation.GetUID()),
+					},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			}, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "fuse",
+					Labels: map[string]string{
+						resources.OwnerLabelKey: string(managedInstallation.GetUID()),
+						"monitoring-key":        "middleware",
+					},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			}),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return config.NewMonitoringSpec(config.ProductConfig{
 						"NAMESPACE":          "",
-						"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+						"OPERATOR_NAMESPACE": managedInstallation.Namespace,
 					}), nil
 				},
 				WriteConfigFunc: func(config config.ConfigReadable) error {
@@ -311,7 +339,71 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: basicInstallation(),
+			Installation: managedInstallation,
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:     setupRecorder(),
+			Uninstall:    false,
+		},
+		{
+			Name:           "test successful reconcile for installationtypemanagedapi",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedApiInstallation, fusesm, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManagedApi),
+					Labels: map[string]string{
+						resources.OwnerLabelKey: string(managedApiInstallation.GetUID()),
+					},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			},
+				&corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "fuse",
+						Labels: map[string]string{
+							resources.OwnerLabelKey: string(managedApiInstallation.GetUID()),
+							"monitoring-key":        "middleware",
+						},
+					},
+					Status: corev1.NamespaceStatus{
+						Phase: corev1.NamespaceActive,
+					},
+				},
+			),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
+					return config.NewMonitoringSpec(config.ProductConfig{
+						"NAMESPACE":          "",
+						"OPERATOR_NAMESPACE": managedApiInstallation.Namespace,
+					}), nil
+				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return nil
+				},
+			},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "monitoring-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "monitoring-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation: managedApiInstallation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 			Uninstall:    false,
@@ -339,7 +431,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 			//Verify that a new servicemonitor is created in the namespace
 			sermon := &prometheusmonitoringv1.ServiceMonitor{}
-			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "fuse-fuse-servicemon", Namespace: defaultInstallationNamespace}, sermon)
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "fuse-fuse-servicemon", Namespace: tc.Installation.Namespace}, sermon)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -372,44 +464,24 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 	}
 	// initialise runtime objects
 
-	//Monitoring namespace
-	monitoringns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultInstallationNamespace,
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
+	managedInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManaged)
+	managedApiInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi)
 
-	//Fuse namespace
-	fusens := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "fuse",
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
-				"monitoring-key":        "middleware",
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
 	//Create a UPS servicemonitor in just monitoring namespace - stale one
-	upssm := createServicemonitor("ups-servicemon", defaultInstallationNamespace)
+	upssmmanagedapi := createServicemonitor("ups-servicemon", getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManagedApi))
+	if len(upssmmanagedapi.Labels) == 0 {
+		upssmmanagedapi.Labels = make(map[string]string)
+	}
+	upssmmanagedapi.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
 
+	upssmmanaged := createServicemonitor("ups-servicemon", getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged))
+	if len(upssmmanaged.Labels) == 0 {
+		upssmmanaged.Labels = make(map[string]string)
+	}
+	upssmmanaged.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
 	//Create a rolebinding in fuse namespace
 	rb := createRoleBinding(roleBindingName, "fuse")
 	role := createRole(roleRefName, "fuse")
-	if len(upssm.Labels) == 0 {
-		upssm.Labels = make(map[string]string)
-	}
-	upssm.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
-
-	installation := basicInstallation()
 
 	cases := []struct {
 		Name           string
@@ -425,14 +497,26 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 		Uninstall      bool
 	}{
 		{
-			Name:           "test successful reconcile with cleanup",
+			Name:           "test successful reconcile with cleanup for install type managedapi",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, installation, monitoringns, upssm, fusens, rb, role),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedApiInstallation, getMonitoringNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManagedApi), upssmmanagedapi, rb, role,
+				&corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "fuse",
+						Labels: map[string]string{
+							resources.OwnerLabelKey: string(basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi).GetUID()),
+							"monitoring-key":        "middleware",
+						},
+					},
+					Status: corev1.NamespaceStatus{
+						Phase: corev1.NamespaceActive,
+					},
+				}),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return config.NewMonitoringSpec(config.ProductConfig{
 						"NAMESPACE":          "",
-						"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+						"OPERATOR_NAMESPACE": getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManagedApi),
 					}), nil
 				},
 				WriteConfigFunc: func(config config.ConfigReadable) error {
@@ -460,7 +544,60 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: basicInstallation(),
+			Installation: managedApiInstallation,
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:     setupRecorder(),
+			Uninstall:    false,
+		},
+		{
+			Name:           "test successful reconcile with cleanup for install type managed",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedInstallation, getMonitoringNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged), upssmmanaged, rb, role,
+				&corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "fuse",
+						Labels: map[string]string{
+							resources.OwnerLabelKey: string(basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi).GetUID()),
+							"monitoring-key":        "middleware",
+						},
+					},
+					Status: corev1.NamespaceStatus{
+						Phase: corev1.NamespaceActive,
+					},
+				}),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
+					return config.NewMonitoringSpec(config.ProductConfig{
+						"NAMESPACE":          "",
+						"OPERATOR_NAMESPACE": getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged),
+					}), nil
+				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return nil
+				},
+			},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "monitoring-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "monitoring-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation: managedInstallation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 			Uninstall:    false,
@@ -478,7 +615,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 
 			//Verify that the sm exisits in monitoring namespace
 			sermon := &prometheusmonitoringv1.ServiceMonitor{}
-			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: defaultInstallationNamespace}, sermon)
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: getNamespaceByInstallType(integreatlyv1alpha1.InstallationType(tc.Installation.Spec.Type))}, sermon)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
@@ -510,7 +647,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			}
 			//Verify that the stale servicemonitor is removed
 			sermon = &prometheusmonitoringv1.ServiceMonitor{}
-			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: defaultInstallationNamespace}, sermon)
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: getNamespaceByInstallType(integreatlyv1alpha1.InstallationType(tc.Installation.Spec.Type))}, sermon)
 			if err != nil && !k8serr.IsNotFound(err) {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
