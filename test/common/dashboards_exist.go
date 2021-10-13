@@ -114,12 +114,12 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
-	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(fmt.Sprintf("wget -qO - %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
-		MonitoringOperatorNamespace,
+		ObservabilityProductNamespace,
 		curlContainerName, ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", ObservabilityProductNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule
@@ -150,14 +150,14 @@ func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext)
 	}
 	curlContainerName := "prometheus"
 
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, ObservabilityProductNamespace)
 
-	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
+	output, err := execToPod(fmt.Sprintf("wget -qO - %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
 		prometheusPodName,
-		MonitoringOperatorNamespace,
+		ObservabilityProductNamespace,
 		curlContainerName, ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", ObservabilityProductNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule

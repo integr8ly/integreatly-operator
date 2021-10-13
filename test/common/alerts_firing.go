@@ -43,8 +43,7 @@ var (
 	// Applicable to all install types
 	commonPodNamespaces = []string{
 		RHMIOperatorNamespace,
-		MonitoringOperatorNamespace,
-		MonitoringFederateNamespace,
+		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,
@@ -108,15 +107,15 @@ func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
 	if err := getFiringAlerts(t, ctx); err != nil {
 		podLogs(t, ctx)
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/INTLY-7481")
+		t.Skipf("Skipping due to known issue : %v, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1404", err.Error())
 		//t.Fatal(err.Error())
 	}
 
 }
 func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
+		"prometheus-kafka-prometheus-0",
+		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
@@ -222,15 +221,15 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	)
 	if err != nil {
 		podLogs(t, ctx)
-		t.Skipf("Skipping due to known flaky behavior due to %v, Jira: https://issues.redhat.com/browse/INTLY-7481", lastError.Error())
+		t.Skipf("Skipping due to known issue %v, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1404", lastError.Error())
 		//t.Fatal(lastError.Error())
 	}
 }
 
 func getFiringOrPendingAlerts(ctx *TestingContext) error {
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
+		"prometheus-kafka-prometheus-0",
+		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {

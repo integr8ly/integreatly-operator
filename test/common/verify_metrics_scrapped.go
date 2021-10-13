@@ -18,9 +18,9 @@ func mangedApiTargets() map[string][]string {
 
 func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
-	output, err := execToPod("curl localhost:9090/api/v1/targets?state=active",
-		"prometheus-application-monitoring-0",
-		GetPrefixedNamespace("middleware-monitoring-operator"),
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
+		"prometheus-kafka-prometheus-0",
+		GetPrefixedNamespace("observability"),
 		"prometheus",
 		ctx)
 	if err != nil {

@@ -127,7 +127,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return err
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(ObservabilityProductNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -182,8 +182,8 @@ func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int3
 
 func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
-		"alertmanager-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		"alertmanager-kafka-alertmanager-0",
+		ObservabilityProductNamespace,
 		"alertmanager",
 		ctx)
 	if err != nil {
@@ -234,9 +234,9 @@ func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t Test
 }
 
 func getKeycloakAlertState(ctx *TestingContext) error {
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
+		"prometheus-kafka-prometheus-0",
+		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {

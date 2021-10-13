@@ -81,7 +81,7 @@ var (
 // TestDashboardsData verifies that all dashboards are installed and all the graphs are filled with data
 func TestDashboardsData(t TestingTB, ctx *TestingContext) {
 	// Get grafana pod ip to curl
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, ObservabilityProductNamespace)
 	grafanaPodIP := monitoringGrafanaPods.Items[0].Status.PodIP
 
 	// Pod and container name to perform curls from
@@ -161,6 +161,9 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 	rhmiNamespaces, err := getRHMINamespaces(rhmi.Spec.NamespacePrefix, prometheusPodName, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RHMI namespaces: %w", err)
+	}
+	if len(rhmiNamespaces) == 0 {
+		return nil, fmt.Errorf("failed to get RHMI namespaces - namespaces not found")
 	}
 
 	rhmiPods, err := getRHMIPods(rhmiNamespaces, prometheusPodName, ctx)
@@ -303,7 +306,7 @@ func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName s
 func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(MonitoringOperatorNamespace),
+		k8sclient.InNamespace(ObservabilityProductNamespace),
 		k8sclient.MatchingLabels{"app": app},
 	}
 
@@ -320,16 +323,16 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 }
 
 func curlGrafana(grafanaPodIp string, path string, curlPodName string, curlContainerName string, ctx *TestingContext) (string, error) {
-	return execToPod(fmt.Sprintf("curl %s:3000", grafanaPodIp)+path,
+	return execToPod(fmt.Sprintf("wget -qO - %s:3000", grafanaPodIp)+path,
 		curlPodName,
-		MonitoringOperatorNamespace,
+		ObservabilityProductNamespace,
 		curlContainerName, ctx)
 }
 
 func queryPrometheus(query string, podName string, ctx *TestingContext) ([]prometheusQueryResult, error) {
-	queryOutput, err := execToPod("curl localhost:9090/api/v1/query?query="+url.QueryEscape(query),
+	queryOutput, err := execToPod("wget -qO - localhost:9090/api/v1/query?query="+url.QueryEscape(query),
 		podName,
-		MonitoringOperatorNamespace,
+		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec to prometheus pod: %w", err)
@@ -342,12 +345,12 @@ func queryPrometheusMany(queries []string, podName string, ctx *TestingContext) 
 	command := ""
 
 	for _, query := range queries {
-		command += "curl localhost:9090/api/v1/query?query=" + url.QueryEscape(query) + ";"
+		command += "wget -qO - localhost:9090/api/v1/query?query=" + url.QueryEscape(query) + ";"
 	}
 
 	output, err := execToPod(command,
 		podName,
-		MonitoringOperatorNamespace,
+		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec to prometheus pod: %w", err)
