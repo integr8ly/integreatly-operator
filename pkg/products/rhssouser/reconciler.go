@@ -1199,7 +1199,8 @@ func reconcileGroup(kcClient keycloakCommon.KeycloakInterface, group *keycloakGr
 		}
 
 		err = kcClient.SetGroupChild(groupID, group.RealmName, &keycloakCommon.Group{
-			ID: childGroupID,
+			ID:   childGroupID,
+			Name: childGroup.Name,
 		})
 		if err != nil {
 			return "", fmt.Errorf("Error assigning child group %s to parent group %s: %v",
