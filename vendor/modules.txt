@@ -613,7 +613,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/observability-operator/v3 v3.0.8-0.20211012103707-b8bf725833e1
+# github.com/redhat-developer/observability-operator/v3 v3.0.7
 ## explicit
 github.com/redhat-developer/observability-operator/v3/api/v1
 # github.com/sirupsen/logrus v1.8.1
