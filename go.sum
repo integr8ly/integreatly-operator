@@ -939,8 +939,8 @@ github.com/integr8ly/grafana-operator/v3 v3.5.0/go.mod h1:nie1yDLaWkgUjW+EBTLUjD
 github.com/integr8ly/grafana-operator/v3 v3.6.0/go.mod h1:pWWg9RerCkkwmTcmaygmfhkjjGilEN30han1yq2MAsA=
 github.com/integr8ly/grafana-operator/v3 v3.10.3 h1:cq+2wO0mrz2Ow36MVsugCcZNqRA9sC1bRadrVg/CeOg=
 github.com/integr8ly/grafana-operator/v3 v3.10.3/go.mod h1:5D8+MTrFKiwxz4kz2Oc36MxQu4EOHnJKaStSFAOukz0=
-github.com/integr8ly/keycloak-client v0.1.5 h1:lD0fDLJ362VSDNReRwfC/eJzFdaFLE1D6mp53ytrdDA=
-github.com/integr8ly/keycloak-client v0.1.5/go.mod h1:UyM3uRRR5kpq/6xGCEvVPpneduPoPQ7hgMp+Mv9VvXs=
+github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e h1:3VGUB7w5bUtkn+CbW00+vGbE52cLz8OGEEgypHR4mDY=
+github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e/go.mod h1:UyM3uRRR5kpq/6xGCEvVPpneduPoPQ7hgMp+Mv9VvXs=
 github.com/jackc/fake v0.0.0-20150926172116-812a484cc733/go.mod h1:WrMFNQdiFJ80sQsxDoMokWK1W5TQtxBFNpzWTD84ibQ=
 github.com/jackc/pgx v3.2.0+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGkVEFm4TeybAXq+I=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=

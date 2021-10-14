@@ -3,11 +3,12 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 
@@ -425,7 +426,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	r.reconcileAdminUsers(ctx, serverClient, keycloakUsers)
+	r.reconcileAdminUsers(ctx, serverClient, kcClient, keycloakUsers)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -459,7 +460,7 @@ func (r *Reconciler) reconcileGroups(ctx context.Context, serverClient k8sclient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8sclient.Client, keycloakUsers []keycloak.KeycloakAPIUser) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8sclient.Client, kcClient keycloakCommon.KeycloakInterface, keycloakUsers []keycloak.KeycloakAPIUser) (integreatlyv1alpha1.StatusPhase, error) {
 
 	// Sync keycloak with openshift users
 	users, err := syncAdminUsersInMasterRealm(keycloakUsers, ctx, serverClient, r.Config.GetNamespace())
@@ -472,12 +473,29 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 		if user.UserName == "" {
 			continue
 		}
+
+		// If the ID is not set, check if the user is already on Keycloak,
+		// and set the ID on the CR to avoid the Keycloak operator from trying
+		// to create the user, causing a conflict
+		if user.ID == "" {
+			kcUser, err := kcClient.FindUserByUsername(user.UserName, masterRealmName)
+			if err != nil && err.Error() != "not found" {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error attempting to retrieve user: %w", err)
+			} else if err == nil {
+				user.ID = kcUser.ID
+			}
+		}
+
 		or, err := r.createOrUpdateKeycloakAdmin(user, ctx, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
 		} else {
 			r.Log.Infof("Operation result", l.Fields{"keycloakuser": user.UserName, "result": or})
 		}
+	}
+
+	if err := r.reconcileGroupMembership(users, kcClient, masterRealmName); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -574,7 +592,7 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, 
 		},
 	}
 
-	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: getMasterLabels(),
 		}
@@ -583,6 +601,18 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, 
 
 		return nil
 	})
+	if err != nil {
+		return or, err
+	}
+
+	switch kcUser.Status.Phase {
+	case keycloak.UserPhaseReconciled:
+		return or, err
+	case keycloak.UserPhaseFailing:
+		return or, fmt.Errorf("keycloack operator failed to reconcile user: %s", kcUser.Status.Message)
+	}
+
+	return or, err
 }
 
 func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
@@ -1242,6 +1272,37 @@ func reconcileGroupRealmRoles(kcClient keycloakCommon.KeycloakInterface, groupID
 		err := mapRealmRoleToGroup(kcClient, group.RealmName, groupID, role)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Reconciler) reconcileGroupMembership(users []keycloak.KeycloakAPIUser, kcClient keycloakCommon.KeycloakInterface, realm string) error {
+	// Keep a reference of all the used groups to avoid unnecesary requests
+	groupPool := map[string]string{}
+
+	for _, user := range users {
+		for _, group := range user.Groups {
+			if _, ok := groupPool[group]; !ok {
+				foundGroup, err := kcClient.FindGroupByPath(group, realm)
+				if err != nil {
+					return err
+				}
+				if foundGroup == nil {
+					r.Log.Warningf("skipping addition of user to group (group not found)", map[string]interface{}{
+						"user":  user.UserName,
+						"group": group,
+					})
+					continue
+				}
+
+				groupPool[group] = foundGroup.ID
+			}
+
+			if err := kcClient.AddUserToGroup(realm, user.ID, groupPool[group]); err != nil {
+				return err
+			}
 		}
 	}
 
