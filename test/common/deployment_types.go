@@ -479,8 +479,8 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		{
 			Name: ObservabilityProductNamespace,
 			Products: []Product{
-				{Name: "alertmanager-kafka-alertmanager", ExpectedReplicas: 1},
-				{Name: "prometheus-kafka-prometheus", ExpectedReplicas: 1},
+				{Name: "alertmanager-alertmanager", ExpectedReplicas: 1},
+				{Name: "prometheus-prometheus", ExpectedReplicas: 1},
 			},
 		},
 		{

@@ -44,7 +44,7 @@ func commonPvcNamespaces() []PersistentVolumeClaim {
 
 			Namespace: NamespacePrefix + "observability",
 			PersistentVolumeClaimNames: []string{
-				"prometheus-kafka-prometheus-db-prometheus-kafka-prometheus-0",
+				"prometheus-prometheus-db-prometheus-prometheus-0",
 			},
 		},
 	}
