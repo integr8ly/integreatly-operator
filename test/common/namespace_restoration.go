@@ -6,6 +6,7 @@ import (
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,17 +51,6 @@ var (
 				return nil
 			},
 		},
-		{
-			productStageName: integreatlyv1alpha1.MonitoringStage,
-			namespaces: []string{
-				MonitoringOperatorNamespace,
-				MonitoringFederateNamespace,
-				MonitoringSpecNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeMonitoringFinalizers(ctx, MonitoringOperatorNamespace)
-			},
-		},
 	}
 
 	rhmiSpecificStages = []StageDeletion{
@@ -95,6 +85,17 @@ var (
 				return nil
 			},
 		},
+		{
+			productStageName: integreatlyv1alpha1.MonitoringStage,
+			namespaces: []string{
+				MonitoringOperatorNamespace,
+				MonitoringFederateNamespace,
+				MonitoringSpecNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				return removeMonitoringFinalizers(ctx, MonitoringOperatorNamespace)
+			},
+		},
 	}
 
 	managedApiStages = []StageDeletion{
@@ -115,6 +116,16 @@ var (
 				}
 
 				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
+			},
+		},
+		{
+			productStageName: integreatlyv1alpha1.ObservabilityStage,
+			namespaces: []string{
+				ObservabilityOperatorNamespace,
+				ObservabilityProductNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				return removObservabilityFinalizers(ctx, ObservabilityProductNamespace)
 			},
 		},
 	}
@@ -415,4 +426,33 @@ func getStagesForInstallType(installType string) []StageDeletion {
 	} else {
 		return append(commonStages, rhmiSpecificStages...)
 	}
+}
+
+func removObservabilityFinalizers(ctx *TestingContext, namespace string) error {
+	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+		observabilityList := &observabilityoperator.ObservabilityList{}
+
+		err = ctx.Client.List(goctx.TODO(), observabilityList, &k8sclient.ListOptions{
+			Namespace: namespace,
+		})
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, observability := range observabilityList.Items {
+			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &observability, func() error {
+				observability.Finalizers = []string{}
+				return nil
+			})
+
+			if err != nil {
+				return false, err
+			}
+		}
+
+		return true, nil
+	})
+
+	return err
 }
