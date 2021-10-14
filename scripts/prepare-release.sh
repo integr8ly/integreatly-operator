@@ -181,10 +181,20 @@ check_csv_replaces_field() {
 
 # Sets the related images in the CSV for RHOAM
 set_related_images() {
+  # Add or remove items from exclusion list if you wish for an item to be ignored in the list
+  exclusionList=(
+    "oc_cli"
+    "zync_postgresql"
+    "system_postgresql"
+    "system_mysql"
+    "backend_redis"
+    "system_redis"
+    "postgresql"
+  )
+
   echo "Adding related images to the CSV"
   containerImageField="""[
   """
-  position=0
   length=$(yq e -j ./products/products.yaml| jq -r '.products' | jq length)
   # Get supported components
   for (( i=0; i<${length}; i++))
@@ -207,29 +217,42 @@ set_related_images() {
         # Read image from the component version but only select quay.io or redhat.registry
         component_image=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[$y].image" | jq -r 'select((test("quay.")) or (test("registry.redhat")))' | tr -d '"')
 
+        # If component image is found, check if the list already contains image pointing to that URL, if not, add it to the list
         if [[ ! -z "$component_image" ]]; then
-          containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
-          position=$((position+1))
+          if [[ "$containerImageField" != *"$component_image"* ]]; then
+            containerImageField="$containerImageField{\"component_name\":\"${component_name}\",\"component_url\":\"${component_image}\"},"
+          fi
         fi
       done
 
       # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
       relatedImagesLength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r '.spec.relatedImages' | jq length)
-      # Adding generic related images
+      
+      # Adding generic related images but only if such image does not already exists in the list
       if [[ $relatedImagesLength != 0 ]]; then
         for (( y=0; y<$relatedImagesLength; y++))
         do
+          excluded=false
           relatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
           relatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
-          if [[ "$relatedImageName" != "oc_cli" ]] && [[ "$relatedImageName" != "zync_postgresql" ]] && [[ "$relatedImageName" != "system_postgresql" ]] && [[ "$relatedImageName" != "system_mysql" ]] && [[ "$relatedImageName" != "system_redis" ]] && [[ "$relatedImageName" != "backend_redis" ]] && [[ "$relatedImageName" != "postgresql" ]]; then
-            containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
-            position=$((position+1))
+    
+          for excludedItem in ${exclusionList[*]}
+            do
+              # Check if item is on the exclusion list
+              if [[ "$excludedItem" == "$relatedImageName" ]]; then
+                excluded=true
+              fi
+          done
+          # if item is not on exclusion list and is not already in the images list, add it in.
+          if [ "$excluded" != true ]; then
+            if [[ "$containerImageField" != *"$relatedImageURL"* ]]; then
+              containerImageField="$containerImageField{\"component_name\":\"${relatedImageName}\",\"component_url\":\"${relatedImageURL}\"},"
+            fi
           fi
         done
       fi
     fi
   done
-
 
   containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
   containerImageField="$containerImageRemovedLastCharacter]"
