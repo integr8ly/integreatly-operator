@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 
 	integreatlymetrics "github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -122,9 +123,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
 		os.Exit(1)
 	}
-	if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "User")
-		os.Exit(1)
+	if watchNamespace == "" || !strings.Contains(watchNamespace, "sandbox") {
+		if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "User")
+			os.Exit(1)
+		}
 	}
 	subscriptionCtrl, err := subscriptioncontroller.New(mgr)
 	if err != nil {
