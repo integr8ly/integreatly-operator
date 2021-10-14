@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
@@ -500,13 +501,19 @@ func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8scl
 
 func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (err error) {
 
+	//clusterVersion
+	containerCpuMetric, err := metrics.GetContainerCPUMetric(ctx, serverClient, r.Log)
+	if err != nil {
+		return err
+	}
+
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dashboard,
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
-	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation)
+	specJSON, _, err := monitoringcommon.GetSpecDetailsForDashboard(dashboard, r.installation, containerCpuMetric)
 	if err != nil {
 		return err
 	}

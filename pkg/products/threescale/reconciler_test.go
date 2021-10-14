@@ -15,6 +15,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	openshiftv1 "github.com/openshift/api/apps/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -73,6 +74,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = monitoringv1.AddToScheme(scheme)
 	err = consolev1.AddToScheme(scheme)
 	err = openshiftv1.AddToScheme(scheme)
+	err = configv1.AddToScheme(scheme)
+
 	return scheme, err
 }
 

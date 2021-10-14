@@ -7,7 +7,7 @@ import (
 
 // This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
-func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName string) string {
+func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName string, containerCpuMetric string) string {
 	quota := ``
 	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
 		quota = `, 
@@ -158,7 +158,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"steppedLine": false,
 			"tableColumn": "",
 			"targets": [{
-				"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})",
+				"expr": "sum(` + containerCpuMetric + `{namespace=~'` + nsPrefix + `.*'}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable{resource='cpu'})",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 2,
@@ -1240,7 +1240,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 			"stack": true,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+				"expr": "sum(` + containerCpuMetric + `{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
 				"format": "time_series",
 				"intervalFactor": 2,
 				"legendFormat": "{{namespace}}",
@@ -1449,7 +1449,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 				}
 			],
 			"targets": [{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
+					"expr": "sum(` + containerCpuMetric + `{namespace=~'` + nsPrefix + `.*'}) by (namespace)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1467,7 +1467,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests{resource='cpu'}) by (namespace))",
+					"expr": "(sum(` + containerCpuMetric + `{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_requests{resource='cpu'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -1485,7 +1485,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits{resource='cpu'}) by (namespace))",
+					"expr": "(sum(` + containerCpuMetric + `{namespace=~'` + nsPrefix + `.*'}) by (namespace) / sum(kube_pod_container_resource_limits{resource='cpu'}) by (namespace))",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -2981,7 +2981,7 @@ func GetMonitoringGrafanaDBClusterResourcesJSON(nsPrefix, installationName strin
 					"step": 10
 				},
 				{
-					"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='memory'})",
+					"expr": "sum(kube_pod_container_resource_requests{namespace=~'` + nsPrefix + `.*',resource='memory'}) by (namespace)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,

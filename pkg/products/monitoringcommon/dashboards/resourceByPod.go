@@ -7,7 +7,7 @@ import (
 
 // This dashboard json is dynamically configured based on installation type (rhmi or rhoam)
 // The installation name taken from the v1alpha1.RHMI.ObjectMeta.Name
-func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName string) string {
+func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName string, containerCpuMetric string) string {
 	quota := ``
 	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
 		quota = `,
@@ -111,7 +111,7 @@ func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName s
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (pod)",
+					"expr": "sum(` + containerCpuMetric + `{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (pod)",
 					"format": "time_series",
 					"intervalFactor": 2,
 					"legendFormat": "{{pod}}",
@@ -336,7 +336,7 @@ func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName s
 				}
 			],
 			"targets": [{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (container)",
+					"expr": "sum(` + containerCpuMetric + `{namespace=~'$namespace', pod=~'$pod', container!='POD'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -354,7 +354,7 @@ func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName s
 					"step": 10
 				},
 				{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='cpu'}) by (container)",
+					"expr": "sum(` + containerCpuMetric + `{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests{namespace=~'$namespace', pod=~'$pod',resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -372,7 +372,7 @@ func GetMonitoringGrafanaDBResourceByPodJSON(namespacePrefix, installationName s
 					"step": 10
 				},
 				{
-					"expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod', resource='cpu'}) by (container)",
+					"expr": "sum(` + containerCpuMetric + `{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_limits{namespace=~'$namespace', pod=~'$pod', resource='cpu'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
