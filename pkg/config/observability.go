@@ -18,9 +18,9 @@ const (
 	AlertManagerCustomTemplatePath          = "alertmanager/alertmanager-email-config.tmpl"
 
 	// CR Overrides
-	AlertManagerOverride = "rhoam-alertmanager"
-	GrafanaOverride      = "rhoam-grafana"
-	PrometheusOverride   = "rhoam-prometheus"
+	AlertManagerOverride = "alertmanager"
+	GrafanaOverride      = "grafana"
+	PrometheusOverride   = "prometheus"
 )
 
 type Observability struct {
