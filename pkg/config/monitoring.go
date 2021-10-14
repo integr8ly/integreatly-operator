@@ -201,3 +201,7 @@ func (m *Monitoring) GetExtraParamWithDefault(key string, v string) string {
 	}
 	return v
 }
+
+func (m *Monitoring) GetAlertManagerRouteName() string {
+	return "alertmanager-route"
+}

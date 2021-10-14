@@ -440,11 +440,11 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	return retryRequeue, err
 }
 
-func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config) error {
+func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config, configManager *config.Manager) error {
 
-	var alertingNamespaces = map[string]string{
-		"openshift-monitoring": "alertmanager-main",
-		installation.Spec.NamespacePrefix + "middleware-monitoring-operator": "alertmanager-route",
+	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
+	if err != nil {
+		return fmt.Errorf("error getting alerting namespaces to silence: %s", err)
 	}
 
 	for namespace, route := range alertingNamespaces {
@@ -462,6 +462,32 @@ func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest
 		}
 	}
 	return nil
+}
+
+func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) (map[string]string, error) {
+
+	var alertingNamespaces = map[string]string{
+		"openshift-monitoring": "alertmanager-main",
+	}
+
+	// Read from Observability config for RHOAM, otherwise read from Monitoring config
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		observabilityConfig, err := configManager.ReadObservability()
+		if err != nil {
+			return alertingNamespaces, err
+		}
+
+		alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
+	} else {
+		monitoringConfig, err := configManager.ReadMonitoring()
+		if err != nil {
+			return alertingNamespaces, err
+		}
+
+		alertingNamespaces[monitoringConfig.GetOperatorNamespace()] = monitoringConfig.GetAlertManagerRouteName()
+	}
+
+	return alertingNamespaces, nil
 }
 
 func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.Config, alertName string) error {
@@ -681,7 +707,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	}
 
 	log.Info("Creating Silence for alerts")
-	err = r.createSilence(installation, r.restConfig)
+	err = r.createSilence(installation, r.restConfig, configManager)
 
 	if err != nil {
 		log.Error("Error creating silence", err)
