@@ -14,14 +14,14 @@ import (
 const (
 	clonedServiceMonitorLabelKey   = "integreatly.org/cloned-servicemonitor"
 	clonedServiceMonitorLabelValue = "true"
-	labelSelector                  = "monitoring-key=middleware"
+	labelSelector                  = "kubernetes.io/metadata.name=redhat-rhoam-observability"
 	roleBindingName                = "rhmi-prometheus-k8s"
 	roleRefName                    = "rhmi-prometheus-k8s"
 )
 
 func getServiceMonitorsByType(monitorsType string) []string {
 	monitors := map[string][]string{
-		"rhmi2ExpectedServiceMonitors": []string{
+		"rhmi2ExpectedServiceMonitors": {
 			NamespacePrefix + "amq-online-enmasse-address-space-controller",
 			NamespacePrefix + "amq-online-enmasse-admin",
 			NamespacePrefix + "amq-online-enmasse-broker",
@@ -33,11 +33,6 @@ func getServiceMonitorsByType(monitorsType string) []string {
 			NamespacePrefix + "fuse-syndesis-integrations",
 			NamespacePrefix + "ups-operator-unifiedpush-operator-metrics",
 			NamespacePrefix + "ups-unifiedpush",
-		},
-		"managedApiServiceMonitors": []string{
-			Marin3rProductNamespace + "-ratelimit",
-		},
-		"commonExpectedServiceMonitors": []string{
 			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
 			NamespacePrefix + "middleware-monitoring-operator-application-monitoring-operator-metrics",
 			NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
@@ -45,6 +40,15 @@ func getServiceMonitorsByType(monitorsType string) []string {
 			NamespacePrefix + "rhsso-keycloak-service-monitor",
 			NamespacePrefix + "user-sso-keycloak-service-monitor",
 		},
+		"managedApiServiceMonitors": {
+			"cloud-resource-operator-metrics",
+			"keycloak-operator-metrics",
+			"keycloak-service-monitor",
+			"ratelimit",
+			//NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
+			//NamespacePrefix + "middleware-monitoring-operator-prometheus-servicemonitor",
+		},
+		"commonExpectedServiceMonitors": {},
 	}
 
 	return monitors[monitorsType]
@@ -62,7 +66,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t TestingTB, ctx *TestingConte
 	expectedServiceMonitors := getExpectedServiceMonitors(rhmi.Spec.Type)
 
 	//Get list of service monitors in the monitoring namespace
-	monSermonMap, err := getServiceMonitors(ctx, MonitoringSpecNamespace)
+	monSermonMap, err := getServiceMonitors(ctx, ObservabilityProductNamespace)
 	if err != nil {
 		t.Fatal("failed to list servicemonitors in monitoring namespace:", err)
 	}
@@ -113,11 +117,10 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t TestingTB, ctx *TestingConte
 			t.Fatal("failed to list servicemonitors", err)
 		}
 		for _, sm := range serviceMonitors.Items {
-			key := sm.Namespace + `-` + sm.Name
-			if _, ok := monSermonMap[key]; !ok {
-				t.Fatal("Servicemonitor: ", key, "not found in monitoring namespace")
+			if _, ok := monSermonMap[sm.Name]; !ok {
+				t.Fatal("Servicemonitor: ", sm.Name, "not found in monitoring namespace")
 			}
-			delete(monSermonMap, key) // Servicemonitor exists, remove it from the local map
+			delete(monSermonMap, sm.Name) // Servicemonitor exists, remove it from the local map
 		}
 	}
 	// Any values left in the servicemonitors map are stale

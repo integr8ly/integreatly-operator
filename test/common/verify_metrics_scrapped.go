@@ -20,7 +20,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
 		"prometheus-kafka-prometheus-0",
-		GetPrefixedNamespace("observability"),
+		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
