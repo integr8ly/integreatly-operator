@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"os"
-
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -1362,6 +1362,9 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 }
 
 func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	r.log.Info("getting tenant users")
+
 	mtUserIdentities, err := user.GetMultiTenantUsers(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -1372,11 +1375,15 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		l.Fields{"totalIdentities": totalIdentities},
 	)
 
+
+	r.log.Info("getting master token")
+
 	// get 3scale master access token
 	accessToken, err := r.GetMasterToken(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	r.log.Info("after getting master token")
 
 	defaultPageSize := 500
 	totalPages := 1
@@ -1409,28 +1416,38 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			"total3scaleTenantAccounts": len(allAccounts),
 		},
 	)
-
+	r.log.Info("setting metrics")
 	setTenantMetrics(mtUserIdentities, allAccounts)
 
+	r.log.Info("getting access token secret")
 	signUpAccountsSecret, err := getAccessTokenSecret(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	r.log.Info("getting accounts created CM")
 	tenantsCreated, err := getAccountsCreatedCM(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	time.Sleep(time.Second * 10)
+
+	r.log.Info("Start looping allAccounts")
 	// looping through the accounts to reconcile default config back
 	for index, account := range allAccounts {
 
 		state, created := tenantsCreated.Data[account.OrgName]
 		if created && state == "true" {
+			r.log.Info("Skipping tenant "+account.OrgName)
 			continue
 		}
 
+		r.log.Info("Processing tenant "+account.OrgName)
+		time.Sleep(time.Second * 1)
+
 		if account.State == "approved" {
+			r.log.Info("tenant is approved "+account.OrgName)
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
 					r.log.Infof("Activating user access to new tenant account",
@@ -1454,6 +1471,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				}
 			}
 
+			r.log.Info("getting account secret "+account.OrgName)
 			val, ok := signUpAccountsSecret.Data[string(account.OrgName)]
 			if !ok || string(val) == "" {
 				r.log.Infof("Tenant account does not have access token created",
@@ -1482,6 +1500,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				},
 			)
 
+			r.log.Info("adding auth provider "+account.OrgName)
 			// verify if the account have the auth provider already
 			err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
 			if err != nil {
@@ -1495,6 +1514,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				)
 			}
 
+			r.log.Info("reconcile dashboard links "+account.OrgName)
 			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
 			if err != nil {
 				r.log.Errorf("Error reconciling console link for the tenant account",
@@ -1506,6 +1526,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				)
 			}
 
+			r.log.Info("updating config map "+account.OrgName)
 			tenantsCreated.Data[string(account.OrgName)] = "true"
 			tenantsCreated.ObjectMeta.ResourceVersion = ""
 			err = resources.CreateOrUpdate(ctx, serverClient, tenantsCreated)
@@ -1542,6 +1563,9 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 	}
 
+	time.Sleep(time.Second * 10)
+
+	r.log.Info("start gett accounts to be created ")
 	// creating new MT accounts in 3scale
 	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
 	r.log.Infof("Retrieving tenant accounts to be created",
@@ -1553,12 +1577,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 	for idx, account := range accountsToBeCreated {
 
+		r.log.Info("getting tenant accoutn pw")
 		pw, err := r.getTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
 			r.log.Error("Failed to get account tenant password:", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
+		r.log.Info("call create tenant")
 		// create account
 		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, pw, emailAddrs[idx])
 		if err != nil {
@@ -1578,14 +1604,17 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			},
 		)
 
+		r.log.Info("updated sign up secret")
 		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
 		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
 		}
+		r.log.Info("updated sign up secret - finsih")
 	}
 
+	r.log.Info("getting accounts to be deleted.")
 	// deleting MT accounts in 3scale
 	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities, allAccounts)
 	r.log.Infof(
@@ -1600,9 +1629,11 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		r.log.Error("Error deleting tenant accounts:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	r.log.Info("getting accounts to be deleted. - finsih")
 
 	// Remove redundant access token secrets
 	for _, account := range accountsToBeDeleted {
+		r.log.Info("removing account " + string(account.OrgName))
 		_, ok := signUpAccountsSecret.Data[string(account.OrgName)]
 		if ok {
 			delete(signUpAccountsSecret.Data, string(account.OrgName))

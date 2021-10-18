@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
 	"os"
 	"strings"
 
@@ -35,7 +36,6 @@ import (
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
 	rhmiconfigcontroller "github.com/integr8ly/integreatly-operator/controllers/rhmiconfig"
 	subscriptioncontroller "github.com/integr8ly/integreatly-operator/controllers/subscription"
-	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -119,11 +119,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RHMIConfig")
 		os.Exit(1)
 	}
-	if err = namespacecontroller.New(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
-		os.Exit(1)
-	}
 	if watchNamespace == "" || !strings.Contains(watchNamespace, "sandbox") {
+		if err = namespacecontroller.New(mgr).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Namespace")
+			os.Exit(1)
+		}
 		if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "User")
 			os.Exit(1)

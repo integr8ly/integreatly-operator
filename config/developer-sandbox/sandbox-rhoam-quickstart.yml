@@ -107,13 +107,15 @@ objects:
 
             ## Accessing the API Management Dashboard
 
-            1. Open 3Scale. Navigate to the launcher link.
+            1. Navigate to the 3Scale launcher.
 
             1. Select Project from the left side navigation pane.
 
             1. Click on project `<username>-dev`
 
             1. In the Launcher pane, select **API Management**
+
+            1. Select **Red Hat Single Sign-On** to login
 
             1. Login using the identity provider that applies to you, e.g **DevSandbox**.
 
@@ -178,13 +180,15 @@ objects:
 
             ## Obtain the APIcast URL
 
-            1. Open 3Scale. Navigate to the launcher link.
+            1. Navigate to the 3Scale launcher.
 
             1. Select Project from the left side navigation pane.
 
             1. Click on project `<username>-dev`
 
             1. In the Launcher pane, select **API Management**
+
+            1. Select **Red Hat Single Sign-On** to login
 
             1. Login using the identity provider that applies to you, e.g **DevSandbox**.
 

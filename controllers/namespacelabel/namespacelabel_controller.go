@@ -150,7 +150,7 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 	ctx := context.TODO()
 
 	if request.NamespacedName.Name == r.operatorNamespace {
-		r.log.Info("Reconciling namespace labels")
+		r.log.Infof("Reconciling namespace labels for", l.Fields{"ns": request.NamespacedName.Name})
 
 		ns, err := GetNS(ctx, r.operatorNamespace, r.Client)
 		if err != nil {
@@ -167,6 +167,7 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 		}
 		err = r.CheckConfigMap(ns, request, deletionConfigMap)
 		if err != nil {
+			r.log.Error("could not retrieve config map", err)
 			return ctrl.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
 		}
 

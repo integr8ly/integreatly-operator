@@ -1006,6 +1006,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, err
 	}
 
+	log.Infof("Found namespaces", l.Fields{"num": len(namespaces.Items)})
 	for _, ns := range namespaces.Items {
 		products, err := r.checkNamespaceForProducts(ns, installation, installationType, configManager)
 		if err != nil {
@@ -1040,6 +1041,13 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 	if strings.HasPrefix(ns.Name, "kube-") {
 		return foundProducts, nil
 	}
+	if (rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) &&
+		(strings.HasSuffix(ns.Name, "-dev") || strings.HasSuffix(ns.Name, "-stage"))) {
+		return foundProducts, nil
+	}
+
+	log.Infof("Checking ns for products ", l.Fields{"ns": ns.Name})
+
 	// new client to avoid caching issues
 	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{
 		Scheme: r.mgr.GetScheme(),

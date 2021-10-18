@@ -12,6 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"time"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
@@ -393,6 +394,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// Create / update the synchronized users
 	for _, user := range users {
+		if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+			// Relieve some pressure on API servers
+			time.Sleep(time.Millisecond * 300)
+		}
+
 		or, err = r.createOrUpdateKeycloakUser(ctx, user, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
