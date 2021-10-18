@@ -43,10 +43,10 @@ done
 # The time is noted and stored for use later
 while true
 do
-  ooPrometheus=$(oc get statefulset prometheus-kafka-prometheus -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
+  ooPrometheus=$(oc get statefulset prometheus-rhoam-prometheus -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
   if [ "$ooPrometheus" -ge 1 ]; then
     echo "Promethues reporting 1 replica ready"
-    ooAlertManager=$(oc get statefulset alertmanager-kafka-alertmanager -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
+    ooAlertManager=$(oc get statefulset alertmanager-rhoam-alertmanager -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
     if [ "$ooAlertManager" -ge 1 ]; then
       echo "AlertManager reporting 1 replica ready"
       date +"%T"
