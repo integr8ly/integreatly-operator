@@ -58,6 +58,8 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Logf("%v", err)
 	}
 
+	defer removeNamespace(t, ctx)
+
 	_, err = patchSecret(ctx, t)
 	if err != nil {
 		t.Log(err)
@@ -105,12 +107,6 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Log(err)
 	}
 
-	t.Log("Removing smtp-server namespace")
-	err = removeNamespace(ctx)
-	if err != nil {
-		t.Log(err)
-	}
-
 }
 
 func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, timeout time.Duration) error {
@@ -138,8 +134,10 @@ func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, ti
 
 }
 
-func removeNamespace(ctx *TestingContext) error {
+func removeNamespace(t TestingTB, ctx *TestingContext) error {
 	//Remove the smtp-server namespace to clean up after test
+
+	t.Log("Removing smtp-server namespace")
 	nameSpaceForDeletion := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "smtp-server",

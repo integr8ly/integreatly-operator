@@ -122,7 +122,7 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	})
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		l.Log("Error clicking IDP link")
-		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
+		return fmt.Errorf("OpenshiftClientSubmitForm(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
 
 	loginForm, err := browser.Form("#kc-form-login")

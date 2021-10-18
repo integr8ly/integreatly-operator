@@ -58,8 +58,6 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 	err = tsClient.Ping()
 	if err != nil {
 		t.Log("Error during making sure 3Scale is available")
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatal(err)
 	}
 
 	s1 := rand.NewSource(time.Now().UnixNano())
