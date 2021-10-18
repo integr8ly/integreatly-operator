@@ -182,7 +182,7 @@ func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int3
 
 func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
-		"alertmanager-kafka-alertmanager-0",
+		"alertmanager-alertmanager-0",
 		ObservabilityProductNamespace,
 		"alertmanager",
 		ctx)
