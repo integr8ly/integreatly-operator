@@ -139,7 +139,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileMonitoring(ctx, serverClient, installation)
+	phase, err = r.reconcileMonitoring(ctx, serverClient)
 	r.Log.Infof("Phase: reconcileMonitoring", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -188,8 +188,7 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8sclient.Client,
-	installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	//Get list of service monitors in the namespace that has
 	//label "integreatly.org/cloned-servicemonitor" set to "true"
@@ -219,11 +218,31 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
+	copyOut:
 		for _, sm := range serviceMonitorsMap {
+
+			// don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed now
+			// delete it from the cluster
+			// consider parameterising this to rhoam
+
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+					if s == "redhat-rhoam-middleware-monitoring-operator" {
+						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
+						if err != nil {
+							return integreatlyv1alpha1.PhaseFailed, err
+						}
+						continue copyOut
+					}
+				}
+			}
+
 			//Create a copy of service monitors in the monitoring namespace
 			//Create the corresponding rolebindings at each of the service namespace
 			key := sm.Name
 			delete(monSermonMap, key) // Servicemonitor exists, remove it from the local map
+			// upgrade specific code
+
 			err := r.reconcileServiceMonitor(ctx, serverClient, sm)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
@@ -237,8 +256,24 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 
 	//Clean-up the stale service monitors and rolebindings if any
 	if len(monSermonMap) > 0 {
+	cleanUpOut:
 		for _, sm := range monSermonMap {
 			//Remove servicemonitor
+			// on upgrade don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed
+			// those service monitors were created by AMO to self monitor
+			// the can be removed in the case of RHOAM
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+					if s == "redhat-rhoam-middleware-monitoring-operator" {
+						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
+						if err != nil {
+							return integreatlyv1alpha1.PhaseFailed, err
+						}
+						continue cleanUpOut
+					}
+				}
+			}
+
 			err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
