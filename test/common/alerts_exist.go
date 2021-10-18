@@ -918,7 +918,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 
 	// exec into the prometheus pod
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
-		"prometheus-rhoam-prometheus-0",
+		"prometheus-prometheus-0",
 		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
