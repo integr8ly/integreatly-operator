@@ -19,7 +19,7 @@ func mangedApiTargets() map[string][]string {
 func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		"prometheus-kafka-prometheus-0",
+		"prometheus-rhoam-prometheus-0",
 		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
