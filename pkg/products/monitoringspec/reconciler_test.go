@@ -431,7 +431,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 			//Verify that a new servicemonitor is created in the namespace
 			sermon := &prometheusmonitoringv1.ServiceMonitor{}
-			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "fuse-fuse-servicemon", Namespace: tc.Installation.Namespace}, sermon)
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "fuse-fuse-fuse-servicemon", Namespace: tc.Installation.Namespace}, sermon)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
