@@ -239,7 +239,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 
 			//Create a copy of service monitors in the monitoring namespace
 			//Create the corresponding rolebindings at each of the service namespace
-			key := sm.Name
+			key := sm.Namespace + `-` + sm.Name
 			delete(monSermonMap, key) // Servicemonitor exists, remove it from the local map
 			// upgrade specific code
 
@@ -300,7 +300,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 	}
 	sm := &monitoringv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceMonitor.Name,
+			Name:      serviceMonitor.Namespace + `-` + serviceMonitor.Name,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
