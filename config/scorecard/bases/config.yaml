@@ -5,3 +5,4 @@ metadata:
 stages:
 - parallel: true
   tests: []
+serviceaccount: rhoam-test-runner
