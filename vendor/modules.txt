@@ -582,8 +582,6 @@ github.com/operator-framework/operator-registry/pkg/client
 github.com/operator-framework/operator-registry/pkg/containertools
 github.com/operator-framework/operator-registry/pkg/lib/bundle
 github.com/operator-framework/operator-registry/pkg/registry
-# github.com/operator-framework/operator-sdk v1.2.0 => github.com/operator-framework/operator-sdk v1.12.0
-## explicit
 # github.com/otiai10/copy v1.0.2
 github.com/otiai10/copy
 # github.com/pkg/errors v0.9.1

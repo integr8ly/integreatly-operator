@@ -38,7 +38,6 @@ require (
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/operator-framework/operator-registry v1.17.4
-	github.com/operator-framework/operator-sdk v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
