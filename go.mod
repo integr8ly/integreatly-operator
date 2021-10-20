@@ -38,6 +38,7 @@ require (
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/operator-framework/operator-registry v1.17.4
+	github.com/operator-framework/operator-sdk v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
@@ -66,7 +67,7 @@ replace (
 	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 	github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
-	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v1.11.0
+	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v1.12.0
 	k8s.io/api => k8s.io/api v0.0.0-20200331211856-3c24962070e9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
