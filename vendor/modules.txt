@@ -144,7 +144,7 @@ github.com/eclipse/che-operator/pkg/apis/org/v1
 # github.com/emicklei/go-restful v2.11.1+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
-# github.com/envoyproxy/go-control-plane v0.9.8
+# github.com/envoyproxy/go-control-plane v0.9.9-0.20210217033140-668b12f5399d
 ## explicit
 github.com/envoyproxy/go-control-plane/envoy/admin/v2alpha
 github.com/envoyproxy/go-control-plane/envoy/admin/v3
@@ -344,7 +344,7 @@ github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 ## explicit
 github.com/ghodss/yaml
-# github.com/go-logr/logr v0.4.0 => github.com/go-logr/logr v0.2.1
+# github.com/go-logr/logr v0.3.0 => github.com/go-logr/logr v0.2.1
 github.com/go-logr/logr
 # github.com/go-logr/zapr v0.2.0
 github.com/go-logr/zapr
@@ -386,7 +386,6 @@ github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
@@ -425,7 +424,7 @@ github.com/headzoo/surf/jar
 github.com/headzoo/surf/util
 # github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca
 ## explicit
-# github.com/imdario/mergo v0.3.11
+# github.com/imdario/mergo v0.3.10
 github.com/imdario/mergo
 # github.com/integr8ly/application-monitoring-operator v1.6.0
 ## explicit
@@ -504,17 +503,13 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/gomega v1.13.0
+# github.com/onsi/gomega v1.15.0
 ## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
 github.com/onsi/gomega/gexec
-github.com/onsi/gomega/internal/assertion
-github.com/onsi/gomega/internal/asyncassertion
-github.com/onsi/gomega/internal/defaults
-github.com/onsi/gomega/internal/oraclematcher
-github.com/onsi/gomega/internal/testingtsupport
+github.com/onsi/gomega/internal
 github.com/onsi/gomega/matchers
 github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
 github.com/onsi/gomega/matchers/support/goraph/edge
@@ -554,7 +549,7 @@ github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 ## explicit
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
-# github.com/operator-framework/api v0.10.5 => github.com/operator-framework/api v0.8.1
+# github.com/operator-framework/api v0.4.1 => github.com/operator-framework/api v0.8.1
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
 github.com/operator-framework/api/pkg/operators
@@ -565,7 +560,7 @@ github.com/operator-framework/api/pkg/validation
 github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
 github.com/operator-framework/api/pkg/validation/internal
-# github.com/operator-framework/operator-lib v0.5.0 => github.com/operator-framework/operator-lib v0.1.0
+# github.com/operator-framework/operator-lib v0.3.0 => github.com/operator-framework/operator-lib v0.1.0
 github.com/operator-framework/operator-lib/status
 # github.com/operator-framework/operator-lifecycle-manager v0.17.0 => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 ## explicit
@@ -646,7 +641,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+# golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 ## explicit
@@ -676,7 +671,7 @@ golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
+# golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1
 golang.org/x/term
 # golang.org/x/text v0.3.6
 golang.org/x/text/encoding
@@ -806,7 +801,7 @@ gopkg.in/tomb.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# k8s.io/api v0.21.2 => k8s.io/api v0.0.0-20200331211856-3c24962070e9
+# k8s.io/api v0.22.1 => k8s.io/api v0.0.0-20200331211856-3c24962070e9
 ## explicit
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -849,7 +844,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.21.2 => k8s.io/apiextensions-apiserver v0.20.2
+# k8s.io/apiextensions-apiserver v0.22.1 => k8s.io/apiextensions-apiserver v0.20.2
 ## explicit
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
@@ -866,7 +861,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-# k8s.io/apimachinery v0.21.2 => k8s.io/apimachinery v0.20.2
+# k8s.io/apimachinery v0.22.1 => k8s.io/apimachinery v0.20.2
 ## explicit
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -920,7 +915,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.21.0 => k8s.io/apiserver v0.20.2
+# k8s.io/apiserver v0.20.6 => k8s.io/apiserver v0.20.2
 k8s.io/apiserver/pkg/apis/apiserver
 k8s.io/apiserver/pkg/apis/apiserver/install
 k8s.io/apiserver/pkg/apis/apiserver/v1
@@ -1020,7 +1015,7 @@ k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/klog/v2 v2.8.0 => k8s.io/klog/v2 v2.1.0
+# k8s.io/klog/v2 v2.4.0 => k8s.io/klog/v2 v2.1.0
 k8s.io/klog/v2
 # k8s.io/kube-aggregator v0.17.3 => k8s.io/kube-aggregator v0.20.6
 k8s.io/kube-aggregator/pkg/apis/apiregistration
@@ -1043,7 +1038,7 @@ k8s.io/utils/trace
 # sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.14
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/proto/client
-# sigs.k8s.io/controller-runtime v0.9.2 => sigs.k8s.io/controller-runtime v0.6.3
+# sigs.k8s.io/controller-runtime v0.10.0 => sigs.k8s.io/controller-runtime v0.6.3
 ## explicit
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
@@ -1102,7 +1097,7 @@ sigs.k8s.io/yaml
 # github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 # github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
-# github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v1.11.0
+# github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v1.13.1
 # k8s.io/api => k8s.io/api v0.0.0-20200331211856-3c24962070e9
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.2
 # k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
