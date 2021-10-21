@@ -69,6 +69,12 @@ type Config struct {
 	//       question to this interface as a parameter.  This is probably moot
 	//       now that this functionality appears at a higher level.
 	RetryOnError bool
+
+	// Called whenever the ListAndWatch drops the connection with an error.
+	WatchErrorHandler WatchErrorHandler
+
+	// WatchListPageSize is the requested chunk size of initial and relist watch lists.
+	WatchListPageSize int64
 }
 
 // ShouldResyncFunc is a type of function that indicates if a reflector should perform a
@@ -131,18 +137,22 @@ func (c *controller) Run(stopCh <-chan struct{}) {
 		c.config.FullResyncPeriod,
 	)
 	r.ShouldResync = c.config.ShouldResync
+	r.WatchListPageSize = c.config.WatchListPageSize
 	r.clock = c.clock
+	if c.config.WatchErrorHandler != nil {
+		r.watchErrorHandler = c.config.WatchErrorHandler
+	}
 
 	c.reflectorMutex.Lock()
 	c.reflector = r
 	c.reflectorMutex.Unlock()
 
 	var wg wait.Group
-	defer wg.Wait()
 
 	wg.StartWithChannel(stopCh, r.Run)
 
 	wait.Until(c.processLoop, time.Second, stopCh)
+	wg.Wait()
 }
 
 // Returns true once this controller has completed an initial resource listing
