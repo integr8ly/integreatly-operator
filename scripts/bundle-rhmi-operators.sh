@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+
+# Documentation to be done
+# BUNDLE_ONLY - set to true if you only want to generate bundle manifests for most recent release, alternatively, set BUNDLE_VERSIONS to make a bundle for a given release.
 if [[ -z "$OLM_TYPE" ]]; then
   OLM_TYPE="integreatly-operator"
 fi
@@ -27,19 +30,24 @@ VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
 ROOT=$(pwd)
 INDEX_IMAGE=""
 CATALOG_SOURCE_INSTALL="${OC_INSTALL:-true}"
+BUNDLE_ONLY="${BUNDLE_ONLY:-false}"
 
 
 start() {
-  clean_up
-  create_work_area
-  copy_bundles
-  check_upgrade_install
-  generate_bundles
-  generate_index
-  if [ "$CATALOG_SOURCE_INSTALL" = true ] ; then
-  create_catalog_source
+  if [ BUNDLE_ONLY ]; then
+    generate_bundles
+  else
+    clean_up
+    create_work_area
+    copy_bundles
+    check_upgrade_install
+    generate_bundles
+    generate_index
+    if [ "$CATALOG_SOURCE_INSTALL" = true ] ; then
+      create_catalog_source
+    fi
+    clean_up
   fi
-  clean_up
 }
 
 create_work_area() {
@@ -79,15 +87,22 @@ generate_bundles() {
 
   for VERSION in $(echo $VERSIONS | sed "s/,/ /g")
   do
-    cd ./$VERSION
-    opm alpha bundle generate -d . --channels $CHANNEL \
+    if [ BUNDLE_ONLY ]; then
+      cd ./packagemanifests/$OLM_TYPE/$VERSION
+      opm alpha bundle generate -d . --channels $CHANNEL \
+          --package integreatly --output-dir $VERSION \
+          --default $CHANNEL
+      cd ../../../
+    else 
+      cd ./$VERSION
+      opm alpha bundle generate -d . --channels $CHANNEL \
         --package integreatly --output-dir bundle \
         --default $CHANNEL
-
-    docker build -f bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION .
-    docker push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    cd ..
+      docker build -f bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION .
+      docker push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
+      operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
+      cd ..
+    fi
   done
 }
 
