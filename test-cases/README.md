@@ -160,7 +160,7 @@ JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPI
 If you need to link the new tasks to the task of a previous test round use the `previous-epic` option:
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
+JIRA_USERNAME=yourusername@redhat.com JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
 ```
 
 > The `previous-epic` option will link each new task to the task in the previous epic with the same ID and it
