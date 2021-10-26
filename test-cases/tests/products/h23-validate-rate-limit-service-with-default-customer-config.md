@@ -142,8 +142,20 @@ If the values are **not** correct make sure the 20M Quota is used. If not, chang
 
 **6. Configure an endpoint to run the load test using 3scale and promote the endpoint to production:**
 
-- Login to the API Management (3Scale) on the testing cluster using on the the testing idp **customer-adminxx**
-- Create a new endpoint by clicking though all the wizard options using the default settings (Note: if the wizard doesn't appear after logging in to 3scale, you can use the existing application: click on INTEGRATION in the 3scale 'dashboard' page)
+- Login to the API Management (3Scale) on the testing cluster using the testing idp **customer-adminxx**
+- If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://<YOUR-3SCALE-ROUTE>/p/admin/onboarding/wizard" to access the 3scale wizard
+- Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
+- On the page for adding a backend, you need to add a custom one. Run the following commands:
+
+```bash
+oc new-project httpbin && \
+oc new-app jsmadis/httpbin && \
+oc scale deployment/httpbin --replicas=6 && \
+printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
+```
+
+- Copy the `3scale Backend Base URL` to clipboard and add it to Base URL field in the 3scale wizard
+- Finish the 3scale wizard
 - When completed, you will be on the Overview page. Select 'Integration' from the menu listings on the left and select 'Configuration'.
 - Scroll down and click 'Promote to Production' (if you didn't go through the wizard, you have to promote it to staging first)
 - take a copy of the Staging APIcast `Example curl for testing` and extract the URL (within the double quotes) and replace the word **'staging'** with **'production'** in the URL (see example below)
