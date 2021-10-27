@@ -227,7 +227,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 
 			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-					if s == "redhat-rhoam-middleware-monitoring-operator" {
+					if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.installation.Spec.NamespacePrefix) {
 						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
 						if err != nil {
 							return integreatlyv1alpha1.PhaseFailed, err
@@ -264,7 +264,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 			// the can be removed in the case of RHOAM
 			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-					if s == "redhat-rhoam-middleware-monitoring-operator" {
+					if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.installation.Spec.NamespacePrefix) {
 						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
 						if err != nil {
 							return integreatlyv1alpha1.PhaseFailed, err
