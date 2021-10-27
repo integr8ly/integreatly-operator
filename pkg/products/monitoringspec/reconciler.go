@@ -102,14 +102,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		func() (integreatlyv1alpha1.StatusPhase, error) {
 			r.Log.Info("Phase: Monitoringspec ReconcileFinalizer")
 
+			ns := r.Config.GetNamespace()
+
+			if uninstall {
+				ns = fmt.Sprintf("%smonitoring", r.installation.Spec.NamespacePrefix)
+			}
+
 			// Check if namespace is still present before trying to delete it resources
-			_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+			_, err := resources.GetNS(ctx, ns, serverClient)
 			if err != nil && k8serr.IsNotFound(err) {
 				r.Log.Info("Spec phase completed")
 				//namespace is gone, return complete
 				return integreatlyv1alpha1.PhaseCompleted, nil
 			}
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace(), r.Log)
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, ns, r.Log)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				if err != nil {
 					r.Log.Error("Spec phase removal failure", err)

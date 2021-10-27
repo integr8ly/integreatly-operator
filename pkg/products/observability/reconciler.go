@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -38,6 +41,15 @@ const (
 	observabilityName            = "observability-stack"
 	defaultProbeModule           = "http_2xx"
 	OpenshiftMonitoringNamespace = "openshift-monitoring"
+
+	roleBindingName                           = "rhmi-prometheus-k8s"
+	clusterMonitoringPrometheusServiceAccount = "prometheus-k8s"
+	clusterMonitoringNamespace                = "openshift-monitoring"
+	roleRefAPIGroup                           = "rbac.authorization.k8s.io"
+	roleRefName                               = "rhmi-prometheus-k8s"
+	labelSelector                             = "monitoring-key=middleware"
+	clonedServiceMonitorLabelKey              = "integreatly.org/cloned-servicemonitor"
+	clonedServiceMonitorLabelValue            = "true"
 )
 
 type Reconciler struct {
@@ -235,6 +247,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("CreateSmtpSecretExistsRule", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile SendgridSmtpSecretExists alert", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileMonitoring(ctx, client)
+	r.log.Infof("reconcileMonitoring", l.Fields{"status": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("failed to reconcile: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile: ", err)
+		}
 		return phase, err
 	}
 
@@ -583,6 +605,340 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	return err
 }
 
+func (r *Reconciler) reconcileMonitoring(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	//Get list of service monitors in the namespace that has
+	//label "integreatly.org/cloned-servicemonitor" set to "true"
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(r.Config.GetNamespace()),
+		k8sclient.MatchingLabels(getClonedServiceMonitorLabel()),
+	}
+
+	//Get list of service monitors in the observability namespace
+	monSermonMap, err := r.getServiceMonitors(ctx, client, listOpts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	//Get the list of namespaces with the given label selector "monitoring-key=middleware"
+	namespaces, err := r.getMWMonitoredNamespaces(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, ns := range namespaces.Items {
+		if ns.Name != r.Config.GetNamespace() {
+			//Get list of service monitors in each name space
+			listOpts := []k8sclient.ListOption{
+				k8sclient.InNamespace(ns.Name),
+			}
+			serviceMonitorsMap, err := r.getServiceMonitors(ctx, client, listOpts)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+
+		copyOut:
+			for _, sm := range serviceMonitorsMap {
+
+				// don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed now
+				// delete it from the cluster
+				// consider parameterising this to rhoam
+
+				if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+					for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+						if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
+							err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
+							if err != nil {
+								return integreatlyv1alpha1.PhaseFailed, err
+							}
+							continue copyOut
+						}
+					}
+				}
+
+				//Create a copy of service monitors in the observability namespace
+				//Create the corresponding rolebindings at each of the service namespace
+				key := sm.Namespace + `-` + sm.Name
+				delete(monSermonMap, key) // Servicemonitor exists, remove it from the local map
+
+				err := r.reconcileServiceMonitor(ctx, client, sm)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, err
+				}
+
+				err = r.reconcileRoleBindingsForServiceMonitor(ctx, client, key)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, err
+				}
+			}
+		}
+	}
+
+	//Clean-up the stale service monitors and rolebindings if any
+	if len(monSermonMap) > 0 {
+	cleanUpOut:
+		for _, sm := range monSermonMap {
+			//Remove servicemonitor
+			// on upgrade don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed
+			// those service monitors were created by AMO to self monitor
+			// the can be removed in the case of RHOAM
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+					if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
+						err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
+						if err != nil {
+							return integreatlyv1alpha1.PhaseFailed, err
+						}
+						continue cleanUpOut
+					}
+				}
+			}
+
+			err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			//Remove rolebindings
+			for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
+				err := r.removeRoleandRoleBinding(ctx, client, namespace, roleRefName, roleBindingName)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, err
+				}
+			}
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, err
+}
+
+func (r *Reconciler) getServiceMonitors(ctx context.Context,
+	serverClient k8sclient.Client,
+	listOpts []k8sclient.ListOption) (serviceMonitorsMap map[string]*prometheus.ServiceMonitor, err error) {
+
+	if len(listOpts) == 0 {
+		return serviceMonitorsMap, fmt.Errorf("List options is empty")
+	}
+	serviceMonitors := &prometheus.ServiceMonitorList{}
+	err = serverClient.List(ctx, serviceMonitors, listOpts...)
+	if err != nil {
+		return serviceMonitorsMap, err
+	}
+	serviceMonitorsMap = make(map[string]*prometheus.ServiceMonitor)
+	for _, sm := range serviceMonitors.Items {
+		serviceMonitorsMap[sm.Name] = sm
+	}
+	return serviceMonitorsMap, err
+}
+
+func (r *Reconciler) getMWMonitoredNamespaces(ctx context.Context,
+	serverClient k8sclient.Client) (namespaces *v1.NamespaceList, err error) {
+	ls, err := labels.Parse(labelSelector)
+	if err != nil {
+		return namespaces, err
+	}
+	opts := &k8sclient.ListOptions{
+		LabelSelector: ls,
+	}
+	//Get the list of namespaces with the given label selector
+	namespaces = &v1.NamespaceList{}
+	err = serverClient.List(ctx, namespaces, opts)
+	return namespaces, err
+}
+
+func (r *Reconciler) removeServiceMonitor(ctx context.Context,
+	serverClient k8sclient.Client, namespace, name string) (err error) {
+	sm := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	//Delete the servicemonitor
+	err = serverClient.Delete(ctx, sm)
+	if err != nil && k8serr.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
+	serverClient k8sclient.Client, serviceMonitor *prometheus.ServiceMonitor) (err error) {
+
+	if serviceMonitor.Spec.NamespaceSelector.Any {
+		r.log.Warningf("servicemonitor cannot be copied to namespace. Namespace selector has been set to any",
+			l.Fields{"serviceMonitor": serviceMonitor.Name, "ns": r.Config.GetNamespace()})
+		return nil
+	}
+	sm := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceMonitor.Namespace + `-` + serviceMonitor.Name,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, sm, func() error {
+		// Check if the servicemonitor has no  namespace selectors defined,
+		// if not add the namespace
+		sm.Spec = serviceMonitor.Spec
+		if len(sm.Spec.NamespaceSelector.MatchNames) == 0 {
+			sm.Spec.NamespaceSelector.MatchNames = []string{serviceMonitor.Namespace}
+		}
+		//Add all the original labels and append cloned servicemonitor label
+		sm.Labels = serviceMonitor.Labels
+		if len(sm.Labels) == 0 {
+			sm.Labels = make(map[string]string)
+		}
+		sm.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"serviceMonitor": sm.Name, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
+	serverClient k8sclient.Client, serviceMonitorName string) (err error) {
+	//Get the service monitor - that was created/updated
+	sermon := &prometheus.ServiceMonitor{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: serviceMonitorName, Namespace: r.Config.GetNamespace()}, sermon)
+	if err != nil {
+		return err
+	}
+	//Create role binding for each of the namespace label selectors
+	for _, namespace := range sermon.Spec.NamespaceSelector.MatchNames {
+		err := r.reconcileRole(ctx, serverClient, namespace)
+		if err != nil {
+			return err
+		}
+		err = r.reconcileRoleBinding(ctx, serverClient, namespace)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileRole(ctx context.Context,
+	serverClient k8sclient.Client, namespace string) (err error) {
+
+	role := &rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleRefName,
+			Namespace: namespace,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, role, func() error {
+		resources := []string{
+			"services",
+			"endpoints",
+			"pods",
+		}
+
+		verbs := []string{
+			"get",
+			"list",
+			"watch",
+		}
+		apiGroups := []string{""}
+
+		role.Rules = []rbac.PolicyRule{
+			{
+				APIGroups: apiGroups,
+				Resources: resources,
+				Verbs:     verbs,
+			},
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"role": roleRefName, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
+	serverClient k8sclient.Client, namespace string) (err error) {
+
+	roleBinding := &rbac.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleBindingName,
+			Namespace: namespace,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
+		roleBinding.Subjects = []rbac.Subject{
+			{
+				Kind:      rbac.ServiceAccountKind,
+				Name:      clusterMonitoringPrometheusServiceAccount,
+				Namespace: clusterMonitoringNamespace,
+			},
+		}
+		roleBinding.RoleRef = rbac.RoleRef{
+			APIGroup: roleRefAPIGroup,
+			Kind:     bundle.RoleKind,
+			Name:     roleRefName,
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"roleBinding": roleBindingName, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) removeRoleandRoleBinding(ctx context.Context,
+	serverClient k8sclient.Client, namespace, roleName, rbName string) (err error) {
+
+	// Check if the namespace has service monitors
+	// if so do not delete the rolebinding
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(namespace),
+	}
+	serviceMonitorsMap, err := r.getServiceMonitors(ctx, serverClient, listOpts)
+	if err != nil {
+		return err
+	}
+
+	if len(serviceMonitorsMap) > 0 {
+		return nil
+	}
+
+	//Get the role
+	role := &rbac.Role{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: roleName, Namespace: namespace}, role)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Delete the role
+	err = serverClient.Delete(ctx, role)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Get the rolebinding
+	rb := &rbac.RoleBinding{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rbName, Namespace: namespace}, rb)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Delete the rolebinding
+	err = serverClient.Delete(ctx, rb)
+	if err != nil && k8serr.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
 func GetDefaultNamespace(installationPrefix string) string {
 	return installationPrefix + defaultInstallationNamespace
+}
+
+func getClonedServiceMonitorLabel() map[string]string {
+	return map[string]string{
+		clonedServiceMonitorLabelKey: clonedServiceMonitorLabelValue,
+	}
 }
