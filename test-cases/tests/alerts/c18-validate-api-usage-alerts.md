@@ -108,11 +108,11 @@ estimate: 90m
 
 8.  Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password
 
-        ```shell script
-        open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
-        ```
+    ```shell script
+    open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
+    ```
 
-    (If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://<YOUR-3SCALE-ROUTE>/p/admin/onboarding/wizard" to access the 3scale wizard)
+    (If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://\<YOUR-3SCALE-ROUTE\>/p/admin/onboarding/wizard" to access the 3scale wizard)
 
 9.  Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
 

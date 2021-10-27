@@ -143,7 +143,7 @@ If the values are **not** correct make sure the 20M Quota is used. If not, chang
 **6. Configure an endpoint to run the load test using 3scale and promote the endpoint to production:**
 
 - Login to the API Management (3Scale) on the testing cluster using the testing idp **customer-adminxx**
-- If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://<YOUR-3SCALE-ROUTE>/p/admin/onboarding/wizard" to access the 3scale wizard
+- If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://\<YOUR-3SCALE-ROUTE\>/p/admin/onboarding/wizard" to access the 3scale wizard
 - Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
 - On the page for adding a backend, you need to add a custom one. Run the following commands:
 
