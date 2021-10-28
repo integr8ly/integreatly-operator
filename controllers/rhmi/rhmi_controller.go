@@ -145,6 +145,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=list;get;watch
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs,verbs=list;get;watch
 
+// Permission to create ClusterRole and ClusterRoleBinding for blackbox-exporter
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=*
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=*
+
 // We need to get console route for solution explorer
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get
 
