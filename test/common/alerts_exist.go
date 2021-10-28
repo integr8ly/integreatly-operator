@@ -547,212 +547,211 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 
 	return []alertsTestRule{
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-threescale-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisCacheConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-threescale-backend-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisCacheConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-threescale-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-threescale-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisCacheUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-threescale-backend-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisCacheUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisResourceDeletionStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-backend-redis-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisResourceDeletionStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhsso-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhsso-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhsso-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhssouser-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-threescale-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresInstanceUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-rhssouser-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhssouser-Postgres-%sPostgresConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-rhssouser-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhssouser-Postgres-%sPostgresInstanceUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-rhsso-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-rhsso-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhsso-Postgres-%sPostgresConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-rhsso-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-rhsso-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhsso-Postgres-%sPostgresInstanceUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-threescale-redis-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-rhssouser-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhasePending", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-rhsso-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-rhsso-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhsso-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-threescale-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresResourceStatusPhasePending", titledName),
 			},
 		},
-
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-threescale-redis-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisResourceStatusPhasePending", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-rhsso-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-rhsso-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhsso-Postgres-%sPostgresResourceStatusPhasePending", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-threescale-backend-redis-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisResourceStatusPhasePending", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-rhssouser-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-threescale-backend-redis-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-threescale-postgres-%s.yaml", NamespacePrefix, installationName),
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-postgres-storage-will-fill-in-4-hours.yaml",
+			File: ObservabilityProductNamespace + "-postgres-storage-will-fill-in-4-hours.yaml",
 			Rules: []string{
 				"PostgresStorageWillFillIn4Hours",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-postgres-storage-will-fill-in-4-days.yaml",
+			File: ObservabilityProductNamespace + "-postgres-storage-will-fill-in-4-days.yaml",
 			Rules: []string{
 				"PostgresStorageWillFillIn4Days",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-postgres-storage-low.yaml",
+			File: ObservabilityProductNamespace + "-postgres-storage-low.yaml",
 			Rules: []string{
 				"PostgresStorageLow",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-postgres-cpu-high.yaml",
+			File: ObservabilityProductNamespace + "-postgres-cpu-high.yaml",
 			Rules: []string{
 				"PostgresCPUHigh",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-postgres-freeable-memory-low.yaml",
+			File: ObservabilityProductNamespace + "-postgres-freeable-memory-low.yaml",
 			Rules: []string{
 				"PostgresFreeableMemoryLow",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-memory-usage-high.yaml",
+			File: ObservabilityProductNamespace + "-redis-memory-usage-high.yaml",
 			Rules: []string{
 				"RedisMemoryUsageHigh",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-memory-usage-will-max-in-4-hours.yaml",
+			File: ObservabilityProductNamespace + "-redis-memory-usage-will-max-in-4-hours.yaml",
 			Rules: []string{
 				"RedisMemoryUsageMaxIn4Hours",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-memory-usage-max-fill-in-4-days.yaml",
+			File: ObservabilityProductNamespace + "-redis-memory-usage-max-fill-in-4-days.yaml",
 			Rules: []string{
 				"RedisMemoryUsageMaxIn4Days",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-cpu-usage-high.yaml",
+			File: ObservabilityProductNamespace + "-redis-cpu-usage-high.yaml",
 			Rules: []string{
 				"RedisCpuUsageHigh",
 			},
 		},
 		{
-			File: NamespacePrefix + "operator-redis-service-maintenance-critical.yaml",
+			File: ObservabilityProductNamespace + "-redis-service-maintenance-critical.yaml",
 			Rules: []string{
 				"RedisServiceMaintenanceCritical",
 			},
@@ -856,36 +855,36 @@ func rhmi2ExpectedAWSRules(installationName string) []alertsTestRule {
 	}
 }
 
-func managedApiAwsExpectedRules(installtionName string) []alertsTestRule {
-	titledName := strings.Title(installtionName)
+func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
+	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-ratelimit-service-redis-%s.yaml", NamespacePrefix, installtionName),
+			File: fmt.Sprintf("%sresource-status-phase-failed-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
 				fmt.Sprintf("Ratelimit-Service-Redis-%sRedisResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-ratelimit-service-redis-%s.yaml", NamespacePrefix, installtionName),
+			File: fmt.Sprintf("%sresource-status-phase-pending-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
 				fmt.Sprintf("Ratelimit-Service-Redis-%sRedisResourceStatusPhasePending", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-availability-rule-ratelimit-service-redis-%s.yaml", NamespacePrefix, installtionName),
+			File: fmt.Sprintf("%savailability-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
 				fmt.Sprintf("Ratelimit-Service-Redis-%sRedisCacheUnavailable", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-connectivity-rule-ratelimit-service-redis-%s.yaml", NamespacePrefix, installtionName),
+			File: fmt.Sprintf("%sconnectivity-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
 				fmt.Sprintf("Ratelimit-Service-Redis-%sRedisCacheConnectionFailed", titledName),
 			},
 		},
 		{
-			File: fmt.Sprintf("%soperator-resource-deletion-status-phase-failed-rule-ratelimit-service-redis-%s.yaml", NamespacePrefix, installtionName),
+			File: fmt.Sprintf("%sresource-deletion-status-phase-failed-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
 				fmt.Sprintf("Ratelimit-Service-Redis-%sRedisResourceDeletionStatusPhaseFailed", titledName),
 			},
@@ -918,7 +917,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 
 	// exec into the prometheus pod
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
-		"prometheus-kafka-prometheus-0",
+		"prometheus-prometheus-0",
 		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
@@ -1009,7 +1008,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	if missingCount > 0 {
-		t.Log("\nMissing alerts were found from Prometheus. If the removal of these Alert rules was intentional, please update this test to remove them from the check. If the removal of these Alert rules was not intendended or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed")
+		t.Log("\nMissing alerts were found from Prometheus. If the removal of these Alert rules was intentional, please update this test to remove them from the check. If the removal of these Alert rules was not intended or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed")
 	}
 	if extraCount > 0 {
 		t.Log("\nUnexpected alerts were found in Prometheus. If these Alert rules were intentionally added, please update this test to add them to the check. If these Alert rules were not added intentionally or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed.")

@@ -56,12 +56,6 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, httpClient, ctx.Client, t)
 
-	// Make sure 3Scale is available
-	err = tsClient.Ping()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	userId, err := tsClient.GetUserId(developerUser)
 	if err != nil || userId == "" {
 		t.Fatal("Failed to retrieve user id for ", developerUser, "userId: ", userId, err)

@@ -250,8 +250,8 @@ func check3ScaleReplicasAreReady(ctx *TestingContext, t TestingTB, replicas map[
 				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
 			}
 
-			if deploymentConfig.Status.Replicas != int32(replicas[replicasID]) {
-				t.Logf("%s replicas ready %v, expected %v ", name, deploymentConfig.Status.ReadyReplicas, replicas[replicasID])
+			if deploymentConfig.Status.ReadyReplicas != int32(replicas[replicasID]) || deploymentConfig.Status.UnavailableReplicas != 0 {
+				t.Logf("%s replicas ready %v, expected %v, unavailable replicas %v ", name, deploymentConfig.Status.ReadyReplicas, replicas[replicasID], deploymentConfig.Status.UnavailableReplicas)
 				return false, nil
 			}
 		}

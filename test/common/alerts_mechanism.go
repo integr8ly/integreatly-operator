@@ -182,7 +182,7 @@ func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int3
 
 func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
-		"alertmanager-kafka-alertmanager-0",
+		"alertmanager-alertmanager-0",
 		ObservabilityProductNamespace,
 		"alertmanager",
 		ctx)
@@ -235,7 +235,7 @@ func waitForKeycloakAlertState(expectedState string, ctx *TestingContext, t Test
 
 func getKeycloakAlertState(ctx *TestingContext) error {
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
-		"prometheus-kafka-prometheus-0",
+		"prometheus-prometheus-0",
 		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)

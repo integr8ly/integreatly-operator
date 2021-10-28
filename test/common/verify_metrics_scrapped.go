@@ -10,7 +10,7 @@ import (
 func mangedApiTargets() map[string][]string {
 	return map[string][]string{
 		// TODO: Should include other expected targets
-		Marin3rProductNamespace: {
+		ObservabilityProductNamespace: {
 			"/ratelimit/0",
 		},
 	}
@@ -19,8 +19,8 @@ func mangedApiTargets() map[string][]string {
 func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		"prometheus-kafka-prometheus-0",
-		GetPrefixedNamespace("observability"),
+		"prometheus-prometheus-0",
+		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {

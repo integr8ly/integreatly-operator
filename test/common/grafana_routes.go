@@ -142,6 +142,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		for _, secret := range serviceAccount.Secrets {
 			if strings.HasPrefix(secret.Name, fmt.Sprintf("%s-token", serviceAccountName)) {
 				saSecret = &secret
+				break
 			}
 		}
 

@@ -318,7 +318,7 @@ func selectRHSSOIDP(browser *browser.Browser, idp string) error {
 		selection.SetHtml(selection.Text())
 	})
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
+		return fmt.Errorf("selectRHSSOIDP(): failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
 
 	return nil

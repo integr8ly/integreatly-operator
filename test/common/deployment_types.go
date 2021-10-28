@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"golang.org/x/net/context"
@@ -111,7 +112,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"rhssoOperatorDeployment": {
 			Name: RHSSOOperatorNamespace,
 			Products: []Product{
-				{Name: "rhsso-operator", ExpectedReplicas: 1},
+				{Name: "keycloak-operator", ExpectedReplicas: 1},
 			},
 		},
 		"solutionExplorerOperatorDeployment": {
@@ -135,7 +136,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"rhssoUserOperatorDeployment": {
 			Name: RHSSOUserOperatorNamespace,
 			Products: []Product{
-				{Name: "rhsso-operator", ExpectedReplicas: 1},
+				{Name: "keycloak-operator", ExpectedReplicas: 1},
 			},
 		},
 		"marin3rOperatorDeployment": {
@@ -479,8 +480,8 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		{
 			Name: ObservabilityProductNamespace,
 			Products: []Product{
-				{Name: "alertmanager-kafka-alertmanager", ExpectedReplicas: 1},
-				{Name: "prometheus-kafka-prometheus", ExpectedReplicas: 1},
+				{Name: "alertmanager-alertmanager", ExpectedReplicas: 1},
+				{Name: "prometheus-prometheus", ExpectedReplicas: 1},
 			},
 		},
 		{

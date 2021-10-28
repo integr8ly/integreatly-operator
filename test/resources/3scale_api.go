@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ThreeScalePingUrl          = "%v/admin/api/applications.xml"
+	ThreeScalePingUrl          = "%v/p/admin/applications"
 	ThreeScaleProductCreateUrl = "%v/apiconfig/services"
 	ThreeScaleProductDeleteUrl = "%v/apiconfig/services/%v"
 	ThreeScaleClient           = "3scale"
@@ -111,7 +111,6 @@ func (r *ThreeScaleAPIClientImpl) Ping() error {
 		return err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", r.token))
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return err
