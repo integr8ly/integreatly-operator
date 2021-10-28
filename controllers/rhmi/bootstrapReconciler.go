@@ -17,9 +17,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -193,6 +193,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
+
+		// temp code for RHOAM, remove once all clusters are upgraded to 1.14
+		// Remove all prometheus rules under redhat/sandbox-rhoam/rhoami-operator
+		phase, err = r.removePrometheusRules(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to remove existing prometheus rules from rhoam-operator namespace", err)
+			return phase, errors.Wrap(err, "Failed to remove existing prometheus rules from rhoam-operator namespace")
+		}
+
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
@@ -201,6 +210,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Info("Metric rhmi_info exposed")
 
 	r.log.Info("Bootstrap stage reconciled successfully")
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) removePrometheusRules(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	existingRules := &prometheusv1.PrometheusRuleList{}
+
+	err := serverClient.List(ctx, existingRules, k8sclient.InNamespace(r.ConfigManager.GetOperatorNamespace()))
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if k8serr.IsNotFound(err) || len(existingRules.Items) == 0 {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	for _, rule := range existingRules.Items {
+		err = serverClient.Delete(ctx, rule)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
