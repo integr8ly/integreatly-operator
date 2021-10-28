@@ -311,16 +311,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
-					{
-						Alert: "ThreeScaleContainerHighMemory",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "The {{  $labels.container  }} Container in the {{  $labels.pod  }} Pod has been using {{  $value  }}% of available memory for longer than 15 minutes.",
-						},
-						Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='', container!='system-provider', namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits{namespace='%[1]v',resource='memory'}) * 100 > 90", r.Config.GetNamespace())),
-						For:    "15m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
-					},
+					alertThreeScaleContainerHighMemory(installationName, r.Config.GetNamespace()),
 					{
 						Alert: "ThreeScaleContainerHighCPU",
 						Annotations: map[string]string{
@@ -348,4 +339,17 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 			},
 		},
 	}, nil
+}
+
+func alertThreeScaleContainerHighMemory(installationName string, namespace string) monitoringv1.Rule {
+	return monitoringv1.Rule{
+		Alert: "ThreeScaleContainerHighMemory",
+		Annotations: map[string]string{
+			"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+			"message": "The {{  $labels.container  }} Container in the {{  $labels.pod  }} Pod has been using {{  $value  }}% of available memory for longer than 15 minutes.",
+		},
+		Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='', container!='system-provider', namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits{namespace='%[1]v',resource='memory'}) * 100 > 90", namespace)),
+		For:    "15m",
+		Labels: map[string]string{"severity": "info", "product": installationName},
+	}
 }
