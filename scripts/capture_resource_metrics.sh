@@ -11,7 +11,7 @@
 START_TIME_FILENAME=${START_TIME_FILENAME:-perf-test-start-time.txt}
 END_TIME_FILENAME=${END_TIME_FILENAME:-perf-test-end-time.txt}
 TOKEN=$(oc whoami --show-token)
-RHOAM_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')")
+RHOAM_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')")
 CLUSTER_PROMETHEUS_ROUTE=$(echo "https://$(oc get route prometheus-k8s -n openshift-monitoring -o=jsonpath='{.spec.host}')")
 PROM_QUERY_ROUTE="$CLUSTER_PROMETHEUS_ROUTE/api/v1/query"
 PROM_QUERY_ROUTE_RHOAM="$RHOAM_PROMETHEUS_ROUTE/api/v1/query"
