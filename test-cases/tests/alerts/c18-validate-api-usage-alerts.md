@@ -112,13 +112,28 @@ estimate: 90m
     open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
     ```
 
-9.  Click on `Ok, how does 3scale work?` and follow the 3Scale wizard to create an API
+    (If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://\<YOUR-3SCALE-ROUTE\>/p/admin/onboarding/wizard" to access the 3scale wizard)
 
-10. Once on your API overview page, click on `Integration` on the left, then on `Configuration`
+9.  Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
 
-11. Take note of the `example curl for testing` and replace the placeholder in `test-cases/tests/alerts/rate-limit.js` with the route from the curl example including the user_key param
+10. On the page for adding a backend, you need to add a custom one. Run the following commands:
 
-12. Verify RHOAMApiUsageOverLimit alert is present
+```bash
+oc new-project httpbin && \
+oc new-app jsmadis/httpbin && \
+oc scale deployment/httpbin --replicas=6 && \
+printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
+```
+
+11. Copy the `3scale Backend Base URL` to clipboard and add it to Base URL field in the 3scale wizard
+
+12. Finish the 3scale wizard
+
+13. Once on your API overview page, click on `Integration` on the left, then on `Configuration`
+
+14. Take note of the `example curl for testing` and replace the placeholder in `test-cases/tests/alerts/rate-limit.js` with the route from the curl example including the user_key param
+
+15. Verify RHOAMApiUsageOverLimit alert is present
 
     It takes 30 minutes for the RHOAMApiUsageOverLimit to fire. In a following step the number of requests required to trigger this
     alert will be reached. You will be asked to note the time at that point. Ensure the alert is present by taking the following steps:
@@ -133,7 +148,7 @@ estimate: 90m
 
     `max_over_time((increase(authorized_calls[1m]) + increase(limited_calls[1m]))[30m:]) / 694`
 
-13. Trigger API Usage alerts
+16. Trigger API Usage alerts
 
         | Alert to fire                        | `rpm` (requests per minute) | `recipients`          |
         | ------------------------------------ | --------------------------- | --------------------- |
@@ -163,9 +178,9 @@ estimate: 90m
 
     Interrupt the script (Ctrl+C), wait 1 minute and repeat the above steps again for each remaining alert listed in the table above
 
-14. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent. Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
+17. Once each of the above alerts have been triggered, verify that a `FIRING` and associated `RESOLVED` email notification is sent. Check the `to` field of the email to ensure that it matches the `recipients` listed in the table above. Also ensure that the link to grafana is working as expected.
 
-15. Verify customer facing Grafana instance and Dashboard is present
+18. Verify customer facing Grafana instance and Dashboard is present
 
     ```shell script
     open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring-operator -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
@@ -189,7 +204,7 @@ estimate: 90m
 
     See [this example](https://user-images.githubusercontent.com/4881144/99288530-07dced00-283c-11eb-9cba-906151dd7dfb.png)
 
-16. Verify RHOAMApiUsageOverLimit alert triggered.
+19. Verify RHOAMApiUsageOverLimit alert triggered.
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.

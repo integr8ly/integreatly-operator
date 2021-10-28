@@ -12,6 +12,7 @@ products:
       - 1.4.0
       - 1.7.0
       - 1.10.0
+      - 1.13.0
 estimate: 1h
 tags:
   - destructive
@@ -51,12 +52,15 @@ EOF
 ```
 
 ```
+# Get postgres db host and password to use it later for logging into postgres db
+oc get secret rhsso-postgres-rhoam -n redhat-rhoam-operator -o json | jq -r .data.host | base64 --decode
+oc get secret rhsso-postgres-rhoam -n redhat-rhoam-operator -o json | jq -r .data.password | base64 --decode
 # Wait until the throwaway Postgres instance is running
 oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $3}'
 # oc rsh to the pod
 oc rsh -n redhat-rhoam-operator $(oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $1}')
-# password and host retrieved from rhsso-postgres-rhoam secret in redhat-rhoam-operator, psql will prompt for password
-psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
+# Log in using host and password retrieved with commands above. psql will prompt for password
+psql --host=<postgres_db_host> --port=5432 --username=postgres --password --dbname=postgres
 $ select * from client;
 $ select * from realm;
 ```
