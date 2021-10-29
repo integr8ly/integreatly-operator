@@ -236,7 +236,7 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	ssoCommon.SetHost(fmt.Sprintf("https://%v", keycloakRoute.Spec.Host))
 	err = r.ConfigManager.WriteConfig(config)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhsso reconciler: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing to config in rhsso reconciler: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

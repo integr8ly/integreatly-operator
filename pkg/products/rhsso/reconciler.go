@@ -195,7 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhsso cluster reconciler: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing to config in rhsso cluster reconciler: %w", err)
 	}
 
 	phase, err = r.ReconcileBlackboxTargets(ctx, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")

@@ -68,7 +68,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	if config.GetNamespace() == "" {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-		configManager.WriteConfig(config)
+		if err := configManager.WriteConfig(config); err != nil {
+			return nil, fmt.Errorf("error writing ups config : %w", err)
+		}
 	}
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
@@ -76,7 +78,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		} else {
 			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
 		}
-		configManager.WriteConfig(config)
+		if err := configManager.WriteConfig(config); err != nil {
+			return nil, fmt.Errorf("error writing ups config : %w", err)
+		}
 	}
 
 	config.SetBlackboxTargetPath("/rest/auth/config/")

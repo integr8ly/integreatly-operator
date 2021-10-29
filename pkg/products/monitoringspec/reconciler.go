@@ -82,7 +82,10 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if config.GetNamespace() == "" || strings.Compare(config.GetNamespace(), installation.Spec.NamespacePrefix+defaultInstallationNamespace) != 0 {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	configManager.WriteConfig(config)
+	if err := configManager.WriteConfig(config); err != nil {
+		return nil, fmt.Errorf("error writing monitoring config : %w", err)
+	}
+
 	return &Reconciler{
 		Config:        config,
 		extraParams:   make(map[string]string),

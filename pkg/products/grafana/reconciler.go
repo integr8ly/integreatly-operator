@@ -82,7 +82,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	if config.GetNamespace() == "" {
 		config.SetNamespace(ns)
-		configManager.WriteConfig(config)
+		if err := configManager.WriteConfig(config); err != nil {
+			return nil, fmt.Errorf("error writing grafana config : %w", err)
+		}
 	}
 	if config.GetOperatorNamespace() == "" {
 		config.SetOperatorNamespace(config.GetNamespace())
@@ -171,7 +173,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionGrafana) {
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionGrafana))
-		r.ConfigManager.WriteConfig(r.Config)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing grafana config : %w", err)
+		}
 	}
 
 	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type)

@@ -70,13 +70,17 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-		configManager.WriteConfig(apicuritoConfig)
+		if err := configManager.WriteConfig(apicuritoConfig); err != nil {
+			return nil, fmt.Errorf("error writing apicurito config : %w", err)
+		}
 	}
 	if apicuritoConfig.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
 			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace())
 		}
-		configManager.WriteConfig(apicuritoConfig)
+		if err := configManager.WriteConfig(apicuritoConfig); err != nil {
+			return nil, fmt.Errorf("error writing apicurito config : %w", err)
+		}
 	}
 	apicuritoConfig.SetBlackboxTargetPath("/oauth/healthz")
 
