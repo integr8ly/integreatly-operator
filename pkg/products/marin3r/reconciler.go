@@ -80,7 +80,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	if config.GetNamespace() == "" {
 		config.SetNamespace(ns)
-		configManager.WriteConfig(config)
+		if err := configManager.WriteConfig(config); err != nil {
+			return nil, fmt.Errorf("error writing marin3r config : %w", err)
+		}
 	}
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {

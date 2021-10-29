@@ -221,7 +221,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if r.Config.GetHost() != route {
 		r.Config.SetHost(route)
-		r.ConfigManager.WriteConfig(r.Config)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing solution explorer config : %w", err)
+		}
 	}
 
 	phase, err = r.reconcileConsoleLink(ctx, serverClient)
@@ -440,7 +442,9 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 	if seCR.Status.Message == "OK" {
 		if r.Config.GetProductVersion() != integreatlyv1alpha1.ProductVersion(seCR.Status.Version) {
 			r.Config.SetProductVersion(seCR.Status.Version)
-			r.ConfigManager.WriteConfig(r.Config)
+			if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing solution explorer config : %w", err)
+			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
