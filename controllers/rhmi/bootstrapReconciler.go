@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -17,9 +18,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -193,6 +194,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
+
+		// temp code for RHOAM, remove once all clusters are upgraded to 1.14
+		// Remove all prometheus rules under redhat/sandbox-rhoam/rhoami-operator
+		phase, err = r.removePrometheusRules(ctx, serverClient, installation.Spec.NamespacePrefix)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to remove existing prometheus rules from rhoam-operator namespace", err)
+			return phase, errors.Wrap(err, "Failed to remove existing prometheus rules from rhoam-operator namespace")
+		}
+
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
@@ -202,6 +212,53 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	r.log.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) removePrometheusRules(ctx context.Context, serverClient k8sclient.Client, nsPrefix string) (integreatlyv1alpha1.StatusPhase, error) {
+	rhoamProductNamespaces, err := getRHOAMNamespaces(ctx, serverClient, nsPrefix)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, namespace := range rhoamProductNamespaces {
+		namespaceRules := &prometheusv1.PrometheusRuleList{}
+
+		err := serverClient.List(ctx, namespaceRules, k8sclient.InNamespace(namespace))
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		} else if k8serr.IsNotFound(err) || len(namespaceRules.Items) == 0 {
+			continue
+		}
+
+		// Exclude keycloak rule from the deletion as it gets recreated by keycloak operator
+		for _, rule := range namespaceRules.Items {
+			if rule.Name != "keycloak" {
+				err := serverClient.Delete(ctx, rule)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to remove %s rule: %s", rule.ObjectMeta.Name, err)
+				}
+			}
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func getRHOAMNamespaces(ctx context.Context, serverClient k8sclient.Client, nsPrefix string) ([]string, error) {
+	var namespaces []string
+	namespaceList := &corev1.NamespaceList{}
+	err := serverClient.List(ctx, namespaceList)
+	if err != nil {
+		return nil, err
+	}
+	// Only return namespaces that have the integreatly label and nsPrefix, but also return rhoam operator ns (it does not have the integreatly label on)
+	for _, namespace := range namespaceList.Items {
+		if !strings.Contains(namespace.Name, "observability") && strings.Contains(namespace.Name, nsPrefix) || namespace.Name == fmt.Sprintf("%soperator", nsPrefix) {
+			namespaces = append(namespaces, namespace.Name)
+		}
+	}
+
+	return namespaces, nil
 }
 
 // temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
