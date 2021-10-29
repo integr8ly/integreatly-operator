@@ -9,9 +9,23 @@ import (
 
 func mangedApiTargets() map[string][]string {
 	return map[string][]string{
-		// TODO: Should include other expected targets
 		ObservabilityProductNamespace: {
-			"/ratelimit/0",
+			"/integreatly-3scale-admin-ui",
+			"/integreatly-3scale-system-developer",
+			"/integreatly-3scale-system-master",
+			"/integreatly-grafana",
+			"/integreatly-rhsso",
+			"/integreatly-rhssouser",
+			"/redhat-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
+			"/redhat-rhoam-marin3r-ratelimit/0",
+			"/redhat-rhoam-rhsso-keycloak-service-monitor/0",
+			"/redhat-rhoam-rhsso-keycloak-service-monitor/1",
+			"/redhat-rhoam-rhsso-operator-keycloak-operator-metrics/0",
+			"/redhat-rhoam-rhsso-operator-keycloak-operator-metrics/1",
+			"/redhat-rhoam-user-sso-keycloak-service-monitor/0",
+			"/redhat-rhoam-user-sso-keycloak-service-monitor/1",
+			"/redhat-rhoam-user-sso-operator-keycloak-operator-metrics/0",
+			"/redhat-rhoam-user-sso-operator-keycloak-operator-metrics/1",
 		},
 	}
 }
