@@ -1,0 +1,12 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 1200
+---
+apiVersion: integreatly.org/v1alpha1
+kind: RHMI
+metadata:
+  name: rhoam
+status:
+  stages:
+    products:
+      phase: completed

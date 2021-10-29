@@ -1,0 +1,11 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  labels:
+    name: rhmi-operator
+status:
+  phase: Running
