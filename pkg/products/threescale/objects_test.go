@@ -795,3 +795,12 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		clusterVersion,
 	}
 }
+
+func getTestPreReqsReconcileBlackboxTargetsPhaseInProgress() []runtime.Object {
+	return []runtime.Object{
+		threescaleRoute1,
+		threescaleRoute4,
+		threescaleRoute5,
+		threescaleRoute6,
+	}
+}

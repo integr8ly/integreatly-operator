@@ -107,6 +107,13 @@ var (
 		"zync-database",
 		"zync-que",
 	}
+	uiBlackboxLabelName            = "uibbt"
+	systemProviderServiceLabel     = "system-provider"
+	systemProviderMonitoringLabel  = "system-provider-admin"
+	systemProviderRoutePrefix      = "3scale-admin"
+	systemDeveloperServiceLabel    = "system-developer"
+	systemDeveloperMonitoringLabel = "system-developer-admin"
+	systemDeveloperRoutePrefix     = "3scale"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
@@ -302,6 +309,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileRouteMonitoringLabel(ctx, serverClient, installation)
+	r.log.Infof("reconcileRouteMonitoringLabel", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile route monitoring label", err)
 		return phase, err
 	}
 
@@ -2030,6 +2044,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
+		if threescaleRoute == nil {
+			r.log.Info("Waiting for threescale Route creation (system-developer)")
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
 		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
 			Url:     "https://" + threescaleRoute.Spec.Host,
 			Service: "3scale-developer-console-ui",
@@ -2117,8 +2135,14 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 	if filterFn == nil {
 		filterFn = func(r routev1.Route) bool { return true }
 	}
-
-	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
+	var idtemplate string
+	if label == "system-developer-admin" || label == "system-provider-admin" {
+		idtemplate = uiBlackboxLabelName + "=%v"
+	} else {
+		idtemplate = "zync.3scale.net/route-to=%v"
+	}
+	//selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
+	selector, err := labels.Parse(fmt.Sprintf(idtemplate, label))
 	if err != nil {
 		return nil, err
 	}
@@ -2986,4 +3010,56 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 		return nil, fmt.Errorf("Error getting the backend-listener external route: %v", err)
 	}
 	return backendRoute, nil
+}
+
+func (r *Reconciler) applyMonitoringLabelToRoute(ctx context.Context, client k8sclient.Client,
+	serviceLabel string, monitoringLabel string, routePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
+	threescaleRoute, err := r.getThreescaleRoute(ctx, client, monitoringLabel, func(r routev1.Route) bool {
+		return strings.HasPrefix(r.Spec.Host, routePrefix)
+	})
+	if err != nil {
+		r.log.Info("Failed to retrieve threescale Route: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+	if threescaleRoute != nil {
+		//Monitoring label already exists on Route, do nothing
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	} else {
+		//add Monitoring Label to route with Service label
+		threescaleRoute, err = r.getThreescaleRoute(ctx, client, serviceLabel, func(r routev1.Route) bool {
+			return strings.HasPrefix(r.Spec.Host, routePrefix)
+		})
+		if threescaleRoute == nil {
+			//route with Service label not created yet, waiting
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		_, err := controllerutil.CreateOrUpdate(ctx, client, threescaleRoute, func() error {
+			owner.AddIntegreatlyOwnerAnnotations(threescaleRoute, r.installation)
+			threescaleRoute.Labels[uiBlackboxLabelName] = monitoringLabel
+			r.log.Info("Apply monitoring label " + monitoringLabel + " to route " + threescaleRoute.Name)
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling edit routes add label %v: %w", threescaleRoute, err)
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileRouteMonitoringLabel(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.applyMonitoringLabelToRoute(ctx, serverClient,
+		systemProviderServiceLabel, systemProviderMonitoringLabel, systemProviderRoutePrefix)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase,
+			"Failed to reconcile label "+systemProviderMonitoringLabel, err)
+		return phase, err
+	}
+	phase, err = r.applyMonitoringLabelToRoute(ctx, serverClient,
+		systemDeveloperServiceLabel, systemDeveloperMonitoringLabel, systemDeveloperRoutePrefix)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase,
+			"Failed to reconcile label "+systemDeveloperMonitoringLabel, err)
+		return phase, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

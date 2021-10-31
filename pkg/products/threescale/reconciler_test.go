@@ -1376,3 +1376,94 @@ func TestReconciler_getUserDiff(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_reconcileBlackboxTargets(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test - reconcileBlackboxTargets - PhaseCompleted",
+			fields: fields{
+				installation: getTestInstallation(),
+				ConfigManager: &config.ConfigReadWriterMock{ReadMonitoringFunc: func() (*config.Monitoring, error) {
+					return config.NewMonitoring(config.ProductConfig{
+						"NAMESPACE": "3scale",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)...),
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			name: "Test - reconcileBlackboxTargets - PhaseInProgress",
+			fields: fields{
+				installation: getTestInstallation(),
+				ConfigManager: &config.ConfigReadWriterMock{ReadMonitoringFunc: func() (*config.Monitoring, error) {
+					return config.NewMonitoring(config.ProductConfig{
+						"NAMESPACE": "3scale",
+					}), nil
+				}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, getTestPreReqsReconcileBlackboxTargetsPhaseInProgress()...),
+			},
+			want: integreatlyv1alpha1.PhaseInProgress,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				log:           getLogger(),
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+			}
+			got, err := r.reconcileBlackboxTargets(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileBlackboxTargets() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileBlackboxTargets() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
