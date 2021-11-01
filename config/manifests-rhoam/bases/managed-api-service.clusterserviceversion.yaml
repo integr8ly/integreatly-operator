@@ -11,7 +11,7 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
-  name: managed-api-service.v1.13.0
+  name: managed-api-service.v1.14.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -51,4 +51,4 @@ spec:
     matchLabels:
       alm-owner-rhoam: rhoam-operator
       operated-by: rhoam-operator
-  version: 1.13.0
+  version: 1.14.0
