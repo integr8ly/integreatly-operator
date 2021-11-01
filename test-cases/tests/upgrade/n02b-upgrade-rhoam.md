@@ -56,6 +56,12 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc get installplans -n redhat-rhoam-operator
    ```
 
+   You can check whether the `installplan` is for the proper RC by examining the output of the command below.
+
+   ```
+   oc get installplan install-<hash> --namespace redhat-rhoam-operator -o yaml
+   ```
+
    In case release candidate is service affecting, you need to approve the installPlan first.
 
    ```
