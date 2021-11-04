@@ -65,7 +65,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 		switch alertConfig.Type {
 		case marin3rconfig.AlertTypeSpike:
 			expr := fmt.Sprintf(
-				"max_over_time((increase(authorized_calls[1m]) + increase(limited_calls[1m]))[%s:]) > %d",
+				"max_over_time((sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m])))[%s:]) > %d",
 				alertConfig.Period, rateLimitRequestsPerUnit)
 			annotations := map[string]string{
 				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),
@@ -157,7 +157,7 @@ func increaseExpr(totalRequestsMetric, period string, comparisonOperator string,
 	}
 
 	result := fmt.Sprintf(
-		"(sum(increase(%s[%s]) %s (%f / 100 * %d)))",
+		"(sum(increase(%s[%s])) %s (%f / 100 * %d))",
 		totalRequestsMetric, period, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
 	)
 
