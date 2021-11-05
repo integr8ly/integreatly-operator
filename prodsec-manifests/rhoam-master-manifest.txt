@@ -3808,7 +3808,7 @@ services-rhoam:master/github.com/operator-framework/api-v0.3.20
 services-rhoam:master/github.com/operator-framework/api-v0.3.5
 services-rhoam:master/github.com/operator-framework/java-operator-plugins-v0.0.0-20210708174638-463fb91f3d5e
 services-rhoam:master/github.com/operator-framework/operator-lib-v0.1.0
-services-rhoam:master/github.com/operator-framework/operator-lib-v0.5.0
+services-rhoam:master/github.com/operator-framework/operator-lib-v0.6.0
 services-rhoam:master/github.com/operator-framework/operator-lifecycle-manager-v0.0.0-20191115003340-16619cd27fa5
 services-rhoam:master/github.com/operator-framework/operator-lifecycle-manager-v0.0.0-20200508205316-9ffa1fdb8dcf
 services-rhoam:master/github.com/operator-framework/operator-lifecycle-manager-v0.17.0
