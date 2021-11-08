@@ -2080,12 +2080,28 @@ func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8scl
 			return phase, fmt.Errorf("error creating threescale prometheus probe: %w", err)
 		}
 
-		// Create a prometheus probe for the developer console ui
+		// Get custom system-developer route by UIBBT label key
 		threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
-			return strings.HasPrefix(r.Spec.Host, "3scale.")
+			_, ok := r.Labels["uibbt"]
+			return ok
 		})
 		if err != nil {
-			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+			r.log.Info("Failed to get threescaleRoute by UIBBT label key: " + err.Error())
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		//  If custom route does not exist - get route by 3scale Prefix
+		if threescaleRoute == nil {
+			// Create a prometheus probe for the developer console ui
+			threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+				return strings.HasPrefix(r.Spec.Host, "3scale.")
+			})
+			if err != nil {
+				r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+				return integreatlyv1alpha1.PhaseInProgress, nil
+			}
+		}
+		if threescaleRoute == nil {
+			r.log.Info("Failed to retrieve threescale system-developer Route with 3scale prefix or uibbt label")
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 		phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-developer", "http_2xx", prometheus.ProbeTargetStaticConfig{
