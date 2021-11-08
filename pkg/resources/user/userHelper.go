@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -214,32 +215,75 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 	return identitiesByProvider, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
+func GetUsersByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.UserList, error) {
+	usersList := &usersv1.UserList{}
+
+	err := serverClient.List(ctx, usersList)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get identities by provider %s", providerName)
+	}
+
+	usersByProvider := &usersv1.UserList{}
+	for _, user := range usersList.Items {
+		for _, identity := range user.Identities {
+			if strings.Contains(identity, providerName) {
+				usersByProvider.Items = append(usersByProvider.Items, user)
+			}
+		}
+	}
+
+	return usersByProvider, nil
+}
+
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
 	requiredIdp, err := getIdpName()
 	if err != nil {
 		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
 	}
 
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
+	usersByIDP, err := GetUsersByProviderName(ctx, serverClient, requiredIdp)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting identity list for multi tenants")
 	}
-	for _, identity := range identities.Items {
 
-		var email = ""
-		if identity.Extra["email"] != "" {
-			email = identity.Extra["email"]
-		} else {
-			email = SetUserNameAsEmail(identity.User.Name)
-		}
-
-		users = append(users, MultiTenantUser{
-			Username:   identity.User.Name,
-			TenantName: SanitiseTenantUserName(identity.User.Name),
-			Email:      email,
-			UID:        string(identity.User.UID),
-		})
+	identitiesByIDP, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting identity list for multi tenants")
 	}
+
+	for _, user := range usersByIDP.Items {
+		if isTenantCreatedAfterInstallation(user, installation) {
+			identityFound := false
+			for _, identity := range identitiesByIDP.Items {
+				if identityForUserFound(user, identity) {
+					var email = ""
+					if identity.Extra["email"] != "" {
+						email = identity.Extra["email"]
+					} else {
+						email = SetUserNameAsEmail(identity.User.Name)
+					}
+
+					users = append(users, MultiTenantUser{
+						Username:   identity.User.Name,
+						TenantName: SanitiseTenantUserName(identity.User.Name),
+						Email:      email,
+						UID:        string(identity.User.UID),
+					})
+
+					identityFound = true
+				}
+			}
+			if identityFound != true {
+				users = append(users, MultiTenantUser{
+					Username:   user.Name,
+					TenantName: SanitiseTenantUserName(user.Name),
+					Email:      SetUserNameAsEmail(user.Name),
+					UID:        string(user.UID),
+				})
+			}
+		}
+	}
+
 	return users, nil
 }
 
@@ -288,4 +332,12 @@ func SetUserNameAsEmail(userName string) string {
 
 	// Otherwise sanitise and append default domain
 	return fmt.Sprintf("%s%s", SanitiseTenantUserName(userName), defaultEmailDomain)
+}
+
+func isTenantCreatedAfterInstallation(user usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
+	return user.CreationTimestamp.Time.After(installation.CreationTimestamp.Time)
+}
+
+func identityForUserFound(user usersv1.User, identity usersv1.Identity) bool {
+	return user.FullName == identity.Name
 }
