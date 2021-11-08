@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
 	"os"
@@ -214,7 +215,7 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 	return identitiesByProvider, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
 	requiredIdp, err := getIdpName()
 	if err != nil {
 		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
@@ -225,20 +226,21 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 		return nil, fmt.Errorf("Error getting identity list for multi tenants")
 	}
 	for _, identity := range identities.Items {
+		if isTenantCreatedAfterInstallation(identity, installation) {
+			var email = ""
+			if identity.Extra["email"] != "" {
+				email = identity.Extra["email"]
+			} else {
+				email = SetUserNameAsEmail(identity.User.Name)
+			}
 
-		var email = ""
-		if identity.Extra["email"] != "" {
-			email = identity.Extra["email"]
-		} else {
-			email = SetUserNameAsEmail(identity.User.Name)
+			users = append(users, MultiTenantUser{
+				Username:   identity.User.Name,
+				TenantName: SanitiseTenantUserName(identity.User.Name),
+				Email:      email,
+				UID:        string(identity.User.UID),
+			})
 		}
-
-		users = append(users, MultiTenantUser{
-			Username:   identity.User.Name,
-			TenantName: SanitiseTenantUserName(identity.User.Name),
-			Email:      email,
-			UID:        string(identity.User.UID),
-		})
 	}
 	return users, nil
 }
@@ -288,4 +290,8 @@ func SetUserNameAsEmail(userName string) string {
 
 	// Otherwise sanitise and append default domain
 	return fmt.Sprintf("%s%s", SanitiseTenantUserName(userName), defaultEmailDomain)
+}
+
+func isTenantCreatedAfterInstallation(identity usersv1.Identity, installation *integreatlyv1alpha1.RHMI) bool {
+	return identity.CreationTimestamp.Time.After(installation.CreationTimestamp.Time)
 }

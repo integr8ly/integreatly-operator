@@ -3,11 +3,14 @@ package user
 import (
 	"context"
 	"fmt"
-	configv1 "github.com/openshift/api/config/v1"
 	"testing"
+	"time"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -284,6 +287,54 @@ func TestSetUserNameAsEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := SetUserNameAsEmail(tt.args.userName); got != tt.want {
 				t.Errorf("SetUserNameAsEmail() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTenantCreationTimeLogic(t *testing.T) {
+
+	tests := []struct {
+		Name           string
+		Installation   *integreatlyv1alpha1.RHMI
+		Identity       userv1.Identity
+		ExpectedStatus bool
+	}{
+		{
+			Name: "Test that a user is created past RHOAM installation",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			Identity: userv1.Identity{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: true,
+		},
+		{
+			Name: "Test that a user is create pre installation of RHOAM",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			Identity: userv1.Identity{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			isTenantCreatedAfterInstallation := isTenantCreatedAfterInstallation(tt.Identity, tt.Installation)
+
+			if isTenantCreatedAfterInstallation != tt.ExpectedStatus {
+				t.Fatalf("Expected %v phase but got %v", tt.ExpectedStatus, isTenantCreatedAfterInstallation)
 			}
 		})
 	}
