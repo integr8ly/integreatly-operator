@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    containerImage: quay.io/austincunningham/3scale-operator:cluster-scoped
     createdAt: "2019-05-30T22:40:00Z"
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
@@ -393,7 +393,7 @@ spec:
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:333e5f8814df86e5c28e9cef1b5df3562080f855d4ba65049cab741f3e140c0b
                 - name: RELATED_IMAGE_OC_CLI
                   value: registry.redhat.io/openshift4/ose-cli@sha256:279e04b357bde2f8045fd2c3a859cdfffe107cd6b4f91effe64e5b11cc30561e
-                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+                image: quay.io/austincunningham/3scale-operator:cluster-scoped
                 name: manager
                 resources:
                   limits:
@@ -937,11 +937,11 @@ spec:
   version: 0.8.0
   relatedImages:
   - name: 3scale-rhel7-operator-9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7-annotation
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    image: quay.io/austincunningham/3scale-operator:cluster-scoped
   - name: kube-rbac-proxy
     image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:484e26e348354e6dd28934aedbcd139c786284a88a4e16a7652b5a52bd0beeac
   - name: manager
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    image: quay.io/austincunningham/3scale-operator:cluster-scoped
   - name: backend
     image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:ab7c488623f350a0c5b6cb506c2aa97f7d6f5d9320f93a34e44689b4c138f0a3
   - name: apicast
