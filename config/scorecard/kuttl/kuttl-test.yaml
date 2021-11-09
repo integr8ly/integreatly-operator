@@ -1,0 +1,9 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+startControlPlane: false
+skipDelete: true
+suppressLog: events
+#timeout: 300
+namespace: redhat-rhoam-operator
+testDirs:
+- rhoam-install
