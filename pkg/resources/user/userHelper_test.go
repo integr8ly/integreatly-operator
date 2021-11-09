@@ -7,9 +7,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	"time"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -361,9 +364,10 @@ func TestGetMultitenantUsers(t *testing.T) {
 	_ = userv1.AddToScheme(scheme)
 
 	tests := []struct {
-		Name       string
-		FakeClient k8sclient.Client
-		Assertion  func(users []MultiTenantUser) error
+		Name           string
+		FakeClient     k8sclient.Client
+		InstallationCR *integreatlyv1alpha1.RHMI
+		Assertion      func(users []MultiTenantUser) error
 	}{
 		{
 			Name: "Test that users are returned correctly",
@@ -372,25 +376,33 @@ func TestGetMultitenantUsers(t *testing.T) {
 					Items: []userv1.User{
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-1",
-								UID:  types.UID("test-1"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-2",
-								UID:  types.UID("test-2"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								UID:               types.UID("test-2"),
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-3",
-								UID:  types.UID("test-3"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								UID:               types.UID("test-3"),
 							},
 						},
 					},
 				},
 			),
+			InstallationCR: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
 			Assertion: confirmThatCorrectNumberOfUsersIsReturned,
 		},
 		{
@@ -400,20 +412,23 @@ func TestGetMultitenantUsers(t *testing.T) {
 					Items: []userv1.User{
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-1",
-								UID:  types.UID("test-1"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-2",
-								UID:  types.UID("test-2"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								UID:               types.UID("test-2"),
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "test-3",
-								UID:  types.UID("test-3"),
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								UID:               types.UID("test-3"),
 							},
 						},
 					},
@@ -446,12 +461,17 @@ func TestGetMultitenantUsers(t *testing.T) {
 					},
 				},
 			),
+			InstallationCR: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
 			Assertion: confirmThatUsersHaveCorrectEmailAddressesSet,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			multitenantUsers, err := GetMultiTenantUsers(context.TODO(), tt.FakeClient)
+			multitenantUsers, err := GetMultiTenantUsers(context.TODO(), tt.FakeClient, tt.InstallationCR)
 			if err != nil {
 				t.Fatalf("Failed test with: %v", err)
 			}
@@ -460,6 +480,54 @@ func TestGetMultitenantUsers(t *testing.T) {
 				t.Fatalf("Failed assertion: %v", err)
 			}
 
+		})
+	}
+}
+
+func TestTenantCreationTimeLogic(t *testing.T) {
+
+	tests := []struct {
+		Name           string
+		Installation   *integreatlyv1alpha1.RHMI
+		User           userv1.User
+		ExpectedStatus bool
+	}{
+		{
+			Name: "Test that a user is created past RHOAM installation",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			User: userv1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: true,
+		},
+		{
+			Name: "Test that a user is create pre installation of RHOAM",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			User: userv1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			isTenantCreatedAfterInstallation := isTenantCreatedAfterInstallation(&tt.User, tt.Installation)
+
+			if isTenantCreatedAfterInstallation != tt.ExpectedStatus {
+				t.Fatalf("Expected %v phase but got %v", tt.ExpectedStatus, isTenantCreatedAfterInstallation)
+			}
 		})
 	}
 }

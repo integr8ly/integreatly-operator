@@ -445,7 +445,7 @@ func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8
 
 func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	allTenants, err := userHelper.GetMultiTenantUsers(ctx, serverClient)
+	allTenants, err := userHelper.GetMultiTenantUsers(ctx, serverClient, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting teants for OAuth clients secrets: %w", err)
 	}
