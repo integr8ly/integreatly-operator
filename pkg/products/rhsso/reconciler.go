@@ -508,12 +508,14 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 		return nil, err
 	}
 
-	for _, osUser := range added {
-		email, err := userHelper.GetUserEmailFromIdentity(ctx, serverClient, osUser)
+	identitiesList := usersv1.IdentityList{}
+	err = serverClient.List(ctx, &identitiesList)
+	if err != nil {
+		return nil, err
+	}
 
-		if err != nil {
-			return nil, err
-		}
+	for _, osUser := range added {
+		email := userHelper.GetUserEmailFromIdentity(ctx, serverClient, osUser, identitiesList)
 
 		if email == "" {
 			email = userHelper.SetUserNameAsEmail(osUser.Name)
