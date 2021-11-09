@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
 	"os"
@@ -230,7 +231,7 @@ func GetUsersByProviderName(ctx context.Context, serverClient k8sclient.Client, 
 	return usersByProvider, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
 	requiredIdp, err := getIdpName()
 	if err != nil {
 		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
@@ -248,15 +249,21 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 	}
 
 	for _, user := range usersList.Items {
-		users = append(users, MultiTenantUser{
-			Username:   user.Name,
-			TenantName: SanitiseTenantUserName(user.Name),
-			Email:      getUserEmail(&user, identities),
-			UID:        string(user.UID),
-		})
+		if isTenantCreatedAfterInstallation(&user, installation) {
+			users = append(users, MultiTenantUser{
+				Username:   user.Name,
+				TenantName: SanitiseTenantUserName(user.Name),
+				Email:      getUserEmail(&user, identities),
+				UID:        string(user.UID),
+			})
+		}
 	}
 
 	return users, nil
+}
+
+func isTenantCreatedAfterInstallation(userCR *usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
+	return userCR.CreationTimestamp.Time.After(installation.CreationTimestamp.Time)
 }
 
 func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
