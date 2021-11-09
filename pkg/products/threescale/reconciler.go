@@ -1589,10 +1589,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 
 	// deleting MT accounts in 3scale
-	accountsToBeDeleted, err := getMTAccountsToBeDeleted(ctx, serverClient, allAccounts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
+	accountsToBeDeleted := getMTAccountsToBeDeleted(mtUserIdentities, allAccounts)
 	r.log.Infof(
 		"Deleting unused tenant accounts",
 		l.Fields{
@@ -1900,27 +1897,20 @@ func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accoun
 	return accountsToBeCreated, emailAddrs
 }
 
-func getMTAccountsToBeDeleted(ctx context.Context, serverClient k8sclient.Client, accounts []AccountDetail) ([]AccountDetail, error) {
+func getMTAccountsToBeDeleted(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) []AccountDetail {
 	accountsToBeDeleted := []AccountDetail{}
-	usersList := &usersv1.UserList{}
-	err := serverClient.List(ctx, usersList)
-	if err != nil {
-		return nil, fmt.Errorf("could not list user CRs while looking for tenants for deletion: %s", err)
-	}
-
 	for _, account := range accounts {
 		foundUser := false
-		for _, user := range usersList.Items {
-			if account.OrgName == user.Name {
+		for _, identity := range usersIdentity {
+			if account.OrgName == identity.TenantName {
 				foundUser = true
-				break
 			}
 		}
 		if !foundUser {
 			accountsToBeDeleted = append(accountsToBeDeleted, account)
 		}
 	}
-	return accountsToBeDeleted, nil
+	return accountsToBeDeleted
 }
 
 func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
