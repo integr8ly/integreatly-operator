@@ -1,9 +1,10 @@
 ---
 tests:
   - name: 3scale-test
-    image: quay.io/rh_integration/3scale-testsuite:2.9.0
+    image: quay.io/rh_integration/3scale-testsuite
     timeout: 3600
     imagePullSecretEnvVar: "RH_INTEGRATION"
+    argument: "smoke"
     envVars:
       - name: NAMESPACE
-        value: redhat-rhmi-3scale
+        value: redhat-rhoam-3scale
