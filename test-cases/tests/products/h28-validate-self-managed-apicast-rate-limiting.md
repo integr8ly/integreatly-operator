@@ -30,10 +30,10 @@ Workload web app not deployed on the cluster
 - Create a request via Managed APIcast and make sure it is counted just once.
 - Create a request via Self Managed APIcast and make sure it is counted just once.
 
-Note: to create a request you can use `curl` as follows. It prints `200` if everything goes ok:
+Note: to create a request you can use `curl` as follows. It prints `200` and datetime if everything goes ok:
 
-```curl -s -o /dev/null -w "%{http_code}" "<your-apicast-url>/?user_key=<your-user-key>
-
+```
+curl -s -o /dev/null -w "%{http_code}" "<your-apicast-url>/?user_key=<your-user-key>" && echo -n " - " && date && echo ""
 ```
 
 Note: Apicasts might not call backend-listeners for each request so in case of Self Managed Apicast slightly more requests might be allowed than expected.
@@ -56,7 +56,7 @@ Other approach might be to check backend-listeners logs. For each request there 
 - Do 5 requests via Self Managed Apicast and 5 requests via Managed apicast
 - Do one more request via both SM and Managed Apicasts to see that 429 is received for both
 
-Note: Changing requests per minute needs to be done via ‘ratelimit-config’ Config Map in marin3r namespace, but rhoam operator needs to be scaled to 0 (zero) beforehand otherwise it reconciles the limit back.
+Note: Changing requests per minute needs to be done via ‘ratelimit-config’ ConfigMap in marin3r namespace, but rhoam operator needs to be scaled to 0 (zero) beforehand otherwise it reconciles the limit back. Also, all the marin3r pods need to be restarted for the change to be applied.
 
 **3. Make sure there is not any (3scale) internal traffic to Backend Listeners rate-limited**
 
