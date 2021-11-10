@@ -6,7 +6,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
-	"os"
 	"regexp"
 	"strings"
 
@@ -232,14 +231,10 @@ func GetUsersByProviderName(ctx context.Context, serverClient k8sclient.Client, 
 }
 
 func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
-	requiredIdp, err := getIdpName()
+	identities := &usersv1.IdentityList{}
+	err = serverClient.List(ctx, identities)
 	if err != nil {
-		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
-	}
-
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting identity list for multi tenants")
+		return nil, fmt.Errorf("Error getting identity list")
 	}
 
 	usersList := &usersv1.UserList{}
@@ -290,19 +285,13 @@ func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
 }
 
 func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
-	requiredIdp, err := getIdpName()
+	users := &usersv1.UserList{}
+	err := serverClient.List(ctx, users)
 	if err != nil {
-		return 0, fmt.Errorf("error when pulling IDP name from the envvar")
+		return 0, err
 	}
 
-	log.Infof("Looking for identities from", l.Fields{"idp": requiredIdp})
-
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting identity list for multi tenants")
-	}
-
-	return len(identities.Items), nil
+	return len(users.Items), nil
 }
 
 func SanitiseTenantUserName(username string) string {
@@ -314,15 +303,6 @@ func SanitiseTenantUserName(username string) string {
 
 	// Remove occurrence of replacement character at end of string
 	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
-}
-
-func getIdpName() (string, error) {
-	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
-	if ok != true {
-		return "devsandbox", nil
-	}
-
-	return idpName, nil
 }
 
 func SetUserNameAsEmail(userName string) string {
