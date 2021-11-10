@@ -222,7 +222,6 @@ test/e2e/multitenant-rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/multitenant-rhoam/prow: export WATCH_NAMESPACE := sandbox-rhoam-operator
 test/e2e/multitenant-rhoam/prow: export NAMESPACE_PREFIX := sandbox-rhoam-
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
-test/e2e/multitenant-rhoam/prow: export IDENTITY_PROVIDER_NAME ?= DevSandbox
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
 test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
