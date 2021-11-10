@@ -49,8 +49,7 @@ func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client
 		for _, identity := range identitiesList.Items {
 			if identityName == identity.Name {
 				if identity.Extra["email"] != "" {
-					email = identity.Extra["email"]
-					break
+					return identity.Extra["email"]
 				}
 			}
 		}
