@@ -69,6 +69,12 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
+		{
+			[]TestCase{
+				{"M01 - Verify multitenancy works as expected", TestMultitenancy},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeMultitenantManagedApi},
+		},
 	}
 
 	IDP_BASED_TESTS = []TestSuite{
