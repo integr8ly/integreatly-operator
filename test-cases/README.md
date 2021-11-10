@@ -11,18 +11,28 @@
 
 ## Index
 
-- [How to create a test case](#How-to-create-a-test-case)
-- [How to include a manual test case in the next release](#How-to-include-a-manual-test-case-in-the-next-release)
-- [How to bulk update the target version on the test cases](#How-to-bulk-update-the-target-version-on-the-test-cases)
-- [How to estimate a test case](#How-to-estimate-a-test-case)
-- [How to automate a test case and link it back](#How-to-automate-a-test-case-and-link-it-back)
-- [How to create Jira tasks for the manual tests](#How-to-create-Jira-tasks-for-the-manual-tests)
-- [List and export the test cases](#List-and-export-the-test-cases)
-- [How to upload all test case to Polarion](#How-to-upload-all-test-case-to-Polarion)
-- [How to report the results of the manual tests to Polarion](#How-to-report-the-results-of-the-manual-tests-to-Polarion)
-- [Test Case Metadata](#Test-Case-Metadata)
-- [Prettier](#Prettier)
-- [How to export the test cases to CSV](#How-to-export-the-test-cases-to-CSV)
+- [Integreatly Test Cases](#integreatly-test-cases)
+  - [Index](#index)
+  - [How to create a test case](#how-to-create-a-test-case)
+  - [How to include a manual test case in the next release](#how-to-include-a-manual-test-case-in-the-next-release)
+  - [How to bulk update the target version on the test cases](#how-to-bulk-update-the-target-version-on-the-test-cases)
+  - [How to estimate a test case](#how-to-estimate-a-test-case)
+  - [How to automate a test case and link it back](#how-to-automate-a-test-case-and-link-it-back)
+  - [How to create Jira tasks for the manual tests](#how-to-create-jira-tasks-for-the-manual-tests)
+  - [List and export the test cases](#list-and-export-the-test-cases)
+  - [Polarion](#polarion)
+    - [How to upload all test case to Polarion](#how-to-upload-all-test-case-to-polarion)
+    - [How to report the results of the manual tests to Polarion](#how-to-report-the-results-of-the-manual-tests-to-polarion)
+  - [Test Case Metadata](#test-case-metadata)
+    - [Products](#products)
+      - [Product names:](#product-names)
+    - [Environments](#environments)
+    - [Targets](#targets)
+    - [Tags](#tags)
+    - [Components](#components)
+    - [Automation Jiras](#automation-jiras)
+  - [Prettier](#prettier)
+  - [How to export the test cases to CSV](#how-to-export-the-test-cases-to-csv)
 
 ## How to create a test case
 
@@ -208,15 +218,19 @@ to pretty print the csv output on the terminal:
 ./tools.sh export csv --product PRODUCT_NAME | column -t -s, | less -S
 ```
 
-## How to upload all test case to Polarion
+## Polarion
+
+**For uploading test cases/results to Polarion, use credentials for RHMI/RHOAM Polarion bot account stored in [vault](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md)**
+
+### How to upload all test case to Polarion
 
 This command will automatically upload all test cases to Polarion:
 
 ```bash
-POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polarion testcase --product PRODUCT_NAME
+POLARION_USERNAME=bot_username POLARION_PASSWORD=bot_password ./tools.sh polarion testcase --product PRODUCT_NAME
 ```
 
-## How to report the results of the manual tests to Polarion
+### How to report the results of the manual tests to Polarion
 
 > Attention: before doing this ensure to have uploaded all test cases to Polarion
 
@@ -225,7 +239,7 @@ This command will read all test results from Jira, and upload them to Polarion.
 For parameter `template`, use the required template id from `Test Runs -> Manage Templates`
 
 ```bash
-JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME --template v1_0_0_rc1
+JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=bot_username POLARION_PASSWORD=bot_password ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME --template v1_0_0_rc1
 ```
 
 ## Test Case Metadata
