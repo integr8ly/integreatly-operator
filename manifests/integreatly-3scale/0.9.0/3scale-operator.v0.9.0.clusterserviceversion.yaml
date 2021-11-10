@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    containerImage: quay.io/austincunningham/3scale-operator:cluster-scoped
     createdAt: "2019-05-30T22:40:00Z"
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
@@ -181,8 +181,8 @@ metadata:
     support: Red Hat
     tectonic-visibility: ocs
     description: 3scale Operator to provision 3scale and publish/manage API
-    olm.skipRange: '>=0.7.0 <0.8.0'
-  name: 3scale-operator.v0.8.0
+    olm.skipRange: '>=0.8.0 <0.9.0'
+  name: 3scale-operator.v0.9.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -344,7 +344,7 @@ spec:
               labels:
                 com.redhat.component-name: 3scale-operator
                 com.redhat.component-type: infrastructure
-                com.redhat.component-version: 0.8.0
+                com.redhat.component-version: 0.9.0
                 com.redhat.product-name: 3scale
                 com.redhat.product-version: "2.11"
                 control-plane: controller-manager
@@ -368,9 +368,7 @@ spec:
                 - /manager
                 env:
                 - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                  value: ""
                 - name: RELATED_IMAGE_BACKEND
                   value: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:ab7c488623f350a0c5b6cb506c2aa97f7d6f5d9320f93a34e44689b4c138f0a3
                 - name: RELATED_IMAGE_APICAST
@@ -915,7 +913,7 @@ spec:
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: false
+  - supported: true
     type: AllNamespaces
   keywords:
   - 3scale
@@ -933,15 +931,15 @@ spec:
   maturity: stable
   provider:
     name: Red Hat
-  replaces: 3scale-operator.v0.7.0
-  version: 0.8.0
+  replaces: 3scale-operator.v0.8.0
+  version: 0.9.0
   relatedImages:
   - name: 3scale-rhel7-operator-9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7-annotation
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    image: quay.io/austincunningham/3scale-operator:cluster-scoped
   - name: kube-rbac-proxy
     image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:484e26e348354e6dd28934aedbcd139c786284a88a4e16a7652b5a52bd0beeac
   - name: manager
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:9b3d2fb6a8c86fad0dd6e89beab6f28bc837641c00bf7e36ad5684873565c1a7
+    image: quay.io/austincunningham/3scale-operator:cluster-scoped
   - name: backend
     image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:ab7c488623f350a0c5b6cb506c2aa97f7d6f5d9320f93a34e44689b4c138f0a3
   - name: apicast
