@@ -104,13 +104,23 @@ var _ = BeforeSuite(func(done Done) {
 	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, bootStrapStageTimeout, string(rhmiv1alpha1.BootstrapStage))
 	Expect(err).NotTo(HaveOccurred())
 
-	// wait for middleware-monitoring to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
-	Expect(err).NotTo(HaveOccurred())
+	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
+		//Observability Operator
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
+		Expect(err).NotTo(HaveOccurred())
 
-	// wait for middleware-monitoring to deploy
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
-	Expect(err).NotTo(HaveOccurred())
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.ObservabilityStage))
+		Expect(err).NotTo(HaveOccurred())
+
+	} else {
+		// AMO, wait for middleware-monitoring to deploy
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
+		Expect(err).NotTo(HaveOccurred())
+
+		// wait for middleware-monitoring to deploy
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	// wait for keycloak-operator to deploy
 	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
@@ -133,7 +143,7 @@ var _ = BeforeSuite(func(done Done) {
 
 	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		products = map[string]string{
-			"3scale":   "3scale-operator",
+			"3scale":   "threescale-operator-controller-manager",
 			"user-sso": "keycloak-operator",
 		}
 	}
