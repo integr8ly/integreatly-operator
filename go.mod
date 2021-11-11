@@ -49,9 +49,9 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.21.2
+	k8s.io/api v0.22.1
 	k8s.io/apiextensions-apiserver v0.21.2
-	k8s.io/apimachinery v0.21.2
+	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 	sigs.k8s.io/controller-runtime v0.9.2
@@ -60,19 +60,19 @@ require (
 
 replace (
 	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1
 	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 	github.com/operator-framework/operator-registry => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v1.12.0
-	k8s.io/api => k8s.io/api v0.0.0-20200331211856-3c24962070e9
+	k8s.io/api => k8s.io/api v0.20.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
 	k8s.io/apiserver => k8s.io/apiserver v0.20.2
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.20.2
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20200331211856-d847b4c9642e
+	k8s.io/client-go => k8s.io/client-go v0.20.6
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.20.6
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.20.6
 	k8s.io/code-generator => k8s.io/code-generator v0.20.6
