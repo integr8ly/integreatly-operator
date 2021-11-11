@@ -69,5 +69,3 @@ aws ec2 describe-vpcs --filter "Name=tag-value,Values=$CID"
 > - Standalone VPC route table exists, has the correct tag and has a route targeting the peering connection
 >
 > - Cluster route tables with the correct tag exist and contain a route to the peering connection and the standalone vpc
->
-> Verify no new VPC is created when the CIDR block is updated in the \_network section of the `cloud-resources-aws-strategies` config map
