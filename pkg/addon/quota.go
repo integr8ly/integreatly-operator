@@ -559,11 +559,11 @@ var quotaConfig = `
 var mtQuotaConfig = `
 [
     {
-        "name":"50 Million",
-        "param":"500",
+        "name":"1 Million",
+        "param":"10",
         "rate-limiting":{
             "unit":"minute",
-            "requests_per_unit":34723,
+            "requests_per_unit":695,
             "alert_limits":[
                 
             ]
@@ -596,7 +596,7 @@ var mtQuotaConfig = `
                 }
             },
             "apicast_production":{
-                "replicas":3,
+                "replicas":2,
                 "resources":{
                     "requests":{
                         "cpu":0.6,
@@ -609,7 +609,7 @@ var mtQuotaConfig = `
                 }
             },
             "ratelimit":{
-                "replicas":3,
+                "replicas":2,
                 "resources":{
                     "requests":{
                         "cpu":0.15,
