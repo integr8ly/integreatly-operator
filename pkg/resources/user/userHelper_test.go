@@ -3,13 +3,19 @@ package user
 import (
 	"context"
 	"fmt"
-	configv1 "github.com/openshift/api/config/v1"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
+	corev1 "k8s.io/api/core/v1"
+	"time"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -32,40 +38,34 @@ func TestGetUserEmailFromIdentity(t *testing.T) {
 		Name          string
 		FakeClient    k8sclient.Client
 		User          userv1.User
+		Identities    userv1.IdentityList
 		ExpectedEmail string
 		ExpectedError bool
 	}{
 		{
-			Name: "Test get email from identity",
-			FakeClient: fake.NewFakeClientWithScheme(scheme, &userv1.Identity{
-				ObjectMeta: v1.ObjectMeta{
-					Name: testIdentity,
-				},
-				Extra: map[string]string{"email": testEmail},
-			}),
-			User: userv1.User{
-				Identities: []string{testIdentity},
-			},
-			ExpectedEmail: testEmail,
-			ExpectedError: false,
-		},
-		{
-			Name:       "Test error getting identity",
+			Name:       "Test get email from identity",
 			FakeClient: fake.NewFakeClientWithScheme(scheme),
 			User: userv1.User{
 				Identities: []string{testIdentity},
 			},
-			ExpectedEmail: "",
-			ExpectedError: true,
+			Identities: userv1.IdentityList{
+				Items: []userv1.Identity{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: testIdentity,
+						},
+						Extra: map[string]string{"email": testEmail},
+					},
+				},
+			},
+			ExpectedEmail: testEmail,
+			ExpectedError: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			got, err := GetUserEmailFromIdentity(context.TODO(), tt.FakeClient, tt.User)
-			if (err != nil) != tt.ExpectedError {
-				t.Errorf("GetUserEmailFromIdentity() error = %v, ExpectedErr %v", err, tt.ExpectedError)
-				return
-			}
+			got := GetUserEmailFromIdentity(context.TODO(), tt.FakeClient, tt.User, tt.Identities)
+
 			if got != tt.ExpectedEmail {
 				t.Errorf("GetUserEmailFromIdentity() got = %v, want %v", got, tt.ExpectedEmail)
 			}
@@ -287,4 +287,285 @@ func TestSetUserNameAsEmail(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUsersReturnedByProvider(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name       string
+		FakeClient k8sclient.Client
+		Assertion  func(userv1.UserList) error
+	}{
+		{
+			Name: "Test that users are returned correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-1",
+							},
+							Identities: []string{
+								"rhd:1243634215613",
+								"someAwesomeIdentity:123456788",
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-2",
+							},
+							Identities: []string{
+								"someAwesomeIdentity:123456788",
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-3",
+							},
+							Identities: []string{
+								"someAwesomeIdentity:123456788",
+								"someAwesomeIdentity2:421453151",
+								"rhd:1243634215613",
+							},
+						},
+					},
+				},
+			),
+			Assertion: assertThatUsersAreReturnedCorrectly,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			usersList, err := GetUsersByProviderName(context.TODO(), tt.FakeClient, "rhd")
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if err := tt.Assertion(*usersList); err != nil {
+				t.Fatalf("Failed assertion: %v", err)
+			}
+
+		})
+	}
+}
+
+func assertThatUsersAreReturnedCorrectly(usersList userv1.UserList) error {
+	if len(usersList.Items) != 2 {
+		return fmt.Errorf("not all users have been found, expected amount of users is 2, actual is %v", len(usersList.Items))
+	}
+
+	return nil
+}
+
+func TestGetMultitenantUsers(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		InstallationCR *integreatlyv1alpha1.RHMI
+		Assertion      func(users []MultiTenantUser) error
+	}{
+		{
+			Name: "Test that users are returned correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								UID:               types.UID("test-2"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								UID:               types.UID("test-3"),
+							},
+						},
+					},
+				},
+			),
+			InstallationCR: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			Assertion: confirmThatCorrectNumberOfUsersIsReturned,
+		},
+		{
+			Name: "Test that users email addresses are setup correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								UID:               types.UID("test-2"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								UID:               types.UID("test-3"),
+							},
+						},
+					},
+				},
+				&userv1.IdentityList{
+					Items: []userv1.Identity{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testIdp:test-1",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-1",
+								UID:  types.UID("test-1"),
+							},
+							Extra: map[string]string{
+								"email": "test1email@email.com",
+							},
+							ProviderName: "devsandbox",
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testIdp:test-2",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-2",
+								UID:  types.UID("test-2"),
+							},
+							ProviderName: "devsandbox",
+						},
+					},
+				},
+			),
+			InstallationCR: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			Assertion: confirmThatUsersHaveCorrectEmailAddressesSet,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			multitenantUsers, err := GetMultiTenantUsers(context.TODO(), tt.FakeClient, tt.InstallationCR)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if err := tt.Assertion(multitenantUsers); err != nil {
+				t.Fatalf("Failed assertion: %v", err)
+			}
+
+		})
+	}
+}
+
+func TestTenantCreationTimeLogic(t *testing.T) {
+
+	tests := []struct {
+		Name           string
+		Installation   *integreatlyv1alpha1.RHMI
+		User           userv1.User
+		ExpectedStatus bool
+	}{
+		{
+			Name: "Test that a user is created past RHOAM installation",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			User: userv1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: true,
+		},
+		{
+			Name: "Test that a user is create pre installation of RHOAM",
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
+				},
+			},
+			User: userv1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+				},
+			},
+			ExpectedStatus: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			isTenantCreatedAfterInstallation := isTenantCreatedAfterInstallation(&tt.User, tt.Installation)
+
+			if isTenantCreatedAfterInstallation != tt.ExpectedStatus {
+				t.Fatalf("Expected %v phase but got %v", tt.ExpectedStatus, isTenantCreatedAfterInstallation)
+			}
+		})
+	}
+}
+
+func confirmThatCorrectNumberOfUsersIsReturned(users []MultiTenantUser) error {
+	if len(users) != 3 {
+		return fmt.Errorf("incorrect number of users returned, expected 3, got %v", len(users))
+	}
+
+	return nil
+}
+
+func confirmThatUsersHaveCorrectEmailAddressesSet(users []MultiTenantUser) error {
+	user1Email := "test1email@email.com"
+	user2Email := "test-2@rhmi.io"
+	user3Email := "test-3@rhmi.io"
+
+	if len(users) != 3 {
+		return fmt.Errorf("incorrect number of users returned, expected 3, got %v", len(users))
+	}
+
+	for _, user := range users {
+		if user.TenantName == "test-1" {
+			if user.Email != user1Email {
+				return fmt.Errorf("%v does not have correct email set, got: %v, expected: %v", user.Username, user.Email, user1Email)
+			}
+		}
+		if user.TenantName == "test-2" {
+			if user.Email != user2Email {
+				return fmt.Errorf("%v does not have correct email set, got: %v, expected: %v", user.Username, user.Email, user2Email)
+			}
+		}
+		if user.TenantName == "test-3" {
+			if user.Email != user3Email {
+				return fmt.Errorf("%v does not have correct email set, got: %v, expected: %v", user.Username, user.Email, user2Email)
+			}
+		}
+	}
+
+	return nil
 }

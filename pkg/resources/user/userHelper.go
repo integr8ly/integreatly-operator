@@ -3,9 +3,9 @@ package user
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
-	"os"
 	"regexp"
 	"strings"
 
@@ -41,26 +41,21 @@ type MultiTenantUser struct {
 	UID        string
 }
 
-func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (string, error) {
+func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User, identitiesList usersv1.IdentityList) string {
 	email := ""
 
 	// User can have multiple identities
 	for _, identityName := range user.Identities {
-		identity := &usersv1.Identity{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: identityName}, identity)
-
-		if err != nil {
-			return "", fmt.Errorf("failed to get identity provider: %w", err)
-		}
-
-		// Get first identity with email and break loop
-		if identity.Extra["email"] != "" {
-			email = identity.Extra["email"]
-			break
+		for _, identity := range identitiesList.Items {
+			if identityName == identity.Name {
+				if identity.Extra["email"] != "" {
+					return identity.Extra["email"]
+				}
+			}
 		}
 	}
 
-	return email, nil
+	return email
 }
 
 func AppendUpdateProfileActionForUserWithoutEmail(keycloakUser *keycloak.KeycloakAPIUser) {
@@ -214,49 +209,88 @@ func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Cli
 	return identitiesByProvider, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
-	requiredIdp, err := getIdpName()
+func GetUsersByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.UserList, error) {
+	users := &usersv1.UserList{}
+	err := serverClient.List(ctx, users)
 	if err != nil {
-		return nil, fmt.Errorf("error when pulling IDP name from the envvar")
+		return nil, errors.Wrapf(err, "could not get users by provider %s", providerName)
 	}
 
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting identity list for multi tenants")
-	}
-	for _, identity := range identities.Items {
-
-		var email = ""
-		if identity.Extra["email"] != "" {
-			email = identity.Extra["email"]
-		} else {
-			email = SetUserNameAsEmail(identity.User.Name)
+	usersByProvider := &usersv1.UserList{}
+	for _, user := range users.Items {
+		for _, identity := range user.Identities {
+			identityName := strings.Split(identity, ":")
+			if identityName[0] == providerName {
+				usersByProvider.Items = append(usersByProvider.Items, user)
+			}
 		}
-
-		users = append(users, MultiTenantUser{
-			Username:   identity.User.Name,
-			TenantName: SanitiseTenantUserName(identity.User.Name),
-			Email:      email,
-			UID:        string(identity.User.UID),
-		})
 	}
+
+	return usersByProvider, nil
+}
+
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
+	identities := &usersv1.IdentityList{}
+	err = serverClient.List(ctx, identities)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting identity list")
+	}
+
+	usersList := &usersv1.UserList{}
+	err = serverClient.List(ctx, usersList)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting users list")
+	}
+
+	for _, user := range usersList.Items {
+		if isTenantCreatedAfterInstallation(&user, installation) {
+			users = append(users, MultiTenantUser{
+				Username:   user.Name,
+				TenantName: SanitiseTenantUserName(user.Name),
+				Email:      getUserEmail(&user, identities),
+				UID:        string(user.UID),
+			})
+		}
+	}
+
 	return users, nil
 }
 
+func isTenantCreatedAfterInstallation(userCR *usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
+	return userCR.CreationTimestamp.Time.After(installation.CreationTimestamp.Time)
+}
+
+func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
+	var email = ""
+	identityForUserFound := false
+
+	for _, identity := range identities.Items {
+		if identity.User.Name == user.Name {
+			identityForUserFound = true
+			if identity.Extra["email"] != "" {
+				email = identity.Extra["email"]
+			} else {
+				email = SetUserNameAsEmail(identity.User.Name)
+			}
+			break
+		}
+	}
+
+	if !identityForUserFound {
+		email = SetUserNameAsEmail(user.Name)
+	}
+
+	return email
+}
+
 func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
-	requiredIdp, err := getIdpName()
+	users := &usersv1.UserList{}
+	err := serverClient.List(ctx, users)
 	if err != nil {
-		return 0, fmt.Errorf("error when pulling IDP name from the envvar")
+		return 0, err
 	}
 
-	log.Infof("Looking for identities from", l.Fields{"idp": requiredIdp})
-
-	identities, err := GetIdentitiesByProviderName(ctx, serverClient, requiredIdp)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting identity list for multi tenants")
-	}
-
-	return len(identities.Items), nil
+	return len(users.Items), nil
 }
 
 func SanitiseTenantUserName(username string) string {
@@ -268,15 +302,6 @@ func SanitiseTenantUserName(username string) string {
 
 	// Remove occurrence of replacement character at end of string
 	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
-}
-
-func getIdpName() (string, error) {
-	idpName, ok := os.LookupEnv("IDENTITY_PROVIDER_NAME")
-	if ok != true {
-		return "devsandbox", nil
-	}
-
-	return idpName, nil
 }
 
 func SetUserNameAsEmail(userName string) string {
