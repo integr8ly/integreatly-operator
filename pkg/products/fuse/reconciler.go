@@ -436,7 +436,9 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 	}
 	if r.Config.GetHost() != url {
 		r.Config.SetHost(url)
-		r.ConfigManager.WriteConfig(r.Config)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing fuse config : %w", err)
+		}
 	}
 
 	// if there are no errors, the phase is complete

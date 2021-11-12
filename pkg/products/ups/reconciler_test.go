@@ -236,6 +236,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.RHMI
 		ExpectErr      bool
+		CreationFail   bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Recorder       record.EventRecorder
@@ -255,37 +256,38 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
 			ExpectErr:      true,
 			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeConfig:     errorConfigMock(),
+			FakeConfig:     basicConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme),
 			Recorder:       setupRecorder(),
 		},
 		{
-			Name:           "UPS Test: Cannot update config with route url - phase failed",
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			ExpectErr:      true,
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeConfig:     errorConfigMock(),
-			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
-			Recorder:       setupRecorder(),
+			Name:         "UPS Test: Cannot update config with route url - phase failed",
+			FakeMPM:      &marketplace.MarketplaceInterfaceMock{},
+			CreationFail: true,
+			Installation: &integreatlyv1alpha1.RHMI{},
+			FakeConfig:   errorConfigMock(),
+			FakeClient:   fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
+			Recorder:     setupRecorder(),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger(), localProductDeclaration)
-			if err != nil {
+			if err != nil && tc.CreationFail == false {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
-			status, err := reconciler.reconcileHost(context.TODO(), tc.FakeClient)
-			if tc.ExpectErr && err == nil {
-				t.Fatal("expected an error but got none")
-			}
-			if !tc.ExpectErr && err != nil {
-				t.Fatal("expected no error but got one ", err)
-			}
-			if tc.ExpectedStatus != status {
-				t.Fatalf("expected phase %s but got %s", tc.ExpectedStatus, status)
+			if reconciler != nil && tc.CreationFail == false {
+				status, err := reconciler.reconcileHost(context.TODO(), tc.FakeClient)
+				if tc.ExpectErr && err == nil {
+					t.Fatal("expected an error but got none")
+				}
+				if !tc.ExpectErr && err != nil {
+					t.Fatal("expected no error but got one ", err)
+				}
+				if tc.ExpectedStatus != status {
+					t.Fatalf("expected phase %s but got %s", tc.ExpectedStatus, status)
+				}
 			}
 		})
 	}

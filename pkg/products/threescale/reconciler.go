@@ -121,7 +121,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	if threescaleConfig.GetNamespace() == "" {
 		threescaleConfig.SetNamespace(ns)
-		configManager.WriteConfig(threescaleConfig)
+		if err := configManager.WriteConfig(threescaleConfig); err != nil {
+			return nil, fmt.Errorf("error writing threescale config : %w", err)
+		}
 	}
 	if threescaleConfig.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
@@ -1958,12 +1960,16 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 
 	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.Version3Scale) {
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.Version3Scale))
-		r.ConfigManager.WriteConfig(r.Config)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing threescale config : %w", err)
+		}
 	}
 
 	if string(r.Config.GetOperatorVersion()) != string(integreatlyv1alpha1.OperatorVersion3Scale) {
 		r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersion3Scale))
-		r.ConfigManager.WriteConfig(r.Config)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing threescale config : %w", err)
+		}
 	}
 
 	system := &corev1.ConfigMap{
