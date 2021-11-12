@@ -2679,7 +2679,6 @@ services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.11.2
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.0
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.3
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.3-0.20191028180845-3492b2aff503
-services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.6
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.1.0
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.5.0
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.8.0
@@ -2945,7 +2944,11 @@ services-rhoam:master/github.com/cznic/sortutil-v0.0.0-20150617083342-4c7342852e
 services-rhoam:master/github.com/cznic/strutil-v0.0.0-20171016134553-529a34b1c186
 services-rhoam:master/github.com/cznic/zappy-v0.0.0-20160723133515-2533cb5b45cc
 services-rhoam:master/github.com/daaku/go.zipexe-v1.0.0
+services-rhoam:master/github.com/dave/dst-v0.26.2
+services-rhoam:master/github.com/dave/gopackages-v0.0.0-20170318123100-46e7023ec56e
 services-rhoam:master/github.com/dave/jennifer-v1.2.0
+services-rhoam:master/github.com/dave/kerr-v0.0.0-20170318121727-bc25dd6abe8e
+services-rhoam:master/github.com/dave/rebecca-v0.9.1
 services-rhoam:master/github.com/davecgh/go-spew-v1.1.0
 services-rhoam:master/github.com/davecgh/go-spew-v1.1.1
 services-rhoam:master/github.com/daviddengcn/go-colortext-v0.0.0-20160507010035-511bcaf42ccd
@@ -3019,7 +3022,6 @@ services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.1-0.2019102620
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.4
 services-rhoam:master/github.com/envoyproxy/go-control-plane-v0.9.8
 services-rhoam:master/github.com/envoyproxy/protoc-gen-validate-v0.1.0
-services-rhoam:master/github.com/evanphx/json-patch-v4.2.0+incompatible
 services-rhoam:master/github.com/evanphx/json-patch-v4.5.0+incompatible
 services-rhoam:master/github.com/evanphx/json-patch-v4.9.0+incompatible
 services-rhoam:master/github.com/evanphx/json-patch/v5-v5.1.0
@@ -3325,6 +3327,7 @@ services-rhoam:master/github.com/google/gofuzz-v1.1.0
 services-rhoam:master/github.com/google/licenseclassifier-v0.0.0-20190926221455-842c0d70d702
 services-rhoam:master/github.com/google/martian-v2.1.0+incompatible
 services-rhoam:master/github.com/google/martian/v3-v3.0.0
+services-rhoam:master/github.com/google/pprof-v0.0.0-20181127221834-b4f47329b966
 services-rhoam:master/github.com/google/pprof-v0.0.0-20181206194817-3ea8567a2e57
 services-rhoam:master/github.com/google/pprof-v0.0.0-20190515194954-54271f7e092f
 services-rhoam:master/github.com/google/pprof-v0.0.0-20190723021845-34ac40c74b70
@@ -3777,7 +3780,7 @@ services-rhoam:master/github.com/openshift/api-v3.9.1-0.20190424152011-77b8897ec
 services-rhoam:master/github.com/openshift/api-v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 services-rhoam:master/github.com/openshift/api-v3.9.1-0.20190927182313-d4a64ec2cbd8+incompatible
 services-rhoam:master/github.com/openshift/api-v3.9.1-0.20191031084152-11eee842dafd+incompatible
-services-rhoam:master/github.com/openshift/build-machinery-go-v0.0.0-20200917070002-f171684f77ab
+services-rhoam:master/github.com/openshift/build-machinery-go-v0.0.0-20210712174854-1bb7fd1518d3
 services-rhoam:master/github.com/openshift/client-go-v0.0.0-20190923180330-3b6373338c9b
 services-rhoam:master/github.com/openshift/client-go-v0.0.0-20191022152013-2823239d2298
 services-rhoam:master/github.com/openshift/client-go-v0.0.0-20200116152001-92a2713fa240
@@ -4192,6 +4195,7 @@ services-rhoam:master/go.uber.org/zap-v1.14.1
 services-rhoam:master/go.uber.org/zap-v1.15.0
 services-rhoam:master/go.uber.org/zap-v1.8.0
 services-rhoam:master/go.uber.org/zap-v1.9.1
+services-rhoam:master/golang.org/x/arch-v0.0.0-20180920145803-b19384d3c130
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20171113213409-9f005a07e0d3
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20180608092829-8ac0e0d97ce4
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20180904163835-0709b304e793
@@ -4224,7 +4228,6 @@ services-rhoam:master/golang.org/x/crypto-v0.0.0-20191206172530-e9b2fee46413
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200124225646-8b5121be2f68
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200128174031-69ecbb4d6d5d
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200208060501-ecb85df21340
-services-rhoam:master/golang.org/x/crypto-v0.0.0-20200220183623-bac4c82f6975
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200302210943-78000ba7a073
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200414173820-0848c9571904
 services-rhoam:master/golang.org/x/crypto-v0.0.0-20200422194213-44a606286825
@@ -4367,6 +4370,7 @@ services-rhoam:master/golang.org/x/sync-v0.0.0-20201207232520-09787c993a3a
 services-rhoam:master/golang.org/x/sync-v0.0.0-20210220032951-036812b2e83c
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180823144017-11551d06cbcc
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180830151530-49385e6e1522
+services-rhoam:master/golang.org/x/sys-v0.0.0-20180903190138-2b024373dcd9
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180905080454-ebe1bf3edb33
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180909124046-d0be0721c37e
 services-rhoam:master/golang.org/x/sys-v0.0.0-20181026203630-95b1ffbd15a5
@@ -4569,11 +4573,11 @@ services-rhoam:master/golang.org/x/tools-v0.0.0-20200331025713-a30bf2db82d4
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200422205258-72e4a01eba43
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200501065659-ab2804fb9c9d
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200505023115-26f46d2f7ef8
+services-rhoam:master/golang.org/x/tools-v0.0.0-20200509030707-2212a7e161a5
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200512131952-2bc93b1c0c88
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200513201620-d5fe73897c97
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200515010526-7d3b6ebf133d
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200603131246-cc40288be839
-services-rhoam:master/golang.org/x/tools-v0.0.0-20200616133436-c1934b75d054
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200616195046-dc31b401abb5
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200618134242-20370b0cb4b2
 services-rhoam:master/golang.org/x/tools-v0.0.0-20200619180055-7c47624df98f
@@ -4752,6 +4756,7 @@ services-rhoam:master/gopkg.in/natefinch/lumberjack.v2-v2.0.0
 services-rhoam:master/gopkg.in/op/go-logging.v1-v1.0.0-20160211212156-b2cb9fa56473
 services-rhoam:master/gopkg.in/resty.v1-v1.12.0
 services-rhoam:master/gopkg.in/square/go-jose.v2-v2.2.2
+services-rhoam:master/gopkg.in/src-d/go-billy.v4-v4.3.0
 services-rhoam:master/gopkg.in/src-d/go-billy.v4-v4.3.2
 services-rhoam:master/gopkg.in/src-d/go-git-fixtures.v3-v3.5.0
 services-rhoam:master/gopkg.in/src-d/go-git.v4-v4.13.1
@@ -6126,6 +6131,7 @@ services-rhoam:master/k8s.io/api-v0.20.6
 services-rhoam:master/k8s.io/api-v0.21.0
 services-rhoam:master/k8s.io/api-v0.21.1
 services-rhoam:master/k8s.io/api-v0.21.2
+services-rhoam:master/k8s.io/api-v0.22.1
 services-rhoam:master/k8s.io/apiextensions-apiserver-v0.0.0-20190409022649-727a075fdec8
 services-rhoam:master/k8s.io/apiextensions-apiserver-v0.0.0-20190918161926-8f644eb6e783
 services-rhoam:master/k8s.io/apiextensions-apiserver-v0.17.0
@@ -6169,6 +6175,7 @@ services-rhoam:master/k8s.io/apimachinery-v0.20.6
 services-rhoam:master/k8s.io/apimachinery-v0.21.0
 services-rhoam:master/k8s.io/apimachinery-v0.21.1
 services-rhoam:master/k8s.io/apimachinery-v0.21.2
+services-rhoam:master/k8s.io/apimachinery-v0.22.1
 services-rhoam:master/k8s.io/apiserver-v0.0.0-20191031110436-8cb875160ee0
 services-rhoam:master/k8s.io/apiserver-v0.0.0-20191122221311-9d521947b1e1
 services-rhoam:master/k8s.io/apiserver-v0.17.3
@@ -6207,6 +6214,7 @@ services-rhoam:master/k8s.io/code-generator-v0.18.8
 services-rhoam:master/k8s.io/code-generator-v0.20.0
 services-rhoam:master/k8s.io/code-generator-v0.20.2
 services-rhoam:master/k8s.io/code-generator-v0.20.6
+services-rhoam:master/k8s.io/code-generator-v0.22.1
 services-rhoam:master/k8s.io/component-base-v0.0.0-20191122220729-2684fb322cb9
 services-rhoam:master/k8s.io/component-base-v0.17.3
 services-rhoam:master/k8s.io/component-base-v0.18.2
@@ -6220,6 +6228,7 @@ services-rhoam:master/k8s.io/gengo-v0.0.0-20191108084044-e500ee069b5c
 services-rhoam:master/k8s.io/gengo-v0.0.0-20200114144118-36b2048a9120
 services-rhoam:master/k8s.io/gengo-v0.0.0-20200413195148-3a45101e95ac
 services-rhoam:master/k8s.io/gengo-v0.0.0-20201113003025-83324d819ded
+services-rhoam:master/k8s.io/gengo-v0.0.0-20201214224949-b6c5ce23f027
 services-rhoam:master/k8s.io/klog-v0.2.0
 services-rhoam:master/k8s.io/klog-v0.3.0
 services-rhoam:master/k8s.io/klog-v0.4.0
@@ -6229,6 +6238,7 @@ services-rhoam:master/k8s.io/klog/v2-v2.2.0
 services-rhoam:master/k8s.io/klog/v2-v2.3.0
 services-rhoam:master/k8s.io/klog/v2-v2.4.0
 services-rhoam:master/k8s.io/klog/v2-v2.8.0
+services-rhoam:master/k8s.io/klog/v2-v2.9.0
 services-rhoam:master/k8s.io/kube-aggregator-v0.17.3
 services-rhoam:master/k8s.io/kube-openapi-v0.0.0-20190722073852-5e22f3d471e6
 services-rhoam:master/k8s.io/kube-openapi-v0.0.0-20190918143330-0270cf2f1c1d
@@ -6245,7 +6255,6 @@ services-rhoam:master/k8s.io/metrics-v0.20.6
 services-rhoam:master/k8s.io/utils-v0.0.0-20190801114015-581e00157fb1
 services-rhoam:master/k8s.io/utils-v0.0.0-20190809000727-6c36bc71fc4a
 services-rhoam:master/k8s.io/utils-v0.0.0-20191114200735-6ca3b61696b6
-services-rhoam:master/k8s.io/utils-v0.0.0-20200324210504-a9aa75ae1b89
 services-rhoam:master/k8s.io/utils-v0.0.0-20200414100711-2df71ebbae66
 services-rhoam:master/k8s.io/utils-v0.0.0-20200603063816-c1c6865ac451
 services-rhoam:master/k8s.io/utils-v0.0.0-20200729134348-d5654de09c73
