@@ -104,7 +104,7 @@ func UserInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
 	return false
 }
 
-func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
+func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client, logger l.Logger) (*usersv1.UserList, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
@@ -132,7 +132,10 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*
 		// get  their identities - can be multiple?
 		identities, err := GetIdentities(ctx, serverClient, user)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not get identities for user %v", user.Name)
+			// it is possible for user CRs to exist without any identity CR's
+			logger.Warning(fmt.Sprintf("could not get identities for user %v", user.Name))
+			activeUsers.Items = append(activeUsers.Items, user)
+			continue
 		}
 
 		for _, identity := range identities.Items {
@@ -155,7 +158,7 @@ func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user user
 		identity := &usersv1.Identity{}
 		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: identityName}, identity)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not get identity %v for user %v", identityName, user.Name)
+			return nil, errors.Wrapf(err, "could not get identity %v for user: %v", identityName, user.Name)
 		}
 		identities.Items = append(identities.Items, *identity)
 	}
