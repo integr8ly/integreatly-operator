@@ -125,12 +125,18 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client, lo
 		}
 	}
 
+	clusterIdentities := &usersv1.IdentityList{}
+	err = serverClient.List(ctx, clusterIdentities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not list cluster identities")
+	}
+
 	activeUsers := &usersv1.UserList{}
 
 	//go over each user
 	for _, user := range openshiftUsers.Items {
 		// get  their identities - can be multiple?
-		identities, err := GetIdentities(ctx, serverClient, user)
+		identities, err := GetIdentities(user, clusterIdentities)
 		if err != nil {
 			// it is possible for user CRs to exist without any identity CR's
 			logger.Warning(fmt.Sprintf("could not get identities for user %v", user.Name))
@@ -151,18 +157,27 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client, lo
 	return activeUsers, nil
 }
 
-func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (*usersv1.IdentityList, error) {
+func GetIdentities(user usersv1.User, clusterIdentities *usersv1.IdentityList) (*usersv1.IdentityList, error) {
 	identities := &usersv1.IdentityList{}
 
 	for _, identityName := range user.Identities {
-		identity := &usersv1.Identity{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: identityName}, identity)
+		// find current user identity in list of cluster identities
+		identity, err := getIdentity(identityName, clusterIdentities)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get identity %v for user: %v", identityName, user.Name)
 		}
 		identities.Items = append(identities.Items, *identity)
 	}
 	return identities, nil
+}
+
+func getIdentity(name string, identities *usersv1.IdentityList) (*usersv1.Identity, error) {
+	for _, identity := range identities.Items {
+		if identity.Name == name {
+			return &identity, nil
+		}
+	}
+	return nil, errors.New("identity not found")
 }
 
 func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {
