@@ -52,9 +52,13 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 
-3. Prepare corrupted users on the cluster (existence of such users must not break the upgrade)
+3. Prepare corrupted users on the cluster (existence of such users must not break the upgrade). Each user needs to have 3scale account created. In order to do that make sure to log into 3scale Admin Portal (via Openshift, `testing-idp` IDP) using the user before proceeding with the `oc` commands below. This command can be used to get the route to 3scale Admin Portal:
 
-   Pick one regular user (test-userXX, not customer-adminXX) and remove its identity:
+   ```
+   echo "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk '{print $2}')"
+   ```
+
+   Pick one regular user (test-userXX, not customer-adminXX), log into 3scale Admin Portal and remove user's identity:
 
    ```
    oc get user <test-userXX> -o jsonpath={.identities} #should be just one identity there
@@ -62,7 +66,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc delete identity <identity-name-from-the-command-above>
    ```
 
-   Pick another regular user (test-userXX, not customer-adminXX), remove it and make sure its identity remained:
+   Pick another regular user (test-userXX, not customer-adminXX), log into 3scale Admin Portal, remove the user and make sure user's identity remained:
 
    ```
    oc get user <test-userXX> -o jsonpath={.identities} #should be just one identity there
@@ -72,7 +76,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc get identity <identity-name-from-the-oc-get-command-above> # identity should be found
    ```
 
-   Pick yet another regular user (test-userXX, not customer-adminXX) and create additional identity for it (so there are two identities for the user in total):
+   Pick yet another regular user (test-userXX, not customer-adminXX), log into 3scale Admin Portal and create additional identity for the user (so there are two identities in total):
 
    ```
    oc create identity testing-idp:<test-userXX-02>
