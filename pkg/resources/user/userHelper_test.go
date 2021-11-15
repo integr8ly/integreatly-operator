@@ -144,7 +144,71 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 			ExpectError: false,
 		},
 		{
-			Name:       "Test get email from identity",
+			Name:       "Test orphaned identities have no side affect",
+			FakeLogger: getLogger(),
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "active-idp",
+					},
+					ProviderName: "exists",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "exists",
+					},
+					Identities: []string{"active-idp"},
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "inactive-idp",
+					},
+					ProviderName: "non-existent",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "non-existent",
+					},
+					Identities: []string{"inactive-idp"},
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "orphaned-identity-1",
+					},
+					ProviderName: "exist",
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "orphaned-identity-2",
+					},
+					ProviderName: "exist",
+				},
+				&configv1.OAuth{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "cluster",
+					},
+					Spec: configv1.OAuthSpec{
+						IdentityProviders: []configv1.IdentityProvider{
+							{Name: "exists"},
+						},
+					},
+				}),
+			ExpectedUsers: &userv1.UserList{
+				TypeMeta: v1.TypeMeta{},
+				ListMeta: v1.ListMeta{},
+				Items: []userv1.User{
+					userv1.User{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "exists",
+						},
+						Identities: []string{"active-idp"},
+					},
+				},
+			},
+			ExpectError: false,
+		},
+		{
+			Name:       "Test get user with active idp",
 			FakeLogger: getLogger(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, &userv1.Identity{
 				ObjectMeta: v1.ObjectMeta{
