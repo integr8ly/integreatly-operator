@@ -135,11 +135,16 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client, lo
 
 	//go over each user
 	for _, user := range openshiftUsers.Items {
+		// if user CR lists no identities, move to the next user
+		if len(user.Identities) == 0 {
+			logger.Info(fmt.Sprintf("user %v has no identities list", user.Name))
+			continue
+		}
 		// get  their identities - can be multiple?
 		identities, err := GetIdentities(user, clusterIdentities)
 		if err != nil {
 			// it is possible for user CRs to exist without any identity CR's
-			logger.Warning(fmt.Sprintf("could not get identities for user %v", user.Name))
+			logger.Warning(fmt.Sprintf("could not get identities for user %v, user classed as miss configured", user.Name))
 			activeUsers.Items = append(activeUsers.Items, user)
 			continue
 		}
@@ -164,10 +169,15 @@ func GetIdentities(user usersv1.User, clusterIdentities *usersv1.IdentityList) (
 		// find current user identity in list of cluster identities
 		identity, err := getIdentity(identityName, clusterIdentities)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not get identity %v for user: %v", identityName, user.Name)
+			continue
 		}
 		identities.Items = append(identities.Items, *identity)
 	}
+
+	if len(identities.Items) == 0 {
+		return identities, errors.New("could not find user identities")
+	}
+
 	return identities, nil
 }
 
