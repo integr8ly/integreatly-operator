@@ -3,10 +3,10 @@ package addon
 import (
 	"context"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	k8sresources "github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +65,37 @@ func InferOperatorRunType(ctx context.Context, client k8sclient.Client, installa
 	return LocalRunType, nil
 }
 
+// Ideally this code will be temporary and CPaaS will add more deterministic name on the Subscription
+// At which point we can update 'runTypesBySubscription' above
+func GetRhoamCPaaSSubscription(ctx context.Context, client k8sclient.Client, ns string) (*operatorsv1alpha1.Subscription, error) {
+	logrus.Info("Looking for CPaaS generated rhoam operator subscription")
+
+	// Get all Subscriptions in the "redhat-rhoam-operator" ns and then check for a specific label
+	subs := &operatorsv1alpha1.SubscriptionList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+	}
+	err := client.List(ctx, subs, opts...)
+	if err != nil {
+		logrus.Errorf("Error getting list of subscriptions %v", err)
+		return nil, err
+	} else {
+		for _, sub := range subs.Items {
+			logrus.Infof("Found subscription %s", sub.Name)
+			labels := sub.GetLabels()
+			// Looking for specific label that should be on the CPaaS generated subscription
+			_, ok := labels["operators.coreos.com/managed-api-service.redhat-rhoam-operator"]
+			if ok {
+				logrus.Info("Found Rhoam operator subscription")
+				return &sub, nil
+			}
+		}
+	}
+
+	logrus.Info("Did not find rhoam operator subscription")
+	return nil, nil
+}
+
 // OperatorInstalledViaOLM checks if the operator was installed through OLM
 func OperatorInstalledViaOLM(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
 	runType, err := InferOperatorRunType(ctx, client, installation)
@@ -117,6 +148,16 @@ func GetSubscription(ctx context.Context, client k8sclient.Client, installation 
 			return nil, err
 		}
 
+		return subscription, nil
+	}
+
+	// If subscription is not found, it could be because the CPaaS CVP build has put a non deterministic name on it.
+	// This code may be temporary if CPaaS changes to deterministic Subscription names
+	subscription, err := GetRhoamCPaaSSubscription(ctx, client, installation.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	if subscription != nil {
 		return subscription, nil
 	}
 

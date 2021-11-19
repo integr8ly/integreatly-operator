@@ -8,6 +8,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -90,6 +91,77 @@ func TestGetSubscription(t *testing.T) {
 
 			if (subscription != nil) != scenario.ExpectSubscriptionFound {
 				t.Errorf("unexpeted subscription presence. Expected %t, but got %t", scenario.ExpectSubscriptionFound, subscription != nil)
+			}
+		})
+	}
+}
+
+func getSub(name string, labelName string, labelValue string) operatorsv1alpha1.Subscription {
+	return operatorsv1alpha1.Subscription{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: "redhat-rhoam-operator",
+			Labels: map[string]string{
+				labelName: labelValue,
+			},
+		},
+	}
+}
+
+func TestCPaaSSubscription(t *testing.T) {
+	scheme := runtime.NewScheme()
+	operatorsv1alpha1.AddToScheme(scheme)
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+
+	validSub := &operatorsv1alpha1.SubscriptionList{
+		Items: []operatorsv1alpha1.Subscription{
+			getSub("sub1", "operators.coreos.com/managed-api-service.redhat-rhoam-operator", ""),
+		},
+	}
+	nosubs := &operatorsv1alpha1.SubscriptionList{
+		Items: []operatorsv1alpha1.Subscription{},
+	}
+	wrongLabel := &operatorsv1alpha1.SubscriptionList{
+		Items: []operatorsv1alpha1.Subscription{
+			getSub("sub1", "key", "value"),
+		},
+	}
+
+	scenarios := []struct {
+		Name          string
+		ExpectedFound bool
+		ExpectedError bool
+		Client        client.Client
+	}{
+		{
+			Name:          "test CPaaS subscription exists",
+			ExpectedFound: true,
+			ExpectedError: false,
+			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{validSub}...),
+		},
+		{
+			Name:          "test no subs exist",
+			ExpectedFound: false,
+			ExpectedError: false,
+			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{nosubs}...),
+		},
+		{
+			Name:          "test wrong label",
+			ExpectedFound: false,
+			ExpectedError: false,
+			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{wrongLabel}...),
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+
+			sub, err := GetRhoamCPaaSSubscription(context.TODO(), scenario.Client, "redhat-rhoam-operator")
+			if err != nil && !scenario.ExpectedError {
+				t.Fatal("Got unexpected error", err)
+			}
+			if scenario.ExpectedFound && sub == nil {
+				t.Fatal("Expected to find subscription")
 			}
 		})
 	}
