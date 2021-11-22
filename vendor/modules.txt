@@ -20,6 +20,10 @@ github.com/3scale/3scale-operator/pkg/3scale/amp/product
 github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
 github.com/3scale/3scale-operator/version
+# github.com/3scale/apicast-operator v0.4.0
+## explicit
+github.com/3scale/apicast-operator/pkg/apis/apps
+github.com/3scale/apicast-operator/pkg/apis/apps/v1alpha1
 # github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 ## explicit
 github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1
@@ -555,6 +559,7 @@ github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 ## explicit
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
 # github.com/operator-framework/api v0.10.5 => github.com/operator-framework/api v0.8.1
+## explicit
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
 github.com/operator-framework/api/pkg/operators
@@ -677,6 +682,7 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
+## explicit
 golang.org/x/term
 # golang.org/x/text v0.3.6
 golang.org/x/text/encoding

@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/3scale-ops/marin3r v0.8.0
 	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
+	github.com/3scale/apicast-operator v0.4.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -36,6 +37,7 @@ require (
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
+	github.com/operator-framework/api v0.10.5
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/operator-framework/operator-registry v1.17.4
 	github.com/pkg/errors v0.9.1
@@ -47,6 +49,7 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.22.1

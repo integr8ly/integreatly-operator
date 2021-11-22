@@ -55,6 +55,8 @@ github.com/3scale-ops/marin3r v0.8.0/go.mod h1:RvfldXZk0ap1zZwZQLj28DY+CpGOFDfNQ
 github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf h1:7ev7/t4QJgQqPxfKAZko/svXooB1t8Rlt5UFzWaa8gY=
 github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf/go.mod h1:G2jfrlmdPGTOnDxyJ8JdsSZlB+xZqv3lBtwJTFtVVIo=
 github.com/3scale/3scale-porta-go-client v0.0.4/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
+github.com/3scale/apicast-operator v0.4.0 h1:CqE2I0ooGQGWLEqguh/7yHZERWSXV1cRvhej6vZEnLg=
+github.com/3scale/apicast-operator v0.4.0/go.mod h1:SZpVbZnAWJGfZ8qfLDYPpqVTUTB8xT8r/3oepGej6rU=
 github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16 h1:ORTw+/upS6z6K8fsvWHYpXSNmew68L/5ss+EPzJfENg=
 github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16/go.mod h1:tjkDoCAlRvvdFst6ydVV0zzIsrYq6UrNuzmtEmZd4Hg=
 github.com/Azure/azure-pipeline-go v0.2.1/go.mod h1:UGSo8XybXnIGZ3epmeBw7Jdz+HiUVpqIlpz/HKHylF4=
@@ -162,6 +164,7 @@ github.com/PuerkitoBio/purell v1.1.1 h1:WEQqlqaGbrPkxLJWfBwQmfEAE1Z7ONdDLqrN38tN
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV/sSk/8dngufqelfh6jnri85riMAaF/M=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
+github.com/RHsyseng/operator-utils v0.0.0-20200213165520-1a022eb07a43/go.mod h1:E+hCtYz+9UsXfAGnRjX2LGuaa5gSGNKHCVTmGZR79vY=
 github.com/RHsyseng/operator-utils v0.0.0-20200506183821-e3b4a2ba9c30/go.mod h1:ZFQi9Pp9lp0+2rKqgESwj1MMEgHqPfsMm2JqOXEh+Ok=
 github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f h1:bU3BgrMr2CqFasfYSy/16dsUuUOlFQyrDnw/PiZIJlM=
 github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f/go.mod h1:E+hCtYz+9UsXfAGnRjX2LGuaa5gSGNKHCVTmGZR79vY=
