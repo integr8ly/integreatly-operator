@@ -104,7 +104,11 @@ func UserInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
 	return false
 }
 
-func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*usersv1.UserList, error) {
+// User has no Identity ID on user CR => not an active user.
+// User has identity ID on user CR, Identity CR exist and are part of an active IDP => Is an active user.
+// User has identity ID on user CR, Identity CR do not exist => Not an active user. Assume the identity CR is associated with a non active IDP. User can log in to rectify
+// User has identity ID on user CR, Identity CR exist but is NOT part of an active IDP => not an active user.
+func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client, logger l.Logger) (*usersv1.UserList, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
@@ -125,15 +129,26 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*
 		}
 	}
 
+	clusterIdentities := &usersv1.IdentityList{}
+	err = serverClient.List(ctx, clusterIdentities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not list cluster identities")
+	}
+
 	activeUsers := &usersv1.UserList{}
 
-	//go over each user
 	for _, user := range openshiftUsers.Items {
-		// get  their identities - can be multiple?
-		identities, err := GetIdentities(ctx, serverClient, user)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not get identities for user %v", user.Name)
+		// if user CR lists no identities, move to the next user
+		if len(user.Identities) == 0 {
+			logger.Info(fmt.Sprintf("user %v has no identities list", user.Name))
+			continue
 		}
+		// get  their identities - can be multiple?
+		identities := GetIdentities(user, clusterIdentities)
+
+		// If the identity id on the user does not exist as an identity cr then we have to assume the identity
+		// is associated with an invalid IDP. The user can rectify this by logging in to OpenShift. The identity
+		// will be recreated.
 
 		for _, identity := range identities.Items {
 			//if any identity is provided by an active idp
@@ -148,18 +163,27 @@ func GetUsersInActiveIDPs(ctx context.Context, serverClient k8sclient.Client) (*
 	return activeUsers, nil
 }
 
-func GetIdentities(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (*usersv1.IdentityList, error) {
+func GetIdentities(user usersv1.User, clusterIdentities *usersv1.IdentityList) *usersv1.IdentityList {
 	identities := &usersv1.IdentityList{}
 
 	for _, identityName := range user.Identities {
-		identity := &usersv1.Identity{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: identityName}, identity)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not get identity %v for user %v", identityName, user.Name)
+		// find current user identity in list of cluster identities
+		identity := getIdentity(identityName, clusterIdentities)
+		if identity != nil {
+			identities.Items = append(identities.Items, *identity)
 		}
-		identities.Items = append(identities.Items, *identity)
 	}
-	return identities, nil
+
+	return identities
+}
+
+func getIdentity(name string, identities *usersv1.IdentityList) *usersv1.Identity {
+	for _, identity := range identities.Items {
+		if identity.Name == name {
+			return &identity
+		}
+	}
+	return nil
 }
 
 func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {

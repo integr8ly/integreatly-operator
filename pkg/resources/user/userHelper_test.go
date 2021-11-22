@@ -10,6 +10,7 @@ import (
 	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,11 +86,124 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 	tests := []struct {
 		Name          string
 		FakeClient    k8sclient.Client
+		FakeLogger    l.Logger
 		ExpectedUsers *userv1.UserList
 		ExpectError   bool
 	}{
 		{
-			Name: "Test get email from identity",
+			Name:       "Test get user with no associated identity",
+			FakeLogger: getLogger(),
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "active-idp",
+					},
+					ProviderName: "exists",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "exists",
+					},
+					Identities: []string{"active-idp"},
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "exits with no identity",
+					},
+					Identities: []string{"missing-identity"},
+				},
+				&configv1.OAuth{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "cluster",
+					},
+					Spec: configv1.OAuthSpec{
+						IdentityProviders: []configv1.IdentityProvider{
+							{Name: "exists"},
+						},
+					},
+				},
+			),
+			ExpectedUsers: &userv1.UserList{
+				TypeMeta: v1.TypeMeta{},
+				ListMeta: v1.ListMeta{},
+				Items: []userv1.User{
+					userv1.User{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "exists",
+						},
+						Identities: []string{"active-idp"},
+					},
+				},
+			},
+			ExpectError: false,
+		},
+		{
+			Name:       "Test orphaned identities have no side affect",
+			FakeLogger: getLogger(),
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "active-idp",
+					},
+					ProviderName: "exists",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "exists",
+					},
+					Identities: []string{"active-idp"},
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "inactive-idp",
+					},
+					ProviderName: "non-existent",
+				},
+				&userv1.User{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "non-existent",
+					},
+					Identities: []string{"inactive-idp"},
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "orphaned-identity-1",
+					},
+					ProviderName: "exist",
+				},
+				&userv1.Identity{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "orphaned-identity-2",
+					},
+					ProviderName: "exist",
+				},
+				&configv1.OAuth{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "cluster",
+					},
+					Spec: configv1.OAuthSpec{
+						IdentityProviders: []configv1.IdentityProvider{
+							{Name: "exists"},
+						},
+					},
+				}),
+			ExpectedUsers: &userv1.UserList{
+				TypeMeta: v1.TypeMeta{},
+				ListMeta: v1.ListMeta{},
+				Items: []userv1.User{
+					userv1.User{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "exists",
+						},
+						Identities: []string{"active-idp"},
+					},
+				},
+			},
+			ExpectError: false,
+		},
+		{
+			Name:       "Test get user with active idp",
+			FakeLogger: getLogger(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, &userv1.Identity{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "active-idp",
@@ -141,7 +255,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			got, err := GetUsersInActiveIDPs(context.TODO(), tt.FakeClient)
+			got, err := GetUsersInActiveIDPs(context.TODO(), tt.FakeClient, tt.FakeLogger)
 			if (err != nil) != tt.ExpectError {
 				t.Errorf("GetUsersInActiveIDPs() error = %v, ExpectedErr %v", err, tt.ExpectError)
 				return
@@ -568,4 +682,8 @@ func confirmThatUsersHaveCorrectEmailAddressesSet(users []MultiTenantUser) error
 	}
 
 	return nil
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
 }
