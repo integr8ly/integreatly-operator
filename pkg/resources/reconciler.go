@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 
@@ -209,10 +210,12 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 	err := r.mpm.InstallOperator(ctx, client, target, operandNS, operatorsv1alpha1.ApprovalManual, catalogSourceReconciler)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
+		logrus.Errorf("Error installing operator %v", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", target.Namespace, err)
 	}
 	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, target.SubscriptionName, target.Namespace)
 	if err != nil {
+		logrus.Errorf("Error getting install plan %v", err)
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(err) || k8serr.IsNotFound(errors.Unwrap(err)) {
 			return integreatlyv1alpha1.PhaseAwaitingOperator, nil
@@ -237,18 +240,28 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 		}
 	}
 
+	logrus.Info("ip is nil")
+
 	if ip == nil {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
+	logrus.Info("upgrade approval")
+
 	err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, ip, log)
 	if err != nil {
+		logrus.Errorf("error upgrade approval %v", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.SubscriptionName, err)
 	}
+
+	logrus.Info("ip phase " + ip.Status.Phase)
 
 	// Workaround to re-install product operator if install plan fails due to https://bugzilla.redhat.com/show_bug.cgi?id=1923111
 	if ip.Status.Phase == operatorsv1alpha1.InstallPlanPhaseFailed {
 		var csv *operatorsv1alpha1.ClusterServiceVersion
+
+		logrus.Info("sub.Status.InstalledCSV " + sub.Status.InstalledCSV)
+
 		if sub.Status.InstalledCSV != "" {
 			csv = &operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{Namespace: target.Namespace, Name: sub.Status.InstalledCSV},
@@ -267,6 +280,9 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 	}
 
 	for _, csvName := range ip.Spec.ClusterServiceVersionNames {
+
+		logrus.Info("ip phase " + ip.Status.Phase)
+
 		ipCSV := &operatorsv1alpha1.ClusterServiceVersion{}
 		if err := client.Get(ctx, k8sclient.ObjectKey{
 			Name:      csvName,
@@ -278,9 +294,11 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 				})
 				return integreatlyv1alpha1.PhaseInProgress, nil
 			}
+			logrus.Errorf("ipCSV %v", err)
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error retrieving CSV: %v", err)
 		}
 
+		logrus.Info("Validate CVS")
 		if err := validateCSV(ipCSV); err != nil {
 			log.Warningf("CSV failed validation. Retrying operator installation", l.Fields{"error": err, "install plan": target.SubscriptionName})
 			return retryInstallation(ctx, client, log, target, ipCSV, sub)
@@ -301,6 +319,7 @@ func (r *Reconciler) GetProductDeclaration() *marketplace.ProductDeclaration {
 
 func validateCSV(csv *operatorsv1alpha1.ClusterServiceVersion) error {
 	if csv.Spec.InstallStrategy.StrategyName == operatorsv1alpha1.InstallStrategyNameDeployment && len(csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs) == 0 {
+		logrus.Errorf("Error validaging cvs")
 		return errors.New("no Deployment found in install strategy")
 	}
 

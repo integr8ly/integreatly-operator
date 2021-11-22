@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
@@ -61,6 +62,11 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		return err
 	}
 
+	logrus.Infof("Catalog Source Name: " + catalogSourceReconciler.CatalogSourceName())
+	logrus.Infof("Catalog Source NS: " + catalogSourceReconciler.CatalogSourceNamespace())
+	logrus.Infof("Package: " + t.Package)
+	logrus.Infof("Target %v", t)
+
 	mutateSub := func() error {
 		sub.Spec = &coreosv1alpha1.SubscriptionSpec{
 			InstallPlanApproval:    approvalStrategy,
@@ -93,8 +99,16 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		log.Error("error creating sub", err)
+		logrus.Errorf("sub:: %v", sub)
 		return err
 	}
+
+	if (k8serr.IsAlreadyExists(err)) {
+		log.Info("Sub already exist")
+	}
+
+	logrus.Infof("Sub 2 %v", sub)
+
 
 	return nil
 
@@ -117,12 +131,24 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+
+	logrus.Infof("Sub name and ns: " +  "  " +  subName +"  " + ns)
+
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
+		logrus.Error("Error getting install plan %v", err)
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
+
+	logrus.Infof("Sub 1: %v", sub)
+
 	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
+		logrus.Error("Error getting install plan, 2 %v", err)
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
+	}
+
+	if (sub.Status.InstallPlanRef != nil) {
+		logrus.Info("Getting plan " +  sub.Status.InstallPlanRef.Name + "   " +  sub.Status.InstallPlanRef.Namespace)
 	}
 
 	ip := &coreosv1alpha1.InstallPlan{}
@@ -130,6 +156,7 @@ func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k
 		Name:      sub.Status.InstallPlanRef.Name,
 		Namespace: sub.Status.InstallPlanRef.Namespace,
 	}, ip); err != nil {
+		logrus.Error("Error getting install plan, 3 %v", err)
 		if k8serr.IsNotFound(err) {
 			return nil, nil, nil
 		}

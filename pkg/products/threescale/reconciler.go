@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/sirupsen/logrus"
 	"os"
 
 	"net/http"
@@ -252,6 +253,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
 		return phase, err
 	}
+
+	logrus.Info("Finsihed reconcole subscriotion for 3scale")
 
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
@@ -2125,7 +2128,7 @@ func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8scl
 		}
 		phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-master", "http_2xx", prometheus.ProbeTargetStaticConfig{
 			Targets: []string{"https://" + threescaleRoute.Spec.Host},
-			Labels: map[string]string{
+				Labels: map[string]string{
 				"service": "3scale-system-admin-ui",
 			},
 		})
@@ -2563,6 +2566,9 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		SubscriptionName: constants.ThreeScaleSubscriptionName,
 		Namespace:        operatorNamespace,
 	}
+
+	a := r.GetProductDeclaration()
+	logrus.Infof("Product Declaration " + "channel: " + a.Channel + "   package: " + a.Package)
 
 	catalogSourceReconciler, err := r.GetProductDeclaration().PrepareTarget(
 		r.log,

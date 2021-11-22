@@ -130,8 +130,8 @@ push_index() {
 create_catalog_source() {
   printf 'Creating catalog source '$INDEX_IMAGE'\n'
   cd $ROOT
-  oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
-  oc process -p INDEX_IMAGE=$INDEX_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
+#  oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
+#  oc process -p INDEX_IMAGE=$INDEX_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
 }
 
 # cleans up the working space

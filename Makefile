@@ -114,6 +114,11 @@ setup/service_account: kustomize
 setup/git/hooks:
 	git config core.hooksPath .githooks
 
+
+.PHONY: install/cpaas/operator
+install/cpaas/operator:
+	@oc process -f config/developer-sandbox/cpaas-operator-template.yml | oc create -f -
+
 .PHONY: install/sandboxrhoam/operator
 install/sandboxrhoam/operator:
 	@-oc new-project $(SANDBOX_NAMESPACE)

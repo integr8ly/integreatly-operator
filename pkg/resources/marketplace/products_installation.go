@@ -2,6 +2,7 @@ package marketplace
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -95,6 +96,7 @@ func (p *ProductDeclaration) PrepareTarget(log logger.Logger, client k8sclient.C
 	channel := p.GetChannel()
 	pkg, ok := p.GetPackage()
 	if !ok {
+		logrus.Error("Package does not exist "+ target.SubscriptionName)
 		pkg = target.SubscriptionName
 	}
 
