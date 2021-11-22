@@ -27,11 +27,11 @@ import (
 )
 
 const (
-	prometheusRule1           = "api-usage-alert-level1"
+	prometheusRule1           = "marin3r-api-usage-alert-level1"
 	prometheusRule1Desc       = "per minute over 4 hours"
-	prometheusRule2           = "api-usage-alert-level2"
+	prometheusRule2           = "marin3r-api-usage-alert-level2"
 	prometheusRule2Desc       = "per minute over 2 hours"
-	prometheusRule3           = "api-usage-alert-level3"
+	prometheusRule3           = "marin3r-api-usage-alert-level3"
 	prometheusRule3Desc       = "per minute over 30 minutes"
 	higherQuotaParam          = "200"
 	lowerQuotaParam           = "1"
@@ -71,25 +71,41 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	//verify that the TOQuota value is set and that Quota is not set
 	//assuming this is run after installation
 	if installation.Status.Quota == "" {
-		t.Fatal("Quota status not set after installation")
+		t.Fatal("Expected '.status.quota' to contain a quota name after installation, but got an empty string")
 	}
 	if installation.Status.ToQuota != "" {
-		t.Fatal("toQuota status set after installation")
+		t.Fatalf("Expected .status.toQuota' to be set after installation to empty value, but got %s", installation.Status.ToQuota)
 	}
 
 	if installation.Status.Quota != quotaConfig.GetName() {
-		t.Fatal(fmt.Sprintf("quota value set as '%s' but doesn't match the expected value: '%s'",
-			installation.Status.Quota, quotaConfig.GetName()))
+		t.Fatalf("Expected quota name '%s' to match the expected value from the quota config map, but got: '%s'",
+			installation.Status.Quota, quotaConfig.GetName())
 	}
 	verifyConfiguration(t, ctx.Client, quotaConfig)
 
-	// update the quota to a higher configuration
+	initialQuotaName := installation.Status.Quota
+	initialQuotaValue, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
+	if !found {
+		t.Fatalf("failed to quota parameter '%s' from the parameter secret %v", addon.QuotaParamName, err)
+	}
+	t.Logf("Initial quota name: %s, value: %s", initialQuotaName, initialQuotaValue)
 
-	t.Logf("Changing Quota to %v", higherQuotaName)
-	installation, err = changeQuota(t, ctx.Client, installation, higherQuotaParam, higherQuotaName)
+	// update the quota to a higher configuration if the initial quota is lower,
+	// otherwise switch to lower quota configuration
+	if initialQuotaValue < higherQuotaParam {
+		t.Logf("Changing Quota to %v", higherQuotaName)
+		err = changeQuota(t, ctx.Client, higherQuotaParam, higherQuotaName)
+	} else {
+		t.Logf("Changing Quota to %v", lowerQuotaName)
+		err = changeQuota(t, ctx.Client, lowerQuotaParam, lowerQuotaName)
+	}
+
 	if err != nil {
 		t.Fatalf("Error changing Quota: %v", err)
 	}
+
+	// Defer changing quota to initial value in case the test would fail below
+	defer changeQuota(t, ctx.Client, initialQuotaValue, initialQuotaName)
 
 	quotaConfig, err = getQuotaConfig(t, ctx.Client)
 	if err != nil {
@@ -250,9 +266,9 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("ratelimit pod does not have expected memory limits. Expected: %v Got: %v", newRatelimitLimit.String(), ratelimitPods.Items[0].Spec.Containers[0].Resources.Limits.Memory())
 	}
 
-	t.Logf("Changing Quota to %v", lowerQuotaName)
-	// update to a lower quota
-	installation, err = changeQuota(t, ctx.Client, installation, lowerQuotaParam, lowerQuotaName)
+	// update to a initial quota
+	t.Logf("Changing Quota to %v", initialQuotaName)
+	err = changeQuota(t, ctx.Client, initialQuotaValue, initialQuotaName)
 	if err != nil {
 		t.Fatalf("Error changing Quota: %v", err)
 	}
@@ -262,8 +278,6 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
 	verifyConfiguration(t, ctx.Client, quotaConfig)
-
-	t.Log("test A34 succeeded")
 }
 
 func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.ConfigMap, error) {
@@ -310,9 +324,9 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 	// verify that promethues rules for alerting get update with rate limiting configuration
 	prometheusRuleList := &v12.PrometheusRuleList{}
 	if err := c.List(context.TODO(), prometheusRuleList, &k8sclient.ListOptions{
-		Namespace: Marin3rProductNamespace,
+		Namespace: ObservabilityProductNamespace,
 	}); err != nil {
-		t.Fatal(fmt.Sprintf("unable to list prometheus rules in namespace '%s'", Marin3rProductNamespace))
+		t.Fatal(fmt.Sprintf("unable to list prometheus rules in namespace '%s'", ObservabilityProductNamespace))
 	}
 
 	for _, prometheusRule := range prometheusRuleList.Items {
@@ -387,13 +401,13 @@ func checkResources(t TestingTB, productName string, configReplicas, crReplicas 
 		t.Fatalf(fmt.Sprintf("Failed verifying %v requested cpu: expected %v but got %v ", productName, resourceConfig.Requests.Cpu(), crResources.Requests.Cpu()))
 	}
 	if resourceConfig.Requests.Memory().Cmp(*crResources.Requests.Memory()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying %v requested memory: expected %v but got %v ", productName, resourceConfig.Requests.Memory(), resourceConfig.Requests.Memory()))
+		t.Fatalf(fmt.Sprintf("Failed verifying %v requested memory: expected %v but got %v ", productName, resourceConfig.Requests.Memory(), crResources.Requests.Memory()))
 	}
 	if resourceConfig.Limits.Cpu().Cmp(*crResources.Limits.Cpu()) != 0 {
 		t.Fatalf(fmt.Sprintf("Failed verifying %v cpu limits: expected %v but got %v ", productName, resourceConfig.Limits.Cpu(), crResources.Limits.Cpu()))
 	}
 	if resourceConfig.Limits.Memory().Cmp(*crResources.Limits.Memory()) != 0 {
-		t.Fatalf(fmt.Sprintf("Failed verifying %v limits: expected %v but got %v ", productName, resourceConfig.Limits.Memory(), resourceConfig.Limits.Memory()))
+		t.Fatalf(fmt.Sprintf("Failed verifying %v limits: expected %v but got %v ", productName, resourceConfig.Limits.Memory(), crResources.Limits.Memory()))
 	}
 }
 
@@ -421,16 +435,28 @@ func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 	return quotaConfig, nil
 }
 
-func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHMI,
-	quotaParam, quotaName string) (*rhmiv1alpha1.RHMI,
-	error) {
+func changeQuota(t TestingTB, c k8sclient.Client,
+	quotaParam, quotaName string) error {
+	installation, err := GetRHMI(c, true)
+	if err != nil {
+		t.Fatal("Couldn't get RHMI cr for quota test")
+	}
+	if installation == nil {
+		t.Fatalf("Got invalid rhmi CR: %v", installation)
+	}
+
+	if installation.Status.Quota == quotaName {
+		t.Logf("changeQuota(): Won't apply a new quota value. Quota %s already configured", quotaName)
+		return nil
+	}
+
 	newSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "addon-managed-api-service-parameters",
 			Namespace: RHMIOperatorNamespace,
 		},
 	}
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), c, newSecret, func() error {
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), c, newSecret, func() error {
 		if newSecret.Data == nil {
 			newSecret.Data = make(map[string][]byte, 1)
 		}
@@ -440,7 +466,7 @@ func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHM
 	})
 	if err != nil {
 		t.Fatalf("failed updating addon secret with new quota: %v", err)
-		return nil, err
+		return err
 	}
 	// verifyConfiguration again
 	startTime := time.Now()
@@ -458,7 +484,7 @@ func changeQuota(t TestingTB, c k8sclient.Client, installation *rhmiv1alpha1.RHM
 			t.Log("Timeout waiting for Quota to be changed")
 		}
 	}
-	return installation, nil
+	return nil
 }
 
 func podMatchesConfig(podList *v1.PodList, limit resource.Quantity) bool {
