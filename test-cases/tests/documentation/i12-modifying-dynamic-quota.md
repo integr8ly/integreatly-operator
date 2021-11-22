@@ -13,7 +13,7 @@ tags:
 
 ## Description
 
-As a RHOAM user, I want to modify the quota, post RHOAM installation. 
+As a RHOAM user, I want to modify the quota, post RHOAM installation.
 
 - Jira ref link: https://issues.redhat.com/browse/MGDDOC-122
 
