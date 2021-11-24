@@ -62,6 +62,14 @@ func (c *CloudResources) SetOperatorNamespace(newNamespace string) {
 	c.Config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
+func (c *CloudResources) SetStrategiesConfigMapName(strategiesConfigMapName string) {
+	c.Config["STRATEGIES_CONFIG_MAP_NAME"] = strategiesConfigMapName
+}
+
+func (c *CloudResources) GetStrategiesConfigMapName() string {
+	return c.Config["STRATEGIES_CONFIG_MAP_NAME"]
+}
+
 func (c *CloudResources) Read() ProductConfig {
 	return c.Config
 }
