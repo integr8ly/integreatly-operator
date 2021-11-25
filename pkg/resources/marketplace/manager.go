@@ -54,7 +54,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		},
 	}
 
-	res, err := catalogSourceReconciler.Reconcile(ctx)
+	res, err := catalogSourceReconciler.Reconcile(ctx, t.SubscriptionName)
 	if res.Requeue {
 		return fmt.Errorf("Requeue")
 	}
@@ -68,6 +68,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	logrus.Infof("Target %v", t)
 
 	mutateSub := func() error {
+
 		sub.Spec = &coreosv1alpha1.SubscriptionSpec{
 			InstallPlanApproval:    approvalStrategy,
 			Channel:                t.Channel,
@@ -75,6 +76,12 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 			CatalogSource:          catalogSourceReconciler.CatalogSourceName(),
 			CatalogSourceNamespace: catalogSourceReconciler.CatalogSourceNamespace(),
 		}
+
+		logrus.Infof("Catalog Source Name 2: " + catalogSourceReconciler.CatalogSourceName())
+		logrus.Infof("Catalog Source NS 2 : " + catalogSourceReconciler.CatalogSourceNamespace())
+		logrus.Infof("Package 2: " + t.Package)
+		logrus.Infof("Channel 2: " + t.Channel)
+
 		return nil
 	}
 
@@ -106,6 +113,16 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	if (k8serr.IsAlreadyExists(err)) {
 		log.Info("Sub already exist")
 	}
+
+
+	logrus.Infof("sub.Spec.Package: " + sub.Spec.Package)
+	logrus.Infof("sub.Spec.Channel: " + sub.Spec.Channel)
+	logrus.Infof("sub.Spec.CatalogSource: " + sub.Spec.CatalogSource)
+	logrus.Infof("sub.Spec.CatalogSourceNamespace: " + sub.Spec.CatalogSourceNamespace)
+	if (sub.Status.InstallPlanRef != nil) {
+		logrus.Infof("sub.Status.InstallPlanRef.Name: " + sub.Status.InstallPlanRef.Name)
+	}
+
 
 	logrus.Infof("Sub 2 %v", sub)
 
