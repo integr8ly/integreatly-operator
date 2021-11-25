@@ -59,7 +59,7 @@ products:
   3scale:
     channel: "threescale-2.11"
     installFrom: "implicit"
-    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:6c916f91899e1c280859ccc49aea9c16554d92e33857151b1050bffc905cb872"
+    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:a5bd262966f0c384e08559a07d2a12e0272e5778f2fce4e21af8fc2f6407b18d"
     package: 3scale-operator
   amqonline:
     channel: "rhmi"
