@@ -4979,6 +4979,7 @@ services-rhmi:master/git.apache.org/thrift.git-v0.12.0
 services-rhmi:master/github.com/3scale-ops/marin3r-v0.8.0
 services-rhmi:master/github.com/3scale/3scale-operator-v0.2.1-0.20210312114906-e612e89addbf
 services-rhmi:master/github.com/3scale/3scale-porta-go-client-v0.0.4
+services-rhmi:master/github.com/3scale/apicast-operator-v0.4.0
 services-rhmi:master/github.com/Apicurio/apicurio-registry-operator-v0.0.0-20200903111206-f9f14054bc16
 services-rhmi:master/github.com/Azure/azure-pipeline-go-v0.2.1
 services-rhmi:master/github.com/Azure/azure-pipeline-go-v0.2.2
@@ -5082,6 +5083,7 @@ services-rhmi:master/github.com/PuerkitoBio/goquery-v1.6.1
 services-rhmi:master/github.com/PuerkitoBio/purell-v1.1.0
 services-rhmi:master/github.com/PuerkitoBio/purell-v1.1.1
 services-rhmi:master/github.com/PuerkitoBio/urlesc-v0.0.0-20170810143723-de5bf2ad4578
+services-rhmi:master/github.com/RHsyseng/operator-utils-v0.0.0-20200213165520-1a022eb07a43
 services-rhmi:master/github.com/RHsyseng/operator-utils-v0.0.0-20200506183821-e3b4a2ba9c30
 services-rhmi:master/github.com/RHsyseng/operator-utils-v0.0.0-20200709142328-d5a5812a443f
 services-rhmi:master/github.com/Shopify/logrus-bugsnag-v0.0.0-20171204204709-577dee27f20d
