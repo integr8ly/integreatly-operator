@@ -922,6 +922,9 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
+	if postgres.Status.Phase != types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
+	}
 
 	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {

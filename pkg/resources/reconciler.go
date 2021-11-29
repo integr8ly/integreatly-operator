@@ -162,20 +162,6 @@ type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := productName + ".integreatly.org" + "/finalizer"
 
-	// Replace finalizers with the new format finalizers
-	err := UpdateFinalizer(ctx, inst, client, productName, finalizer, log)
-	if err != nil {
-		log.Error(fmt.Sprintf("Error replacing finalizer %s in installation", finalizer), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Add finalizer if not there
-	err = AddFinalizer(ctx, inst, client, finalizer, log)
-	if err != nil {
-		log.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	// Run finalization logic. If it fails, don't remove the finalizer
 	// so that we can retry during the next reconciliation
 	if inst.GetDeletionTimestamp() != nil {
@@ -192,6 +178,21 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 		// Don't continue reconciling the product
 		return integreatlyv1alpha1.PhaseNone, nil
 	}
+
+	// Replace finalizers with the new format finalizers
+	err := UpdateFinalizer(ctx, inst, client, productName, finalizer, log)
+	if err != nil {
+		log.Error(fmt.Sprintf("Error replacing finalizer %s in installation", finalizer), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Add finalizer if not there
+	err = AddFinalizer(ctx, inst, client, finalizer, log)
+	if err != nil {
+		log.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
