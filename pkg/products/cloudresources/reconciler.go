@@ -166,16 +166,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if err := r.addServiceUpdates(ctx, client, croProviders.RedisResourceType, redisServiceUpdatesToInstall); err != nil {
+	phase, err = r.addServiceUpdates(ctx, client, croProviders.RedisResourceType, redisServiceUpdatesToInstall)
+	if err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile redis service updates", err)
 		return phase, err
 	}
+	if phase == integreatlyv1alpha1.PhaseInProgress {
+		return phase, nil
+	}
 
-	if err := r.addServiceUpdates(ctx, client, croProviders.PostgresResourceType, postgresServiceUpdateTimestamp); err != nil {
+	phase, err = r.addServiceUpdates(ctx, client, croProviders.PostgresResourceType, postgresServiceUpdateTimestamp)
+	if err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile postgres service updates", err)
 		return phase, err
+	}
+	if phase == integreatlyv1alpha1.PhaseInProgress {
+		return phase, nil
 	}
 
 	// In this case due to cloudresources reconciler is always installed in the
@@ -464,70 +472,46 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 	return nil
 }
 
-func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Client, resourceType croProviders.ResourceType, updates []string) error {
-	cfgMap := &corev1.ConfigMap{}
-
-	if err := client.Get(ctx, k8sclient.ObjectKey{
-		Name:      r.Config.GetStrategiesConfigMapName(),
-		Namespace: r.installation.Namespace,
-	}, cfgMap); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
+func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Client, resourceType croProviders.ResourceType, updates []string) (integreatlyv1alpha1.StatusPhase, error) {
+	cfgMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetStrategiesConfigMapName(),
+			Namespace: r.installation.Namespace,
+		},
 	}
 
-	// Add service update names from RedisServiceUpdatesToInstall variable into CRO config
-	// preserve other values present in the serviceUpdates list for production redis
-
-	resourceConfig := map[string]map[string]interface{}{}
-	data, ok := cfgMap.Data[string(resourceType)]
-	if ok {
-		if err := json.Unmarshal([]byte(data), &resourceConfig); err != nil {
-			return err
-		}
-	}
-
-	// setup config structure in a safe manner
-	var updatesConfig []string
-	if _, ok = resourceConfig[croUtil.TierProduction]; !ok {
-		resourceConfig[croUtil.TierProduction] = make(map[string]interface{})
-	}
-	if _, ok = resourceConfig[croUtil.TierProduction][serviceUpdatesKey]; !ok {
-		resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = []string{}
-	}
-	updatesConfig, ok = resourceConfig[croUtil.TierProduction][serviceUpdatesKey].([]string)
-	if !ok {
-		resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = []string{}
-	}
-	originalLen := len(updatesConfig)
-
-	// add items from RedisServiceUpdatesToInstall to the config if they are not in it already
-	for _, update := range updates {
-		found := false
-		for _, u := range updatesConfig {
-			if u == update {
-				found = true
-				break
+	op, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
+		resourceConfig := map[string]map[string]interface{}{}
+		data, ok := cfgMap.Data[string(resourceType)]
+		if ok {
+			if err := json.Unmarshal([]byte(data), &resourceConfig); err != nil {
+				return err
 			}
 		}
-		if !found {
-			updatesConfig = append(updatesConfig, update)
-		}
-	}
 
-	// We are only appending updates to an array, so patch call is required only if number of items in the array changed
-	if originalLen != len(updatesConfig) {
-		// add updated array of updates to the original config, this will preserve all other redis config data
-		resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = updatesConfig
+		if _, ok = resourceConfig[croUtil.TierProduction]; !ok {
+			resourceConfig[croUtil.TierProduction] = make(map[string]interface{})
+		}
+		if _, ok = resourceConfig[croUtil.TierProduction][serviceUpdatesKey]; !ok {
+			resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = []string{}
+		}
+		resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = updates
 		updatesConfigJSON, err := json.Marshal(resourceConfig)
 		if err != nil {
 			return err
 		}
 		cfgMap.Data[string(resourceType)] = string(updatesConfigJSON)
-		return client.Patch(ctx, cfgMap, k8sclient.Merge)
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	return nil
+	if op == controllerutil.OperationResultUpdated {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // reconcileCIDRValue sets the CIDR value in the ConfigMap from the addon

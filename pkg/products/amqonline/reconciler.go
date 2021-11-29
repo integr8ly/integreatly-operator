@@ -307,7 +307,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	}
 
 	if postgres.Status.Phase != cro1types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 	}
 
 	// Read the CRO secret, to get values to copy to enmasse namespace.

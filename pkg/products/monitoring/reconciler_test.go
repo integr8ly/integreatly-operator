@@ -56,6 +56,14 @@ const (
 
 var localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-monitoring")
 
+func buildInstallation(modifyFn func(rhmi *integreatlyv1alpha1.RHMI)) *integreatlyv1alpha1.RHMI {
+	mock := basicInstallation()
+	if modifyFn != nil {
+		modifyFn(mock)
+	}
+	return mock
+}
+
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -568,7 +576,9 @@ func TestReconciler_testPhases(t *testing.T) {
 		{
 			Name:           "test namespace terminating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			Installation:   basicInstallation(),
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaultInstallationNamespace,
