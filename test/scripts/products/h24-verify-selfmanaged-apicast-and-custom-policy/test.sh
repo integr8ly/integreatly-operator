@@ -2,19 +2,17 @@
 
 #  Prerequisites:
 # 		oc logged as cluster admin (kubeadmin)
-#  Recommended, before running current version of script, to have following:
-# 		Password for customer, if testing-idp is not yet available.
+#  Recommended, before running the script in interactive mode (- interactive-mode=true ), to have following:
 # 		Customer Token, if testing-idp and customer-admin users are already available.
 # 		Open 3scale Admin Portal, to be ready to put updates. Details will be notified by script.
-
+#  If script executed in batch mode (-interactive-mode=false) - no input required, just to be logged as admin.
 
 go run h24-verify-selfmanaged-apicast-and-custom-policy.go \
 -apicast-operator-version="0.5.0" \
 -apicast-image-stream-tag="3scale2.11.0" \
 -apicast-namespace="selfmanaged-apicast" \
--create-testing-idp=false \
 -use-customer-admin-user=true \
--promote-manually=true \
+-interactive-mode=false \
 --namespace-prefix redhat-rhoam- \
 
 

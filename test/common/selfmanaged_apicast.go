@@ -4,185 +4,162 @@
 // Doc: https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00
 // This test case should prove that it is possible for customers to deploy self-managed APIcast
 
-package main
+package common
 
 import (
 	"bytes"
 	"context"
-	"encoding/xml"
-	"flag"
-	"fmt"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
-	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"net/http"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
-	"syscall"
-	"time"
-
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
 	appsv1alpha1 "github.com/3scale/apicast-operator/pkg/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
+	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	testcommon "github.com/integr8ly/integreatly-operator/test/common"
+	"github.com/integr8ly/integreatly-operator/test/resources"
+	imagev1 "github.com/openshift/api/image/v1"
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"golang.org/x/term"
+	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	//"github.com/integr8ly/integreatly-operator/test/resources"
-	"k8s.io/client-go/rest"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
-	defaultDedicatedAdminName    = "customer-admin"
+	apicastOperatorVersion       = "0.5.0"
+	apicastImageStreamTag        = "3scale2.11.0"
+	apicastNamespace             = "selfmanaged-apicast"
+	apiExampleApicast            = "apicast-example-apicast"
 	adminPortalCredentialsSecret = "adminportal-credentials"
+	namespacePrefix              = "redhat-rhoam-"
 	accountOrgName               = "Developer"
 	serviceSystemName            = "api"
-	apiExampleApicast            = "apicast-example-apicast"
 )
 
 var (
-	log                                                             = l.NewLogger()
-	apicastNamespace, apicastImageStreamTag, apicastOperatorVersion string
-	namespacePrefix                                                 string
-	threeScaleNamespace                                             string
+	log                 = l.NewLogger()
+	threeScaleNamespace string
 )
 
-func main() {
-	var useCustomerAdminUser, interactiveMode bool
-	flag.StringVar(&apicastOperatorVersion, "apicast-operator-version", "", "APIcast Operator version")
-	flag.StringVar(&apicastImageStreamTag, "apicast-image-stream-tag", "", "APIcast image stream tag")
-	flag.StringVar(&apicastNamespace, "apicast-namespace", "selfmanaged-apicast", "Selfmanaged APIcast namespace")
-	flag.BoolVar(&useCustomerAdminUser, "use-customer-admin-user", true, "Whether to use customer-admin user or not")
-	flag.BoolVar(&interactiveMode, "interactive-mode", true, "Whether to run script in interactive mode or not")
-	flag.StringVar(&namespacePrefix, "namespace-prefix", "redhat-rhoam-", "Namespace prefix of RHOAM. Defaults to redhat-rhoam-")
-	flag.Parse()
+func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
 	threeScaleNamespace = fmt.Sprintf("%s3scale", namespacePrefix)
-
 	scheme := runtime.NewScheme()
 	utilruntime.Must(operatorsv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
 	utilruntime.Must(appsv1alpha1.SchemeBuilder.AddToScheme(scheme))
+	utilruntime.Must(projectv1.AddToScheme(scheme))
+	utilruntime.Must(imagev1.AddToScheme(scheme))
 
 	config := ctrl.GetConfigOrDie()
 	client, err := k8sclient.New(config, k8sclient.Options{
 		Scheme: scheme,
 	})
 	if err != nil {
-		log.Error("Error get Client k8sclient. Exit...", err)
-		return
+		t.Fatalf("Error get Client k8sclient: %v", err)
 	}
 	ctx := context.Background()
 
-	err = cleanUpBeforeTest(ctx, client)
+	installation, err := GetRHMI(testingCtx.Client, true)
 	if err != nil {
-		log.Error("Error clean before test", err)
-		return
+		t.Fatal("couldn't get RHMI cr")
+	}
+	if installation == nil {
+		t.Fatalf("Got invalid rhmi CR: %v", installation)
+	}
+
+	err = cleanUpBeforeTest(ctx, client, installation)
+	if err != nil {
+		t.Fatalf("Error clean before test: %v", err)
 	}
 
 	// Create apicast namespace
-	err = createNamespace(ctx, client)
+	err = createApicastNamespace(ctx, client)
 	if err != nil {
-		log.Error("Error create namespace "+apicastNamespace+". Exit...", err)
-		return
+		t.Fatalf("Error create namespace  %s: %v", apicastNamespace, err)
 	}
 
 	// Get 3scale admin token
 	token3scale, err := getThreeScaleAdminToken(ctx, client)
 	if err != nil {
-		log.Error("Error get 3scale admin Token. Exit...", err)
-		return
+		t.Fatalf("Error get 3scale admin Token: %v", err)
 	}
 
 	// Customer login
-	if useCustomerAdminUser {
-		err = customerLogin(interactiveMode)
-		if err != nil {
-			log.Error("Error in customer login. Exit...", err)
-			return
-		}
+	err = customerLogin(t, testingCtx, installation)
+	if err != nil {
+		t.Fatalf("Error in customer login: %v", err)
 	}
 
 	// Import APIcast Image
-	err = importApicastImage()
+	err = importApicastImage(ctx, client)
 	if err != nil {
-		log.Error("Error importApicastImage(), Exit...", err)
-		return
+		t.Fatalf("Error import Apicast image: %v", err)
 	}
 
 	// Create an adminportal-credentials secret
 	threeScaleAdminPortal, err := getThreeScaleAdminPortal(ctx, client)
 	if err != nil {
-		log.Error("Error get 3scale admin portal. Exit...", err)
-		return
+		t.Fatalf("Error get 3scale admin portal: %v", err)
 	}
 	err = createAdminPortalCredentialsSecret(ctx, client, token3scale, threeScaleAdminPortal)
 	if err != nil {
-		log.Error("Error create adminportal-credentials secret. Exit...", err)
-		return
+		t.Fatalf("Error create adminportal-credentials secret: %v", err)
 	}
 
 	// Use self-managed APIcast instead of the builded one for API
-	userKey, err := promoteSelfManagedAPIcast(ctx, client, interactiveMode, threeScaleAdminPortal, token3scale)
+	userKey, err := promoteSelfManagedAPIcast(ctx, client, threeScaleAdminPortal, token3scale)
 	if err != nil {
-		log.Error("Error promote Self-managed APIcast. Exit...", err)
-		return
+		t.Fatalf("Error promote Self-managed APIcast: %v", err)
 	}
 
 	// Install 3scale APIcast gateway operator
 	err = installThreeScaleApicastGatewayOperator(client)
 	if err != nil {
-		log.Error("Error install 3scale APIcast gateway Operator. Exit...", err)
-		return
+		t.Fatalf("Error install 3scale APIcast gateway Operator: %v", err)
 	}
 
 	// Create a self-managed APIcast
 	err = createSelfManagedApicast(ctx, client)
 	if err != nil {
-		log.Error("Error create self-managed APIcast. Exit...", err)
-		return
+		t.Fatalf("Error create self-managed APIcast: %v", err)
 	}
-	err = waitApiCastDeploymentReady(config)
+	err = waitApiCastDeploymentReady(testingCtx)
 	if err != nil {
-		log.Error("self-managed APIcast deployment is not Ready ", err)
-		return
+		t.Fatalf("self-managed APIcast deployment is not Ready: %v", err)
 	}
+
 	// Create a route for the self-managed APIcast
 	routeHost, err := createApicastRoute(ctx, client, threeScaleAdminPortal)
 	if err != nil {
-		log.Error("Error create route for self-managed APIcast. Exit...", err)
-		return
+		t.Fatalf("Error create route for self-managed APIcast: %v", err)
 	}
 
 	// Validation of the Deployment
-	res, err := validateDeployment(userKey, routeHost)
+	err = validateDeployment(userKey, routeHost)
 	if err != nil {
-		log.Error("Validation of Self-managed APIcast deployment - Failed", err)
-	} else {
-		if res {
-			log.Info("Validation of Self-managed APIcast deployment - Succeeded")
-		} else {
-			log.Error("Self-managed APIcast deployment issue", nil)
-		}
+		t.Fatalf("Validation of Self-managed APIcast deployment failed with error: %v", err)
 	}
-
 	log.Info("Self-managed APIcast deployment - Completed")
 
-} //end of main()
+} //end of TestSelfmanagedApicast()
 
-func createNamespace(ctx context.Context, client k8sclient.Client) error {
+func createApicastNamespace(ctx context.Context, client k8sclient.Client) error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: apicastNamespace,
@@ -207,22 +184,11 @@ func createNamespace(ctx context.Context, client k8sclient.Client) error {
 		}
 		return true, nil
 	})
-	//set namespace
-	command := "oc project " + apicastNamespace
-	err = runShellCommand(command)
 	if err != nil {
 		log.Error("Error set namespace "+ns.Name, err)
 		return err
 	}
 	return nil
-}
-
-// Import APIcast Image
-func importApicastImage() error {
-	log.Info("Import APIcast Image")
-	command := "oc import-image 3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag + " --from=registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag + " --confirm"
-	err := runShellCommand(command)
-	return err
 }
 
 // Get 3scale admin token
@@ -373,11 +339,16 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 			}
 			return false, err
 		}
-		_, err = rhmiConfigs.GetLatestInstallPlan(context.TODO(), subscription, client)
+		latestInstallPlan, err := rhmiConfigs.GetLatestInstallPlan(context.TODO(), subscription, client)
 		if err != nil {
 			log.Info("Error get install plan for subscription " + subscription.Name + ", waiting")
 			return false, nil
 		}
+		if latestInstallPlan.Status.Phase != olmv1alpha1.InstallPlanPhaseComplete {
+			log.Info("Install plan phase is " + string(latestInstallPlan.Status.Phase) + ", waiting for Complete")
+			return false, nil
+		}
+		log.Info("Install plan found for subscription " + subscription.Name)
 		return true, nil
 	})
 
@@ -468,105 +439,27 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 	return routeHost, nil
 }
 
-func customerLogin(interactiveMode bool) error {
-	log.Info("Customer Login")
-	command := ""
-	var err error
-	if interactiveMode {
-		message := "Copy Customer Admin user Token to command prompt (from openshift console -> copy login command Screen),\n"
-		message += "and press Enter: "
-		token, err := getCustomerAdminPasswordTokenFromTerm(message)
-		if err != nil {
-			log.Error("Error login customer, can't get token: ", err)
-			return err
-		}
-		command = "oc login --token=" + token
-	} else {
-		customerAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
-		command = "oc login -u " + customerAdminUsername + " -p " + testcommon.DefaultPassword
-	}
-	err = runShellCommand(command)
+func promoteSelfManagedAPIcast(ctx context.Context, client k8sclient.Client, threeScaleAdminPortal string, token3scale string) (string, error) {
+	log.Info("Promote selfmanaged APIcast")
+	err := deleteManagedApicastRoutes(ctx, client)
 	if err != nil {
-		log.Error("Error login customer: ", err)
-		return err
-	}
-	return nil
-}
-
-func getCustomerAdminPasswordTokenFromTerm(prompt string) (string, error) {
-	fmt.Print(prompt)
-	bytepw, err := term.ReadPassword(syscall.Stdin)
-	if err != nil {
+		log.Error("Error deleting Managed Apicast Routes : ", err)
 		return "", err
 	}
-	pass := string(bytepw)
-	return pass, nil
-}
-
-func runShellCommand(command string) error {
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
 	if err != nil {
-		log.Error("Error: ", err)
-		return err
-	}
-	return nil
-}
-
-// Configure the service to use the self-managed APIcast instead of the built-in APIcast for API.
-// See https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00
-func promoteSelfManagedAPIcastInUI() (string, error) {
-	message := "This is the manual step - Configure the service to use the self-managed APIcast instead of the built-in APIcast for API. \n"
-	message += "a. Navigate to 3scale Admin Portal. You can use the following command to find route  \"oc get routes --namespace " + threeScaleNamespace + " | grep admin\" \n"
-	message += "b. In the Products section, click API → Integration → Settings → APIcast Self Managed.\n"
-	message += "c. Change the Staging Public Base URL. Replace api-3scale-apicast- with selfmanaged-. \n"
-	message += "d. Click Update Product. \n"
-	message += "e. Click API → Configuration → Promote to Staging and Promote to Production\n"
-	message += "f. Copy user_key value (from Staging APIcast - Example curl for testing) to command prompt \n"
-	log.Info(message)
-	fmt.Print("Waiting for manual step completion. Copy user_key value here and Press enter when done :")
-	userKey, err := term.ReadPassword(syscall.Stdin)
-	if err != nil {
-		log.Error("Error: ", err)
+		log.Error("Error get Service ID", err)
 		return "", err
 	}
-	log.Info("Promote - completed, continue ...")
-	return string(userKey[:]), err
-}
-
-func promoteSelfManagedAPIcast(ctx context.Context, client k8sclient.Client, interactiveMode bool,
-	threeScaleAdminPortal string, token3scale string) (string, error) {
-	userKey := ""
-	var err error
-	if interactiveMode {
-		userKey, err = promoteSelfManagedAPIcastInUI()
-		if err != nil {
-			log.Error("Error promote Self-managed APIcast. Exit...", err)
-			return "", err
-		}
-	} else {
-		err = deleteManagedApicastRoutes(ctx, client)
-		if err != nil {
-			log.Error("Error deleting Managed Apicast Routes : ", err)
-			return "", err
-		}
-		serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
-		if err != nil {
-			log.Error("Error get Service ID", err)
-			return "", err
-		}
-		err = apiCastConfigPromote(threeScaleAdminPortal, token3scale, serviceId)
-		if err != nil {
-			log.Error("Error in 3scale api Proxy Config Promote : ", err)
-			return "", err
-		}
-		userKey, err = getUserKey(threeScaleAdminPortal, token3scale, serviceId)
-		if err != nil {
-			log.Error("Error get user key: ", err)
-			return "", err
-		}
+	err = apiCastConfigPromote(threeScaleAdminPortal, token3scale, serviceId)
+	if err != nil {
+		log.Error("Error in 3scale api Proxy Config Promote : ", err)
+		return "", err
+	}
+	userKey, err := getUserKey(threeScaleAdminPortal, token3scale, serviceId)
+	if err != nil {
+		log.Error("Error get user key: ", err)
+		return "", err
 	}
 	return userKey, err
 }
@@ -578,22 +471,14 @@ func validateDeploymentRequest(userKey, routeHost string) (int, error) {
 		log.Error("HTTP Get error", err)
 		return 0, err
 	}
-	//log.Info("Response Code: " + strconv.Itoa(resp.StatusCode))
-	if resp.StatusCode == http.StatusOK {
-		defer resp.Body.Close()
-		_, err := ioutil.ReadAll(resp.Body) //bytes,err:= ...
-		if err != nil {
-			log.Error("Unable to read response body: ", err)
-			return 0, nil
-		}
-		return http.StatusOK, nil
-	} else {
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Expected status %v but got %v\n", http.StatusOK, resp.StatusCode)
 	}
 	return resp.StatusCode, nil
 }
 
-func validateDeployment(userKey, routeHost string) (bool, error) {
+func validateDeployment(userKey, routeHost string) error {
 	log.Info("Validation of deployment")
 	responseCode := 0
 	err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
@@ -606,11 +491,11 @@ func validateDeployment(userKey, routeHost string) (bool, error) {
 		}
 		return true, nil
 	})
-	if err != nil && responseCode != http.StatusOK {
-		return false, err
+	if err != nil || responseCode != http.StatusOK {
+		return err
 	}
 	fmt.Printf("Response Code: %v\n", responseCode)
-	return true, nil
+	return nil
 }
 
 func apiCastConfigPromote(threeScaleAdminPortal string, token3scale string, serviceId string) error {
@@ -775,14 +660,17 @@ func checkApicastNamespaceExists(ctx context.Context, serverClient k8sclient.Cli
 	return false, nil
 }
 
-func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client) error {
+func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {
+	log.Info("CleanUp before Test")
 	apiCastNsExists, err := checkApicastNamespaceExists(ctx, serverClient)
 	if err != nil {
 		return err
 	}
 	if apiCastNsExists {
-		command := "oc delete project " + apicastNamespace
-		err = runShellCommand(command)
+		_, err := pkgresources.RemoveNamespace(ctx, installation, serverClient, apicastNamespace, log)
+		if err != nil {
+			return err
+		}
 		if err != nil {
 			return err
 		}
@@ -963,15 +851,10 @@ func getRequest(token3scale string, url string) ([]byte, error) {
 	return bytesresp, nil
 }
 
-func waitApiCastDeploymentReady(config *rest.Config) error {
+func waitApiCastDeploymentReady(testingCtx *TestingContext) error {
 	log.Info("Wait APIcast deployment ready")
 	err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
-		testingContext, err := testcommon.NewTestingContext(config)
-		if err != nil || testingContext == nil {
-			log.Error("failed to create testing context", err)
-			return false, err
-		}
-		deployment, err := testingContext.KubeClient.AppsV1().Deployments(apicastNamespace).Get(context.TODO(), apiExampleApicast, metav1.GetOptions{})
+		deployment, err := testingCtx.KubeClient.AppsV1().Deployments(apicastNamespace).Get(context.TODO(), apiExampleApicast, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				return false, nil
@@ -986,6 +869,51 @@ func waitApiCastDeploymentReady(config *rest.Config) error {
 	})
 	if err != nil {
 		return fmt.Errorf("APIcast deployment %v is not ready: %s", apiExampleApicast, err)
+	}
+	return nil
+}
+
+func customerLogin(t TestingTB, ctx *TestingContext, installation *integreatlyv1alpha1.RHMI) error {
+	log.Info("Customer Login")
+	customerAdminUsername := fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		return err
+	}
+	err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
+		err = resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", installation.Spec.MasterURL),
+			customerAdminUsername, DefaultPassword, httpClient, TestingIDPRealm, t)
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	return nil
+}
+
+func importApicastImage(ctx context.Context, client k8sclient.Client) error {
+	log.Info("Import Apicast Image")
+	imagestream := &imagev1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "apicast-gateway-rhel8",
+			Namespace: apicastNamespace,
+		},
+		Spec: imagev1.ImageStreamSpec{
+			Tags: []imagev1.TagReference{
+				{
+					Name: "3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag,
+					From: &corev1.ObjectReference{
+						Kind: "DockerImage",
+						Name: "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag,
+					},
+				},
+			},
+		},
+	}
+	err := client.Create(ctx, imagestream)
+	if err != nil {
+		log.Error("Error create imagestream "+apicastImageStreamTag, err)
+		return err
 	}
 	return nil
 }
