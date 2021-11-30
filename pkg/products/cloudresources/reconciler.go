@@ -166,6 +166,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	// In this case due to cloudresources reconciler is always installed in the
+	// same namespace as the operatorNamespace we pass operatorNamespace as the
+	// productNamepace too
+	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
+		return phase, err
+	}
+
 	phase, err = r.addServiceUpdates(ctx, client, croProviders.RedisResourceType, redisServiceUpdatesToInstall)
 	if err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
@@ -182,17 +191,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile postgres service updates", err)
 		return phase, err
 	}
+
 	if phase == integreatlyv1alpha1.PhaseInProgress {
 		return phase, nil
-	}
-
-	// In this case due to cloudresources reconciler is always installed in the
-	// same namespace as the operatorNamespace we pass operatorNamespace as the
-	// productNamepace too
-	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
-		return phase, err
 	}
 
 	phase, err = r.reconcileBackupsStorage(ctx, installation, client)
