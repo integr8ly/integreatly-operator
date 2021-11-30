@@ -15,6 +15,8 @@ require (
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.39.2
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77
+	github.com/chromedp/chromedp v0.7.6
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
 	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32

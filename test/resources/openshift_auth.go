@@ -3,12 +3,12 @@ package resources
 import (
 	goctx "context"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
