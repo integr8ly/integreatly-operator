@@ -241,6 +241,9 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	logrus.Infof("rhmi spec: %v", installation.Spec)
+	logrus.Infof("rhmi status: %v", installation.Status)
+	
 	originalInstallation := installation.DeepCopy()
 
 	retryRequeue := ctrl.Result{
