@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/3scale-ops/marin3r v0.8.0
-	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
+	github.com/3scale/3scale-operator v0.7.0
 	github.com/3scale/apicast-operator v0.4.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
@@ -27,7 +27,7 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
-	github.com/integr8ly/cloud-resource-operator v0.31.0
+	github.com/integr8ly/cloud-resource-operator v0.32.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e

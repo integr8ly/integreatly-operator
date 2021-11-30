@@ -52,8 +52,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/3scale-ops/marin3r v0.8.0 h1:id1aDZ3yXFw4BoWoPuZAYqt3AjqddpPOaGQrct9EHV8=
 github.com/3scale-ops/marin3r v0.8.0/go.mod h1:RvfldXZk0ap1zZwZQLj28DY+CpGOFDfNQFLEJfYKiC4=
-github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf h1:7ev7/t4QJgQqPxfKAZko/svXooB1t8Rlt5UFzWaa8gY=
-github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf/go.mod h1:G2jfrlmdPGTOnDxyJ8JdsSZlB+xZqv3lBtwJTFtVVIo=
+github.com/3scale/3scale-operator v0.7.0 h1:98lKWk6d5Lu+wPS5tn0ikZGtzOsiAe2BQlsS60pd7J0=
+github.com/3scale/3scale-operator v0.7.0/go.mod h1:G2jfrlmdPGTOnDxyJ8JdsSZlB+xZqv3lBtwJTFtVVIo=
 github.com/3scale/3scale-porta-go-client v0.0.4/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/3scale/apicast-operator v0.4.0 h1:CqE2I0ooGQGWLEqguh/7yHZERWSXV1cRvhej6vZEnLg=
 github.com/3scale/apicast-operator v0.4.0/go.mod h1:SZpVbZnAWJGfZ8qfLDYPpqVTUTB8xT8r/3oepGej6rU=
@@ -937,8 +937,8 @@ github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mq
 github.com/influxdata/usage-client v0.0.0-20160829180054-6d3895376368/go.mod h1:Wbbw6tYNvwa5dlB6304Sd+82Z3f7PmVZHVKU637d4po=
 github.com/integr8ly/application-monitoring-operator v1.6.0 h1:vQV5vXxOho2lONcJe0qTV+oxg7qWE2l4hee4ACtS620=
 github.com/integr8ly/application-monitoring-operator v1.6.0/go.mod h1:08svhH7y8+X89PDDZESLsRAg1+uMJU7IM78Q+03wdOY=
-github.com/integr8ly/cloud-resource-operator v0.31.0 h1:Ak4ZL9NFklxcfNl+6Sy0ss3wwJDw4EM8gxfdiUeK1gU=
-github.com/integr8ly/cloud-resource-operator v0.31.0/go.mod h1:WIiZpdOKp9h7D0GIz4oc48uZrdaKP8rOhQvERLLvpeg=
+github.com/integr8ly/cloud-resource-operator v0.32.0 h1:pSJqt2uNRXQeSxDmQa1Lm82OE0C7i9dXI/e+/Z0yVbM=
+github.com/integr8ly/cloud-resource-operator v0.32.0/go.mod h1:WIiZpdOKp9h7D0GIz4oc48uZrdaKP8rOhQvERLLvpeg=
 github.com/integr8ly/grafana-operator v2.0.0+incompatible h1:wSqKpcr5wE6pws35iJeOYGVBMJbSNEhcE6hlD0zF9NU=
 github.com/integr8ly/grafana-operator v2.0.0+incompatible/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
 github.com/integr8ly/grafana-operator/v3 v3.5.0/go.mod h1:nie1yDLaWkgUjW+EBTLUjDzj1xsGOG444ZpcR1i1MrA=
