@@ -3,8 +3,9 @@ module github.com/integr8ly/integreatly-operator
 go 1.16
 
 require (
-	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
-	github.com/3scale/marin3r v0.7.0
+	github.com/3scale-ops/marin3r v0.8.0
+	github.com/3scale/3scale-operator v0.7.0
+	github.com/3scale/apicast-operator v0.4.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -16,7 +17,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
-	github.com/envoyproxy/go-control-plane v0.9.7
+	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.20.3
 	github.com/go-openapi/strfmt v0.20.1
@@ -27,13 +28,13 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
-	github.com/integr8ly/cloud-resource-operator v0.31.0
+	github.com/integr8ly/cloud-resource-operator v0.32.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.1
 	github.com/integr8ly/keycloak-client v0.1.4
 	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
-	github.com/onsi/ginkgo v1.15.0
-	github.com/onsi/gomega v1.10.5
+	github.com/onsi/ginkgo v1.15.2
+	github.com/onsi/gomega v1.11.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
