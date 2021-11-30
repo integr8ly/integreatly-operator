@@ -1,6 +1,6 @@
 ---
 automation:
-  - MGDAPI-1920
+  - MGDAPI-3146
 products:
   - name: rhoam
     environments:
@@ -19,20 +19,91 @@ Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse
 
 Note: in RHOAM v1.3.0 the [guide on this](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00) was published so it is preferred to follow the official guide and only use the text below as a supportive material.
 
-The document includes the steps for manual test and instructions how to run the automation script
+The document includes the steps for manual test and instructions how to run the automation script.
+There are two automation options:
 
-1. [Automation script](#Automation-script)
-2. [Manual Test Steps](#Manual-Test-Steps)
+- Automation test could be executed in Pipeline as part of IDP based tests - **H24**. Test file: _integreatly-operator/test/common/selfmanaged_apicast.go_
+- Automation test could run separately, by standalone script, in interactive mode and batch mode. Test directory: _integreatly-operator/test/scripts/products/h24-verify-selfmanaged-apicast-and-custom-policy/_  
+  _Note. Automation tests do not include creation of custom policy_
+
+1. [Automation Test in Pipeline](#Automation-Test-in-Pipeline)
+2. [Standalon Automation script](#Standalon-Automation-script)
+3. [Manual Test Steps](#Manual-Test-Steps)
 
 ## Steps
 
-### Automation script
+### Automation Test in Pipeline
 
-#### Automation Test procedure briefly
+Selfmanaged Apicast Automation test will be integrated into Pipeline, and also could be executed as e2e single test.
+Test is a part of `IDP based tests`.
+
+- Test name: `TestSelfmanagedApicast`
+- Test location: `integreatly-operator/test/common`
+- Test file: `selfmanaged_apicast.go`
+- Test definition in `integreatly-operator/test/common/tests.go:`
+
+```asciidoc
+IDP_BASED_TESTS = []TestSuite{
+    {
+        []TestCase{
+          .....
+          {Description: "H24 - Verify selfmanaged Apicast", Test: TestSelfmanagedApicast},
+	},
+    .....
+```
+
+#### Configuration parameters
+
+TestSelfmanagedApicast has following configuration parameters, that hardcoded as constants in `selfmanaged_apicast.go`
+
+```
+const (
+  apicastOperatorVersion       = "0.5.0"
+  apicastImageStreamTag        = "3scale2.11.0"
+  apicastNamespace             = "selfmanaged-apicast"
+  adminPortalCredentialsSecret = "adminportal-credentials"
+  namespacePrefix              = "redhat-rhoam-"
+  defaultDedicatedAdminName    = "customer-admin"
+  promotionAttempts            = 20
+  accountOrgName               = "Developer"
+  serviceSystemName            = "api"
+)
+```
+
+#### Run test as e2e single test
+
+This is sample how to run TestSelfmanagedApicast as single test:
+
+```
+$ TEST=H24 INSTALLATION_TYPE=managed-api make test/e2e/single
+```
+
+Expected result could be similar to following:
+
+```
+...
+time="2021-12-13T14:51:14+02:00" level=info msg="userKey found"
+time="2021-12-13T14:51:14+02:00" level=info msg="Install 3scale APIcast gateway Operator"
+time="2021-12-13T14:51:20+02:00" level=info msg="Create self-managed APIcast"
+time="2021-12-13T14:51:20+02:00" level=info msg="Create route for self-managed APIcast"
+time="2021-12-13T14:51:25+02:00" level=info msg="routeHost: selfmanaged-staging.apps.xxx.3bjq.s1.devshift.org"
+....
+time="2021-12-13T14:52:11+02:00" level=info msg="Response Code: 200"
+time="2021-12-13T14:52:11+02:00" level=info msg="Validation of Self-managed APIcast deployment - Succeeded"
+time="2021-12-13T14:52:11+02:00" level=info msg="Self-managed APIcast deployment - Completed"
+....
+PASS
+ok  ...
+```
+
+### Standalon Automation script
+
+#### Test location
 
 ```sh
 $ cd integreatly-operator/test/scripts/products/h24-verify-selfmanaged-apicast-and-custom-policy
-$ test.sh
+$ ls
+h24-verify-selfmanaged-apicast-and-custom-policy.go  test.sh
 ```
 
 **Notes**
@@ -44,8 +115,7 @@ Parameters for configuration and recommendations for test could be found in _tes
 
 #### Recommended have the following before running the script
 
-- Password for customer-admin user, if testing-idp is not yet available
-- Customer Token, if testing-idp and customers are already available
+- Customer Token
   - To get customer token (example below is for user _customer-admin01_):
     - Login to OSD Portal as _customer-admin01_
     - at the top-right corner, under _Customer Admin 01_, select _Copy login command_ ->
@@ -56,20 +126,13 @@ Parameters for configuration and recommendations for test could be found in _tes
 
 #### Configuration parameters:
 
-- create-testing-idp
-  - _true_ - to allow script to create IDP and customer-admin users, if not exists yet.
-  - _false_ - if IDP and customer-admin users do not exists yet  
-    **Note:** IDP also could be created using separate idp creation script, as in following example:
-
-```sh
-  $ PASSWORD=<password> DEDICATED_ADMIN_PASSWORD=<password> scripts/setup-sso-idp.sh
-```
-
 - use-customer-admin-user
   - true - use this option
   - false - this option could be used for script debugging, using current user, such as kubeadmin
 - promote-manually
-  - true - use this option. The option will require manual configuration -  
+  - false - to run script in batch mode. No interaction with user, and no any additional input from user required.
+    The flow is similar to Test running in Pipeline.
+  - true - the option could be useful for investigation. The option will require manual configuration -  
     to use the self-managed APIcast instead of the built-in, and for promotion to Staging and Production.  
     Following notes are provided by the script in runtime, and script is waiting for these manual operations completion.
 
@@ -83,11 +146,10 @@ Parameters for configuration and recommendations for test could be found in _tes
 	*f. Copy user_key value (from Staging APIcast - Example curl for testing) to command prompt:
 ```
 
-- false - the option is in development, for fully automated script running in batch mode, without interaction with user
-- 3scale-version="2.11"
-- apicast-operator-version="v0.5.0"
-- apicast-image-stream-tag="3scale2.11.0"
-- apicast-namespace="selfmanaged-apicast"
+-apicast-operator-version="0.5.0" \
+-apicast-image-stream-tag="3scale2.11.0" \
+-apicast-namespace="selfmanaged-apicast" \
+--namespace-prefix redhat-rhoam- \
 
 #### Run the automation test script
 
@@ -96,7 +158,7 @@ $ cd integreatly-operator/test/scripts/products/h24-verify-selfmanaged-apicast-a
 $ test.sh
 ```
 
-- The script is working in interactive mode, two inputs will be required in command line in script runtime
+- If the script is working in interactive mode, two inputs will be required in command line in script runtime
   (while using following default parameters: _promote-manually=true_, _create-testing-idp=false_):
   - 1st input prompt:
 
@@ -135,6 +197,48 @@ Put **user_key** to command prompt. _User-key will be taken from 3scale portal, 
   .......
   INFO[0432] Validation of Self-managed APIcast API gateway Deployment - Succeeded
   INFO[0432] Self-managed APIcast API gateway - Deployment script Completed
+```
+
+- If the script is running in batch mode, `-interactive-mode=false`, - no input required during script execution.
+- Expected result will be similar to following:
+
+```asciidoc
+$ ./test.sh
+....
+project.project.openshift.io "selfmanaged-apicast" deleted
+...
+INFO[0026] Get 3scale admin Token
+INFO[0026] Customer Login
+Login successful.
+...
+3scale2.11.0
+  tagged from registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:3scale2.11.0
+...
+Image Name:	apicast-gateway-rhel8:3scale2.11.0
+....
+INFO[0031] Get 3scale admin Portal
+INFO[0031] Route: zync-3scale-provider-ndjgh
+INFO[0031] 3scale Admin portal: 3scale-admin.apps.xxx.3bjq.s1.devshift.org
+INFO[0031] Create adminportal-credentials secret
+INFO[0032] Delete api-3scale-apicast- routes in redhat-rhoam-3scale namespace
+INFO[0032] sendGetRequest, url: https://3scale-admin.apps.xxxx.3bjq.s1.devshift.org/admin/api/services.xml
+INFO[0032] Service ID found: 2
+INFO[0032] Service Update URL: https://3scale-admin.apps.xxxx.3bjq.s1.devshift.org/admin/api/services/2.xml
+....
+INFO[0038] sendGetRequest, url: https://3scale-admin.apps.xxxx.3bjq.s1.devshift.org/admin/api/accounts.xml
+INFO[0038] Account ID found: 3
+INFO[0038] sendGetRequest, url: https://3scale-admin.apps.xxxx.3bjq.s1.devshift.org/admin/api/accounts/3/applications.xml
+INFO[0039] userKey found
+INFO[0039] Install 3scale APIcast gateway Operator
+INFO[0044] Create self-managed APIcast
+INFO[0044] Create route for self-managed APIcast
+INFO[0049] routeHost: selfmanaged-staging.apps.xxxx.3bjq.s1.devshift.org
+Expected status 200 but got 503
+Expected status 200 but got 503
+INFO[0080] Response Code: 200
+INFO[0080] Validation of Self-managed APIcast deployment - Succeeded
+INFO[0080] Self-managed APIcast deployment - Completed
+$
 ```
 
 ### Manual Test Steps
