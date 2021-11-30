@@ -101,6 +101,12 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
 		},
+		{
+			[]TestCase{
+				{"B01B - Verify users can login to products", TestProductLogins},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
 	}
 
 	SCALABILITY_TESTS = []TestSuite{
