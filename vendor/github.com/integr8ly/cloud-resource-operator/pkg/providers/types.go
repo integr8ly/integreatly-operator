@@ -68,7 +68,7 @@ type PostgresProvider interface {
 	GetName() string
 	SupportsStrategy(s string) bool
 	GetReconcileTime(ps *v1alpha1.Postgres) time.Duration
-	CreatePostgres(ctx context.Context, ps *v1alpha1.Postgres) (*PostgresInstance, croType.StatusMessage, error)
+	ReconcilePostgres(ctx context.Context, ps *v1alpha1.Postgres) (*PostgresInstance, croType.StatusMessage, error)
 	DeletePostgres(ctx context.Context, ps *v1alpha1.Postgres) (croType.StatusMessage, error)
 }
 
