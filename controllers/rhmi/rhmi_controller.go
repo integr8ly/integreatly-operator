@@ -246,6 +246,22 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	logrus.Infof("lastError: %s", installation.Status.LastError)
 
 	if (installation.Status.Stages != nil) {
+
+		_, rhssoExists := installation.Status.Stages["authentication"]
+		if (rhssoExists) {
+			logrus.Infof("authentication: %s", installation.Status.Stages["authentication"].Products["rhsso"].Phase)
+		}
+
+		_, crExists := installation.Status.Stages["cloud-resources"]
+		if (crExists) {
+			logrus.Infof("cloud-resources: %s", installation.Status.Stages["products"].Products["cloud-resources"].Phase)
+		}
+
+		_, observabilityExists := installation.Status.Stages["observability"]
+		if (observabilityExists) {
+			logrus.Infof("observability: %s", installation.Status.Stages["observability"].Products["observability"].Phase)
+		}
+
 		_, exists := installation.Status.Stages["products"]
 		if (exists) {
 			if _, ok := installation.Status.Stages["products"].Products["3scale"]; ok {
