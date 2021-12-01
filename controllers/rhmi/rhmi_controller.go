@@ -248,15 +248,22 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if (installation.Status.Stages != nil) {
 		_, exists := installation.Status.Stages["products"]
 		if (exists) {
-			_, ok := installation.Status.Stages["products"].Products["3scale"]; ok {
+			if _, ok := installation.Status.Stages["products"].Products["3scale"]; ok {
 				logrus.Infof("3Scale Phase: %s", installation.Status.Stages["products"].Products["3scale"].Phase)
 			}
-
+			if _, ok := installation.Status.Stages["products"].Products["marin3r"]; ok {
+				logrus.Infof("marin3r Phase: %s", installation.Status.Stages["products"].Products["marin3r"].Phase)
+			}
+			if _, ok := installation.Status.Stages["products"].Products["rhssouser"]; ok {
+				logrus.Infof("rhssouser Phase: %s", installation.Status.Stages["products"].Products["rhssouser"].Phase)
+			}
+			if _, ok := installation.Status.Stages["products"].Products["grafana"]; ok {
+				logrus.Infof("grafana Phase: %s", installation.Status.Stages["grafana"].Products["3scale"].Phase)
+			}
 		}
 	}
-
-
-
+	logrus.Infof("Quota: %s", installation.Status.ToQuota)
+	
 	originalInstallation := installation.DeepCopy()
 
 	retryRequeue := ctrl.Result{
