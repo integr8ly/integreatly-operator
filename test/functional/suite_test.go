@@ -67,7 +67,8 @@ func TestAPIs(t *testing.T) {
 			t.Fatalf("error getting RHMI CR: %v", err)
 		}
 		if rhmi.Spec.UseClusterStorage == "true" {
-			t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false")
+			t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false" +
+				"\nOr set BYPASS_STORAGE_TYPE_CHECK=true to bypass check")
 		}
 	}
 

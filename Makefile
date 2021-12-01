@@ -334,7 +334,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -385,6 +385,10 @@ ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	$(MAKE) cluster/cleanup/serviceaccount
 endif
 
+.PHONY:cluster/prepare/rbac/dedicated-admins
+cluster/prepare/rbac/dedicated-admins:
+	@-oc create -f config/rbac/dedicated_admins_rbac.yaml
+
 .PHONY: cluster/cleanup
 cluster/cleanup: kustomize
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
@@ -414,6 +418,10 @@ cluster/cleanup/crds:
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 	@-oc delete crd rhmiconfigs.integreatly.org
+
+.PHONY:cluster/cleanup/rbac/dedicated-admins
+cluster/cleanup/rbac/dedicated-admins:
+	@-oc delete -f config/rbac/dedicated_admins_rbac.yaml
 
 .PHONY: deploy/integreatly-rhmi-cr.yml
 deploy/integreatly-rhmi-cr.yml:
