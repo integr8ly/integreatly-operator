@@ -263,7 +263,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 	logrus.Infof("Quota: %s", installation.Status.ToQuota)
-	
+
 	originalInstallation := installation.DeepCopy()
 
 	retryRequeue := ctrl.Result{

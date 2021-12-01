@@ -1,6 +1,6 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 60
+timeout: 600
 ---
 apiVersion: integreatly.org/v1alpha1
 kind: RHMI
