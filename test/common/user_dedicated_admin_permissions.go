@@ -227,10 +227,10 @@ func verifyDedicatedAdminRHMIConfigPermissions(t TestingTB, openshiftClient *res
 
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 403,
-		ExpectedReadStatusCode:   403,
+		ExpectedReadStatusCode:   200,
 		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
-		ExpectedListStatusCode:   403,
+		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
 		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{

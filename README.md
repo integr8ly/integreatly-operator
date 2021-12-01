@@ -198,6 +198,9 @@ make test/unit
 
 ### E2E tests
 
+A `BYPASS_STORAGE_TYPE_CHECK=true` flag is used to allow test to run when the operator is installed using cluster storage.
+This may cause side effects related to the cloud resources test.
+
 To run E2E tests against a clean OpenShift cluster using operator-sdk, build and push an image 
 to your own quay repo, then run the command below changing the installation type based on which type you are testing:
 ```
