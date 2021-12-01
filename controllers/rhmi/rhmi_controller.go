@@ -243,7 +243,20 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	logrus.Infof("rhmi spec: %v", installation.Spec)
 	logrus.Infof("rhmi status: %v", installation.Status)
-	
+	logrus.Infof("lastError: %s", installation.Status.LastError)
+
+	if (installation.Status.Stages != nil) {
+		_, exists := installation.Status.Stages["products"]
+		if (exists) {
+			_, ok := installation.Status.Stages["products"].Products["3scale"]; ok {
+				logrus.Infof("3Scale Phase: %s", installation.Status.Stages["products"].Products["3scale"].Phase)
+			}
+
+		}
+	}
+
+
+
 	originalInstallation := installation.DeepCopy()
 
 	retryRequeue := ctrl.Result{
