@@ -68,7 +68,7 @@ create_users() {
 }
 
 echo "User password set to \"${PASSWORD}\""
-echo "Dedciated Admin password set to \"${DEDICATED_ADMIN_PASSWORD}\""
+echo "Dedicated Admin password set to \"${DEDICATED_ADMIN_PASSWORD}\""
 CLIENT_SECRET=$(openssl rand -base64 20)
 OAUTH_URL=https://$(oc get route oauth-openshift -n openshift-authentication -o json | jq -r .spec.host)
 KEYCLOAK_URL=https://$(oc get route keycloak-edge -n "$INSTALLATION_PREFIX-rhsso" -o json | jq -r .spec.host)
