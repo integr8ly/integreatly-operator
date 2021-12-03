@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	"strings"
 	"time"
 
@@ -51,7 +52,7 @@ const (
 
 var (
 	log           = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "namespacelabel_controller"})
-	configMapName = "cloud-resources-aws-strategies"
+	configMapName = croAWS.DefaultConfigMapName
 	//configMap name derived from the addons metadata id
 	deletionConfigMap = deletionRHOAM
 )
