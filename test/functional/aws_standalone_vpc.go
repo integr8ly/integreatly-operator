@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	"net"
 	"strings"
 	"time"
@@ -31,8 +32,7 @@ import (
 var (
 	resourceType      = "_network"
 	tier              = "production"
-	dummyIpAddress    = "172.11.0.0/24"
-	strategyMapName   = "cloud-resources-aws-strategies"
+	strategyMapName   = croAWS.DefaultConfigMapName
 	allowedCidrRanges = []string{
 		"10.255.255.255/8",
 		"172.31.255.255/12",

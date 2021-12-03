@@ -28,7 +28,7 @@ import (
 	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
-	"github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -45,7 +45,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	manifestPackage              = "integreatly-cloud-resources"
 	serviceUpdatesKey            = "serviceUpdates"
 )
 
@@ -85,7 +84,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 
 	if config.GetStrategiesConfigMapName() == "" {
-		config.SetStrategiesConfigMapName("cloud-resources-aws-strategies")
+		config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
 	}
 
 	if err := configManager.WriteConfig(config); err != nil {
@@ -293,7 +292,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 			finalSnapshotIdentifier := ""
 
 			resourcesConfig := map[string]interface{}{
-				"blobstorage": aws.S3DeleteStrat{
+				"blobstorage": croAWS.S3DeleteStrat{
 					ForceBucketDeletion: &forceBucketDeletion,
 				},
 				"postgres": rds.DeleteDBClusterInput{
@@ -450,7 +449,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 
 func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.ConfigMap, deleteStrategy interface{}) error {
 	resource := croStrategyConfig.Data[resourceType]
-	strategyConfig := map[string]*aws.StrategyConfig{}
+	strategyConfig := map[string]*croAWS.StrategyConfig{}
 	if err := json.Unmarshal([]byte(resource), &strategyConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
 	}
@@ -482,26 +481,30 @@ func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Cli
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
-		resourceConfig := map[string]map[string]interface{}{}
-		data, ok := cfgMap.Data[string(resourceType)]
-		if ok {
-			if err := json.Unmarshal([]byte(data), &resourceConfig); err != nil {
-				return err
-			}
+
+		var rawStrategy map[string]*croAWS.StrategyConfig
+		if err := json.Unmarshal([]byte(cfgMap.Data[string(resourceType)]), &rawStrategy); err != nil {
+			return err
 		}
 
-		if _, ok = resourceConfig[croUtil.TierProduction]; !ok {
-			resourceConfig[croUtil.TierProduction] = make(map[string]interface{})
+		var updateConfig []string
+		if err := json.Unmarshal(rawStrategy[croUtil.TierProduction].ServiceUpdates, &updateConfig); err != nil {
+			return err
 		}
-		if _, ok = resourceConfig[croUtil.TierProduction][serviceUpdatesKey]; !ok {
-			resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = []string{}
-		}
-		resourceConfig[croUtil.TierProduction][serviceUpdatesKey] = updates
-		updatesConfigJSON, err := json.Marshal(resourceConfig)
+
+		updateConfig = updates
+		updatesMarshalled, err := json.Marshal(updateConfig)
 		if err != nil {
 			return err
 		}
-		cfgMap.Data[string(resourceType)] = string(updatesConfigJSON)
+
+		rawStrategy[croUtil.TierProduction].ServiceUpdates = updatesMarshalled
+
+		marshalledStrategy, err := json.Marshal(rawStrategy)
+		if err != nil {
+			return err
+		}
+		cfgMap.Data[string(resourceType)] = string(marshalledStrategy)
 
 		return nil
 	})
