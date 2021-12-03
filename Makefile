@@ -193,6 +193,7 @@ image/build/push: image/build image/push
 ############ E2E TEST COMMANDS ############
 .PHONY: test/e2e/prow
 test/e2e/prow: export component := integreatly-operator
+test/e2e/prow: export IMAGE_FORMAT := quay.io/integreatly/integreatly-operator:2.9
 test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/prow: export INSTALLATION_TYPE := managed
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
