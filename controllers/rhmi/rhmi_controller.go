@@ -242,6 +242,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	logrus.Infof("rhmi spec: %v", installation.Spec)
+	logrus.Infof("rhmi spec SelfSignedCerts: %v", installation.Spec.SelfSignedCerts)
 	logrus.Infof("rhmi status: %v", installation.Status)
 	logrus.Infof("lastError: %s", installation.Status.LastError)
 
