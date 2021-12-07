@@ -37,3 +37,4 @@ Go to [this directory](https://github.com/openshift/release/tree/master/ci-opera
     ```
 
 If `updateManagedTenantsOnly` is checked, you only need to follow step 6-7.
+##
