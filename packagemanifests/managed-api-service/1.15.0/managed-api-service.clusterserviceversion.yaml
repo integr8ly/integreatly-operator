@@ -51,7 +51,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.15.0-rc2
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.15.0-rc3
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.11.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -495,7 +495,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:rhoam-v1.15.0-rc2
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.15.0-rc3
                     imagePullPolicy: Always
                     name: rhmi-operator
                     ports:
