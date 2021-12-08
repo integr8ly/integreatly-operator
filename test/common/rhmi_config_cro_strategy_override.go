@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	CROStrategyConfigMap = "cloud-resources-aws-strategies"
+	CROStrategyConfigMap = croAWS.DefaultConfigMapName
 )
 
 /*
@@ -75,7 +76,7 @@ func VerifyCROStrategyMap(context context.Context, client client.Client, expecte
 
 	croStrategyConfig := &v12.ConfigMap{}
 	if err := client.Get(context, types.NamespacedName{Name: CROStrategyConfigMap, Namespace: RHMIOperatorNamespace}, croStrategyConfig); err != nil {
-		return fmt.Errorf("unable to get cloud-resources-aws-strategies config map : %v", err)
+		return fmt.Errorf("unable to get %s config map : %v", CROStrategyConfigMap, err)
 	}
 
 	redisExpectedBackupWindow := fmt.Sprintf("\"SnapshotWindow\":\"%s\"", expectedBackupWindow)
