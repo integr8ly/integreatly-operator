@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,6 +86,10 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	if config.GetStrategiesConfigMapName() == "" {
 		config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
+	}
+
+	if config.GetReconcileCount() == "" {
+		config.SetReconcileCount(0)
 	}
 
 	if err := configManager.WriteConfig(config); err != nil {
@@ -184,9 +189,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile redis service updates", err)
 		return phase, err
 	}
-	if phase == integreatlyv1alpha1.PhaseInProgress {
-		return phase, nil
-	}
 
 	phase, err = r.addServiceUpdates(ctx, client, croProviders.PostgresResourceType, postgresServiceUpdateTimestamp)
 	if err != nil {
@@ -195,8 +197,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if phase == integreatlyv1alpha1.PhaseInProgress {
-		return phase, nil
+	// TODO remove this block post 1.15.0
+	// the following block is custom code to give a number of additional reconiles at the beginning of
+	// a cro upgrade so there is time for Postgres/Redis cr to go in progress when there are serviceupdates applied during
+	// a rhoam upgrade
+	value, err := strconv.Atoi(r.Config.GetReconcileCount())
+	if err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+		return phase, err
+	}
+	if value < 10 {
+		r.log.Info(fmt.Sprintf("cloud resources reconcile, number of reconciles since upgrade began: %d", value))
+		r.Config.SetReconcileCount(value + 1)
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			phase := integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+			return phase, err
+		}
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	phase, err = r.reconcileBackupsStorage(ctx, installation, client)
@@ -484,7 +503,7 @@ func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Cli
 		},
 	}
 
-	op, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
 
 		var rawStrategy map[string]*croAWS.StrategyConfig
 		if err := json.Unmarshal([]byte(cfgMap.Data[string(resourceType)]), &rawStrategy); err != nil {
@@ -515,10 +534,6 @@ func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Cli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if op == controllerutil.OperationResultUpdated {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
