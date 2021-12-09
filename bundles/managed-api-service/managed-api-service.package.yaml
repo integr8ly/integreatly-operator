@@ -1,0 +1,5 @@
+channels:
+- currentCSV: managed-api-service.v1.13.0
+  name: rhmi
+defaultChannel: rhmi
+packageName: managed-api-service
