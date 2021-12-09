@@ -223,6 +223,3 @@ make test/products/local
 ## Release
 
 See the [release doc](./RELEASE.md).
-
-
-
