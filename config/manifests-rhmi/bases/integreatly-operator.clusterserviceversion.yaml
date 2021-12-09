@@ -57,3 +57,4 @@ spec:
   provider:
     name: rhmi
   version: 2.9.0
+  replaces: 2.8.0

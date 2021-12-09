@@ -132,3 +132,4 @@ spec:
       alm-owner-rhoam: rhoam-operator
       operated-by: rhoam-operator
   version: 1.15.2
+  replaces: managed-api-service.v1.15.1
