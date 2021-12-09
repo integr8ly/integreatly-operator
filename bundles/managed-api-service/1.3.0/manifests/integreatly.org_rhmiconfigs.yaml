@@ -1,0 +1,122 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: rhmiconfigs.integreatly.org
+spec:
+  group: integreatly.org
+  names:
+    kind: RHMIConfig
+    listKind: RHMIConfigList
+    plural: rhmiconfigs
+    singular: rhmiconfig
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: RHOAMConfig is the Schema for the rhoamconfigs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: RHOAMConfigSpec defines the desired state of RHOAMConfig
+          properties:
+            backup:
+              properties:
+                applyOn:
+                  description: 'apply-on: string, day time. Format: "DDD hh:mm" >
+                    "wed 20:00". UTC time'
+                  type: string
+              type: object
+            maintenance:
+              properties:
+                applyFrom:
+                  description: 'apply-from: string, day time. Currently this is a
+                    6 hour window. Format: "DDD hh:mm" > "sun 23:00". UTC time'
+                  type: string
+              type: object
+            upgrade:
+              properties:
+                contacts:
+                  description: 'contacts: list of contacts which are comma separated
+                    "user1@example.com,user2@example.com"'
+                  type: string
+                notBeforeDays:
+                  description: Minimum of days since an upgrade is made available
+                    until it's approved
+                  nullable: true
+                  type: integer
+                schedule:
+                  type: boolean
+                waitForMaintenance:
+                  description: If this value is true, upgrades will be approved in
+                    the next maintenance window n days after the upgrade is made available.
+                    Being n the value of `notBeforeDays`.
+                  nullable: true
+                  type: boolean
+              type: object
+          type: object
+        status:
+          description: RHOAMConfigStatus defines the observed state of RHOAMConfig
+          properties:
+            maintenance:
+              description: "status block reflects the current configuration of the
+                cr \n \tstatus: \t\tmaintenance: \t\t\tapply-from: 16-05-2020 23:00
+                \t\t\tduration: \"6hrs\" \t\tupgrade: \t\t\twindow: \"3 Jan 1980 -
+                17 Jan 1980\""
+              properties:
+                applyFrom:
+                  type: string
+                duration:
+                  type: string
+              type: object
+            upgrade:
+              properties:
+                scheduled:
+                  description: Scheduled contains the information on the next upgrade
+                    schedule
+                  properties:
+                    for:
+                      description: For is the calculated time when the upgrade is
+                        scheduled for, in format "2 Jan 2006 15:04"
+                      type: string
+                  type: object
+              type: object
+            upgradeAvailable:
+              properties:
+                availableAt:
+                  description: 'Time of new update becoming available Format: "DDD
+                    hh:mm" > "sun 23:00". UTC time'
+                  format: date-time
+                  type: string
+                targetVersion:
+                  description: 'target-version: string, version of incoming RHOAM
+                    Operator'
+                  type: string
+              type: object
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -9,12 +9,12 @@ fi
 case $OLM_TYPE in
   "integreatly-operator")
     PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}') || echo "No previous version"
-    
+    PACKAGE_NAME=integreatly
     OPERATOR_TYPE=rhmi
     ;;
   "managed-api-service")
     PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}') || echo "No previous version"
-    echo "PREVIOUS VERSION IS ${PREVIOUS_VERSION}"
+    PACKAGE_NAME=managed-api-service
     OPERATOR_TYPE=rhoam
     ;;
   *)
@@ -50,16 +50,16 @@ create_new_csv() {
   if [[ -z "$PREVIOUS_VERSION" ]]
     then
       echo "here1..."
-      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi 
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
     else
       echo "here..."
-      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
   fi
 }
 
 update_csv() {
   echo "here2..."
-  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi 
+  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
 }
 
 # The base CSV is used to generate the final CSV by combining it with the other operator
