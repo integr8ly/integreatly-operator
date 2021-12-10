@@ -270,7 +270,8 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 	}
 	var replicationGroupClusters []elasticache.CacheCluster
 	for _, checkedCluster := range cacheClustersOutput.CacheClusters {
-		if *checkedCluster.ReplicationGroupId == *foundCache.ReplicationGroupId {
+		cluster := *checkedCluster
+		if resources.SafeStringDereference(cluster.ReplicationGroupId) == *foundCache.ReplicationGroupId {
 			replicationGroupClusters = append(replicationGroupClusters, *checkedCluster)
 		}
 	}
