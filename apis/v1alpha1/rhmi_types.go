@@ -110,12 +110,12 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline        OperatorVersion = "1.4"
-	OperatorVersionMonitoring       OperatorVersion = "1.6.2"
-	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
-	OperatorVersionRHSSO            OperatorVersion = "13.0.1"
-	OperatorVersionRHSSOUser        OperatorVersion = "13.0.1"
+	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
+	OperatorVersionAMQOnline           OperatorVersion = "1.4"
+	OperatorVersionMonitoring          OperatorVersion = "1.6.2"
+	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.62"
+	OperatorVersionRHSSO               OperatorVersion = "13.0.1"
+	OperatorVersionRHSSOUser           OperatorVersion = "13.0.1"
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.7.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
