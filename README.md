@@ -27,7 +27,6 @@ The operator installs the following products:
 - RHSSO (both a cluster instance, and a user instance)
 - Marin3r
 
-
 ## Prerequisites
 
 - [operator-sdk](https://github.com/operator-framework/operator-sdk) version v1.7.2.

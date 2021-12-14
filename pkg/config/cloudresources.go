@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,6 +61,22 @@ func (c *CloudResources) GetOperatorNamespace() string {
 
 func (c *CloudResources) SetOperatorNamespace(newNamespace string) {
 	c.Config["OPERATOR_NAMESPACE"] = newNamespace
+}
+
+func (c *CloudResources) SetStrategiesConfigMapName(strategiesConfigMapName string) {
+	c.Config["STRATEGIES_CONFIG_MAP_NAME"] = strategiesConfigMapName
+}
+
+func (c *CloudResources) GetStrategiesConfigMapName() string {
+	return c.Config["STRATEGIES_CONFIG_MAP_NAME"]
+}
+
+func (c *CloudResources) SetReconcileCount(reconcileCount int) {
+	c.Config["RECONCILE_COUNT"] = fmt.Sprintf("%d", reconcileCount)
+}
+
+func (c *CloudResources) GetReconcileCount() string {
+	return c.Config["RECONCILE_COUNT"]
 }
 
 func (c *CloudResources) Read() ProductConfig {
