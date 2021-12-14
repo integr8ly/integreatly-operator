@@ -241,6 +241,10 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 		if skipRangeStr, ok := csvFromCatalogSource.GetAnnotations()["olm.skipRange"]; ok {
 			regex := regexp.MustCompile(`(?m)integreatly-operator\.v(.*)$`)
+			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+				regex = regexp.MustCompile(`(?m)managed-api-service\.v(.*)$`)
+			}
+
 			rhmiPreviousVersion := regex.FindAllStringSubmatch(csvFromCatalogSource.Spec.Replaces, -1)[0][1]
 
 			if rhmiPreviousVersion == "" {
@@ -318,18 +322,6 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 			Requeue:      true,
 			RequeueAfter: 10 * time.Second,
 		}, nil
-	}
-
-	if isServiceAffecting {
-		// Fixes cases where an upgrade is already in progress eg: patch upgrades
-		// In that case we want to clear the toVersion so that the operator will reset it to the new upgrade
-		// If it's not cleared, the installation controller logic can't handle it, which will block the upgrade from completing.
-		if installation.Status.ToVersion != "" {
-			installation.Status.ToVersion = ""
-		}
-		if err := r.Status().Update(context.TODO(), installation); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
