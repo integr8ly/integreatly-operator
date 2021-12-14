@@ -72,8 +72,6 @@ var (
 				ApicuritoOperatorNamespace,
 				CodeReadyProductNamespace,
 				CodeReadyOperatorNamespace,
-				FuseProductNamespace,
-				FuseOperatorNamespace,
 				RHSSOUserProductNamespace,
 				RHSSOUserOperatorNamespace,
 				ThreeScaleProductNamespace,

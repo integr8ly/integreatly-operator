@@ -125,7 +125,6 @@ var _ = BeforeSuite(func(done Done) {
 		"3scale":               "3scale-operator",
 		"amq-online":           "enmasse-operator",
 		"codeready-workspaces": "codeready-operator",
-		"fuse":                 "syndesis-operator",
 		"user-sso":             "keycloak-operator",
 		"ups":                  "unifiedpush-operator",
 		"apicurito":            "apicurito-operator",
@@ -191,6 +190,7 @@ func waitForInstallationStageCompletion(k8sClient client.Client, retryInterval, 
 
 		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[rhmiv1alpha1.StageName(phase)].Phase)
 		if strings.Contains(phaseStatus, "completed") {
+			logrus.Info("Checking installation stage completion")
 			return true, nil
 		}
 

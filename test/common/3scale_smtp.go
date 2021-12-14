@@ -221,7 +221,7 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	// Get the fuse host url from the rhmi status
+	// Get the 3scale host url from the rhmi status
 	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)

@@ -3,6 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
@@ -27,6 +28,7 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	k8sappsv1 "k8s.io/api/apps/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -122,6 +124,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 // Reconcile reads that state of the cluster for fuse and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
@@ -142,53 +145,63 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
-		return phase, err
+	fuseInstallExists := false
+	// If product version is set we can assume fuse installed
+	if r.fuseExists(installation, r.log) {
+		r.scaleDown(ctx, serverClient)
+		r.removeAlerts(ctx, serverClient)
+		fuseInstallExists = true
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
-		return phase, err
-	}
+	if !fuseInstallExists {
+		phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
+			return phase, err
+		}
 
-	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), productNamespace, defaultFusePullSecret, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultFusePullSecret), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
+		phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
+			return phase, err
+		}
 
-	phase, err = r.reconcileViewFusePerms(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile view fuse permissions", err)
-		return phase, err
-	}
+		err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), productNamespace, defaultFusePullSecret, serverClient)
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultFusePullSecret), err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 
-	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.FuseSubscriptionName), err)
-		return phase, err
-	}
+		phase, err = r.reconcileViewFusePerms(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile view fuse permissions", err)
+			return phase, err
+		}
 
-	phase, err = r.reconcileCloudResources(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
-		return phase, err
-	}
+		phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.FuseSubscriptionName), err)
+			return phase, err
+		}
 
-	phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile custom resource", err)
-		return phase, err
-	}
+		phase, err = r.reconcileCloudResources(ctx, installation, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+			return phase, err
+		}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	r.log.Infof("ReconcileTemplates", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
+		phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile custom resource", err)
+			return phase, err
+		}
+
+		phase, err = r.reconcileTemplates(ctx, serverClient)
+		r.log.Infof("ReconcileTemplates", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+			return phase, err
+		}
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
@@ -197,7 +210,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
+	if fuseInstallExists {
+		phase, err = r.newAlertsReconcilerInverted(r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
+	} else {
+		// fresh install
+		phase, err = r.newAlertsReconciler(r.installation.Spec.Type).ReconcileAlerts(ctx, serverClient)
+	}
+
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
@@ -210,6 +229,48 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Infof("Reconciled successfully", l.Fields{"product": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) fuseExists(installation *integreatlyv1alpha1.RHMI, log l.Logger) bool {
+	log.Info("Checking for fuse install")
+	if installation.Status.Stages["products"].Products["fuse"].Version != "" {
+		return true
+	}
+	return false
+}
+
+func (r *Reconciler) removeAlerts(ctx context.Context, serverClient k8sclient.Client) {
+
+	alerts := map[string]string{
+		"ksm-fuse-online-alerts": "redhat-rhmi-fuse",
+		"ksm-endpoint-alerts":    "redhat-rhmi-fuse-operator",
+	}
+
+	deleteAlert := func(name string, ns string) {
+		rule := &monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+			},
+		}
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{
+			Name:      name,
+			Namespace: ns,
+		}, rule)
+		if err == nil {
+			if err := serverClient.Delete(ctx, rule); err != nil {
+				r.log.Errorf("Error deleting Prometheus Rule", l.Fields{"ns": ns, "name": name}, err)
+			}
+		} else if k8serr.IsNotFound(err) {
+			r.log.Infof("prom rule not found", l.Fields{"ns": ns, "name": name})
+		} else if err != nil {
+			r.log.Errorf("Error getting prom rule", l.Fields{"ns": ns, "name": name}, err)
+		}
+	}
+
+	for name, ns := range alerts {
+		deleteAlert(name, ns)
+	}
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
@@ -235,6 +296,58 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	}
 
 	return resource, nil
+}
+
+func (r *Reconciler) scaleDown(ctx context.Context, serverClient k8sclient.Client) {
+	var replicas int32 = 0
+
+	r.log.Info("Scaling down fuse deployments")
+
+	var deployment = &k8sappsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-operator",
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, deployment, func() error {
+		deployment.Spec.Replicas = &replicas
+		return nil
+	})
+	if k8serr.IsNotFound(err) {
+		r.log.Info("syndesis-operator deployment not found")
+	} else if err != nil {
+		r.log.Error("Error scaling syndesis-operator down", err)
+	}
+
+	// name/namespace to scale down
+	dcs := []string{
+		"broker-amq",
+		"syndesis-meta",
+		"syndesis-oauthproxy",
+		"syndesis-prometheus",
+		"syndesis-server",
+		"syndesis-ui",
+	}
+
+	for _, deployment := range dcs {
+
+		var dc = &appsv1.DeploymentConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      deployment,
+				Namespace: r.Config.GetNamespace(),
+			},
+		}
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, dc, func() error {
+			dc.Spec.Replicas = replicas
+			return nil
+		})
+		if k8serr.IsNotFound(err) {
+			r.log.Infof("deployment not found", l.Fields{"deployment": dc.Name})
+		} else if err != nil {
+			r.log.Errorf("Error scaling down", l.Fields{"deployment": dc.Name}, err)
+		}
+	}
 }
 
 func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

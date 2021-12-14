@@ -26,7 +26,6 @@ var (
 		"aMQOnlineOperatorDeployment",
 		"codeReadyOperatorDeployment",
 		"codereadyWorkspacesDeployment",
-		"fuseOperatorDeployment",
 		"solutionExplorerOperatorDeployment",
 		"upsOperatorDeployment",
 		"upsDeployment",
@@ -82,12 +81,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "codeready", ExpectedReplicas: 1},
 				{Name: "devfile-registry", ExpectedReplicas: 1},
 				{Name: "plugin-registry", ExpectedReplicas: 1},
-			},
-		},
-		"fuseOperatorDeployment": {
-			Name: FuseOperatorNamespace,
-			Products: []Product{
-				{Name: "syndesis-operator", ExpectedReplicas: 1},
 			},
 		},
 		"monitoringOperatorDeployment": {
@@ -161,17 +154,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "zync", ExpectedReplicas: 1},
 				{Name: "zync-database", ExpectedReplicas: int32(replicas["zyncDatabase"])},
 				{Name: "zync-que", ExpectedReplicas: int32(replicas["zyncQue"])},
-			},
-		},
-		"fuseDeploymentConfig": {
-			Name: NamespacePrefix + "fuse",
-			Products: []Product{
-				{Name: "syndesis-meta", ExpectedReplicas: 1},
-				{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
-				{Name: "syndesis-prometheus", ExpectedReplicas: 1},
-				{Name: "syndesis-server", ExpectedReplicas: 1},
-				{Name: "syndesis-ui", ExpectedReplicas: 1},
-				{Name: "broker-amq", ExpectedReplicas: 1},
 			},
 		},
 		"solutionExplorerDeploymentConfig": {
@@ -439,7 +421,6 @@ func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *Test
 	}
 	return []Namespace{
 		getDeploymentConfiguration("threeScaleDeploymentConfig", inst, t, ctx),
-		getDeploymentConfiguration("fuseDeploymentConfig", inst, t, ctx),
 		getDeploymentConfiguration("solutionExplorerDeploymentConfig", inst, t, ctx),
 	}
 }

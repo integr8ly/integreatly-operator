@@ -3,8 +3,6 @@ package fuse
 import (
 	"context"
 	"errors"
-	"fmt"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
 
@@ -15,8 +13,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -24,8 +20,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
-
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	routev1 "github.com/openshift/api/route/v1"
@@ -39,9 +33,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -132,10 +124,6 @@ func setupRecorder() record.EventRecorder {
 }
 
 func TestReconciler_config(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	cases := []struct {
 		Name           string
@@ -163,31 +151,6 @@ func TestReconciler_config(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
-		},
-		{
-			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			ExpectError:    true,
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-
-					return errors.New("dummy error")
-				},
-			},
-			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultInstallationNamespace,
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-				},
-			}),
-			FakeConfig: basicConfigMock(),
-			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -381,211 +344,6 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			}
 			if tc.ExpectedStatus != phase {
 				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
-			}
-		})
-	}
-}
-
-func TestReconciler_fullReconcile(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	installation := &integreatlyv1alpha1.RHMI{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installation",
-			Namespace: defaultInstallationNamespace,
-			UID:       types.UID("xyz"),
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RHMI",
-			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-		},
-	}
-
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultInstallationNamespace,
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(installation.GetUID()),
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
-
-	operatorNS := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultInstallationNamespace + "-operator",
-			Labels: map[string]string{
-				resources.OwnerLabelKey: string(installation.GetUID()),
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceActive,
-		},
-	}
-
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis",
-			Namespace: defaultInstallationNamespace,
-		},
-	}
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-global-config",
-			Namespace: defaultInstallationNamespace,
-		},
-	}
-
-	pullSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
-			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
-		},
-		Data: map[string][]byte{
-			"test": {'t', 'e', 's', 't'},
-		},
-	}
-
-	test1User := &usersv1.User{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test1",
-		},
-	}
-	rhmiDevelopersGroup := &usersv1.Group{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "rhmi-developers",
-		},
-		Users: []string{
-			test1User.Name,
-		},
-	}
-	operatorDeployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-operator",
-			Namespace: "fuse-operator",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{},
-						},
-					},
-				},
-			},
-		},
-	}
-	//completed postgres that points at the secret croPostgresSecret
-	postgresName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installation.Name)
-	croPostgres := &crov1alpha1.Postgres{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      postgresName,
-			Namespace: installation.Namespace,
-		},
-		Status: croTypes.ResourceTypeStatus{
-			Phase: croTypes.PhaseComplete,
-			SecretRef: &croTypes.SecretRef{
-				Name:      postgresName,
-				Namespace: installation.Namespace,
-			},
-		},
-	}
-
-	//secret created by the cloud resource operator postgres reconciler
-	croPostgresSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      postgresName,
-			Namespace: installation.Namespace,
-		},
-		Data: map[string][]byte{},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	cases := []struct {
-		Name           string
-		ExpectError    bool
-		ExpectedStatus integreatlyv1alpha1.StatusPhase
-		ExpectedError  string
-		FakeConfig     *config.ConfigReadWriterMock
-		FakeClient     k8sclient.Client
-		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.RHMI
-		Product        *integreatlyv1alpha1.RHMIProductStatus
-		Recorder       record.EventRecorder
-	}{
-		{
-			Name:           "test successful reconcile",
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment, croPostgres, croPostgresSecret),
-			FakeConfig:     basicConfigMock(),
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-					return nil
-				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "fuse-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-							},
-						}, &operatorsv1alpha1.Subscription{
-							Status: operatorsv1alpha1.SubscriptionStatus{
-								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "fuse-install-plan",
-								},
-							},
-						}, nil
-				},
-			},
-			Installation: installation,
-			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder:     setupRecorder(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			testReconciler, err := NewReconciler(
-				tc.FakeConfig,
-				tc.Installation,
-				tc.FakeMPM,
-				tc.Recorder,
-				getLogger(),
-				localProductDeclaration,
-			)
-			if err != nil && err.Error() != tc.ExpectedError {
-				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
-			}
-
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient, &quota.ProductConfigMock{})
-
-			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
-			}
-
-			if err == nil && tc.ExpectError {
-				t.Fatal("expected error but got none")
-			}
-
-			if status != tc.ExpectedStatus {
-				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
-			}
-
-			pvccr := &v1.PersistentVolumeClaim{}
-			err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: syndesisPrometheus, Namespace: defaultInstallationNamespace}, pvccr)
-			if err != nil {
-				t.Fatalf("expected no error but got one: %v", err)
-			}
-			if pvccr.Spec.Resources.Requests[v1.ResourceStorage] != resource.MustParse(syndesisPrometheusPVC) {
-				t.Fatalf("syndesis-prometheus pvc not set to 10Gi")
 			}
 		})
 	}
