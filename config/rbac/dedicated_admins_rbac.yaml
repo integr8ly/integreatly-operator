@@ -1,0 +1,39 @@
+# required only when installing using make code/run
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: rhoam-dedicated-admins-role
+rules:
+  - apiGroups:
+      - "integreatly.org"
+    resources:
+      - "rhmis"
+      - "rhmiconfigs"
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "apiextensions.k8s.io"
+    resourceNames:
+      - "rhmis.integreatly.org"
+      - "rhmiconfigs.integreatly.org"
+    resources:
+      - "customresourcedefinitions"
+    verbs:
+      - get
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rhoam-dedicated-admins-role-binding
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: dedicated-admins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rhoam-dedicated-admins-role
