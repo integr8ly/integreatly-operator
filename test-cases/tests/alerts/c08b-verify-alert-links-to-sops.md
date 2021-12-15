@@ -3,7 +3,6 @@ estimate: 15m
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
     targets:
       - 0.1.0
@@ -13,6 +12,7 @@ products:
       - 1.6.0
       - 1.9.0
       - 1.12.0
+      - 1.15.0
 ---
 
 # C08B - Verify alert links to SOPs

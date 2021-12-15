@@ -3,12 +3,12 @@ estimate: 15m
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
     targets:
       - 0.2.0
       - 1.0.0
       - 1.12.0
+      - 1.15.0
 ---
 
 # A27 - Verify pod priority class is created
