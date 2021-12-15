@@ -542,7 +542,7 @@ bundle: manifests kustomize
 .PHONY: bundle-rhmi
 bundle-rhmi: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhmi | operator-sdk generate bundle -q --output-dir ./bundles/managed-api-service/$(TAG) --version $(TAG) $(BUNDLE_METADATA_OPTS)
+	$(KUSTOMIZE) build config/manifests-rhmi | operator-sdk generate bundle -q --output-dir ./bundles/integreatly-operator/$(TAG) --version $(TAG) $(BUNDLE_METADATA_OPTS)
 
 .PHONY: bundle-rhoam
 bundle-rhoam: manifests kustomize

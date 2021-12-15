@@ -34,7 +34,7 @@ BUNDLE_ONLY="${BUNDLE_ONLY:-false}"
 
 
 start() {
-  if [ BUNDLE_ONLY ]; then
+  if [ "$BUNDLE_ONLY" = true ]; then
     generate_bundles
   else
     clean_up
@@ -87,7 +87,7 @@ generate_bundles() {
 
   for VERSION in $(echo $VERSIONS | sed "s/,/ /g")
   do
-    if [ BUNDLE_ONLY ]; then
+    if [ "$BUNDLE_ONLY" = true ]; then
       cd ./packagemanifests/$OLM_TYPE/$VERSION
       opm alpha bundle generate -d . --channels $CHANNEL \
           --package integreatly --output-dir $VERSION \
