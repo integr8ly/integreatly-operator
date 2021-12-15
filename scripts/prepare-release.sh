@@ -67,7 +67,6 @@ update_base_csv() {
   yq e -i ".metadata.name=\"$OLM_TYPE.v$VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
   yq e -i ".spec.version=\"$VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
   if [[ "${VERSION}" != "${PREVIOUS_VERSION}" ]]; then
-    # yq e -i ".spec.replaces=\"${OLM_TYPE}.${PREVIOUS_VERSION}\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
     yq e -i ".spec.replaces=\"$OLM_TYPE.v$PREVIOUS_VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
   fi
 }
