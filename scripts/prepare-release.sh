@@ -9,7 +9,7 @@ fi
 case $OLM_TYPE in
   "integreatly-operator")
     PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}') || echo "No previous version"
-    PACKAGE_NAME=integreatly
+    PACKAGE_NAME=integreatly-operator
     OPERATOR_TYPE=rhmi
     ;;
   "managed-api-service")
