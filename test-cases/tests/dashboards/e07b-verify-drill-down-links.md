@@ -4,7 +4,6 @@ components:
 products:
   - name: rhoam
     environments:
-      - osd-post-upgrade
       - osd-fresh-install
     targets:
       - 0.1.0
@@ -14,6 +13,7 @@ products:
       - 1.6.0
       - 1.9.0
       - 1.12.0
+      - 1.15.0
 ---
 
 # E07B - Verify drill down links
