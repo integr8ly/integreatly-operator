@@ -78,6 +78,7 @@ type SelfContained struct {
 	GrafanaDashboardLabelSelector         *metav1.LabelSelector    `json:"grafanaDashboardLabelSelector,omitempty"`
 	AlertManagerConfigSecret              string                   `json:"alertManagerConfigSecret,omitempty"`
 	AlertManagerVersion                   string                   `json:"alertManagerVersion,omitempty"`
+	BlackboxBearerTokenSecret             string                   `json:"blackboxBearerTokenSecret,omitempty"`
 	PrometheusVersion                     string                   `json:"prometheusVersion,omitempty"`
 	AlertManagerResourceRequirement       v1.ResourceRequirements  `json:"alertManagerResourceRequirement,omitempty"`
 	PrometheusResourceRequirement         v1.ResourceRequirements  `json:"prometheusResourceRequirement,omitempty"`
@@ -164,6 +165,14 @@ func (in *Observability) SelfSignedCerts() bool {
 func (in *Observability) HasAlertmanagerConfigSecret() (bool, string) {
 	if in.Spec.SelfContained != nil && in.Spec.SelfContained.AlertManagerConfigSecret != "" {
 		return true, in.Spec.SelfContained.AlertManagerConfigSecret
+	}
+
+	return false, ""
+}
+
+func (in *Observability) HasBlackboxBearerTokenSecret() (bool, string) {
+	if in.Spec.SelfContained != nil && in.Spec.SelfContained.BlackboxBearerTokenSecret != "" {
+		return true, in.Spec.SelfContained.BlackboxBearerTokenSecret
 	}
 
 	return false, ""

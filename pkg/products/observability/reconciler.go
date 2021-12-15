@@ -3,16 +3,11 @@ package observability
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
-	rbac "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -23,13 +18,19 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
+	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
 	v1 "k8s.io/api/core/v1"
+	flowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
+	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -42,14 +43,17 @@ const (
 	defaultProbeModule           = "http_2xx"
 	OpenshiftMonitoringNamespace = "openshift-monitoring"
 
-	roleBindingName                           = "rhmi-prometheus-k8s"
+	blackboxExporterPrefix                    = "blackbox-exporter"
+	blackboxExporterAPIGroup                  = "rbac.authorization.k8s.io"
 	clusterMonitoringPrometheusServiceAccount = "prometheus-k8s"
 	clusterMonitoringNamespace                = "openshift-monitoring"
-	roleRefAPIGroup                           = "rbac.authorization.k8s.io"
-	roleRefName                               = "rhmi-prometheus-k8s"
-	labelSelector                             = "monitoring-key=middleware"
-	clonedServiceMonitorLabelKey              = "integreatly.org/cloned-servicemonitor"
-	clonedServiceMonitorLabelValue            = "true"
+	serviceMonitorRoleBindingName             = "rhmi-prometheus-k8s"
+	serviceMonitorRoleRefAPIGroup             = "rbac.authorization.k8s.io"
+	serviceMonitorRoleRefName                 = "rhmi-prometheus-k8s"
+
+	clonedServiceMonitorLabelKey   = "integreatly.org/cloned-servicemonitor"
+	clonedServiceMonitorLabelValue = "true"
+	labelSelector                  = "monitoring-key=middleware"
 )
 
 type Reconciler struct {
@@ -145,6 +149,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 		}
+		// Delete ClusterRole and ClusterRoleBinding that were created for the blackbox exporter
+		err = r.removeRoleandRoleBindingForBlackbox(ctx, client)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
 		// If both namespaces are deleted, return complete
 		_, operatorNSErr := resources.GetNS(ctx, operatorNamespace, client)
 		_, productNSErr := resources.GetNS(ctx, productNamespace, client)
@@ -193,6 +203,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	})
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to check AMO is uninstalled"), err)
+	}
+
+	phase, err = r.reconcileBlackboxExporter(ctx, client, r.Config)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox exporter", err)
+		return phase, err
 	}
 
 	phase, err = r.reconcileSubscription(ctx, client, productNamespace, operatorNamespace)
@@ -386,6 +402,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			oo.Spec.SelfContained = &observability.SelfContained{}
 		}
 
+		bearerToken := r.getBlackboxExporterServiceAccountToken(ctx, serverClient, productNamespace)
+		if bearerToken != "" {
+			oo.Spec.SelfContained.BlackboxBearerTokenSecret = bearerToken
+		}
 		oo.Spec.SelfContained.OverrideSelectors = &overrideSelectors
 		oo.Spec.SelfContained.DisableRepoSync = &disabled
 		oo.Spec.SelfContained.DisableObservatorium = &disabled
@@ -700,7 +720,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, client k8sclient.C
 			}
 			//Remove rolebindings
 			for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
-				err := r.removeRoleandRoleBinding(ctx, client, namespace, roleRefName, roleBindingName)
+				err := r.removeRoleandRoleBindingForServiceMonitor(ctx, client, namespace, serviceMonitorRoleRefName, serviceMonitorRoleBindingName)
 				if err != nil {
 					return integreatlyv1alpha1.PhaseFailed, err
 				}
@@ -710,12 +730,103 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, client k8sclient.C
 	return integreatlyv1alpha1.PhaseCompleted, err
 }
 
+func (r *Reconciler) reconcileBlackboxExporter(ctx context.Context, client k8sclient.Client, cfg *config.Observability) (integreatlyv1alpha1.StatusPhase, error) {
+	// Create blackbox-exporter-service-account
+	blackboxExporterServiceAccount := &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      blackboxExporterPrefix,
+			Namespace: cfg.GetNamespace(),
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, client, blackboxExporterServiceAccount, func() error {
+		return nil
+	})
+	if err != nil {
+		r.log.Error("Unable to create blackbox-exporter ServiceAccount", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Create ClusterRole
+	apiGroups := []string{""}
+	resources := []string{"namespaces"}
+	verbs := []string{"get"}
+	err = r.reconcileClusterRole(ctx, client, blackboxExporterPrefix, apiGroups, resources, verbs)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Create ClusterRoleBinding
+	err = r.reconcileClusterRoleBinding(ctx, client, blackboxExporterPrefix, rbac.ServiceAccountKind, blackboxExporterPrefix, cfg.GetNamespace(), blackboxExporterPrefix, blackboxExporterAPIGroup)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getBlackboxExporterServiceAccountToken(ctx context.Context, client k8sclient.Client, namespace string) string {
+	// Get the blackbox-exporter ServiceAccount
+	sa := &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      blackboxExporterPrefix,
+			Namespace: namespace,
+		},
+	}
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: sa.Name, Namespace: sa.Namespace}, sa); err != nil {
+		r.log.Error("Unable to get blackbox-exporter ServiceAccount", err)
+		return ""
+	}
+
+	// Get secret containing bearer token from the blackbox-exporter ServiceAccount
+	secretName := ""
+	for _, secret := range sa.Secrets {
+		if res, _ := regexp.MatchString(fmt.Sprintf("%s-token", blackboxExporterPrefix), secret.Name); res {
+			secretName = secret.Name
+		}
+	}
+	return secretName
+}
+
+func (r *Reconciler) removeRoleandRoleBindingForBlackbox(ctx context.Context, serverClient k8sclient.Client) (err error) {
+	//Get the ClusterRoleBinding
+	clusterRoleBinding := &rbac.ClusterRoleBinding{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blackboxExporterPrefix}, clusterRoleBinding)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Delete the ClusterRoleBinding if serverClient was able to get it
+	if err == nil {
+		err = serverClient.Delete(ctx, clusterRoleBinding)
+		if err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
+	}
+
+	//Get the ClusterRole
+	clusterRole := &rbac.ClusterRole{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blackboxExporterPrefix}, clusterRole)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Delete the ClusterRole if serverClient was able to get it
+	if err == nil {
+		err = serverClient.Delete(ctx, clusterRole)
+		if err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *Reconciler) getServiceMonitors(ctx context.Context,
 	serverClient k8sclient.Client,
 	listOpts []k8sclient.ListOption) (serviceMonitorsMap map[string]*prometheus.ServiceMonitor, err error) {
 
 	if len(listOpts) == 0 {
-		return serviceMonitorsMap, fmt.Errorf("List options is empty")
+		return serviceMonitorsMap, fmt.Errorf("list options is empty")
 	}
 	serviceMonitors := &prometheus.ServiceMonitorList{}
 	err = serverClient.List(ctx, serviceMonitors, listOpts...)
@@ -807,12 +918,23 @@ func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
 		return err
 	}
 	//Create role binding for each of the namespace label selectors
+	apiGroups := []string{""}
+	resources := []string{
+		"services",
+		"endpoints",
+		"pods",
+	}
+	verbs := []string{
+		"get",
+		"list",
+		"watch",
+	}
 	for _, namespace := range sermon.Spec.NamespaceSelector.MatchNames {
-		err := r.reconcileRole(ctx, serverClient, namespace)
+		err := r.reconcileRole(ctx, serverClient, serviceMonitorRoleRefName, namespace, apiGroups, resources, verbs)
 		if err != nil {
 			return err
 		}
-		err = r.reconcileRoleBinding(ctx, serverClient, namespace)
+		err = r.reconcileRoleBinding(ctx, serverClient, serviceMonitorRoleBindingName, namespace, rbac.ServiceAccountKind, clusterMonitoringPrometheusServiceAccount, clusterMonitoringNamespace, serviceMonitorRoleRefName, serviceMonitorRoleRefAPIGroup)
 		if err != nil {
 			return err
 		}
@@ -820,75 +942,7 @@ func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
 	return err
 }
 
-func (r *Reconciler) reconcileRole(ctx context.Context,
-	serverClient k8sclient.Client, namespace string) (err error) {
-
-	role := &rbac.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleRefName,
-			Namespace: namespace,
-		},
-	}
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, role, func() error {
-		resources := []string{
-			"services",
-			"endpoints",
-			"pods",
-		}
-
-		verbs := []string{
-			"get",
-			"list",
-			"watch",
-		}
-		apiGroups := []string{""}
-
-		role.Rules = []rbac.PolicyRule{
-			{
-				APIGroups: apiGroups,
-				Resources: resources,
-				Verbs:     verbs,
-			},
-		}
-		return nil
-	})
-	if opRes != controllerutil.OperationResultNone {
-		r.log.Infof("Operation result", l.Fields{"role": roleRefName, "result": opRes})
-	}
-	return err
-}
-
-func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
-	serverClient k8sclient.Client, namespace string) (err error) {
-
-	roleBinding := &rbac.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleBindingName,
-			Namespace: namespace,
-		},
-	}
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
-		roleBinding.Subjects = []rbac.Subject{
-			{
-				Kind:      rbac.ServiceAccountKind,
-				Name:      clusterMonitoringPrometheusServiceAccount,
-				Namespace: clusterMonitoringNamespace,
-			},
-		}
-		roleBinding.RoleRef = rbac.RoleRef{
-			APIGroup: roleRefAPIGroup,
-			Kind:     bundle.RoleKind,
-			Name:     roleRefName,
-		}
-		return nil
-	})
-	if opRes != controllerutil.OperationResultNone {
-		r.log.Infof("Operation result", l.Fields{"roleBinding": roleBindingName, "result": opRes})
-	}
-	return err
-}
-
-func (r *Reconciler) removeRoleandRoleBinding(ctx context.Context,
+func (r *Reconciler) removeRoleandRoleBindingForServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, namespace, roleName, rbName string) (err error) {
 
 	// Check if the namespace has service monitors
@@ -941,4 +995,113 @@ func getClonedServiceMonitorLabel() map[string]string {
 	return map[string]string{
 		clonedServiceMonitorLabelKey: clonedServiceMonitorLabelValue,
 	}
+}
+
+func (r *Reconciler) reconcileRole(ctx context.Context, serverClient k8sclient.Client, name string, namespace string,
+	apiGroups []string, resources []string, verbs []string) (err error) {
+
+	role := &rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, role, func() error {
+		role.Rules = []rbac.PolicyRule{
+			{
+				APIGroups: apiGroups,
+				Resources: resources,
+				Verbs:     verbs,
+			},
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"role": name, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileRoleBinding(ctx context.Context, serverClient k8sclient.Client, bindingName string,
+	bindingNamespace string, subjectKind flowcontrolv1alpha1.SubjectKind, subjectName string, subjectNamespace string, roleName string, roleApiGroup string) (err error) {
+
+	roleBinding := &rbac.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      bindingName,
+			Namespace: bindingNamespace,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
+		roleBinding.Subjects = []rbac.Subject{
+			{
+				Kind:      string(subjectKind),
+				Name:      subjectName,
+				Namespace: subjectNamespace,
+			},
+		}
+		roleBinding.RoleRef = rbac.RoleRef{
+			APIGroup: roleApiGroup,
+			Kind:     bundle.RoleKind,
+			Name:     roleName,
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"roleBinding": bindingName, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileClusterRole(ctx context.Context, serverClient k8sclient.Client, name string,
+	apiGroups []string, resources []string, verbs []string) (err error) {
+
+	clusterRole := &rbac.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, clusterRole, func() error {
+		clusterRole.Rules = []rbac.PolicyRule{
+			{
+				APIGroups: apiGroups,
+				Resources: resources,
+				Verbs:     verbs,
+			},
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"clusterRole": name, "result": opRes})
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileClusterRoleBinding(ctx context.Context, serverClient k8sclient.Client, bindingName string,
+	subjectKind flowcontrolv1alpha1.SubjectKind, subjectName string, subjectNamespace string, roleName string, roleApiGroup string) (err error) {
+
+	clusterRoleBinding := &rbac.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, clusterRoleBinding, func() error {
+		clusterRoleBinding.Subjects = []rbac.Subject{
+			{
+				Kind:      string(subjectKind),
+				Name:      subjectName,
+				Namespace: subjectNamespace,
+			},
+		}
+		clusterRoleBinding.RoleRef = rbac.RoleRef{
+			APIGroup: roleApiGroup,
+			Kind:     bundle.ClusterRoleKind,
+			Name:     roleName,
+		}
+
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.log.Infof("Operation result", l.Fields{"roleBinding": bindingName, "result": opRes})
+	}
+	return err
 }

@@ -27,9 +27,9 @@ observability:
         observability:
           host: ''
           name: observability
-          operator: 3.0.7
+          operator: 3.0.8
           status: completed
-          version: 3.0.7
+          version: 3.0.8
 ```
 
 5. Verify that the config-map redhat-rhoam-installation-config in redhat-rhoam-operator namespace contains an observability block with the following
