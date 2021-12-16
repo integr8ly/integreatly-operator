@@ -123,6 +123,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
 		os.Exit(1)
 	}
+	if err = (&usercontroller.TenantReconciler{}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create tenant controller", "controller", "Tenant")
+		os.Exit(1)
+	}
+
 	if watchNamespace == "" || !strings.Contains(watchNamespace, "sandbox") {
 		if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "User")
