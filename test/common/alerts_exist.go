@@ -69,13 +69,6 @@ func rhmi2ExpectedRules() []alertsTestRule {
 			},
 		},
 		{
-			File: NamespacePrefix + "fuse-ksm-fuse-online-alerts.yaml",
-			Rules: []string{
-				"FuseOnlineSyndesisServerInstanceDown",
-				"FuseOnlineSyndesisUIInstanceDown",
-			},
-		},
-		{
 			File: NamespacePrefix + "codeready-workspaces-ksm-codeready-alerts.yaml",
 			Rules: []string{
 				"CodeReadyPodCount",
@@ -173,13 +166,6 @@ func rhmi2ExpectedRules() []alertsTestRule {
 				"RHMIAMQOnlineRegistryCsServiceEndpointDown",
 				"RHMIAMQOnlineStandardAuthServiceEndpointDown",
 				"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
-			},
-		},
-		{
-			File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
-			Rules: []string{
-				"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{

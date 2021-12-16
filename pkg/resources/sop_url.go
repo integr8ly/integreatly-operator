@@ -17,6 +17,7 @@ const (
 	sopUrlPostgresCpuUsageHigh                                = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_cpu_usage_high.asciidoc"
 	sopUrlRedisCpuUsageHigh                                   = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_cpu_usage_high.asciidoc"
 	SopUrlEndpointAvailableAlert                              = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc"
+	SopUrlScaleDownFuse                                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/scale_down_fuse.md"
 	SopUrlAlertsAndTroubleshooting                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md"
 	sopUrlCloudResourceDeletionStatusFailed                   = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/clean_up_cloud_resources_failed_teardown.asciidoc"
 	sopUrlSendGridSmtpSecretExists                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/sendgrid_smtp_secret_not_present.asciidoc"

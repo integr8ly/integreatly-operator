@@ -49,8 +49,10 @@ var (
 				{"A10 - Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 				{"A11 - Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
 				{"A12 - Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
+
 				{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 				{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
+
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
 				{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
@@ -88,7 +90,6 @@ var (
 		{
 			[]TestCase{
 				{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
-				{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
 		},
