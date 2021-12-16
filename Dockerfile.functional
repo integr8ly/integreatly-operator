@@ -20,7 +20,8 @@ COPY version ./version
 
 RUN make test/compile/functional
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+# Use chromedp as base image to allow for headless chrome instance in tests
+FROM chromedp/headless-shell:latest
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
