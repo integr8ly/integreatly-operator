@@ -1,6 +1,6 @@
 ---
 automation:
-  - INTLY-7416
+  - MGDAPI-3029
 products:
   - name: rhoam
     environments:
@@ -9,6 +9,7 @@ products:
 estimate: 15m
 tags:
   - per-release
+  - automated
 ---
 
 # B01B - Verify that the users can login in all products
