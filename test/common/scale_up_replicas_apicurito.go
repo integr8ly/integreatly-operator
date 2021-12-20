@@ -18,7 +18,6 @@ var (
 	scaleUpApicuritoReplicas   = 3
 	scaleDownApicuritoReplicas = 1
 	apicuritoName              = "apicurito"
-	apicuritoNamespace         = NamespacePrefix + "apicurito"
 	retryIntervalApicurito     = time.Second * 20
 	timeoutApicurito           = time.Minute * 7
 	requestURLApicturito       = "/apis/apicur.io/v1alpha1"
@@ -26,7 +25,6 @@ var (
 )
 
 func TestReplicasInApicurito(t TestingTB, ctx *TestingContext) {
-
 	apicuritoCR, err := getApicurito(ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to get Apicurito : %v", err)
@@ -68,9 +66,9 @@ func checkReplicasAreReady(dynClient *TestingContext, t TestingTB, replicas int3
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
-		deployment, err := dynClient.KubeClient.AppsV1().Deployments(apicuritoNamespace).Get(goctx.TODO(), apicuritoName, metav1.GetOptions{})
+		deployment, err := dynClient.KubeClient.AppsV1().Deployments(ApicuritoProductNamespace).Get(goctx.TODO(), apicuritoName, metav1.GetOptions{})
 		if err != nil {
-			t.Errorf("Failed to get Deployment %s in namespace %s with error: %s", apicuritoName, apicuritoNamespace, err)
+			t.Errorf("Failed to get Deployment %s in namespace %s with error: %s", apicuritoName, ApicuritoProductNamespace, err)
 		}
 		if deployment.Status.ReadyReplicas == replicas {
 			t.Logf("Replicas Ready %v", deployment.Status.ReadyReplicas)
@@ -87,7 +85,7 @@ func checkReplicasAreReady(dynClient *TestingContext, t TestingTB, replicas int3
 func getApicurito(dynClient k8sclient.Client) (apicuritov1alpha1.Apicurito, error) {
 	apicuritoCR := &apicuritov1alpha1.Apicurito{}
 
-	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: apicuritoName, Namespace: apicuritoNamespace}, apicuritoCR); err != nil {
+	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: apicuritoName, Namespace: ApicuritoProductNamespace}, apicuritoCR); err != nil {
 		return *apicuritoCR, err
 	}
 
@@ -109,7 +107,7 @@ func updateApicurito(ctx *TestingContext, replicas int32, t TestingTB) (apicurit
 	request := ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 		Resource(kindApicurito).
 		Name(apicuritoName).
-		Namespace(apicuritoNamespace).
+		Namespace(ApicuritoProductNamespace).
 		RequestURI(requestURLApicturito).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
 
