@@ -102,13 +102,17 @@ endif
 setup/moq:
 	GO111MODULE=off go get github.com/matryer/moq
 
+.PHONY: setup/service_account/oc_login
+setup/service_account/oc_login:
+	@oc login --token=$(shell sh -c "oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}") --server=$(shell sh -c "oc whoami --show-server") --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
+
 .PHONY: setup/service_account
 setup/service_account: kustomize
 	@-oc new-project $(NAMESPACE)
 	@oc project $(NAMESPACE)
 	@-oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
-	@$(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc replace --force -f -	
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'") --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
+	@$(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc replace --force -f -
+	$(MAKE) setup/service_account/oc_login
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
@@ -278,7 +282,7 @@ test/rhoam/products:
 
 
 .PHONY: cluster/deploy
-cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare deploy/integreatly-rhmi-cr.yml
+cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
 	@ - oc create -f config/rbac/service_account.yaml
 	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
 	@ - $(KUSTOMIZE) build config/redhat-$(INSTALLATION_SHORTHAND) | oc apply -f -
