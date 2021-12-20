@@ -2869,7 +2869,10 @@ services-rhoam:master/github.com/che-incubator/kubernetes-image-puller-operator-
 services-rhoam:master/github.com/chirino/hawtgo-v0.0.1
 services-rhoam:master/github.com/chromedp/cdproto-v0.0.0-20200116234248-4da64dd111ac
 services-rhoam:master/github.com/chromedp/cdproto-v0.0.0-20200424080200-0de008e41fa0
+services-rhoam:master/github.com/chromedp/cdproto-v0.0.0-20211126220118-81fa0469ad77
 services-rhoam:master/github.com/chromedp/chromedp-v0.5.3
+services-rhoam:master/github.com/chromedp/chromedp-v0.7.6
+services-rhoam:master/github.com/chromedp/sysutil-v1.0.0
 services-rhoam:master/github.com/chzyer/logex-v1.1.10
 services-rhoam:master/github.com/chzyer/readline-v0.0.0-20180603132655-2972be24d48e
 services-rhoam:master/github.com/chzyer/test-v0.0.0-20180213035817-a1ea475d72b1
@@ -3235,8 +3238,11 @@ services-rhoam:master/github.com/gobuffalo/packr/v2-v2.7.1
 services-rhoam:master/github.com/gobuffalo/syncx-v0.0.0-20190224160051-33c29581e754
 services-rhoam:master/github.com/gobwas/glob-v0.2.3
 services-rhoam:master/github.com/gobwas/httphead-v0.0.0-20180130184737-2c6c146eadee
+services-rhoam:master/github.com/gobwas/httphead-v0.1.0
 services-rhoam:master/github.com/gobwas/pool-v0.2.0
+services-rhoam:master/github.com/gobwas/pool-v0.2.1
 services-rhoam:master/github.com/gobwas/ws-v1.0.2
+services-rhoam:master/github.com/gobwas/ws-v1.1.0
 services-rhoam:master/github.com/goccy/go-yaml-v1.8.1
 services-rhoam:master/github.com/gocql/gocql-v0.0.0-20190301043612-f6df8288f9b4
 services-rhoam:master/github.com/gocql/gocql-v0.0.0-20200121121104-95d072f1b5bb
@@ -3607,6 +3613,7 @@ services-rhoam:master/github.com/mailru/easyjson-v0.0.0-20190626092158-b2ccc5198
 services-rhoam:master/github.com/mailru/easyjson-v0.7.0
 services-rhoam:master/github.com/mailru/easyjson-v0.7.1
 services-rhoam:master/github.com/mailru/easyjson-v0.7.6
+services-rhoam:master/github.com/mailru/easyjson-v0.7.7
 services-rhoam:master/github.com/markbates/inflect-v1.0.4
 services-rhoam:master/github.com/markbates/oncer-v0.0.0-20181203154359-bf2de49a0be2
 services-rhoam:master/github.com/markbates/safe-v1.0.1
@@ -3828,6 +3835,7 @@ services-rhoam:master/github.com/operator-framework/operator-sdk-v0.16.0
 services-rhoam:master/github.com/operator-framework/operator-sdk-v0.17.0
 services-rhoam:master/github.com/operator-framework/operator-sdk-v0.18.2
 services-rhoam:master/github.com/operator-framework/operator-sdk-v1.2.0
+services-rhoam:master/github.com/orisano/pixelmatch-v0.0.0-20210112091706-4fa4c7ba91d5
 services-rhoam:master/github.com/otiai10/copy-v1.0.2
 services-rhoam:master/github.com/otiai10/curr-v0.0.0-20150429015615-9b4961190c95
 services-rhoam:master/github.com/otiai10/mint-v1.3.0
@@ -4468,6 +4476,7 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20201015000850-e3ed0017c211
 services-rhoam:master/golang.org/x/sys-v0.0.0-20201112073958-5cba982894dd
 services-rhoam:master/golang.org/x/sys-v0.0.0-20201119102817-f84b799fce68
 services-rhoam:master/golang.org/x/sys-v0.0.0-20201201145000-ef89a241ccb3
+services-rhoam:master/golang.org/x/sys-v0.0.0-20201207223542-d4d67f95c62d
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210112080510-489259a85091
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210119212857-b64e53b001e4
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210124154548-22da62e12c0c
@@ -4478,6 +4487,7 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20210420072515-93ed5bcd2bfe
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210423082822-04245dca01da
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210510120138-977fb7262007
 services-rhoam:master/golang.org/x/sys-v0.0.0-20210603081109-ebe580a85c40
+services-rhoam:master/golang.org/x/sys-v0.0.0-20211124211545-fe61309f8881
 services-rhoam:master/golang.org/x/term-v0.0.0-20201117132131-f5c789dd3221
 services-rhoam:master/golang.org/x/term-v0.0.0-20201126162022-7de9c90e9dd1
 services-rhoam:master/golang.org/x/term-v0.0.0-20210220032956-6a3ed077a48d
@@ -8979,7 +8989,10 @@ services-rhoam:master/observability-operator:v3.0.8/github.com/che-incubator/kub
 services-rhoam:master/observability-operator:v3.0.8/github.com/chirino/hawtgo-v0.0.1
 services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/cdproto-v0.0.0-20200116234248-4da64dd111ac
 services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/cdproto-v0.0.0-20200424080200-0de008e41fa0
+services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/cdproto-v0.0.0-20211126220118-81fa0469ad77
 services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/chromedp-v0.5.3
+services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/chromedp-v0.7.6
+services-rhoam:master/observability-operator:v3.0.8/github.com/chromedp/sysutil-v1.0.0
 services-rhoam:master/observability-operator:v3.0.8/github.com/chzyer/logex-v1.1.10
 services-rhoam:master/observability-operator:v3.0.8/github.com/chzyer/readline-v0.0.0-20180603132655-2972be24d48e
 services-rhoam:master/observability-operator:v3.0.8/github.com/chzyer/test-v0.0.0-20180213035817-a1ea475d72b1
@@ -9345,8 +9358,11 @@ services-rhoam:master/observability-operator:v3.0.8/github.com/gobuffalo/packr/v
 services-rhoam:master/observability-operator:v3.0.8/github.com/gobuffalo/syncx-v0.0.0-20190224160051-33c29581e754
 services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/glob-v0.2.3
 services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/httphead-v0.0.0-20180130184737-2c6c146eadee
+services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/httphead-v0.1.0
 services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/pool-v0.2.0
+services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/pool-v0.2.1
 services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/ws-v1.0.2
+services-rhoam:master/observability-operator:v3.0.8/github.com/gobwas/ws-v1.1.0
 services-rhoam:master/observability-operator:v3.0.8/github.com/goccy/go-yaml-v1.8.1
 services-rhoam:master/observability-operator:v3.0.8/github.com/gocql/gocql-v0.0.0-20190301043612-f6df8288f9b4
 services-rhoam:master/observability-operator:v3.0.8/github.com/gocql/gocql-v0.0.0-20200121121104-95d072f1b5bb
@@ -9717,6 +9733,7 @@ services-rhoam:master/observability-operator:v3.0.8/github.com/mailru/easyjson-v
 services-rhoam:master/observability-operator:v3.0.8/github.com/mailru/easyjson-v0.7.0
 services-rhoam:master/observability-operator:v3.0.8/github.com/mailru/easyjson-v0.7.1
 services-rhoam:master/observability-operator:v3.0.8/github.com/mailru/easyjson-v0.7.6
+services-rhoam:master/observability-operator:v3.0.8/github.com/mailru/easyjson-v0.7.7
 services-rhoam:master/observability-operator:v3.0.8/github.com/markbates/inflect-v1.0.4
 services-rhoam:master/observability-operator:v3.0.8/github.com/markbates/oncer-v0.0.0-20181203154359-bf2de49a0be2
 services-rhoam:master/observability-operator:v3.0.8/github.com/markbates/safe-v1.0.1
@@ -9938,6 +9955,7 @@ services-rhoam:master/observability-operator:v3.0.8/github.com/operator-framewor
 services-rhoam:master/observability-operator:v3.0.8/github.com/operator-framework/operator-sdk-v0.17.0
 services-rhoam:master/observability-operator:v3.0.8/github.com/operator-framework/operator-sdk-v0.18.2
 services-rhoam:master/observability-operator:v3.0.8/github.com/operator-framework/operator-sdk-v1.2.0
+services-rhoam:master/observability-operator:v3.0.8/github.com/orisano/pixelmatch-v0.0.0-20210112091706-4fa4c7ba91d5
 services-rhoam:master/observability-operator:v3.0.8/github.com/otiai10/copy-v1.0.2
 services-rhoam:master/observability-operator:v3.0.8/github.com/otiai10/curr-v0.0.0-20150429015615-9b4961190c95
 services-rhoam:master/observability-operator:v3.0.8/github.com/otiai10/mint-v1.3.0
@@ -10578,6 +10596,7 @@ services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-2020
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20201112073958-5cba982894dd
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20201119102817-f84b799fce68
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20201201145000-ef89a241ccb3
+services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20201207223542-d4d67f95c62d
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210112080510-489259a85091
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210119212857-b64e53b001e4
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210124154548-22da62e12c0c
@@ -10588,6 +10607,7 @@ services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-2021
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210423082822-04245dca01da
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210510120138-977fb7262007
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20210603081109-ebe580a85c40
+services-rhoam:master/observability-operator:v3.0.8/golang.org/x/sys-v0.0.0-20211124211545-fe61309f8881
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/term-v0.0.0-20201117132131-f5c789dd3221
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/term-v0.0.0-20201126162022-7de9c90e9dd1
 services-rhoam:master/observability-operator:v3.0.8/golang.org/x/term-v0.0.0-20210220032956-6a3ed077a48d
