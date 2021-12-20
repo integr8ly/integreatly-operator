@@ -116,7 +116,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 					Namespace: common.RHMIOperatorNamespace,
 				},
 				Data: map[string][]byte{
-					"url": []byte("test"),
+					"url": []byte("https://dms.example.com"),
 				},
 			}
 			if err := ctx.Client.Create(goctx.TODO(), dms.DeepCopy()); err != nil {
