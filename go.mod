@@ -29,7 +29,7 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
-	github.com/integr8ly/cloud-resource-operator v0.32.1
+	github.com/integr8ly/cloud-resource-operator v0.33.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e
