@@ -453,6 +453,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			Rules: []string{
 				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
 				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
 			},
 		},
 		{
