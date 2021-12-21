@@ -35,6 +35,8 @@ const (
 	DefaultRedisStatusMetricName              = "cro_redis_status_phase"
 	DefaultRedisDeletionMetricName            = "cro_redis_deletion_timestamp"
 	DefaultRedisSnapshotStatusMetricName      = "cro_redis_snapshot_status_phase"
+	DefaultRedisSnapshotNotAvailable          = "cro_redis_snapshot_not_found"
+	DefaultPostgresSnapshotNotAvailable       = "cro_postgres_snapshot_not_found"
 	DefaultBlobStorageStatusMetricName        = "cro_blobstorage_status_phase"
 
 	BytesInGibiBytes = 1073741824
@@ -64,6 +66,18 @@ func StartGaugeVector() {
 			time.Sleep(time.Duration(sleepytime) * time.Second)
 		}
 	}()
+}
+
+func ResetMetric(name string) {
+	logrus.Info(fmt.Sprintf("Resetting metric %s", name))
+	// set vector value
+	gv, ok := MetricVecs[name]
+	if ok {
+		gv.Reset()
+		logrus.Info(fmt.Sprintf("successfully reset metric value for %s", name))
+		return
+	}
+	logrus.Error(fmt.Sprintf("Error reset metric value for %s", name))
 }
 
 //SetMetric Set exports a Prometheus Gauge
