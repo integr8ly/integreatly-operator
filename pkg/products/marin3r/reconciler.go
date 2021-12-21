@@ -109,7 +109,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), integreatlyv1alpha1.ProductsStage, uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")

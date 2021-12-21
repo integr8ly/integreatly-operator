@@ -159,7 +159,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, uninstall bool, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, stageName integreatlyv1alpha1.StageName, uninstall bool, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := productName + ".integreatly.org" + "/finalizer"
 
 	// Run finalization logic. If it fails, don't remove the finalizer
@@ -174,6 +174,8 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 			// Remove the finalizer to allow for deletion of the installation cr
 			log.Infof("Removing finalizer", l.Fields{"finalizer": finalizer})
 			inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
+
+			delete(inst.Status.Stages, stageName)
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}

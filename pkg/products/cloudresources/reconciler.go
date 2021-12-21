@@ -118,7 +118,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), integreatlyv1alpha1.CloudResourcesStage, uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {

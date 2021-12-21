@@ -19,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,7 +102,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 // Reconcile method for monitorspec
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI,
 	productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, _ quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall,
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), rhmiv1alpha1.MonitoringStage, uninstall,
 		func() (integreatlyv1alpha1.StatusPhase, error) {
 			r.Log.Info("Phase: Monitoringspec ReconcileFinalizer")
 

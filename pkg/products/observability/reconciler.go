@@ -126,7 +126,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), integreatlyv1alpha1.ObservabilityStage, uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if productNamespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, productNamespace, client)
 		if !k8serr.IsNotFound(err) {
