@@ -420,6 +420,7 @@ func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Post
 		msg := "Can't get Snapshot info"
 		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
 	}
+
 	// Adding tags to each DB Snapshots from list on AWS
 	for _, snapshotList := range rdsSnapshotList.DBSnapshots {
 		inputRdsSnapshot := &rds.AddTagsToResourceInput{
@@ -436,6 +437,15 @@ func (p *PostgresProvider) TagRDSPostgres(ctx context.Context, cr *v1alpha1.Post
 
 	logger.Infof("tags were added successfully to the rds instance %s", *foundInstance.DBInstanceIdentifier)
 	return "successfully created and tagged", nil
+}
+
+func buildRdsSnapshotNotFoundLabels(clusterID string, dbInstanceArn, dbSnapshotArn, dbSnapshotIdentifier *string) map[string]string {
+	labels := map[string]string{}
+	labels["clusterID"] = clusterID
+	labels["dbInstanceArn"] = resources.SafeStringDereference(dbInstanceArn)
+	labels["dbSnapshotArn"] = resources.SafeStringDereference(dbSnapshotArn)
+	labels["dbSnapshotIdentifier"] = resources.SafeStringDereference(dbSnapshotIdentifier)
+	return labels
 }
 
 func (p *PostgresProvider) DeletePostgres(ctx context.Context, r *v1alpha1.Postgres) (croType.StatusMessage, error) {

@@ -80,7 +80,7 @@ products:
     channel: "rhmi"
     installFrom: "index"
     package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.32.1"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.33.0"
   codeready-workspaces:
     channel: "rhmi"
     installFrom: "local"
@@ -118,8 +118,7 @@ products:
     channel: rhmi
     installFrom: "local"
     manifestsDir: "integreatly-solution-explorer"
-  ups:  
+  ups:
     channel: rhmi
     installFrom: "local"
     manifestsDir: "integreatly-unifiedpush"
-  
