@@ -315,9 +315,10 @@ cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prep
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
-.PHONY: create/olm/bundle
-create/olm/bundle:
-	./scripts/bundle-rhmi-operators.sh
+# Temporary disable create/olm/bundle due to move from pkgman to bundle format.
+# .PHONY: create/olm/bundle
+# create/olm/bundle:
+# 	./scripts/bundle-rhmi-operators.sh
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
