@@ -1,18 +1,22 @@
 package cloudresources
 
 import (
+	"context"
 	"fmt"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"strings"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.Client, logger l.Logger, installType string, ns string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
-	return &resources.AlertReconcilerImpl{
+	alertsReconciler := &resources.AlertReconcilerImpl{
 		ProductName:  "Cloud Resources Operator",
 		Installation: r.installation,
 		Log:          logger,
@@ -45,4 +49,64 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			},
 		},
 	}
+
+	return addElasticCacheSnapshotNotFoundAlert(ctx, client, logger, installationName, *alertsReconciler, ns)
+}
+
+func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.Client, logger l.Logger, installationName string, alertsReconciler resources.AlertReconcilerImpl, ns string) (resources.AlertReconciler, error) {
+
+	names, err := getRedisCRsNames(ctx, client, logger, ns)
+	if err != nil {
+		logger.Error("Error getting redis names", err)
+		return &alertsReconciler, err
+	}
+	if len(names) == 0 {
+		return &alertsReconciler, nil
+	}
+
+	metricsCheck := ""
+	for _, name := range names {
+		metricsCheck = metricsCheck + "cro_redis_snapshot_not_found_" + name + " > 1 or "
+	}
+	metricsCheck = strings.TrimSuffix(metricsCheck, " or ")
+	// sanitise
+	metricsCheck = sanitize(metricsCheck)
+
+	alertsReconciler.Alerts[0].Rules = append(alertsReconciler.Alerts[0].Rules, monitoringv1.Rule{
+		Alert: "RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
+		Annotations: map[string]string{
+			"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+			"message": fmt.Sprintf("Elastic Cache snapshot not found or not available for tagging."),
+		},
+		Expr:   intstr.FromString(metricsCheck),
+		Labels: map[string]string{"severity": "warning", "product": installationName},
+	})
+
+	return &alertsReconciler, nil
+}
+
+func getRedisCRsNames(ctx context.Context, client k8sclient.Client, logger l.Logger, ns string) ([]string, error) {
+
+	names := []string{}
+
+	// ensure redis instances are cleaned up
+	redisInstances := &crov1alpha1.RedisList{}
+	redisInstanceOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+	}
+	err := client.List(ctx, redisInstances, redisInstanceOpts...)
+	if err != nil {
+		return []string{}, fmt.Errorf("failed to list redis instances: %w", err)
+	}
+
+	for _, redisInst := range redisInstances.Items {
+		names = append(names, redisInst.Name)
+	}
+
+	return names, nil
+}
+
+func sanitize(metricsCheck string) string {
+	// Convention for CRs is - but _ for prom metrics
+	return strings.ToLower(strings.ReplaceAll(metricsCheck, "-", "_"))
 }
