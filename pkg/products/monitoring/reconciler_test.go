@@ -3,6 +3,7 @@ package monitoring
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -51,6 +52,14 @@ const (
 )
 
 var localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-monitoring")
+
+func buildInstallation(modifyFn func(rhmi *integreatlyv1alpha1.RHMI)) *integreatlyv1alpha1.RHMI {
+	mock := basicInstallation()
+	if modifyFn != nil {
+		modifyFn(mock)
+	}
+	return mock
+}
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
@@ -563,7 +572,7 @@ func TestReconciler_testPhases(t *testing.T) {
 		Uninstall      bool
 	}{
 		{
-			Name:           "test uninstall - Namespace already removed should result in PhaseUninstallCompleted",
+			Name:           "test uninstall - Finalizer alreay removed should result in PhaseCompleted",
 			Installation:   basicInstallation(),
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
@@ -572,8 +581,21 @@ func TestReconciler_testPhases(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
-			Name:         "test uninstall - Namespace present returns PhaseInProgress",
-			Installation: basicInstallation(),
+			Name: "test uninstall - Namespace already removed should result in PhaseCompleted",
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
+			FakeConfig:     basicConfigMock(),
+			Recorder:       setupRecorder(),
+			Uninstall:      true,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			Name: "test uninstall - Namespace present returns PhaseInProgress",
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.ApplicationMonitoring{
 				ObjectMeta: metav1.ObjectMeta{Name: defaultMonitoringName, Namespace: operatorNS.Name},
 			}),
@@ -583,8 +605,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 		},
 		{
-			Name:           "test uninstall - Namespace present with blackbox targets already removed should result in PhaseUninstallInProgress",
-			Installation:   basicInstallation(),
+			Name: "test uninstall - Namespace present with blackbox targets already removed should result in PhaseInProgress",
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS),
 			FakeConfig:     basicConfigMock(),
 			Recorder:       setupRecorder(),
@@ -592,8 +616,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 		},
 		{
-			Name:         "test uninstall - Namespace present with blackbox targets are still present should result in PhaseUninstallInProgress",
-			Installation: basicInstallation(),
+			Name: "test uninstall - Namespace present with blackbox targets are still present should result in PhaseInProgress",
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation(), ns, federationNs, operatorNS, &monitoringv1.BlackboxTarget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "blackbox-target",
@@ -611,7 +637,9 @@ func TestReconciler_testPhases(t *testing.T) {
 		{
 			Name:           "test namespace terminating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			Installation:   basicInstallation(),
+			Installation: buildInstallation(func(rhmi *integreatlyv1alpha1.RHMI) {
+				rhmi.SetFinalizers([]string{fmt.Sprint(defaultMonitoringName + ".integreatly.org" + "/finalizer")})
+			}),
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaultInstallationNamespace,

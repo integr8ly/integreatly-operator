@@ -3,6 +3,7 @@ package codeready
 import (
 	"context"
 	"fmt"
+	cro1types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -207,6 +208,9 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres: %w", err)
+	}
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 	}
 
 	// reconcile postgres alerts
