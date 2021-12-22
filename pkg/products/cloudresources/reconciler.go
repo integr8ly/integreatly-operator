@@ -223,7 +223,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(r.log, r.installation.Spec.Type).ReconcileAlerts(ctx, client)
+	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, r.installation.Namespace)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to get new alerts reconciler", err)
+		r.log.Error("Error getting cloud resources alerts reconciler", err)
+		return phase, err
+	}
+
+	phase, err = alertsReconciler.ReconcileAlerts(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
