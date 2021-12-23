@@ -230,6 +230,15 @@ rules:
 - apiGroups:
   - operators.coreos.com
   resources:
+  - clusterserviceversions
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+- apiGroups:
+  - operators.coreos.com
+  resources:
   - installplans
   verbs:
   - update
@@ -237,24 +246,11 @@ rules:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
-  verbs:
-  - '*'
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
   - clusterroles
+  - rolebindings
+  - roles
   verbs:
   - '*'
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
 - apiGroups:
   - route.openshift.io
   resources:
@@ -447,17 +443,5 @@ rules:
   - get
   - list
   - patch
-  - update
-  - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  - roles
-  verbs:
-  - create
-  - delete
-  - get
-  - list
   - update
   - watch
