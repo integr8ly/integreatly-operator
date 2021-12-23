@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -1243,6 +1245,301 @@ func TestReconciler_IsOperatorInstallComplete(t *testing.T) {
 			}
 			if got := r.IsOperatorInstallComplete(tt.args.kc, tt.args.operatorVersion); got != tt.want {
 				t.Errorf("IsOperatorInstallComplete() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
+	type fields struct {
+		ConfigManager         config.ConfigReadWriter
+		mpm                   marketplace.MarketplaceInterface
+		Installation          *integreatlyv1alpha1.RHMI
+		Log                   l.Logger
+		Oauthv1Client         oauthClient.OauthV1Interface
+		APIURL                string
+		Reconciler            *resources.Reconciler
+		Recorder              record.EventRecorder
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+	}
+	type args struct {
+		kc              *keycloak.Keycloak
+		operatorVersion integreatlyv1alpha1.OperatorVersion
+	}
+	scenarios := []struct {
+		name     string
+		CSV      *olmv1alpha1.ClusterServiceVersion
+		EnvVars  map[string]string
+		fields   fields
+		args     args
+		validate func(csv *olmv1alpha1.ClusterServiceVersion, updated bool, err error) error
+	}{
+		{
+			name: "new env var is created",
+			args: args{
+				kc: &keycloak.Keycloak{
+					Status: keycloak.KeycloakStatus{
+						Version: "1.0.0",
+					},
+				},
+				operatorVersion: integreatlyv1alpha1.OperatorVersion("1.1.0"),
+			},
+			CSV: &operatorsv1alpha1.ClusterServiceVersion{
+				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+								{
+									Name: "keycloak-operator",
+									Spec: appsv1.DeploymentSpec{
+										Template: corev1.PodTemplateSpec{
+											Spec: corev1.PodSpec{
+												Containers: []corev1.Container{
+													{
+														Env: []corev1.EnvVar{},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			EnvVars: map[string]string{
+				"PHILS_COOL_ENV_VAR": "yesboi",
+			},
+			validate: func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error {
+				for _, e := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env {
+					if e.Name != "PHILS_COOL_ENV_VAR" || e.Value != "yesboi" {
+						return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", e))
+					}
+				}
+				if !updated {
+					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+				}
+				return nil
+			},
+		},
+		{
+			name: "existing env var is preserved",
+			args: args{
+				kc: &keycloak.Keycloak{
+					Status: keycloak.KeycloakStatus{
+						Version: "1.0.0",
+					},
+				},
+				operatorVersion: integreatlyv1alpha1.OperatorVersion("1.1.0"),
+			},
+			CSV: &operatorsv1alpha1.ClusterServiceVersion{
+				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+								{
+									Name: "keycloak-operator",
+									Spec: appsv1.DeploymentSpec{
+										Template: corev1.PodTemplateSpec{
+											Spec: corev1.PodSpec{
+												Containers: []corev1.Container{
+													{
+														Env: []corev1.EnvVar{
+															{
+																Name:  "PAULS_AMAZEBALLS_ENV_VAR",
+																Value: "yeaaah",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			EnvVars: map[string]string{
+				"PHILS_COOL_ENV_VAR": "yesboi",
+			},
+			validate: func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error {
+				envs := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env
+				for _, e := range envs {
+					if e.Name == "PHILS_COOL_ENV_VAR" {
+						if e.Value != "yesboi" {
+							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+						}
+					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
+						if e.Value != "yeaaah" {
+							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+						}
+					} else {
+						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+					}
+				}
+				if !updated {
+					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+				}
+				return nil
+			},
+		},
+		{
+			name: "existing env var is updated",
+			args: args{
+				kc: &keycloak.Keycloak{
+					Status: keycloak.KeycloakStatus{
+						Version: "1.0.0",
+					},
+				},
+				operatorVersion: integreatlyv1alpha1.OperatorVersion("1.1.0"),
+			},
+			CSV: &operatorsv1alpha1.ClusterServiceVersion{
+				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+								{
+									Name: "keycloak-operator",
+									Spec: appsv1.DeploymentSpec{
+										Template: corev1.PodTemplateSpec{
+											Spec: corev1.PodSpec{
+												Containers: []corev1.Container{
+													{
+														Env: []corev1.EnvVar{
+															{
+																Name:  "PAULS_AMAZEBALLS_ENV_VAR",
+																Value: "yeaaah",
+															},
+															{
+																Name:  "PHILS_COOL_ENV_VAR",
+																Value: "noboi",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			EnvVars: map[string]string{
+				"PHILS_COOL_ENV_VAR": "yesboi",
+			},
+			validate: func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error {
+				envs := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env
+				for _, e := range envs {
+					if e.Name == "PHILS_COOL_ENV_VAR" {
+						if e.Value != "yesboi" {
+							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+						}
+					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
+						if e.Value != "yeaaah" {
+							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+						}
+					} else {
+						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+					}
+				}
+				if !updated {
+					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+				}
+				return nil
+			},
+		},
+		{
+			name: "updated set to false with no changes",
+			args: args{
+				kc: &keycloak.Keycloak{
+					Status: keycloak.KeycloakStatus{
+						Version: "1.0.0",
+					},
+				},
+				operatorVersion: integreatlyv1alpha1.OperatorVersion("1.1.0"),
+			},
+			CSV: &operatorsv1alpha1.ClusterServiceVersion{
+				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+								{
+									Name: "keycloak-operator",
+									Spec: appsv1.DeploymentSpec{
+										Template: corev1.PodTemplateSpec{
+											Spec: corev1.PodSpec{
+												Containers: []corev1.Container{
+													{
+														Env: []corev1.EnvVar{
+															{
+																Name:  "PAULS_AMAZEBALLS_ENV_VAR",
+																Value: "yeaaah",
+															},
+															{
+																Name:  "PHILS_COOL_ENV_VAR",
+																Value: "yesboi",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
+			EnvVars: map[string]string{
+				"PHILS_COOL_ENV_VAR": "yesboi",
+			},
+			validate: func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error {
+				envs := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env
+				for _, e := range envs {
+					if e.Name == "PHILS_COOL_ENV_VAR" {
+						if e.Value != "yesboi" {
+							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+						}
+					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
+						if e.Value != "yeaaah" {
+							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+						}
+					} else {
+						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+					}
+				}
+				if updated {
+					return errors.New(fmt.Sprintf("Expected updated to be false, but got: %v", updated))
+				}
+				return nil
+			},
+		},
+	}
+	for _, scenario := range scenarios {
+		t.Run(scenario.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager:         scenario.fields.ConfigManager,
+				mpm:                   scenario.fields.mpm,
+				Installation:          scenario.fields.Installation,
+				Log:                   scenario.fields.Log,
+				Oauthv1Client:         scenario.fields.Oauthv1Client,
+				APIURL:                scenario.fields.APIURL,
+				Reconciler:            scenario.fields.Reconciler,
+				Recorder:              scenario.fields.Recorder,
+				KeycloakClientFactory: scenario.fields.KeycloakClientFactory,
+			}
+			err := scenario.validate(r.ReconcileCSVEnvVars(scenario.CSV, scenario.EnvVars))
+			if err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
