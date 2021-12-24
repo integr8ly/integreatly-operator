@@ -18,6 +18,9 @@ route:
         severity: critical
       receiver: critical
     - match:
+        alertname: ThreeScaleContainerHighMemory
+      receiver: blackhole
+    - match:
         alertname: DeadMansSwitch
       repeat_interval: 5m
       receiver: deadmansswitch
@@ -29,7 +32,7 @@ route:
       receiver: BUandCustomer
     - match:
         alertname: RHOAMApiUsageLevel3ThresholdExceeded
-      receiver: SRECustomerBU
+      receiver: BUandCustomer
     - match_re:
         alertname: RHOAMApiUsageSoftLimitReachedTier[0-9]+
       receiver: BU
@@ -38,8 +41,9 @@ route:
       receiver: BUandCustomer
     - match:
         alertname: RHOAMApiUsageRejectedRequestsMismatch
-      receiver: SRECustomerBU
+      receiver: BUandCustomer
 receivers:
+  - name: blackhole
   - name: default
     email_configs:
       - send_resolved: true
