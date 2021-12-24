@@ -19,6 +19,7 @@ import (
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -161,6 +162,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = grafanav1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -588,6 +593,35 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 	}
 
+	csv := &operatorsv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-operator.v15.0.2",
+			Namespace: defaultNamespace + "-operator",
+		},
+		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+			InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+						{
+							Name: "keycloak-operator",
+							Spec: appsv1.DeploymentSpec{
+								Template: corev1.PodTemplateSpec{
+									Spec: corev1.PodSpec{
+										Containers: []corev1.Container{
+											{
+												Env: []corev1.EnvVar{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -608,7 +642,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -831,6 +865,35 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
+	csv := &operatorsv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-operator.v15.0.2",
+			Namespace: defaultNamespace + "-operator",
+		},
+		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+			InstallStrategy: olmv1alpha1.NamedInstallStrategy{
+				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
+					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+						{
+							Name: "keycloak-operator",
+							Spec: appsv1.DeploymentSpec{
+								Template: corev1.PodTemplateSpec{
+									Spec: corev1.PodSpec{
+										Containers: []corev1.Container{
+											{
+												Env: []corev1.EnvVar{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -851,7 +914,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		{
 			Name:            "RHOAM - test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
