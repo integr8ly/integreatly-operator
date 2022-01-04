@@ -150,10 +150,11 @@ Example: [MR!63](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-c
 Prerequisites:
 
 - Nodejs >= 10
+- [Valid JIRA Personal Access Token](https://issues.redhat.com/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens)
 
 > Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
 
-To crate the Jira tasks for the test cases you need first to create an Epic in Jira with the `fixVersion` that you want to target. Only test cases with the same target version or marked as `per-release` or `per-build` will be created in the Epic.
+To create the Jira tasks for the test cases you need first to create an Epic in Jira with the `fixVersion` that you want to target. Only test cases with the same target version or marked as `per-release` or `per-build` will be created in the Epic.
 
 To see the list of test cases that will be created in the Epic you can use the `export` cmd:
 
@@ -164,13 +165,13 @@ To see the list of test cases that will be created in the Epic you can use the `
 Use the `jira` cmd to create the Jira tasks for the test cases and add them to the Epic
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME --environment ENVIRONMENT
+JIRA_TOKEN=<jiraPersonalAccessToken> ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME --environment ENVIRONMENT
 ```
 
 If you need to link the new tasks to the task of a previous test round use the `previous-epic` option:
 
 ```bash
-JIRA_USERNAME=yourusername@redhat.com JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
+JIRA_TOKEN=<jiraPersonalAccessToken> ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
 ```
 
 > The `previous-epic` option will link each new task to the task in the previous epic with the same ID and it
@@ -186,7 +187,7 @@ JIRA_USERNAME=yourusername@redhat.com JIRA_PASSWORD=yourpassword ./tools.sh jira
 >
 > And automatically close as **Won't Do** all tests marked as **Won't Do** or **Done** in the previous Epic
 
-It is also possible to set the Jira username and password in environment variables:
+It is also possible to set the Jira token in environment variables. Then the command looks as following:
 
 ```
  ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME
@@ -239,7 +240,7 @@ This command will read all test results from Jira, and upload them to Polarion.
 For parameter `template`, use the required template id from `Test Runs -> Manage Templates`
 
 ```bash
-JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=bot_username POLARION_PASSWORD=bot_password ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME --template v1_0_0_rc1
+JIRA_TOKEN=<jiraPersonalAccessToken> POLARION_USERNAME=bot_username POLARION_PASSWORD=bot_password ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME --template v1_0_0_rc1
 ```
 
 ## Test Case Metadata
