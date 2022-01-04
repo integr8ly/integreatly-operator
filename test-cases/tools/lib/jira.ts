@@ -72,7 +72,7 @@ class Jira {
         this.client = new JiraApi({
             host: JIRA_HOST,
             protocol: JIRA_PROTOCOL,
-            bearer: token
+            bearer: token,
         });
     }
 
