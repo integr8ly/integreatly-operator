@@ -109,8 +109,7 @@ function toIssueBlock(issue: Issue) {
 }
 
 interface Args {
-    jiraUsername: string;
-    jiraPassword: string;
+    jiraToken: string;
     epic: string;
     previousEpic?: string;
     environment: string;
@@ -123,17 +122,11 @@ const jira: CommandModule<{}, Args> = {
     command: "jira",
     describe: "create Jira task for each test case",
     builder: {
-        "jira-username": {
-            demand: true,
-            default: process.env.JIRA_USERNAME,
-            describe: "Jira username or set JIRA_USERNAME",
+        jiraToken: {
+            describe: "Jira token or set JIRA_TOKEN",
+            default: process.env.JIRA_TOKEN,
             type: "string",
-        },
-        "jira-password": {
             demand: true,
-            default: process.env.JIRA_PASSWORD,
-            describe: "Jira password or set JIRA_PASSWORD",
-            type: "string",
         },
         environment: {
             demand: true,
@@ -161,7 +154,7 @@ const jira: CommandModule<{}, Args> = {
         },
     },
     handler: async (args) => {
-        const jiraApi = new Jira(args.jiraUsername, args.jiraPassword);
+        const jiraApi = new Jira(args.jiraToken);
 
         const epic = await jiraApi.findIssue(args.epic);
         assertEpic(epic);

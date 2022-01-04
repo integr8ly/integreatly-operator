@@ -67,13 +67,12 @@ function assertEpic(issue: Issue) {
 class Jira {
     public client;
 
-    public constructor(username: string, password: string) {
+    public constructor(token: string) {
         // @ts-ignore
         this.client = new JiraApi({
             host: JIRA_HOST,
-            password,
             protocol: JIRA_PROTOCOL,
-            username,
+            bearer: token,
         });
     }
 
