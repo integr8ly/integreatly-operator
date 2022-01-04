@@ -109,8 +109,7 @@ interface TestRunArgs {
     product: string;
     polarionUsername: string;
     polarionPassword: string;
-    jiraUsername: string;
-    jiraPassword: string;
+    jiraToken: string;
     epic: string;
     template: string;
     dumpOnly: boolean;
@@ -137,15 +136,9 @@ const testRun: CommandModule<{}, TestRunArgs> = {
             type: "string",
             demand: true,
         },
-        jiraUsername: {
-            describe: "Jira username or set JIRA_USERNAME",
-            default: process.env.JIRA_USERNAME,
-            type: "string",
-            demand: true,
-        },
-        jiraPassword: {
-            describe: "Jira password or set JIRA_PASSWORD",
-            default: process.env.JIRA_PASSWORD,
+        jiraToken: {
+            describe: "Jira token or set JIRA_TOKEN",
+            default: process.env.JIRA_TOKEN,
             type: "string",
             demand: true,
         },
@@ -165,7 +158,7 @@ const testRun: CommandModule<{}, TestRunArgs> = {
         },
     },
     handler: async (args) => {
-        const jira = new Jira(args.jiraUsername, args.jiraPassword);
+        const jira = new Jira(args.jiraToken);
 
         const epic = await jira.findIssue(args.epic);
         assertEpic(epic);
