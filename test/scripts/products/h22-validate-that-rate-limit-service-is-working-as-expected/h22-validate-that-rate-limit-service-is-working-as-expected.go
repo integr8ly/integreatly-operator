@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	testcommon "github.com/integr8ly/integreatly-operator/test/common"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -42,6 +42,7 @@ const (
 
 var (
 	testRunStart time.Time
+	allSkipped   = true
 )
 
 func main() {
@@ -79,25 +80,21 @@ func main() {
 	// Start creating the Redis Pod
 	redisCreated, err := createRedis(ctx, client, namespace)
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, nil)
 	}
 	defer cleanupRedis(ctx, client, namespace)
 
 	// Get the host of the redis rate limiting instance
 	redisHost, err := getRedisHost(ctx, client, namespace)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, nil)
 	}
 	fmt.Printf("ℹ️  Redis host: %s\n", redisHost)
 
 	// Create the threescale API
 	api, err := createAPI(ctx, client, namespacePrefix, baseName)
 	if err != nil {
-		fmt.Println(err)
-		deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 	fmt.Printf("️🔌  Created API. Endpoint %s\n", api.Endpoint)
 	defer deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
@@ -105,8 +102,7 @@ func main() {
 	// Wait for the Redis Pod to finish creating
 	redisPod := <-redisCreated
 	if redisPod.Error != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 
 	fmt.Println("️ℹ️  Throw away Redis Pod ready")
@@ -130,11 +126,10 @@ func main() {
 		numRequests := rand.IntnRange(5, 15)
 		success, err := testCountIncreases(redisCounter, api.Endpoint, numRequests)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 		}
 
-		overallSuccess = overallSuccess && success
+		overallSuccess = overallSuccess && success && !allSkipped
 
 		time.Sleep(time.Second)
 	}
@@ -142,10 +137,7 @@ func main() {
 	if !overallSuccess {
 		fmt.Println("Test failed, not all iterations succeeded")
 		fmt.Println("Note: Counter reset can cause false failures due to current count being higher than previous count")
-		fmt.Print("Cleaning up after a failure\n")
-		cleanupRedis(ctx, client, namespace)
-		deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
-		os.Exit(1)
+		osExit1(errors.New("cleaning up after a failure"), ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 }
 
@@ -284,7 +276,6 @@ func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) 
 		}()
 	}
 	wg.Wait()
-	// time.Sleep(30 * time.Second)
 
 	newCount, err := getCount(r, time.Now())
 	if err != nil {
@@ -299,6 +290,7 @@ func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) 
 	} else if newCount <= initialCount-numberOfRequests {
 		status = "[PASS] 🎉"
 		success = true
+		allSkipped = false
 	}
 
 	fmt.Printf("[%s] Previous count: %d | Number of requests: %d | Current count: %d | %s\n",
@@ -334,7 +326,7 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
 	fmt.Printf("  🔑  Found access token: %s\n", accessToken)
 
-	installation, err := resources.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
+	installation, err := rhmi.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +637,7 @@ func mock3scaleAPI(ctx context.Context, client k8sclient.Client, namespacePrefix
 	}
 	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
 	fmt.Printf("  🔑  Found access token: %s\n", accessToken)
-	installation, err := resources.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
+	installation, err := rhmi.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
 	if err != nil {
 		fmt.Printf("Error getting installaction: %s\n", err)
 		os.Exit(1)
@@ -674,4 +666,11 @@ func getCount(r *redisCounter, startTime time.Time) (int, error) {
 		}
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func osExit1(err error, ctx context.Context, client k8sclient.Client, namespace, namespacePrefix string, cleanupAPI bool, api *threescaleAPI) {
+	fmt.Println(err)
+	cleanupRedis(ctx, client, namespace)
+	deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
+	os.Exit(1)
 }
