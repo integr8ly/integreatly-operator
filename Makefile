@@ -227,7 +227,7 @@ test/e2e/multitenant-rhoam/prow: export WATCH_NAMESPACE := sandbox-rhoam-operato
 test/e2e/multitenant-rhoam/prow: export NAMESPACE_PREFIX := sandbox-rhoam-
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
-test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
+test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
 test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
@@ -291,7 +291,6 @@ cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/c
 test/unit: export WATCH_NAMESPACE=testing-namespaces-operator
 test/unit:
 	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
-
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty

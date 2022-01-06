@@ -30,8 +30,6 @@ var commonNamespaces = []string{
 	"operator",
 	"rhsso",
 	"rhsso-operator",
-	"user-sso",
-	"user-sso-operator",
 }
 
 // Applicable to install types used in 2.X
@@ -49,6 +47,13 @@ var rhmi2NamespacesPermissions = []string{
 	"solution-explorer-operator",
 	"ups",
 	"ups-operator",
+	"user-sso",
+	"user-sso-operator",
+}
+
+var managedAPINamespacesPermissions = []string{
+	"user-sso",
+	"user-sso-operator",
 }
 
 type ExpectedPermissions struct {
@@ -214,7 +219,9 @@ func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resourc
 }
 
 func getProductNamespaces(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return append(commonNamespaces, managedAPINamespacesPermissions...)
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonNamespaces
 	} else {
 		return append(commonNamespaces, rhmi2NamespacesPermissions...)

@@ -35,7 +35,7 @@ const (
 )
 
 var keycloakAlertsToTest = map[string]string{
-	"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
+	"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
 }
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
@@ -273,7 +273,7 @@ func getKeycloakAlertState(ctx *TestingContext) error {
 }
 
 func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (int32, error) {
-	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOUserOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOOperatorNamespace)
 
 	result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})
 	if getErr != nil {
@@ -284,7 +284,7 @@ func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (i
 }
 
 func scaleDeployment(t TestingTB, name string, replicas int32, kubeClient kubernetes.Interface) {
-	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOUserOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(RHSSOOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(goctx.TODO(), name, metav1.GetOptions{})

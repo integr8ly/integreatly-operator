@@ -38,9 +38,33 @@ var (
 )
 
 // Specific to RHMI2
-func rhmi2ExpectedRules() []alertsTestRule {
+func rhmi2ExpectedRules(installationName string) []alertsTestRule {
+
+	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
+		{
+			File: ObservabilityNamespacePrefix + "rhssouser.yaml",
+			Rules: []string{
+				"KeycloakJavaNonHeapThresholdExceeded",
+				"KeycloakJavaGCTimePerMinuteScavenge",
+				"KeycloakJavaGCTimePerMinuteMarkSweep",
+				"KeycloakJavaDeadlockedThreads",
+				"KeycloakLoginFailedThresholdExceeded",
+				"KeycloakInstanceNotAvailable",
+				"KeycloakAPIRequestDuration90PercThresholdExceeded",
+				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "user-sso-slo-availability-alerts.yaml",
+			Rules: []string{
+				fmt.Sprintf("%sUserSsoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
+			},
+		},
 		{
 			File: NamespacePrefix + "amq-online-backupjobs-exist-alerts.yaml",
 			Rules: []string{
@@ -93,6 +117,13 @@ func rhmi2ExpectedRules() []alertsTestRule {
 			File: NamespacePrefix + "solution-explorer-ksm-solution-explorer-alerts.yaml",
 			Rules: []string{
 				"SolutionExplorerPodCount",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
@@ -211,6 +242,13 @@ func rhmi2ExpectedRules() []alertsTestRule {
 			},
 		},
 		{
+			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoKeycloakServiceEndpointDown",
+				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+			},
+		},
+		{
 			File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
@@ -250,14 +288,45 @@ func rhmi2ExpectedRules() []alertsTestRule {
 }
 
 // Managed-Api-Service rules
-func managedApiSpecificRules() []alertsTestRule {
+func managedApiSpecificRules(installationName string) []alertsTestRule {
+
+	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
+		{
+			File: ObservabilityNamespacePrefix + "rhssouser.yaml",
+			Rules: []string{
+				"KeycloakJavaNonHeapThresholdExceeded",
+				"KeycloakJavaGCTimePerMinuteScavenge",
+				"KeycloakJavaGCTimePerMinuteMarkSweep",
+				"KeycloakJavaDeadlockedThreads",
+				"KeycloakLoginFailedThresholdExceeded",
+				"KeycloakInstanceNotAvailable",
+				"KeycloakAPIRequestDuration90PercThresholdExceeded",
+				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "user-sso-slo-availability-alerts.yaml",
+			Rules: []string{
+				fmt.Sprintf("%sUserSsoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
+				fmt.Sprintf("%sUserSsoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
+			},
+		},
 		{
 			File: ObservabilityNamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"Marin3rDiscoveryServiceEndpointDown",
 				"Marin3rRateLimitServiceEndpointDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoKeycloakServiceEndpointDown",
+				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
@@ -284,6 +353,13 @@ func managedApiSpecificRules() []alertsTestRule {
 			Rules: []string{
 				"Marin3rEnvoyApicastStagingContainerDown",
 				"Marin3rEnvoyApicastProductionContainerDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
@@ -339,6 +415,96 @@ func managedApiSpecificRules() []alertsTestRule {
 	}
 }
 
+// Managed-Api-Service rules
+func mtManagedApiSpecificRules() []alertsTestRule {
+
+	return []alertsTestRule{
+		{
+			File: ObservabilityNamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"Marin3rDiscoveryServiceEndpointDown",
+				"Marin3rRateLimitServiceEndpointDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
+			Rules: []string{
+				"Marin3rOperatorPod",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
+			Rules: []string{
+				"Marin3rWebhookPod",
+				"Marin3rRateLimitPod",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "3scale-ksm-marin3r-alerts.yaml",
+			Rules: []string{
+				"Marin3rEnvoyApicastStagingContainerDown",
+				"Marin3rEnvoyApicastProductionContainerDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "customer-monitoring-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
+				"GrafanaServiceEndpointDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "customer-monitoring-ksm-grafana-alerts.yaml",
+			Rules: []string{
+				"GrafanaOperatorPod",
+				"GrafanaServicePod",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "marin3r-rejected-requests.yaml",
+			Rules: []string{
+				"RHOAMApiUsageRejectedRequestsMismatch",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "rhoam-installation-controller-alerts.yaml",
+			Rules: []string{
+				"RHOAMInstallationControllerIsInReconcilingErrorState",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "api-usage-alert-level1.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel1ThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "api-usage-alert-level2.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel2ThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "api-usage-alert-level3.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel3ThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "rate-limit-spike.yaml",
+			Rules: []string{
+				"RHOAMApiUsageOverLimit",
+			},
+		},
+	}
+}
+
 // Common to all install types
 func commonExpectedRules(installationName string) []alertsTestRule {
 	titledName := strings.Title(installationName)
@@ -354,19 +520,6 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 		},
 		{
 			File: ObservabilityNamespacePrefix + "rhsso.yaml",
-			Rules: []string{
-				"KeycloakJavaNonHeapThresholdExceeded",
-				"KeycloakJavaGCTimePerMinuteScavenge",
-				"KeycloakJavaGCTimePerMinuteMarkSweep",
-				"KeycloakJavaDeadlockedThreads",
-				"KeycloakLoginFailedThresholdExceeded",
-				"KeycloakInstanceNotAvailable",
-				"KeycloakAPIRequestDuration90PercThresholdExceeded",
-				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
-			},
-		},
-		{
-			File: ObservabilityNamespacePrefix + "rhssouser.yaml",
 			Rules: []string{
 				"KeycloakJavaNonHeapThresholdExceeded",
 				"KeycloakJavaGCTimePerMinuteScavenge",
@@ -442,18 +595,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
-			Rules: []string{
-				"RHMIUserRhssoKeycloakServiceEndpointDown",
-				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
-			},
-		},
-		{
 			File: ObservabilityNamespacePrefix + "cro-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
 				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
 				"RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
+				"RHMICloudResourceOperatorVPCActionFailed",
 			},
 		},
 		{
@@ -490,13 +637,6 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
-			Rules: []string{
-				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
-				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
-			},
-		},
-		{
 			File: ObservabilityNamespacePrefix + "install-upgrade-alerts.yaml",
 			Rules: []string{
 				"RHMICSVRequirementsNotMet",
@@ -521,15 +661,6 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				fmt.Sprintf("%sRhssoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
 				fmt.Sprintf("%sRhssoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
 				fmt.Sprintf("%sRhssoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
-			},
-		},
-		{
-			File: ObservabilityNamespacePrefix + "user-sso-slo-availability-alerts.yaml",
-			Rules: []string{
-				fmt.Sprintf("%sUserSsoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(titledName)),
-				fmt.Sprintf("%sUserSsoAvailability30mto6hErrorBudgetBurn", strings.ToUpper(titledName)),
-				fmt.Sprintf("%sUserSsoAvailability2hto1dErrorBudgetBurn", strings.ToUpper(titledName)),
-				fmt.Sprintf("%sUserSsoAvailability6hto3dErrorBudgetBurn", strings.ToUpper(titledName)),
 			},
 		},
 		{
@@ -602,27 +733,9 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
-			Rules: []string{
-				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
-			},
-		},
-		{
 			File: fmt.Sprintf("%s-availability-rule-threescale-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Postgres-%sPostgresInstanceUnavailable", titledName),
-			},
-		},
-		{
-			File: fmt.Sprintf("%s-connectivity-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
-			Rules: []string{
-				fmt.Sprintf("Rhssouser-Postgres-%sPostgresConnectionFailed", titledName),
-			},
-		},
-		{
-			File: fmt.Sprintf("%s-availability-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
-			Rules: []string{
-				fmt.Sprintf("Rhssouser-Postgres-%sPostgresInstanceUnavailable", titledName),
 			},
 		},
 		{
@@ -641,12 +754,6 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-threescale-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Redis-%sRedisResourceStatusPhaseFailed", titledName),
-			},
-		},
-		{
-			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
-			Rules: []string{
-				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhasePending", titledName),
 			},
 		},
 		{
@@ -677,12 +784,6 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-threescale-backend-redis-%s.yaml", ObservabilityProductNamespace, installationName),
 			Rules: []string{
 				fmt.Sprintf("Threescale-Backend-Redis-%sRedisResourceStatusPhasePending", titledName),
-			},
-		},
-		{
-			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
-			Rules: []string{
-				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
 			},
 		},
 		{
@@ -762,7 +863,39 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 
 // rhmi2 aws rules
 func rhmi2ExpectedAWSRules(installationName string) []alertsTestRule {
+	titledName := strings.Title(installationName)
+
 	return []alertsTestRule{
+		{
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhasePending", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-connectivity-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresConnectionFailed", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-availability-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresInstanceUnavailable", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
+			},
+		},
 		{
 			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-codeready-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
 			Rules: []string{
@@ -860,6 +993,36 @@ func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
 	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
+		{
+			File: fmt.Sprintf("%s-resource-status-phase-pending-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhasePending", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-connectivity-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresConnectionFailed", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-availability-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresInstanceUnavailable", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceDeletionStatusPhaseFailed", titledName),
+			},
+		},
+		{
+			File: fmt.Sprintf("%s-resource-status-phase-failed-rule-rhssouser-postgres-%s.yaml", ObservabilityProductNamespace, installationName),
+			Rules: []string{
+				fmt.Sprintf("Rhssouser-Postgres-%sPostgresResourceStatusPhaseFailed", titledName),
+			},
+		},
 		{
 			File: fmt.Sprintf("%sresource-status-phase-failed-rule-ratelimit-service-redis-%s.yaml", ObservabilityNamespacePrefix, installationName),
 			Rules: []string{
@@ -1020,18 +1183,22 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedAWSRules(installType string, installationName string) []alertsTestRule {
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
 		return append(commonExpectedAWSRules(installationName), managedApiAwsExpectedRules(installationName)...)
+	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+		return commonExpectedAWSRules(installationName)
 	} else {
 		return append(commonExpectedAWSRules(installationName), rhmi2ExpectedAWSRules(installationName)...)
 	}
 }
 
 func getExpectedRules(installType string, installationName string) []alertsTestRule {
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
-		return append(commonExpectedRules(installationName), managedApiSpecificRules()...)
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
+		return append(commonExpectedRules(installationName), managedApiSpecificRules(installationName)...)
+	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+		return append(commonExpectedRules(installationName), mtManagedApiSpecificRules()...)
 	} else {
-		return append(commonExpectedRules(installationName), rhmi2ExpectedRules()...)
+		return append(commonExpectedRules(installationName), rhmi2ExpectedRules(installationName)...)
 	}
 }
 

@@ -43,6 +43,20 @@ var (
 			integreatlyv1alpha1.ProductRHSSOUser: integreatlyv1alpha1.OperatorVersionRHSSOUser,
 		},
 	}
+	mtManagedApiProductOperatorVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion{
+		integreatlyv1alpha1.AuthenticationStage: {
+			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.OperatorVersionRHSSO,
+		},
+		integreatlyv1alpha1.ObservabilityStage: {
+			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.OperatorVersionObservability,
+		},
+		integreatlyv1alpha1.CloudResourcesStage: {
+			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.OperatorVersionCloudResources,
+		},
+		integreatlyv1alpha1.ProductsStage: {
+			integreatlyv1alpha1.Product3Scale: integreatlyv1alpha1.OperatorVersion3Scale,
+		},
+	}
 )
 
 func TestProductOperatorVersions(t TestingTB, ctx *TestingContext) {
@@ -67,8 +81,10 @@ func TestProductOperatorVersions(t TestingTB, ctx *TestingContext) {
 
 func getOperatorVersions(installType string) map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion {
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiProductOperatorVersions
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return mtManagedApiProductOperatorVersions
 	} else {
 		return rhmiProductOperatorVersions
 	}
