@@ -33,7 +33,7 @@ func NewGRPCImageCatalogSourceReconciler(image string, client client.Client, nam
 	}
 }
 
-func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context) (reconcile.Result, error) {
+func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context, subName string) (reconcile.Result, error) {
 	r.Log.Infof("Reconciling registry catalog source for namespace", l.Fields{"ns": r.Namespace})
 
 	catalogSource := &coreosv1alpha1.CatalogSource{
