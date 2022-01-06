@@ -44,12 +44,12 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 		}
 
 		// Patch RHMI CR CR with cluster storage
-		if rhmi.Spec.UseClusterStorage == "true" || rhmi.Spec.UseClusterStorage == "" {
+		if rhmi.Spec.UseClusterStorage == "false" || rhmi.Spec.UseClusterStorage == "" {
 			rhmiCR := fmt.Sprintf(`{
 				"apiVersion": "integreatly.org/v1alpha1",
 				"kind": "RHMI",
 				"spec": {
-					"useClusterStorage" : "false"
+					"useClusterStorage" : "true"
 				}
 			}`)
 
@@ -116,7 +116,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 					Namespace: common.RHMIOperatorNamespace,
 				},
 				Data: map[string][]byte{
-					"url": []byte("test"),
+					"url": []byte("https://dms.example.com"),
 				},
 			}
 			if err := ctx.Client.Create(goctx.TODO(), dms.DeepCopy()); err != nil {

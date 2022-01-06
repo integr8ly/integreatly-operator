@@ -2,17 +2,18 @@ package osde2e
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"testing"
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
@@ -103,6 +104,7 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	common.RHMIOperatorNamespace = common.NamespacePrefix + "operator"
 	common.MonitoringOperatorNamespace = common.NamespacePrefix + "middleware-monitoring-operator"
 	common.MonitoringFederateNamespace = common.NamespacePrefix + "middleware-monitoring-federate"
+	common.ObservabilityNamespacePrefix = common.NamespacePrefix + "observability-"
 	common.ObservabilityOperatorNamespace = common.NamespacePrefix + "observability-operator"
 	common.ObservabilityProductNamespace = common.NamespacePrefix + "observability"
 	common.AMQOnlineOperatorNamespace = common.NamespacePrefix + "amq-online"
@@ -129,4 +131,5 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	common.Marin3rOperatorNamespace = common.NamespacePrefix + "marin3r-operator"
 	common.Marin3rProductNamespace = common.NamespacePrefix + "marin3r"
 	common.CustomerGrafanaNamespace = common.NamespacePrefix + "customer-monitoring-operator"
+	common.SMTPSecretName = common.NamespacePrefix + "smtp"
 }
