@@ -64,6 +64,28 @@ var (
 			"grafana",
 		},
 	}
+
+	mtManagedApiExpectedStageProducts = map[string][]string{
+		"authentication": {
+			"rhsso",
+		},
+
+		"bootstrap": {},
+
+		"cloud-resources": {
+			"cloud-resources",
+		},
+
+		"monitoring": {
+			"middleware-monitoring",
+		},
+
+		"products": {
+			"3scale",
+			"marin3r",
+			"grafana",
+		},
+	}
 )
 
 func TestIntegreatlyStagesStatus(t TestingTB, ctx *TestingContext) {
@@ -126,7 +148,9 @@ func TestIntegreatlyStagesStatus(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedStageProducts(installType string) map[string][]string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return mtManagedApiExpectedStageProducts
+	} else if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiExpectedStageProducts
 	} else {
 		return rhmi2ExpectedStageProducts

@@ -141,10 +141,15 @@ var _ = BeforeSuite(func(done Done) {
 		"apicurito":            "apicurito-operator",
 	}
 
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
 		products = map[string]string{
 			"3scale":   "threescale-operator-controller-manager",
 			"user-sso": "keycloak-operator",
+		}
+	}
+	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+		products = map[string]string{
+			"3scale": "threescale-operator-controller-manager",
 		}
 	}
 

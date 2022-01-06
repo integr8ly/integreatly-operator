@@ -30,12 +30,18 @@ const (
 )
 
 func getExpectedPostgres(installType string, installationName string) []string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		// expected postgres resources provisioned per product
 		return []string{
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+		}
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		// expected postgres resources provisioned per product
+		return []string{
+			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 		}
 	} else {
 		// expected postgres resources provisioned per product

@@ -15,6 +15,7 @@ const (
 	clonedServiceMonitorLabelKey   = "integreatly.org/cloned-servicemonitor"
 	clonedServiceMonitorLabelValue = "true"
 	labelSelector                  = "kubernetes.io/metadata.name=redhat-rhoam-observability"
+	labelSelectorMt                = "kubernetes.io/metadata.name=sandbox-rhoam-observability"
 	roleBindingName                = "rhmi-prometheus-k8s"
 	roleRefName                    = "rhmi-prometheus-k8s"
 )
@@ -48,6 +49,13 @@ func getServiceMonitorsByType(monitorsType string) []string {
 			NamespacePrefix + "rhsso-operator-keycloak-operator-metrics",
 			NamespacePrefix + "user-sso-keycloak-service-monitor",
 			NamespacePrefix + "user-sso-operator-keycloak-operator-metrics",
+		},
+		"mtManagedApiServiceMonitors": {
+			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
+			NamespacePrefix + "marin3r-ratelimit",
+			NamespacePrefix + "operator-rhmi-operator-metrics",
+			NamespacePrefix + "rhsso-keycloak-service-monitor",
+			NamespacePrefix + "rhsso-operator-keycloak-operator-metrics",
 		},
 		"commonExpectedServiceMonitors": {},
 	}
@@ -94,7 +102,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t TestingTB, ctx *TestingConte
 		}
 	}
 	//Get the namespaces
-	ls, err := labels.Parse(labelSelector)
+	ls, err := labels.Parse(getLabelSelector(rhmi.Spec.Type))
 	if err != nil {
 		t.Fatal("failed to parse label", err)
 	}
@@ -134,8 +142,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t TestingTB, ctx *TestingConte
 	}
 }
 
-func getServiceMonitors(ctx *TestingContext,
-	nameSpace string) (serviceMonitorsMap map[string]*monitoringv1.ServiceMonitor, err error) {
+func getServiceMonitors(ctx *TestingContext, nameSpace string) (serviceMonitorsMap map[string]*monitoringv1.ServiceMonitor, err error) {
 	//Get list of service monitors in the namespace that has
 	//label "integreatly.org/cloned-servicemonitor" set to "true"
 	listOpts := []k8sclient.ListOption{
@@ -152,6 +159,13 @@ func getServiceMonitors(ctx *TestingContext,
 		serviceMonitorsMap[sm.Name] = sm
 	}
 	return serviceMonitorsMap, err
+}
+
+func getLabelSelector(installType string) string {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return labelSelectorMt
+	}
+	return labelSelector
 }
 
 func getClonedServiceMonitorLabel() map[string]string {
@@ -173,8 +187,10 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 }
 
 func getExpectedServiceMonitors(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("managedApiServiceMonitors")...)
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("mtManagedApiServiceMonitors")...)
 	} else {
 		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("rhmi2ExpectedServiceMonitors")...)
 	}

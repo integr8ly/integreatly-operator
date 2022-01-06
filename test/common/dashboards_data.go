@@ -57,14 +57,17 @@ var (
 		"3scale-admin-ui",
 		"3scale-developer-console-ui",
 		"rhsso-ui",
-		"rhssouser-ui",
 		"3scale-system-admin-ui",
+	}
+	singleTenantRHOAMExpectedServices = []string{
+		"rhssouser-ui",
 	}
 	rhmi2ExpectedServices = []string{
 		"apicurito-ui",
 		"codeready-ui",
 		"amq-service-broker",
 		"webapp-ui",
+		"rhssouser-ui",
 		"syndesis-ui",
 		"ups-ui",
 	}
@@ -221,8 +224,10 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 }
 
 func getExpectedServices(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonExpectedServices
+	} else if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return append(commonExpectedServices, singleTenantRHOAMExpectedServices...)
 	} else {
 		return append(commonExpectedServices, rhmi2ExpectedServices...)
 	}

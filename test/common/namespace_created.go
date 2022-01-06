@@ -49,6 +49,21 @@ func managedApiNamespaces() []string {
 	}
 }
 
+func mtManagedApiNamespaces() []string {
+	return []string{
+		ObservabilityOperatorNamespace,
+		ObservabilityProductNamespace,
+		CloudResourceOperatorNamespace,
+		RHSSOProductNamespace,
+		RHSSOOperatorNamespace,
+		ThreeScaleProductNamespace,
+		ThreeScaleOperatorNamespace,
+		Marin3rOperatorNamespace,
+		Marin3rProductNamespace,
+		CustomerGrafanaNamespace,
+	}
+}
+
 func TestNamespaceCreated(t TestingTB, ctx *TestingContext) {
 
 	namespacesCreated := getNamespaces(t, ctx)
@@ -72,8 +87,10 @@ func getNamespaces(t TestingTB, ctx *TestingContext) []string {
 		t.Errorf("error getting RHMI CR: %v", err)
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		return managedApiNamespaces()
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+		return mtManagedApiNamespaces()
 	} else {
 		return rhmi2Namespaces()
 	}

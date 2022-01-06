@@ -178,6 +178,13 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"customer-monitoring-operator": customerGrafanaRoutes,
 }
 
+var mtManagedApiExpectedRoutes = map[string][]ExpectedRoute{
+	"3scale":                       threeScaleRoutes,
+	"observability":                observabilityRoutes,
+	"rhsso":                        rhssoRoutes,
+	"customer-monitoring-operator": customerGrafanaRoutes,
+}
+
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created
 func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 
@@ -209,8 +216,10 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiExpectedRoutes
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return mtManagedApiExpectedRoutes
 	} else {
 		return rhmi2ExpectedRoutes
 	}

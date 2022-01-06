@@ -129,6 +129,36 @@ var (
 			},
 		},
 	}
+
+	mtManagedApiStages = []StageDeletion{
+		{
+			productStageName: integreatlyv1alpha1.ProductsStage,
+			namespaces: []string{
+				CustomerGrafanaNamespace,
+				Marin3rOperatorNamespace,
+				Marin3rProductNamespace,
+				ThreeScaleProductNamespace,
+				ThreeScaleOperatorNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				if err := removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace); err != nil {
+					return err
+				}
+
+				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
+			},
+		},
+		{
+			productStageName: integreatlyv1alpha1.ObservabilityStage,
+			namespaces: []string{
+				ObservabilityOperatorNamespace,
+				ObservabilityProductNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				return removObservabilityFinalizers(ctx, ObservabilityProductNamespace)
+			},
+		},
+	}
 )
 
 func TestNamespaceRestoration(t TestingTB, ctx *TestingContext) {
@@ -421,8 +451,10 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 }
 
 func getStagesForInstallType(installType string) []StageDeletion {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonStages, managedApiStages...)
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return append(commonStages, mtManagedApiStages...)
 	} else {
 		return append(commonStages, rhmiSpecificStages...)
 	}

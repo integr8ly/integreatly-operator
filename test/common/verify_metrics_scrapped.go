@@ -30,6 +30,24 @@ func mangedApiTargets() map[string][]string {
 	}
 }
 
+func mtMangedApiTargets() map[string][]string {
+	return map[string][]string{
+		ObservabilityProductNamespace: {
+			"/integreatly-3scale-admin-ui",
+			"/integreatly-3scale-system-developer",
+			"/integreatly-3scale-system-master",
+			"/integreatly-grafana",
+			"/integreatly-rhsso",
+			"/sandbox-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
+			"/sandbox-rhoam-marin3r-ratelimit/0",
+			"/sandbox-rhoam-rhsso-keycloak-service-monitor/0",
+			"/sandbox-rhoam-rhsso-keycloak-service-monitor/1",
+			"/sandbox-rhoam-rhsso-operator-keycloak-operator-metrics/0",
+			"/sandbox-rhoam-rhsso-operator-keycloak-operator-metrics/1",
+		},
+	}
+}
+
 func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
@@ -80,8 +98,10 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 }
 
 func getTargets(installType string) map[string][]string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return mangedApiTargets()
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return mtMangedApiTargets()
 	} else {
 		// TODO - return list for managed install type
 		return map[string][]string{}
