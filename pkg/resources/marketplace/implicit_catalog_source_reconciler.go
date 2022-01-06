@@ -2,11 +2,14 @@ package marketplace
 
 import (
 	"context"
-	"errors"
+	"github.com/pkg/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	k8sresources "github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	rhmiresources "github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,13 +22,13 @@ import (
 // included in the CatalogSource installed by the add-on
 type ImplicitCatalogSourceReconciler struct {
 	Client            k8sclient.Client
-	Log               logger.Logger
+	Log               l.Logger
 	selfCatalogSource *coreosv1alpha1.CatalogSource
 }
 
 var _ CatalogSourceReconciler = &ImplicitCatalogSourceReconciler{}
 
-func NewImplicitCatalogSourceReconciler(log logger.Logger, client k8sclient.Client) (*ImplicitCatalogSourceReconciler, error) {
+func NewImplicitCatalogSourceReconciler(log l.Logger, client k8sclient.Client) (*ImplicitCatalogSourceReconciler, error) {
 	reconciler := &ImplicitCatalogSourceReconciler{
 		Log:    log,
 		Client: client,
@@ -37,7 +40,7 @@ func NewImplicitCatalogSourceReconciler(log logger.Logger, client k8sclient.Clie
 // Reconcile finds the CatalogSource that provides the current installation,
 // returning an error if it fails to find it. Caches the found CatalogSource
 // to be used by r.CatalogSourceName() and r.CatalogSourceNamespace()
-func (r *ImplicitCatalogSourceReconciler) Reconcile(ctx context.Context) (reconcile.Result, error) {
+func (r *ImplicitCatalogSourceReconciler) Reconcile(ctx context.Context, subName string) (reconcile.Result, error) {
 	// Get the CatalogSource that installed the operator
 	catalogSource, err := r.getSelfCatalogSource(ctx)
 	if err != nil {
@@ -46,6 +49,37 @@ func (r *ImplicitCatalogSourceReconciler) Reconcile(ctx context.Context) (reconc
 	// If the CatalogSource was not found, return an error
 	if catalogSource == nil {
 		return reconcile.Result{}, errors.New("catalog source not found for implicit product installation type")
+	}
+
+	r.Log.Infof("Found: ", l.Fields{"catalogSource": catalogSource.Name, "ns": catalogSource.Namespace})
+
+	watchNS, err := k8sresources.GetWatchNamespace()
+	if err != nil {
+		return reconcile.Result{}, errors.Wrapf(err, "could not get watch namespace in ImplicitCatalogSourceReconciler")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+	ns := namespacePrefix + "operator"
+
+	// If the Catalog Source is in the rhoam operator ns but the subscription is for 3Scale then
+	// we need to copy the CS to the 3Scale operator namespace in order for it to be discovered.
+	if catalogSource.Namespace == ns && strings.Contains(subName, "3scale") {
+		r.Log.Info("Copying 3scale Catalog source")
+
+		cs := &coreosv1alpha1.CatalogSource{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      catalogSource.Name,
+				Namespace: namespacePrefix + "3scale-operator",
+			},
+		}
+
+		controllerutil.CreateOrUpdate(ctx, r.Client, cs, func() error {
+			cs.Spec = catalogSource.DeepCopy().Spec
+			return nil
+		})
+
+		r.Log.Infof("Created 3Scale catalog source ", l.Fields{"image": cs.Spec.Image})
+		r.selfCatalogSource = cs
 	}
 
 	return reconcile.Result{}, nil

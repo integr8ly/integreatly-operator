@@ -43,7 +43,7 @@ func (r *ConfigMapCatalogSourceReconciler) CatalogSourceNamespace() string {
 	return r.Namespace
 }
 
-func (r *ConfigMapCatalogSourceReconciler) Reconcile(ctx context.Context) (reconcile.Result, error) {
+func (r *ConfigMapCatalogSourceReconciler) Reconcile(ctx context.Context, subName string) (reconcile.Result, error) {
 	configMapData, err := GenerateRegistryConfigMapFromManifest(r.ManifestsProductDirectory)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("Failed to generated config map data from manifest: %w", err)
