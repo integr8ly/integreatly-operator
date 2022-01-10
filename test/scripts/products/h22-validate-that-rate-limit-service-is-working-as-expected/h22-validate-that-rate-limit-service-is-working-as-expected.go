@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	testcommon "github.com/integr8ly/integreatly-operator/test/common"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +32,17 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	baseName        = "h22-test"
+	endpointTimeout = 10 * time.Minute
+	counterTimeout  = 2 * time.Minute
+)
+
+var (
+	testRunStart time.Time
+	allSkipped   = true
 )
 
 func main() {
@@ -65,36 +76,33 @@ func main() {
 
 	ctx := context.Background()
 
+	cleanupRedis(ctx, client, namespace)
 	// Start creating the Redis Pod
 	redisCreated, err := createRedis(ctx, client, namespace)
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, nil)
 	}
 	defer cleanupRedis(ctx, client, namespace)
 
 	// Get the host of the redis rate limiting instance
 	redisHost, err := getRedisHost(ctx, client, namespace)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, nil)
 	}
 	fmt.Printf("ℹ️  Redis host: %s\n", redisHost)
 
 	// Create the threescale API
-	api, err := createAPI(ctx, client, namespacePrefix, "h22-test")
+	api, err := createAPI(ctx, client, namespacePrefix, baseName)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 	fmt.Printf("️🔌  Created API. Endpoint %s\n", api.Endpoint)
-	defer deleteAPI(cleanupAPI, api)
+	defer deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
 
 	// Wait for the Redis Pod to finish creating
 	redisPod := <-redisCreated
 	if redisPod.Error != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 
 	fmt.Println("️ℹ️  Throw away Redis Pod ready")
@@ -112,16 +120,16 @@ func main() {
 	// and assert that the counter is *at least* greater or equal than the
 	// previous count + the number of requests made
 	overallSuccess := true
-	fmt.Printf("[%s] Starting test run\n", time.Now().Format("15:04:05"))
+	testRunStart = time.Now()
+	fmt.Printf("[%s] Starting test run\n", testRunStart.Format("15:04:05"))
 	for i := 0; i < iterations; i++ {
 		numRequests := rand.IntnRange(5, 15)
 		success, err := testCountIncreases(redisCounter, api.Endpoint, numRequests)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 		}
 
-		overallSuccess = overallSuccess && success
+		overallSuccess = overallSuccess && success && !allSkipped
 
 		time.Sleep(time.Second)
 	}
@@ -129,7 +137,7 @@ func main() {
 	if !overallSuccess {
 		fmt.Println("Test failed, not all iterations succeeded")
 		fmt.Println("Note: Counter reset can cause false failures due to current count being higher than previous count")
-		os.Exit(1)
+		osExit1(errors.New("cleaning up after a failure"), ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 	}
 }
 
@@ -236,9 +244,24 @@ func cleanupRedis(ctx context.Context, client k8sclient.Client, namespace string
 // and an error if an unexpected error occurred when performing the test
 func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) (bool, error) {
 	// call endpoint for rate limiting key to show in redis
-	requestEndpoint(endpoint)
+	for {
+		err, code := requestEndpoint(endpoint)
+		if err != nil && code != http.StatusNotFound && code != http.StatusForbidden {
+			fmt.Printf("Error on initial request of endpoint: %s\n", err)
+			break
+		}
+		if code == http.StatusOK {
+			break
+		}
+		if testRunStart.Add(endpointTimeout).Before(time.Now()) {
+			fmt.Println("Timeout waiting for the endpoint to become functional")
+			break
+		}
+		fmt.Println("  ☁️  Waiting for the endpoint to become functional")
+		time.Sleep(10 * time.Second)
+	}
 
-	initialCount, err := r.GetCount()
+	initialCount, err := getCount(r, time.Now())
 	if err != nil {
 		return false, err
 	}
@@ -246,25 +269,28 @@ func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) 
 	var wg sync.WaitGroup
 
 	for i := 0; i < numberOfRequests; i++ {
-		go func() {
-			requestEndpoint(endpoint)
-			wg.Done()
-		}()
 		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			requestEndpoint(endpoint)
+		}()
 	}
-
 	wg.Wait()
 
-	newCount, err := r.GetCount()
+	newCount, err := getCount(r, time.Now())
 	if err != nil {
 		return false, err
 	}
 
 	status := "[FAIL] ❌"
 	success := false
-	if newCount <= initialCount-numberOfRequests {
+	if newCount == 0 || initialCount == 0 {
+		status = "[SKIP] ❌"
+		success = true
+	} else if newCount <= initialCount-numberOfRequests {
 		status = "[PASS] 🎉"
 		success = true
+		allSkipped = false
 	}
 
 	fmt.Printf("[%s] Previous count: %d | Number of requests: %d | Current count: %d | %s\n",
@@ -297,19 +323,15 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 	if err != nil {
 		return nil, err
 	}
-
 	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
 	fmt.Printf("  🔑  Found access token: %s\n", accessToken)
 
-	installation, err := resources.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
+	installation, err := rhmi.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
 	if err != nil {
 		return nil, err
 	}
 
-	threescaleClient := newThreescaleClient(
-		installation,
-		accessToken,
-	)
+	threescaleClient := newThreescaleClient(installation)
 
 	accountID, err := threescaleClient.CreateAccount(accessToken,
 		baseName,
@@ -327,7 +349,6 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 	if err != nil {
 		return nil, err
 	}
-
 	fmt.Printf("  ✔️  Created Backend ID: %d\n", backendID)
 
 	metricID, err := threescaleClient.CreateMetric(accessToken,
@@ -358,7 +379,7 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 	)
 	fmt.Printf("  ✔️  Created Service ID: %s\n", serviceID)
 
-	if err := threescaleClient.CreateBackendUsage(accessToken,
+	if err = threescaleClient.CreateBackendUsage(accessToken,
 		serviceID,
 		backendID,
 		"/",
@@ -413,33 +434,38 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 	}, nil
 }
 
-func deleteAPI(cleanup bool, api *threescaleAPI) {
+func deleteAPI(cleanup bool, api *threescaleAPI, ctx context.Context, client k8sclient.Client, namespacePrefix string) {
 	if !cleanup {
 		fmt.Println("Skipping API clean-up")
 		return
 	}
 
 	fmt.Println("🗑️🔌  Cleaning up API")
+	if api == nil {
+		api = mock3scaleAPI(ctx, client, namespacePrefix)
+	}
 
-	if err := api.threescaleClient.DeleteService(api.accessToken, api.ServiceID); err != nil {
+	err := api.threescaleClient.DeleteService(api.accessToken, api.ServiceID)
+	if err != nil && !strings.Contains(err.Error(), "Not Found") {
 		fmt.Printf("Failed to clean up API: failed to delete service: %v", err)
-		return
+	} else {
+		fmt.Println("  ✔️️  Deleted API service")
 	}
-	fmt.Println("  ✔️️  Deleted API service")
-
-	if err := api.threescaleClient.DeleteBackend(api.accessToken, api.BackendID); err != nil {
+	err = api.threescaleClient.DeleteBackend(api.accessToken, api.BackendID)
+	if err != nil && !strings.Contains(err.Error(), "Not Found") {
 		fmt.Printf("Failed to clean up API: failed to delete backend: %v", err)
-		return
+	} else {
+		fmt.Println("  ✔️️  Deleted API backend")
 	}
-	fmt.Println("  ✔️️  Deleted API backend")
-
-	if err := api.threescaleClient.DeleteAccount(api.accessToken, api.AccountID); err != nil {
+	err = api.threescaleClient.DeleteAccount(api.accessToken, api.AccountID)
+	if err != nil && !strings.Contains(err.Error(), "Not Found") {
 		fmt.Printf("Failed to clean up API: failed to delete account: %v", err)
-		return
+	} else {
+		fmt.Println("  ✔️  Deleted API account")
 	}
-	fmt.Println("  ✔️  Deleted API account")
-
-	fmt.Println("✔️  Deleted API. If re-testing, allow a few minutes (~5) for the changes to propagate in 3scale before launching the test again.")
+	if err == nil {
+		fmt.Println("  ✔️  Deleted API. If re-testing, allow a few minutes (~10) for the changes to propagate in 3scale before launching the test again.")
+	}
 }
 
 // getRedisHosts finds the host of the rate limiting Redis instance
@@ -461,19 +487,19 @@ func getRedisHost(ctx context.Context, client k8sclient.Client, namespace string
 }
 
 // requestEndpoint sends a simple GET request to the endpoint and returns an
-// error if the response is not OK
-func requestEndpoint(endpoint string) error {
+// error if the response is not OK and the response code
+func requestEndpoint(endpoint string) (error, int) {
 	c := &http.Client{}
 	res, err := c.Get(endpoint)
 	if err != nil {
-		return err
+		return err, res.StatusCode
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code. Expected %d got %d", http.StatusOK, res.StatusCode)
+		return fmt.Errorf("unexpected status code. Expected %d got %d ", http.StatusOK, res.StatusCode), res.StatusCode
 	}
 
-	return nil
+	return nil, res.StatusCode
 }
 
 type redisCounter struct {
@@ -582,7 +608,7 @@ func (r *redisCounter) keyIsString(key string) (bool, error) {
 	return false, nil
 }
 
-func newThreescaleClient(installation *integreatlyv1alpha1.RHMI, accessToken string) threescale.ThreeScaleInterface {
+func newThreescaleClient(installation *integreatlyv1alpha1.RHMI) threescale.ThreeScaleInterface {
 	httpc := &http.Client{
 		Timeout: time.Second * 10,
 		Transport: &http.Transport{
@@ -593,4 +619,58 @@ func newThreescaleClient(installation *integreatlyv1alpha1.RHMI, accessToken str
 	}
 
 	return threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
+}
+
+// mock3scaleAPI used to simulate an API while creation of one failed but we still want to clean up resources
+func mock3scaleAPI(ctx context.Context, client k8sclient.Client, namespacePrefix string) *threescaleAPI {
+	namespace := fmt.Sprintf("%soperator", namespacePrefix)
+	tsNamespace := fmt.Sprintf("%s3scale", namespacePrefix)
+
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "system-seed",
+		},
+	}
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: tsNamespace}, s)
+	if err != nil {
+		os.Exit(1)
+	}
+	accessToken := string(s.Data["ADMIN_ACCESS_TOKEN"])
+	fmt.Printf("  🔑  Found access token: %s\n", accessToken)
+	installation, err := rhmi.GetRhmiCr(client, ctx, namespace, logger.NewLogger())
+	if err != nil {
+		fmt.Printf("Error getting installaction: %s\n", err)
+		os.Exit(1)
+	}
+	return &threescaleAPI{
+		threescaleClient: newThreescaleClient(installation),
+		accessToken:      accessToken,
+	}
+}
+
+// getCount queries redisCounter until an error or non 0 counter
+func getCount(r *redisCounter, startTime time.Time) (int, error) {
+	fmt.Println("  ☁️  Waiting for the counter to return a valid value")
+	for {
+		count, err := r.GetCount()
+		if err != nil {
+			return 0, err
+		}
+		if count > 0 {
+			return count, nil
+		}
+
+		if startTime.Add(counterTimeout).Before(time.Now()) {
+			fmt.Println("Timeout waiting for the counter to return > 0 count")
+			return 0, err
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func osExit1(err error, ctx context.Context, client k8sclient.Client, namespace, namespacePrefix string, cleanupAPI bool, api *threescaleAPI) {
+	fmt.Println(err)
+	cleanupRedis(ctx, client, namespace)
+	deleteAPI(cleanupAPI, api, ctx, client, namespacePrefix)
+	os.Exit(1)
 }
