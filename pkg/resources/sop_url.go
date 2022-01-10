@@ -26,6 +26,7 @@ const (
 	SopUrlOperatorInstallDelayed                              = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/OperatorInstallDelayed.asciidoc"
 	SopUrlUpgradeExpectedDurationExceeded                     = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/UpgradeExpectedDurationExceeded.asciidoc"
 	SopUrlRHMICloudResourceOperatorMetricsServiceEndpointDown = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHMICloudResourceOperatorMetricsServiceEndpointDown.asciidoc"
+	SopUrlRHMICloudResourceOperatorVPCActionFailed            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHMICloudResourceOperatorVPCActionFailed.asciidoc"
 	SopUrlRHMIThreeScaleApicastProductionServiceEndpointDown  = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHMIThreeScaleApicastProductionServiceEndpointDown.asciidoc"
 	SopUrlRHMIThreeScaleApicastStagingServiceEndpointDown     = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHMIThreeScaleApicastStagingServiceEndpointDown.asciidoc"
 	SopUrlRHMIThreeScaleBackendListenerServiceEndpointDown    = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHMIThreeScaleBackendListenerServiceEndpointDown.asciidoc"

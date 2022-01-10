@@ -3,8 +3,9 @@ package cloudresources
 import (
 	"context"
 	"fmt"
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"strings"
+
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -59,6 +60,15 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
+					}, {
+						Alert: "RHMICloudResourceOperatorVPCActionFailed",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHMICloudResourceOperatorVPCActionFailed,
+							"message": "CRO failed to perform an action on a VPC.",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf("cro_vpc_action{namespace='%s', status='failed', error!=''} > 0", r.Config.GetOperatorNamespace())),
+						For:    "5m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},
