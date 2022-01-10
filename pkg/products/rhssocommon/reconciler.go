@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Masterminds/semver"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"strings"
@@ -733,4 +734,34 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+//ReconcileCSVEnvVars will take a keycloak-operator CSV and a map of env vars to update or create
+func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion, envVars map[string]string) (*olmv1alpha1.ClusterServiceVersion, bool, error) {
+	updated := false
+	for deploymentIndex, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+		if deployment.Name != "keycloak-operator" {
+			continue
+		}
+		deploymentEnvVars := deployment.Spec.Template.Spec.Containers[0].Env
+		for envVarIndex, envVar := range deploymentEnvVars {
+			if newValue, ok := envVars[envVar.Name]; ok {
+				delete(envVars, envVar.Name)
+				if deploymentEnvVars[envVarIndex].Value != newValue {
+					updated = true
+					deploymentEnvVars[envVarIndex].Value = newValue
+				}
+			}
+		}
+
+		//any left are new entries
+		for name, value := range envVars {
+			updated = true
+			deploymentEnvVars = append(deploymentEnvVars, corev1.EnvVar{Name: name, Value: value})
+		}
+
+		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[deploymentIndex].Spec.Template.Spec.Containers[0].Env = deploymentEnvVars
+		break // no need to iterate any further
+	}
+	return csv, updated, nil
 }
