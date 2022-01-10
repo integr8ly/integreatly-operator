@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// UninstallOperator uninstalls the RHMI operator by deleting the subscription
-// and CSV. If the subscription is not found, it doesn't do anything, as the
+// UninstallOperator uninstalls the RHMI operator by deleting the CSV.
+// If the subscription is not found, it doesn't do anything, as the
 // operator might not be run through OLM
 func UninstallOperator(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {
 	// Get the operator subscription
@@ -31,13 +31,6 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 		return nil
 	}
 
-	log.Infof("Deleting subscription", l.Fields{"name": subscription.Name})
-
-	// Declare the deleting subscription function
-	deleteSubscription := func() error {
-		return client.Delete(ctx, subscription)
-	}
-
 	// Retrieve the operator CSV
 	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 	err = client.Get(ctx, k8sclient.ObjectKey{
@@ -49,20 +42,15 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 		return err
 	}
 
-	// If the CSV wasn't found, just delete the subscription
+	// If the CSV wasn't found, there is nothing left to delete
 	if k8serr.IsNotFound(err) {
-		return deleteSubscription()
+		return nil
 	}
 
 	log.Infof("Deleting operator CSV", l.Fields{"name": csv.Name})
 
 	// Delete the CSV
-	if err := client.Delete(ctx, csv); err != nil {
-		return err
-	}
-
-	// Delete the subscription
-	return deleteSubscription()
+	return client.Delete(ctx, csv)
 }
 
 type deleteRHMIHandler struct {
