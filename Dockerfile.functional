@@ -20,8 +20,10 @@ COPY version ./version
 
 RUN make test/compile/functional
 
-# Use chromedp as base image to allow for headless chrome instance in tests
-FROM chromedp/headless-shell:latest
+FROM registry.access.redhat.com/ubi8/ubi:latest
+# Install chrome for tests
+COPY test-dependancy/*.repo /etc/yum.repos.d/
+RUN dnf -y install google-chrome-stable && dnf clean all
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
