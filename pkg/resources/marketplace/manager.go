@@ -53,7 +53,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		},
 	}
 
-	res, err := catalogSourceReconciler.Reconcile(ctx)
+	res, err := catalogSourceReconciler.Reconcile(ctx, t.SubscriptionName)
 	if res.Requeue {
 		return fmt.Errorf("Requeue")
 	}
@@ -117,11 +117,14 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+	log.Infof("Get", l.Fields{"Subscription Name": subName, "ns": ns})
+
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
 	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
+		log.Error("Error getting install plan ref on subscription, %v", err)
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
 	}
 
