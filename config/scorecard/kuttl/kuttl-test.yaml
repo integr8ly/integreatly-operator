@@ -1,9 +1,8 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestSuite
-startControlPlane: false
-skipDelete: true
-suppressLog: events
-#timeout: 300
 namespace: redhat-rhoam-operator
-testDirs:
-- rhoam-install
+parallel: 1 # Run tests in serial
+skipDelete: true
+startControlPlane: false
+suppressLog: events
+timeout: 60 # timeout in seconds for each step
