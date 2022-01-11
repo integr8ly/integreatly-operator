@@ -35,6 +35,7 @@ import (
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
 	rhmiconfigcontroller "github.com/integr8ly/integreatly-operator/controllers/rhmiconfig"
 	subscriptioncontroller "github.com/integr8ly/integreatly-operator/controllers/subscription"
+	tenantcontroller "github.com/integr8ly/integreatly-operator/controllers/tenant"
 	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -101,7 +102,7 @@ func main() {
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "28185cee.integreatly.org",
-		Namespace:          watchNamespace,
+		//Namespace:          watchNamespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -129,6 +130,17 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	tenantCtrl, err := tenantcontroller.New(mgr)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "TenantController")
+		os.Exit(1)
+	}
+	if err = tenantCtrl.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to setup controller", "controller", "TenantController")
+		os.Exit(1)
+	}
+
 	subscriptionCtrl, err := subscriptioncontroller.New(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Subscription")

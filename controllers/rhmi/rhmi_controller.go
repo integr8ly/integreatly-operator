@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"strconv"
 	"strings"
 	"time"
@@ -189,7 +190,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations;mutatingwebhookconfigurations,verbs=get;watch;list;create;update;delete
 
 // Permission to get the ConfigMap that embeds the CSV for an InstallPlan
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;watch;list;
 
 // Permission for marin3r resources
 // +kubebuilder:rbac:groups=marin3r.3scale.net,resources=envoyconfigs,verbs=get;list;watch;create;update;delete
@@ -211,7 +212,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Role permissions
 
-// +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator
+// +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=delete,namespace=integreatly-operator
 
@@ -235,6 +236,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 
 	// your logic here
+	log.Info("######## RHMIReconciler #####")
+
 	installInProgress := false
 	installation := &rhmiv1alpha1.RHMI{}
 	err := r.Get(context.TODO(), request.NamespacedName, installation)
@@ -256,6 +259,26 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if installationCfgMap == "" {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
+
+	////tenants config maps checking draft
+	//log.Info("Tenant config maps search")
+	//ls, err := labels.Parse("tenant=yes")
+	//if err != nil {
+	//	log.Error("failed to parse label selector: %v", err)
+	//}
+	//cmClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
+	//	Scheme: r.mgr.GetScheme(),
+	//})
+	//configMaps := &corev1.ConfigMapList{}
+	//if err := cmClient.List(context.TODO(), configMaps, &k8sclient.ListOptions{LabelSelector: ls}); err != nil {
+	//	log.Error("failed to list configMaps %v", err)
+	//	return ctrl.Result{}, err
+	//}
+	//log.Info("Tenant configMaps count: " + strconv.Itoa(len(configMaps.Items)))
+	//for _, configMap := range configMaps.Items {
+	//	log.Info("Tenant configMap: " + configMap.Name)
+	//}
+	////tenants config maps end
 
 	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
 	if installation.Spec.AlertingEmailAddresses.CSSRE == "" && cssreAlertingEmailAddress != "" {
@@ -1231,18 +1254,20 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Instead of calling .Complete(r), we call .Build(r), which
 	// does the same but returns the controller instance, to be
 	// stored in the reconciler
+	log.Info("########### RHMI SetupWithManager debug watch 1")
 	controller, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhmiv1alpha1.RHMI{}).
-		Watches(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, enqueueAllInstallations).
-		Watches(&source.Kind{Type: &usersv1.Group{}}, enqueueAllInstallations).
+		Watches(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations, builder.WithPredicates(namespacePredicate(installation.Namespace))).
+		Watches(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations, builder.WithPredicates(tenantAnnotationPredicate())).
+		Watches(&source.Kind{Type: &corev1.Secret{}}, enqueueAllInstallations, builder.WithPredicates(namespacePredicate(installation.Namespace))).
+		Watches(&source.Kind{Type: &usersv1.Group{}}, enqueueAllInstallations, builder.WithPredicates(namespacePredicate(installation.Namespace))).
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueAllInstallations, builder.WithPredicates(newObjectPredicate(isName(marin3rconfig.RateLimitConfigMapName)))).
 		Build(r)
 
 	if err != nil {
 		return err
 	}
-
+	log.Info("###########  debug watch 2")
 	r.controller = controller
 
 	return nil
@@ -1468,4 +1493,20 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
+}
+
+func namespacePredicate(namespace string) predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+		return m.GetNamespace() == namespace
+	})
+}
+
+func tenantAnnotationPredicate() predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+		if _, ok := m.GetAnnotations()["tenant"]; ok {
+			return true
+		} else {
+			return false
+		}
+	})
 }

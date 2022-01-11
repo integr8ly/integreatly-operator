@@ -12,6 +12,22 @@ rules:
   - configmaps
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - events
+  - pods
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -234,6 +250,18 @@ rules:
   verbs:
   - update
 - apiGroups:
+  - operators.coreos.com
+  resources:
+  - subscriptions
+  - subscriptions/status
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
@@ -317,6 +345,7 @@ rules:
   verbs:
   - get
   - list
+  - update
   - watch
 
 ---
@@ -333,20 +362,6 @@ rules:
   - configmaps
   verbs:
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - events
-  - pods
-  - secrets
-  verbs:
-  - create
-  - get
-  - list
-  - patch
-  - update
-  - watch
 - apiGroups:
   - ""
   resources:
@@ -430,18 +445,6 @@ rules:
   - operators.coreos.com
   resources:
   - installplans
-  verbs:
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operators.coreos.com
-  resources:
-  - subscriptions
-  - subscriptions/status
   verbs:
   - delete
   - get

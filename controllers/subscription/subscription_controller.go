@@ -115,7 +115,7 @@ type SubscriptionReconciler struct {
 	csvLocator          csvlocator.CSVLocator
 }
 
-// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions;subscriptions/status,verbs=get;list;watch;update;patch;delete,namespace=integreatly-operator
+// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions;subscriptions/status,verbs=get;list;watch;update;patch;delete
 
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=installplans,verbs=get;list;watch;update;patch;delete,namespace=integreatly-operator
 
