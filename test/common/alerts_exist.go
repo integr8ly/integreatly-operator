@@ -454,6 +454,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
 				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
 				"RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
+				"RHMICloudResourceOperatorVPCActionFailed",
 			},
 		},
 		{
