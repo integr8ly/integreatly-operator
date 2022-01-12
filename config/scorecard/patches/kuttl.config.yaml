@@ -2,7 +2,7 @@
   path: /stages/0/tests/-
   value:
     entrypoint:
-    - rhoam-scorecard-tests
+    - entrypoint
     - happy-path
     image: quay.io/operator-framework/scorecard-test-kuttl:v2.0.0
     labels:
