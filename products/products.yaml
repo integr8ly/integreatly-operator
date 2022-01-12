@@ -48,6 +48,12 @@ products:
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-rhsso"
     quayScan: true
+  - name: keycloak-client
+    version: v0.1.4
+    url: "https://github.com/integr8ly/keycloak-client"
+    installType: "rhmi/rhoam"
+    manifestsDir: "integreatly-keycloak-client"
+    quayScan: false
   - name: tutorial-web-app-operator
     version: v0.0.62
     url: "https://github.com/integr8ly/tutorial-web-app-operator"
@@ -58,7 +64,7 @@ products:
     version: v0.5.0
     url: "https://github.com/aerogear/unifiedpush-operator"
     installType: "rhmi"
-    manifestsDir: "integreatly-uninfedpush"
+    manifestsDir: "integreatly-unifiedpush"
     quayScan: false
   - name: observability-operator
     version: v3.0.8
