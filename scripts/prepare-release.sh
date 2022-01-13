@@ -8,11 +8,13 @@ fi
 
 case $OLM_TYPE in
   "integreatly-operator")
-    PREVIOUS_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}') || echo "No previous version"
+    PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}') || echo "No previous version"
+    PACKAGE_NAME=integreatly-operator
     OPERATOR_TYPE=rhmi
     ;;
   "managed-api-service")
-    PREVIOUS_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}') || echo "No previous version"
+    PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}') || echo "No previous version"
+    PACKAGE_NAME=managed-api-service
     OPERATOR_TYPE=rhoam
     ;;
   *)
@@ -47,14 +49,14 @@ create_new_csv() {
 
   if [[ -z "$PREVIOUS_VERSION" ]]
     then
-      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
     else
-      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi --from-version $PREVIOUS_VERSION
+      "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
   fi
 }
 
 update_csv() {
-  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$OPERATOR_TYPE --output-dir packagemanifests/$OLM_TYPE --version $VERSION --default-channel --channel rhmi 
+  "${KUSTOMIZE[@]}" build config/manifests-$OPERATOR_TYPE | operator-sdk generate bundle --kustomize-dir config/manifests-$OPERATOR_TYPE --output-dir bundles/$OLM_TYPE/$VERSION --version $VERSION --default-channel rhmi --package ${PACKAGE_NAME} --channels rhmi
 }
 
 # The base CSV is used to generate the final CSV by combining it with the other operator
@@ -64,6 +66,9 @@ update_csv() {
 update_base_csv() {
   yq e -i ".metadata.name=\"$OLM_TYPE.v$VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
   yq e -i ".spec.version=\"$VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
+  if [[ "${VERSION}" != "${PREVIOUS_VERSION}" ]]; then
+    yq e -i ".spec.replaces=\"$OLM_TYPE.v$PREVIOUS_VERSION\"" config/manifests-$OPERATOR_TYPE/bases/$OLM_TYPE.clusterserviceversion.yaml
+  fi
 }
 
 set_version() {
@@ -75,10 +80,12 @@ set_version() {
         "integreatly-operator")
           "${SED_INLINE[@]}" -E "s/RHMI_TAG\s+\?=\s+$PREVIOUS_VERSION/RHMI_TAG \?= $VERSION/g" Makefile
           "${SED_INLINE[@]}" -E "s/version\s+=\s+\"$PREVIOUS_VERSION\"/version = \"$VERSION\"/g" version/version.go
+          yq e -i ".channels[0].currentCSV=\"$OLM_TYPE.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
           ;;
         "managed-api-service")
           "${SED_INLINE[@]}" -E "s/RHOAM_TAG\s+\?=\s+$PREVIOUS_VERSION/RHOAM_TAG \?= $VERSION/g" Makefile
           "${SED_INLINE[@]}" -E "s/managedAPIVersion\s+=\s+\"$PREVIOUS_VERSION\"/managedAPIVersion = \"$VERSION\"/g" version/version.go
+          yq e -i ".channels[0].currentCSV=\"$OLM_TYPE.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
           ;;
         *)
           echo "No version found for install type : $(OLM_TYPE)"
@@ -97,7 +104,7 @@ set_installation_type() {
           echo "using default INSTALLATION_TYPE found in deploy/operator.yaml"
           ;;
         "managed-api-service")
-          yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "managed-api" ' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+          yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "managed-api" ' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
           ;;
         *)
           echo "No INSTALLATION_TYPE found for install type : $(OLM_TYPE)"
@@ -114,20 +121,20 @@ set_descriptions() {
       ;;
     "managed-api-service")
       echo "Updating descriptions"
-      yq e -i '.spec.validation.openAPIV3Schema.description="RHOAM is the Schema for the RHOAM API"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmis.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMSpec defines the desired state of Installation"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmis.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMStatus defines the observed state of Installation"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmis.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.description="RHOAMConfig is the Schema for the rhoamconfigs API"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMConfigSpec defines the desired state of RHOAMConfig"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMConfigStatus defines the observed state of RHOAMConfig"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs.yaml
-      yq e -i '.spec.validation.openAPIV3Schema.properties.status.properties.upgradeAvailable.properties.targetVersion.description="target-version: string, version of incoming RHOAM Operator"' packagemanifests/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.description="RHOAM is the Schema for the RHOAM API"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMSpec defines the desired state of Installation"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMStatus defines the observed state of Installation"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.description="RHOAMConfig is the Schema for the rhoamconfigs API"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMConfigSpec defines the desired state of RHOAMConfig"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMConfigStatus defines the observed state of RHOAMConfig"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
+      yq e -i '.spec.validation.openAPIV3Schema.properties.status.properties.upgradeAvailable.properties.targetVersion.description="target-version: string, version of incoming RHOAM Operator"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
 
-      yq e -i '.spec.customresourcedefinitions.owned[1].description="RHOAM is the Schema for the RHOAM API"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-      yq e -i '.spec.customresourcedefinitions.owned[1].displayName="RHOAM installation"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.customresourcedefinitions.owned[1].description="RHOAM is the Schema for the RHOAM API"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.customresourcedefinitions.owned[1].displayName="RHOAM installation"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 
 
-      yq e -i '.spec.customresourcedefinitions.owned[0].description="RHOAMConfig is the Schema for the rhoamconfigs API"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-      yq e -i '.spec.customresourcedefinitions.owned[0].displayName="RHOAMConfig"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.customresourcedefinitions.owned[0].description="RHOAMConfig is the Schema for the rhoamconfigs API"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.customresourcedefinitions.owned[0].displayName="RHOAMConfig"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 
       ;;
   esac
@@ -140,8 +147,8 @@ set_clusterPermissions() {
       ;;
     "managed-api-service")
       echo "Updating permissions"
-      yq e -i '.spec.maintainers[0].email="rhoam-support@redhat.com"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-      yq e -i '.spec.maintainers[0].name="rhoam"' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.maintainers[0].email="rhoam-support@redhat.com"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.maintainers[0].name="rhoam"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
       ;;
   esac
 }
@@ -150,13 +157,13 @@ set_images() {
   case $OLM_TYPE in
    "integreatly-operator")
   : "${IMAGE_TAG:=v${SEMVER}}"
-  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
   ;;
   "managed-api-service")
    : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
-  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
   ;;
   esac
 }
@@ -164,19 +171,7 @@ set_images() {
 set_csv_service_affecting_field() {
   local value=$1
   echo "Update CSV for release $SEMVER to be 'serviceAffecting: $value'"
-  yq e -i ".metadata.annotations.serviceAffecting= \"$value\" " packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-}
-
-# Due to a quirk in operator-sdk v1.2.0, the `replaces` field in the generated CSV is taken from the current version in
-# the base CSV (config/manifests-(rhoam|rhmi)/bases). When generating the CSV from a new version (e.g. from 1.5.0
-# to 1.6.0), this script updates the version in the base CSV to the new version, so the next time the script runs it
-# uses it as the `replaces` field value. However, when cutting an RC from the same version (1.5.0-rc1 to 1.5.0-rc2), the
-# version in the base CSV is the same as the new version, so operator-sdk generates a CSV without the `replaces` field.
-# This function addresses that by adding the `replaces` field if it was removed.
-check_csv_replaces_field() {
-  if [[ $(yq e '.spec.replaces' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml) == null ]]; then
-    yq e -i ".spec.replaces=\"${PREVIOUS_REPLACES_VALUE}\"" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
-  fi
+  yq e -i ".metadata.annotations.serviceAffecting= \"$value\" " bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 # Sets the related images in the CSV for RHOAM
@@ -256,7 +251,7 @@ set_related_images() {
 
   containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
   containerImageField="$containerImageRemovedLastCharacter]"
-  printf -v m "$containerImageField" ; m="$m" yq e -i ".metadata.annotations.containerImages= strenv(m)" packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml
+  printf -v m "$containerImageField" ; m="$m" yq e -i ".metadata.annotations.containerImages= strenv(m)" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 }
 
 if [[ -z "$SEMVER" ]]; then
@@ -287,13 +282,13 @@ fi
 current_project_name=$(yq e '.projectName' PROJECT)
 yq e -i ".projectName=\"$OLM_TYPE\"" PROJECT
 
+update_base_csv
+
 # We have a new version so generate the csv
 if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   create_new_csv
   set_version
 else
-  # Save the previous value of the `replaces` field. Needed to repopulate the `replaces` field later if removed.
-  PREVIOUS_REPLACES_VALUE=$(yq e '.spec.replaces' packagemanifests/$OLM_TYPE/${VERSION}/$OLM_TYPE.clusterserviceversion.yaml)
   update_csv
 fi
 
@@ -311,8 +306,8 @@ if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
  set_related_images
 fi
 
-update_base_csv
-check_csv_replaces_field
+# Move bundle.Dockerfile to the bundle folder
+mv bundle.Dockerfile bundles/$OLM_TYPE/$VERSION
 
 # Reset the project name
 yq e -i ".projectName=\"$current_project_name\"" PROJECT
@@ -320,7 +315,7 @@ yq e -i ".projectName=\"$current_project_name\"" PROJECT
 # Ensure the RHMI package is `integreatly`: The operator-sdk CLI will take the
 # package name from the PROJECT file, so in the case of RHMI it will set it
 # incorrectly to `integreatly-operator`
-yq e -i '.packageName="integreatly"' packagemanifests/integreatly-operator/integreatly-operator.package.yaml
+yq e -i '.packageName="integreatly"' bundles/integreatly-operator/integreatly-operator.package.yaml
 
 # Ensure code is formatted correctly
 "${GOFMT[@]}" -w `find . -type f -name '*.go' -not -path "./vendor/*"`

@@ -315,9 +315,10 @@ cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prep
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
-.PHONY: create/olm/bundle
-create/olm/bundle:
-	./scripts/bundle-rhmi-operators.sh
+# Temporary disable create/olm/bundle due to move from pkgman to bundle format.
+# .PHONY: create/olm/bundle
+# create/olm/bundle:
+# 	./scripts/bundle-rhmi-operators.sh
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -542,7 +543,12 @@ bundle: manifests kustomize
 .PHONY: bundle-rhmi
 bundle-rhmi: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhmi | operator-sdk generate bundle -q --overwrite --version $(TAG) $(BUNDLE_METADATA_OPTS)
+	$(KUSTOMIZE) build config/manifests-rhmi | operator-sdk generate bundle -q --output-dir ./bundles/integreatly-operator/$(TAG) --version $(TAG) $(BUNDLE_METADATA_OPTS)
+
+.PHONY: bundle-rhoam
+bundle-rhoam: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
+	$(KUSTOMIZE) build config/manifests-rhoam | operator-sdk generate bundle -q --output-dir ./bundles/managed-api-service/$(TAG) --kustomize-dir config/manifests-rhoam --version $(TAG) $(BUNDLE_METADATA_OPTS) 
 
 .PHONY: packagemanifests
 packagemanifests: manifests kustomize
