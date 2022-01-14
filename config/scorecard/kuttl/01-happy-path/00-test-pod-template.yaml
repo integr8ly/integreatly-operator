@@ -1,0 +1,51 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: rhoam-test-container
+  namespace: redhat-rhoam-operator
+spec:
+  restartPolicy: Never
+  serviceAccountName: rhoam-test-runner
+  containers:
+    - resources: {}
+      name: test
+      env:
+        - name: DESTRUCTIVE
+          value: 'false'
+        - name: MULTIAZ
+          value: 'false'
+        - name: WATCH_NAMESPACE
+          value: redhat-rhoam-operator
+        - name: BYPASS_STORAGE_TYPE_CHECK
+          value: 'true'
+      imagePullPolicy: Always
+      volumeMounts:
+        - name: test-run-results
+          mountPath: /test-run-results
+      terminationMessagePolicy: File
+      image: "quay.io/integreatly/integreatly-operator-test-harness:master"
+      args:
+        - '-ginkgo.focus'
+        - '(A0[1-9])|(A1[0-5,7-9])|(A2[2-4,6-9])|(A32)|(C04)|(E0[1-9])|(F02)'
+    - resources: {}
+      terminationMessagePath: /dev/termination-log
+      name: sidecar
+      command:
+        - sh
+      securityContext:
+        capabilities:
+          drop:
+            - MKNOD
+      imagePullPolicy: Always
+      volumeMounts:
+        - name: test-run-results
+          mountPath: /test-run-results
+      terminationMessagePolicy: File
+      image: quay.io/quay/busybox
+      args:
+        - '-c'
+        - 'while true; if [[ -f /tmp/done ]]; then exit 0; fi; do sleep 1; done'
+  serviceAccount: rhoam-test-runner
+  volumes:
+    - name: test-run-results
+      emptyDir: {}

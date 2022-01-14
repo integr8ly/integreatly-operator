@@ -4,4 +4,3 @@ metadata:
   name: rhoam
 spec:
   useClusterStorage: 'true'
-  selfSignedCerts: true
