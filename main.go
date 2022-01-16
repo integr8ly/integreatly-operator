@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"os"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
 	rhmiconfigcontroller "github.com/integr8ly/integreatly-operator/controllers/rhmiconfig"
 	subscriptioncontroller "github.com/integr8ly/integreatly-operator/controllers/subscription"
+	tenantcontroller "github.com/integr8ly/integreatly-operator/controllers/tenant"
 	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -70,7 +72,10 @@ func init() {
 
 	utilruntime.Must(rhmiv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(rhmiv1alpha1.AddToSchemes.AddToScheme(scheme))
+	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
+	// +kubebuilder:rbac:groups=rhoam.tenants.io,resources=rhoamtenant,verbs=watch;get;list
+
 }
 
 func main() {
@@ -129,6 +134,19 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	if strings.Contains(watchNamespace, "sandbox") {
+		tenantCtrl, err := tenantcontroller.New(mgr)
+		if err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "TenantController")
+			os.Exit(1)
+		}
+		if err = tenantCtrl.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to setup controller", "controller", "TenantController")
+			os.Exit(1)
+		}
+	}
+
 	subscriptionCtrl, err := subscriptioncontroller.New(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Subscription")

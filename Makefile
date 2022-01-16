@@ -336,6 +336,7 @@ cluster/prepare/croaws:
 .PHONY: cluster/prepare/crd
 cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd | oc apply -f -
+	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
@@ -422,6 +423,7 @@ cluster/cleanup/crds:
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 	@-oc delete crd rhmiconfigs.integreatly.org
+	@-oc delete crd rhoamtenants.integreatly.org
 
 .PHONY:cluster/cleanup/rbac/dedicated-admins
 cluster/cleanup/rbac/dedicated-admins:
