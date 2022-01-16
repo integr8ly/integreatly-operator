@@ -267,7 +267,7 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, ins
 	}
 
 	for _, user := range usersList.Items {
-		if isTenantCreatedAfterInstallation(&user, installation) {
+		if isUserHasTenantAnnotation(&user, installation) {
 			users = append(users, MultiTenantUser{
 				Username:   user.Name,
 				TenantName: SanitiseTenantUserName(user.Name),
@@ -280,8 +280,14 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, ins
 	return users, nil
 }
 
-func isTenantCreatedAfterInstallation(userCR *usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
-	return userCR.CreationTimestamp.Time.After(installation.CreationTimestamp.Time)
+func isUserHasTenantAnnotation(user *usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
+	if user.Annotations == nil {
+		return false
+	}
+	if _, ok := user.Annotations["tenant"]; ok {
+		return true
+	}
+	return false
 }
 
 func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
