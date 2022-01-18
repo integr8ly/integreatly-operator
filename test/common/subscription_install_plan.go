@@ -21,10 +21,6 @@ func commonSubscriptionsToCheck() []SubscriptionCheck {
 		},
 		{
 			Name:      constants.RHSSOSubscriptionName,
-			Namespace: RHSSOUserOperatorNamespace,
-		},
-		{
-			Name:      constants.RHSSOSubscriptionName,
 			Namespace: RHSSOOperatorNamespace,
 		},
 		{
@@ -44,6 +40,10 @@ func rhmi2SubscriptionsToCheck() []SubscriptionCheck {
 		{
 			Name:      constants.AMQOnlineSubscriptionName,
 			Namespace: AMQOnlineOperatorNamespace,
+		},
+		{
+			Name:      constants.RHSSOSubscriptionName,
+			Namespace: RHSSOUserOperatorNamespace,
 		},
 		{
 			Name:      constants.ApicuritoSubscriptionName,
@@ -72,6 +72,10 @@ func managedApiSubscriptionsToCheck() []SubscriptionCheck {
 		{
 			Name:      constants.Marin3rSubscriptionName,
 			Namespace: Marin3rOperatorNamespace,
+		},
+		{
+			Name:      constants.RHSSOSubscriptionName,
+			Namespace: RHSSOUserOperatorNamespace,
 		},
 		{
 			Name:      constants.GrafanaSubscriptionName,
@@ -127,8 +131,10 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 }
 
 func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonSubscriptionsToCheck(), managedApiSubscriptionsToCheck()...)
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return commonSubscriptionsToCheck()
 	} else {
 		return append(commonSubscriptionsToCheck(), rhmi2SubscriptionsToCheck()...)
 	}

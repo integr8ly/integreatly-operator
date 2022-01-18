@@ -119,11 +119,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RHMIConfig")
 		os.Exit(1)
 	}
-	if err = namespacecontroller.New(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Namespace")
-		os.Exit(1)
-	}
 	if watchNamespace == "" || !strings.Contains(watchNamespace, "sandbox") {
+		if err = namespacecontroller.New(mgr).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Namespace")
+			os.Exit(1)
+		}
 		if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "User")
 			os.Exit(1)

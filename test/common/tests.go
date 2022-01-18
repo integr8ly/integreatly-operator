@@ -29,9 +29,14 @@ var (
 		},
 		{
 			[]TestCase{
+				{"A32 - Validate SSO config", TestSSOconfig},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+		{
+			[]TestCase{
 				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 				/*FLAKY on RHOAM*/ {"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
-				{"A32 - Validate SSO config", TestSSOconfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
@@ -114,11 +119,15 @@ var (
 			[]TestCase{
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
-				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
-
+		{
+			[]TestCase{
+				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+		},
 		{
 			[]TestCase{
 				{"A34 - Verify Quota values", TestQuotaValues},

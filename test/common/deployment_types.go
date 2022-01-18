@@ -31,17 +31,18 @@ var (
 		"solutionExplorerOperatorDeployment",
 		"upsOperatorDeployment",
 		"upsDeployment",
+		"rhssoUserOperatorDeployment",
 	}
 	commonApiDeploymentsList = []string{
 		"threeScaleDeployment",
 		"cloudResourceOperatorDeployment",
 		"observabilityDeployment",
 		"rhssoOperatorDeployment",
-		"rhssoUserOperatorDeployment",
 	}
 	managedApiDeploymentsList = []string{
 		"marin3rOperatorDeployment",
 		"marin3rDeployment",
+		"rhssoUserOperatorDeployment",
 	}
 )
 
@@ -242,9 +243,23 @@ func getClusterStorageDeployments(installationName string, installType string) [
 			},
 		},
 	}
+	mtManagedApiClusterStorageDeployments := []Namespace{
+		{
+			Name: NamespacePrefix + "operator",
+			Products: []Product{
+				{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
+				{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
+				{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
+				{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
+				{Name: constants.RateLimitRedisPrefix + installationName, ExpectedReplicas: 1},
+			},
+		},
+	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedApiClusterStorageDeployments
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return mtManagedApiClusterStorageDeployments
 	} else {
 		return rhmi2ClusterStorageDeployments
 	}
@@ -298,7 +313,6 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 					t.Fatalf("failed to get pods for Ratelimit: %v", err)
 				}
 				checkDeploymentPods(t, pods, product, namespace, deployment)
-
 			}
 			// Verify that the expected replicas are also available, means they are up and running and consumable by users
 			if deployment.Status.AvailableReplicas < product.ExpectedReplicas {
@@ -352,8 +366,10 @@ func getDeployments(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingCon
 		managedApiDeployments = append(managedApiDeployments, getDeploymentConfiguration(deployment, inst, t, ctx))
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...), managedApiDeployments...)
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
+		return append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...)
 	} else {
 		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForRhmi2", inst, t, ctx)}...)
 	}
@@ -457,7 +473,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		rhssoExpectedReplicas = 1
 		rhssoUserExpectedReplicas = 1
 	}
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		keycloakCR := &v1alpha1.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
@@ -490,12 +506,17 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				{Name: "keycloak", ExpectedReplicas: rhssoExpectedReplicas},
 			},
 		},
-		{
-			Name: NamespacePrefix + "user-sso",
-			Products: []Product{
-				{Name: "keycloak", ExpectedReplicas: rhssoUserExpectedReplicas},
+	}
+
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) || integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+		statefulSets = append(statefulSets, []Namespace{
+			{
+				Name: NamespacePrefix + "user-sso",
+				Products: []Product{
+					{Name: "keycloak", ExpectedReplicas: rhssoUserExpectedReplicas},
+				},
 			},
-		},
+		}...)
 	}
 
 	for _, namespace := range statefulSets {

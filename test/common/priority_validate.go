@@ -11,16 +11,20 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func priorityStatefulSets() []StatefulSets {
-	return []StatefulSets{
-		{
-			Namespace: NamespacePrefix + "rhsso",
-			Name:      "keycloak",
-		},
-		{
-			Namespace: NamespacePrefix + "user-sso",
-			Name:      "keycloak",
-		},
+func priorityStatefulSets(installType string) []StatefulSets {
+	rhsso := StatefulSets{
+		Namespace: NamespacePrefix + "rhsso",
+		Name:      "keycloak",
+	}
+	usersso := StatefulSets{
+		Namespace: NamespacePrefix + "user-sso",
+		Name:      "keycloak",
+	}
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return []StatefulSets{rhsso}
+	} else {
+		return []StatefulSets{rhsso, usersso}
 	}
 }
 
@@ -100,7 +104,7 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		t.Errorf("Error %v", err)
 	}
 
-	for _, priority := range priorityStatefulSets() {
+	for _, priority := range priorityStatefulSets(rhmi.Spec.Type) {
 		item, err := ctx.KubeClient.AppsV1().StatefulSets(priority.Namespace).Get(goctx.TODO(), priority.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("Error: %v", err)
