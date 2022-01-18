@@ -1,9 +1,13 @@
 package csvlocator
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -67,7 +71,7 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 
 		// Get the ConfigMap
 		csvConfigMap := &corev1.ConfigMap{}
-		if err := client.Get(ctx, k8sclient.ObjectKey{
+		if err = client.Get(ctx, k8sclient.ObjectKey{
 			Name:      ref.Name,
 			Namespace: ref.Namespace,
 		}, csvConfigMap); err != nil {
@@ -75,36 +79,79 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 		}
 
 		// The ConfigMap may contain other manifests other than the CSV. Iterate
-		// through the content and skip the ones that have a kind other than
-		// ClusterSeerviceVersion
+		// through the data and skip the ones that have a kind other than
+		// ClusterSeerviceVersion. This is for 4.8 clusters
+		csvStr := ""
 		for _, resourceStr := range csvConfigMap.Data {
-			// Decode the manifest
-			reader := strings.NewReader(resourceStr)
-			resource, decodeErr := registry.DecodeUnstructured(reader)
-			if decodeErr != nil {
-				return nil, decodeErr
-			}
-
-			// If the kind is not CSV, skip it
-			if resource.GetKind() != olmv1alpha1.ClusterServiceVersionKind {
+			csvCandidate, err := getCSVfromCM(&csvStr, resourceStr)
+			if csvCandidate == nil {
 				continue
 			}
-
-			// Encode the unstructured CSV as Json to decode it back to the
-			// structured object
-			resourceJSON, err := resource.MarshalJSON()
 			if err != nil {
-				return nil, err
+				return csv, err
 			}
+			csv = csvCandidate
+		}
 
-			if err := json.Unmarshal(resourceJSON, csv); err != nil {
-				return csv, fmt.Errorf("failed to unmarshall yaml: %v", err)
+		// ConfigMap may contain CSV as binary data (on 4.9+ clusters). To account for this check
+		// if the CSV was found in a data and if not - look for a binary data
+		if csvStr == "" {
+			for _, resourceByte := range csvConfigMap.BinaryData {
+				// Decode base64 into a string
+				base64text := make([]byte, base64.StdEncoding.DecodedLen(len(resourceByte)))
+				_, err = base64.StdEncoding.Decode(base64text, resourceByte)
+				if err != nil {
+					return nil, err
+				}
+
+				// decompress from gzip
+				reader, err := gzip.NewReader(bytes.NewBuffer(base64text))
+				if err != nil {
+					return nil, err
+				}
+				result, _ := ioutil.ReadAll(reader)
+
+				csvCandidate, err := getCSVfromCM(&csvStr, string(result))
+				if csvCandidate == nil {
+					continue
+				}
+				if err != nil {
+					return csv, err
+				}
+				csv = csvCandidate
+
 			}
-
-			return csv, nil
 		}
 	}
+	return csv, nil
+}
 
+func getCSVfromCM(csvStr *string, resourceStr string) (*olmv1alpha1.ClusterServiceVersion, error) {
+	csv := &olmv1alpha1.ClusterServiceVersion{}
+
+	// Decode the manifest
+	reader := strings.NewReader(resourceStr)
+	resource, decodeErr := registry.DecodeUnstructured(reader)
+	if decodeErr != nil {
+		return csv, decodeErr
+	}
+
+	// If the kind is not CSV, skip it
+	if resource.GetKind() != olmv1alpha1.ClusterServiceVersionKind {
+		return nil, nil
+	}
+
+	csvStr = &resourceStr
+	// Encode the unstructured CSV as Json to decode it back to the
+	// structured object
+	resourceJSON, err := resource.MarshalJSON()
+	if err != nil {
+		return csv, err
+	}
+
+	if err := json.Unmarshal(resourceJSON, csv); err != nil {
+		return csv, fmt.Errorf("failed to unmarshall yaml: %v", err)
+	}
 	return csv, nil
 }
 

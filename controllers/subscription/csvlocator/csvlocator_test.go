@@ -1,7 +1,10 @@
 package csvlocator
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"testing"
 
@@ -121,10 +124,96 @@ status:
 	}
 }
 
+func binaryDataConfigMapScenario(t *testing.T) *testScenario {
+	csvString := `
+apiVersion: v1alpha1
+kind: ClusterServiceVersion
+metadata:
+    creationTimestamp: null
+    name: test-csv
+    namespace: test
+spec:
+    apiservicedefinitions: {}
+    customresourcedefinitions: {}
+    displayName: ""
+    install:
+        strategy: ""
+        provider: {}
+    version: 1.0.0
+status:
+    certsLastUpdated: null
+    certsRotateAt: null
+    lastTransitionTime: null
+    lastUpdateTime: null`
+
+	// compress and encode data
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	_, err := w.Write([]byte(csvString))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	compressed := b.Bytes()
+	base64text := make([]byte, base64.StdEncoding.EncodedLen(len(compressed)))
+	base64.StdEncoding.Encode(base64text, compressed)
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-cm",
+			Namespace: "test",
+		},
+		BinaryData: map[string][]byte{
+			"managed-api-service.clusterserviceversion.yaml": base64text,
+		},
+	}
+
+	configMapRef := &unpackedBundleReference{
+		Namespace: "test",
+		Name:      "test-cm",
+	}
+
+	configMapRefJSON, err := json.Marshal(configMapRef)
+	if err != nil {
+		t.Fatalf("failed to marshal config map reference: %v", err)
+	}
+
+	installPlan := &olmv1alpha1.InstallPlan{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-ip",
+			Namespace: "test",
+		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+						Manifest: string(configMapRefJSON),
+					},
+				},
+			},
+		},
+	}
+
+	return &testScenario{
+		Name: "ConfigMapCSVLocator",
+		InitObjs: []runtime.Object{
+			configMap,
+		},
+		InstallPlan: installPlan,
+		Locator:     &ConfigMapCSVLocator{},
+		Assertion:   assertCorrectCSV,
+	}
+}
+
 func TestGetCSV(t *testing.T) {
 	scenarios := []*testScenario{
 		embeddedScenario(t),
 		configMapScenario(t),
+		binaryDataConfigMapScenario(t),
 	}
 
 	for _, scenario := range scenarios {
