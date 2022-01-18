@@ -1224,7 +1224,10 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		})
 		if err != nil {
 			log.Error("Addon flow installation detected - missing MTR_RECONCILED env after 10 mintues", err)
+			return err
 		}
+
+		log.Info("Addon flow installation detected - MTR_RECONCILED env found.")
 	}
 
 	if !installedViaOLM {
