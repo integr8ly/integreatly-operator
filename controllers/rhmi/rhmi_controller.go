@@ -89,6 +89,7 @@ const (
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
+	hiveManagedLabel                 = "hive.openshift.io/managed"
 )
 
 var (
@@ -1211,11 +1212,12 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	installedViaOLM, err := addon.OperatorInstalledViaOLM(context.Background(), client, installation)
 	installedViaAddon, err := addon.OperatorInstalledViaAddon(context.Background(), client, installation)
+	isHiveManaged, err := r.isHiveLabelPresent(client)
 
 	if installedViaAddon {
 		mtrReconciled := os.Getenv("MTR_RECONCILED")
 
-		if mtrReconciled == "" {
+		if mtrReconciled == "" && isHiveManaged {
 			log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
 
 			err := wait.Poll(time.Minute*2, time.Minute*10, func() (done bool, err error) {
@@ -1269,6 +1271,26 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.controller = controller
 
 	return nil
+}
+
+func (r *RHMIReconciler) isHiveLabelPresent(client k8sclient.Client) (bool, error) {
+	namespace, err := resources.GetWatchNamespace()
+	if err != nil {
+		return false, err
+	}
+
+	ns, err := resources.GetNS(context.TODO(), namespace, client)
+	if err != nil {
+		return false, fmt.Errorf("could not retrieve %s namespace:", err)
+	}
+
+	for label := range ns.ObjectMeta.Labels {
+		if label == hiveManagedLabel {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
