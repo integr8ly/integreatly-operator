@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os"
 	"reflect"
@@ -1209,6 +1210,33 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	installedViaOLM, err := addon.OperatorInstalledViaOLM(context.Background(), client, installation)
+	installedViaAddon, err := addon.OperatorInstalledViaAddon(context.Background(), client, installation)
+
+	if installedViaAddon {
+		mtrReconciled := os.Getenv("MTR_RECONCILED")
+
+		if mtrReconciled == "" {
+			log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
+
+			err := wait.Poll(time.Minute*2, time.Minute*10, func() (done bool, err error) {
+				mtrReconciled := os.Getenv("MTR_RECONCILED")
+				if mtrReconciled == "" {
+					log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
+					return false, nil
+				}
+
+				return true, nil
+			})
+
+			if err != nil {
+				log.Error("Addon flow installation detected - missing MTR_RECONCILED env after 10 mintues", err)
+				return err
+			}
+		} else {
+			log.Info("Addon flow installation detected - MTR_RECONCILED env found.")
+		}
+	}
+
 	if !installedViaOLM {
 		_, err = r.createInstallationCR(context.Background(), client)
 		if err != nil {
