@@ -8,9 +8,15 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	hiveManagedLabel = "hive.openshift.io/managed"
 )
 
 // OperatorRunType is used to indicate how the operator is being currently
@@ -114,6 +120,30 @@ func OperatorInstalledViaAddon(ctx context.Context, client k8sclient.Client, ins
 	}
 
 	return runType == AddonRunType, nil
+}
+
+// Operator is managed by Hive
+func OperatorIsHiveManaged(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: installation.Namespace,
+		},
+	}
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
+	if err != nil {
+		return false, fmt.Errorf("could not retrieve %s namespace:", err)
+	}
+
+	labels := ns.GetLabels()
+	value, ok := labels[hiveManagedLabel]
+	if ok {
+		if value == "true" {
+			logrus.Info("operator is hive managed")
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // IsClusterRunType checks if the operator is run on a cluster
