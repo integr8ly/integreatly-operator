@@ -473,6 +473,8 @@ spec:
                     command:
                       - rhmi-operator
                     env:
+                      - name: INSTALLATION_TYPE
+                        value: managed-api
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -481,6 +483,18 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.name
+                      - name: OPERATOR_NAME
+                        value: rhmi-operator
+                      - name: USE_CLUSTER_STORAGE
+                        value: "true"
+                      - name: LOG_LEVEL
+                        value: info
+                      - name: REBALANCE_PODS
+                        value: "true"
+                      - name: ALERT_SMTP_FROM
+                        value: default@test.com
+                      - name: QUOTA
+                        value: "200"
                     image: quay.io/integreatly/managed-api-service:rhoam-v1.15.1
                     imagePullPolicy: Always
                     name: rhmi-operator
