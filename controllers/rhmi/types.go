@@ -26,13 +26,6 @@ var (
 				},
 			},
 			{
-				Name: integreatlyv1alpha1.MonitoringStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring, Uninstall: true},
-					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec, Uninstall: true},
-				},
-			},
-			{
 				Name: integreatlyv1alpha1.ObservabilityStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductObservability: {
@@ -80,13 +73,6 @@ var (
 				},
 			},
 			{
-				Name: integreatlyv1alpha1.UninstallMonitoringStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
-					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
-				},
-			},
-			{
 				Name: integreatlyv1alpha1.UninstallBootstrap,
 			},
 		},
@@ -102,13 +88,6 @@ var (
 					integreatlyv1alpha1.ProductCloudResources: {
 						Name: integreatlyv1alpha1.ProductCloudResources,
 					},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.MonitoringStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring, Uninstall: true},
-					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec, Uninstall: true},
 				},
 			},
 			{
@@ -158,13 +137,6 @@ var (
 				Name: integreatlyv1alpha1.UninstallObservabilityStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.UninstallMonitoringStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
-					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
 				},
 			},
 			{
