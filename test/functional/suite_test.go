@@ -78,6 +78,10 @@ func TestAPIs(t *testing.T) {
 		t.Fatalf("could not get install type %s", err)
 	}
 
+	if err := common.WaitForROAMInstallationToComplete(t, cfg); err != nil {
+		t.Error(err)
+	}
+
 	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("%s/%s", testResultsDirectory, utils.JUnitFileName(testSuiteName)))
 
 	RunSpecsWithDefaultAndCustomReporters(t,

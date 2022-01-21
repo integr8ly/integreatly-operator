@@ -407,3 +407,21 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 	}
 	return nil
 }
+
+func WaitForROAMInstallationToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Config) error {
+	testingContext, _ := NewTestingContext(restConfig)
+	err := wait.Poll(time.Second*10, time.Minute*70, func() (done bool, err error) {
+		rhmi, _ := GetRHMI(testingContext.Client, true)
+		if rhmi.Status.Stage == "complete" {
+			return true, nil
+		}
+		t.Logf("RHMI CR status.stage is: \"%s\". Waiting for: \"complete\"", rhmi.Status.Stage)
+		time.Sleep(time.Second * 10)
+		return false, nil
+
+	})
+	if err != nil {
+		return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
+	}
+	return nil
+}
