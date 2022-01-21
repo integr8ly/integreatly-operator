@@ -53,8 +53,8 @@ var (
 			"cloud-resources",
 		},
 
-		"monitoring": {
-			"middleware-monitoring",
+		"observability": {
+			"observability",
 		},
 
 		"products": {
@@ -76,8 +76,8 @@ var (
 			"cloud-resources",
 		},
 
-		"monitoring": {
-			"middleware-monitoring",
+		"observability": {
+			"observability",
 		},
 
 		"products": {
