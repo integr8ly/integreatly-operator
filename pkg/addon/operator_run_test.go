@@ -6,6 +6,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -173,4 +174,115 @@ func existingSubscription(name string) *string {
 
 func noSubscription() *string {
 	return nil
+}
+
+func TestOperatorHiveManaged(t *testing.T) {
+	scheme := runtime.NewScheme()
+	corev1.SchemeBuilder.AddToScheme(scheme)
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+
+	scenarios := []struct {
+		Name          string
+		ExpectedError bool
+		HiveManaged   bool
+		Client        client.Client
+		Installation  *integreatlyv1alpha1.RHMI
+	}{
+		{
+			Name:          "test hive managed operator",
+			ExpectedError: false,
+			HiveManaged:   true,
+			Client: fake.NewFakeClientWithScheme(scheme,
+				&corev1.Namespace{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name: "redhat-rhoam-operator",
+						Labels: map[string]string{
+							"hive.openshift.io/managed": "true",
+						},
+					},
+				},
+			),
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "redhat-rhoam-operator",
+				},
+			},
+		},
+		{
+			Name:          "test not hive managed operator with managed false",
+			ExpectedError: false,
+			HiveManaged:   false,
+			Client: fake.NewFakeClientWithScheme(scheme,
+				&corev1.Namespace{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name: "redhat-rhoam-operator",
+						Labels: map[string]string{
+							"hive.openshift.io/managed": "false",
+						},
+					},
+				},
+			),
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "redhat-rhoam-operator",
+				},
+			},
+		},
+		{
+			Name:          "test not hive managed operator without label",
+			ExpectedError: false,
+			HiveManaged:   false,
+			Client: fake.NewFakeClientWithScheme(scheme,
+				&corev1.Namespace{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name: "redhat-rhoam-operator",
+					},
+				},
+			),
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "redhat-rhoam-operator",
+				},
+			},
+		},
+		{
+			Name:          "test hive managed error if empty installation cr is found",
+			ExpectedError: true,
+			HiveManaged:   true,
+			Client: fake.NewFakeClientWithScheme(scheme,
+				&corev1.Namespace{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name: "redhat-rhoam-operator",
+						Labels: map[string]string{
+							"hive.openshift.io/managed": "true",
+						},
+					},
+				},
+			),
+			Installation: &integreatlyv1alpha1.RHMI{},
+		},
+	}
+
+	for _, tt := range scenarios {
+		t.Run(tt.Name, func(t *testing.T) {
+			isHiveManaged, err := OperatorIsHiveManaged(context.TODO(), tt.Client, tt.Installation)
+			if err == nil && tt.ExpectedError {
+				t.Fatal("expected error but found none")
+			}
+			if err != nil && !tt.ExpectedError {
+				t.Fatal("error found but none expected")
+			}
+			if err == nil && isHiveManaged && !tt.HiveManaged {
+				t.Fatal("error operator is not hive managed but reporting that it is")
+			}
+			if err == nil && !isHiveManaged && tt.HiveManaged {
+				t.Fatal("error operator is hive managed but reporting that it's not")
+			}
+		})
+	}
 }

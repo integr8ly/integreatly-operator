@@ -1210,14 +1210,13 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	installedViaOLM, err := addon.OperatorInstalledViaOLM(context.Background(), client, installation)
-	installedViaAddon, err := addon.OperatorInstalledViaAddon(context.Background(), client, installation)
+	isHiveManaged, err := addon.OperatorIsHiveManaged(context.Background(), client, installation)
 
-	if installedViaAddon {
+	if isHiveManaged {
 		mtrReconciled := os.Getenv("MTR_RECONCILED")
 
 		if mtrReconciled == "" {
 			log.Info("Addon flow installation detected - missing MTR_RECONCILED env. Retrying in 2 minutes")
-
 			err := wait.Poll(time.Minute*2, time.Minute*10, func() (done bool, err error) {
 				mtrReconciled := os.Getenv("MTR_RECONCILED")
 				if mtrReconciled == "" {
@@ -1232,8 +1231,6 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				log.Error("Addon flow installation detected - missing MTR_RECONCILED env after 10 mintues", err)
 				return err
 			}
-		} else {
-			log.Info("Addon flow installation detected - MTR_RECONCILED env found.")
 		}
 	}
 
