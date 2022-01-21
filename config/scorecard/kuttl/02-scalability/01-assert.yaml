@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 1000
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rhoam-test-container
+status:
+  containerStatuses:
+    - name: sidecar
+      ready: true
+    # Wait for test container to finish
+    - name: test
+      started: false

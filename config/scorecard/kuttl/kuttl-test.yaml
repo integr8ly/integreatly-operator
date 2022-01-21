@@ -4,5 +4,6 @@ namespace: redhat-rhoam-operator
 parallel: 1 # Run tests in serial
 skipDelete: true
 startControlPlane: false
-suppressLog: events
-timeout: 60 # timeout in seconds for each step
+suppress:
+  - events
+timeout: 60 # timeout in seconds for each step (unless overriden in test step)
