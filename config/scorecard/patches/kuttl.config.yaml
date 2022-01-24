@@ -3,10 +3,22 @@
   value:
     entrypoint:
     - entrypoint
-    - happy-path
-    image: quay.io/operator-framework/scorecard-test-kuttl:v2.0.0
+    - 01-happy-path
+    image: quay.io/psturc/scorecard-test-kuttl:latest
     labels:
       cluster-product: ocp
       cluster-size: small
       phase: msp-main
       test: happy-path
+- op: add
+  path: /stages/0/tests/-
+  value:
+    entrypoint:
+    - entrypoint
+    - 02-scalability
+    image: quay.io/psturc/scorecard-test-kuttl:latest
+    labels:
+      cluster-product: ocp
+      cluster-size: small
+      phase: msp-main
+      test: scalability
