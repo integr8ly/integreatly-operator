@@ -493,6 +493,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-1",
 								UID:               types.UID("test-1"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 						{
@@ -500,6 +501,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-2",
 								UID:               types.UID("test-2"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 						{
@@ -507,6 +509,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-3",
 								UID:               types.UID("test-3"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 					},
@@ -529,6 +532,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-1",
 								UID:               types.UID("test-1"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 						{
@@ -536,6 +540,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-2",
 								UID:               types.UID("test-2"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 						{
@@ -543,6 +548,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
 								Name:              "test-3",
 								UID:               types.UID("test-3"),
+								Annotations:       map[string]string{"tenant": "yes"},
 							},
 						},
 					},
@@ -551,7 +557,8 @@ func TestGetMultitenantUsers(t *testing.T) {
 					Items: []userv1.Identity{
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "testIdp:test-1",
+								Name:        "testIdp:test-1",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 							User: corev1.ObjectReference{
 								Name: "test-1",
@@ -564,7 +571,8 @@ func TestGetMultitenantUsers(t *testing.T) {
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								Name: "testIdp:test-2",
+								Name:        "testIdp:test-2",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 							User: corev1.ObjectReference{
 								Name: "test-2",
@@ -594,54 +602,6 @@ func TestGetMultitenantUsers(t *testing.T) {
 				t.Fatalf("Failed assertion: %v", err)
 			}
 
-		})
-	}
-}
-
-func TestTenantCreationTimeLogic(t *testing.T) {
-
-	tests := []struct {
-		Name           string
-		Installation   *integreatlyv1alpha1.RHMI
-		User           userv1.User
-		ExpectedStatus bool
-	}{
-		{
-			Name: "Test that a user is created past RHOAM installation",
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
-				},
-			},
-			User: userv1.User{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 01, 00, 00, time.UTC)},
-				},
-			},
-			ExpectedStatus: true,
-		},
-		{
-			Name: "Test that a user is create pre installation of RHOAM",
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.April, 01, 00, 00, 00, 00, time.UTC)},
-				},
-			},
-			User: userv1.User{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-				},
-			},
-			ExpectedStatus: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			isTenantCreatedAfterInstallation := isTenantCreatedAfterInstallation(&tt.User, tt.Installation)
-
-			if isTenantCreatedAfterInstallation != tt.ExpectedStatus {
-				t.Fatalf("Expected %v phase but got %v", tt.ExpectedStatus, isTenantCreatedAfterInstallation)
-			}
 		})
 	}
 }

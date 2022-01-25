@@ -162,6 +162,22 @@ rules:
   - patch
   - update
 - apiGroups:
+  - integreatly.org
+  resources:
+  - rhoamtenant
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - integreatly.org
+  resources:
+  - rhoamtenant/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - marin3r.3scale.net
   resources:
   - envoyconfigs
@@ -313,6 +329,7 @@ rules:
   verbs:
   - get
   - list
+  - update
   - watch
 
 ---
