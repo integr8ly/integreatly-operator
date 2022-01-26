@@ -19,6 +19,7 @@ import (
 	"github.com/headzoo/surf/browser"
 	brow "github.com/headzoo/surf/browser"
 
+	. "github.com/onsi/ginkgo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -123,7 +124,7 @@ func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client
 }
 
 func loginToThreeScale(t TestingTB, tsHost, username, password string, idp string, client *http.Client) error {
-
+	By("Login to 3Scale")
 	// const variable to validate authentication
 	const (
 		provisioningAccountTxt = "Your account is being provisioned"
@@ -143,140 +144,158 @@ func loginToThreeScale(t TestingTB, tsHost, username, password string, idp strin
 
 	t.Logf("Attempting to open threescale login page with url: %s", tsLoginURL)
 
-	browser := surf.NewBrowser()
-	browser.SetCookieJar(client.Jar)
-	browser.SetTransport(client.Transport)
-	browser.SetAttribute(brow.FollowRedirects, true)
+	clintBrowser := surf.NewBrowser()
+	clintBrowser.SetCookieJar(client.Jar)
+	clintBrowser.SetTransport(client.Transport)
+	clintBrowser.SetAttribute(brow.FollowRedirects, true)
 
 	// open threescale login page
-	err = browser.Open(tsLoginURL)
+	By("Open 3Scale login page")
+	err = clintBrowser.Open(tsLoginURL)
 	if err != nil {
 		return fmt.Errorf("failed to open browser url: %w", err)
 	}
 
 	// check if user is already authenticated
-	if isUserAuthenticated(browser, tsDashboardURL) {
+	By("Check if user authenticated")
+	if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 		return nil
 	}
 
-	t.Logf("User is not authenticated yet, going to authenticate through rhsso url  %s", browser.Url().String())
+	t.Logf("User is not authenticated yet, going to authenticate through rhsso url  %s", clintBrowser.Url().String())
 
 	// click on authenticate through rhsso
-	err = authenticateThroughRHSSO(browser)
+	By("Authenticate through RHSSO")
+	err = authenticateThroughRHSSO(clintBrowser)
 	if err != nil {
-		t.Logf("response %s", browser.Body())
+		t.Logf("response %s", clintBrowser.Body())
 		return err
 	}
 
 	// check if user is already authenticated through rhsso
-	if isUserAuthenticated(browser, tsDashboardURL) {
+	By("Check if user authenticated")
+	if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 		return nil
 	}
 
-	t.Logf("User is not authenticated through rhsso yet, going to select the IDP %s", browser.Url().String())
+	t.Logf("User is not authenticated through rhsso yet, going to select the IDP %s", clintBrowser.Url().String())
 
-	selectIDPURL := browser.Url().String()
+	By("Select the testing IDP to authenticate through RHSSO")
+	selectIDPURL := clintBrowser.Url().String()
 	// select the IDP to authenticate through RHSSO
-	err = selectRHSSOIDP(browser, idp)
+	err = selectRHSSOIDP(clintBrowser, idp)
 	if err != nil {
 		return err
 	}
 
 	// check if user is already authenticated after selecting the IDP
-	if isUserAuthenticated(browser, tsDashboardURL) {
+	By("Check if user authenticated")
+	if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 		return nil
 	}
 
-	t.Logf("User is not authenticated after selecting the IDP yet, going to submit the form to authenticate the user through rhsso %s", browser.Url().String())
+	t.Logf("User is not authenticated after selecting the IDP yet, going to submit the form to authenticate the user through rhsso %s", clintBrowser.Url().String())
 
+	By("Submit login form for testing IDP")
 	// submit openshift oauth login form
-	err = browser.Open(selectIDPURL)
+	err = clintBrowser.Open(selectIDPURL)
 	if err != nil {
 		return fmt.Errorf("failed to open selectIDPURL url: %w", err)
 	}
-	err = resources.OpenshiftClientSubmitForm(browser, username, password, idp, t)
+	err = resources.OpenshiftClientSubmitForm(clintBrowser, username, password, idp, t)
 	if err != nil {
 		return fmt.Errorf("failed to submit the openshift oauth login: %w", err)
 	}
 
-	// check if user is authenticated after submiting rhsso login form
-	if isUserAuthenticated(browser, tsDashboardURL) {
+	// check if user is authenticated after submitting rhsso login form
+	By("Check if user authenticated after submitting RHSSO login form")
+	if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 		return nil
 	}
 
+	By("Wait until account is provisioned and user is authenticated in 3Scale")
 	// waits until the account is provisioned and user is authenticated in three scale
 	err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		t.Logf("browser URL first %s - URL with requestURI %s, status code %v", browser.Url().String(), browser.Url().RequestURI(), browser.StatusCode())
+		t.Logf("\nbrowser URL first:\n %s\nURL with requestURI:\n %s\n", clintBrowser.Url().String(), clintBrowser.Url().RequestURI())
 
 		// checks if an error happened in the login
-		if browser.StatusCode() == 502 {
-			t.Logf("Unexpected error, User already authenticated: URL - %s | Request status code - %v", browser.Url().String(), browser.StatusCode())
+		if clintBrowser.StatusCode() == 502 {
+			t.Logf("Unexpected error: \nURL - %s \nRequest status code - %v", clintBrowser.Url().String(), clintBrowser.StatusCode())
 
-			err := browser.Open(tsDashboardURL)
-			t.Logf("Opened dashboard URL to validate user authentication: URL - %s | DashboardURL - %s", browser.Url().String(), tsDashboardURL)
+			err := clintBrowser.Open(tsDashboardURL)
+			t.Logf("Opened dashboard URL to validate user authentication: URL - %s | DashboardURL - %s", clintBrowser.Url().String(), tsDashboardURL)
 			if err != nil {
 				t.Logf("failed to open dashboard url: %w", err)
 				return false, fmt.Errorf("failed to open dashboard url: %w", err)
 			}
 
 			// if user is redirected to the login page try again
-			if browser.Url().String() == tsLoginURL {
+			if clintBrowser.Url().String() == tsLoginURL {
 				// click on authenticate through rhsso
-				err = authenticateThroughRHSSO(browser)
+				err = authenticateThroughRHSSO(clintBrowser)
 				if err != nil {
 					return false, err
 				}
 
 				// check if user is already authenticated through rhsso
-				if isUserAuthenticated(browser, tsDashboardURL) {
+				if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 					return true, nil
 				}
 
-				selectIDPURL = browser.Url().String()
+				selectIDPURL = clintBrowser.Url().String()
 				// select the IDP to authenticate through RHSSO
-				err = selectRHSSOIDP(browser, idp)
+				err = selectRHSSOIDP(clintBrowser, idp)
 				if err != nil {
 					return false, err
 				}
 
 				// check if user is already authenticated after selecting the IDP
-				if isUserAuthenticated(browser, tsDashboardURL) {
+				if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 					return true, nil
 				}
-				t.Logf("authenticate after click on idp url: %s", browser.Url().String())
+				t.Logf("authenticate after click on idp url: %s", clintBrowser.Url().String())
 			}
 		}
 
-		if isUserAuthenticated(browser, tsDashboardURL) {
+		if isUserAuthenticated(clintBrowser, tsDashboardURL) {
 			return true, nil
 		}
 
-		browser.Find(fmt.Sprintf("h1:contains('%s')", provisioningAccountTxt)).Each(func(index int, s *goquery.Selection) {
-
+		clintBrowser.Find(fmt.Sprintf("h1:contains('%s')", provisioningAccountTxt)).Each(func(index int, s *goquery.Selection) {
 			// gets the refresh url from the meta tag
-			browser.Dom().Find("meta").Each(func(index int, s *goquery.Selection) {
+			clintBrowser.Dom().Find("meta").Each(func(index int, s *goquery.Selection) {
 				val, exist := s.Attr("content")
 				if exist {
 					contentValue := strings.Split(val, ";")
 					if len(contentValue) > 0 {
-						browser.Open(contentValue[1])
-						t.Logf("open new url after creating user in rhsso url: %s", browser.Url().String())
+						err = clintBrowser.Open(contentValue[1])
+						if err != nil {
+							t.Logf("open new URL error", err)
+						}
+						t.Logf("open new url after creating user in rhsso url: %s", clintBrowser.Url().String())
 					}
 				}
 			})
 		})
 
-		t.Logf("request status code %v , browser response", browser.StatusCode())
+		if clintBrowser.StatusCode() != 200 {
+			t.Logf("request status code %v , browser response", clintBrowser.StatusCode())
+		}
 
-		return isUserAuthenticated(browser, tsDashboardURL), nil
+		if isUserAuthenticated(clintBrowser, tsDashboardURL) {
+			return true, nil
+		}
+
+		return false, nil
 	})
 
 	if err != nil {
-		errLogin := browser.Open(tsDashboardURL)
+		By("Try open 3Scale dashboard")
+		errLogin := clintBrowser.Open(tsDashboardURL)
 		if errLogin != nil {
 			t.Logf("failed to open dashboard url: %w", err)
 		}
-		if !isUserAuthenticated(browser, tsDashboardURL) {
+		if !isUserAuthenticated(clintBrowser, tsDashboardURL) {
 			return fmt.Errorf("Account was not provisioned: %w", err)
 		}
 	}

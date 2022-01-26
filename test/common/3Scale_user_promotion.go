@@ -52,7 +52,10 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
 
-	waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
+	err = waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
+	if err != nil {
+		t.Fatalf("timout asserting 3scale user, %s, is admin for performing test: %s", threescaleLoginUser, err)
+	}
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, httpClient, ctx.Client, t)
 

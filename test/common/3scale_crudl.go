@@ -15,6 +15,7 @@ import (
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	. "github.com/onsi/ginkgo"
 )
 
 var (
@@ -23,64 +24,72 @@ var (
 
 // Tests that a user in group dedicated-admins can create an integration
 func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
+	By("Ensure testing IDP is configured")
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatalf("error while creating testing idp: %v", err)
+		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
 	// get console master url
+	By("Get RHMI CR")
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatalf("error getting RHMI CR: %v", err)
+		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
 	// Get the fuse host url from the rhmi status
+	By("Get 3Scale URL and 3Scale clint")
 	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
+		t.Log("No host route found. Creating route from `Spec.RoutingSubdomain`")
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
 	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
+	if keycloakHost == "" {
+		t.Log("Keycloak host route not found")
+	}
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, ctx.HttpClient, ctx.Client, t)
 
 	// Login to 3Scale
+	By("Login to 3Scale and become admin")
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatalf("Failed to log into 3Scale: %v", err)
+		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
 
-	waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
+	err = waitForUserToBecome3ScaleAdmin(t, ctx, host, threescaleLoginUser)
+	if err != nil {
+		t.Fatalf("timout asserting 3scale user, %s, is admin for performing test: %s", threescaleLoginUser, err)
+	}
 
 	// Make sure 3Scale is available
+	By("Ensure 3Scale is available")
 	err = tsClient.Ping()
 	if err != nil {
 		t.Log("Error during making sure 3Scale is available")
 	}
 
+	// Create a product
+	By("Create a product")
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-
-	// Create a product
 	productId, err := tsClient.CreateProduct(fmt.Sprintf("dummy-product-%v", r1.Intn(100000)))
 	if err != nil {
 		t.Log("Error during create the product")
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatal(err)
+		t.Fatal(err)
 	}
 
 	// Delete the product
+	By("Delete the product")
 	err = tsClient.DeleteProduct(productId)
 	if err != nil {
 		t.Log("Error during deleting the product")
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
-func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, userName string) {
+func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, userName string) error {
 	err := wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
 		users, err := getUsersIn3scale(ctx, host)
 		if err != nil {
@@ -100,9 +109,10 @@ func waitForUserToBecome3ScaleAdmin(t TestingTB, ctx *TestingContext, host, user
 	})
 
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior due to, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1806")
-		//t.Fatalf("timout asserting 3scale user, %s, is admin for performing test: %s", userName, err)
+		return err
 	}
+
+	return nil
 }
 
 func getUsersIn3scale(ctx *TestingContext, host string) (*threescale.Users, error) {
@@ -118,7 +128,12 @@ func getUsersIn3scale(ctx *TestingContext, host string) (*threescale.Users, erro
 	if err != nil {
 		return nil, fmt.Errorf("unable to get list of users via api: %s", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			fmt.Println("request body close error: ", err)
+		}
+	}()
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
