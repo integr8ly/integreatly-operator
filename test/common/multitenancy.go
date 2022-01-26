@@ -10,10 +10,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"net/url"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"strings"
 	"time"
@@ -77,6 +79,12 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 
 		host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
 
+		//create testing user CR RhoamTenant CR
+		err = createTestingUserRhoamTenantCR(t, testUser, ctx)
+		if err != nil {
+			return fmt.Errorf("error create RhoamTenant CR for testing user: %v", err)
+		}
+
 		err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
 			// login to cluster
 			if !isClusterLoggedIn {
@@ -139,7 +147,6 @@ func getTenant3scaleRoute(t TestingTB, ctx *TestingContext, testUser string) err
 			continue
 		}
 		tenantHostRoute := route.Spec.Host
-
 		if strings.Contains(tenantHostRoute, testUser) {
 			routeFound = true
 		}
@@ -226,5 +233,20 @@ func is3scaleLoginFailed(t TestingTB, tsHost, username, password string, idp str
 		return fmt.Errorf("unsuccessful 3scale login failed, response code recived is %v", statusCode)
 	}
 
+	return nil
+}
+
+func createTestingUserRhoamTenantCR(t TestingTB, testUserName string, ctx *TestingContext) error {
+	tenantCR := &integreatlyv1alpha1.RhoamTenant{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testUserName,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, tenantCR, func() error {
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Error create RhoamTenant CR for testing user %v", err)
+	}
 	return nil
 }
