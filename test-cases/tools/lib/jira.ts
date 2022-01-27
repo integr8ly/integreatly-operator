@@ -100,7 +100,7 @@ class Jira {
     public resolveIssue(key: string): Promise<unknown> {
         return this.client.transitionIssue(key, {
             fields: { resolution: { name: "Won't Do" } },
-            transition: { id: "821" },
+            transition: { id: "51" },
         }) as Promise<unknown>;
     }
 }

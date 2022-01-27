@@ -48,7 +48,7 @@ function toPriority(run?: TestRun) {
         case "Blocked":
             return "Critical";
         case "Passed":
-            return "Optional";
+            return "Normal";
         case "Skipped":
             return "Minor";
     }
