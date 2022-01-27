@@ -8,6 +8,7 @@ products:
       - osd-fresh-install
     targets:
       - 1.13.0
+      - 1.16.0
 estimate: 15m
 ---
 
