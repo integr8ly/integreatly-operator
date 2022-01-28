@@ -35,6 +35,38 @@ const (
 	openShiftConsoleNamespace = "openshift-console"
 )
 
+func getSmtpHost(smtpSecret *corev1.Secret) string {
+	host := "smtp.example.com"
+	if smtpSecret.Data != nil && string(smtpSecret.Data["host"]) != "" {
+		host = string(smtpSecret.Data["host"])
+	}
+	return host
+}
+
+func getSmtpPort(smtpSecret *corev1.Secret) string {
+	port := "587"
+	if smtpSecret.Data != nil && string(smtpSecret.Data["port"]) != "" {
+		port = string(smtpSecret.Data["port"])
+	}
+	return port
+}
+
+func getSmtpUsername(smtpSecret *corev1.Secret) string {
+	username := "smtp_username"
+	if smtpSecret.Data != nil && string(smtpSecret.Data["username"]) != "" {
+		username = string(smtpSecret.Data["username"])
+	}
+	return username
+}
+
+func getSmtpPassword(smtpSecret *corev1.Secret) string {
+	password := "smtp_password"
+	if smtpSecret.Data != nil && string(smtpSecret.Data["password"]) != "" {
+		password = string(smtpSecret.Data["password"])
+	}
+	return password
+}
+
 func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, productNamespace string, alertManagerRouteName string) (integreatlyv1alpha1.StatusPhase, error) {
 	log := l.NewLogger()
 
@@ -129,20 +161,13 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	clusterName := clusterInfra.Status.InfrastructureName
 	clusterID := string(clusterVersion.Spec.ClusterID)
 
-	if string(smtpSecret.Data["host"]) == "" {
-		smtpSecret.Data["host"] = []byte("smtp.example.com")
-	}
-	if string(smtpSecret.Data["port"]) == "" {
-		smtpSecret.Data["port"] = []byte("587")
-	}
-
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
-		"SMTPHost":              string(smtpSecret.Data["host"]),
-		"SMTPPort":              string(smtpSecret.Data["port"]),
+		"SMTPHost":              getSmtpHost(smtpSecret),
+		"SMTPPort":              getSmtpPort(smtpSecret),
 		"SMTPFrom":              smtpAlertFromAddress,
-		"SMTPUsername":          string(smtpSecret.Data["username"]),
-		"SMTPPassword":          string(smtpSecret.Data["password"]),
+		"SMTPUsername":          getSmtpUsername(smtpSecret),
+		"SMTPPassword":          getSmtpPassword(smtpSecret),
 		"SMTPToCustomerAddress": smtpToCustomerAddress,
 		"SMTPToSREAddress":      smtpToSREAddress,
 		"SMTPToBUAddress":       smtpToBUAddress,
