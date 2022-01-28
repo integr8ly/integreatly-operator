@@ -247,6 +247,14 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		wantErr      string
 	}{
 		{
+			name: "succeeds when smtp secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+			},
+			wantErr: "",
+			want:    integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
@@ -610,4 +618,268 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_getSmtpHost(t *testing.T) {
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.example.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name       string
+		smtpSecret func() *corev1.Secret
+		want       string
+	}{
+		{
+			name: "getSmtpHost returns default value when host value is an empty string",
+			smtpSecret: func() *corev1.Secret {
+				emptySmtpSecret := smtpSecret.DeepCopy()
+				emptySmtpSecret.Data = map[string][]byte{}
+				emptySmtpSecret.Data["host"] = []byte("")
+				return emptySmtpSecret
+			},
+			want: "smtp.example.com",
+		},
+		{
+			name: "getSmtpHost returns default value when SmtpSecret data map is nil",
+			smtpSecret: func() *corev1.Secret {
+				invalidSmtpSecret := smtpSecret.DeepCopy()
+				invalidSmtpSecret.Data = nil
+				return invalidSmtpSecret
+			},
+			want: "smtp.example.com",
+		},
+		{
+			name: "getSmtpHost returns host value from SmtpSecret",
+			smtpSecret: func() *corev1.Secret {
+				correctSmtpSecret := smtpSecret.DeepCopy()
+				correctSmtpSecret.Data = map[string][]byte{}
+				correctSmtpSecret.Data["host"] = []byte("smtpTest")
+				return correctSmtpSecret
+			},
+			want: "smtpTest",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			smtpSecret := tt.smtpSecret()
+
+			got := getSmtpHost(smtpSecret)
+			if got != tt.want {
+				t.Errorf("getSmtpHost() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+}
+
+func Test_getSmtpPort(t *testing.T) {
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.example.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name       string
+		smtpSecret func() *corev1.Secret
+		want       string
+	}{
+		{
+			name: "getSmtpPort returns default value when port value is an empty string",
+			smtpSecret: func() *corev1.Secret {
+				emptySmtpSecret := smtpSecret.DeepCopy()
+				emptySmtpSecret.Data = map[string][]byte{}
+				emptySmtpSecret.Data["port"] = []byte("")
+				return emptySmtpSecret
+			},
+			want: "587",
+		},
+		{
+			name: "getSmtpHost returns default value when SmtpSecret data map is nil",
+			smtpSecret: func() *corev1.Secret {
+				invalidSmtpSecret := smtpSecret.DeepCopy()
+				invalidSmtpSecret.Data = nil
+				return invalidSmtpSecret
+			},
+			want: "587",
+		},
+		{
+			name: "getSmtpPort returns port value from SmtpSecret",
+			smtpSecret: func() *corev1.Secret {
+				correctSmtpSecret := smtpSecret.DeepCopy()
+				correctSmtpSecret.Data = map[string][]byte{}
+				correctSmtpSecret.Data["port"] = []byte("420")
+				return correctSmtpSecret
+			},
+			want: "420",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			smtpSecret := tt.smtpSecret()
+
+			got := getSmtpPort(smtpSecret)
+			if got != tt.want {
+				t.Errorf("getSmtpPort() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+}
+
+func Test_getSmtpUsername(t *testing.T) {
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.example.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name       string
+		smtpSecret func() *corev1.Secret
+		want       string
+	}{
+		{
+			name: "getSmtpUsername returns default value when username value is an empty string",
+			smtpSecret: func() *corev1.Secret {
+				emptySmtpSecret := smtpSecret.DeepCopy()
+				emptySmtpSecret.Data = map[string][]byte{}
+				emptySmtpSecret.Data["username"] = []byte("")
+				return emptySmtpSecret
+			},
+			want: "smtp_username",
+		},
+		{
+			name: "getSmtpUsername returns default value when SmtpSecret data map is nil",
+			smtpSecret: func() *corev1.Secret {
+				invalidSmtpSecret := smtpSecret.DeepCopy()
+				invalidSmtpSecret.Data = nil
+				return invalidSmtpSecret
+			},
+			want: "smtp_username",
+		},
+		{
+			name: "getSmtpUsername returns username value from SmtpSecret",
+			smtpSecret: func() *corev1.Secret {
+				correctSmtpSecret := smtpSecret.DeepCopy()
+				correctSmtpSecret.Data = map[string][]byte{}
+				correctSmtpSecret.Data["username"] = []byte("smtpTestUsername")
+				return correctSmtpSecret
+			},
+			want: "smtpTestUsername",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			smtpSecret := tt.smtpSecret()
+
+			got := getSmtpUsername(smtpSecret)
+			if got != tt.want {
+				t.Errorf("getSmtpUsername() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+}
+
+func Test_getSmtpPassword(t *testing.T) {
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.example.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name       string
+		smtpSecret func() *corev1.Secret
+		want       string
+	}{
+		{
+			name: "getSmtpPassword returns default value when password value is an empty string",
+			smtpSecret: func() *corev1.Secret {
+				emptySmtpSecret := smtpSecret.DeepCopy()
+				emptySmtpSecret.Data = map[string][]byte{}
+				emptySmtpSecret.Data["password"] = []byte("")
+				return emptySmtpSecret
+			},
+			want: "smtp_password",
+		},
+		{
+			name: "getSmtpPassword returns default value when SmtpSecret data map is nil",
+			smtpSecret: func() *corev1.Secret {
+				invalidSmtpSecret := smtpSecret.DeepCopy()
+				invalidSmtpSecret.Data = nil
+				return invalidSmtpSecret
+			},
+			want: "smtp_password",
+		},
+		{
+			name: "getSmtpPassword returns password value from SmtpSecret",
+			smtpSecret: func() *corev1.Secret {
+				correctSmtpSecret := smtpSecret.DeepCopy()
+				correctSmtpSecret.Data = map[string][]byte{}
+				correctSmtpSecret.Data["password"] = []byte("smtpTestPassword")
+				return correctSmtpSecret
+			},
+			want: "smtpTestPassword",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			smtpSecret := tt.smtpSecret()
+
+			got := getSmtpPassword(smtpSecret)
+			if got != tt.want {
+				t.Errorf("getSmtpPassword got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
 }
