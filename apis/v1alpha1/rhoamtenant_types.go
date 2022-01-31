@@ -20,18 +20,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const ()
+type ProvisioningStatus string
+
+var (
+	UserAnnotated              ProvisioningStatus = "user annotated"
+	ThreeScaleAccountReady     ProvisioningStatus = "3scale account ready"
+	ThreeScaleAccountRequested ProvisioningStatus = "3scale account requested"
+)
 
 // RhoamTenantSpec defines the desired state of RhoamTenant
 type RhoamTenantSpec struct {
-	//
 }
 
 // RhoamTenantStatus defines the observed state of RhoamTenant
 type RhoamTenantStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	LastError string `json:"lastError"`
+	LastError          string             `json:"lastError"`
+	ProvisioningStatus ProvisioningStatus `json:"provisioningStatus"`
+	TenantUrl          string             `json:"tenantUrl,omitempty"`
 }
 
 //+kubebuilder:object:root=true
