@@ -26,7 +26,7 @@ spec:
       image: "quay.io/integreatly/integreatly-operator-test-harness:master"
       args:
         - '-ginkgo.focus'
-        - '(F05)|(F01)'
+        - '(F05)|(F08)'
     - resources: {}
       terminationMessagePath: /dev/termination-log
       name: sidecar
