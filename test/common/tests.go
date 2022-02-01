@@ -93,6 +93,7 @@ var (
 				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
+				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
 				// Keep H11 as last 3scale IDP Test as test causes 3scale deployments to be rescaled at the end of test
 				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
