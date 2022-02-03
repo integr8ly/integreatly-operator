@@ -3,6 +3,7 @@
 # Prereq:
 # - opm
 # - operator-sdk
+# - oc (optional if OC_INSTALL is set)
 # Function:
 # Script creates olm bundle/bundles and index/indexes for RHOAM/RHMI 
 # Usage:
@@ -13,6 +14,7 @@
 # ORG - organization of where to push the bundles and indexes 
 # REG - registry of where to push the bundles and indexes, defaults to quay.io
 # BUILD_TOOL - tool used for building the index, defaults to docker
+# OC_INSTALL - set to true if you want the catalogue source to be created pointing to the "oldest" version within the versions specified (version must have no replaces field)(must be oc logged in)
 # Example:
 # make create/olm/bundle OLM_TYPE=managed-api-service UPGRADE=false BUNDLE_VERSIONS=1.16.0,1.15.2 ORG=mstoklus
 
@@ -39,8 +41,10 @@ REG="${REG:-quay.io}"
 BUILD_TOOL="${BUILD_TOOL:-docker}"
 UPGRADE_RHMI="${UPGRADE:-false}"
 VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
+CATALOG_SOURCE_INSTALL="${OC_INSTALL:-false}"
 ROOT=$(pwd)
 INDEX=""
+OLDEST_IMAGE=""
 
 start() {
   clean_up
@@ -49,6 +53,9 @@ start() {
   check_upgrade_install
   generate_bundles
   generate_index
+  if [ "$CATALOG_SOURCE_INSTALL" = true ] ; then
+  create_catalog_source
+  fi
   clean_up
   echo "Index images are: "
   echo $INDEX
@@ -81,6 +88,8 @@ check_upgrade_install() {
   file=`ls ./$OLDEST_VERSION/manifests | grep .clusterserviceversion.yaml`
 
   sed '/replaces/d' './'$OLDEST_VERSION'/manifests/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/manifests/'$file
+
+  OLDEST_IMAGE=$REG/$ORG/${OLM_TYPE}-index:$OLDEST_VERSION
 }
 
 # Generates a bundle for each of the version specified or, the latest version if no BUNDLE_VERSIONS  specified
@@ -135,6 +144,14 @@ push_index() {
   INDEX="""$INDEX
   $INDEX_IMAGE
   """
+}
+
+# creates catalog source on the cluster
+create_catalog_source() {
+printf 'Creating catalog source '$INDEX_IMAGE'\n'
+  cd $ROOT
+  oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
+  oc process -p INDEX_IMAGE=$OLDEST_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
 }
 
 # cleans up the working space
