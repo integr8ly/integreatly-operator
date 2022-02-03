@@ -133,14 +133,9 @@ Once the installation completed the command wil result in following output:
 
 ## Deploying to a Cluster with OLM and the Bundle Format
 
-There exists a number of variables, that can prepend the make target below. Refer to [this](/scripts/README.md#system-variables) document.
-
 In order to create a bundle and/or deploy RHMI or RHOAM with OLM follow refer to [this](https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/) document.
 
-OLM will create a PackageManifest (integreatly) based on the CatalogSource (rhmi-operators) in the openshift-marketplace namespace. 
-Confirm both and then find the RHMI/RHOAM in the OperatorHub. Verify that the version references the latest version available in the index and click install
-
-For more details refer to [this](https://github.com/RHCloudServices/integreatly-help/blob/master/guides/olm/install-upgrade-rhoam-bundle.md#installing-rhmi-through-olm-with-bundle-format) readme file.
+For more details refer to [this](https://github.com/RHCloudServices/integreatly-help/blob/master/guides/olm/installing-rhmi-bundle-format.md#installing-rhmi-through-olm-with-bundle-format) readme file.
 
 ## 	Identity Provider setup
 ### Set up testing IDP for OSD cluster

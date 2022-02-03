@@ -148,7 +148,7 @@ push_index() {
 
 # creates catalog source on the cluster
 create_catalog_source() {
-printf 'Creating catalog source '$INDEX_IMAGE'\n'
+printf 'Creating catalog source '$OLDEST_IMAGE'\n'
   cd $ROOT
   oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
   oc process -p INDEX_IMAGE=$OLDEST_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
