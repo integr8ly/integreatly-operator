@@ -10,6 +10,10 @@
       cluster-size: small
       phase: msp-main
       test: happy-path
+    storage:
+      spec:
+        mountPath:
+          path: logs/artifacts
 - op: add
   path: /stages/0/tests/-
   value:
@@ -22,3 +26,7 @@
       cluster-size: medium
       phase: msp-main
       test: scalability
+    storage:
+      spec:
+        mountPath:
+          path: logs/artifacts
