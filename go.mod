@@ -31,7 +31,7 @@ require (
 	github.com/integr8ly/cloud-resource-operator v0.33.0
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.3
-	github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e
+	github.com/integr8ly/keycloak-client v0.1.7
 	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
