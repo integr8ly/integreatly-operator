@@ -6,3 +6,7 @@ stages:
 - parallel: true
   tests: []
 serviceaccount: rhoam-test-runner
+storage:
+  spec:
+    mountPath:
+      path: logs/artifacts
