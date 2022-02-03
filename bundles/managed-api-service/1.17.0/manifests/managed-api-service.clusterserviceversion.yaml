@@ -51,7 +51,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.17.0
+    containerImage: quay.io/integreatly/managed-api-service:master
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.11.0+git
@@ -517,7 +517,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:rhoam-v1.17.0
+                    image: quay.io/integreatly/managed-api-service:master
                     imagePullPolicy: Always
                     name: rhmi-operator
                     ports:
