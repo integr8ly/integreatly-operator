@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
 
+# Prereq:
+# - opm
+# - operator-sdk
+# Function:
+# Builds and pushes the bundles and indexes for RHMI or/and RHOAM
+# Usage:
+# make create/olm/bundle OLM_TYPE=<managed||managed-api> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
+# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can either be integreatly-operator (RHMI) or managed-api-service (RHOAM)
+# UPGRADE - defaults to false, if upgrade is false the oldest version specified in the BUNDLE_VERSIONS will have it's replaces removed, otherwise, replaces will stay
+# BUNDLE_VERSIONS - specifies the versions that are going to have the bundles build. Versions must exists in the bundle/OLM_TYPE folder and must be listed in a descending order
+# ORG - organization of where to push the bundles and indexes 
+# REG - registry of where to push the bundles and indexes, defaults to quay.io
+# BUILD_TOOL - tool used for building the index, defaults to docker
+# Example:
+# make create/olm/bundle OLM_TYPE=managed-api-service UPGRADE=false BUNDLE_VERSIONS=1.16.0,1.15.2 ORG=mstoklus
+
 if [[ -z "$OLM_TYPE" ]]; then
   OLM_TYPE="integreatly-operator"
 fi
 
 case $OLM_TYPE in
   "integreatly-operator")
-    LATEST_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
+    LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
     ;;
   "managed-api-service")
-    LATEST_VERSION=$(grep $OLM_TYPE packagemanifests/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
+    LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
     ;;
   *)
     echo "Invalid OLM_TYPE set"
@@ -18,16 +34,12 @@ case $OLM_TYPE in
     ;;
 esac
 
-CHANNEL="${CHANNEL:-alpha}"
-ORG="${ORG:-integreatly}"
+ORG="${ORG}"
 REG="${REG:-quay.io}"
 BUILD_TOOL="${BUILD_TOOL:-docker}"
 UPGRADE_RHMI="${UPGRADE:-false}"
 VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
 ROOT=$(pwd)
-INDEX_IMAGE=""
-CATALOG_SOURCE_INSTALL="${OC_INSTALL:-true}"
-
 
 start() {
   clean_up
@@ -36,16 +48,12 @@ start() {
   check_upgrade_install
   generate_bundles
   generate_index
-  if [ "$CATALOG_SOURCE_INSTALL" = true ] ; then
-  create_catalog_source
-  fi
   clean_up
 }
 
 create_work_area() {
   printf "Creating Work Area \n"
-
-  cd ./packagemanifests/$OLM_TYPE/
+  cd ./bundles/$OLM_TYPE/
   mkdir temp && cd temp
 }
 
@@ -67,10 +75,9 @@ check_upgrade_install() {
   fi
   # Get the oldest version, example: VERSIONS="2.5,2.4,2.3" oldest="2.3"
   OLDEST_VERSION=${VERSIONS##*,}
+  file=`ls ./$OLDEST_VERSION/manifests | grep .clusterserviceversion.yaml`
 
-  file=`ls './'$OLDEST_VERSION | grep .clusterserviceversion.yaml`
-
-  sed '/replaces/d' './'$OLDEST_VERSION'/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/'$file
+  sed '/replaces/d' './'$OLDEST_VERSION'/manifests/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/manifests/'$file
 }
 
 # Generates a bundle for each of the version specified or, the latest version if no BUNDLE_VERSIONS  specified
@@ -79,15 +86,12 @@ generate_bundles() {
 
   for VERSION in $(echo $VERSIONS | sed "s/,/ /g")
   do
-    cd ./$VERSION
-    opm alpha bundle generate -d . --channels $CHANNEL \
-        --package integreatly --output-dir bundle \
-        --default $CHANNEL
-
-    docker build -f bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION .
+    pwd
+    cd ../../..
+    docker build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION --build-arg manifest_path=./bundles/$OLM_TYPE/temp/$VERSION/manifests --build-arg metadata_path=./bundles/$OLM_TYPE/temp/$VERSION/metadata --build-arg version=$VERSION .
     docker push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
     operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    cd ..
+    cd ./bundles/managed-api-service/temp
   done
 }
 
@@ -126,18 +130,10 @@ push_index() {
   docker push $INDEX_IMAGE
 }
 
-# creates catalog source on the cluster
-create_catalog_source() {
-  printf 'Creating catalog source '$INDEX_IMAGE'\n'
-  cd $ROOT
-  oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
-  oc process -p INDEX_IMAGE=$INDEX_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
-}
-
 # cleans up the working space
 clean_up() {
   printf 'Cleaning up work area \n'
-  rm -rf $ROOT/packagemanifests/$OLM_TYPE/temp
+  rm -rf $ROOT/bundles/$OLM_TYPE/temp
 }
 
 start
