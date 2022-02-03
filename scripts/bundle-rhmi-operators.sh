@@ -4,7 +4,7 @@
 # - opm
 # - operator-sdk
 # Function:
-# Builds and pushes the bundles and indexes for RHMI or/and RHOAM
+# Script creates olm bundle/bundles and index/indexes for RHOAM/RHMI 
 # Usage:
 # make create/olm/bundle OLM_TYPE=<managed||managed-api> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
 # OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can either be integreatly-operator (RHMI) or managed-api-service (RHOAM)
@@ -40,6 +40,7 @@ BUILD_TOOL="${BUILD_TOOL:-docker}"
 UPGRADE_RHMI="${UPGRADE:-false}"
 VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
 ROOT=$(pwd)
+INDEX=""
 
 start() {
   clean_up
@@ -49,6 +50,8 @@ start() {
   generate_bundles
   generate_index
   clean_up
+  echo "Index images are: "
+  echo $INDEX
 }
 
 create_work_area() {
@@ -128,6 +131,10 @@ push_index() {
   printf 'Pushing index image:'$INDEX_IMAGE'\n'
 
   docker push $INDEX_IMAGE
+
+  INDEX="""$INDEX
+  $INDEX_IMAGE
+  """
 }
 
 # cleans up the working space
