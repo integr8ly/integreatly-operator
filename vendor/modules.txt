@@ -515,7 +515,7 @@ github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/grafana-operator/v3 v3.10.3
 ## explicit
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/keycloak-client v0.1.6-0.20211011133857-8e862bf47e7e
+# github.com/integr8ly/keycloak-client v0.1.7
 ## explicit
 github.com/integr8ly/keycloak-client/pkg/common
 # github.com/jmespath/go-jmespath v0.4.0
