@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/3scale-ops/marin3r v0.8.0
 	github.com/3scale/3scale-operator v0.7.0
+	github.com/3scale/3scale-porta-go-client v0.0.4
 	github.com/3scale/apicast-operator v0.4.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
