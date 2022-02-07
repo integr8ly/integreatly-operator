@@ -178,8 +178,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	//update or inject the env vars required
 	csv, updated, err := r.ReconcileCSVEnvVars(csv, map[string]string{
-		"RELATED_IMAGE_RHSSO_OPENJDK": "quay.io/integreatly/rhsso:7.5-11",
-		"RELATED_IMAGE_RHSSO_OPENJ9":  "quay.io/integreatly/rhsso:7.5-11",
+		"RELATED_IMAGE_RHSSO_OPENJDK": "quay.io/integreatly/rhsso:7.5-17",
+		"RELATED_IMAGE_RHSSO_OPENJ9":  "quay.io/integreatly/rhsso:7.5-17",
 	})
 
 	if updated {
