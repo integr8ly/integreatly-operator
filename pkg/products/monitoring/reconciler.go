@@ -338,7 +338,7 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetFederationNamespace(), serverClient, installation, false, true)
+		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetFederationNamespace(), serverClient, installation, false, true, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -346,7 +346,8 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	resources.PrepareObject(namespace, installation, false, true)
+	resources.PrepareObjectLabels(namespace, installation, false, true, true)
+
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
