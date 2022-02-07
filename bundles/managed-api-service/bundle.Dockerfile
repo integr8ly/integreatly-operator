@@ -2,7 +2,7 @@
 
 FROM scratch
 
-ARG version version
+ARG version
 ARG manifest_path=bundles/managed-api-service/${version}/manifests
 ARG metadata_path=bundles/managed-api-service/${version}/metadata
 

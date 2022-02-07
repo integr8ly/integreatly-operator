@@ -13,7 +13,7 @@
 # BUNDLE_VERSIONS - specifies the versions that are going to have the bundles build. Versions must exists in the bundle/OLM_TYPE folder and must be listed in a descending order
 # ORG - organization of where to push the bundles and indexes 
 # REG - registry of where to push the bundles and indexes, defaults to quay.io
-# BUILD_TOOL - tool used for building the index, defaults to docker
+# BUILD_TOOL - tool used for building the bundle and index, defaults to docker
 # OC_INSTALL - set to true if you want the catalogue source to be created pointing to the "oldest" version within the versions specified (version must have no replaces field)(must be oc logged in)
 # Example:
 # make create/olm/bundle OLM_TYPE=managed-api-service UPGRADE=false BUNDLE_VERSIONS=1.16.0,1.15.2 ORG=mstoklus
@@ -100,8 +100,8 @@ generate_bundles() {
   do
     pwd
     cd ../../..
-    docker build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION --build-arg manifest_path=./bundles/$OLM_TYPE/temp/$VERSION/manifests --build-arg metadata_path=./bundles/$OLM_TYPE/temp/$VERSION/metadata --build-arg version=$VERSION .
-    docker push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
+    $BUILD_TOOL build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION --build-arg manifest_path=./bundles/$OLM_TYPE/temp/$VERSION/manifests --build-arg metadata_path=./bundles/$OLM_TYPE/temp/$VERSION/metadata --build-arg version=$VERSION .
+    $BUILD_TOOL push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
     operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
     cd ./bundles/managed-api-service/temp
   done
@@ -132,14 +132,14 @@ push_index() {
   NEWEST_VERSION="$( cut -d ',' -f 1 <<< "$VERSIONS_TO_PUSH" )"
   opm index add \
       --bundles $bundles \
-      --build-tool ${BUILD_TOOL} \
+      --container-tool $BUILD_TOOL \
       --tag $REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION
 
   INDEX_IMAGE=$REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION
 
   printf 'Pushing index image:'$INDEX_IMAGE'\n'
 
-  docker push $INDEX_IMAGE
+  $BUILD_TOOL push $INDEX_IMAGE
 
   INDEX="""$INDEX
   $INDEX_IMAGE
