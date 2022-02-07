@@ -253,6 +253,7 @@ rules:
   - create
   - get
   - list
+  - update
 - apiGroups:
   - operators.coreos.com
   resources:
