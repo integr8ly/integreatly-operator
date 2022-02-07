@@ -168,7 +168,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // - Namespace update permissions are needed for setting labels
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=update
 // - Installation of product operators
-// +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources;operatorgroups,verbs=create;list;get
+// +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources;operatorgroups,verbs=create;list;get;update
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=update,resourceNames=rhmi-registry-cs
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=installplans,verbs=update
 
