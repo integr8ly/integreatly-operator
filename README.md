@@ -2,9 +2,9 @@
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
 
-An Integreatly Operator can be installed using two different flavours: `managed` or `managed-api`
+An Integreatly Operator can be installed using three different flavours: `managed`, `managed-api` or `multitenant-managed-api`
 
-To switch between the two you can use export the `INSTALLATION_TYPE` env or use it in conjunction with any of the make commands referenced in this README
+To switch between the three you can use export the `INSTALLATION_TYPE` env or use it in conjunction with any of the make commands referenced in this README
 
 ### Installed products
 
@@ -27,6 +27,11 @@ The operator installs the following products:
 - RHSSO (both a cluster instance, and a user instance)
 - Marin3r
 
+### multitenant-managed-api
+
+- 3scale
+- RHSSO (cluster instance)
+- Marin3r
 
 ## Prerequisites
 
@@ -54,7 +59,7 @@ See [here](https://github.com/integr8ly/delorean/tree/master/docs/ocm) for an up
 ## Local Development
 Ensure that the cluster satisfies minimal requirements: 
 - RHMI (managed): 26 vCPU 
-- RHOAM (managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
+- RHOAM (managed-api and multitenant-managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
   under the "Resource Requirements" section
 
 ### 1. Clone the integreatly-operator
@@ -89,7 +94,7 @@ INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make
 
 | Variable | Options | Type | Default | Details |
 |----------|---------|:----:|---------|-------|
-| INSTALLATION_TYPE     | `managed` or `managed-api`| **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. |
+| INSTALLATION_TYPE     | `managed`, `managed-api` or `multitenant-managed-api` | **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
 | IN_PROW               | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters |
 | USE_CLUSTER_STORAGE   | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift. |
 
@@ -98,7 +103,7 @@ INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
 The operator can now be run locally:
 ```shell
-INSTALLATION_TYPE=<managed/managed-api> make code/run
+INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> make code/run
 ```
 If you want to run the operator from a specific image, you can specify the image and run `make cluster/deploy`
 ```shell
@@ -119,6 +124,8 @@ For `RHMI` (managed): `oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq .st
 
 For `RHOAM` (managed-api): `oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage `
 
+For `RHOAM Multitenant` (multitenant-managed-api): `oc get rhmi rhoam -n sandbox-rhoam-operator -o json | jq .status.stage `
+
 Once the installation completed the command wil result in following output:  
 ```yaml
 "complete"
@@ -126,17 +133,9 @@ Once the installation completed the command wil result in following output:
 
 ## Deploying to a Cluster with OLM and the Bundle Format
 
-### 1. Bundles
-There exists a number of variables, that can prepend the make target below. Refer to [this](/scripts/README.md#system-variables) document.
+In order to create a bundle and/or deploy RHMI or RHOAM with OLM follow refer to [this](https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/) document.
 
-
-To generate bundles run the script: `./scripts/bundle-rhmi-opertors.sh `
-
-### 2. Install from OperatorHub
-OLM will create a PackageManifest (integreatly) based on the CatalogSource (rhmi-operators) in the openshift-marketplace namespace. 
-Confirm both and then find the RHMI in the OperatorHub. Verify that the version references the latest version available in the index and click install
-
-For more details refer to [this](https://github.com/RHCloudServices/integreatly-help/blob/master/guides/olm/installing-rhmi-bundle-format.md#installing-rhmi-through-olm-with-bundle-format) readme file. 
+For more details refer to [this](https://github.com/RHCloudServices/integreatly-help/blob/master/guides/olm/installing-rhmi-bundle-format.md#installing-rhmi-through-olm-with-bundle-format) readme file.
 
 ## 	Identity Provider setup
 ### Set up testing IDP for OSD cluster
@@ -204,7 +203,7 @@ This may cause side effects related to the cloud resources test.
 To run E2E tests against a clean OpenShift cluster using operator-sdk, build and push an image 
 to your own quay repo, then run the command below changing the installation type based on which type you are testing:
 ```
-make test/e2e INSTALLATION_TYPE=<managed/managed-api> OPERATOR_IMAGE=<your/repo/image:tag>
+make test/e2e INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> OPERATOR_IMAGE=<your/repo/image:tag>
 ```
 
 To run E2E tests against an existing RHMI cluster:
@@ -214,7 +213,7 @@ make test/functional
 
 To run a single E2E test against a running cluster run the command below where E03 is the start of the test description:
 ```
-INSTALLATION_TYPE=<managed/managed-api> TEST=E03 make test/e2e/single
+INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> TEST=E03 make test/e2e/single
 ```
 ### Product tests
 
