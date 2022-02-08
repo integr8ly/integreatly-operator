@@ -100,8 +100,9 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 		}
 	}
 
-	// Verify RHMI Developer permissions around RHMI Config
+	// Verify RHMI Developer permissions around RHMI & RHMI Config
 	verifyRHMIDeveloperRHMIConfigPermissions(t, openshiftClient)
+	verifyRHMIDeveloperRHMIPermissions(t, openshiftClient)
 
 	verifyRHMIDeveloper3ScaleRoutePermissions(t, openshiftClient)
 }
@@ -201,6 +202,32 @@ func verifyRHMIDeveloperRHMIConfigPermissions(t TestingTB, openshiftClient *reso
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1alpha1",
 				Kind:       "RHMIConfig",
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+func verifyRHMIDeveloperRHMIPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying RHMI Developer permissions for RHMI Resource")
+
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 403,
+		ExpectedReadStatusCode:   403,
+		ExpectedUpdateStatusCode: 403,
+		ExpectedDeleteStatusCode: 403,
+		ExpectedListStatusCode:   403,
+		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHMIOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "test-rhmi"),
+		ObjectToCreate: &integreatlyv1alpha1.RHMI{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-rhmi",
+				Namespace: RHMIOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1alpha1",
+				Kind:       "RHMI",
 			},
 		},
 	}
