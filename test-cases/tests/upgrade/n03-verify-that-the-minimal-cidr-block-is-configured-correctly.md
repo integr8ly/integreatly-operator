@@ -8,7 +8,7 @@ products:
       - osd-post-upgrade
 estimate: 30m
 tags:
-  - per-release
+  - manual-selection
 ---
 
 # N03 - Verify that the minimal CIDR block is configured correctly
