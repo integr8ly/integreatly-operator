@@ -183,6 +183,35 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 	return v1alpha1.PhaseCompleted, nil
 }
 
+// CreateDeadMansSnitchSecretExists creates a PrometheusRule to alert if the redhat-rhoam-deadmanssnitch is present
+func CreateDeadMansSnitchSecretExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
+	installationName := InstallationNames[cr.Spec.Type]
+
+	alertName := "DeadMansSnitchSecretExists"
+	ruleName := "deadmanssnitch-secret-exists-rule"
+	alertExp := intstr.FromString(
+		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='"+cr.Spec.NamespacePrefix+"deadmanssnitch'} == 1)", cr.Namespace),
+	)
+	alertDescription := fmt.Sprintf("The DeadMansSnitch secret has not been created in the %s namespace and may need to be created manualy", cr.Namespace)
+	labels := map[string]string{
+		"severity": "warning",
+		"product":  installationName,
+	}
+
+	alertForXMins := alertFor10Mins
+	if cr.Status.Version == "" && cr.Status.ToVersion != "" {
+		// Alerting time extended for fresh installations only.
+		alertForXMins = alertFor60Mins
+	}
+
+	ruleNs := cr.Spec.NamespacePrefix + "observability"
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, SopUrlDeadMansSnitchSecretExists, alertForXMins, alertExp, labels)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create deadmanssnitch exists rule err: %s", err)
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
 func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {

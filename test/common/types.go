@@ -27,6 +27,7 @@ var (
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
 	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
 	SMTPSecretName                    = NamespacePrefix + "smtp"
+	DMSSecretName                     = NamespacePrefix + "deadmanssnitch"
 	ApicurioRegistryOperatorNamespace = ApicurioRegistryProductNamespace + "-operator"
 	ApicuritoProductNamespace         = NamespacePrefix + "apicurito"
 	ApicuritoOperatorNamespace        = ApicuritoProductNamespace + "-operator"

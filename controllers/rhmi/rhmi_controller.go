@@ -923,7 +923,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	}
 
 	if rhmiv1alpha1.IsManaged(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
+		requiredSecrets := []string{installation.Spec.PagerDutySecret}
 
 		for _, secretName := range requiredSecrets {
 			secret := &corev1.Secret{

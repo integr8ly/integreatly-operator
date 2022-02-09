@@ -273,22 +273,22 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
-			name: "fails when dead mans snitch secret cannot be found",
+			name: "succeeds when dead mans snitch secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
-			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: "",
+			want:    integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
-			name: "fails when dead mans snitch url is not defined",
+			name: "succeeds when dead mans snitch url is not defined",
 			serverClient: func() k8sclient.Client {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
-			wantErr: "url is undefined in dead mans snitch secret",
-			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: "",
+			want:    integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			name: "awaiting components when alert manager route cannot be found",
