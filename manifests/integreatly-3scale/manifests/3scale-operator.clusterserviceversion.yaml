@@ -372,7 +372,7 @@ spec:
                 - name: RELATED_IMAGE_ZYNC_POSTGRESQL
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
                 - name: RELATED_IMAGE_OC_CLI
-                  value: registry.redhat.io/openshift4/ose-cli@sha256:3e9d4491159d943642fc3ce26e2453d948b7abe44a1728f6429fb15c49700b04
+                  value: registry.redhat.io/openshift4/ose-cli@sha256:028ba12cbbf038dd57185f9ede402f15cef503c361efed8e94210b2b13a53933
                 image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:f86f59428e5ed4cad23912aaf623a44bf5369c7545ecba4ae3a2cbf84685cd52
                 name: manager
                 ports:
@@ -944,4 +944,4 @@ spec:
   - name: zync_postgresql
     image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
   - name: oc_cli
-    image: registry.redhat.io/openshift4/ose-cli@sha256:3e9d4491159d943642fc3ce26e2453d948b7abe44a1728f6429fb15c49700b04
+    image: registry.redhat.io/openshift4/ose-cli@sha256:028ba12cbbf038dd57185f9ede402f15cef503c361efed8e94210b2b13a53933
