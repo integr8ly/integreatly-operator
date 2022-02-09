@@ -40,12 +40,14 @@ spec:
             description: RhoamTenantStatus defines the observed state of RhoamTenant
             properties:
               lastError:
-
-
-
+                type: string
+              provisioningStatus:
+                type: string
+              tenantUrl:
                 type: string
             required:
             - lastError
+            - provisioningStatus
             type: object
         type: object
     served: true
