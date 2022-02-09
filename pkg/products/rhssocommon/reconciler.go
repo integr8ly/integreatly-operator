@@ -3,11 +3,12 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/Masterminds/semver"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"strings"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -112,7 +113,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	if err != nil {
 		r.Log.Error("Error checking Keycloak CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
-	} else if !crdExists {
+	}
+	if !crdExists {
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
@@ -146,7 +148,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	err = serverClient.List(ctx, users, opts)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(users.Items) > 0 {
+	}
+	if len(users.Items) > 0 {
 		r.Log.Info("rhsso deletion of users in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
@@ -155,7 +158,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	err = serverClient.List(ctx, clients, opts)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(clients.Items) > 0 {
+	}
+	if len(clients.Items) > 0 {
 		r.Log.Info("rhsso deletion of clients in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
@@ -171,9 +175,18 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
+	}
+
+	// Refresh the realm list
+	err = serverClient.List(ctx, realms, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	// Delete all realm finalizers
+	for _, realm := range realms.Items {
 		realm.SetFinalizers([]string{})
-		err := serverClient.Update(ctx, &realm)
-		if !k8serr.IsNotFound(err) && err != nil {
+		err = serverClient.Update(ctx, &realm)
+		if err != nil && !k8serr.IsNotFound(err) {
 			r.Log.Error("Error removing finalizer from Realm", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -183,7 +196,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	err = serverClient.List(ctx, realms, opts)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(realms.Items) > 0 {
+	}
+	if len(realms.Items) > 0 {
 		r.Log.Info("rhsso deletion of realms in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}

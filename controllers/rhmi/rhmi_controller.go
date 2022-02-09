@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os"
 	"reflect"
@@ -50,8 +49,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -113,7 +112,7 @@ type RHMIReconciler struct {
 }
 
 func New(mgr ctrl.Manager) *RHMIReconciler {
-	restconfig := controllerruntime.GetConfigOrDie()
+	restconfig := ctrl.GetConfigOrDie()
 	restconfig.Timeout = 10 * time.Second
 	return &RHMIReconciler{
 		Client: mgr.GetClient(),
@@ -725,16 +724,17 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	// Clean up the products which have finalizers associated to them
 	merr := &resources.MultiErr{}
 	finalizers := []string{}
-	for _, finalizer := range installation.Finalizers {
-		finalizers = append(finalizers, finalizer)
-	}
+	finalizers = append(finalizers, installation.Finalizers...)
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
 		if stage.Name == rhmiv1alpha1.BootstrapStage {
 			pendingUninstalls = r.handleUninstallBootstrap(installation, finalizers, stage, configManager, merr, request)
 		} else {
 			for product := range stage.Products {
-				pendingUninstalls = r.handleUninstallProduct(installation, product, stage, finalizers, configManager, merr)
+				productPending := r.handleUninstallProduct(installation, product, stage, finalizers, configManager, merr)
+				if productPending && !pendingUninstalls {
+					pendingUninstalls = true
+				}
 			}
 		}
 		//don't move to next stage until all products in this stage are removed
