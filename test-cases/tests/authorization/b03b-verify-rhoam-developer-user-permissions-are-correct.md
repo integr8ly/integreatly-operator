@@ -9,6 +9,7 @@ products:
 estimate: 15m
 tags:
   - per-release
+  - automated
 ---
 
 # B03B - Verify RHOAM Developer User Permissions are Correct

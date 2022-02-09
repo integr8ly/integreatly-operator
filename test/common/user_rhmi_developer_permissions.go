@@ -219,7 +219,7 @@ func verifyRHMIDeveloperRHMIPermissions(t TestingTB, openshiftClient *resources.
 		ExpectedDeleteStatusCode: 403,
 		ExpectedListStatusCode:   403,
 		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHMIOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "test-rhmi"),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "rhoam"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhmi",
