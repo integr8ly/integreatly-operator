@@ -21,6 +21,8 @@ const (
 	OpenshiftPathGetSecret        = "/api/kubernetes/api/v1/namespaces/%s/secrets"
 	PathListRHMIConfig            = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs"
 	PathGetRHMIConfig             = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs/%s"
+	PathListRHMI                  = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis"
+	PathGetRHMI                   = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis/%s"
 	PathGetRoute                  = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
 	PathListStandardInfraConfig   = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs"
 	PathGetStandardInfraConfig    = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs/%s"
