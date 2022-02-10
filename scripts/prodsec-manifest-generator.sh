@@ -111,13 +111,13 @@ case $TYPE_OF_MANIFEST in
     case $OLM_TYPE in
       "integreatly-operator")
         OLM_TYPE="rhmi"
-        VERSION=$(grep integreatly-operator ${CURRENT_DIR}/packagemanifests/integreatly-operator/integreatly-operator.package.yaml | awk -F v '{print $2}')
+        VERSION=$(grep integreatly-operator ${CURRENT_DIR}/bundles/integreatly-operator/integreatly-operator.package.yaml | awk -F v '{print $2}')
         FILE_NAME="${CURRENT_DIR}/prodsec-manifests/rhmi-production-release-manifest.txt"
         SERVICE_NAME="services-rhmi"
         ;;
       "managed-api-service")
         OLM_TYPE="rhoam"
-        VERSION=$(grep managed-api-service ${CURRENT_DIR}/packagemanifests/managed-api-service/managed-api-service.package.yaml | awk -F v '{print $3}')
+        VERSION=$(grep managed-api-service ${CURRENT_DIR}/bundles/managed-api-service/managed-api-service.package.yaml | awk -F v '{print $3}')
         FILE_NAME="${CURRENT_DIR}/prodsec-manifests/rhoam-production-release-manifest.txt"
         SERVICE_NAME="services-rhoam"
         ;;

@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-3452
 estimate: 15m
 products:
   - name: rhoam

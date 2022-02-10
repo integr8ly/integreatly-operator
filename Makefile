@@ -31,7 +31,7 @@ SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.17.0
+RHOAM_TAG ?= 1.18.0
 
 export SKIP_FLAKES := true
 
@@ -165,6 +165,7 @@ apis/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen apis/v1alpha1
 code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml apis/integreatly/v1alpha1/zz_generated.deepcopy.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..."
 	@go generate ./...
+	mv ./config/crd/bases/integreatly.org_rhoamtenants.yaml ./config/crd-sandbox/bases
 
 .PHONY: code/check
 code/check:
@@ -346,7 +347,7 @@ cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd clu
 .PHONY: cluster/prepare/olm/subscription
 cluster/prepare/olm/subscription:
 	oc process -p NAMESPACE=$(NAMESPACE) -f config/olm/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
-	$(call wait_command, oc get crd rhmis.integreatly.org, rhmis.integreatly.org crd, 1m, 10
+	$(call wait_command, oc get crd rhmis.integreatly.org, rhmis.integreatly.org crd, 1m, 10)
 
 .PHONY: cluster/check/operator/deployment
 cluster/check/operator/deployment:
@@ -457,7 +458,7 @@ release/prepare: kustomize
 .PHONY: push/csv
 push/csv:
 	operator-courier verify packagemanifests/$(PROJECT)
-	-operator-courier push packagemanifests/$(PROJECT)/ $(REPO) $(APPLICATION_REPO) $(TAG) "$(AUTH_TOKEN)
+	-operator-courier push packagemanifests/$(PROJECT)/ $(REPO) $(APPLICATION_REPO) $(TAG) "$(AUTH_TOKEN)"
 
 .PHONY: gen/push/csv
 gen/push/csv: release/prepare push/csv
