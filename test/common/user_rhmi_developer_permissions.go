@@ -222,7 +222,7 @@ func verifyRHMIDeveloperRHMIPermissions(t TestingTB, openshiftClient *resources.
 		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "rhoam"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "rhoam",
+				Name:      "test-rhoam",
 				Namespace: RHMIOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
