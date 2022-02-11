@@ -2,7 +2,9 @@
 
 FROM scratch
 
-ARG version version
+ARG version
+ARG manifest_path=bundles/managed-api-service/${version}/manifests
+ARG metadata_path=bundles/managed-api-service/${version}/metadata
 
 LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
@@ -11,5 +13,5 @@ LABEL operators.operatorframework.io.bundle.package.v1=managed-api-service
 LABEL operators.operatorframework.io.bundle.channels.v1=stable
 LABEL operators.operatorframework.io.bundle.channel.default.v1=stable
 
-COPY bundles/managed-api-service/${version}/manifests /manifests/
-COPY bundles/managed-api-service/${version}/metadata /metadata/
+COPY ${manifest_path} /manifests/
+COPY ${metadata_path} /metadata/
