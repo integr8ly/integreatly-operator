@@ -5,6 +5,7 @@ import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"regexp"
 )
 
 func mangedApiTargets() map[string][]string {
@@ -105,5 +106,23 @@ func getTargets(installType string) map[string][]string {
 	} else {
 		// TODO - return list for managed install type
 		return map[string][]string{}
+	}
+}
+
+func TestRhoamVersionMetricExposed(t TestingTB, ctx *TestingContext) {
+	const rhoamVersionKey = "rhoam_version"
+	// Get the rhoam_version metric from prometheus
+	promQueryRes, err := queryPrometheus(rhoamVersionKey, "prometheus-prometheus-0", ctx)
+	if err != nil {
+		t.Fatalf("Failed to query prometheus: %w", err)
+	}
+	if len(promQueryRes) == 0 {
+		t.Fatalf("No results for metric %s ", rhoamVersionKey)
+	}
+	rhoamVersionValue := promQueryRes[0].Metric["version"].(string)
+	// Semver regex (https://regexr.com/39s32)
+	re := regexp.MustCompile(`^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$`)
+	if !re.MatchString(rhoamVersionValue) {
+		t.Fatalf("Failed to validate RHOAM version format. Expected semantic version, got %s", rhoamVersionValue)
 	}
 }
