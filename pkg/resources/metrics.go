@@ -171,7 +171,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 	)
 	alertDescription := fmt.Sprintf("The Sendgrid SMTP secret has not been created in the %s namespace and may need to be created manualy", cr.Namespace)
 	labels := map[string]string{
-		"severity": "warning",
+		"severity": "critical",
 		"product":  installationName,
 	}
 

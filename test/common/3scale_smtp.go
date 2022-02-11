@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
 	"strings"
 	"time"
@@ -60,7 +61,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 
 	defer removeNamespace(t, ctx)
 
-	_, err = patchSecret(ctx, t)
+	_, isCreated, err := patchSecret(ctx, t)
 	if err != nil {
 		t.Log(err)
 	}
@@ -102,7 +103,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	}
 
 	t.Log("Reset email details")
-	_, err = resetSecret(ctx, t)
+	_, err = resetSecret(ctx, t, isCreated)
 	if err != nil {
 		t.Log(err)
 	}
@@ -164,7 +165,6 @@ func checkSMTPReconciliation(ctx *TestingContext, t TestingTB) error {
 		if err != nil {
 			t.Fatalf("Failed to get rhmi secret %v", err)
 		}
-
 		if string(threescaleSecret.Data["address"]) != string(rhmiSecret.Data["host"]) {
 			return false, nil
 		}
@@ -248,8 +248,17 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	}
 }
 
-func resetSecret(ctx *TestingContext, t TestingTB) (string, error) {
+func resetSecret(ctx *TestingContext, t TestingTB, isCreated bool) (string, error) {
 	//Reset the smtp details back to the pre test version
+	if isCreated {
+		if err := ctx.Client.Delete(goctx.TODO(), &v1.Secret{ObjectMeta: metav1.ObjectMeta{Name: NamespacePrefix + "smtp", Namespace: NamespacePrefix + "operator"}}); err != nil {
+			return "", err
+		}
+		t.Log("SMTP was deleted")
+		return "", nil
+
+	}
+
 	secret, err := getSecret(ctx)
 
 	if err != nil {
@@ -275,14 +284,35 @@ func resetSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	return "", nil
 }
 
-func patchSecret(ctx *TestingContext, t TestingTB) (string, error) {
+func patchSecret(ctx *TestingContext, t TestingTB) (string, bool, error) {
 	// Update secret with our test smtp details
 	serviceIP, err := getServiceIP(ctx)
 
 	secret, err := getSecret(ctx)
+	if k8errors.IsNotFound(err) {
+		t.Log("SMTP was not found , creating for test")
+		secret := v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      NamespacePrefix + "smtp",
+				Namespace: NamespacePrefix + "operator",
+			},
+			Data: map[string][]byte{
+				"username": []byte(emailUsername),
+				"password": []byte(emailPassword),
+				"host":     []byte(serviceIP),
+				"port":     []byte(emailPort),
+			},
+		}
+
+		if err := ctx.Client.Create(goctx.TODO(), secret.DeepCopy()); err != nil {
+			return secret.APIVersion, false, err
+		}
+		t.Log("SMTP was created")
+		return secret.APIVersion, true, err
+	}
 
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	originalHost = string(secret.Data["host"])
 	originalPassword = string(secret.Data["password"])
@@ -303,10 +333,10 @@ func patchSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	secret.Data["username"] = []byte(emailUsername)
 
 	if err := ctx.Client.Update(goctx.TODO(), secret.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
-		return secret.APIVersion, err
+		return secret.APIVersion, false, err
 	}
 
-	return "", nil
+	return "", false, nil
 }
 
 func getSecret(ctx *TestingContext) (v1.Secret, error) {
