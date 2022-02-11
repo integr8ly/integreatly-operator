@@ -72,7 +72,7 @@ var (
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 				{"H29 - Verify that backend can be created via backend CR", Test3scaleBackendViaCR},
-				{"H30 - Verify that product can be created via tenant CR", Test3scaleProductViaCR},
+				{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
 				{"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
