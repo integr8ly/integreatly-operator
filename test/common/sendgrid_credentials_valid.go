@@ -29,10 +29,10 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 		if port != "587" {
 			t.Fatal("Dummy port values have changed. Expected: 587, Actual: ", port)
 		}
-		if username != "" && username != "dummy" {
+		if username != "" && username != "smtp_username" {
 			t.Fatal("Dummy uesrname values have changed. Expected: dummy, Actual: ", username)
 		}
-		if password != "" && password != "dummy" {
+		if password != "" && password != "smtp_password" {
 			t.Fatal("Dummy password values have changed. Expected: dummy, Actual: %s", password)
 		}
 
