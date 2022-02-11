@@ -60,7 +60,7 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to create secret %v", err)
 	}
 
-	// //get system url
+	//get system url
 	route, err := getRoutes(ctx, masterRoute)
 	if err != nil {
 		t.Fatalf("failed to get route %v", err)
