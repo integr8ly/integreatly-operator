@@ -40,6 +40,7 @@ const (
 	RHMIAddonSubscriptionEdge       = "addon-rhmi-internal"
 	ManagedAPIAddonSubscription     = "addon-managed-api-service"
 	ManagedAPIAddonSubscriptionEdge = "addon-managed-api-service-internal"
+	ManagedAPIolmSubscription       = "managed-api-service"
 )
 
 var subscriptionsToReconcile []string = []string{
@@ -48,6 +49,7 @@ var subscriptionsToReconcile []string = []string{
 	ManagedAPIAddonSubscription,
 	RHMIAddonSubscriptionEdge,
 	ManagedAPIAddonSubscriptionEdge,
+	ManagedAPIolmSubscription,
 }
 
 func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
