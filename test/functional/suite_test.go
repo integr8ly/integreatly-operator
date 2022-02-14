@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
+	threescaleBv1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -17,8 +17,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1alpha1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 )
 
 const (
@@ -91,6 +93,14 @@ var _ = BeforeSuite(func(done Done) {
 	err = rhmiv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = threescalev1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = threescaleBv1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = operatorsv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 	// +kubebuilder:scaffold:scheme
 
 	close(done)
