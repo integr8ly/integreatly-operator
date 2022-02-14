@@ -31,8 +31,7 @@ cat $COVER_PROFILE.tmp | grep -v "zz_generated" > $COVER_PROFILE
 
 if [[ ! -z "${REPORT_COVERAGE}" ]]; then
 
-    go get github.com/mattn/goveralls
-    go install -v github.com/mattn/goveralls
+    go install github.com/mattn/goveralls@latest
 
     if [[ ! -z "${PROW_JOB_ID}" ]]; then
         report_coverage_prow || echo "push to coveralls failed"
