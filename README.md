@@ -1,6 +1,6 @@
 # Integreatly Operator
 
-A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
+An Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
 
 An Integreatly Operator can be installed using three different flavours: `managed`, `managed-api` or `multitenant-managed-api`
 
