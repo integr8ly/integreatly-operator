@@ -26,6 +26,20 @@ var _ = Describe("integreatly", func() {
 		}
 	})
 
+	shouldRunFunctionalTests := func() bool {
+		context, err := common.NewTestingContext(cfg)
+		if err != nil {
+			t.Fatalf("\"failed to create testing context: %s", err)
+		}
+
+		rhmi, err := common.GetRHMI(context.Client, true)
+		if err != nil {
+			t.Fatalf("error getting RHMI CR: %v", err)
+		}
+
+		return rhmi.Spec.UseClusterStorage == "false" || os.Getenv("BYPASS_STORAGE_TYPE_CHECK") == "true"
+	}
+
 	RunTests := func() {
 
 		// get all automated tests
@@ -43,10 +57,6 @@ var _ = Describe("integreatly", func() {
 				TestCases: common.GetIDPBasedTestCases(installType),
 			},
 			{
-				Type:      fmt.Sprintf("%s Functional", installType),
-				TestCases: FUNCTIONAL_TESTS,
-			},
-			{
 				Type:      fmt.Sprintf("%s SCALABILITY TESTS", installType),
 				TestCases: common.GetScalabilityTestCases(installType),
 			},
@@ -54,6 +64,15 @@ var _ = Describe("integreatly", func() {
 				Type:      "FAILURE TESTS",
 				TestCases: common.FAILURE_TESTS,
 			},
+		}
+
+		// Run functional (AWS) tests only in case of AWS storage type installation (useClusterStorage: false)
+		// or if overriden by BYPASS_STORAGE_TYPE_CHECK=true env var
+		if shouldRunFunctionalTests() {
+			tests = append(tests, common.Tests{
+				Type:      fmt.Sprintf("%s Functional", installType),
+				TestCases: FUNCTIONAL_TESTS,
+			})
 		}
 
 		if os.Getenv("MULTIAZ") == "true" {

@@ -2,7 +2,6 @@ package functional
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	threescaleBv1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1"
@@ -55,23 +54,6 @@ func TestAPIs(t *testing.T) {
 	cfg.Impersonate = rest.ImpersonationConfig{
 		UserName: "system:admin",
 		Groups:   []string{"system:authenticated"},
-	}
-
-	// Allow overriding via environment variable
-	if os.Getenv("BYPASS_STORAGE_TYPE_CHECK") != "true" {
-		// get RMI CR and if cluster storage set to true, skip the suite
-		context, err := common.NewTestingContext(cfg)
-		if err != nil {
-			t.Fatalf("\"failed to create testing context: %s", err)
-		}
-		rhmi, err := common.GetRHMI(context.Client, true)
-		if err != nil {
-			t.Fatalf("error getting RHMI CR: %v", err)
-		}
-		if rhmi.Spec.UseClusterStorage == "true" {
-			t.Skip("Aborting functional tests: \"UseClusterStorage\" is set to true. \nPlease, run another testing suite or reinstall operator with \"UseClusterStorage\" set to false" +
-				"\nOr set BYPASS_STORAGE_TYPE_CHECK=true to bypass check")
-		}
 	}
 
 	// get install type
