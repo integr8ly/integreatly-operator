@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/onsi/ginkgo"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 	"time"
+
+	"github.com/onsi/ginkgo"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,10 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	goctx "context"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
@@ -177,7 +182,7 @@ func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, er
 		return nil, nil
 	}
 	if len(installationList.Items) != 1 {
-		return nil, fmt.Errorf("Unexpected number of rhmi CRs: %w", err)
+		return nil, fmt.Errorf("unexpected number of rhmi CRs: %w", err)
 	}
 	return &installationList.Items[0], nil
 }
@@ -373,6 +378,44 @@ func GetScalabilityTestCases(installType string) []TestCase {
 		}
 	}
 	return testCases
+}
+
+func GetClusterScopedTestCases(installType string) []TestCase {
+	testCases := []TestCase{}
+	for _, testSuite := range THREESCALE_CLUSTER_SCOPED_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
+func IsClusterScoped(restConfig *rest.Config) (bool, error) {
+	context, err := NewTestingContext(restConfig)
+	if err != nil {
+		return false, err
+	}
+	threeScaleOperatorGroup := &operatorsv1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-registry-og",
+			Namespace: ThreeScaleOperatorNamespace,
+		},
+	}
+
+	err = context.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
+	if err != nil {
+		return false, err
+	}
+
+	for _, namespace := range threeScaleOperatorGroup.Status.Namespaces {
+		if namespace == "" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func writeObjToYAMLFile(obj interface{}, out string) error {
