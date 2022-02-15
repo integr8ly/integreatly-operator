@@ -66,7 +66,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 		t.FailNow()
 	}
 
-	t.Log("Keycloak alerts are not firing - scaling down keycloak operator deployemnt and performing tests")
+	t.Log("Keycloak alerts are not firing - scaling down keycloak operator deployment and performing tests")
 	err = performTest(t, ctx, originalOperatorReplicas)
 	if err != nil {
 		t.Fatal("Error during testing keycloak operator alerts: %s", err)
