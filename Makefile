@@ -565,3 +565,7 @@ bundle-build:
 .PHONY: olm/bundle 
 olm/bundle:
 	docker build -f bundles/$(OLM_TYPE)/bundle.Dockerfile -t $(BUNDLE_TAG) --build-arg version=$(VERSION) .
+
+.PHONY: coverage
+coverage:
+	hack/codecov.sh
