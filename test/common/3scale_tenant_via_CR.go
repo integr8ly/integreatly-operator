@@ -11,7 +11,6 @@ import (
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,16 +35,6 @@ const (
 
 // Tests that a user in group dedicated-admins can create an integration
 func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
-	// verify that 3scale is cluster scoped and if not, skip the test
-	isThreescaleClusterScoped, err := isClusterScoped(ctx)
-	if err != nil {
-		t.Fatalf("failed to establish if 3scale is cluster scoped or not %v", err)
-	}
-
-	if !isThreescaleClusterScoped {
-		t.Skip("skipping as 3scale is not cluster scoped")
-	}
-
 	// make project
 	project, err := makeProject(ctx)
 	if err != nil {
@@ -258,26 +247,4 @@ func getTenantID(ctx *TestingContext) (int64, error) {
 	}
 
 	return tenantID, nil
-}
-
-func isClusterScoped(ctx *TestingContext) (bool, error) {
-	threeScaleOperatorGroup := &operatorsv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-registry-og",
-			Namespace: ThreeScaleOperatorNamespace,
-		},
-	}
-
-	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
-	if err != nil {
-		return false, err
-	}
-
-	for _, namespace := range threeScaleOperatorGroup.Status.Namespaces {
-		if namespace == "" {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
