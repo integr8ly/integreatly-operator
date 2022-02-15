@@ -3,6 +3,8 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/net/context"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 )
 
 const deadMansSwitch = "DeadMansSwitch"
+const missingSmtpSecret = "SendgridSmtpSecretExists"
 
 // alertsTestMetadata contains metadata about the alert
 type alertTestMetadata struct {
@@ -74,7 +77,7 @@ var (
 func (e *alertsFiringError) Error() string {
 	var str strings.Builder
 
-	if e.deadMansSwitchFiring {
+	if !e.deadMansSwitchFiring {
 		str.WriteString("\nThe following alerts were not fired, but were expected to be firing:")
 		str.WriteString(fmt.Sprintf("\n\talert: %s", deadMansSwitch))
 	}
@@ -102,6 +105,15 @@ func (e *alertsFiringError) Error() string {
 // isNotEmpty checks whether or not the error contains firing or pending alerts
 func (e *alertsFiringError) isValid() bool {
 	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
+}
+
+func smtpMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB) bool {
+	smtpSecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: SMTPSecretName, Namespace: RHMIOperatorNamespace}, smtpSecret); err != nil {
+		t.Logf("SMTP secret is missing from %s namespace, expecting %s to fire\n", RHMIOperatorNamespace, missingSmtpSecret)
+		return true
+	}
+	return false
 }
 
 // This test ensures that no alerts are firing during or after installation
@@ -155,13 +167,16 @@ func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 		if alertName == deadMansSwitch && alert.State != prometheusv1.AlertStateFiring {
 			alertsError.deadMansSwitchFiring = false
 		}
-		// check for firing alerts
-		if alertName != deadMansSwitch {
-			if alert.State == prometheusv1.AlertStateFiring {
-				alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
-
-			}
-
+		//  ignore firing dms and missingSmtp alerts
+		if alertName == deadMansSwitch ||
+			(alertName == missingSmtpSecret &&
+				alert.State == prometheusv1.AlertStateFiring &&
+				smtpMissing(context.TODO(), ctx.Client, t)) {
+			continue
+		}
+		// add firing alerts
+		if alert.State == prometheusv1.AlertStateFiring {
+			alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
 		}
 	}
 
@@ -212,7 +227,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		if newErr := getFiringOrPendingAlerts(ctx); newErr != nil {
+		if newErr := getFiringOrPendingAlerts(t, ctx); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {
 				t.Log("Waiting 1 minute for alerts to normalise before retrying")
@@ -230,7 +245,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getFiringOrPendingAlerts(ctx *TestingContext) error {
+func getFiringOrPendingAlerts(t TestingTB, ctx *TestingContext) error {
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/alerts",
 		"prometheus-prometheus-0",
 		ObservabilityProductNamespace,
@@ -272,14 +287,17 @@ func getFiringOrPendingAlerts(ctx *TestingContext) error {
 		if alertName == deadMansSwitch && alert.State != prometheusv1.AlertStateFiring {
 			alertsError.deadMansSwitchFiring = false
 		}
-		// check for pending or firing alerts
-		if alertName != deadMansSwitch {
-			if alert.State == prometheusv1.AlertStateFiring {
-				alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
-			}
-			if alert.State == prometheusv1.AlertStatePending {
-				alertsError.alertsPending = append(alertsError.alertsPending, alertMetadata)
-			}
+		// ignore firing and pending  dms and missingSmtp alerts
+		if alertName == deadMansSwitch || (alertName == missingSmtpSecret && alert.State == prometheusv1.AlertStateFiring && smtpMissing(context.TODO(), ctx.Client, t)) {
+			continue
+		}
+		// add firing alerts
+		if alert.State == prometheusv1.AlertStateFiring {
+			alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
+		}
+		//add pending alerts
+		if alert.State == prometheusv1.AlertStatePending {
+			alertsError.alertsPending = append(alertsError.alertsPending, alertMetadata)
 		}
 	}
 	if alertsError.isValid() {
