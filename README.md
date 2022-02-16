@@ -36,7 +36,7 @@ The operator installs the following products:
 ## Prerequisites
 
 - [operator-sdk](https://github.com/operator-framework/operator-sdk) version v1.12.0.
-- [go](https://golang.org/dl/) version 1.16.7+
+- [go](https://golang.org/dl/) version 1.17+
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/latest/cli_reference/openshift_cli/getting-started-cli.html) version v4.6+
 - [yq](https://github.com/mikefarah/yq) version v4+
