@@ -83,6 +83,12 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
+		{
+			[]TestCase{
+				{"M02B - Verify RHOAM version metric is exposed in Prometheus", TestRhoamVersionMetricExposed},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
 	}
 
 	IDP_BASED_TESTS = []TestSuite{

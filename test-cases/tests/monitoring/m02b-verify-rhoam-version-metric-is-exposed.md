@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-3453
 products:
   - name: rhoam
     environments:
@@ -13,6 +15,8 @@ products:
       - 1.12.0
       - 1.15.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # M02B - Verify RHOAM version metric is exposed
