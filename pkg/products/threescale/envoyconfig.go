@@ -2,19 +2,19 @@ package threescale
 
 import (
 	"fmt"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	v2route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyratelimitconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	lua "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
-	matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	ptypes "github.com/golang/protobuf/ptypes"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
+	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -46,11 +46,11 @@ const (
 	- genericKey:
 		descriptorValue: slowpath
 */
-var tsRatelimitDescriptor = route.RateLimit{
+var tsRatelimitDescriptor = envoyroutev3.RateLimit{
 	Stage: &wrappers.UInt32Value{Value: 0},
-	Actions: []*route.RateLimit_Action{{
-		ActionSpecifier: &route.RateLimit_Action_GenericKey_{
-			GenericKey: &route.RateLimit_Action_GenericKey{
+	Actions: []*envoyroutev3.RateLimit_Action{{
+		ActionSpecifier: &envoyroutev3.RateLimit_Action_GenericKey_{
+			GenericKey: &envoyroutev3.RateLimit_Action_GenericKey{
 				DescriptorValue: ratelimit.RateLimitDescriptorValue,
 			},
 		},
@@ -71,17 +71,17 @@ var tsRatelimitDescriptor = route.RateLimit{
                     header_name: tenant
                     descriptor_key: tenant
 */
-var multiTenantRatelimitDescriptor = route.RateLimit{
+var multiTenantRatelimitDescriptor = envoyroutev3.RateLimit{
 	Stage: &wrappers.UInt32Value{Value: 0},
-	Actions: []*route.RateLimit_Action{
+	Actions: []*envoyroutev3.RateLimit_Action{
 		{
-			ActionSpecifier: &route.RateLimit_Action_HeaderValueMatch_{
-				HeaderValueMatch: &v2route.RateLimit_Action_HeaderValueMatch{
+			ActionSpecifier: &envoyroutev3.RateLimit_Action_HeaderValueMatch_{
+				HeaderValueMatch: &envoyroutev3.RateLimit_Action_HeaderValueMatch{
 					DescriptorValue: multitenantDescriptorKey,
-					Headers: []*v2route.HeaderMatcher{
+					Headers: []*envoyroutev3.HeaderMatcher{
 						{
 							Name: headerName,
-							HeaderMatchSpecifier: &v2route.HeaderMatcher_SafeRegexMatch{
+							HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_SafeRegexMatch{
 								SafeRegexMatch: &matcher.RegexMatcher{
 									EngineType: &matcher.RegexMatcher_GoogleRe2{},
 									Regex:      safeRegex,
@@ -93,77 +93,10 @@ var multiTenantRatelimitDescriptor = route.RateLimit{
 			},
 		},
 		{
-			ActionSpecifier: &route.RateLimit_Action_RequestHeaders_{
-				RequestHeaders: &v2route.RateLimit_Action_RequestHeaders{
+			ActionSpecifier: &envoyroutev3.RateLimit_Action_RequestHeaders_{
+				RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{
 					HeaderName:    tenantHeaderName,
 					DescriptorKey: tenantHeaderName,
-				},
-			},
-		},
-	},
-}
-
-/*
-	Defines http filters for the rate limit service
-	   httpFilters:
-	   - config:
-	       domain: apicast-ratelimit
-	       rate_limit_service:
-	         grpc_service:
-	           envoy_grpc:
-	             cluster_name: ratelimit
-	           timeout: 2s
-	       stage: 0
-	     name: envoy.rate_limit
-*/
-var tsHTTPRateLimitFilter = hcm.HttpFilter{
-	Name: "envoy.rate_limit",
-	ConfigType: &hcm.HttpFilter_Config{
-		Config: &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"domain": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: ratelimit.RateLimitDomain,
-					},
-				},
-				"stage": {
-					Kind: &structpb.Value_NumberValue{
-						NumberValue: 0,
-					},
-				},
-				"rate_limit_service": {
-					Kind: &structpb.Value_StructValue{
-						StructValue: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"grpc_service": {
-									Kind: &structpb.Value_StructValue{
-										StructValue: &structpb.Struct{
-											Fields: map[string]*structpb.Value{
-												"timeout": {
-													Kind: &structpb.Value_StringValue{
-														StringValue: "2s",
-													},
-												},
-												"envoy_grpc": {
-													Kind: &structpb.Value_StructValue{
-														StructValue: &structpb.Struct{
-															Fields: map[string]*structpb.Value{
-																"cluster_name": {
-																	Kind: &structpb.Value_StringValue{
-																		StringValue: ratelimit.RateLimitClusterName,
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
 				},
 			},
 		},
@@ -173,13 +106,55 @@ var tsHTTPRateLimitFilter = hcm.HttpFilter{
 /**
  httpFilters:
 	- &tsHTTPRateLimitFilter
-	- name: envoy.router
+	- name: envoy.filters.http.router
 **/
 func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
+	/*
+		Defines http filters for the rate limit service
+		   httpFilters:
+		   - config:
+		       domain: apicast-ratelimit
+		       rate_limit_service:
+		         grpc_service:
+		           envoy_grpc:
+		             cluster_name: ratelimit
+		           timeout: 2s
+		       stage: 0
+		     name: envoy.envoy.filters.http.ratelimit
+	*/
+	serial, err := anypb.New(
+		&envoyratelimitv3.RateLimit{
+			Domain: ratelimit.RateLimitDomain,
+			Stage:  0,
+			RateLimitService: &envoyratelimitconfigv3.RateLimitServiceConfig{
+				GrpcService: &envoycorev3.GrpcService{
+					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+							ClusterName: ratelimit.RateLimitClusterName,
+						},
+					},
+					Timeout: &duration.Duration{
+						Seconds: 2,
+					},
+				},
+				TransportApiVersion: envoycorev3.ApiVersion_V3,
+			},
+		},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert rate limit filter for rate limiting")
+	}
+
+	var tsHTTPRateLimitFilter = hcm.HttpFilter{
+		Name:       "envoy.filters.http.ratelimit",
+		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: serial},
+	}
+
 	httpFilters := []*hcm.HttpFilter{
 		&tsHTTPRateLimitFilter,
 		{
-			Name: "envoy.router",
+			Name: "envoy.filters.http.router",
 		},
 	}
 
@@ -208,7 +183,7 @@ func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 	luaFilter := &lua.Lua{
 		InlineCode: luaFunctionToAddTSHeaders,
 	}
-	pbst, err := ptypes.MarshalAny(luaFilter)
+	pbst, err := anypb.New(luaFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
 	}
@@ -220,11 +195,14 @@ func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 				TypedConfig: pbst,
 			},
 		},
-		&tsHTTPRateLimitFilter,
-		{
-			Name: "envoy.router",
-		},
 	}
+
+	filters, err := getAPICastHTTPFilters()
+	if err != nil {
+		return nil, err
+	}
+
+	httpFilters = append(httpFilters, filters...)
 
 	return httpFilters, nil
 }
@@ -265,23 +243,25 @@ func getBackendListenerHTTPFilters() ([]*hcm.HttpFilter, error) {
 	luaFilter := &lua.Lua{
 		InlineCode: luaFunctionToAddTSHeaders,
 	}
-	pbst, err := ptypes.MarshalAny(luaFilter)
+	pbst, err := anypb.New(luaFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
 	}
 
 	httpFilters := []*hcm.HttpFilter{
-		&tsHTTPRateLimitFilter,
 		{
 			Name: "envoy.filters.http.lua",
 			ConfigType: &hcm.HttpFilter_TypedConfig{
 				TypedConfig: pbst,
 			},
 		},
-		{
-			Name: "envoy.router",
-		},
 	}
+	filters, err := getAPICastHTTPFilters()
+	if err != nil {
+		return nil, err
+	}
+
+	httpFilters = append(httpFilters, filters...)
 	return httpFilters, nil
 }
 
@@ -301,21 +281,21 @@ virtualHosts:
 				descriptorValue: slowpath
 			stage: 0
 */
-func getAPICastVirtualHosts(installation *integreatlyv1alpha1.RHMI, clusterName string) []*v2route.VirtualHost {
-	virtualHost := v2route.VirtualHost{
+func getAPICastVirtualHosts(installation *integreatlyv1alpha1.RHMI, clusterName string) []*envoyroutev3.VirtualHost {
+	virtualHost := envoyroutev3.VirtualHost{
 		Name:    clusterName,
 		Domains: []string{"*"},
 
-		Routes: []*v2route.Route{
+		Routes: []*envoyroutev3.Route{
 			{
-				Match: &v2route.RouteMatch{
-					PathSpecifier: &v2route.RouteMatch_Prefix{
+				Match: &envoyroutev3.RouteMatch{
+					PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
 						Prefix: "/",
 					},
 				},
-				Action: &v2route.Route_Route{
-					Route: &v2route.RouteAction{
-						ClusterSpecifier: &route.RouteAction_Cluster{
+				Action: &envoyroutev3.Route_Route{
+					Route: &envoyroutev3.RouteAction{
+						ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 							Cluster: clusterName,
 						},
 						RateLimits: getRateLimitsPerInstallType(installation),
@@ -324,16 +304,16 @@ func getAPICastVirtualHosts(installation *integreatlyv1alpha1.RHMI, clusterName 
 			},
 		},
 	}
-	return []*v2route.VirtualHost{&virtualHost}
+	return []*envoyroutev3.VirtualHost{&virtualHost}
 }
 
-func getRateLimitsPerInstallType(installation *integreatlyv1alpha1.RHMI) []*route.RateLimit {
-	var routes []*route.RateLimit
+func getRateLimitsPerInstallType(installation *integreatlyv1alpha1.RHMI) []*envoyroutev3.RateLimit {
+	var routes []*envoyroutev3.RateLimit
 
 	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		routes = []*route.RateLimit{&tsRatelimitDescriptor}
+		routes = []*envoyroutev3.RateLimit{&tsRatelimitDescriptor}
 	} else {
-		routes = []*route.RateLimit{&tsRatelimitDescriptor, &multiTenantRatelimitDescriptor}
+		routes = []*envoyroutev3.RateLimit{&tsRatelimitDescriptor, &multiTenantRatelimitDescriptor}
 	}
 
 	return routes
@@ -350,25 +330,25 @@ virtual_hosts:
 			cluster: backend-listener-ratelimit
 			rate_limits:
 **/
-func getBackendListenerVitualHosts(clusterName string) []*v2route.VirtualHost {
-	virtualHosts := []*v2route.VirtualHost{
+func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHost {
+	virtualHosts := []*envoyroutev3.VirtualHost{
 		{
 			Name:    clusterName,
 			Domains: []string{"*"},
 
-			Routes: []*v2route.Route{
+			Routes: []*envoyroutev3.Route{
 				{
-					Match: &v2route.RouteMatch{
-						PathSpecifier: &v2route.RouteMatch_Prefix{
+					Match: &envoyroutev3.RouteMatch{
+						PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
 							Prefix: "/",
 						},
 					},
-					Action: &v2route.Route_Route{
-						Route: &v2route.RouteAction{
-							ClusterSpecifier: &route.RouteAction_Cluster{
+					Action: &envoyroutev3.Route_Route{
+						Route: &envoyroutev3.RouteAction{
+							ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 								Cluster: clusterName,
 							},
-							RateLimits: []*route.RateLimit{&tsRatelimitDescriptor},
+							RateLimits: []*envoyroutev3.RateLimit{&tsRatelimitDescriptor},
 						},
 					},
 				},
@@ -380,9 +360,9 @@ func getBackendListenerVitualHosts(clusterName string) []*v2route.VirtualHost {
 }
 
 /**
-        - name: envoy.http_connection_manager
+        - name: envoy.filters.network.http_connection_manager
           typedConfig:
-            '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
 			httpFilters:
 				&httpFilters
             routeConfig:
@@ -390,12 +370,12 @@ func getBackendListenerVitualHosts(clusterName string) []*v2route.VirtualHost {
 			   virtualHosts: virtualHosts
 			statPrefix: ingress_http
 **/
-func getListenerResourceFilters(virtualHosts []*v2route.VirtualHost, httpFilters []*hcm.HttpFilter) ([]*listener.Filter, error) {
+func getListenerResourceFilters(virtualHosts []*envoyroutev3.VirtualHost, httpFilters []*hcm.HttpFilter) ([]*envoylistenerv3.Filter, error) {
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: "ingress_http",
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoyapi.RouteConfiguration{
+			RouteConfig: &envoyroutev3.RouteConfiguration{
 				Name:         "local_route",
 				VirtualHosts: virtualHosts,
 			},
@@ -403,14 +383,14 @@ func getListenerResourceFilters(virtualHosts []*v2route.VirtualHost, httpFilters
 		HttpFilters: httpFilters,
 	}
 
-	pbst, err := ptypes.MarshalAny(manager)
+	pbst, err := anypb.New(manager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
 	}
 
-	filters := []*listener.Filter{{
-		Name:       "envoy.http_connection_manager",
-		ConfigType: &listener.Filter_TypedConfig{TypedConfig: pbst},
+	filters := []*envoylistenerv3.Filter{{
+		Name:       "envoy.filters.network.http_connection_manager",
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: pbst},
 	}}
 
 	return filters, nil
