@@ -159,3 +159,27 @@ type DeploymentConfigs struct {
 	Namespace string
 	Name      string
 }
+
+type keycloakUser struct {
+	ID            string `json:"id"`
+	UserName      string `json:"username"`
+	Enabled       bool   `json:"enabled"`
+	EmailVerified bool   `json:"emailVerified"`
+	FirstName     string `json:"firstName"`
+	LastName      string `json:"lastName"`
+}
+
+type keycloakUserGroup struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+type keycloakOpenIDTokenResponse struct {
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int32  `json:"expires_in"`
+	RefreshExpiresIn int32  `json:"refresh_expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	TokenType        string `json:"token_type"`
+	Scope            string `json:"scope"`
+}
