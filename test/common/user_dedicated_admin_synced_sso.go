@@ -190,6 +190,9 @@ func getKeycloakTokens(client client.Client, httpClient *http.Client, host strin
 	getKeycloakOpenIDTokenReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	getKeycloakOpenIDTokenReq.Header.Add("Content-Length", strconv.Itoa(len(urlEncodedParams)))
 	getKeycloakOpenIDTokenRes, err := httpClient.Do(getKeycloakOpenIDTokenReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve Keycloak tokens: %v", err)
+	}
 	defer getKeycloakOpenIDTokenRes.Body.Close()
 	if getKeycloakOpenIDTokenRes.StatusCode != http.StatusOK {
 		dumpRes, _ := httputil.DumpResponse(getKeycloakOpenIDTokenRes, true)
