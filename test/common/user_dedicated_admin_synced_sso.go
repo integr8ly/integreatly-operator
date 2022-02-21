@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -25,12 +26,14 @@ import (
 )
 
 const (
-	testUserName                          = "test-user99"
-	groupNameRHMIDevelopers               = "rhmi-developers"
-	groupNameDedicatedAdmins              = "dedicated-admins"
-	groupNameDedicatedAdminsRealmManagers = "realm-managers"
 	clientIDAdminCLI                      = "admin-cli"
 	grantTypePassword                     = "password"
+	grantTypeRefreshToken                 = "refresh_token"
+	groupNameDedicatedAdmins              = "dedicated-admins"
+	groupNameDedicatedAdminsRealmManagers = "realm-managers"
+	groupNameRHMIDevelopers               = "rhmi-developers"
+	realmNameMaster                       = "master"
+	testUserName                          = "test-user99"
 )
 
 var testUser = &userv1.User{
@@ -39,77 +42,105 @@ var testUser = &userv1.User{
 	},
 }
 
-func TestDedicatedAdminUsersSyncedSSO(t TestingTB, ctx *TestingContext) {
-	goCtx := context.TODO()
-	defer cleanUpTestDedicatedAdminUsersSyncedSSO(goCtx, ctx.Client)
+func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
+	ctx := context.Background()
+	defer cleanUpTestDedicatedAdminUsersSyncedSSO(ctx, tc.Client)
 
 	// Create Testing IDP
-	if err := createTestingIDP(t, goCtx, ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, ctx, tc.Client, tc.KubeConfig, tc.SelfSignedCerts); err != nil {
 		t.Fatalf("error creating testing IDP: %v", err)
 	}
 
-	// Get RHMI CR details for test
-	rhmi, err := GetRHMI(ctx.Client, true)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
-	}
-
 	// Create OpenShift user
-	if err := ctx.Client.Create(goCtx, testUser); err != nil {
+	if err := tc.Client.Create(ctx, testUser); err != nil {
 		t.Fatalf("error creating openshift user: %v", err)
 	}
 	t.Logf("openShift user %s created", testUser.Name)
 
-	// List KeycloakUser CRs and validate there is no CR with such username
-	validateUserNotListedInKeyCloakCR(t, ctx, goCtx, testUser.Name)
-
-	// Create KeycloakUser CR in rhsso namespace
-	var testUsersToCreate = []TestUser{
-		{
-			UserName:  testUserName,
-			FirstName: "Test",
-			LastName:  "User99",
-		},
+	// Authenticate with Keycloak
+	hostKeycloakUserSSO, err := getHostKeycloak(ctx, tc.Client, RHSSOUserProductNamespace)
+	credentialsKeycloak, err := getCredentialsRHSSOUser(ctx, tc.Client)
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
-	if err := createOrUpdateKeycloakUserCR(goCtx, ctx.Client, testUsersToCreate, rhmi.Name); err != nil {
-		t.Fatalf("failed to create KeycloakUser CR in namespace %s: %v", RHSSOProductNamespace, err)
+	tokenOptions := keycloakTokenOptions{
+		ClientID:  pointer.StringPtr(clientIDAdminCLI),
+		GrantType: pointer.StringPtr(grantTypePassword),
+		RealmName: realmNameMaster,
+		Username:  pointer.StringPtr(credentialsKeycloak[0]),
+		Password:  pointer.StringPtr(credentialsKeycloak[1]),
 	}
-	t.Logf("created KeycloakUser CR %s in namespace %s ", testUserName, RHSSOProductNamespace)
+	tokens, err := getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-	// Add user to the dedicated-admins group
-	if err := createOrUpdateDedicatedAdminGroupCR(goCtx, ctx.Client, []string{testUserName}); err != nil {
+	// Create a testing user in Keycloak (user-sso)
+	keycloakUserToCreate := keycloakUser{
+		EmailVerified: pointer.BoolPtr(true),
+		Enabled:       pointer.BoolPtr(true),
+		FirstName:     pointer.StringPtr("Test User"),
+		LastName:      pointer.StringPtr("99"),
+		UserName:      pointer.StringPtr(testUserName),
+	}
+	if err := createKeycloakUser(tc.HttpClient, hostKeycloakUserSSO, realmNameMaster, tokens.AccessToken, keycloakUserToCreate); err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Logf("created Keycloak user with username: %s", testUserName)
+
+	// Add the test user to the dedicated-admins group
+	if err := createOrUpdateDedicatedAdminGroupCR(ctx, tc.Client, []string{testUserName}); err != nil {
 		t.Fatalf("failed to add user %s to group %s: %v", testUserName, groupNameDedicatedAdmins, err)
 	}
 	t.Logf("added user %s to group %s", testUserName, groupNameDedicatedAdmins)
 
 	// Wait for RHOAM to reconcile the KeycloakUser CR in user-sso namespace and verify their group membership
-	if err := pollGeneratedKeycloakUserCR(goCtx, ctx.Client); err != nil {
+	if err := pollGeneratedKeycloakUserCR(ctx, tc.Client); err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	// Wait for group memberships to propagate in Keycloak
+	time.Sleep(90 * time.Second)
+
+	// Refresh the access token as it's validity is 60 seconds and will have expired
+	tokenOptions = keycloakTokenOptions{
+		ClientID:     pointer.StringPtr(clientIDAdminCLI),
+		GrantType:    pointer.StringPtr(grantTypeRefreshToken),
+		RealmName:    realmNameMaster,
+		RefreshToken: pointer.StringPtr(tokens.RefreshToken),
+	}
+	tokens, err = getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
+	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
 	// Get the matching test KeyCloak user and verify their group membership
-	hostKeycloakUserSSO, err := getHostKeycloak(ctx.Client, RHSSOUserProductNamespace)
-	tokens, err := getKeycloakTokens(ctx.Client, ctx.HttpClient, hostKeycloakUserSSO)
+	userOptions := keycloakUserOptions{
+		RealmName: realmNameMaster,
+		Username:  pointer.StringPtr(testUserName),
+	}
+	keycloakUsers, err := getKeycloakUsers(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, userOptions)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	keycloakUser, err := getKeycloakUserByIDPUserID(ctx.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, testUser.UID)
-	if err != nil {
-		t.Fatalf("%v", err)
+	groupOptions := keycloakUserGroupOptions{
+		BriefRepresentation: pointer.BoolPtr(true),
+		RealmName:           realmNameMaster,
+		UserID:              *keycloakUsers[0].ID,
 	}
-	userGroups, err := getKeycloakUserGroups(ctx.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, keycloakUser.ID)
+	userGroups, err := getKeycloakUserGroups(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, groupOptions)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 	var userGroupsSlice []string
 	for _, group := range userGroups {
-		userGroupsSlice = append(userGroupsSlice, group.Name)
+		userGroupsSlice = append(userGroupsSlice, *group.Name)
 	}
 	expectedGroups := []string{groupNameDedicatedAdmins, groupNameDedicatedAdminsRealmManagers, groupNameRHMIDevelopers}
 	if !reflect.DeepEqual(expectedGroups, userGroupsSlice) {
 		t.Fatalf("Expected user groups %s, got %s", expectedGroups, userGroupsSlice)
 	}
-
+	t.Logf("user %s is member of all required groups", testUserName)
 	t.Log("all checks for test B09 completed successfully")
 }
 
@@ -155,11 +186,10 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) erro
 	return nil
 }
 
-func getHostKeycloak(c client.Client, namespace string) (string, error) {
-	Context := context.TODO()
+func getHostKeycloak(ctx context.Context, c client.Client, namespace string) (string, error) {
 	// Get Keycloak OpenShift route
 	route := &routev1.Route{}
-	if err := c.Get(Context, client.ObjectKey{Name: "keycloak", Namespace: namespace}, route); err != nil {
+	if err := c.Get(ctx, client.ObjectKey{Name: "keycloak", Namespace: namespace}, route); err != nil {
 		return "", fmt.Errorf("failed to get Keycloak route for namespace %s: %v", namespace, err)
 	}
 
@@ -171,24 +201,31 @@ func getHostKeycloak(c client.Client, namespace string) (string, error) {
 	return hostName, nil
 }
 
-func getKeycloakTokens(client client.Client, httpClient *http.Client, host string) (*keycloakOpenIDTokenResponse, error) {
-	secret, err := getCredentialsRHSSOUser(client)
-	if err != nil {
-		return nil, err
+func getKeycloakToken(httpClient *http.Client, host string, options keycloakTokenOptions) (*keycloakOpenIDTokenResponse, error) {
+	params := url.Values{}
+	if options.ClientID != nil {
+		params.Set("client_id", *options.ClientID)
 	}
-	formParams := url.Values{}
-	formParams.Set("client_id", clientIDAdminCLI)
-	formParams.Set("username", secret[0])
-	formParams.Set("password", secret[1])
-	formParams.Set("grant_type", grantTypePassword)
-	urlEncodedParams := formParams.Encode()
-	getKeycloakOpenIDTokenPath := fmt.Sprintf("%s/auth/realms/master/protocol/openid-connect/token", host)
+	if options.GrantType != nil {
+		params.Set("grant_type", *options.GrantType)
+	}
+	if options.RefreshToken != nil {
+		params.Set("refresh_token", *options.RefreshToken)
+	}
+	if options.Username != nil {
+		params.Set("username", *options.Username)
+	}
+	if options.Password != nil {
+		params.Set("password", *options.Password)
+	}
+	urlEncodedParams := params.Encode()
+	getKeycloakOpenIDTokenPath := fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/token", host, options.RealmName)
 	getKeycloakOpenIDTokenReq, err := http.NewRequest("POST", getKeycloakOpenIDTokenPath, strings.NewReader(urlEncodedParams))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get token request for Keycloak user-sso: %v", err)
+		return nil, fmt.Errorf("failed to init get token request for Keycloak: %v", err)
 	}
-	getKeycloakOpenIDTokenReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	getKeycloakOpenIDTokenReq.Header.Add("Content-Length", strconv.Itoa(len(urlEncodedParams)))
+	getKeycloakOpenIDTokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	getKeycloakOpenIDTokenReq.Header.Set("Content-Length", strconv.FormatInt(getKeycloakOpenIDTokenReq.ContentLength, 10))
 	getKeycloakOpenIDTokenRes, err := httpClient.Do(getKeycloakOpenIDTokenReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve Keycloak tokens: %v", err)
@@ -209,10 +246,10 @@ func getKeycloakTokens(client client.Client, httpClient *http.Client, host strin
 	return keycloakOpenIDTokenRes, nil
 }
 
-func getCredentialsRHSSOUser(client client.Client) ([]string, error) {
+func getCredentialsRHSSOUser(ctx context.Context, client client.Client) ([]string, error) {
 	secret := &corev1.Secret{}
 	secretName := "credential-rhssouser"
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: RHSSOUserProductNamespace}, secret); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: RHSSOUserProductNamespace}, secret); err != nil {
 		return nil, fmt.Errorf("error getting secret %s: %v", secretName, err)
 	}
 	userName := string(secret.Data["ADMIN_USERNAME"])
@@ -220,21 +257,67 @@ func getCredentialsRHSSOUser(client client.Client) ([]string, error) {
 	return []string{userName, password}, nil
 }
 
-func getKeycloakUserByIDPUserID(httpClient *http.Client, host, token string, idpUserID types.UID) (*keycloakUser, error) {
-	getKeycloakUsersPath := fmt.Sprintf("%s/auth/admin/realms/master/users/?idpUserId=%s", host, idpUserID)
+func getKeycloakUsers(httpClient *http.Client, host, token string, options keycloakUserOptions) ([]*keycloakUser, error) {
+	getKeycloakUsersPath := fmt.Sprintf("%s/auth/admin/realms/%s/users", host, options.RealmName)
 	getKeycloakUsersReq, err := http.NewRequest("GET", getKeycloakUsersPath, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get users request for Keycloak user-sso: %v", err)
+		return nil, fmt.Errorf("failed to init get users request for Keycloak: %v", err)
 	}
+	query := getKeycloakUsersReq.URL.Query()
+	if options.BriefRepresentation != nil {
+		query.Set("briefRepresentation", *options.IDPUserID)
+	}
+	if options.Email != nil {
+		query.Set("email", *options.Email)
+	}
+	if options.EmailVerified != nil {
+		query.Set("emailVerified", strconv.FormatBool(*options.EmailVerified))
+	}
+	if options.Enabled != nil {
+		query.Set("enabled", strconv.FormatBool(*options.Enabled))
+	}
+	if options.Exact != nil {
+		query.Set("exact", strconv.FormatBool(*options.Exact))
+	}
+	if options.First != nil {
+		query.Set("first", strconv.FormatInt(int64(*options.First), 10))
+	}
+	if options.FirstName != nil {
+		query.Set("firstName", *options.FirstName)
+	}
+	if options.IDPAlias != nil {
+		query.Set("idpAlias", *options.IDPAlias)
+	}
+	if options.IDPUserID != nil {
+		query.Set("idpUserId", *options.IDPUserID)
+	}
+	if options.LastName != nil {
+		query.Set("lastName", *options.LastName)
+	}
+	if options.Max != nil {
+		query.Set("max", strconv.FormatInt(int64(*options.Max), 10))
+	}
+	if options.Search != nil {
+		query.Set("search", *options.Search)
+	}
+	if options.Username != nil {
+		query.Set("username", *options.Username)
+	}
+	getKeycloakUsersReq.URL.RawQuery = query.Encode()
 	getKeycloakUsersReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	getKeycloakUsersRes, err := httpClient.Do(getKeycloakUsersReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve users from Keycloak user-sso: %v", err)
+		return nil, fmt.Errorf("failed to retrieve users from Keycloak: %v", err)
 	}
 	defer getKeycloakUsersRes.Body.Close()
 	if getKeycloakUsersRes.StatusCode != http.StatusOK {
-		dumpRes, _ := httputil.DumpResponse(getKeycloakUsersRes, true)
-		return nil, fmt.Errorf("dump response: %q", dumpRes)
+		switch getKeycloakUsersRes.StatusCode {
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("unauthorized to retrieve Keycloak users")
+		default:
+			dumpRes, _ := httputil.DumpResponse(getKeycloakUsersRes, true)
+			return nil, fmt.Errorf("dump response: %q", dumpRes)
+		}
 	}
 	getKeycloakUsersResBody, err := ioutil.ReadAll(getKeycloakUsersRes.Body)
 	if err != nil {
@@ -244,24 +327,68 @@ func getKeycloakUserByIDPUserID(httpClient *http.Client, host, token string, idp
 	if err := json.Unmarshal(getKeycloakUsersResBody, &keycloakUsers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal keycloak users: %v", err)
 	}
-	return keycloakUsers[0], nil
+	if len(keycloakUsers) == 0 {
+		return nil, fmt.Errorf("no Keycloak users found for query %v: %v", options, err)
+	}
+	return keycloakUsers, nil
 }
 
-func getKeycloakUserGroups(httpClient *http.Client, host, token, keycloakUserID string) ([]*keycloakUserGroup, error) {
-	getKeycloakUserGroupsPath := fmt.Sprintf("%s/auth/admin/realms/master/users/%s/groups", host, keycloakUserID)
+func createKeycloakUser(httpClient *http.Client, host, realmName, token string, user keycloakUser) error {
+	createKeycloakUserPath := fmt.Sprintf("%s/auth/admin/realms/%s/users", host, realmName)
+	createKeycloakUserBody, err := json.Marshal(user)
+	createKeycloakUserReq, err := http.NewRequest("POST", createKeycloakUserPath, strings.NewReader(string(createKeycloakUserBody)))
+	if err != nil {
+		return fmt.Errorf("failed to init create users request for Keycloak: %v", err)
+	}
+	createKeycloakUserReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	createKeycloakUserReq.Header.Set("Content-Type", "application/json")
+	createKeycloakUserReq.Header.Set("Content-Length", strconv.FormatInt(createKeycloakUserReq.ContentLength, 10))
+	createKeycloakUserRes, err := httpClient.Do(createKeycloakUserReq)
+	if err != nil {
+		return fmt.Errorf("failed to create Keycloak user: %v", err)
+	}
+	defer createKeycloakUserRes.Body.Close()
+	if createKeycloakUserRes.StatusCode != http.StatusCreated {
+		dumpRes, _ := httputil.DumpResponse(createKeycloakUserRes, true)
+		return fmt.Errorf("dump response: %q", dumpRes)
+	}
+	return nil
+}
+
+func getKeycloakUserGroups(httpClient *http.Client, host, token string, options keycloakUserGroupOptions) ([]*keycloakUserGroup, error) {
+	getKeycloakUserGroupsPath := fmt.Sprintf("%s/auth/admin/realms/%s/users/%s/groups", host, options.RealmName, options.UserID)
 	getKeycloakUserGroupsReq, err := http.NewRequest("GET", getKeycloakUserGroupsPath, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get user groups request for Keycloak user-sso: %v", err)
+		return nil, fmt.Errorf("failed to init get user groups request for Keycloak: %v", err)
 	}
+	query := getKeycloakUserGroupsReq.URL.Query()
+	if options.BriefRepresentation != nil {
+		query.Set("briefRepresentation", strconv.FormatBool(*options.BriefRepresentation))
+	}
+	if options.First != nil {
+		query.Set("first", strconv.FormatInt(int64(*options.First), 10))
+	}
+	if options.Max != nil {
+		query.Set("max", strconv.FormatInt(int64(*options.Max), 10))
+	}
+	if options.Search != nil {
+		query.Set("search", *options.Search)
+	}
+	getKeycloakUserGroupsReq.URL.RawQuery = query.Encode()
 	getKeycloakUserGroupsReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	getKeycloakUserGroupsRes, err := httpClient.Do(getKeycloakUserGroupsReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve groups for user with ID %s from Keycloak user-sso: %v", keycloakUserID, err)
+		return nil, fmt.Errorf("failed to retrieve groups for user with ID %s from Keycloak: %v", options.UserID, err)
 	}
 	defer getKeycloakUserGroupsRes.Body.Close()
 	if getKeycloakUserGroupsRes.StatusCode != http.StatusOK {
-		dumpRes, _ := httputil.DumpResponse(getKeycloakUserGroupsRes, true)
-		return nil, fmt.Errorf("dump response: %q", dumpRes)
+		switch getKeycloakUserGroupsRes.StatusCode {
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("unauthorized to retrieve Keycloak users")
+		default:
+			dumpRes, _ := httputil.DumpResponse(getKeycloakUserGroupsRes, true)
+			return nil, fmt.Errorf("dump response: %q", dumpRes)
+		}
 	}
 	getKeycloakUserGroupsResBody, err := ioutil.ReadAll(getKeycloakUserGroupsRes.Body)
 	if err != nil {

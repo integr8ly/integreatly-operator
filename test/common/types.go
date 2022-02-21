@@ -161,18 +161,65 @@ type DeploymentConfigs struct {
 }
 
 type keycloakUser struct {
-	ID            string `json:"id"`
-	UserName      string `json:"username"`
-	Enabled       bool   `json:"enabled"`
-	EmailVerified bool   `json:"emailVerified"`
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
+	Access                     *map[string]bool     `json:"access,omitempty"`
+	Attributes                 *map[string][]string `json:"attributes,omitempty"`
+	ClientRoles                *map[string][]string `json:"clientRoles,omitempty"`
+	CreatedTimestamp           *int64               `json:"createdTimestamp,omitempty"`
+	DisableableCredentialTypes *[]interface{}       `json:"disableableCredentialTypes,omitempty"`
+	Email                      *string              `json:"email,omitempty"`
+	EmailVerified              *bool                `json:"emailVerified,omitempty"`
+	Enabled                    *bool                `json:"enabled,omitempty"`
+	FederationLink             *string              `json:"federationLink,omitempty"`
+	FirstName                  *string              `json:"firstName,omitempty"`
+	Groups                     *[]string            `json:"groups,omitempty"`
+	ID                         *string              `json:"id,omitempty"`
+	LastName                   *string              `json:"lastName,omitempty"`
+	RealmRoles                 *[]string            `json:"realmRoles,omitempty"`
+	RequiredActions            *[]string            `json:"requiredActions,omitempty"`
+	ServiceAccountClientID     *string              `json:"serviceAccountClientId,omitempty"`
+	UserName                   *string              `json:"username,omitempty"`
+}
+
+type keycloakUserOptions struct {
+	BriefRepresentation *bool
+	Email               *string
+	EmailVerified       *bool
+	Enabled             *bool
+	Exact               *bool
+	First               *int32
+	FirstName           *string
+	IDPAlias            *string
+	IDPUserID           *string
+	LastName            *string
+	Max                 *int32
+	Q                   *string
+	RealmName           string
+	Search              *string
+	Username            *string
 }
 
 type keycloakUserGroup struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
+	ID   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Path *string `json:"path,omitempty"`
+}
+
+type keycloakUserGroupOptions struct {
+	BriefRepresentation *bool
+	First               *int32
+	Max                 *int32
+	RealmName           string
+	Search              *string
+	UserID              string
+}
+
+type keycloakTokenOptions struct {
+	ClientID     *string
+	GrantType    *string
+	RealmName    string
+	RefreshToken *string
+	Username     *string
+	Password     *string
 }
 
 type keycloakOpenIDTokenResponse struct {
