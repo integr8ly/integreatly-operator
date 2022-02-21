@@ -111,6 +111,9 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 
+	// Verify Dedicated admin permissions around RHMI
+	verifyDedicatedAdminRHMIPermissions(t, openshiftClient)
+
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
 	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
@@ -481,4 +484,31 @@ func verifyDedicatedAdminAMQOnlineRolePermissions(t TestingTB, ctx *TestingConte
 	if !haveCorrectPermission {
 		t.Fatalf("Incorrect permissions found for %s role in %s namespace. Excpected %s as a policy rule ", role.Name, role.Namespace, expectedRule)
 	}
+}
+
+// Verify Dedicated admin permissions for RHMI Resource - CRUDL
+func verifyDedicatedAdminRHMIPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for RHMI Resource")
+
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 403,
+		ExpectedReadStatusCode:   200,
+		ExpectedUpdateStatusCode: 403,
+		ExpectedDeleteStatusCode: 403,
+		ExpectedListStatusCode:   200,
+		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHMIOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "rhoam"),
+		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-rhoam",
+				Namespace: RHMIOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1alpha1",
+				Kind:       "RHMI",
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }
