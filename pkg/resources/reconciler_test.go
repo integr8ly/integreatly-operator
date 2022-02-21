@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
 
@@ -18,13 +19,12 @@ import (
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
+	projectv1 "github.com/openshift/api/project/v1"
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -51,6 +51,7 @@ func buildScheme() (*runtime.Scheme, error) {
 	err := alpha1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	err = projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -494,6 +495,10 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 }
 
 func TestReconciler_ReconcileNamespace(t *testing.T) {
+	scheme, err := buildScheme()
+	if err != nil {
+		t.Fatalf("error creating scheme: %s", err.Error())
+	}
 	nsName := "test-ns"
 	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -511,11 +516,12 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		ExpectLabel    bool
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name: "Test namespace reconcile completes without error",
-			client: fakeclient.NewFakeClient(&corev1.Namespace{
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -528,10 +534,11 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			}),
 			Installation:   installation,
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectLabel:    true,
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns not ready",
-			client: fakeclient.NewFakeClient(&corev1.Namespace{
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -542,10 +549,11 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			}),
 			Installation:   installation,
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectLabel:    true,
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns is terminating",
-			client: fakeclient.NewFakeClient(&corev1.Namespace{
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -558,6 +566,59 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			}),
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectLabel:    true,
+		},
+		{
+			Name: "Test namespace reconcile return error when pulling secret fails",
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						OwnerLabelKey: string(installation.GetUID()),
+					},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			}),
+			Installation: &integreatlyv1alpha1.RHMI{
+				Spec: integreatlyv1alpha1.RHMISpec{
+					PullSecret: integreatlyv1alpha1.PullSecretSpec{
+						Name:      "test",
+						Namespace: "test",
+					},
+				},
+			},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			ExpectErr:      true,
+			ExpectLabel:    false,
+		},
+		{
+			Name: "Test if label is added to an existing namespace",
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+				},
+			}),
+			Installation:   installation,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectErr:      false,
+			ExpectLabel:    true,
+		},
+		{
+			Name: "Test if label is changed to false when namespace is reconciled",
+			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						"openshift.io/user-monitoring": "true",
+					},
+				},
+			}),
+			Installation:   installation,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectErr:      false,
+			ExpectLabel:    true,
 		},
 	}
 
@@ -576,6 +637,36 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			if tc.ExpectedStatus != phase {
 				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
 			}
+			labelExists, labelIsTrue, err := verifyNSLabelExistsAndIsTrue(tc.client)
+			if err != nil {
+				t.Fatal("error when verifying namespace label exists")
+			}
+			if !labelExists && tc.ExpectLabel {
+				t.Fatal("error because label was not applied to namespace")
+			}
+			if labelIsTrue && tc.ExpectLabel {
+				t.Fatal("error when verifying namespace label was changed to false during reconcile")
+			}
 		})
 	}
+}
+
+func verifyNSLabelExistsAndIsTrue(client k8sclient.Client) (bool, bool, error) {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-ns",
+		},
+	}
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: ns.Name}, ns)
+	if err != nil {
+		return false, false, err
+	}
+	labelExists, labelIsTrue := false, false
+	if ns.Labels["openshift.io/user-monitoring"] != "" {
+		labelExists = true
+	}
+	if ns.Labels["openshift.io/user-monitoring"] != "false" && labelExists {
+		labelIsTrue = true
+	}
+	return labelExists, labelIsTrue, nil
 }
