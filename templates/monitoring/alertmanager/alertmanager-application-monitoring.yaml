@@ -18,7 +18,7 @@ route:
         severity: critical
       receiver: critical
     - match:
-        alertname: ThreeScaleContainerHighMemory
+        severity: info
       receiver: blackhole
     - match:
         alertname: DeadMansSwitch
