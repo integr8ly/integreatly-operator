@@ -25,11 +25,6 @@ type EventsScenario struct {
 func TestHandleStageComplete(t *testing.T) {
 	cases := []EventsScenario{
 		{
-			Name:               "test stage complete event handler on a stage thats unavailable",
-			Installation:       &integreatlyv1alpha1.RHMI{},
-			ExpectedEventCount: 1,
-		},
-		{
 			Name: "test stage complete event handler on a stage thats not completed",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
