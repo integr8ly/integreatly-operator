@@ -9,7 +9,6 @@ import (
 	userv1 "github.com/openshift/api/user/v1"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -59,6 +58,9 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 
 	// Authenticate with Keycloak
 	hostKeycloakUserSSO, err := getHostKeycloak(ctx, tc.Client, RHSSOUserProductNamespace)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 	credentialsKeycloak, err := getCredentialsRHSSOUser(ctx, tc.Client)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -70,10 +72,12 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 		Username:  pointer.StringPtr(credentialsKeycloak[0]),
 		Password:  pointer.StringPtr(credentialsKeycloak[1]),
 	}
+	timeBeforeTokenReq := time.Now()
 	tokens, err := getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
+	accessTokenExpiry := timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
 
 	// Create a testing user in Keycloak (user-sso)
 	keycloakUserToCreate := keycloakUser{
@@ -94,59 +98,21 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 	}
 	t.Logf("added user %s to group %s", testUserName, groupNameDedicatedAdmins)
 
-	// Wait for RHOAM to reconcile the KeycloakUser CR in user-sso namespace and verify their group membership
+	// Wait for RHOAM to reconcile the KeycloakUser CR in user-sso namespace and verify its group memberships
 	if err := pollGeneratedKeycloakUserCR(ctx, tc.Client); err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	// Wait for group memberships to propagate in Keycloak
-	time.Sleep(90 * time.Second)
-
-	// Refresh the access token as it's validity is 60 seconds and will have expired
-	tokenOptions = keycloakTokenOptions{
-		ClientID:     pointer.StringPtr(clientIDAdminCLI),
-		GrantType:    pointer.StringPtr(grantTypeRefreshToken),
-		RealmName:    realmNameMaster,
-		RefreshToken: pointer.StringPtr(tokens.RefreshToken),
-	}
-	tokens, err = getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
-	if err != nil {
+	// Poll for the matching KeyCloak user and verify its group memberships
+	if err := pollKeycloakUserGroups(tc.HttpClient, hostKeycloakUserSSO, tokens, accessTokenExpiry); err != nil {
 		t.Fatalf("%v", err)
-	}
-
-	// Get the matching test KeyCloak user and verify their group membership
-	userOptions := keycloakUserOptions{
-		RealmName: realmNameMaster,
-		Username:  pointer.StringPtr(testUserName),
-	}
-	keycloakUsers, err := getKeycloakUsers(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, userOptions)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	groupOptions := keycloakUserGroupOptions{
-		BriefRepresentation: pointer.BoolPtr(true),
-		RealmName:           realmNameMaster,
-		UserID:              *keycloakUsers[0].ID,
-	}
-	userGroups, err := getKeycloakUserGroups(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, groupOptions)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	var userGroupsSlice []string
-	for _, group := range userGroups {
-		userGroupsSlice = append(userGroupsSlice, *group.Name)
-	}
-	expectedGroups := []string{groupNameDedicatedAdmins, groupNameDedicatedAdminsRealmManagers, groupNameRHMIDevelopers}
-	if !reflect.DeepEqual(expectedGroups, userGroupsSlice) {
-		t.Fatalf("Expected user groups %s, got %s", expectedGroups, userGroupsSlice)
 	}
 	t.Logf("user %s is member of all required groups", testUserName)
-	t.Log("all checks for test B09 completed successfully")
 }
 
 func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) error {
 	generatedKU := &keycloak.KeycloakUser{}
-	if err := wait.Poll(time.Second*10, time.Minute*3, func() (done bool, err error) {
+	if err := wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
 		err = client.Get(
 			ctx,
 			types.NamespacedName{
@@ -156,16 +122,7 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) erro
 			generatedKU,
 		)
 		if err != nil {
-			switch err.(type) {
-			case *errors.StatusError:
-				statusErr := err.(*errors.StatusError)
-				if statusErr.ErrStatus.Code == http.StatusNotFound {
-					return false, nil
-				}
-				return true, statusErr
-			default:
-				return true, err
-			}
+			return true, err
 		}
 		userGroups := generatedKU.Spec.User.Groups
 		expectedGroups := []string{
@@ -184,6 +141,47 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) erro
 		return fmt.Errorf("failed to retrieve generated KeycloakUser CR: %v", err)
 	}
 	return nil
+}
+
+func pollKeycloakUserGroups(client *http.Client, host string, tokens *keycloakOpenIDTokenResponse, accessTokenExpiry time.Time) error {
+	err := wait.PollImmediate(time.Second*15, time.Minute*5, func() (done bool, err error) {
+		if time.Now().After(accessTokenExpiry) {
+			timeBeforeTokenReq := time.Now()
+			var err error
+			tokens, err = refreshKeycloakToken(client, host, tokens.RefreshToken)
+			if err != nil {
+				return true, err
+			}
+			accessTokenExpiry = timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
+		}
+		userOptions := keycloakUserOptions{
+			RealmName: realmNameMaster,
+			Username:  pointer.StringPtr(testUserName),
+		}
+		keycloakUsers, err := getKeycloakUsers(client, host, tokens.AccessToken, userOptions)
+		if err != nil {
+			return true, err
+		}
+		groupOptions := keycloakUserGroupOptions{
+			BriefRepresentation: pointer.BoolPtr(true),
+			RealmName:           realmNameMaster,
+			UserID:              *keycloakUsers[0].ID,
+		}
+		userGroups, err := getKeycloakUserGroups(client, host, tokens.AccessToken, groupOptions)
+		if err != nil {
+			return true, err
+		}
+		var userGroupsSlice []string
+		for _, group := range userGroups {
+			userGroupsSlice = append(userGroupsSlice, *group.Name)
+		}
+		expectedGroups := []string{groupNameDedicatedAdmins, groupNameDedicatedAdminsRealmManagers, groupNameRHMIDevelopers}
+		if !reflect.DeepEqual(expectedGroups, userGroupsSlice) {
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
 }
 
 func getHostKeycloak(ctx context.Context, c client.Client, namespace string) (string, error) {
@@ -349,8 +347,13 @@ func createKeycloakUser(httpClient *http.Client, host, realmName, token string, 
 	}
 	defer createKeycloakUserRes.Body.Close()
 	if createKeycloakUserRes.StatusCode != http.StatusCreated {
-		dumpRes, _ := httputil.DumpResponse(createKeycloakUserRes, true)
-		return fmt.Errorf("dump response: %q", dumpRes)
+		switch createKeycloakUserRes.StatusCode {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("unauthorized to create a Keycloak user")
+		default:
+			dumpRes, _ := httputil.DumpResponse(createKeycloakUserRes, true)
+			return fmt.Errorf("dump response: %q", dumpRes)
+		}
 	}
 	return nil
 }
@@ -384,7 +387,7 @@ func getKeycloakUserGroups(httpClient *http.Client, host, token string, options 
 	if getKeycloakUserGroupsRes.StatusCode != http.StatusOK {
 		switch getKeycloakUserGroupsRes.StatusCode {
 		case http.StatusUnauthorized:
-			return nil, fmt.Errorf("unauthorized to retrieve Keycloak users")
+			return nil, fmt.Errorf("unauthorized to retrieve Keycloak user groups")
 		default:
 			dumpRes, _ := httputil.DumpResponse(getKeycloakUserGroupsRes, true)
 			return nil, fmt.Errorf("dump response: %q", dumpRes)
@@ -428,4 +431,15 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, client client.
 
 func removeIndex(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
+}
+
+func refreshKeycloakToken(client *http.Client, host, refreshToken string) (*keycloakOpenIDTokenResponse, error) {
+	tokenOptions := keycloakTokenOptions{
+		ClientID:     pointer.StringPtr(clientIDAdminCLI),
+		GrantType:    pointer.StringPtr(grantTypeRefreshToken),
+		RealmName:    realmNameMaster,
+		RefreshToken: pointer.StringPtr(refreshToken),
+	}
+	tokens, err := getKeycloakToken(client, host, tokenOptions)
+	return tokens, err
 }
