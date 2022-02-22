@@ -428,7 +428,7 @@ func writeObjToYAMLFile(obj interface{}, out string) error {
 func WriteRHMICRToFile(client dynclient.Client, file string) error {
 	rhmi, err := GetRHMI(client, true)
 	if err != nil {
-		return fmt.Errorf("Failed to write RHMI cr due to error %w", err)
+		return fmt.Errorf("failed to write RHMI cr due to error %w", err)
 	}
 	return writeObjToYAMLFile(rhmi, file)
 }
