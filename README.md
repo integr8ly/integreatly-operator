@@ -198,8 +198,8 @@ make test/unit
 
 ### E2E tests
 
-A `BYPASS_STORAGE_TYPE_CHECK=true` flag is used to allow test to run when the operator is installed using cluster storage.
-This may cause side effects related to the cloud resources test.
+If you have RHOAM operator installed using cluster storage (`useClusterStorage: true`), all [AWS tests](https://github.com/integr8ly/integreatly-operator/blob/27c4a8c4fdf3461247fad2bb20fe958d4b709a99/test/functional/tests.go#L6-L12) are being skipped (because all AWS tests would fail).
+To override this, you can provide an env var `BYPASS_STORAGE_TYPE_CHECK=true`.
 
 To run E2E tests against a clean OpenShift cluster using operator-sdk, build and push an image 
 to your own quay repo, then run the command below changing the installation type based on which type you are testing:
