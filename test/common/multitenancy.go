@@ -10,6 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 const (
 	pollingTime        = time.Second * 5
 	tenantReadyTimeout = time.Minute * 10
+	userReadyTimeout   = time.Minute * 5
 )
 
 var (
@@ -43,13 +45,13 @@ func TestMultitenancy(t TestingTB, ctx *TestingContext) {
 		t.Errorf("error while creating testing IDP: %s", err)
 	}
 
-	// Verify that the the regular users can log in to their 3scale account
+	// Verify that the regular users can log in to their 3scale account
 	err = loginUsersTo3scale(t, ctx, rhmi)
 	if err != nil {
 		t.Errorf("User login to 3scale failed: %v", err)
 	}
 
-	// Delet user CR for one of the users
+	// Delete user CR for one of the users
 	err = deleteTenantUserCR(t, ctx)
 	if err != nil {
 		t.Error(err)
@@ -66,6 +68,7 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 	postfix := 1
 	for postfix <= defaultNumberOfTestUsers {
 		isClusterLoggedIn := false
+		isTenantCRCreated := false
 		routeFound := false
 		isThreeScaleLoggedIn := false
 
@@ -79,10 +82,10 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 
 		host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
 
-		//create testing user CR APIManagementTenant CR
-		err = createTestingUserApiManagementTenantCR(t, testUser, ctx)
+		// Create new namespace for APIManagementTenant CR
+		err, testUserNamespace := createTestingUserNamespace(t, testUser, ctx)
 		if err != nil {
-			return fmt.Errorf("error create APIManagementTenant CR for testing user: %v", err)
+			return fmt.Errorf("error while creating namespace for testing user: %v", err)
 		}
 
 		err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
@@ -93,6 +96,16 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 					return false, nil
 				} else {
 					isClusterLoggedIn = true
+				}
+			}
+
+			if !isTenantCRCreated {
+				// Create testing user CR an APIManagementTenant CR
+				err = createTestingUserApiManagementTenantCR(t, testUser, testUserNamespace, ctx)
+				if err != nil {
+					return false, nil
+				} else {
+					isTenantCRCreated = true
 				}
 			}
 
@@ -121,7 +134,7 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 		})
 
 		if err != nil {
-			return fmt.Errorf("User %s login and creation of tenant failed with: %v", testUser, err)
+			return fmt.Errorf("user %s login and creation of tenant failed with: %v", testUser, err)
 		}
 
 		postfix++
@@ -153,7 +166,7 @@ func getTenant3scaleRoute(t TestingTB, ctx *TestingContext, testUser string) err
 	}
 
 	if !routeFound {
-		return fmt.Errorf("Route for %s has not yet been found", testUser)
+		return fmt.Errorf("route for %s has not yet been found", testUser)
 	} else {
 		return nil
 	}
@@ -187,7 +200,7 @@ func confirmTenantAccountNotAvailable(t TestingTB, ctx *TestingContext, routingD
 	host := fmt.Sprintf("https://%v-admin.%v", testUserForDeletion, routingDomain)
 
 	err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
-		err = is3scaleLoginFailed(t, host, testUserForDeletion, DefaultPassword, TestingIDPRealm, tenantClient)
+		err = is3scaleLoginFailed(t, host, tenantClient)
 		if err != nil {
 			return false, nil
 		}
@@ -209,8 +222,7 @@ func loginToCluster(t TestingTB, tenantClient *http.Client, masterURL, testUser 
 	return nil
 }
 
-func is3scaleLoginFailed(t TestingTB, tsHost, username, password string, idp string, client *http.Client) error {
-
+func is3scaleLoginFailed(t TestingTB, tsHost string, client *http.Client) error {
 	parsedURL, err := url.Parse(tsHost)
 	if err != nil {
 		return fmt.Errorf("failed to parse three scale url %s: %s", parsedURL, err)
@@ -236,17 +248,55 @@ func is3scaleLoginFailed(t TestingTB, tsHost, username, password string, idp str
 	return nil
 }
 
-func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, ctx *TestingContext) error {
-	tenantCR := &integreatlyv1alpha1.APIManagementTenant{
+func createTestingUserNamespace(t TestingTB, user string, ctx *TestingContext) (error, string) {
+	testUserNamespaceName := user + "-dev"
+	testUserNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testUserName,
+			Name: testUserNamespaceName,
 		},
 	}
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, tenantCR, func() error {
+
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, testUserNamespace, func() error {
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("Error create APIManagementTenant CR for testing user %v", err)
+		t.Fatalf("error while creating namespace for testing user %v", err)
+	}
+
+	return nil, testUserNamespaceName
+}
+
+func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, testUserNamespace string, ctx *TestingContext) error {
+	// Wait until User has finished being created before attempting to create an APIManagementTenant CR
+	err := wait.Poll(pollingTime, userReadyTimeout, func() (done bool, err error) {
+		// Get User successfully to exit the poll
+		user := &usersv1.User{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testUserName,
+			},
+		}
+		key, err := k8sclient.ObjectKeyFromObject(user)
+		if err != nil {
+			return false, nil
+		}
+		err = ctx.Client.Get(context.TODO(), key, user)
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+
+	tenantCR := &integreatlyv1alpha1.APIManagementTenant{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testUserName,
+			Namespace: testUserNamespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, tenantCR, func() error {
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("error while creating APIManagementTenant CR for testing user %v", err)
 	}
 	return nil
 }

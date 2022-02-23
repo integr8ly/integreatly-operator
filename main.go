@@ -100,22 +100,32 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
-	// Multitenant installations require "cluster scoping" the RHOAM operator which requires the watchNamespace to be empty
-	if strings.Contains(watchNamespace, "sandbox") {
-		watchNamespace = ""
-	}
-
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "28185cee.integreatly.org",
-		Namespace:          watchNamespace,
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+	var mgr ctrl.Manager
+	if strings.Contains(watchNamespace, "sandbox") || watchNamespace == "" {
+		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Scheme:             scheme,
+			MetricsBindAddress: metricsAddr,
+			Port:               9443,
+			LeaderElection:     enableLeaderElection,
+			LeaderElectionID:   "28185cee.integreatly.org",
+		})
+		if err != nil {
+			setupLog.Error(err, "unable to start multitenant manager")
+			os.Exit(1)
+		}
+	} else {
+		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Scheme:             scheme,
+			MetricsBindAddress: metricsAddr,
+			Port:               9443,
+			LeaderElection:     enableLeaderElection,
+			LeaderElectionID:   "28185cee.integreatly.org",
+			Namespace:          watchNamespace,
+		})
+		if err != nil {
+			setupLog.Error(err, "unable to start singletenant manager")
+			os.Exit(1)
+		}
 	}
 
 	if err = rhmicontroller.New(mgr).SetupWithManager(mgr); err != nil {
