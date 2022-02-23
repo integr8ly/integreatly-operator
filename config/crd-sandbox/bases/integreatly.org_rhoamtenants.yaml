@@ -14,7 +14,7 @@ spec:
     listKind: RhoamTenantList
     plural: rhoamtenants
     singular: rhoamtenant
-  scope: Cluster
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:

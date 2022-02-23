@@ -27,6 +27,7 @@ var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "tenant_contro
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhoamtenant,verbs=get;list;watch
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhoamtenant/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=user.openshift.io,resources=users,verbs=watch;get;list;update
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 
 func New(mgr manager.Manager) (*TenantReconciler, error) {
 	restConfig := controllerruntime.GetConfigOrDie()
@@ -96,9 +97,15 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 }
 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	//enqueueAllInstallations := &handler.EnqueueRequestsFromMapFunc{
+	//	ToRequests: installationMapper{context: context.TODO(), client: mgr.GetClient()},
+	//}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.RhoamTenant{}).
 		Watches(&source.Kind{Type: &v1alpha1.RhoamTenant{}}, &handler.EnqueueRequestForObject{}).
+		//Watches(&source.Kind{Type: &v1alpha1.RhoamTenant{}}, enqueueAllInstallations).
 		Complete(r)
 }
 
