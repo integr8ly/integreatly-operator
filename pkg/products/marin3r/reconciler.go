@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -146,6 +147,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
+	// Ensures that for an upgrade scenario we are removing V2 EnvoyConfigRevision before
+	// initializing an upgrade to marin3r 0.10.0
+	// TODO remove after the next release from here
+	listOptions := []k8sclient.ListOption{
+		k8sclient.MatchingLabels(map[string]string{
+			"marin3r.3scale.net/envoy-api": "v2",
+		}),
+		k8sclient.InNamespace("redhat-rhoam-3scale"),
+	}
+	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
+	_ = client.List(ctx, envoyConfigRevisions, listOptions...)
+	for _, envoyConfigRevision := range envoyConfigRevisions.Items {
+		err = client.Delete(ctx, &envoyConfigRevision)
+		if err != nil || !k8serr.IsNotFound(err) {
+			return phase, err
+		}
+	}
+	// to here
+
 	r.RateLimitConfig = productConfig.GetRateLimitConfig()
 
 	alertsConfig, err := marin3rconfig.GetAlertConfig(ctx, client, r.installation.Namespace)
@@ -187,22 +207,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
 		return phase, nil
 	}
-
-	// TODO - Remove after next release
-	phase, err = r.reconcilePromStatsdExporter(ctx, client, productNamespace)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter cr"), err)
-		return phase, err
-	}
-	// END of removal
-
-	// TODO - Remove after next release
-	phase, err = r.reconcilePromStatsdExporterService(ctx, client, productNamespace)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter service"), err)
-		return phase, err
-	}
-	// END of removal
 
 	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
 		ReconcileRateLimitService(ctx, client, productConfig)

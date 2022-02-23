@@ -56,7 +56,7 @@ type EnvoyConfigRevisionSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Version string `json:"version"`
 	// EnvoyAPI is the version of envoy's API to use. Defaults to v3.
-	// +kubebuilder:validation:Enum=v2;v3
+	// +kubebuilder:validation:Enum=v3
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	EnvoyAPI *string `json:"envoyAPI,omitempty"`
@@ -118,18 +118,19 @@ func (status *EnvoyConfigRevisionStatus) IsTainted() bool {
 // VersionTracker tracks the versions of the resources
 // that this revision publishes in the xDS server cache
 type VersionTracker struct {
-	Endpoints string `json:"endpoints,omitempty"`
-	Clusters  string `json:"clusters,omitempty"`
-	Routes    string `json:"routes,omitempty"`
-	Listeners string `json:"listeners,omitempty"`
-	Secrets   string `json:"secrets,omitempty"`
-	Runtimes  string `json:"runtimes,omitempty"`
+	Endpoints    string `json:"endpoints,omitempty"`
+	Clusters     string `json:"clusters,omitempty"`
+	Routes       string `json:"routes,omitempty"`
+	ScopedRoutes string `json:"scopedRoutes,omitempty"`
+	Listeners    string `json:"listeners,omitempty"`
+	Secrets      string `json:"secrets,omitempty"`
+	Runtimes     string `json:"runtimes,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// EnvoyConfigRevision holds an specific version of the EnvoyConfig resources.
-// EnvoyConfigRevisions are automatically created and deleted  by the EnvoyConfig
+// EnvoyConfigRevision is an internal resource that stores a specific version of an EnvoyConfig
+// resource. EnvoyConfigRevisions are automatically created and deleted by the EnvoyConfig
 // controller and are not intended to be directly used. Use EnvoyConfig objects instead.
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=envoyconfigrevisions,scope=Namespaced,shortName=ecr

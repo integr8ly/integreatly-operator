@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/3scale-ops/marin3r/pkg/version"
+	"github.com/3scale-ops/marin3r/pkg/image"
 	"github.com/operator-framework/operator-lib/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,8 +48,6 @@ const (
 
 	// DefaultMetricsPort is the default port where the discovery service metrics server listens
 	DefaultMetricsPort uint32 = 8383
-	// DefaultWebhookPort is the default port where the discovery service webhook server listens
-	DefaultWebhookPort uint32 = 9443
 	// DefaultXdsServerPort is the default port where the discovery service xds server port listens
 	DefaultXdsServerPort uint32 = 18000
 	// DefaultRootCertificateDuration is the default root CA certificate duration
@@ -62,8 +60,6 @@ const (
 	// DefaultServerCertificateSecretNamePrefix is the default prefix for the Secret
 	// where the server certificate is stored
 	DefaultServerCertificateSecretNamePrefix string = "marin3r-server-cert"
-	// DefaultImageRegistry is the default registry to pull discovery service images from
-	DefaultImageRegistry string = "quay.io/3scale/marin3r"
 )
 
 // ServiceType is an enum with the available discovery service Service types
@@ -151,12 +147,12 @@ type ServiceConfig struct {
 
 // +kubebuilder:object:root=true
 
-// DiscoveryService represents an envoy discovery service server. Currently
-// only one DiscoveryService per cluster is supported.
+// DiscoveryService represents an envoy discovery service server. Only one
+// instance per namespace is currently supported.
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=discoveryservices,scope=Namespaced
 // +operator-sdk:csv:customresourcedefinitions:displayName="DiscoveryService"
-// +operator-sdk:csv:customresourcedefinitions.resources={{Deployment,v1},{Service,v1},{DiscoveryServiceCertificate,v1alpha1}
+// +operator-sdk:csv:customresourcedefinitions.resources={{Deployment,v1},{Service,v1},{DiscoveryServiceCertificate,v1alpha1}}
 type DiscoveryService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -183,7 +179,7 @@ func (d *DiscoveryService) GetImage() string {
 }
 
 func (d *DiscoveryService) defaultImage() string {
-	return fmt.Sprintf("%s:%s", DefaultImageRegistry, version.Current())
+	return image.Current()
 }
 
 // Debug returns a boolean value that indicates if debug loggin is enabled

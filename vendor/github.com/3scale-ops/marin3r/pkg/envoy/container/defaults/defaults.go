@@ -1,25 +1,33 @@
 package defaults
 
 import (
-	"strings"
-
 	"github.com/3scale-ops/marin3r/pkg/envoy"
-	"github.com/3scale-ops/marin3r/pkg/version"
+	"github.com/3scale-ops/marin3r/pkg/image"
+)
+
+type DrainStrategy string
+
+const (
+	DrainStrategyGradual   DrainStrategy = "gradual"
+	DrainStrategyImmediate DrainStrategy = "immediate"
 )
 
 const (
 	// common defaults
-	Image                           string = "envoyproxy/envoy:v1.18.3"
-	EnvoyConfigBasePath             string = "/etc/envoy/bootstrap"
-	EnvoyConfigFileName             string = "config.json"
-	EnvoyExtraArgs                  string = ""
-	EnvoyTLSBasePath                string = "/etc/envoy/tls/client"
-	EnvoyAPIVersion                 string = string(envoy.APIv3)
-	TlsCertificateSdsSecretFileName string = "tls_certificate_sds_secret.json"
-	EnvoyAdminPort                  uint32 = 9901
-	EnvoyAdminBindAddress           string = "0.0.0.0"
-	EnvoyAdminAccessLogPath         string = "/dev/null"
-	GracefulShutdownTimeoutSeconds  int64  = 300
+	EnvoyRelease                    string        = "v1.20.1"
+	ImageRepo                       string        = "envoyproxy/envoy"
+	Image                           string        = ImageRepo + ":" + EnvoyRelease
+	EnvoyConfigBasePath             string        = "/etc/envoy/bootstrap"
+	EnvoyConfigFileName             string        = "config.json"
+	EnvoyExtraArgs                  string        = ""
+	EnvoyTLSBasePath                string        = "/etc/envoy/tls/client"
+	EnvoyAPIVersion                 string        = string(envoy.APIv3)
+	TlsCertificateSdsSecretFileName string        = "tls_certificate_sds_secret.json"
+	EnvoyAdminPort                  uint32        = 9901
+	EnvoyAdminBindAddress           string        = "0.0.0.0"
+	EnvoyAdminAccessLogPath         string        = "/dev/null"
+	GracefulShutdownTimeoutSeconds  int64         = 300
+	GracefulShutdownStrategy        DrainStrategy = DrainStrategyGradual
 
 	LivenessInitialDelaySeconds int32 = 30
 	LivenessTimeoutSeconds      int32 = 1
@@ -46,11 +54,9 @@ const (
 	DeploymentClientCertificate string = "envoy-client-cert"
 
 	// init manager defaults
-	InitMgrDefaultImageRegistry  string = "quay.io/3scale/marin3r"
 	InitMgrRtdsLayerResourceName string = "runtime"
 
 	// shutdown manager defaults
-	ShtdnMgrDefaultImageRegistry      string = "quay.io/3scale/marin3r"
 	ShtdnMgrDefaultServerPort         uint32 = 8090
 	ShtdnMgrDefaultReadyFile          string = "/tmp/shutdown-ok"
 	ShtdnMgrDefaultReadyCheckInterval int    = 1
@@ -65,9 +71,9 @@ const (
 )
 
 func ShtdnMgrImage() string {
-	return strings.Join([]string{ShtdnMgrDefaultImageRegistry, version.Current()}, ":")
+	return image.Current()
 }
 
 func InitMgrImage() string {
-	return strings.Join([]string{InitMgrDefaultImageRegistry, version.Current()}, ":")
+	return image.Current()
 }

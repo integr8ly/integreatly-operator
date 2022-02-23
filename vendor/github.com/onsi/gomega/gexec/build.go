@@ -3,12 +3,9 @@
 package gexec
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -197,9 +194,7 @@ func newExecutablePath(gopath, packagePath string, suffixes ...string) (string, 
 		return "", errors.New("$GOPATH not provided when building " + packagePath)
 	}
 
-	hash := md5.Sum([]byte(packagePath))
-	filename := fmt.Sprintf("%s-%x%s", path.Base(packagePath), hex.EncodeToString(hash[:]), strings.Join(suffixes, ""))
-	executable := filepath.Join(tmpDir, filename)
+	executable := filepath.Join(tmpDir, path.Base(packagePath))
 
 	if runtime.GOOS == "windows" {
 		executable += ".exe"
@@ -226,11 +221,11 @@ func temporaryDirectory() (string, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if tmpDir == "" {
-		tmpDir, err = ioutil.TempDir("", "gexec_artifacts")
+		tmpDir, err = os.MkdirTemp("", "gexec_artifacts")
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return ioutil.TempDir(tmpDir, "g")
+	return os.MkdirTemp(tmpDir, "g")
 }
