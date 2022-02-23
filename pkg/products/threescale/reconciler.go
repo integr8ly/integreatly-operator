@@ -1858,7 +1858,7 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 		ClientSecret:                   string(secret),
 		Site:                           site,
 		SkipSSLCertificateVerification: true,
-		Published:                      true,
+		Published:                      true, 		// This field does the test?
 		SystemName:                     clientID,
 	}
 	r.log.Infof("auth provider", l.Fields{"authProviderDetails": authProviderDetails})
