@@ -9,6 +9,7 @@ import (
 	userv1 "github.com/openshift/api/user/v1"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,11 +36,15 @@ const (
 	testUserName                          = "test-user99"
 )
 
-var testUser = &userv1.User{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: testUserName,
-	},
-}
+var (
+	testUser = &userv1.User{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testUserName,
+		},
+	}
+	tokens          *keycloakOpenIDTokenResponse
+	tokenExpiryTime time.Time
+)
 
 func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 	ctx := context.Background()
@@ -73,11 +78,11 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 		Password:  pointer.StringPtr(credentialsKeycloak[1]),
 	}
 	timeBeforeTokenReq := time.Now()
-	tokens, err := getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
+	tokens, err = getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	accessTokenExpiry := timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
+	tokenExpiryTime = timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
 
 	// Create a testing user in Keycloak (user-sso)
 	keycloakUserToCreate := keycloakUser{
@@ -103,17 +108,30 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 		t.Fatalf("%v", err)
 	}
 
-	// Poll for the matching KeyCloak user and verify its group memberships
-	if err := pollKeycloakUserGroups(tc.HttpClient, hostKeycloakUserSSO, tokens, accessTokenExpiry); err != nil {
+	tokens, err = refreshKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokens.RefreshToken)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	userOptions := keycloakUserOptions{
+		RealmName: realmNameMaster,
+		Username:  pointer.StringPtr(testUserName),
+	}
+	keycloakUsers, err := getKeycloakUsers(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, userOptions)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	// Poll for the matching Keycloak user and verify its group memberships
+	if err := pollKeycloakUserGroups(tc.HttpClient, hostKeycloakUserSSO, *keycloakUsers[0].ID); err != nil {
 		t.Fatalf("%v", err)
 	}
 	t.Logf("user %s is member of all required groups", testUserName)
 }
 
-func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) error {
+func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 	generatedKU := &keycloak.KeycloakUser{}
 	if err := wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
-		err = client.Get(
+		err = c.Get(
 			ctx,
 			types.NamespacedName{
 				Namespace: RHSSOUserProductNamespace,
@@ -122,7 +140,16 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) erro
 			generatedKU,
 		)
 		if err != nil {
-			return true, err
+			switch err.(type) {
+			case *errors.StatusError:
+				statusErr := err.(*errors.StatusError)
+				if statusErr.ErrStatus.Code == http.StatusNotFound {
+					return false, nil
+				}
+				return true, statusErr
+			default:
+				return true, err
+			}
 		}
 		userGroups := generatedKU.Spec.User.Groups
 		expectedGroups := []string{
@@ -143,31 +170,22 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, client client.Client) erro
 	return nil
 }
 
-func pollKeycloakUserGroups(client *http.Client, host string, tokens *keycloakOpenIDTokenResponse, accessTokenExpiry time.Time) error {
+func pollKeycloakUserGroups(httpClient *http.Client, host, userID string) error {
 	err := wait.PollImmediate(time.Second*15, time.Minute*5, func() (done bool, err error) {
-		if time.Now().After(accessTokenExpiry) {
+		if time.Now().After(tokenExpiryTime) {
 			timeBeforeTokenReq := time.Now()
-			var err error
-			tokens, err = refreshKeycloakToken(client, host, tokens.RefreshToken)
+			tokens, err = refreshKeycloakToken(httpClient, host, tokens.RefreshToken)
 			if err != nil {
 				return true, err
 			}
-			accessTokenExpiry = timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
-		}
-		userOptions := keycloakUserOptions{
-			RealmName: realmNameMaster,
-			Username:  pointer.StringPtr(testUserName),
-		}
-		keycloakUsers, err := getKeycloakUsers(client, host, tokens.AccessToken, userOptions)
-		if err != nil {
-			return true, err
+			tokenExpiryTime = timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
 		}
 		groupOptions := keycloakUserGroupOptions{
 			BriefRepresentation: pointer.BoolPtr(true),
 			RealmName:           realmNameMaster,
-			UserID:              *keycloakUsers[0].ID,
+			UserID:              userID,
 		}
-		userGroups, err := getKeycloakUserGroups(client, host, tokens.AccessToken, groupOptions)
+		userGroups, err := getKeycloakUserGroups(httpClient, host, tokens.AccessToken, groupOptions)
 		if err != nil {
 			return true, err
 		}
@@ -244,10 +262,10 @@ func getKeycloakToken(httpClient *http.Client, host string, options keycloakToke
 	return keycloakOpenIDTokenRes, nil
 }
 
-func getCredentialsRHSSOUser(ctx context.Context, client client.Client) ([]string, error) {
+func getCredentialsRHSSOUser(ctx context.Context, c client.Client) ([]string, error) {
 	secret := &corev1.Secret{}
 	secretName := "credential-rhssouser"
-	if err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: RHSSOUserProductNamespace}, secret); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Name: secretName, Namespace: RHSSOUserProductNamespace}, secret); err != nil {
 		return nil, fmt.Errorf("error getting secret %s: %v", secretName, err)
 	}
 	userName := string(secret.Data["ADMIN_USERNAME"])
@@ -404,12 +422,12 @@ func getKeycloakUserGroups(httpClient *http.Client, host, token string, options 
 	return keycloakUserGroups, nil
 }
 
-func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, client client.Client) {
+func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, c client.Client) {
 	// Ensure OpenShift user is deleted
-	client.Delete(ctx, testUser)
+	c.Delete(ctx, testUser)
 
 	// Ensure KeycloakUser CR is deleted
-	client.Delete(ctx, &keycloak.KeycloakUser{
+	c.Delete(ctx, &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
 			Namespace: RHSSOProductNamespace,
@@ -418,8 +436,8 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, client client.
 
 	// Ensure the test user is removed from dedicated-admins group
 	dedicatedAdminGroup := &userv1.Group{}
-	client.Get(ctx, types.NamespacedName{Name: groupNameDedicatedAdmins}, dedicatedAdminGroup)
-	controllerutil.CreateOrUpdate(ctx, client, dedicatedAdminGroup, func() error {
+	c.Get(ctx, types.NamespacedName{Name: groupNameDedicatedAdmins}, dedicatedAdminGroup)
+	controllerutil.CreateOrUpdate(ctx, c, dedicatedAdminGroup, func() error {
 		for i, user := range dedicatedAdminGroup.Users {
 			if user == testUserName {
 				dedicatedAdminGroup.Users = removeIndex(dedicatedAdminGroup.Users, i)
@@ -440,6 +458,5 @@ func refreshKeycloakToken(client *http.Client, host, refreshToken string) (*keyc
 		RealmName:    realmNameMaster,
 		RefreshToken: pointer.StringPtr(refreshToken),
 	}
-	tokens, err := getKeycloakToken(client, host, tokenOptions)
-	return tokens, err
+	return getKeycloakToken(client, host, tokenOptions)
 }
