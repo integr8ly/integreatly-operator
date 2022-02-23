@@ -1418,10 +1418,13 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 	setTenantMetrics(mtUserIdentities, allAccounts)
 
+	r.log.Info("getAccessTokenSecret")
 	signUpAccountsSecret, err := getAccessTokenSecret(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	r.log.Info("getAccessTokenSecret length: " + strconv.Itoa(len(signUpAccountsSecret.Data)))
+
 
 	tenantsCreated, err := getAccountsCreatedCM(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
@@ -1548,6 +1551,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 	}
 
+	r.log.Info("creating new MT accounts in 3scale")
+
 	// creating new MT accounts in 3scale
 	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
 	r.log.Infof("Retrieving tenant accounts to be created",
@@ -1558,6 +1563,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	)
 
 	for idx, account := range accountsToBeCreated {
+
+		r.log.Info("Accounts to be created loop")
 
 		pw, err := r.getTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
@@ -1584,12 +1591,15 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			},
 		)
 
+		r.log.Info("Creating signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
 		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
 		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
 		if err != nil {
+			r.log.Error("Error creating access token secret ", err)
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
 		}
+		r.log.Info("After signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
 	}
 
 	// deleting MT accounts in 3scale
