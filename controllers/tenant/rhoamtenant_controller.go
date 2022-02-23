@@ -57,7 +57,7 @@ type TenantReconciler struct {
 
 func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	tenant, err := r.getRhoamTenant(request.Name)
+	tenant, err := r.getRhoamTenant(request.Name, request.Namespace)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -65,7 +65,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, err
 	}
 
-	err = r.addAnnotationToUser(request.Name)
+	err = r.addAnnotationToUser(request.Name, request.Namespace)
 	if err != nil {
 		tenant.Status.LastError = err.Error()
 		err1 := r.Client.Status().Update(context.TODO(), tenant)
@@ -75,7 +75,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, err
 	}
 
-	err = r.reconcileTenantUrl(request.Name)
+	err = r.reconcileTenantUrl(request.Name, request.Namespace)
 	if err != nil {
 		tenant.Status.LastError = err.Error()
 		err1 := r.Client.Status().Update(context.TODO(), tenant)
@@ -98,19 +98,14 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	//enqueueAllInstallations := &handler.EnqueueRequestsFromMapFunc{
-	//	ToRequests: installationMapper{context: context.TODO(), client: mgr.GetClient()},
-	//}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.RhoamTenant{}).
 		Watches(&source.Kind{Type: &v1alpha1.RhoamTenant{}}, &handler.EnqueueRequestForObject{}).
-		//Watches(&source.Kind{Type: &v1alpha1.RhoamTenant{}}, enqueueAllInstallations).
 		Complete(r)
 }
 
-func (r *TenantReconciler) addAnnotationToUser(crName string) error {
-	tenant, err := r.getRhoamTenant(crName)
+func (r *TenantReconciler) addAnnotationToUser(crName string, ns string) error {
+	tenant, err := r.getRhoamTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -142,7 +137,7 @@ func (r *TenantReconciler) addAnnotationToUser(crName string) error {
 		}
 
 		// Update tenant's ProvisioningStatus to UserAnnotated
-		err = r.updateProvisioningStatus(crName, v1alpha1.UserAnnotated)
+		err = r.updateProvisioningStatus(crName, v1alpha1.UserAnnotated, ns)
 		if err != nil {
 			return err
 		}
@@ -151,8 +146,8 @@ func (r *TenantReconciler) addAnnotationToUser(crName string) error {
 	return nil
 }
 
-func (r *TenantReconciler) reconcileTenantUrl(crName string) error {
-	tenant, err := r.getRhoamTenant(crName)
+func (r *TenantReconciler) reconcileTenantUrl(crName string, ns string) error {
+	tenant, err := r.getRhoamTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -187,7 +182,7 @@ func (r *TenantReconciler) reconcileTenantUrl(crName string) error {
 		if foundRoute == nil {
 			// If no matching route was found, then the account is still being created.
 			// Set the provisioningStatus to ThreeScaleAccountRequested and return an error.
-			err = r.updateProvisioningStatus(crName, v1alpha1.ThreeScaleAccountRequested)
+			err = r.updateProvisioningStatus(crName, v1alpha1.ThreeScaleAccountRequested, ns)
 			if err != nil {
 				return err
 			}
@@ -195,11 +190,11 @@ func (r *TenantReconciler) reconcileTenantUrl(crName string) error {
 		}
 
 		// Since the matching route was found, update the tenant's tenantUrl and provisioningStatus.
-		err = r.updateTenantUrl(crName, foundRoute.Spec.Host)
+		err = r.updateTenantUrl(crName, foundRoute.Spec.Host, ns)
 		if err != nil {
 			return err
 		}
-		err = r.updateProvisioningStatus(crName, v1alpha1.ThreeScaleAccountReady)
+		err = r.updateProvisioningStatus(crName, v1alpha1.ThreeScaleAccountReady, ns)
 		if err != nil {
 			return err
 		}
@@ -207,8 +202,8 @@ func (r *TenantReconciler) reconcileTenantUrl(crName string) error {
 	return nil
 }
 
-func (r *TenantReconciler) updateProvisioningStatus(crName string, status v1alpha1.ProvisioningStatus) error {
-	tenant, err := r.getRhoamTenant(crName)
+func (r *TenantReconciler) updateProvisioningStatus(crName string, status v1alpha1.ProvisioningStatus, ns string) error {
+	tenant, err := r.getRhoamTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -221,8 +216,8 @@ func (r *TenantReconciler) updateProvisioningStatus(crName string, status v1alph
 	return nil
 }
 
-func (r *TenantReconciler) updateTenantUrl(crName string, url string) error {
-	tenant, err := r.getRhoamTenant(crName)
+func (r *TenantReconciler) updateTenantUrl(crName string, url string, ns string) error {
+	tenant, err := r.getRhoamTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -235,10 +230,11 @@ func (r *TenantReconciler) updateTenantUrl(crName string, url string) error {
 	return nil
 }
 
-func (r *TenantReconciler) getRhoamTenant(crName string) (*v1alpha1.RhoamTenant, error) {
+func (r *TenantReconciler) getRhoamTenant(crName string, ns string) (*v1alpha1.RhoamTenant, error) {
 	tenant := &v1alpha1.RhoamTenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crName,
+			Namespace: ns,
 		},
 	}
 	key, err := k8sclient.ObjectKeyFromObject(tenant)

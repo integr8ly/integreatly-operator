@@ -94,6 +94,7 @@ func main() {
 		QuoteEmptyFields: false,
 	})
 
+	// ONLY IF SANDBOX !!!!!!!!
 	watchNamespace, err := resources.GetWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+

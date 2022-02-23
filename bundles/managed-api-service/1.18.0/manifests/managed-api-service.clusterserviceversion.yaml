@@ -51,7 +51,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/bgallagher/managed-api-service:v1.18.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.12.0
@@ -66,6 +66,15 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+      - description: RhoamTenant is the Schema for the RhoamTenant API
+        displayName: RhoamTenant
+        kind: RhoamTenant
+        name: rhoamtenants.integreatly.org
+        statusDescriptors:
+          - description: The status of each of the RhoamTenant CR
+            displayName: RhoamTenant CR Status
+            path: status
+        version: v1alpha1
       - description: RHOAMConfig is the Schema for the rhoamconfigs API
         displayName: RHOAMConfig
         kind: RHMIConfig
@@ -520,7 +529,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/bgallagher/managed-api-service:v1.18.0
                     imagePullPolicy: Always
                     name: rhmi-operator
                     ports:
