@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-3454
 components:
   - product-sso
 products:
@@ -10,6 +12,8 @@ products:
       - 1.13.0
       - 1.16.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # B09 - Verify dedicated admin users are synced with User SSO

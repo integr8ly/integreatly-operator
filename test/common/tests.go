@@ -98,6 +98,7 @@ var (
 				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
+				{"B09 - Verify dedicated admin users are synced with User SSO", TestDedicatedAdminUsersSyncedSSO},
 				{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
 				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
