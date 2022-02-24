@@ -5,6 +5,7 @@ import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"reflect"
 	"regexp"
 )
 
@@ -51,26 +52,9 @@ func mtMangedApiTargets() map[string][]string {
 
 func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 	// get all active targets in prometheus
-	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		"prometheus-prometheus-0",
-		ObservabilityProductNamespace,
-		"prometheus",
-		ctx)
+	targetsResult, err := getPrometheusTargets(ctx)
 	if err != nil {
-		t.Fatalf("failed to exec to prometheus pod: %s", err)
-	}
-
-	// get all found active targets from the prometheus api
-	var promApiCallOutput prometheusAPIResponse
-	err = json.Unmarshal([]byte(output), &promApiCallOutput)
-	if err != nil {
-		t.Fatalf("failed to unmarshal json: %s", err)
-	}
-
-	var targetResult prometheusv1.TargetsResult
-	err = json.Unmarshal(promApiCallOutput.Data, &targetResult)
-	if err != nil {
-		t.Fatalf("failed to unmarshal json: %s", err)
+		t.Fatalf("%v", err)
 	}
 
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -84,7 +68,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 		for _, targetName := range targets {
 			// check that metrics is being correctly scrapped by target
 			correctlyScrapping := false
-			for _, target := range targetResult.Active {
+			for _, target := range targetsResult.Active {
 				if target.DiscoveredLabels["job"] == fmt.Sprintf("%s%s", ns, targetName) && target.Health == prometheusv1.HealthGood && target.ScrapeURL != "" {
 					correctlyScrapping = true
 					break
@@ -96,6 +80,29 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 			}
 		}
 	}
+}
+
+func getPrometheusTargets(ctx *TestingContext) (*prometheusv1.TargetsResult, error) {
+	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
+		"prometheus-prometheus-0",
+		ObservabilityProductNamespace,
+		"prometheus",
+		ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exec to prometheus pod: %v", err)
+	}
+
+	// get all found active targets from the prometheus api
+	var promApiCallOutput prometheusAPIResponse
+	if err = json.Unmarshal([]byte(output), &promApiCallOutput); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json: %v", err)
+	}
+
+	var targetsResult prometheusv1.TargetsResult
+	if err = json.Unmarshal(promApiCallOutput.Data, &targetsResult); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json: %s", err)
+	}
+	return &targetsResult, nil
 }
 
 func getTargets(installType string) map[string][]string {
@@ -124,5 +131,39 @@ func TestRhoamVersionMetricExposed(t TestingTB, ctx *TestingContext) {
 	re := regexp.MustCompile(`^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$`)
 	if !re.MatchString(rhoamVersionValue) {
 		t.Fatalf("Failed to validate RHOAM version format. Expected semantic version, got %s", rhoamVersionValue)
+	}
+}
+
+func TestAdditionalBlackboxTargets(t TestingTB, ctx *TestingContext) {
+	// get all active targets in prometheus
+	expectedBlackboxTargets := getBlackboxTargets()
+	targetsResult, err := getPrometheusTargets(ctx)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if len(targetsResult.Active) == 0 {
+		t.Fatalf("no active prometheus targets", err)
+	}
+	var blackboxTargets []string
+	for _, target := range targetsResult.Active {
+		jobValue := target.Labels["job"]
+		serviceValue := target.Labels["service"]
+		if jobValue == "blackbox" {
+			blackboxTargets = append(blackboxTargets, string(serviceValue))
+		}
+	}
+	if !reflect.DeepEqual(blackboxTargets, expectedBlackboxTargets) {
+		t.Fatalf("expected prometheus blackbox targets %v, got %v", expectedBlackboxTargets, blackboxTargets)
+	}
+}
+
+func getBlackboxTargets() []string {
+	return []string{
+		"3scale-admin-ui",
+		"3scale-developer-console-ui",
+		"3scale-system-admin-ui",
+		"grafana-ui",
+		"rhsso-ui",
+		"rhssouser-ui",
 	}
 }
