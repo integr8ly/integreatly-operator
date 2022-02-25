@@ -44,7 +44,7 @@ func commonPvcNamespaces() []PersistentVolumeClaim {
 
 			Namespace: NamespacePrefix + "observability",
 			PersistentVolumeClaimNames: []string{
-				"prometheus-prometheus-db-prometheus-prometheus-0",
+				"managed-services-prometheus-prometheus-0",
 			},
 		},
 	}
