@@ -1580,6 +1580,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				err,
 			)
 
+			// Attempt a delete of Tenant to force re-entry !!!
+
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating tenant account: %s, Error=[%v]", account.OrgName, err)
 		}
 
