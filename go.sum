@@ -1441,8 +1441,8 @@ github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1/go.mod h1:J
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20190706150252-9beb055b7962/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/redhat-cop/operator-utils v1.1.3-0.20210602122509-2eaf121122d2/go.mod h1:Hu6OKop6iQfga0Hwrqv/03CQgpkcp55qwjMh9Gi0Iyk=
-github.com/redhat-developer/observability-operator/v3 v3.0.8-0.20211209212156-6ed7d61df3bd h1:AMIf0kkpS+PBb2TXbksZJhdMA8AaECnxDBlf12glIlk=
-github.com/redhat-developer/observability-operator/v3 v3.0.8-0.20211209212156-6ed7d61df3bd/go.mod h1:uxJaGOf2wyHwEMuJgggI55G0dC64et0NOye5eRuTLdg=
+github.com/redhat-developer/observability-operator/v3 v3.0.9 h1:djH/2Imc3ENXfRaHWrCmVos/tZ5zUzs6nXaApXsUVjs=
+github.com/redhat-developer/observability-operator/v3 v3.0.9/go.mod h1:1DPdctMZoeIZWlsW8YprBCBDiQytGrnPo5teibaYKf4=
 github.com/retailnext/hllpp v1.0.1-0.20180308014038-101a6d2f8b52/go.mod h1:RDpi1RftBQPUCDRw6SmxeaREsAaRKnOclghuzp/WRzc=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=

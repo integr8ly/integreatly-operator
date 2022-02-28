@@ -748,8 +748,8 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/observability-operator/v3 v3.0.8-0.20211209212156-6ed7d61df3bd
-## explicit; go 1.13
+# github.com/redhat-developer/observability-operator/v3 v3.0.9
+## explicit; go 1.16
 github.com/redhat-developer/observability-operator/v3/api/v1
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13
