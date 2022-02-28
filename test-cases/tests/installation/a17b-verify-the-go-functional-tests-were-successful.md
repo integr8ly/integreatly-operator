@@ -20,7 +20,7 @@ Acceptance Criteria:
 
 1. Select the Jenkins job used for installation of the QE release testing cluster from
 
-https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
+https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
 
 If there is not such build (typically if working with post upgrade cluster) then trigger the build
 

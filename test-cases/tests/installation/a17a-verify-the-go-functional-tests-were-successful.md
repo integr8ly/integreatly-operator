@@ -21,7 +21,7 @@ Acceptance Criteria:
 
 1. Select the Jenkins job used for installation of the QE release testing cluster from
 
-https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/Integreatly/job/rhmi-install-addon-flow
+https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/Integreatly/job/rhmi-install-addon-flow
 
 2. Check the functional tests were run as part of the pipeline.
 3. Check if there were any failed or skipped tests (flaky ones).

@@ -72,7 +72,7 @@ watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage"
 
 **Run automated tests**
 
-1. Navigate to [RHOAM addon flow jenkins job](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow)
+1. Navigate to [RHOAM addon flow jenkins job](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow)
 2. Fill in the following parameters
 
 ```

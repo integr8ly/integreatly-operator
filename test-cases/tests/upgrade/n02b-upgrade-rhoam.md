@@ -28,7 +28,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 - Node.js installed locally
 - [ocm CLI](https://github.com/openshift-online/ocm-cli/releases) installed locally
 - [jq v1.6](https://github.com/stedolan/jq/releases) installed locally
-- cluster with the current RHOAM GA version installed on it. Such cluster is typically created via the [addon-flow](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline when the RC1 is not yet merged into MT (or reverted back to GA).
+- cluster with the current RHOAM GA version installed on it. Such cluster is typically created via the [addon-flow](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline when the RC1 is not yet merged into MT (or reverted back to GA).
   - testing-idp is configured on the cluster
 
 ## Steps
@@ -39,7 +39,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    oc login --token=<TOKEN> --server=https://api.CLUSTER_NAME.s1.devshift.org:6443
    ```
 
-2. If the [workload-web-app](https://github.com/integr8ly/workload-web-app) is not deployed on the cluster (it should be since it can be done via [addon-flow](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline), clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repository and run the following command:
+2. If the [workload-web-app](https://github.com/integr8ly/workload-web-app) is not deployed on the cluster (it should be since it can be done via [addon-flow](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline), clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repository and run the following command:
 
    ```
    git clone https://github.com/integr8ly/workload-web-app

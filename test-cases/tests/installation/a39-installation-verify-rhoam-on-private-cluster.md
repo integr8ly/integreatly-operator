@@ -14,7 +14,7 @@ tags:
 
 1. Create a clean OSD cluster as usual
 
-- can be done either manually as described in [A30](./a30-validate-installation-of-rhoam-addon-and-integration-with-ld.md) or via [addon-flow](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline
+- can be done either manually as described in [A30](./a30-validate-installation-of-rhoam-addon-and-integration-with-ld.md) or via [addon-flow](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow) pipeline
 - it is enough for the cluster to be single-AZ
 
 2. Follow [this guide](https://docs.google.com/document/d/1BwjzezNFtE7gd2y6FY6v2W6KRXCn0jMZk58ilJ8zSa8/edit) to make it private
