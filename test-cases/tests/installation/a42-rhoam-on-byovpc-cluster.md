@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-3412
 products:
   - name: rhoam
     environments:
@@ -6,11 +8,15 @@ products:
 estimate: 4h
 tags:
   - per-release
+  - automated
 ---
 
 # A42 - RHOAM on BYOVPC cluster
 
 ## Description
+
+**Update**
+These steps were automated and there was a Jenkins pipeline created that is [running nightly](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/Nightly/job/managed-api-install-addon-flow/) and is being monitored.
 
 Verify RHOAM installation on BYOVPC cluster (OSD cluster using custom AWS VPC)
 
