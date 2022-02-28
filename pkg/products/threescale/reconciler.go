@@ -513,47 +513,54 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 
 		smtpUpdated := false
 
-		if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
-			smtpConfigSecret.Data["address"] = credSec.Data["host"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
-			smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
-			smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
-			smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
-			smtpConfigSecret.Data["password"] = credSec.Data["password"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
-			smtpConfigSecret.Data["port"] = credSec.Data["port"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
-			smtpConfigSecret.Data["username"] = credSec.Data["username"]
-			smtpUpdated = true
-		}
+		// There is an issue with setting smtp values and creating Tenants. CreateTenant fails when SMTP values are set.
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 
-		if smtpUpdated {
-			err = r.RolloutDeployment(ctx, "system-app")
-			if err != nil {
-				r.log.Error("Rollout system-app deployment", err)
+			if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
+				smtpConfigSecret.Data["address"] = credSec.Data["host"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
+				smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
+				smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
+				smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
+				smtpConfigSecret.Data["password"] = credSec.Data["password"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
+				smtpConfigSecret.Data["port"] = credSec.Data["port"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
+				smtpConfigSecret.Data["username"] = credSec.Data["username"]
+				smtpUpdated = true
 			}
 
-			err = r.RolloutDeployment(ctx, "system-sidekiq")
-			if err != nil {
-				r.log.Error("Rollout system-sidekiq deployment", err)
+			smtpConfigSecret.Data["from_address"] = []byte("test@rhmw.io")
+
+			// TODO: set from_address
+
+			if smtpUpdated {
+				err = r.RolloutDeployment(ctx, "system-app")
+				if err != nil {
+					r.log.Error("Rollout system-app deployment", err)
+				}
+
+				err = r.RolloutDeployment(ctx, "system-sidekiq")
+				if err != nil {
+					r.log.Error("Rollout system-sidekiq deployment", err)
+				}
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
@@ -1106,7 +1113,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
+	_, err = r.tsClient.SetFromEmailAddress("test@rhmw.io", *accessToken)
 	if err != nil {
 		r.log.Error("Failed to set email from address:", err)
 		return integreatlyv1alpha1.PhaseFailed, err

@@ -606,6 +606,9 @@ func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDet
 			"username": account.Name,
 			"password": password,
 			"email":    email,
+			"from_email": "test@rhmw.io",
+			"support_email": "test@rhmw.io",
+			"finance_support_email": "test@rhmw.io",
 		}),
 	)
 	if err != nil {
