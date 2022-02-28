@@ -22,7 +22,7 @@ We want to validate that RHOAM can be installed via Addon Flow on all currently 
 - Access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - Login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
 - Access to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs)
-- Access to [RHOAM Addon Flow pipeline](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
+- Access to [RHOAM Addon Flow pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
 
 ## Steps
 
@@ -37,7 +37,7 @@ We want to validate that RHOAM can be installed via Addon Flow on all currently 
 
 **Trigger the pipeline and analyse the test results**
 
-1. Go to the [RHOAM Addon Flow pipeline](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/) and select "Build with Parameters"
+1. Go to the [RHOAM Addon Flow pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/) and select "Build with Parameters"
 2. Look for AWS account ID that is free (it doesn't have anything specified in 'Note'). If no account is free, you can use account that is used by nightly pipelines (but don't forget to clean it up for night)
 3. Open the [AWS secrets file from 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) locally and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
 4. Make sure to fill in `openshiftVersion` properly
