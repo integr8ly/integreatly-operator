@@ -20,16 +20,6 @@ const (
 )
 
 func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
-	// verify that 3scale is cluster scoped and if not, skip the test
-	isThreescaleClusterScoped, err := isClusterScoped(ctx)
-	if err != nil {
-		t.Fatalf("failed to establish if 3scale is cluster scoped or not %v", err)
-	}
-
-	if !isThreescaleClusterScoped {
-		t.Skip("skipping as 3scale is not cluster scoped")
-	}
-
 	// make project
 	project, err := makeProject(ctx)
 	if err != nil {
