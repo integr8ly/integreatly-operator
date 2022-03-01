@@ -52,7 +52,7 @@ metadata:
     categories: Integration & Delivery
     certified: "false"
     containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.18.2-rc1
-    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
+    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.10"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.11.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -716,7 +716,7 @@ spec:
   maturity: alpha
   provider:
     name: rhoam
-  replaces: managed-api-service.v1.18.0
+  replaces: managed-api-service.v1.17.0
   selector:
     matchLabels:
       alm-owner-rhoam: rhoam-operator
