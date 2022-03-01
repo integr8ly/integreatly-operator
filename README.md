@@ -269,3 +269,4 @@ rosa uninstall addon \
 ## Release
 
 See the [release doc](./RELEASE.md).
+
