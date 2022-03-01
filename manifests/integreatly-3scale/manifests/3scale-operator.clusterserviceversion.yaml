@@ -356,7 +356,7 @@ spec:
                 - name: RELATED_IMAGE_APICAST
                   value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:be2c774a4c01602634a5a5cbf51430b58f66306567883a30794d009f7bf5e870
                 - name: RELATED_IMAGE_SYSTEM
-                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:8fad9a089f6d72010cf0535398461d407c0d6d6ed01c45f03988e3b1ee53cb68
+                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:285e48176be550dd4535eb9a19c57bfeedd066240a227ffe832211b4bf07fb64
                 - name: RELATED_IMAGE_ZYNC
                   value: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:3ac39338006e648189ef1d68c10f9b397b6241b129750ce14a79b0e5a827d0ed
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
@@ -928,7 +928,7 @@ spec:
   - name: apicast
     image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:be2c774a4c01602634a5a5cbf51430b58f66306567883a30794d009f7bf5e870
   - name: system
-    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:8fad9a089f6d72010cf0535398461d407c0d6d6ed01c45f03988e3b1ee53cb68
+    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:285e48176be550dd4535eb9a19c57bfeedd066240a227ffe832211b4bf07fb64
   - name: zync
     image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:3ac39338006e648189ef1d68c10f9b397b6241b129750ce14a79b0e5a827d0ed
   - name: system_memcached
