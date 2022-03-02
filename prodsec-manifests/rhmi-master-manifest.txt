@@ -7094,7 +7094,7 @@ services-rhmi:master/github.com/rafaeljusto/redigomock-v0.0.0-20190202135759-257
 services-rhmi:master/github.com/rcrowley/go-metrics-v0.0.0-20181016184325-3113b8401b8a
 services-rhmi:master/github.com/rcrowley/go-metrics-v0.0.0-20190706150252-9beb055b7962
 services-rhmi:master/github.com/redhat-cop/operator-utils-v1.1.3-0.20210602122509-2eaf121122d2
-services-rhmi:master/github.com/redhat-developer/observability-operator/v3-v3.0.8-0.20211209212156-6ed7d61df3bd
+services-rhmi:master/github.com/redhat-developer/observability-operator/v3-v3.0.9
 services-rhmi:master/github.com/retailnext/hllpp-v1.0.1-0.20180308014038-101a6d2f8b52
 services-rhmi:master/github.com/robfig/cron/v3-v3.0.1
 services-rhmi:master/github.com/rogpeppe/fastuuid-v0.0.0-20150106093220-6724a57986af
@@ -12624,3 +12624,4 @@ services-rhmi:master/sigs.k8s.io/structured-merge-diff/v4-v4.0.2
 services-rhmi:master/sigs.k8s.io/yaml-v1.1.0
 services-rhmi:master/sigs.k8s.io/yaml-v1.2.0
 services-rhmi:master/sourcegraph.com/sourcegraph/appdash-v0.0.0-20190731080439-ebfcffb1b5c0
+0-20190731080439-ebfcffb1b5c0
