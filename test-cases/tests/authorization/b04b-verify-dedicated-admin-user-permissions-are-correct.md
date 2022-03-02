@@ -1,6 +1,6 @@
 ---
 automation:
-  - INTLY-7748
+  - MGDAPI-3164
 products:
   - name: rhoam
     environments:
