@@ -74,7 +74,7 @@ func init() {
 	utilruntime.Must(rhmiv1alpha1.AddToSchemes.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
-	// +kubebuilder:rbac:groups=rhoam.tenants.io,resources=rhoamtenant,verbs=watch;get;list
+	// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant,verbs=watch;get;list
 
 }
 

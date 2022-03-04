@@ -24,8 +24,8 @@ import (
 
 var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "tenant_controller"})
 
-// +kubebuilder:rbac:groups=integreatly.org,resources=rhoamtenant,verbs=get;list;watch
-// +kubebuilder:rbac:groups=integreatly.org,resources=rhoamtenant/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant,verbs=get;list;watch
+// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=user.openshift.io,resources=users,verbs=watch;get;list;update
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 
@@ -57,7 +57,7 @@ type TenantReconciler struct {
 
 func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	tenant, err := r.getRhoamTenant(request.Name, request.Namespace)
+	tenant, err := r.getAPIManagementTenant(request.Name, request.Namespace)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -70,7 +70,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 		tenant.Status.LastError = err.Error()
 		err1 := r.Client.Status().Update(context.TODO(), tenant)
 		if err1 != nil {
-			log.Error("error updating status of RhoamTenant CR", err1)
+			log.Error("error updating status of APIManagementTenant CR", err1)
 		}
 		return ctrl.Result{}, err
 	}
@@ -80,7 +80,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 		tenant.Status.LastError = err.Error()
 		err1 := r.Client.Status().Update(context.TODO(), tenant)
 		if err1 != nil {
-			log.Error("error updating status of RhoamTenant CR", err1)
+			log.Error("error updating status of APIManagementTenant CR", err1)
 		}
 		return ctrl.Result{}, err
 	}
@@ -89,7 +89,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 	tenant.Status.LastError = ""
 	err = r.Client.Status().Update(context.TODO(), tenant)
 	if err != nil {
-		log.Error("error updating status of RhoamTenant CR", err)
+		log.Error("error updating status of APIManagementTenant CR", err)
 		return ctrl.Result{}, err
 	}
 
@@ -99,18 +99,18 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 func (r *TenantReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.RhoamTenant{}).
-		Watches(&source.Kind{Type: &v1alpha1.RhoamTenant{}}, &handler.EnqueueRequestForObject{}).
+		For(&v1alpha1.APIManagementTenant{}).
+		Watches(&source.Kind{Type: &v1alpha1.APIManagementTenant{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
 
 func (r *TenantReconciler) addAnnotationToUser(crName string, ns string) error {
-	tenant, err := r.getRhoamTenant(crName, ns)
+	tenant, err := r.getAPIManagementTenant(crName, ns)
 	if err != nil {
 		return err
 	}
 
-	// Only add the annotation to the User if its RhoamTenant's ProvisioningStatus hasn't been set to a value yet.
+	// Only add the annotation to the User if its APIManagementTenant's ProvisioningStatus hasn't been set to a value yet.
 	if tenant.Status.ProvisioningStatus == "" {
 		user := &usersv1.User{
 			ObjectMeta: metav1.ObjectMeta{
@@ -147,7 +147,7 @@ func (r *TenantReconciler) addAnnotationToUser(crName string, ns string) error {
 }
 
 func (r *TenantReconciler) reconcileTenantUrl(crName string, ns string) error {
-	tenant, err := r.getRhoamTenant(crName, ns)
+	tenant, err := r.getAPIManagementTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (r *TenantReconciler) reconcileTenantUrl(crName string, ns string) error {
 }
 
 func (r *TenantReconciler) updateProvisioningStatus(crName string, status v1alpha1.ProvisioningStatus, ns string) error {
-	tenant, err := r.getRhoamTenant(crName, ns)
+	tenant, err := r.getAPIManagementTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (r *TenantReconciler) updateProvisioningStatus(crName string, status v1alph
 }
 
 func (r *TenantReconciler) updateTenantUrl(crName string, url string, ns string) error {
-	tenant, err := r.getRhoamTenant(crName, ns)
+	tenant, err := r.getAPIManagementTenant(crName, ns)
 	if err != nil {
 		return err
 	}
@@ -230,10 +230,10 @@ func (r *TenantReconciler) updateTenantUrl(crName string, url string, ns string)
 	return nil
 }
 
-func (r *TenantReconciler) getRhoamTenant(crName string, ns string) (*v1alpha1.RhoamTenant, error) {
-	tenant := &v1alpha1.RhoamTenant{
+func (r *TenantReconciler) getAPIManagementTenant(crName string, ns string) (*v1alpha1.APIManagementTenant, error) {
+	tenant := &v1alpha1.APIManagementTenant{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: crName,
+			Name:      crName,
 			Namespace: ns,
 		},
 	}

@@ -79,10 +79,10 @@ func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alp
 
 		host := fmt.Sprintf("https://%v-admin.%v", testUser, rhmi.Spec.RoutingSubdomain)
 
-		//create testing user CR RhoamTenant CR
-		err = createTestingUserRhoamTenantCR(t, testUser, ctx)
+		//create testing user CR APIManagementTenant CR
+		err = createTestingUserApiManagementTenantCR(t, testUser, ctx)
 		if err != nil {
-			return fmt.Errorf("error create RhoamTenant CR for testing user: %v", err)
+			return fmt.Errorf("error create APIManagementTenant CR for testing user: %v", err)
 		}
 
 		err = wait.Poll(pollingTime, tenantReadyTimeout, func() (done bool, err error) {
@@ -236,8 +236,8 @@ func is3scaleLoginFailed(t TestingTB, tsHost, username, password string, idp str
 	return nil
 }
 
-func createTestingUserRhoamTenantCR(t TestingTB, testUserName string, ctx *TestingContext) error {
-	tenantCR := &integreatlyv1alpha1.RhoamTenant{
+func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, ctx *TestingContext) error {
+	tenantCR := &integreatlyv1alpha1.APIManagementTenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testUserName,
 		},
@@ -246,7 +246,7 @@ func createTestingUserRhoamTenantCR(t TestingTB, testUserName string, ctx *Testi
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("Error create RhoamTenant CR for testing user %v", err)
+		t.Fatalf("Error create APIManagementTenant CR for testing user %v", err)
 	}
 	return nil
 }

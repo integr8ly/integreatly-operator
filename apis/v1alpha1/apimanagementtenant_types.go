@@ -28,12 +28,12 @@ var (
 	ThreeScaleAccountRequested ProvisioningStatus = "3scale account requested"
 )
 
-// RhoamTenantSpec defines the desired state of RhoamTenant
-type RhoamTenantSpec struct {
+// APIManagementTenantSpec defines the desired state of APIManagementTenant
+type APIManagementTenantSpec struct {
 }
 
-// RhoamTenantStatus defines the observed state of RhoamTenant
-type RhoamTenantStatus struct {
+// APIManagementTenantStatus defines the observed state of APIManagementTenant
+type APIManagementTenantStatus struct {
 	LastError          string             `json:"lastError"`
 	ProvisioningStatus ProvisioningStatus `json:"provisioningStatus"`
 	TenantUrl          string             `json:"tenantUrl,omitempty"`
@@ -41,26 +41,25 @@ type RhoamTenantStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Cluster
 
-// RhoamTenant is the Schema for the RhoamTenants API
-type RhoamTenant struct {
+// APIManagementTenant is the Schema for the APIManagementTenants API
+type APIManagementTenant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RhoamTenantSpec   `json:"spec,omitempty"`
-	Status RhoamTenantStatus `json:"status,omitempty"`
+	Spec   APIManagementTenantSpec   `json:"spec,omitempty"`
+	Status APIManagementTenantStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// RhoamTenantList contains a list of RhoamTenant
-type RhoamTenantList struct {
+// APIManagementTenantList contains a list of APIManagementTenant
+type APIManagementTenantList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RhoamTenant `json:"items"`
+	Items           []APIManagementTenant `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&RhoamTenant{}, &RhoamTenantList{})
+	SchemeBuilder.Register(&APIManagementTenant{}, &APIManagementTenantList{})
 }

@@ -6,20 +6,21 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: rhoamtenants.integreatly.org
+  name: apimanagementtenants.integreatly.org
 spec:
   group: integreatly.org
   names:
-    kind: RhoamTenant
-    listKind: RhoamTenantList
-    plural: rhoamtenants
-    singular: rhoamtenant
-  scope: Cluster
+    kind: APIManagementTenant
+    listKind: APIManagementTenantList
+    plural: apimanagementtenants
+    singular: apimanagementtenant
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: RhoamTenant is the Schema for the RhoamTenants API
+        description: APIManagementTenant is the Schema for the APIManagementTenants
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,10 +35,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: RhoamTenantSpec defines the desired state of RhoamTenant
+            description: APIManagementTenantSpec defines the desired state of APIManagementTenant
             type: object
           status:
-            description: RhoamTenantStatus defines the observed state of RhoamTenant
+            description: APIManagementTenantStatus defines the observed state of APIManagementTenant
             properties:
               lastError:
                 type: string

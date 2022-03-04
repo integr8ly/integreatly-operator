@@ -1,13 +1,13 @@
-# permissions for end users to edit rhoamtenants.
+# permissions for end users to edit apimanagementtenants.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: rhoamtenant-editor-role
+  name: apimanagementtenant-editor-role
 rules:
 - apiGroups:
   - integreatly.org
   resources:
-  - rhoamtenants
+  - apimanagementtenants
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - integreatly.org
   resources:
-  - rhoamtenants/status
+  - apimanagementtenants/status
   verbs:
   - get
