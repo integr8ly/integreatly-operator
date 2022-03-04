@@ -19,7 +19,13 @@ github.com/3scale-ops/marin3r/pkg/version
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
 github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
+github.com/3scale/3scale-operator/pkg/apis/capabilities/v1alpha1
+github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1
+github.com/3scale/3scale-operator/pkg/common
 github.com/3scale/3scale-operator/version
+# github.com/3scale/3scale-porta-go-client v0.0.4
+## explicit
+github.com/3scale/3scale-porta-go-client/client
 # github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 ## explicit
 github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1

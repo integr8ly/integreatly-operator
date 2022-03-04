@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/3scale-ops/marin3r v0.8.0
 	github.com/3scale/3scale-operator v0.2.1-0.20210312114906-e612e89addbf
+	github.com/3scale/3scale-porta-go-client v0.0.4
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
