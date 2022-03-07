@@ -1,126 +1,68 @@
-# Product declaration file. This file declares the available product operators
-# and how to install them.
-# 
-# Currently supports "local", "index" and "implicit" installations.
-#
-# ------------------------------------------------------------------------------
-#
-# Local:
-#
-# Install the operator by creating a CatalogSource pointing to manifests
-# from a ConfigMap reconciled from a local directory.
-#
-# Example:
-#
-# ```
-# product:
-#   installFrom: "local"
-#   manifestsDir: "integreatly-product"
-#   channel: "rhmi"
-# ```
-#
-# ------------------------------------------------------------------------------
-#
-# Index:
-#
-# Install the operator by creating a CatalogSource pointing to an index image
-#
-# * Example:
-#
-# ```
-# product:
-#   installFrom: "index"
-#   index: "quay.io/org/product-index:latest"
-#   channel: "alpha"
-# ```
-#
-# ------------------------------------------------------------------------------
-#
-# Implicit:
-#
-# Install the operator by creating a Subscription assuming that the operator is
-# provided by the same CatalogSource that installed RHOAM.
-#
-# * Example:
-#
-# ```
-# product:
-#   installFrom: "implicit"
-#   channel: "alpha"
-# ```
-#
-# --------------------------------------------------------------------------------
-#
-# Common fields:
-# * `channel`: Name of the channel to point the Subscription to. Defaults to "rhmi"
-# * `package`: Name of the package. Defaults to the subscription name of each product
-#
 products:
   3scale:
-    channel: "threescale-2.11"
-    installFrom: "implicit"
-    bundle: "registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:a5bd262966f0c384e08559a07d2a12e0272e5778f2fce4e21af8fc2f6407b18d"
+    channel: threescale-2.11
+    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata:2.11.2-9.1646619125
+    installFrom: implicit
     package: 3scale-operator
   amqonline:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-amq-online"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-amq-online
   amqstreams:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-amq-streams"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-amq-streams
   apicurio-registry:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-apicurio-registry"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-apicurio-registry
   apicurito:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-apicurito"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-apicurito
   cloud-resources:
-    channel: "rhmi"
-    installFrom: "index"
-    package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.36.0"
+    channel: rhmi
+    installFrom: index
+    package: rhmi-cloud-resources
+    index: quay.io/integreatly/cloud-resource-operator:index-v0.36.0
   codeready-workspaces:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-codeready-workspaces"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-codeready-workspaces
   fuse:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-fuse-online"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-fuse-online
   grafana:
-    channel: "rhmi"
-    installFrom: "local"
-    manifestsDir: "integreatly-grafana"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-grafana
   marin3r:
-    installFrom: "local"
-    manifestsDir: "integreatly-marin3r"
-    channel: "rhmi"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-marin3r
   middleware-monitoring:
     channel: rhmi
-    installFrom: "local"
-    manifestsDir: "integreatly-monitoring"
+    installFrom: local
+    manifestsDir: integreatly-monitoring
   observability:
     channel: alpha
+    installFrom: index
     package: observability-operator
-    installFrom: "index"
-    index: "quay.io/rhoas/observability-operator-index:v3.0.9"
+    index: quay.io/rhoas/observability-operator-index:v3.0.9
   rhsso:
-    installFrom: "local"
-    manifestsDir: "integreatly-rhsso"
-    channel: "rhmi"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-rhsso
   rhssouser:
-    installFrom: "local"
-    manifestsDir: "integreatly-rhsso"
-    channel: "rhmi"
+    channel: rhmi
+    installFrom: local
+    manifestsDir: integreatly-rhsso
   solution-explorer:
     channel: rhmi
-    installFrom: "local"
-    manifestsDir: "integreatly-solution-explorer"
-  ups:  
+    installFrom: local
+    manifestsDir: integreatly-solution-explorer
+  ups:
     channel: rhmi
-    installFrom: "local"
-    manifestsDir: "integreatly-unifiedpush"
-  
+    installFrom: local
+    manifestsDir: integreatly-unifiedpush
