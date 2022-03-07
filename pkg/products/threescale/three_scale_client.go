@@ -602,12 +602,12 @@ func (tsc *threeScaleClient) CreateTenant(accessToken string, account AccountDet
 		"POST",
 		"master/api/providers.xml",
 		withAccessToken(accessToken, map[string]interface{}{
-			"org_name": account.OrgName,
-			"username": account.Name,
-			"password": password,
-			"email":    email,
-			"from_email": "test@rhmw.io",
-			"support_email": "test@rhmw.io",
+			"org_name":              account.OrgName,
+			"username":              account.Name,
+			"password":              password,
+			"email":                 email,
+			"from_email":            "test@rhmw.io",
+			"support_email":         "test@rhmw.io",
 			"finance_support_email": "test@rhmw.io",
 		}),
 	)

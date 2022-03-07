@@ -1432,7 +1432,6 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	}
 	r.log.Info("getAccessTokenSecret length: " + strconv.Itoa(len(signUpAccountsSecret.Data)))
 
-
 	tenantsCreated, err := getAccountsCreatedCM(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -1878,7 +1877,7 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 		ClientSecret:                   string(secret),
 		Site:                           site,
 		SkipSSLCertificateVerification: true,
-		Published:                      true, 		// This field does the test?
+		Published:                      true, // This field does the test?
 		SystemName:                     clientID,
 	}
 	r.log.Infof("auth provider", l.Fields{"authProviderDetails": authProviderDetails})
