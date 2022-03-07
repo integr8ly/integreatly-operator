@@ -514,7 +514,6 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			Rules: []string{
 				"JobRunningTimeExceeded",
 				"JobRunningTimeExceeded",
-				"CronJobsFailed",
 				"CronJobNotRunInThreshold",
 			},
 		},
