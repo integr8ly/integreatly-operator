@@ -24,6 +24,7 @@ type ProvisioningStatus string
 
 var (
 	UserAnnotated              ProvisioningStatus = "user annotated"
+	WontProvisionTenant        ProvisioningStatus = "won't provision"
 	ThreeScaleAccountReady     ProvisioningStatus = "3scale account ready"
 	ThreeScaleAccountRequested ProvisioningStatus = "3scale account requested"
 )
