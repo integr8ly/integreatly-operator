@@ -19,7 +19,7 @@ objects:
     spec:
       channel: ${CHANNEL}
       installPlanApproval: Automatic
-      name: integreatly
+      name: ${SUBSCRIPTION_NAME}
       source: ${CATALOG_SOURCE_CONFIG_NAME}
       sourceNamespace: ${CATALOG_SOURCE_CONFIG_NAMESPACE}
 
