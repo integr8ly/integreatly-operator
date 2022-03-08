@@ -81,7 +81,7 @@ products:
     channel: "rhmi"
     installFrom: "index"
     package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.36.0"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.37.1"
   codeready-workspaces:
     channel: "rhmi"
     installFrom: "local"
@@ -106,7 +106,7 @@ products:
     channel: alpha
     package: observability-operator
     installFrom: "index"
-    index: "quay.io/rhoas/observability-operator-index:v3.0.8"
+    index: "quay.io/rhoas/observability-operator-index:v3.0.9"
   rhsso:
     installFrom: "local"
     manifestsDir: "integreatly-rhsso"

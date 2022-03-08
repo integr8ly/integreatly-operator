@@ -16,7 +16,7 @@ Verify RHOAM installation on OSD Trial works as expected.
 
 ## Steps
 
-1. Provision an OSD Trial Cluster through [Jenkins](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
+1. Provision an OSD Trial Cluster through [Jenkins](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
    - Reach out for AWS credentials needed to provision an OSD Trial Cluster
    - Check `osdTrial` checkbox and for phases choose `provisionCluster` and `installProduct`
 2. After pipeline finishes log into the cluster using `oc` and the provided kubeadmin credentials

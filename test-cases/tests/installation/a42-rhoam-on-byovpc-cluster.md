@@ -66,4 +66,4 @@ make ocm/cluster.json
 make ocm/cluster/create
 ```
 
-16. Once it's created, install RHOAM and run the e2e test suite using [Jenkins pipeline](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
+16. Once it's created, install RHOAM and run the e2e test suite using [Jenkins pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)

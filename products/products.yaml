@@ -19,7 +19,7 @@ products:
     manifestsDir: "integreatly-apicurito"
     quayScan: false
   - name: cloud-resource-operator
-    version: v0.36.0
+    version: v0.37.1
     url: "https://github.com/integr8ly/cloud-resource-operator"
     installType: "rhoam/rhmi"
     manifestsDir: "integreatly-cloud-resources"
@@ -67,7 +67,7 @@ products:
     manifestsDir: "integreatly-unifiedpush"
     quayScan: false
   - name: observability-operator
-    version: v3.0.8
+    version: v3.0.9
     url: "https://github.com/redhat-developer/observability-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-observability-operator"

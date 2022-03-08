@@ -86,6 +86,7 @@ type PrometheusIndex struct {
 	Federation                      string             `json:"federation,omitempty"`
 	Observatorium                   string             `json:"observatorium,omitempty"`
 	RemoteWrite                     string             `json:"remoteWrite,omitempty"`
+	OverridePrometheusPvcSize       string             `json:"overridePrometheusPvcSize,omitempty"`
 	Labels                          *v13.LabelSelector `json:"labels,omitempty"`
 	PodMonitorLabelSelector         *v13.LabelSelector `json:"podMonitorLabelSelector,omitempty"`
 	PodMonitorNamespaceSelector     *v13.LabelSelector `json:"podMonitorNamespaceSelector,omitempty"`

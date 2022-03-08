@@ -62,6 +62,7 @@ var (
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
+				{"C10B - Verify Prometheus blackbox targets", TestAdditionalBlackboxTargets},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
@@ -71,9 +72,6 @@ var (
 				/*FLAKY on RHMI*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
-				{"H29 - Verify that backend can be created via backend CR", Test3scaleBackendViaCR},
-				{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
-				{"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
@@ -88,6 +86,18 @@ var (
 				{"M02B - Verify RHOAM version metric is exposed in Prometheus", TestRhoamVersionMetricExposed},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+	}
+
+	//Threescale cluster scoped test suite to be used when Threescale becomes cluster scoped.
+	THREESCALE_CLUSTER_SCOPED_TESTS = []TestSuite{
+		{
+			[]TestCase{
+				//{"H29 - Verify that backend can be created via backend CR", Test3scaleBackendViaCR},
+				//{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
+				//{"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 

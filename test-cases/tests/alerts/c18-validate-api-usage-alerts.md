@@ -23,7 +23,7 @@ estimate: 90m
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
 
-2. RHOAM is installed using the [Jenkins pipeline](https://master-jenkins-csb-intly.apps.ocp4.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-master/build?delay=0sec) with following parameters:
+2. RHOAM is installed using the [Jenkins pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-master/build?delay=0sec) with following parameters:
 
    - integreatlyOperatorBranchName: (Go to integreatly-operator github repo and select latest RHOAM release branch)
    - ocmClusterLifespan: 36

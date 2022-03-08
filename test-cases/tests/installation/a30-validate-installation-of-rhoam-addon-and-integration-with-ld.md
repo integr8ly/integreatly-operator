@@ -147,23 +147,38 @@ oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.quota
 
 **Verify that LDAP IDP can be configured**
 
-1. Go to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) again and search for "ldap-server-tester AWS UI credentials"
+1. Go to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) again and search for "RHOAM LDAP Instance" You should find "Login page" there and AWS credentials for AWS CLI
 2. Access the AWS EC2 console with those credentials
+
+   - you can either use the IAM user if you have one and navigate to "Login page" in your browser
+   - or you can use AWS CLI
 
 3. On the AWS EC2 console, right click on the LDAP Server EC2 instance and select start instance.
 
    > Instance should change to running state
 
+   If having only AWS CLI access you can do the following
+
+   ```bash
+   export AWS_PAGER=""
+   EC2=`aws ec2 describe-instances --region eu-west-1 --filters "Name=tag:Name,Values=rhoam-ldap" --query 'Reservations[0].Instances[0].InstanceId' --output text`
+   aws ec2 start-instances --region eu-west-1 --instance-ids $EC2
+   aws ec2 wait instance-status-ok --instance-ids $EC2 --region eu-west-1
+
+   # store the public IP for later use
+   LDAP_PUBLIC_IP=$(aws ec2 describe-instances --region eu-west-1 --filters "Name=tag:Name,Values=rhoam-ldap" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+   ```
+
 4. Once the instance is in a running state verify if the LDAP service is up and running.
 
    ```bash
-   // you need to change the <EC2 instance IP> to the EC2 instance IP
+   curl -vv "ldap://${LDAP_PUBLIC_IP}/dc=ec2-172-31-37-63,dc=eu-west-1,dc=compute,dc=amazonaws,dc=com?uid?sub?(uid=rhoam-customer-admin)"
 
-   curl -vv "ldap://<EC2 instance IP>:389/dc=ec2-3-133-150-27,dc=us-east-2,dc=compute,dc=amazonaws,dc=com?uid?sub?(uid=rhoam)"
-
-   DN: uid=rhoam,ou=people,dc=ec2-3-133-150-27,dc=us-east-2,dc=compute,dc=amazonaws,dc=com
-    uid: rhoam
+   DN: uid=rhoam-customer-admin,ou=people,dc=ec2-172-31-37-63,dc=eu-west-1,dc=compute,dc=amazonaws,dc=com
+    uid: rhoam-customer-admin
    ```
+
+   If the LDAP service is not running ssh to the EC2 instance and start it. Follow our [LDAP guide](https://github.com/RHCloudServices/integreatly-help/tree/master/qe-guides/rhoam-ldap-instance.md) to do so.
 
 Create the integration with RHOAM via IDP.
 
@@ -186,9 +201,8 @@ Create the integration with RHOAM via IDP.
    - In `LDAP URL` add the URL we want to use for searching users in the LDAP server
 
    ```bash
-   // you need to change the <EC2 instance IP> to the EC2 instance IP
 
-   ldap://<EC2 instance IP>:389/dc=ec2-3-133-150-27,dc=us-east-2,dc=compute,dc=amazonaws,dc=com?uid?sub
+   echo "ldap://${LDAP_PUBLIC_IP}:389/dc=ec2-172-31-37-63,dc=eu-west-1,dc=compute,dc=amazonaws,dc=com?uid?sub"
    ```
 
    - Leave the fields Bind DN and Bind password empty
@@ -333,3 +347,12 @@ ocm delete /api/clusters_mgmt/v1/clusters/<CLUSTER-ID>/addons/managed-api-servic
 2. On the AWS EC2 console, right click on the LDAP Server EC2 instance and select stop instance.
 
    > Instance should change to stopped state.
+
+   If having only AWS CLI access you can do the following
+
+   ```bash
+   EC2=`aws ec2 describe-instances --region eu-west-1 --filters "Name=tag:Name,Values=rhoam-ldap" --query 'Reservations[0].Instances[0].InstanceId' --output text`
+   aws ec2 stop-instances --region eu-west-1 --instance-ids $EC2
+   aws ec2 wait instance-stopped --instance-ids $EC2 --region eu-west-1
+
+   ```
