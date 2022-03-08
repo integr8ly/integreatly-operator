@@ -51,6 +51,16 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - '*'
+  resources:
+  - configmaps
+  - secrets
+  - subscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - admissionregistration.k8s.io
   resources:
   - mutatingwebhookconfigurations

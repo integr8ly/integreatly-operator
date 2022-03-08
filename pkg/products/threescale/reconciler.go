@@ -545,10 +545,6 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 				smtpUpdated = true
 			}
 
-			smtpConfigSecret.Data["from_address"] = []byte("test@rhmw.io")
-
-			// TODO: set from_address
-
 			if smtpUpdated {
 				err = r.RolloutDeployment(ctx, "system-app")
 				if err != nil {

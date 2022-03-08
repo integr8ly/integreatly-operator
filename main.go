@@ -94,11 +94,15 @@ func main() {
 		QuoteEmptyFields: false,
 	})
 
-	// ONLY IF SANDBOX !!!!!!!!
 	watchNamespace, err := resources.GetWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
 			"the manager will watch and manage resources in all namespaces")
+	}
+
+	// Multitenant installations require "cluster scoping" the RHOAM operator which requires the watchNamespace to be empty
+	if strings.Contains(watchNamespace, "sandbox") {
+		watchNamespace = ""
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -107,7 +111,7 @@ func main() {
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "28185cee.integreatly.org",
-		//Namespace:          watchNamespace,
+		Namespace:          watchNamespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
