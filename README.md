@@ -72,7 +72,22 @@ git clone https://github.com/integr8ly/integreatly-operator
 cd integreatly-operator
 ```
 
-### 2. Prepare your cluster
+### 2. Cluster size guidelines
+
+For development work the required vcpu and ram can be lower than that stated in the [service definition](https://access.redhat.com/articles/5534341#scalability-and-service-levels-15).
+Different quotas require different values.
+Table belong are typical requested values needed for RHOAM on a cluster with cluster storage set to True.
+
+| Quota        | vCPU     | RAM     |
+|--------------|----------|---------|
+| 100 Thousand | 6.5 vCPU | 22 Gb   |
+| 1 Million    | 6.5 vCPU | 22 Gb   |
+| 5 Million    | 8 vCPU   | 24 Gb   |
+| 10 Million   | 8.5 vCPU | 24 Gb   |
+| 20 Million   | 9.5 vCPU | 24 Gb   |
+| 50 Million   | 14 vCPU  | 26.5 Gb |
+
+### 3. Prepare your cluster
 
 If you are working against a fresh cluster it will need to be prepared using the following. 
 Ensure you are logged into a cluster by `oc whoami`.
@@ -82,7 +97,7 @@ INSTALLATION_TYPE=<managed/managed-api> make cluster/prepare/local
 ```
 
 
-### 3. Configuration (optional)
+### 4. Configuration (optional)
 
 If you are running RHOAM against a cluster which is smaller than the requirements listed above, you 
 should use the IN_PROW variable, otherwise the installation will not complete. 
@@ -100,7 +115,7 @@ INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make
 | USE_CLUSTER_STORAGE   | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift. |
 
 
-### 4. Run integreatly-operator
+### 5. Run integreatly-operator
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
 The operator can now be run locally:
 ```shell
@@ -117,7 +132,7 @@ IMAGE_FORMAT=<image-registry-address> INSTALLATION_TYPE=managed-api  make cluste
 |----------|---------|:----:|---------|-------|
 | PRODUCT_DECLARATION | File path | Optional |`./products/installation.yaml` | Specifies how RHOAM install the product operators, either from a local manifest, an index, or an included bundle. Only applicable to RHOAM |
 
-### 5. Validate installation 
+### 6. Validate installation 
 
 Use following commands to validate that installation succeeded:
 
