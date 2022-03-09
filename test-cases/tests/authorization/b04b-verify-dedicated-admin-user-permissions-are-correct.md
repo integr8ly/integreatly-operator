@@ -1,6 +1,6 @@
 ---
 automation:
-  - INTLY-7748
+  - MGDAPI-3164
 products:
   - name: rhoam
     environments:
@@ -9,6 +9,7 @@ products:
 estimate: 1h
 tags:
   - per-release
+  - automated
 ---
 
 # B04B - Verify Dedicated Admin User Permissions are Correct
@@ -21,7 +22,7 @@ The following steps are still not automated in [user_dedicated_admin_permissions
 
 ### View only permissions for RHMI Custom Resource
 
-JIRA: [INTLY-7748](https://issues.redhat.com/browse/INTLY-7748)
+JIRA: [MGDAPI-3164](https://issues.redhat.com/browse/MGDAPI-3164)
 
 1. Go to the **redhat-rhoam-operator** namespace in the OpenShift console
 2. Go to **Home** > **Search**
