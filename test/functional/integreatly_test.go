@@ -61,6 +61,10 @@ var _ = Describe("integreatly", func() {
 				TestCases: common.GetScalabilityTestCases(installType),
 			},
 			{
+				Type:      fmt.Sprintf("%s Threescale Cluster Scoped", installType),
+				TestCases: common.GetClusterScopedTestCases(installType),
+			},
+			{
 				Type:      "FAILURE TESTS",
 				TestCases: common.FAILURE_TESTS,
 			},
@@ -81,17 +85,6 @@ var _ = Describe("integreatly", func() {
 				TestCases: MULTIAZ_TESTS,
 			})
 		}
-		//Function to be used when Threescale becomes cluster scoped.
-		// clusterScoped, err := common.IsClusterScoped(restConfig)
-		// if err != nil {
-		// 	t.Error(err)
-		// }
-		// if clusterScoped {
-		// 	tests = append(tests, common.Tests{
-		// 		Type:      fmt.Sprintf("%s Threescale Cluster Scoped", installType),
-		// 		TestCases: common.GetClusterScopedTestCases(installType),
-		// 	})
-		// }
 
 		if os.Getenv("DESTRUCTIVE") == "true" {
 			tests = append(tests, common.Tests{

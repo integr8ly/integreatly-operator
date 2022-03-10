@@ -80,6 +80,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 			return false, nil
 		}
 		for _, backend := range backendList.Backends {
+			println(backend.Element.Name)
 			if backend.Element.Name == backendName {
 				return true, nil
 			}
