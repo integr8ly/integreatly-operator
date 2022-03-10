@@ -165,7 +165,7 @@ apis/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen apis/v1alpha1
 code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml apis/integreatly/v1alpha1/zz_generated.deepcopy.go
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..."
 	@go generate ./...
-	mv ./config/crd/bases/integreatly.org_rhoamtenants.yaml ./config/crd-sandbox/bases
+	mv ./config/crd/bases/integreatly.org_apimanagementtenants.yaml ./config/crd-sandbox/bases
 
 .PHONY: code/check
 code/check:
@@ -423,7 +423,7 @@ cluster/cleanup/crds:
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 	@-oc delete crd rhmiconfigs.integreatly.org
-	@-oc delete crd rhoamtenants.integreatly.org
+	@-oc delete crd apimanagementtenants.integreatly.org
 
 .PHONY:cluster/cleanup/rbac/dedicated-admins
 cluster/cleanup/rbac/dedicated-admins:

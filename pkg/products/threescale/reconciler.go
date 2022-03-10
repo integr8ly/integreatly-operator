@@ -513,47 +513,50 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 
 		smtpUpdated := false
 
-		if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
-			smtpConfigSecret.Data["address"] = credSec.Data["host"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
-			smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
-			smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
-			smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
-			smtpConfigSecret.Data["password"] = credSec.Data["password"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
-			smtpConfigSecret.Data["port"] = credSec.Data["port"]
-			smtpUpdated = true
-		}
-		if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
-			smtpConfigSecret.Data["username"] = credSec.Data["username"]
-			smtpUpdated = true
-		}
+		// There is an issue with setting smtp values and creating Tenants. CreateTenant fails when SMTP values are set.
+		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 
-		if smtpUpdated {
-			err = r.RolloutDeployment(ctx, "system-app")
-			if err != nil {
-				r.log.Error("Rollout system-app deployment", err)
+			if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
+				smtpConfigSecret.Data["address"] = credSec.Data["host"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
+				smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
+				smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
+				smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
+				smtpConfigSecret.Data["password"] = credSec.Data["password"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
+				smtpConfigSecret.Data["port"] = credSec.Data["port"]
+				smtpUpdated = true
+			}
+			if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
+				smtpConfigSecret.Data["username"] = credSec.Data["username"]
+				smtpUpdated = true
 			}
 
-			err = r.RolloutDeployment(ctx, "system-sidekiq")
-			if err != nil {
-				r.log.Error("Rollout system-sidekiq deployment", err)
+			if smtpUpdated {
+				err = r.RolloutDeployment(ctx, "system-app")
+				if err != nil {
+					r.log.Error("Rollout system-app deployment", err)
+				}
+
+				err = r.RolloutDeployment(ctx, "system-sidekiq")
+				if err != nil {
+					r.log.Error("Rollout system-sidekiq deployment", err)
+				}
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
@@ -1106,7 +1109,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
+	_, err = r.tsClient.SetFromEmailAddress("test@rhmw.io", *accessToken)
 	if err != nil {
 		r.log.Error("Failed to set email from address:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -1418,10 +1421,12 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 	setTenantMetrics(mtUserIdentities, allAccounts)
 
+	r.log.Info("getAccessTokenSecret")
 	signUpAccountsSecret, err := getAccessTokenSecret(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	r.log.Info("getAccessTokenSecret length: " + strconv.Itoa(len(signUpAccountsSecret.Data)))
 
 	tenantsCreated, err := getAccountsCreatedCM(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
@@ -1548,6 +1553,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 	}
 
+	r.log.Info("creating new MT accounts in 3scale")
+
 	// creating new MT accounts in 3scale
 	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
 	r.log.Infof("Retrieving tenant accounts to be created",
@@ -1558,6 +1565,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	)
 
 	for idx, account := range accountsToBeCreated {
+
+		r.log.Info("Accounts to be created loop")
 
 		pw, err := r.getTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
@@ -1573,6 +1582,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				err,
 			)
 
+			// Attempt a delete of Tenant to force re-entry !!!
+
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating tenant account: %s, Error=[%v]", account.OrgName, err)
 		}
 
@@ -1584,12 +1595,15 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			},
 		)
 
+		r.log.Info("Creating signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
 		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
 		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
 		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
 		if err != nil {
+			r.log.Error("Error creating access token secret ", err)
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
 		}
+		r.log.Info("After signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
 	}
 
 	// deleting MT accounts in 3scale
@@ -1859,7 +1873,7 @@ func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClien
 		ClientSecret:                   string(secret),
 		Site:                           site,
 		SkipSSLCertificateVerification: true,
-		Published:                      true,
+		Published:                      true, // This field does the test?
 		SystemName:                     clientID,
 	}
 	r.log.Infof("auth provider", l.Fields{"authProviderDetails": authProviderDetails})

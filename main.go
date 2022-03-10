@@ -74,7 +74,7 @@ func init() {
 	utilruntime.Must(rhmiv1alpha1.AddToSchemes.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
-	// +kubebuilder:rbac:groups=rhoam.tenants.io,resources=rhoamtenant,verbs=watch;get;list
+	// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant,verbs=watch;get;list
 
 }
 
@@ -98,6 +98,11 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
 			"the manager will watch and manage resources in all namespaces")
+	}
+
+	// Multitenant installations require "cluster scoping" the RHOAM operator which requires the watchNamespace to be empty
+	if strings.Contains(watchNamespace, "sandbox") {
+		watchNamespace = ""
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{

@@ -51,6 +51,16 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - '*'
+  resources:
+  - configmaps
+  - secrets
+  - subscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - admissionregistration.k8s.io
   resources:
   - mutatingwebhookconfigurations
@@ -124,6 +134,22 @@ rules:
 - apiGroups:
   - integreatly.org
   resources:
+  - apimanagementtenant
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - integreatly.org
+  resources:
+  - apimanagementtenant/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - integreatly.org
+  resources:
   - rhmiconfigs
   verbs:
   - create
@@ -157,22 +183,6 @@ rules:
   - integreatly.org
   resources:
   - rhmis/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - integreatly.org
-  resources:
-  - rhoamtenant
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - integreatly.org
-  resources:
-  - rhoamtenant/status
   verbs:
   - get
   - patch
