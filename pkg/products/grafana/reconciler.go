@@ -561,33 +561,32 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
 	// If the installation type isn't managed-api, ensure that the ConsoleLink
 	// doesn't exist
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		return nil
-	}
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 
-	cl := &consolev1.ConsoleLink{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: grafanaConsoleLink,
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
-		cl.Spec = consolev1.ConsoleLinkSpec{
-			ApplicationMenu: &consolev1.ApplicationMenuSpec{
-				ImageURL: grafanaIcon,
-				Section:  "OpenShift Managed Services",
-			},
-			Location: consolev1.ApplicationMenu,
-			Link: consolev1.Link{
-				Href: r.Config.GetHost(),
-				Text: "API Management Dashboards",
+		cl := &consolev1.ConsoleLink{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: grafanaConsoleLink,
 			},
 		}
 
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("error reconciling console link: %v", err)
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
+			cl.Spec = consolev1.ConsoleLinkSpec{
+				ApplicationMenu: &consolev1.ApplicationMenuSpec{
+					ImageURL: grafanaIcon,
+					Section:  "OpenShift Managed Services",
+				},
+				Location: consolev1.ApplicationMenu,
+				Link: consolev1.Link{
+					Href: r.Config.GetHost(),
+					Text: "API Management Dashboards",
+				},
+			}
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error reconciling console link: %v", err)
+		}
 	}
 
 	return nil
