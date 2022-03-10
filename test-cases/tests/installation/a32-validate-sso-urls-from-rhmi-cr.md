@@ -12,6 +12,8 @@ products:
       - 1.12.0
       - 1.15.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # A32 - Validate SSO URLs from RHMI CR

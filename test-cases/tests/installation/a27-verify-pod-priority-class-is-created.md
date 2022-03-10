@@ -1,4 +1,6 @@
 ---
+automation:
+  - MGDAPI-3464
 estimate: 15m
 products:
   - name: rhoam
@@ -9,6 +11,8 @@ products:
       - 1.0.0
       - 1.12.0
       - 1.15.0
+tags:
+  - automated
 ---
 
 # A27 - Verify pod priority class is created
