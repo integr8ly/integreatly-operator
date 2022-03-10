@@ -1,6 +1,6 @@
 domain: integreatly.org
 layout: go.kubebuilder.io/v2
-projectName: integreatly-operator
+projectName: managed-api-service
 repo: github.com/integr8ly/integreatly-operator
 resources:
   - group: integreatly.org
