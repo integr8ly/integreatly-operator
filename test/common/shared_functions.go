@@ -8,39 +8,33 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	"io"
-	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"net/http/cookiejar"
-	"strings"
-	"time"
-
-	"github.com/onsi/ginkgo"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"gopkg.in/yaml.v2"
-	corev1 "k8s.io/api/core/v1"
-
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/onsi/ginkgo"
 	routev1 "github.com/openshift/api/route/v1"
 	"golang.org/x/net/publicsuffix"
+	"gopkg.in/yaml.v2"
+	"io"
+	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	cached "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/remotecommand"
+	"net/http"
+	"net/http/cookiejar"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
+	"time"
 
-	goctx "context"
 )
 
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
@@ -400,32 +394,6 @@ func GetClusterScopedTestCases(installType string) []TestCase {
 		}
 	}
 	return testCases
-}
-
-func IsClusterScoped(restConfig *rest.Config) (bool, error) {
-	context, err := NewTestingContext(restConfig)
-	if err != nil {
-		return false, err
-	}
-	threeScaleOperatorGroup := &operatorsv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-registry-og",
-			Namespace: ThreeScaleOperatorNamespace,
-		},
-	}
-
-	err = context.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
-	if err != nil {
-		return false, err
-	}
-
-	for _, namespace := range threeScaleOperatorGroup.Status.Namespaces {
-		if namespace == "" {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func writeObjToYAMLFile(obj interface{}, out string) error {
