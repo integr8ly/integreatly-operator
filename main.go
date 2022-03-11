@@ -201,6 +201,36 @@ func setupWebhooks(mgr ctrl.Manager) error {
 		},
 	})
 
+	//webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+	//	Name: "3scale-apimanager-block-create",
+	//	Rule: webhooks.NewRule().
+	//		OneResource("apps.3scale.net", "v1alpha1", "apimanagers").
+	//		ForCreate().
+	//		NamespacedScope(),
+	//	Register: webhooks.AdmissionWebhookRegister{
+	//		Type: webhooks.ValidatingType,
+	//		Path: "/3scale-apimanager-block-create",
+	//		Hook: &admission.Webhook{
+	//			Handler: addon.New3scaleCRBlockCreateHandler(mgr.GetConfig(), mgr.GetScheme()),
+	//		},
+	//	},
+	//})
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name: "3scale-tenant-block-create",
+		Rule: webhooks.NewRule().
+			OneResource("capabilities.3scale.net", "v1alpha1", "tenants").
+			ForCreate().
+			NamespacedScope(),
+		Register: webhooks.AdmissionWebhookRegister{
+			Type: webhooks.ValidatingType,
+			Path: "/3scale-tenant-block-create",
+			Hook: &admission.Webhook{
+				Handler: addon.New3scaleCRBlockCreateHandler(mgr.GetConfig(), mgr.GetScheme()),
+			},
+		},
+	})
+
 	// Delete webhook for the RHMI CR that uninstalls the operator if there
 	// are no finalizers left
 	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
