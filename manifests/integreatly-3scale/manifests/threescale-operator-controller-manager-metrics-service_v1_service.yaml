@@ -3,14 +3,16 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
+    app: 3scale-api-management
     control-plane: controller-manager
   name: threescale-operator-controller-manager-metrics-service
 spec:
   ports:
-  - name: https
-    port: 8443
-    targetPort: https
+  - name: metrics
+    port: 8080
+    targetPort: metrics
   selector:
+    app: 3scale-api-management
     control-plane: controller-manager
 status:
   loadBalancer: {}
