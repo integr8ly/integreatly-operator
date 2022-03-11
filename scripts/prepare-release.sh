@@ -249,7 +249,7 @@ set_related_images() {
     fi
   done
 
-  containerImageRemovedLastCharacter=$(echo "${containerImageField::-1}")
+  containerImageRemovedLastCharacter=${containerImageField%?}
   containerImageField="$containerImageRemovedLastCharacter]"
   printf -v m "$containerImageField" ; m="$m" yq e -i ".metadata.annotations.containerImages= strenv(m)" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 }
