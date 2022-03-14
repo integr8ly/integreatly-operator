@@ -2,7 +2,10 @@ package rhsso
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"os"
+	"time"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -11,10 +14,11 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
+	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-
-	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -27,6 +31,7 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	_ "github.com/lib/pq"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +51,10 @@ var (
 	ssoType                   = "rhsso"
 	postgresResourceName      = "rhsso-postgres-rhmi"
 	routeName                 = "keycloak-edge"
+	// tmp fix
+	timeoutTime    time.Time
+	failureTimeout = time.Minute * 15
+	encountered    = false
 )
 
 const (
@@ -180,8 +189,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile components", err)
+
+		if strings.Contains(err.Error(), "invalid character") {
+			if !encountered {
+				timeoutTime = time.Now().Add(failureTimeout)
+				encountered = true
+			}
+			// tmp fix - extra logs collection
+			connected := r.connectToPostgres(r.Config.RHSSOCommon.GetNamespace(), ctx, serverClient)
+			// tmp fix - restarting pod after failuresLimit is reached
+			if connected {
+				r.restartPod(ctx, serverClient, err, r.Config.RHSSOCommon.GetNamespace())
+			}
+		}
 		return phase, err
 	}
+	encountered = false
 
 	phase, err = r.ReconcileStatefulSet(ctx, serverClient, r.Config.RHSSOCommon)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -715,5 +738,96 @@ func getKeycloakRoles(installationType integreatlyv1alpha1.InstallationType) map
 func GetInstanceLabels() map[string]string {
 	return map[string]string{
 		SSOLabelKey: SSOLabelValue,
+	}
+}
+
+func (r *Reconciler) connectToPostgres(ns string, ctx context.Context, client k8sclient.Client) bool {
+	mtrReconciled, found := os.LookupEnv("MTR_RECONCILED")
+	if mtrReconciled == "true" || found {
+		r.Log.Info("Found MTR_RECONCILED. Disabling connection to rds")
+		return false
+	}
+
+	r.Log.Info("Testing connection to the Postgres rhsso-postgres-rhoam")
+
+	keycloakSec := &corev1.Secret{
+		ObjectMeta: controllerruntime.ObjectMeta{
+			Name:      resources.DatabaseSecretName,
+			Namespace: ns,
+		},
+	}
+	key, err := k8sclient.ObjectKeyFromObject(keycloakSec)
+	if err != nil {
+		r.Log.Error("Error retrieving object key from Keycloak secret: ", err)
+		return false
+	}
+	err = client.Get(ctx, key, keycloakSec)
+	if err != nil {
+		r.Log.Error("Error getting KeyclockSecret: ", err)
+		return false
+	}
+	database := keycloakSec.Data[resources.DatabaseSecretKeyDatabase]
+	port := keycloakSec.Data[resources.DatabaseSecretKeyExtPort]
+	host := keycloakSec.Data[resources.DatabaseSecretKeyExtHost]
+	password := keycloakSec.Data[resources.DatabaseSecretKeyPassword]
+	username := keycloakSec.Data[resources.DatabaseSecretKeyUsername]
+
+	r.Log.Info(fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, username, password, database))
+
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, username, password, database)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		r.Log.Error("Error opening connection: ", err)
+		return false
+	}
+	err = db.Ping()
+	if err != nil {
+		r.Log.Error("Error pinging db: ", err)
+	} else {
+		r.Log.Info("Successfully connected")
+	}
+	err = db.Close()
+	if err != nil {
+		r.Log.Error("Error closing a dummy connection: ", err)
+	} else {
+		r.Log.Info("Closed connection")
+	}
+	return true
+}
+
+// pods will be recreated by the replicaSet. Scaling down replicas isnt efficient - it gets scaled back before all
+// pods entered the "Terminating" state
+func (r *Reconciler) restartPod(ctx context.Context, client k8sclient.Client, keyckloakErr error, ns string) {
+	currentTime := time.Now()
+	if timeoutTime.Before(currentTime) {
+		r.Log.Warning(fmt.Sprintf("Reached timeout on the the \"invalid charater\" lastError, Restarting %s pods", ns))
+
+		pods := &corev1.PodList{}
+		listOpts := []k8sclient.ListOption{
+			k8sclient.InNamespace(ns),
+			k8sclient.MatchingLabels(map[string]string{
+				"component": "keycloak",
+			}),
+		}
+		err := client.List(ctx, pods, listOpts...)
+		if err != nil {
+			r.Log.Error("Error listing Keycloak pods:", err)
+			return
+		}
+
+		for _, pod := range pods.Items {
+			err = client.Delete(ctx, &pod)
+			if err != nil {
+				r.Log.Error(fmt.Sprintf("Error deleting pod %s in namespace %s", pod.Name, pod.Namespace), err)
+			}
+		}
+		// to reset the timer
+		encountered = false
+	} else {
+		r.Log.Warning(fmt.Sprintf("Encoutered error: %s. Current time: %s, restarting %s pods when reaching timeout at %s", keyckloakErr, currentTime.String(), ns, timeoutTime.String()))
 	}
 }
