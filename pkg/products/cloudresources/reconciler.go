@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"strings"
 	"time"
 
@@ -42,15 +42,12 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-
-	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 )
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
 	serviceUpdatesKey            = "serviceUpdates"
-	croSecretName                = "sts-credentials"
-	addonStsArnParameterName     = "sts-role-arn"
+	stsCROSecretName             = "sts-credentials"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002"}
@@ -170,24 +167,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	// Check if STS Cluster, get STS role ARN addon parameter and pass ARN to Secret in CRO namespace
 	r.log.Info("checking if STS mode")
-	sts, err := checkIfStsClusterByCredentialsMode(ctx, client, operatorNamespace)
+	isSTS, err := sts.IsClusterSTS(ctx, client, r.log)
 	if err != nil {
 		r.log.Error("Error checking STS mode", err)
-		phase := integreatlyv1alpha1.PhaseFailed
-		return phase, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if sts {
-		r.log.Info("validation of STS role ARN parameter ")
-		stsRoleArn, err := getStsRoleArn(installation, client)
-		if err != nil {
-			r.log.Error("STS role ARN parameter pattern validation failed", err)
-			phase := integreatlyv1alpha1.PhaseFailed
-			return phase, err
-		}
-		r.log.Info("pass ARN into secret in cro namespace")
-		if err := passArnIntoSecretInCroNamespace(ctx, client, operatorNamespace, stsRoleArn); err != nil {
-			r.log.Error("error passing ARN into secret in cro namespace", err)
-			phase := integreatlyv1alpha1.PhaseFailed
+	if isSTS {
+		phase, err = r.createSTSArnSecret(ctx, client, operatorNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to create STS secret", err)
 			return phase, err
 		}
 	}
@@ -627,75 +615,31 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	return client.Patch(ctx, cfgMap, k8sclient.Merge)
 }
 
-// passArnIntoSecretInCroNamespace pass the ARN value into a Secret in CRO namespace
-func passArnIntoSecretInCroNamespace(ctx context.Context, client k8sclient.Client, operatorNamespace string, stsRoleArn string) error {
+// createSTSArnSecret create the STS arn secret - should be already validated in preflight checks
+func (r *Reconciler) createSTSArnSecret(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	stsRoleArn, err := sts.GetStsRoleArn(ctx, client, r.installation.Namespace)
+	if err != nil {
+		r.log.Error("STS role ARN parameter pattern validation failed", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	// create CRO credentials secret
 	credSec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      croSecretName,
+			Name:      stsCROSecretName,
 			Namespace: operatorNamespace,
 		},
 		Data: map[string][]byte{},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), client, credSec, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, credSec, func() error {
 		credSec.Data["role_arn"] = []byte(stsRoleArn)
 		credSec.Data["web_identity_token_file"] = []byte("/var/run/secrets/openshift/serviceaccount/token")
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update CRO credentials Secret. Failed to pass ARN into secret: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update CRO credentials Secret. Failed to pass ARN into secret: %w", err)
 	}
 
-	return nil
-}
-
-func getStsRoleArn(installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (string, error) {
-	stsRoleArn, stsFound, err := addon.GetStringParameterByInstallType(
-		context.TODO(),
-		client,
-		integreatlyv1alpha1.InstallationTypeManagedApi,
-		installation.Namespace,
-		addonStsArnParameterName,
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed while retrieving addon parameter %w", err)
-	} else if !stsFound || stsRoleArn == "" {
-		fmt.Printf("Non STS configuration")
-		return "", nil
-	}
-
-	validArn, err := validateStsRoleArnPattern(stsRoleArn)
-	if err != nil {
-		return "", fmt.Errorf("failed to validate STS role ARN parameter: %w", err)
-	} else if !validArn {
-		return "", fmt.Errorf("STS role ARN parameter is not valid, not matching to AWS ARN standard")
-	}
-
-	return stsRoleArn, nil
-}
-
-func checkIfStsClusterByCredentialsMode(ctx context.Context, client k8sclient.Client, operatorNamespace string) (bool, error) {
-	//Check if Cluster uses STS authentication
-	cloudCredential := &cloudcredentialv1.CloudCredential{}
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "cluster"}, cloudCredential)
-	if err != nil {
-		return false, fmt.Errorf("failed to get cloudCredential: %w", err)
-	}
-	//If CloudCredentialsModeManual - so cluster uses STS
-	if cloudCredential.Spec.CredentialsMode == cloudcredentialv1.CloudCredentialsModeManual {
-		return true, nil
-	}
-	return false, nil
-}
-
-func validateStsRoleArnPattern(stsRoleArn string) (bool, error) {
-	//Check ARN pattern
-	awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
-	r, err := regexp.Compile(awsArnPattern)
-	if err != nil {
-		return false, fmt.Errorf("regexp Compile error %w", err)
-	}
-
-	return r.MatchString(stsRoleArn), nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

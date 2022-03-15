@@ -2,12 +2,16 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -16,23 +20,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"testing"
-
-	cloudcredentialv1 "github.com/openshift/api/operator/v1"
-
 )
-const (
-	operatorNamespace = "openshift-operators"
-)
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := cloudcredentialv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-
-	return scheme, err
-}
 
 func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -122,54 +110,101 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 	}
 }
 
-func TestReconciler_checkIfStsClusterByCredentialsMode(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatalf("Error obtaining scheme")
+func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+
+	const namespace = "test"
+
+	type args struct {
+		client    client.Client
+		namespace string
 	}
 	tests := []struct {
-		name       string
-		ARN        string
-		fakeClient k8sclient.Client
-		want       bool
-		wantErr    bool
+		name    string
+		args    args
+		want    bool
+		wantErr bool
 	}{
 		{
-			name: "STS cluster",
-			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
+			name: "test: can't get secret",
+			args: args{
+				client: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("get error")
+					},
 				},
-				Spec: cloudcredentialv1.CloudCredentialSpec{
-					CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-				},
-			}),
-			want:    true,
-			wantErr: false,
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
 		},
 		{
-			name: "Non STS cluster",
-			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Spec: cloudcredentialv1.CloudCredentialSpec{
-					CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
-				},
-			}),
+			name: "test: role arn not found",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme),
+				namespace: namespace,
+			},
+			wantErr: true,
 			want:    false,
+		},
+		{
+			name: "test: role arn empty",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("")})),
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn regex not match",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("notAnARN")})),
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn regex match",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
+				namespace: namespace,
+			},
 			wantErr: false,
+			want:    true,
+		},
+		{
+			name: "test: role arn regex match for AWS GovCloud (US) Regions",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
+				namespace: namespace,
+			},
+			wantErr: false,
+			want:    true,
 		},
 	}
 	for _, tt := range tests {
-		got, err := checkIfStsClusterByCredentialsMode(context.TODO(), tt.fakeClient, operatorNamespace)
-		if (err != nil) != tt.wantErr {
-			t.Errorf("checkIfStsClusterByCredentialsMode() error = %v, wantErr %v", err, tt.wantErr)
-			return
-		}
-		if got != tt.want {
-			t.Errorf("checkIfStsClusterByCredentialsMode() got = %v, want %v", got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := validateAddOnStsRoleArnParameterPattern(tt.args.client, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateAddOnStsRoleArnParameterPattern() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("validateAddOnStsRoleArnParameterPattern() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
+func buildAddonSecret(namespace string, secretData map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "addon-managed-api-service-parameters",
+			Namespace: namespace,
+		},
+		Data: secretData,
+	}
+}

@@ -22,7 +22,7 @@ IN_PROW ?= "false"
 # if 500 then 50M
 # if 1 then 100k
 DEV_QUOTA ?= "1"
-ROLE_ARN = "arn:aws:iam::485026278258:role/12345"
+ROLE_ARN ?= "arn:aws:iam::485026278258:role/12345"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
