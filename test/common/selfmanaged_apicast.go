@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"math/rand"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,16 +49,26 @@ const (
 	adminPortalCredentialsSecret = "adminportal-credentials"
 	namespacePrefix              = "redhat-rhoam-"
 	accountOrgName               = "Developer"
-	serviceSystemName            = "api"
+	planName                     = "Basic"
+	applicationName              = "H24_test_app"
+	applicationDescription       = "app created for H24 test"
+	backendSystemName            = "api"
+	stagingUrlPrefix             = "h24-test-selfmanaged-staging"
 )
 
 var (
 	log                 = l.NewLogger()
 	threeScaleNamespace string
+	serviceSystemName   string
 )
 
 func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
 	threeScaleNamespace = fmt.Sprintf("%s3scale", namespacePrefix)
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	serviceSystemName = fmt.Sprintf("h24_test_product_%v", r1.Intn(100000))
+
 	scheme := runtime.NewScheme()
 	utilruntime.Must(operatorsv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1.AddToScheme(scheme))
@@ -100,30 +111,51 @@ func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
 		t.Fatalf("Error get 3scale admin Token: %v", err)
 	}
 
+	// Get 3scale admin portal
+	threeScaleAdminPortal, err := getThreeScaleAdminPortal(ctx, client)
+	if err != nil {
+		t.Fatalf("Error getting admin portal: %v", err)
+	}
+
+	// Create 3scale product
+	_, err = create3scaleProduct(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		t.Fatalf("Error creating product: %v", err)
+	}
+	defer deleteProduct(threeScaleAdminPortal, token3scale)
+
+	//Add backend usage to product
+	err = addBackendToProduct(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		t.Fatalf("Error adding backend to product: %v", err)
+	}
+
+	//Add application to product
+	err = addApplicationToProduct(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		t.Fatalf("Error adding aplication to product: %v", err)
+	}
+
 	// Customer login
 	err = customerLogin(t, testingCtx, installation)
 	if err != nil {
 		t.Fatalf("Error in customer login: %v", err)
 	}
 
-	// Import APIcast Image
+	// Import APICast Image
 	err = importApicastImage(ctx, client)
 	if err != nil {
 		t.Fatalf("Error import Apicast image: %v", err)
 	}
 
 	// Create an adminportal-credentials secret
-	threeScaleAdminPortal, err := getThreeScaleAdminPortal(ctx, client)
-	if err != nil {
-		t.Fatalf("Error get 3scale admin portal: %v", err)
-	}
 	err = createAdminPortalCredentialsSecret(ctx, client, token3scale, threeScaleAdminPortal)
 	if err != nil {
 		t.Fatalf("Error create adminportal-credentials secret: %v", err)
 	}
 
 	// Use self-managed APIcast instead of the builded one for API
-	userKey, err := promoteSelfManagedAPIcast(ctx, client, threeScaleAdminPortal, token3scale)
+	userKey, err := promoteSelfManagedAPIcast(threeScaleAdminPortal, token3scale)
 	if err != nil {
 		t.Fatalf("Error promote Self-managed APIcast: %v", err)
 	}
@@ -258,28 +290,6 @@ func createAdminPortalCredentialsSecret(ctx context.Context, client k8sclient.Cl
 		}
 		return true, nil
 	})
-	return nil
-}
-
-func deleteManagedApicastRoutes(ctx context.Context, client k8sclient.Client) error {
-	log.Info("Delete api-3scale-apicast- routes in " + threeScaleNamespace + " namespace")
-	routes := routev1.RouteList{}
-	err := client.List(context.TODO(), &routes, &k8sclient.ListOptions{
-		Namespace: threeScaleNamespace,
-	})
-	if err != nil {
-		log.Error("Error obtaining routes list in "+threeScaleNamespace+" namespace  ", err)
-		return err
-	}
-	for _, route := range routes.Items {
-		if strings.Contains(route.Spec.Host, "api-3scale-apicast-") {
-			err := client.Delete(ctx, &route)
-			if err != nil {
-				log.Error("error Delete Route", err)
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -419,7 +429,7 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 				Kind: "Service",
 				Name: apiExampleApicast,
 			},
-			Host: "selfmanaged-staging" + hostsub,
+			Host: stagingUrlPrefix + hostsub,
 		},
 	}
 	err := client.Create(ctx, route)
@@ -439,13 +449,8 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 	return routeHost, nil
 }
 
-func promoteSelfManagedAPIcast(ctx context.Context, client k8sclient.Client, threeScaleAdminPortal string, token3scale string) (string, error) {
+func promoteSelfManagedAPIcast(threeScaleAdminPortal, token3scale string) (string, error) {
 	log.Info("Promote selfmanaged APIcast")
-	err := deleteManagedApicastRoutes(ctx, client)
-	if err != nil {
-		log.Error("Error deleting Managed Apicast Routes : ", err)
-		return "", err
-	}
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
 	if err != nil {
 		log.Error("Error get Service ID", err)
@@ -498,7 +503,7 @@ func validateDeployment(userKey, routeHost string) error {
 	return nil
 }
 
-func apiCastConfigPromote(threeScaleAdminPortal string, token3scale string, serviceId string) error {
+func apiCastConfigPromote(threeScaleAdminPortal, token3scale, serviceId string) error {
 	threeScaleAdminPortalServiceUrl := "https://" + threeScaleAdminPortal + "/admin/api/services/" + serviceId
 	// Switch to self_managed Apicast
 	err := serviceUpdate(threeScaleAdminPortalServiceUrl, token3scale)
@@ -529,7 +534,7 @@ func apiCastConfigPromote(threeScaleAdminPortal string, token3scale string, serv
 
 // Switch to self_managed Apicast
 // 3scale API: Service Update
-func serviceUpdate(threeScaleAdminPortalServiceUrl string, token3scale string) error {
+func serviceUpdate(threeScaleAdminPortalServiceUrl, token3scale string) error {
 	url := threeScaleAdminPortalServiceUrl + ".xml"
 	log.Info("Service Update URL: " + url)
 	data, err := json.Marshal(map[string]string{
@@ -562,7 +567,7 @@ func proxyUpdate(threeScaleAdminPortal, threeScaleAdminPortalServiceUrl string, 
 	log.Info("Proxy Update URL: " + url)
 	hostsub := strings.TrimPrefix(threeScaleAdminPortal, "3scale-admin")
 	productionEndPoint := "https://api-3scale-apicast-production" + hostsub
-	stagingEndPoint := "https://selfmanaged-staging" + hostsub
+	stagingEndPoint := "https://" + stagingUrlPrefix + hostsub
 	data, err := json.Marshal(map[string]string{
 		"access_token":     token3scale,
 		"endpoint":         productionEndPoint,
@@ -589,7 +594,7 @@ func proxyUpdate(threeScaleAdminPortal, threeScaleAdminPortalServiceUrl string, 
 
 // Promotes the APIcast configuration to the Staging Environment
 // 3scale API: Proxy Deploy
-func proxyDeploy(threeScaleAdminPortalServiceUrl string, token3scale string) error {
+func proxyDeploy(threeScaleAdminPortalServiceUrl, token3scale string) error {
 	url := threeScaleAdminPortalServiceUrl + "/proxy/deploy.xml"
 	log.Info("Proxy Deploy URL: " + url)
 	data, err := json.Marshal(map[string]string{
@@ -616,7 +621,7 @@ func proxyDeploy(threeScaleAdminPortalServiceUrl string, token3scale string) err
 
 // Promotes a Proxy Config from Staging environment to Production environment.
 // 3scale API: Proxy Config Promote
-func proxyConfigPromote(threeScaleAdminPortalServiceUrl string, token3scale string) error {
+func proxyConfigPromote(threeScaleAdminPortalServiceUrl, token3scale string) error {
 	latestVer, err := getProxyConfigLatestVersion(threeScaleAdminPortalServiceUrl, token3scale)
 	if err != nil {
 		return err
@@ -691,7 +696,7 @@ func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client, insta
 	return nil
 }
 
-func getServiceId(threeScaleAdminPortal string, token3scale string) (string, error) {
+func getServiceId(threeScaleAdminPortal, token3scale string) (string, error) {
 	url := "https://" + threeScaleAdminPortal + "/admin/api/services.xml"
 	bytesresp, err := getRequest(token3scale, url)
 	if err != nil {
@@ -757,6 +762,74 @@ func getAccountId(threeScaleAdminPortal string, token3scale string) (string, err
 	}
 	log.Info("Account ID found: " + accId)
 	return accId, nil
+}
+
+func getBasicApllicationPlanId(threeScaleAdminPortal, token3scale string) (string, error) {
+	url := "https://" + threeScaleAdminPortal + "/admin/api/application_plans.xml"
+	bytesresp, err := getRequest(token3scale, url)
+	if err != nil {
+		return "", err
+	}
+	type Plan struct {
+		Id   string `xml:"id"`
+		Name string `xml:"name"`
+	}
+	type Plans struct {
+		XMLName xml.Name `xml:"plans"`
+		Plans   []Plan   `xml:"plan"`
+	}
+	plan := Plans{}
+	err = xml.Unmarshal(bytesresp, &plan)
+	if err != nil {
+		return "", fmt.Errorf("unable to Unmarshal get basic application plans response: %s", err)
+	}
+	planId := ""
+	for i := 0; i < len(plan.Plans); i++ {
+		if plan.Plans[i].Name == planName {
+			planId = plan.Plans[i].Id
+			break
+		}
+	}
+	if planId == "" {
+		return planId, fmt.Errorf("unable to parse get plans response xml")
+	}
+	log.Info("Basic plan ID found: " + planId)
+	return planId, nil
+}
+
+func getBackendId(threeScaleAdminPortal, token3scale string) (string, error) {
+	url := "https://" + threeScaleAdminPortal + "/admin/api/backend_apis.json"
+	bytesresp, err := getRequest(token3scale, url)
+	if err != nil {
+		return "", err
+	}
+	type BackendDetails struct {
+		Id         int    `json:"id"`
+		SystemName string `json:"system_name"`
+	}
+	type Backend struct {
+		Backend BackendDetails `json:"backend_api"`
+	}
+	type Backends struct {
+		Backends []Backend `json:"backend_apis"`
+	}
+	backend := Backends{}
+	err = json.Unmarshal(bytesresp, &backend)
+	if err != nil {
+		return "", fmt.Errorf("unable to Unmarshal get backends response: %s", err)
+	}
+	backendId := ""
+	for i := 0; i < len(backend.Backends); i++ {
+		if backend.Backends[i].Backend.SystemName == backendSystemName {
+			backendId = strconv.Itoa(backend.Backends[i].Backend.Id)
+			break
+		}
+	}
+	if backendId == "" {
+		return backendId, fmt.Errorf("unable to parse get backends response xml")
+	}
+	log.Info("Backend ID found: " + backendId)
+	return backendId, nil
 }
 
 func getUserKey(threeScaleAdminPortal string, token3scale string, serviceId string) (string, error) {
@@ -916,4 +989,201 @@ func importApicastImage(ctx context.Context, client k8sclient.Client) error {
 		return err
 	}
 	return nil
+}
+
+func create3scaleProduct(threeScaleAdminPortal, token3scale string) (string, error) {
+	url := "https://" + threeScaleAdminPortal + "/admin/api/services.xml"
+	bytesresp, err := serviceCreate(token3scale, url, serviceSystemName)
+	if err != nil {
+		return "", err
+	}
+	type Service struct {
+		Id         string `xml:"id"`
+		SystemName string `xml:"system_name"`
+		Body       string `xml:",chardata"`
+	}
+	var svc Service
+	svcId := svc.Id
+	err = xml.Unmarshal(bytesresp, &svc)
+	if err != nil {
+		return "", fmt.Errorf("unable to Unmarshal post service response: %s", err)
+	}
+	return svcId, nil
+}
+
+func serviceCreate(token3scale, url, name string) ([]byte, error) {
+	log.Info("sendPostRequest, url: " + url)
+	data, err := json.Marshal(map[string]string{
+		"access_token":    token3scale,
+		"name":            name,
+		"backend_version": "1",
+	})
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+		if resp.StatusCode != http.StatusCreated {
+			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	bytesresp, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return bytesresp, nil
+}
+
+func addBackendToProduct(threeScaleAdminPortal, token3scale string) error {
+	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	backendId, err := getBackendId(threeScaleAdminPortal, token3scale)
+	url := "https://" + threeScaleAdminPortal + "/admin/api/services/" + serviceId + "/backend_usages.json"
+	_, err = backendUsageCreate(token3scale, url, serviceId, backendId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func backendUsageCreate(token3scale, url, serviceId, backendId string) ([]byte, error) {
+	log.Info("sendPostRequest, url: " + url)
+	data, err := json.Marshal(map[string]string{
+		"access_token":   token3scale,
+		"service_id":     serviceId,
+		"backend_api_id": backendId,
+		"path":           "/",
+	})
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+		if resp.StatusCode != http.StatusCreated {
+			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	bytesresp, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return bytesresp, nil
+}
+
+func addApplicationToProduct(threeScaleAdminPortal, token3scale string) error {
+	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	accId, err := getAccountId(threeScaleAdminPortal, token3scale)
+	planId, err := getBasicApllicationPlanId(threeScaleAdminPortal, token3scale)
+	url := "https://" + threeScaleAdminPortal + "/admin/api/accounts/" + accId + "/applications.xml"
+	_, err = applicationCreate(token3scale, url, accId, planId, applicationName, applicationDescription, serviceId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func applicationCreate(token3scale, url, accountId, planId, name, description, serviceId string) ([]byte, error) {
+	log.Info("sendPostRequest, url: " + url)
+	data, err := json.Marshal(map[string]string{
+		"access_token": token3scale,
+		"account_id":   accountId,
+		"plan_id":      planId,
+		"name":         name,
+		"description":  description,
+		"service_id":   serviceId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	err = wait.Poll(time.Second*5, time.Minute*1, func() (done bool, err2 error) {
+		if resp.StatusCode != http.StatusCreated {
+			return false, fmt.Errorf("expected status %v but got %v", http.StatusCreated, resp.StatusCode)
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	bytesresp, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return bytesresp, nil
+}
+
+func deleteProduct(threeScaleAdminPortal, token3scale string) {
+	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	_, err = serviceDelete(token3scale, threeScaleAdminPortal, serviceId)
+	if err != nil {
+		log.Error("Failed to delete product:", err)
+	}
+}
+
+func serviceDelete(token3scale, threeScaleAdminPortal, serviceId string) ([]byte, error) {
+	url := "https://" + threeScaleAdminPortal + "/admin/api/services/" + serviceId + ".xml"
+	log.Info("sendDeleteRequest, url: " + url)
+	data, err := json.Marshal(map[string]string{
+		"access_token": token3scale,
+		"id":           serviceId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected status %v but got %v", http.StatusOK, resp.StatusCode)
+	}
+	bytesresp, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return bytesresp, nil
 }
