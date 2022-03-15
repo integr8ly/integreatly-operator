@@ -27,7 +27,7 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
-ROLE_ARN = "arn:aws:iam::485026278258:role/12345"
+ROLE_ARN ?= "arn:aws:iam::485026278258:role/12345"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
