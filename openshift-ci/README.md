@@ -36,4 +36,3 @@ Reference: [https://docs.ci.openshift.org/docs/architecture/ci-operator/#build-r
 To update the version of the root images edit the `FROM` image in the Dockerfile.tools and update the imagestream in the .ci-operator.yaml.
 The ci-operator will work from the HEAD of the PR and build the new updated images.
 There is no need to do any edits in the `openshift/release` repo to get these changes added.
-

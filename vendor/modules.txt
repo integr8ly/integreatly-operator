@@ -684,6 +684,7 @@ github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
 # github.com/operator-framework/api v0.10.5 => github.com/operator-framework/api v0.8.1
 ## explicit; go 1.15
+github.com/operator-framework/api/pkg/apis/scorecard/v1alpha3
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
 github.com/operator-framework/api/pkg/operators
