@@ -1,8 +1,8 @@
 package cloudresources
 
 import (
-	"bytes"
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -18,7 +18,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -30,12 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-)
-
-const (
-	operatorNamespace = "openshift-operators"
 )
 
 func TestReconciler_cleanupResources(t *testing.T) {
@@ -250,163 +243,92 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cloudcredentialv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
 
 	return scheme, err
 }
 
-func TestReconciler_validateStsRoleArnPattern(t *testing.T) {
-
-	tests := []struct {
-		name          string
-		awsArnPattern string
-		want          bool
-	}{
-		{
-			name:          "ARN string Pattern is matching for AWS GovCloud (US) Regions",
-			awsArnPattern: "arn:aws-us-gov:iam::485026278258:role/12345",
-			want:          true,
-		},
-		{
-			name:          "ARN string Pattern is matching",
-			awsArnPattern: "arn:aws:iam::485026278258:role/12345",
-			want:          true,
-		},
-		{
-			name:          "ARN string Pattern is not matching #1",
-			awsArnPattern: "arn:aws:iam::485026278258:user/12345",
-			want:          false,
-		},
-		{
-			name:          "ARN string Pattern is not matching #2",
-			awsArnPattern: "12345",
-			want:          false,
-		},
-		{
-			name:          "ARN string Pattern is not matching #3",
-			awsArnPattern: "",
-			want:          false,
-		},
-	}
-	for _, tt := range tests {
-		got, err := validateStsRoleArnPattern(tt.awsArnPattern)
-		if err != nil {
-			t.Errorf("failed to validate STS role ARN parameter: %w", err)
-			return
-		}
-		if got != tt.want {
-			t.Errorf("validateStsRoleArnPattern() got = %v, want %v", got, tt.want)
-		}
-	}
-
-}
-
-func TestReconciler_passArnIntoSecretInCroNamespace(t *testing.T) {
-	sourceSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      operatorNamespace,
-			Namespace: operatorNamespace,
-		},
-		Data: map[string][]byte{
-			"role_arn": {'t', 'e', 's', 't'},
-		},
-	}
+func TestReconciler_createSTSArnSecret(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
 		t.Fatalf("Error obtaining scheme")
 	}
+
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
 	type args struct {
-		ctx    context.Context
-		client client.Client
+		ctx               context.Context
+		client            client.Client
+		operatorNamespace string
 	}
 	tests := []struct {
 		name    string
-		ARN     string
+		fields  fields
 		args    args
+		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
 		{
-			name: "ARN Secret passed to Cro Namespace",
-			ARN:  "test", //Note that any ARN will be passed, there is no checking of ARN pattern here.
+			name: "test: phase failed on error getting role arn",
+			fields: fields{
+				log: getLogger(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{Namespace: defaultInstallationNamespace},
+				},
+			},
 			args: args{
-				ctx: context.TODO(),
-				client: moqclient.NewSigsClientMoqWithScheme(scheme, sourceSecret, &corev1.Namespace{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test: phase complete on creating secret",
+			fields: fields{
+				log: getLogger(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{Namespace: defaultInstallationNamespace},
+				},
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: operatorNamespace,
-						Name:      operatorNamespace,
+						Name:      "addon-managed-api-service-parameters",
+						Namespace: defaultInstallationNamespace,
+					},
+					Data: map[string][]byte{
+						sts.AddonStsArnParameterName: []byte("arn:aws:iam::123456789012:role/12345"),
 					},
 				}),
 			},
-			wantErr: false,
+			want: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
 	for _, tt := range tests {
-		err := passArnIntoSecretInCroNamespace(tt.args.ctx, tt.args.client, operatorNamespace, tt.ARN)
-		if (err != nil) != tt.wantErr {
-			t.Errorf("passArnIntoSecretInCroNamespace() error = %v, wantErr %v", err, tt.wantErr)
-			return
-		}
-		destinationSecret := &corev1.Secret{}
-		err = tt.args.client.Get(context.TODO(), k8sclient.ObjectKey{Name: croSecretName, Namespace: operatorNamespace}, destinationSecret)
-		if err != nil {
-			return
-		}
-		if !bytes.Equal(destinationSecret.Data["role_arn"], sourceSecret.Data["role_arn"]) {
-			t.Fatalf("expected data %v, but got %v", sourceSecret.Data["role_arn"], destinationSecret.Data["role_arn"])
-		}
-	}
-}
-
-func TestReconciler_checkIfStsClusterByCredentialsMode(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatalf("Error obtaining scheme")
-	}
-	tests := []struct {
-		name       string
-		ARN        string
-		fakeClient k8sclient.Client
-		want       bool
-		wantErr    bool
-	}{
-		{
-			name: "STS cluster",
-			fakeClient: fake.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Spec: cloudcredentialv1.CloudCredentialSpec{
-					CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-				},
-			}),
-			want:    true,
-			wantErr: false,
-		},
-		{
-			name: "Non STS cluster",
-			fakeClient: fake.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Spec: cloudcredentialv1.CloudCredentialSpec{
-					CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
-				},
-			}),
-			want:    false,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		got, err := checkIfStsClusterByCredentialsMode(context.TODO(), tt.fakeClient, operatorNamespace)
-		if (err != nil) != tt.wantErr {
-			t.Errorf("checkIfStsClusterByCredentialsMode() error = %v, wantErr %v", err, tt.wantErr)
-			return
-		}
-		if got != tt.want {
-			t.Errorf("checkIfStsClusterByCredentialsMode() got = %v, want %v", got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.createSTSArnSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createSTSArnSecret() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("createSTSArnSecret() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
