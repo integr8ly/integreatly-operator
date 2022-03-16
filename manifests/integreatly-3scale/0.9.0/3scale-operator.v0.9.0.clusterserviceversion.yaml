@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_26eb8ed88c804a05ba2d78cce1da8b0af549402987c24c1c2c0e3edb8073ffcc
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_1ad6f944d1b87588ec2594558d5b887747012344a1b71489caad3a7acbb9c750
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -353,15 +353,15 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_BACKEND
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_bb4ff926237d454a427c5d178bac065d585ad9f9f212ee3cc200dc06adeba73a
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_2b110754622fa1c7eab5094eec2d7150f90bfa77a47b227392e1edf7ee047545
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_4a22473dc1b1c2ef681e6b283f591ec16d2ebbbf6c755c9ea543d011dbbe8ed1
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_f5e4fba70d882b975ef7a7cd5b184127cb913313a874ea6468309088a7af55f2
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_bab8ddbf5e4e40e39bef9e5ea50b2b773bdd2d9275dbb45f272c16e173e92418
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_3dc093b40df0dc77ac52861e6ca97cad984355f25aa41adffa283a12f02ab2f0
                 - name: RELATED_IMAGE_ZYNC
-                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_158783181d38540883d47cedd45438b5d325458786d3d1d5a3d919aa66806678
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_1f5d7aa9001deeb95e34ac5cbd78201193f3aa1f75582cc09bc365015834f6df
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_920d1ae378bafe30bed59213a3faf76ae25eec10783eb50a67841ce1f1f5bf75
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_2e50550dc3e47e3e09ef4db680eecdfc2b5cafa313db29b289e0a45fecd5042d
                 - name: RELATED_IMAGE_BACKEND_REDIS
                   value: quay.io/integreatly/delorean:rhscl-redis-5-rhel7_581031ff28f09345f02f1ac21203796926ecec27165c5d851573d19ac7587f74
                 - name: RELATED_IMAGE_SYSTEM_REDIS
@@ -374,7 +374,7 @@ spec:
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_46e46a1f0f524daf01da33dc2ea3d394147096c2b03df15eebed6578db1ad40f
                 - name: RELATED_IMAGE_OC_CLI
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_41f02c60fdab25d4e670b7fad1e25381364ce22dd40f10e8f0b99b823bce431e
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_26eb8ed88c804a05ba2d78cce1da8b0af549402987c24c1c2c0e3edb8073ffcc
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_1ad6f944d1b87588ec2594558d5b887747012344a1b71489caad3a7acbb9c750
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -918,19 +918,19 @@ spec:
   provider:
     name: Red Hat dev
   relatedImages:
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:26eb8ed88c804a05ba2d78cce1da8b0af549402987c24c1c2c0e3edb8073ffcc
-    name: 3scale-rhel7-operator-26eb8ed88c804a05ba2d78cce1da8b0af549402987c24c1c2c0e3edb8073ffcc-annotation
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:26eb8ed88c804a05ba2d78cce1da8b0af549402987c24c1c2c0e3edb8073ffcc
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ad6f944d1b87588ec2594558d5b887747012344a1b71489caad3a7acbb9c750
+    name: 3scale-rhel7-operator-1ad6f944d1b87588ec2594558d5b887747012344a1b71489caad3a7acbb9c750-annotation
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ad6f944d1b87588ec2594558d5b887747012344a1b71489caad3a7acbb9c750
     name: manager
-  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:bb4ff926237d454a427c5d178bac065d585ad9f9f212ee3cc200dc06adeba73a
+  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:2b110754622fa1c7eab5094eec2d7150f90bfa77a47b227392e1edf7ee047545
     name: backend
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:4a22473dc1b1c2ef681e6b283f591ec16d2ebbbf6c755c9ea543d011dbbe8ed1
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:f5e4fba70d882b975ef7a7cd5b184127cb913313a874ea6468309088a7af55f2
     name: apicast
-  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:bab8ddbf5e4e40e39bef9e5ea50b2b773bdd2d9275dbb45f272c16e173e92418
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:3dc093b40df0dc77ac52861e6ca97cad984355f25aa41adffa283a12f02ab2f0
     name: system
-  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:158783181d38540883d47cedd45438b5d325458786d3d1d5a3d919aa66806678
+  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:1f5d7aa9001deeb95e34ac5cbd78201193f3aa1f75582cc09bc365015834f6df
     name: zync
-  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:920d1ae378bafe30bed59213a3faf76ae25eec10783eb50a67841ce1f1f5bf75
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2e50550dc3e47e3e09ef4db680eecdfc2b5cafa313db29b289e0a45fecd5042d
     name: system_memcached
   - image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:581031ff28f09345f02f1ac21203796926ecec27165c5d851573d19ac7587f74
     name: backend_redis
