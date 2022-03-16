@@ -39,6 +39,11 @@
   
   Normally speaking, you don't need to make any changes here.
 
+* [`scorecard`](./scorecard)  
+
+  This directory contains source code for the KUTTL scorecard test image
+  * `entrypoint` - a shell script used for triggering KUTTL tests within the image
+  * `main.go` - A helper tool for processing the output from kuttl test and converting it to the scorecard test status format
 ## Adding New Common Tests
 
 You should aim to add new tests here so that they can be executed in both test suites.
