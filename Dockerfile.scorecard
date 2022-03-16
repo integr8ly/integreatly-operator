@@ -15,7 +15,7 @@ COPY Makefile ./Makefile
 COPY test/scorecard ./test/scorecard
 
 # Build
-RUN GOOS=linux GOARCH=amd64 make scorecard/build
+RUN GOOS=linux GOARCH=amd64 make scorecard/compile
 
 FROM kudobuilder/kuttl:v0.11.1
 

@@ -27,10 +27,13 @@ scorecard/test/run:
 	operator-sdk scorecard ./bundle --namespace=${SCORECARD_NAMESPACE} --output json --selector=test=${SCORECARD_TEST_NAME} --skip-cleanup=${SCORECARD_SKIP_CLEANUP}
 
 .PHONY: scorecard/build/push
-scorecard/build/push:
-	docker build -t ${IMAGE} -f Dockerfile.scorecard .
+scorecard/build/push: scorecard/build
 	docker push ${IMAGE}
 
 .PHONY: scorecard/build
 scorecard/build:
+	docker build -t ${IMAGE} -f Dockerfile.scorecard .
+
+.PHONY: scorecard/compile
+scorecard/compile:
 	go build -o scorecard-test-kuttl test/scorecard/main.go
