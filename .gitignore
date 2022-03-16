@@ -108,3 +108,7 @@ test-cases/package-lock.json
 
 ### GoLand ###
 .run
+
+### Writing/debugging scorecard tests
+/bundle/*
+/bundle.Dockerfile
