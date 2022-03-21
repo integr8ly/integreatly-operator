@@ -190,7 +190,7 @@ set_related_images() {
   echo "Adding related images to the CSV"
   containerImageField="""[
   """
-  length=$(yq e -j ./products/products.yaml| jq -r '.products' | jq length)
+  length=$(yq e -o=j ./products/products.yaml| jq -r '.products' | jq length)
   # Get supported components
   for (( i=0; i<${length}; i++))
   do
@@ -203,14 +203,14 @@ set_related_images() {
       component_version=$(grep currentCSV manifests/$product_dir/*.package.yaml | awk -F v '{print $2}')
       fi
       # Read component name
-      component_name=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' | tr -d '"')
+      component_name=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.metadata.name' | tr -d '"')
 
       # Read containers section length
-      containerLength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq length)
+      containerLength=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq '.spec.install.spec.deployments[0].spec.template.spec.containers' | jq length)
       for (( y=0; y<$containerLength; y++))
       do
         # Read image from the component version but only select quay.io or redhat.registry
-        component_image=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[$y].image" | jq -r 'select((test("quay.")) or (test("registry.redhat")))' | tr -d '"')
+        component_image=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq ".spec.install.spec.deployments[0].spec.template.spec.containers[$y].image" | jq -r 'select((test("quay.")) or (test("registry.redhat")))' | tr -d '"')
 
         # If component image is found, check if the list already contains image pointing to that URL, if not, add it to the list
         if [[ ! -z "$component_image" ]]; then
@@ -221,15 +221,15 @@ set_related_images() {
       done
 
       # Check if the CSV of the component has the relatedImages set, if it does, populate RHOAM CSV with it.
-      relatedImagesLength=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r '.spec.relatedImages' | jq length)
+      relatedImagesLength=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r '.spec.relatedImages' | jq length)
       
       # Adding generic related images but only if such image does not already exists in the list
       if [[ $relatedImagesLength != 0 ]]; then
         for (( y=0; y<$relatedImagesLength; y++))
         do
           excluded=false
-          relatedImageName=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
-          relatedImageURL=$(yq e -j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
+          relatedImageName=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].name")
+          relatedImageURL=$(yq e -o=j ./manifests/$product_dir/${component_version}/*.clusterserviceversion.yaml | jq -r ".spec.relatedImages[$y].image")
     
           for excludedItem in ${exclusionList[*]}
             do
