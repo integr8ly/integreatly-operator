@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -88,6 +89,12 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
+	//get the rhmi CR to check if its a sandbox install
+	sandboxRhmiCR := &integreatlyv1alpha1.RHMI{}
+
+	// don't like hard coding but can't see another way to get the rhoam sandbox CR at this point
+	serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: "sandbox-rhoam-operator", Name: "rhoam"}, sandboxRhmiCR)
+
 	//TODO can maybe return this to a create only function after all clusters are updated in production
 	//err = serverClient.Create(ctx, og)
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, og, func() error {
@@ -95,7 +102,9 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		og.Name = OperatorGroupName
 		og.Labels = map[string]string{"integreatly": t.SubscriptionName}
 		if csv.Status.Phase == "Succeeded" && csv.Status.Reason == "InstallSucceeded" {
-			og.Spec.TargetNamespaces = operatorGroupNamespaces
+			if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(sandboxRhmiCR.Spec.Type)) {
+				og.Spec.TargetNamespaces = operatorGroupNamespaces
+			}
 		}
 		return nil
 	})
