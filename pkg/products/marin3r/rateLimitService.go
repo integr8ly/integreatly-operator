@@ -27,7 +27,7 @@ const (
 	headerMatch                = "header_match"
 	headerKey                  = "tenant"
 	mtUnit                     = "minute"
-	possibleTenants            = 3000
+	possibleTenants            = 200
 	multitenantLimitConfigMap  = "multitenant-config"
 	multitenantRateLimit       = "mulitenantLimit"
 	multitenantDescriptorValue = "per-mt-limit"
@@ -454,8 +454,9 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 
 func (r *RateLimitServiceReconciler) getLimitPerTenant() uint32 {
 	limitPerTenant := r.RateLimitConfig.RequestsPerUnit / possibleTenants
-	if limitPerTenant == 0 {
-		limitPerTenant = 1
+	// Ensure there is a 200 per tenant limit at least
+	if limitPerTenant < 200 {
+		limitPerTenant = 200
 	}
 
 	return uint32(limitPerTenant)
