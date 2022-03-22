@@ -56,8 +56,12 @@ type TenantReconciler struct {
 
 func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
+
+	log.Info(fmt.Sprintf("TenantReconciler request: %s", request))
+
 	tenant, err := r.getAPIManagementTenant(request.Name, request.Namespace)
 	if err != nil {
+		log.Error("getAPIManagementTenant failed ", err)
 		if k8serr.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
@@ -93,7 +97,10 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, err
 	}
 
-	err = r.reconcileTenantUrl(tenant)
+	wasTenantUrlReconciled, err := r.reconcileTenantUrl(tenant)
+	if err == nil && !wasTenantUrlReconciled {
+		return ctrl.Result{Requeue: true}, nil
+	}
 	if err != nil {
 		if err1 := r.updateLastError(tenant, err.Error()); err1 != nil {
 			return ctrl.Result{}, err1
@@ -202,12 +209,13 @@ func (r *TenantReconciler) addAnnotationToUser(tenant *v1alpha1.APIManagementTen
 	return nil
 }
 
-func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTenant) error {
-	// Only check for the 3scale account and route once per tenant
+func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTenant) (bool, error) {
+	tenantUrlReconciled := true
 	if tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountReady {
+		tenantUrlReconciled = false // Reset value because tenant hasn't been reconciled yet
 		selector, err := labels.Parse("zync.3scale.net/route-to=system-provider")
 		if err != nil {
-			return err
+			return tenantUrlReconciled, err
 		}
 		opts := k8sclient.ListOptions{
 			LabelSelector: selector,
@@ -217,43 +225,58 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 		routes := routev1.RouteList{}
 		err = r.Client.List(context.TODO(), &routes, &opts)
 		if err != nil {
-			return err
+			return tenantUrlReconciled, err
 		}
 		if len(routes.Items) == 0 {
-			return fmt.Errorf("failed to find any system-developer routes in namespace %s", opts.Namespace)
+			return tenantUrlReconciled, fmt.Errorf("failed to find any system-developer routes in namespace %s", opts.Namespace)
 		}
 
 		var foundRoute *routev1.Route
-		username := tenant.Namespace
-		username = strings.TrimSuffix(username, "-dev")
-		username = strings.TrimSuffix(username, "-stage")
+		user, err := r.getUserByTenantNamespace(tenant.Namespace)
 		for _, rt := range routes.Items {
-			if strings.Contains(rt.Spec.Host, username) {
+			if strings.Contains(rt.Spec.Host, user.Name) {
 				foundRoute = &rt
 				break
 			}
 		}
 		if foundRoute == nil {
-			// If no matching route was found, then the account is still being created.
-			// Set the provisioningStatus to ThreeScaleAccountRequested and return an error.
-			err = r.updateProvisioningStatus(tenant, v1alpha1.ThreeScaleAccountRequested)
+			// If no matching route was found, then the account is still being created
+			// Set the provisioningStatus to ThreeScaleAccountRequested
+			err := r.updateProvisioningStatus(tenant, v1alpha1.ThreeScaleAccountRequested)
 			if err != nil {
-				return err
+				return tenantUrlReconciled, err
 			}
-			return fmt.Errorf("waiting for matching route in namespace %s for tenant %s", opts.Namespace, tenant.Name)
+			// Update the value of lastError to reflect the user's SSO not being ready
+			err = r.updateLastError(tenant, fmt.Sprintf("waiting for matching route in namespace %s for tenant %s", opts.Namespace, tenant.Name))
+			return tenantUrlReconciled, nil
 		}
 
-		// Since the matching route was found, update the tenant's tenantUrl and provisioningStatus.
+		// Get the value of the `ssoReady` annotation if it exists
+		ssoReady := user.Annotations["ssoReady"]
+		if ssoReady != "yes" {
+			// If the user's SSO is not ready, then the tenantUrl isn't ready
+			// Set the provisioningStatus to ThreeScaleAccountRequested
+			err := r.updateProvisioningStatus(tenant, v1alpha1.ThreeScaleAccountRequested)
+			if err != nil {
+				return tenantUrlReconciled, err
+			}
+			// Update the value of lastError to reflect the user's SSO not being ready
+			err = r.updateLastError(tenant, fmt.Sprintf("waiting for SSO for user %s to be ready", user.Name))
+			return tenantUrlReconciled, nil
+		}
+
+		// Since the user's SSO is ready, update the tenant's tenantUrl and provisioningStatus
 		err = r.updateTenantUrl(tenant, foundRoute.Spec.Host)
 		if err != nil {
-			return err
+			return tenantUrlReconciled, err
 		}
 		err = r.updateProvisioningStatus(tenant, v1alpha1.ThreeScaleAccountReady)
 		if err != nil {
-			return err
+			return tenantUrlReconciled, err
 		}
+		tenantUrlReconciled = true
 	}
-	return nil
+	return tenantUrlReconciled, nil
 }
 
 func (r *TenantReconciler) updateLastError(tenant *v1alpha1.APIManagementTenant, message string) error {

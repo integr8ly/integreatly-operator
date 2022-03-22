@@ -1494,7 +1494,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			)
 
 			// verify if the account have the auth provider already
-			err = r.AddAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
+			err = r.addAuthProviderToMTAccount(ctx, serverClient, signUpAccount)
 			if err != nil {
 				r.log.Errorf("Error adding authentication provider to tenant account",
 					l.Fields{
@@ -1504,6 +1504,21 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					},
 					err,
 				)
+			}
+
+			// Only add the ssoReady annotation if the auth provider was successfully added to the managed tenant account
+			if err == nil {
+				// Add ssoReady annotation to the user CR associated with the tenantAccount's OrgName
+				// This is required by apimanagementtenant_controller so it can finish reconciling the APIManagementTenant CR
+				err = r.addSSOReadyAnnotationToUser(ctx, serverClient, account.OrgName)
+				if err != nil {
+					r.log.Errorf("Error adding ssoReady annotation for the user associated with the tenant account org",
+						l.Fields{
+							"tenantAccountOrgName": account.OrgName,
+						},
+						err,
+					)
+				}
 			}
 
 			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
@@ -1800,7 +1815,7 @@ func (r *Reconciler) reconcileDashboardLink(ctx context.Context, serverClient k8
 	return nil
 }
 
-func (r *Reconciler) AddAuthProviderToMTAccount(ctx context.Context, serverClient k8sclient.Client, account SignUpAccount) error {
+func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClient k8sclient.Client, account SignUpAccount) error {
 
 	tenantID := string(account.AccountDetail.OrgName)
 	clientID := fmt.Sprintf("%s-%s", multitenantID, tenantID)
@@ -2722,7 +2737,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 			envVars["BACKEND_PUBLIC_URL"] = *backendListenerRoute
 
 			// Have to use the index when iterating here because when using range go creates a copy of the variable
-			// so any update will be applyed to the copy
+			// so any update will be applied to the copy
 			for envVarName, _ := range envVars {
 				foundEnv := false
 				envVarValue := envVars[envVarName]
@@ -3026,4 +3041,35 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 		return nil, fmt.Errorf("Error getting the backend-listener external route: %v", err)
 	}
 	return backendRoute, nil
+}
+
+func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8sclient.Client, name string) error {
+	// Get the User CR to annotate
+	userToAnnotate := &usersv1.User{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	key, err := k8sclient.ObjectKeyFromObject(userToAnnotate)
+	if err != nil {
+		return fmt.Errorf("error getting ObjectKey for user %s: %v", name, err)
+	}
+	err = client.Get(context.TODO(), key, userToAnnotate)
+	if err != nil {
+		return fmt.Errorf("error getting user %s: %v", name, err)
+	}
+
+	// Add the annotation `ssoReady: 'yes'` to the User CR
+	_, err = controllerutil.CreateOrUpdate(context.TODO(), client, userToAnnotate, func() error {
+		if userToAnnotate.Annotations == nil {
+			userToAnnotate.Annotations = map[string]string{}
+		}
+		userToAnnotate.Annotations["ssoReady"] = "yes"
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add ssoReady annotation to user %s: %v", userToAnnotate.Name, err)
+	}
+
+	return nil
 }
