@@ -1,0 +1,33 @@
+#!/bin/sh
+
+KUTTL_PATH=${KUTTL_PATH:-"/bundle/tests/scorecard/kuttl"}
+KUTTL_CONFIG=${KUTTL_CONFIG:-"${KUTTL_PATH}/kuttl-test.yaml"}
+ARTIFACTS_DIR=${ARTIFACTS_DIR:-/logs/artifacts}
+
+mkdir -p "${ARTIFACTS_DIR}"
+
+echo "Running installation" >> "${ARTIFACTS_DIR}/log"
+
+kubectl-kuttl test "${KUTTL_PATH}" \
+  --test 00-installation \
+  --config="${KUTTL_CONFIG}" \
+  --namespace="${SCORECARD_NAMESPACE}" \
+  --report=JSON --artifacts-dir="${ARTIFACTS_DIR}" > "${ARTIFACTS_DIR}/kuttl-installation.stdout" 2> "${ARTIFACTS_DIR}/kuttl-installation.stderr"
+
+# If installation test did not fail, proceed with test name passed
+# as a parameter from scorecard command
+if ! grep -q "\"failure\"" "${ARTIFACTS_DIR}/kuttl-test.json";
+then
+  echo "Running ${*}" >> "${ARTIFACTS_DIR}/log"
+
+  kubectl-kuttl test "${KUTTL_PATH}" \
+    --test "${*}" \
+    --config="${KUTTL_CONFIG}" \
+    --namespace="${SCORECARD_NAMESPACE}" \
+    --report=JSON --artifacts-dir="${ARTIFACTS_DIR}" > "${ARTIFACTS_DIR}/kuttl.stdout" 2> "${ARTIFACTS_DIR}/kuttl.stderr"
+
+  # Copy test results (junit-integreatly-operator.xml) from RHOAM test container to $ARTIFACTS_DIR
+  kubectl cp rhoam-test-container:/test-run-results/ "${ARTIFACTS_DIR}" -c sidecar -n redhat-rhoam-operator > /dev/null 2>&1
+fi
+
+exec scorecard-test-kuttl -kuttl-test-output-folder "${ARTIFACTS_DIR}"

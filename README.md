@@ -223,6 +223,28 @@ To run products tests against an existing RHMI cluster:
 make test/products/local
 ```
 
+### Scorecard tests
+
+For testing all scorecard tests within this repo, it is recommended to have RHOAM installed (or RHOAM install triggered) on an OSD/OCP cluster:
+
+1. To deploy RHOAM operator on a cluster (using master branch image) and install RHOAM:
+```bash
+export INSTALLATION_TYPE=managed-api
+make cluster/deploy
+```
+2. Prepare scorecard tests
+
+```bash
+make scorecard/bundle/prepare
+make scorecard/service_account/prepare
+```
+3. Run scorecard test
+```bash
+# To run a specific test, set SCORECARD_TEST_NAME env var with a name
+# of the test taken from '.labels.test' field in bundle/tests/scorecard/config.yaml
+# Example:
+make scorecard/test/run SCORECARD_TEST_NAME=basic-check-spec-test
+```
 ## Uninstalling RHOAM
 This section covers uninstallation of RHOAM if it was installed via locally, OLM or on ROSA
 
