@@ -55,6 +55,7 @@ rules:
   resources:
   - configmaps
   - secrets
+  - services
   - subscriptions
   verbs:
   - get
