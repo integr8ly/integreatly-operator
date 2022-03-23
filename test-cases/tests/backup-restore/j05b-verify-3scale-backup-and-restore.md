@@ -68,11 +68,18 @@ Once verified, delete the throwaway Postgres
 oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
 ```
 
-3. Run the backup and restore script
+3. **Non-STS** - Run the backup and restore script
 
 ```sh
 cd test/scripts/backup-restore
 NS_PREFIX=redhat-rhoam ./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
+```
+
+4. **STS** - Reach out to QE for the `osdCcsAdmin` credentials in order to run the backup and restore script
+
+```sh
+cd test/scripts/backup-restore
+AWS_ACCESS_KEY_ID=<aws_access_key_id> AWS_SECRET_ACCESS_KEY=<aws_secret_access_key> NS_PREFIX=redhat-rhoam ./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
 ```
 
 4. Wait for the script to finish without errors
