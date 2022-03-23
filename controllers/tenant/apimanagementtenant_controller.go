@@ -247,7 +247,7 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 				return tenantUrlReconciled, err
 			}
 			// Update the value of lastError to reflect the user's SSO not being ready
-			err = r.updateLastError(tenant, fmt.Sprintf("waiting for matching route in namespace %s for tenant %s", opts.Namespace, tenant.Name))
+			err = r.updateLastError(tenant, fmt.Sprintf("waiting for route creation for tenant %s", tenant.Name))
 			return tenantUrlReconciled, nil
 		}
 
