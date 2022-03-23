@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
@@ -184,37 +187,34 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 	return foundResourceIDs, foundErrors
 }
 
-// creates a session to be used in getting an api instance for aws
+// CreateAWSSession creates a session to be used in getting an api instance for aws
 func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, error) {
-	//retrieve aws credentials for creating an aws session
-	awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS credentials : %w", err)
-	}
-
-	//retrieve aws region for creating an aws session
 	region, err := getAWSRegion(ctx, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get AWS cluster region : %w", err)
 	}
-
-	//create new session for aws api's
-	sess, err := createAWSSession(awsSecretAccessKey, awsAccessKeyID, region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create session : %w", err)
+	awsConfig := aws.Config{
+		Region: aws.String(region),
 	}
-	return sess, nil
-}
-
-// createAWSSession returns a new session from aws
-func createAWSSession(awsAccessKeyID, awsSecretAccessKey, region string) (*session.Session, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
-		Region:      aws.String(region),
-	})
+	isSTS, err := sts.IsClusterSTS(ctx, client, logger.NewLogger())
 	if err != nil {
-		return nil, fmt.Errorf("cannot create new session with aws : %w", err)
+		return nil, err
 	}
+	if isSTS {
+		roleARN, err := sts.GetStsRoleArn(ctx, client, common.RHMIOperatorNamespace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get role ARN: %w", err)
+		}
+		sess := session.Must(session.NewSession(&awsConfig))
+		awsConfig.Credentials = stscreds.NewCredentials(sess, roleARN)
+		return sess, nil
+	}
+	awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS credentials : %w", err)
+	}
+	awsConfig.Credentials = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
+	sess := session.Must(session.NewSession(&awsConfig))
 	return sess, nil
 }
 
@@ -274,24 +274,6 @@ func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) 
 		return nil, fmt.Errorf("no strategy found for deployment type: %s and deployment tier: %s", resourceType, tier)
 	}
 	return strategyMapping[tier], nil
-}
-
-func putStrategyForResource(configMap *v1.ConfigMap, stratMap *strategyMap, resourceType, tier string) error {
-	rawStrategyMapping := configMap.Data[resourceType]
-	if rawStrategyMapping == "" {
-		return fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
-	}
-	var strategyMapping map[string]*strategyMap
-	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
-		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
-	}
-	strategyMapping[tier] = stratMap
-	updatedRawStrategyMapping, err := json.Marshal(strategyMapping)
-	if err != nil {
-		return fmt.Errorf("failed to marshal strategy mapping for resource type %s: %v", resourceType, err)
-	}
-	configMap.Data[resourceType] = string(updatedRawStrategyMapping)
-	return nil
 }
 
 // GetClustersAvailableZones returns a map containing zone names that are currently available
