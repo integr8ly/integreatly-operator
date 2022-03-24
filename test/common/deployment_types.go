@@ -53,7 +53,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"threeScaleDeployment": {
 			Name: ThreeScaleOperatorNamespace,
 			Products: []Product{
-				{Name: "threescale-operator-controller-manager", ExpectedReplicas: 1},
+				{Name: "threescale-operator-controller-manager-v2", ExpectedReplicas: 1},
 			},
 		},
 		"aMQOnlineOperatorDeployment": {

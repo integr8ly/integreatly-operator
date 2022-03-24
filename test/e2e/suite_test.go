@@ -155,13 +155,13 @@ var _ = BeforeSuite(func(done Done) {
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
 		products = map[string]string{
-			"3scale":   "threescale-operator-controller-manager",
+			"3scale":   "threescale-operator-controller-manager-v2",
 			"user-sso": "keycloak-operator",
 		}
 	}
 	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
 		products = map[string]string{
-			"3scale": "threescale-operator-controller-manager",
+			"3scale": "threescale-operator-controller-manager-v2",
 		}
 	}
 
