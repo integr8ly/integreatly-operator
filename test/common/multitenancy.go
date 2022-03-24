@@ -17,7 +17,9 @@ import (
 	"net/url"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strconv"
 
+	"os"
 	"strings"
 	"time"
 )
@@ -66,7 +68,8 @@ func TestMultitenancy(t TestingTB, ctx *TestingContext) {
 
 func loginUsersTo3scale(t TestingTB, ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI) error {
 	postfix := 1
-	for postfix <= defaultNumberOfTestUsers {
+	numberOfTestUsers := getNumberOfTestUsersFromEnv()
+	for postfix <= numberOfTestUsers {
 		isClusterLoggedIn := false
 		isTenantCRCreated := false
 		routeFound := false
@@ -299,4 +302,17 @@ func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, te
 		t.Fatalf("error while creating APIManagementTenant CR for testing user %v", err)
 	}
 	return nil
+}
+
+func getNumberOfTestUsersFromEnv() int {
+	strNum := os.Getenv("TENANTS_NUMBER")
+	if strNum == "" {
+		return defaultNumberOfTestUsers
+	}
+	num, err := strconv.Atoi(strNum)
+	if err != nil {
+		fmt.Println("error converting env var TENANTS_NUMBER to integer, using default number of test users")
+		return defaultNumberOfTestUsers
+	}
+	return num
 }
