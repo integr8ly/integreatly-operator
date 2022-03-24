@@ -266,6 +266,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	// creates an alert to check for the presents of DeadMansSnitch secret
+	phase, err = resources.CreateDeadMansSnitchSecretExists(ctx, client, installation)
+	r.log.Infof("create DeadMansSnitch secret alerting rule", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile DeadMansSnitchSecretExists alert", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileMonitoring(ctx, client)
 	r.log.Infof("reconcileMonitoring", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {

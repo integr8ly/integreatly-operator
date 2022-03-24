@@ -310,7 +310,7 @@ ifeq ($(INSTALLATION_TYPE), managed)
 endif
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/quota
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/quota
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean

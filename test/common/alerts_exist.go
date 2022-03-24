@@ -649,6 +649,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
+			File: ObservabilityNamespacePrefix + "deadmanssnitch-secret-exists-rule.yaml",
+			Rules: []string{
+				"DeadMansSnitchSecretExists",
+			},
+		},
+		{
 			File: ObservabilityNamespacePrefix + "multi-az-pod-distribution.yaml",
 			Rules: []string{
 				"MultiAZPodDistribution",

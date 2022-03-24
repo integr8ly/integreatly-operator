@@ -20,6 +20,7 @@ import (
 
 const deadMansSwitch = "DeadMansSwitch"
 const missingSmtpSecret = "SendgridSmtpSecretExists"
+const dmsSecretAlertName = "DeadMansSnitchSecretExists"
 
 // alertsTestMetadata contains metadata about the alert
 type alertTestMetadata struct {
@@ -116,6 +117,15 @@ func smtpMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB
 	return false
 }
 
+func dmsSecretMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB) bool {
+	dmsSecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: DMSSecretName, Namespace: RHMIOperatorNamespace}, dmsSecret); err != nil {
+		t.Logf("DeadMansSnitch secret is missing from %s namespace, expecting %s to fire\n", RHMIOperatorNamespace, dmsSecretAlertName)
+		return true
+	}
+	return false
+}
+
 // This test ensures that no alerts are firing during or after installation
 func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
@@ -171,7 +181,10 @@ func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 		if alertName == deadMansSwitch ||
 			(alertName == missingSmtpSecret &&
 				alert.State == prometheusv1.AlertStateFiring &&
-				smtpMissing(context.TODO(), ctx.Client, t)) {
+				smtpMissing(context.TODO(), ctx.Client, t)) ||
+			(alertName == dmsSecretAlertName &&
+				alert.State == prometheusv1.AlertStateFiring &&
+				dmsSecretMissing(context.TODO(), ctx.Client, t)) {
 			continue
 		}
 		// add firing alerts
@@ -288,7 +301,13 @@ func getFiringOrPendingAlerts(t TestingTB, ctx *TestingContext) error {
 			alertsError.deadMansSwitchFiring = false
 		}
 		// ignore firing and pending  dms and missingSmtp alerts
-		if alertName == deadMansSwitch || (alertName == missingSmtpSecret && alert.State == prometheusv1.AlertStateFiring && smtpMissing(context.TODO(), ctx.Client, t)) {
+		if alertName == deadMansSwitch ||
+			(alertName == missingSmtpSecret &&
+				alert.State == prometheusv1.AlertStateFiring &&
+				smtpMissing(context.TODO(), ctx.Client, t)) ||
+			(alertName == dmsSecretAlertName &&
+				alert.State == prometheusv1.AlertStateFiring &&
+				dmsSecretMissing(context.TODO(), ctx.Client, t)) {
 			continue
 		}
 		// add firing alerts

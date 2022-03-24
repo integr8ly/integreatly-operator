@@ -97,16 +97,19 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 
 func verifySecrets(kubeClient kubernetes.Interface) error {
 	var pagerdutyKey, dmsURL string
+	dmsSecretFound := true
 	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get secret: %w", err)
+		dmsSecretFound = false
 	}
-	if len(res.Data["SNITCH_URL"]) != 0 {
-		dmsURL = string(res.Data["SNITCH_URL"])
-	} else if len(res.Data["url"]) != 0 {
-		dmsURL = string(res.Data["url"])
-	} else {
-		return fmt.Errorf("url is undefined in dead mans snitch secret")
+	if dmsSecretFound {
+		if len(res.Data["SNITCH_URL"]) != 0 {
+			dmsURL = string(res.Data["SNITCH_URL"])
+		} else if len(res.Data["url"]) != 0 {
+			dmsURL = string(res.Data["url"])
+		} else {
+			return fmt.Errorf("url is undefined in dead mans snitch secret")
+		}
 	}
 
 	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"pagerduty", metav1.GetOptions{})
@@ -157,9 +160,11 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 				return fmt.Errorf("pagerduty service_key not set correctly")
 			}
 		case "deadmansswitch":
-			configs := receiver["webhook_configs"].([]interface{})
-			if configs[0].(map[interface{}]interface{})["url"] != dmsURL {
-				return fmt.Errorf("dms url not set correctly")
+			if dmsSecretFound {
+				configs := receiver["webhook_configs"].([]interface{})
+				if configs[0].(map[interface{}]interface{})["url"] != dmsURL {
+					return fmt.Errorf("dms url not set correctly")
+				}
 			}
 		}
 	}

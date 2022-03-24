@@ -99,7 +99,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	//Get dms credentials
 	dmsSecret, err := getDMSSecret(ctx, serverClient, *installation)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		log.Warningf("Could not get DMS secret", l.Fields{"error": err.Error()})
 	}
 
 	// only set the to address to a real value for managed deployments
