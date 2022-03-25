@@ -7,7 +7,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"

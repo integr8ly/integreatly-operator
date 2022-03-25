@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
-	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
-	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	apiApiManager "github.com/3scale/3scale-operator/apis/apps"
+	threescalev1alpha1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -23,8 +23,8 @@ func (t *ThreeScale) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
 		&threescalev1alpha1.APIManager{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       threescaleapps.APIManagerKind,
-				APIVersion: threescalev1alpha1.SchemeGroupVersion.String(),
+				Kind:       apiApiManager.APIManagerKind,
+				APIVersion: threescalev1alpha1.GroupVersion.String(),
 			},
 		},
 	}

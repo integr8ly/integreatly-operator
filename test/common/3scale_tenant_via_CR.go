@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"

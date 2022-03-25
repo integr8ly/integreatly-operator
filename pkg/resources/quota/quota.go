@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"

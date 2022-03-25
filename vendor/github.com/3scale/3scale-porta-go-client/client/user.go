@@ -15,6 +15,7 @@ const (
 )
 
 // ActivateUser activates user of a given account from pending state to active
+// Deprecated: Use ActivateDeveloperUser instead
 func (c *ThreeScaleClient) ActivateUser(accountID, userID int64) error {
 	endpoint := fmt.Sprintf(userActivate, accountID, userID)
 
@@ -37,6 +38,7 @@ func (c *ThreeScaleClient) ActivateUser(accountID, userID int64) error {
 }
 
 // ReadUser reads user of a given account
+// Deprecated: Use DeveloperUser instead
 func (c *ThreeScaleClient) ReadUser(accountID, userID int64) (*User, error) {
 	endpoint := fmt.Sprintf(userRead, accountID, userID)
 	req, err := c.buildGetReq(endpoint)
@@ -59,6 +61,7 @@ func (c *ThreeScaleClient) ReadUser(accountID, userID int64) (*User, error) {
 }
 
 // ListUser list users of a given account and a given filter params
+// Deprecated: Use ListDeveloperAccounts instead
 func (c *ThreeScaleClient) ListUsers(accountID int64, filterParams Params) (*UserList, error) {
 	endpoint := fmt.Sprintf(userList, accountID)
 	req, err := c.buildGetReq(endpoint)
@@ -87,6 +90,7 @@ func (c *ThreeScaleClient) ListUsers(accountID int64, filterParams Params) (*Use
 }
 
 // UpdateUser updates user of a given account
+// Deprecated: Use UpdateDeveloperUser instead
 func (c *ThreeScaleClient) UpdateUser(accountID int64, userID int64, userParams Params) (*User, error) {
 	endpoint := fmt.Sprintf(userUpdate, accountID, userID)
 

@@ -24,8 +24,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1alpha1"
-	threescaleBv1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1"
+	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -89,10 +89,10 @@ var _ = BeforeSuite(func(done Done) {
 	err = rhmiv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = threescalev1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	err = threescalev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = threescaleBv1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	err = threescaleBv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = operatorsv1.AddToScheme(scheme.Scheme)

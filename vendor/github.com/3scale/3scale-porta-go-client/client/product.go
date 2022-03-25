@@ -20,6 +20,26 @@ const (
 	productProxyDeployResourceEndpoint     = "/admin/api/services/%d/proxy/deploy.json"
 )
 
+// BackendApi Read 3scale Backend
+func (c *ThreeScaleClient) Product(id int64) (*Product, error) {
+	endpoint := fmt.Sprintf(productResourceEndpoint, id)
+
+	req, err := c.buildGetJSONReq(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	product := &Product{}
+	err = handleJsonResp(resp, http.StatusOK, product)
+	return product, err
+}
+
 // CreateProduct Create 3scale Product
 func (c *ThreeScaleClient) CreateProduct(name string, params Params) (*Product, error) {
 	values := url.Values{}
