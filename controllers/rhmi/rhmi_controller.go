@@ -1690,7 +1690,7 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 // 3.	parameter exists and value is empty
 // 4.	parameter does not exists
 func validateAddOnStsRoleArnParameterPattern(client k8sclient.Client, namespace string) (bool, error) {
-	stsRoleArn, err := sts.GetStsRoleArn(context.TODO(), client, namespace)
+	stsRoleArn, err := sts.GetSTSRoleARN(context.TODO(), client, namespace)
 	if err != nil {
 		return false, fmt.Errorf("failed while retrieving addon parameter: %v", err)
 	}
