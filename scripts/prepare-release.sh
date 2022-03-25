@@ -35,7 +35,7 @@ fi
 if [[ -z $KUSTOMIZE_PATH ]]; then
   KUSTOMIZE="/usr/local/bin/kustomize"
 else
-  KUSTOMIZE="/usr/local/bin/kustomize"
+  KUSTOMIZE=$(which kustomize)
 fi
 
 # Path to gofmt
