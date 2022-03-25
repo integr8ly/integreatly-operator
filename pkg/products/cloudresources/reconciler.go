@@ -46,8 +46,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	serviceUpdatesKey            = "serviceUpdates"
-	stsCROSecretName             = "sts-credentials"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002"}
@@ -173,7 +171,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if isSTS {
-		phase, err = r.createSTSArnSecret(ctx, client, operatorNamespace)
+		phase, err = r.createSTSARNSecret(ctx, client, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to create STS secret", err)
 			return phase, err
@@ -615,9 +613,9 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	return client.Patch(ctx, cfgMap, k8sclient.Merge)
 }
 
-// createSTSArnSecret create the STS arn secret - should be already validated in preflight checks
-func (r *Reconciler) createSTSArnSecret(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	stsRoleArn, err := sts.GetStsRoleArn(ctx, client, r.installation.Namespace)
+// createSTSARNSecret create the STS arn secret - should be already validated in preflight checks
+func (r *Reconciler) createSTSARNSecret(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	stsRoleArn, err := sts.GetSTSRoleARN(ctx, client, r.installation.Namespace)
 	if err != nil {
 		r.log.Error("STS role ARN parameter pattern validation failed", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -626,15 +624,15 @@ func (r *Reconciler) createSTSArnSecret(ctx context.Context, client k8sclient.Cl
 	// create CRO credentials secret
 	credSec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      stsCROSecretName,
+			Name:      sts.CredsSecretName,
 			Namespace: operatorNamespace,
 		},
 		Data: map[string][]byte{},
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, credSec, func() error {
-		credSec.Data["role_arn"] = []byte(stsRoleArn)
-		credSec.Data["web_identity_token_file"] = []byte("/var/run/secrets/openshift/serviceaccount/token")
+		credSec.Data[sts.CredsSecretRoleARNKeyName] = []byte(stsRoleArn)
+		credSec.Data[sts.CredsSecretTokenPathKeyName] = []byte("/var/run/secrets/openshift/serviceaccount/token")
 		return nil
 	})
 	if err != nil {
