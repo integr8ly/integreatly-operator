@@ -1,0 +1,8 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: rhmi-operators
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: quay.io/dmoskale/integreatly-index:1.18.2

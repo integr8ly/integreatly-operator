@@ -1,6 +1,6 @@
 include ./make/*.mk
 
-ORG ?= integreatly
+ORG ?= dmoskale
 
 REG=quay.io
 SHELL=/bin/bash

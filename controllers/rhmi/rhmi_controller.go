@@ -409,9 +409,9 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	// Entered on first reconcile where all stages reported complete after an upgrade / install
 	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
-		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
-		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		// installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
+		// installation.Status.ToVersion = ""
+		// metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""

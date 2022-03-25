@@ -2,6 +2,7 @@ apiVersion: scorecard.operatorframework.io/v1alpha3
 kind: Configuration
 metadata:
   name: config
+serviceaccount: rhoam-test-runner
 stages:
 - parallel: true
   tests:
@@ -68,7 +69,7 @@ stages:
   - entrypoint:
     - entrypoint
     - 01-happy-path
-    image: quay.io/psturc/scorecard-test-kuttl:latest
+    image: quay.io/integreatly/scorecard-test-kuttl:master
     labels:
       cluster-product: ocp
       cluster-size: small
@@ -81,7 +82,7 @@ stages:
   - entrypoint:
     - entrypoint
     - 02-scalability
-    image: quay.io/psturc/scorecard-test-kuttl:latest
+    image: quay.io/integreatly/scorecard-test-kuttl:master
     labels:
       cluster-product: ocp
       cluster-size: medium

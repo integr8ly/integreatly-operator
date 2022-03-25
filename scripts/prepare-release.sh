@@ -33,9 +33,9 @@ fi
 # Optional environment variable to set a different Kustomize path. If this
 # variable is not set, it will use the one from the $PATH or install Kustomize
 if [[ -z $KUSTOMIZE_PATH ]]; then
-  KUSTOMIZE="/usr/local/bin/kustomize"
+  KUSTOMIZE=$(which kustomize)
 else
-  KUSTOMIZE="/usr/local/bin/kustomize"
+  KUSTOMIZE=$(which kustomize)
 fi
 
 # Path to gofmt

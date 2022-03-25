@@ -439,7 +439,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Infof("Installation reconciled successfully", l.Fields{"productStatus": r.Config.GetProductName()})
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
 // restores seed and master api cast secrets if available
