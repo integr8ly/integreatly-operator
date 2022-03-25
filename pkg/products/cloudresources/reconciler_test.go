@@ -303,7 +303,7 @@ func TestReconciler_createSTSArnSecret(t *testing.T) {
 						Namespace: defaultInstallationNamespace,
 					},
 					Data: map[string][]byte{
-						sts.AddonStsArnParameterName: []byte("arn:aws:iam::123456789012:role/12345"),
+						sts.RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345"),
 					},
 				}),
 			},
@@ -321,13 +321,13 @@ func TestReconciler_createSTSArnSecret(t *testing.T) {
 				Reconciler:    tt.fields.Reconciler,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.createSTSArnSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
+			got, err := r.createSTSARNSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("createSTSArnSecret() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("createSTSARNSecret() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("createSTSArnSecret() got = %v, want %v", got, tt.want)
+				t.Errorf("createSTSARNSecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

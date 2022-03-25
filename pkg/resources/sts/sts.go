@@ -7,12 +7,18 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	clusterCloudCredentialName = "cluster"
-	AddonStsArnParameterName   = "sts-role-arn"
+	clusterCloudCredentialName  = "cluster"
+	RoleArnParameterName        = "sts-role-arn"
+	RoleSessionName             = "Red-Hat-cloud-resources-operator"
+	CredsSecretName             = "sts-credentials"
+	CredsSecretRoleARNKeyName   = "role_arn"
+	CredsSecretTokenPathKeyName = "web_identity_token_file"
 )
 
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
@@ -30,13 +36,14 @@ func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logge
 	return false, nil
 }
 
-func GetStsRoleArn(ctx context.Context, client k8sclient.Client, namespace string) (string, error) {
+// GetSTSRoleARN retrieves the role ARN addon parameter to be used by CRO
+func GetSTSRoleARN(ctx context.Context, client k8sclient.Client, namespace string) (string, error) {
 	stsRoleArn, stsFound, err := addon.GetStringParameterByInstallType(
 		ctx,
 		client,
 		integreatlyv1alpha1.InstallationTypeManagedApi,
 		namespace,
-		AddonStsArnParameterName,
+		RoleArnParameterName,
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed while retrieving addon parameter %w", err)
@@ -46,4 +53,18 @@ func GetStsRoleArn(ctx context.Context, client k8sclient.Client, namespace strin
 	}
 
 	return stsRoleArn, nil
+}
+
+// GetSTSCredentials retrieves the STS secret used by CRO
+func GetSTSCredentials(ctx context.Context, client k8sclient.Client, namespace string) (string, string, error) {
+	secret := &corev1.Secret{}
+	if err := client.Get(ctx, types.NamespacedName{Name: CredsSecretName, Namespace: namespace}, secret); err != nil {
+		return "", "", fmt.Errorf("failed getting secret %s from ns %s: %w", CredsSecretName, namespace, err)
+	}
+	roleARN := string(secret.Data[CredsSecretRoleARNKeyName])
+	tokenPath := string(secret.Data[CredsSecretTokenPathKeyName])
+	if roleARN == "" || tokenPath == "" {
+		return "", "", fmt.Errorf("sts credentials secret can't be empty")
+	}
+	return roleARN, tokenPath, nil
 }
