@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
+	v1 "github.com/openshift/api/apps/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	namespacecontroller "github.com/integr8ly/integreatly-operator/controllers/namespacelabel"
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
@@ -73,6 +74,7 @@ func init() {
 	utilruntime.Must(rhmiv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(rhmiv1alpha1.AddToSchemes.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
+	utilruntime.Must(v1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 	// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant,verbs=watch;get;list
 
