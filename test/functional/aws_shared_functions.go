@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	stsSvc "github.com/aws/aws-sdk-go/service/sts"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -201,19 +203,25 @@ func CreateAWSSession(ctx context.Context, client client.Client) (*session.Sessi
 		return nil, err
 	}
 	if isSTS {
-		roleARN, err := sts.GetStsRoleArn(ctx, client, common.RHMIOperatorNamespace)
+		roleARN, tokenPath, err := sts.GetSTSCredentials(ctx, client, common.CloudResourceOperatorNamespace)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get role ARN: %w", err)
+			return nil, fmt.Errorf("failed to get STS credentials: %w", err)
 		}
-		sess := session.Must(session.NewSession(&awsConfig))
-		awsConfig.Credentials = stscreds.NewCredentials(sess, roleARN)
-		return sess, nil
+		if k8s.IsRunLocally() {
+			sess := session.Must(session.NewSession(&awsConfig))
+			awsConfig.Credentials = stscreds.NewCredentials(sess, roleARN)
+		} else {
+			svc := stsSvc.New(session.Must(session.NewSession(&awsConfig)))
+			credentialsProvider := stscreds.NewWebIdentityRoleProvider(svc, roleARN, sts.RoleSessionName, tokenPath)
+			awsConfig.Credentials = credentials.NewCredentials(credentialsProvider)
+		}
+	} else {
+		awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get AWS credentials: %w", err)
+		}
+		awsConfig.Credentials = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 	}
-	awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS credentials : %w", err)
-	}
-	awsConfig.Credentials = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 	sess := session.Must(session.NewSession(&awsConfig))
 	return sess, nil
 }
@@ -231,15 +239,14 @@ func getAWSRegion(ctx context.Context, client client.Client) (string, error) {
 	return infra.Status.PlatformStatus.AWS.Region, nil
 }
 
-//getAWSCredentials retrieves credentials from secret namespace
+//getAWSCredentials retrieves aws credentials from secret namespace
 func getAWSCredentials(ctx context.Context, client client.Client) (string, string, error) {
 	secret := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{Name: awsCredsSecretName, Namespace: awsCredsNamespace}, secret); err != nil {
-		return "", "", fmt.Errorf("failed getting secret: %v from cluster: %w ", awsCredsSecretName, err)
+		return "", "", fmt.Errorf("failed getting secret %s from ns %s: %w", awsCredsSecretName, awsCredsNamespace, err)
 	}
 	awsAccessKeyID := string(secret.Data["aws_access_key_id"])
 	awsSecretAccessKey := string(secret.Data["aws_secret_access_key"])
-
 	if awsAccessKeyID == "" && awsSecretAccessKey == "" {
 		return "", "", errors.New("aws credentials secret can't be empty")
 	}
