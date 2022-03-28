@@ -18,20 +18,20 @@ package main
 
 import (
 	"flag"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"os"
 	"strings"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
 	integreatlymetrics "github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	v1 "github.com/openshift/api/apps/v1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	namespacecontroller "github.com/integr8ly/integreatly-operator/controllers/namespacelabel"
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
@@ -42,7 +42,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
+	"github.com/openshift/api/apps/v1"
 	"github.com/sirupsen/logrus"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	// +kubebuilder:scaffold:imports
 )
@@ -68,13 +70,12 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.NoTenantRealm)
 
 	integreatlymetrics.OperatorVersion.Add(1)
-
+	utilruntime.Must(v1.Install(clientgoscheme.Scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(rhmiv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(rhmiv1alpha1.AddToSchemes.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
-	utilruntime.Must(v1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 	// +kubebuilder:rbac:groups=integreatly.org,resources=apimanagementtenant,verbs=watch;get;list
 
