@@ -73,23 +73,29 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to setup portaClient: %v", err)
 	}
 
+
+	var errors error 
+
 	// verify that product has been created
 	err = wait.Poll(time.Second*5, time.Minute*2, func() (done bool, err error) {
 		backendList, err := threescaleClient.ListBackendApis()
 		if err != nil {
-			return false, nil
+			errors = fmt.Errorf("can't list backends %s", err)
+			return false, err
 		}
 		for _, backend := range backendList.Backends {
 			println(backend.Element.Name)
 			if backend.Element.Name == backendName {
 				return true, nil
+			} else {
+				errors = fmt.Errorf("cant find backend in 3scale api")
 			}
 		}
 
 		return false, nil
 	})
 	if err != nil {
-		t.Fatalf("failed to get backend api: %v", err)
+		t.Fatalf("failed to get backend api: %v", errors)
 	}
 
 	// delete backend cr
