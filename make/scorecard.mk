@@ -6,6 +6,8 @@ SCORECARD_SA_NAME ?= rhoam-test-runner
 
 SCORECARD_TEST_NAME ?= ""
 SCORECARD_SKIP_CLEANUP ?= true
+ARTIFACTS_DIR ?= "logs/artifacts"
+TEST_TIMEOUT ?= "3000s"
 
 .PHONY: scorecard/bundle/prepare
 scorecard/bundle/prepare:
@@ -24,7 +26,7 @@ scorecard/service_account/cleanup:
 
 .PHONY: scorecard/test/run
 scorecard/test/run:
-	operator-sdk scorecard ./bundle --namespace=${SCORECARD_NAMESPACE} --output json --selector=test=${SCORECARD_TEST_NAME} --skip-cleanup=${SCORECARD_SKIP_CLEANUP}
+	operator-sdk scorecard ./bundle --namespace=${SCORECARD_NAMESPACE} --output json --service-account ${SCORECARD_SA_NAME}  --wait-time ${TEST_TIMEOUT} --test-output ${ARTIFACTS_DIR} --selector=test=${SCORECARD_TEST_NAME} --skip-cleanup=${SCORECARD_SKIP_CLEANUP}
 
 .PHONY: scorecard/build/push
 scorecard/build/push: scorecard/build
