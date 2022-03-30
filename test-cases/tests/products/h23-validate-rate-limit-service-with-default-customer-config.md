@@ -10,6 +10,7 @@ products:
       - 1.10.0
       - 1.11.0
       - 1.14.0
+      - 1.19.0
 estimate: 1h
 tags:
   - destructive
@@ -111,10 +112,10 @@ list the folders - you should see a 'rate-limit-testing' folder.
 Delete any existing scripts.js files in this folder
 
 Run the command (below)
-to download the script from [here](https://gist.github.com/psturc/9d7486bac0a5791d80419694721069e8) and rename the file to script.js. The downloaded script will be used to set up the load testing tool.
+to download the script from [here](https://gist.githubusercontent.com/trepel/48186acce76190d4519e876c4db280f1/raw/b9a4b93938829212c53223dbc0eb5582958f2273/script.js -O script.js) and rename the file to script.js. The downloaded script will be used to set up the load testing tool.
 
 ```bash
-wget https://gist.githubusercontent.com/psturc/9d7486bac0a5791d80419694721069e8/raw/e3d6baca6a1f9cdd3be7c82f3313de5ecad1de75/script.js -O script.js
+wget https://gist.githubusercontent.com/trepel/48186acce76190d4519e876c4db280f1/raw/b9a4b93938829212c53223dbc0eb5582958f2273/script.js -O script.js
 ```
 
 The script.js file should now be downloaded.

@@ -5,14 +5,16 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
+    targets:
+      - 1.19.0
 estimate: 1h
-tags:
-  - per-release
 ---
 
 # H24 - Verify self-managed APIcast and custom policy
 
 ## Description
+
+Note: This test case was automated and is executed automatically. However, the "custom policy" part is not yet automated so every third release comment out the [cleanup](https://github.com/integr8ly/integreatly-operator/blob/3b24a8d67fb0c2af8ca6502ff7bd593e69ad5bf2/test/common/selfmanaged_apicast.go#L125), run the h24 test and then do only the pieces required for setting up the custom policy.
 
 This test case should prove that it is possible for customers to deploy self-managed APIcast and use custom policies on it. The 3scale QE team will perform this test case in RHOAM each time there is an upgrade of 3scale. We (RHOAM QE) should only perform this if there are modifications on our end that might break the functionality - typically changes in permissions in RHOAM and/or OSD.
 Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse/MGDAPI-370)
