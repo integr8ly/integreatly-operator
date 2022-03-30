@@ -126,7 +126,7 @@ install/sandboxrhoam/operator:
 .PHONY: install/sandboxrhoam/config
 install/sandboxrhoam/config:
 	@-oc process -p RHOAM_OPERATOR_NAMESPACE=$(SANDBOX_NAMESPACE) -f config/developer-sandbox/sandbox-config-template.yml | oc create -f - -n $(SANDBOX_NAMESPACE)
-	@oc label namespace $(SANDBOX_NAMESPACE) monitoring-key=middleware --overwrite
+	@oc label namespace $(SANDBOX_NAMESPACE) monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 	@-oc process -f config/developer-sandbox/sandbox-rhoam-quickstart.yml | oc create -f -
 
 .PHONY: code/run
