@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -370,6 +371,16 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_, err = r.newAlertsReconciler(installation).ReconcileAlerts(context.TODO(), alertsClient)
 	if err != nil {
 		log.Error("Error reconciling alerts for the rhmi installation", err)
+	}
+
+	log.Info("set alerts metric")
+	err = r.composeAndSetAlertMetric(installation, r.restConfig, configManager)
+	if err != nil {
+		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
+			log.Warning(fmt.Sprintf("Initial installation, error setting alerts metric: %s", err))
+		} else {
+			log.Error("error setting alerts metric:", err)
+		}
 	}
 
 	installationQuota := &quota.Quota{}
@@ -1367,6 +1378,89 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	return installation, nil
 }
 
+func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHMI, rc *rest.Config, configManager *config.Manager) error {
+	var alerts []metrics.AlertMetric
+
+	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
+	if err != nil {
+		return fmt.Errorf("getting alerting namespace failed: %w", err)
+	}
+
+	observability, err := configManager.ReadObservability()
+	if err != nil {
+		return fmt.Errorf("getting observability configuration failed: %w", err)
+	}
+
+	for namespace, _ := range alertingNamespaces {
+		if namespace == observability.GetNamespace() {
+			alerts, err = r.composeAlertMetric("prometheus", namespace, rc)
+			if err != nil {
+				return fmt.Errorf("composing alert metric failed: %w", err)
+			}
+			metrics.SetRHOAMAlerts(alerts)
+		}
+	}
+
+	return nil
+}
+
+func (r *RHMIReconciler) composeAlertMetric(route string, namespace string, rc *rest.Config) ([]metrics.AlertMetric, error) {
+	var alerts metrics.AlertMetrics
+	endpoint := "/api/v1/alerts"
+
+	url, err := r.getURLFromRoute(route, namespace, rc)
+	if err != nil {
+		return alerts.Alerts, fmt.Errorf("error getting route : %w", err)
+	}
+	url = url + endpoint
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return alerts.Alerts, fmt.Errorf("error on request : %w", err)
+	}
+	var bearer = "Bearer " + r.restConfig.BearerToken
+	req.Header.Add("Authorization", bearer)
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return alerts.Alerts, fmt.Errorf("error on response : %w", err)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("reader close failure", err)
+		}
+	}(resp.Body)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return alerts.Alerts, fmt.Errorf("unable to read body : %w", err)
+	}
+
+	var alertResp struct {
+		Status string `json:"status"`
+		Data   struct {
+			Alerts []struct {
+				Labels models.LabelSet `json:"labels"`
+				State  string          `json:"state"`
+			} `json:"alerts"`
+		} `json:"data"`
+	}
+
+	err = json.Unmarshal([]byte(body), &alertResp)
+	if err != nil {
+		return alerts.Alerts, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	alerts = formatAlerts(alertResp.Data.Alerts)
+
+	return alerts.Alerts, nil
+}
+
 func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
 	if !rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		return nil
@@ -1498,4 +1592,35 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
+}
+
+func formatAlerts(alerts []struct {
+	Labels models.LabelSet `json:"labels"`
+	State  string          `json:"state"`
+}) metrics.AlertMetrics {
+	alertMetrics := metrics.AlertMetrics{}
+
+	for _, alert := range alerts {
+		if alert.Labels["alertname"] == "DeadMansSwitch" {
+			// DeadManSwitch alert is always fire and only a problem if not firing.
+			// Skipping the inclusion to have a more accurate metric.
+			continue
+		}
+		if !alertMetrics.Contains(alert) {
+			alertMetrics.Alerts = append(alertMetrics.Alerts, metrics.AlertMetric{
+				Name:     alert.Labels["alertname"],
+				Severity: alert.Labels["severity"],
+				State:    alert.State,
+				Value:    0,
+			})
+		}
+
+		for index := range alertMetrics.Alerts {
+			if alertMetrics.Alerts[index].Contains(alert) {
+				alertMetrics.Alerts[index].Value++
+			}
+		}
+	}
+
+	return alertMetrics
 }

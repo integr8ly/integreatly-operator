@@ -4,7 +4,9 @@ import (
 	"context"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/prometheus/alertmanager/api/v2/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,4 +106,95 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFormatAlerts(t *testing.T) {
+	input := []struct {
+		Labels models.LabelSet `json:"labels"`
+		State  string          `json:"state"`
+	}{
+		{
+			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: map[string]string{"alertname": "dummy", "severity": "Low"},
+			State:  "Firing",
+		},
+		{
+			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			State:  "Pending",
+		},
+		{
+			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			State:  "Pending",
+		},
+
+		{
+			Labels: map[string]string{"alertname": "dummy two", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: map[string]string{"alertname": "dummy two", "severity": "High"},
+			State:  "Firing",
+		},
+	}
+
+	expected := metrics.AlertMetrics{Alerts: []metrics.AlertMetric{
+		{
+			Name:     "dummy",
+			Severity: "High",
+			Value:    2,
+			State:    "Firing",
+		},
+		{
+			Name:     "dummy",
+			Severity: "Low",
+			Value:    1,
+			State:    "Firing",
+		},
+		{
+			Name:     "dummy",
+			Severity: "High",
+			Value:    2,
+			State:    "Pending",
+		},
+		{
+			Name:     "dummy two",
+			Severity: "High",
+			Value:    2,
+			State:    "Firing",
+		},
+	}}
+
+	actual := formatAlerts(input)
+
+	if !compare(actual.Alerts, expected.Alerts) {
+		t.Fatalf("alert metrics not equal; Actual: %v, Expected: %v", actual, expected)
+	}
+
+}
+
+func compare(actual []metrics.AlertMetric, expected []metrics.AlertMetric) bool {
+
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	for _, a := range actual {
+		found := false
+		for _, b := range expected {
+			if a.Name == b.Name && a.Value == b.Value && a.State == b.State && a.Severity == b.Severity {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
