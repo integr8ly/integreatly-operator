@@ -34,7 +34,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
-
 )
 
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
