@@ -3,11 +3,11 @@ package metrics
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/version"
+	"github.com/prometheus/alertmanager/api/v2/models"
 
 	"github.com/prometheus/client_golang/prometheus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -95,6 +95,18 @@ var (
 		},
 	)
 
+	RHOAMAlert = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_alerts",
+			Help: "RHOAM alerts summary, excludes DeadManSwitch",
+		},
+		[]string{
+			"alert",
+			"severity",
+			"state",
+		},
+	)
+
 	ThreeScaleUserAction = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "threescale_user_action",
@@ -142,6 +154,17 @@ var (
 	)
 )
 
+type AlertMetric struct {
+	Name     string
+	Severity string
+	State    string
+	Value    int64
+}
+
+type AlertMetrics struct {
+	Alerts []AlertMetric
+}
+
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
 func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
 	RHMIInfo.WithLabelValues(installation.Spec.UseClusterStorage,
@@ -175,6 +198,17 @@ func SetRhmiVersions(stage string, version string, toVersion string, firstInstal
 
 	RHOAMVersion.Reset()
 	RHOAMVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
+}
+
+func SetRHOAMAlerts(alerts []AlertMetric) {
+	RHOAMAlert.Reset()
+	for index := range alerts {
+		RHOAMAlert.With(prometheus.Labels{
+			"alert":    alerts[index].Name,
+			"severity": alerts[index].Severity,
+			"state":    alerts[index].State,
+		}).Set(float64(alerts[index].Value))
+	}
 }
 
 func SetThreeScaleUserAction(httpStatus int, username, action string) {
@@ -217,4 +251,51 @@ func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l
 	} else {
 		return "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate", nil
 	}
+}
+
+func (a *AlertMetric) ContainsName(name string) bool {
+	if a.Name == name {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) ContainsSeverity(severity string) bool {
+	if a.Severity == severity {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) ContainsState(state string) bool {
+	if a.State == state {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) Contains(alert struct {
+	Labels models.LabelSet `json:"labels"`
+	State  string          `json:"state"`
+}) bool {
+
+	if a.ContainsName(alert.Labels["alertname"]) && a.ContainsSeverity(alert.Labels["severity"]) && a.ContainsState(alert.State) {
+		return true
+	}
+
+	return false
+}
+
+func (a *AlertMetrics) Contains(alert struct {
+	Labels models.LabelSet `json:"labels"`
+	State  string          `json:"state"`
+}) bool {
+
+	for _, current := range a.Alerts {
+		if current.Contains(alert) {
+			return true
+		}
+	}
+
+	return false
 }
