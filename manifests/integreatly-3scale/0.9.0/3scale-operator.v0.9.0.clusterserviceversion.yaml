@@ -932,4 +932,4 @@ spec:
   provider:
     name: Red Hat
   version: 0.9.0
-  replaces: 3scale-operator.v0.8.0
+  replaces: 3scale-operator.v0.8.3
