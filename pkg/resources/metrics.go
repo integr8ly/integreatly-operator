@@ -862,3 +862,18 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 
 	return rule, nil
 }
+
+func InstallationState(version string, toVersion string) string {
+
+	if len(version) == 0 && len(toVersion) == 0 {
+		return "Unknown State"
+	} else if len(version) == 0 && len(toVersion) > 0 {
+		return "Installation"
+	} else if len(version) > 0 && len(toVersion) > 0 {
+		return "Upgrade"
+	} else if len(version) > 0 && len(toVersion) == 0 {
+		return "Installed"
+	}
+
+	return ""
+}
