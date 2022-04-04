@@ -23,11 +23,11 @@ var quotaConfig = `
                 "resources":{
                     "requests":{
                         "cpu":0.5,
-                        "memory":"470Mi"
+                        "memory":"650Mi"
                     },
                     "limits":{
                         "cpu":1,
-                        "memory":"520Mi"
+                        "memory":"750Mi"
                     }
                 }
             },
@@ -97,15 +97,15 @@ var quotaConfig = `
         },
         "resources":{
             "backend_listener":{
-                "replicas":3,
+                "replicas":2,
                 "resources":{
                     "requests":{
                         "cpu":0.25,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
-                        "cpu":0.6,
-                        "memory":"500Mi"
+                        "cpu":0.06,
+                        "memory":"700Mi"
                     }
                 }
             },
@@ -175,15 +175,15 @@ var quotaConfig = `
         },
         "resources":{
             "backend_listener":{
-                "replicas":3,
+                "replicas":2,
                 "resources":{
                     "requests":{
                         "cpu":0.15,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":0.5,
-                        "memory":"500Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
@@ -253,15 +253,15 @@ var quotaConfig = `
         },
         "resources":{
             "backend_listener":{
-                "replicas":3,
+                "replicas":2,
                 "resources":{
                     "requests":{
                         "cpu":0.1,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":0.3,
-                        "memory":"500Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
@@ -335,11 +335,11 @@ var quotaConfig = `
                 "resources":{
                     "requests":{
                         "cpu":0.06,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":0.18,
-                        "memory":"500Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
@@ -413,11 +413,11 @@ var quotaConfig = `
                 "resources":{
                     "requests":{
                         "cpu":0.06,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":0.18,
-                        "memory":"500Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
@@ -491,11 +491,11 @@ var quotaConfig = `
                 "resources":{
                     "requests":{
                         "cpu":0.06,
-                        "memory":"450Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":0.18,
-                        "memory":"500Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
