@@ -107,6 +107,16 @@ var (
 		},
 	)
 
+	RHOAMCluster = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_cluster",
+			Help: "Gives Cluster type for the RHOAM installation",
+		},
+		[]string{
+			"type",
+		},
+	)
+
 	ThreeScaleUserAction = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "threescale_user_action",
@@ -215,6 +225,13 @@ func SetRHOAMAlerts(alerts []AlertMetric) {
 			"state":    alerts[index].State,
 		}).Set(float64(alerts[index].Value))
 	}
+}
+
+func SetRHOAMCluster(cluster string, value int64) {
+	RHOAMCluster.Reset()
+	RHOAMCluster.With(prometheus.Labels{
+		"type": cluster,
+	}).Set(float64(value))
 }
 
 func SetThreeScaleUserAction(httpStatus int, username, action string) {

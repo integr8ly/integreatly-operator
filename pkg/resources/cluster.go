@@ -6,6 +6,8 @@ import (
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"strings"
@@ -52,4 +54,28 @@ func getCurrentVersion(versionHistory []configv1.UpdateHistory, log l.Logger) (f
 	}
 
 	return version, nil
+}
+
+func GetClusterInfrastructure(ctx context.Context, c client.Client) (*configv1.Infrastructure, error) {
+	infra := &configv1.Infrastructure{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
+		return nil, fmt.Errorf("failed to retrieve cluster infrastructure: %w", err)
+	}
+	return infra, nil
+}
+
+func GetClusterType(infra *configv1.Infrastructure) (string, error) {
+
+	switch infra.Status.PlatformStatus.Type {
+	case configv1.AWSPlatformType:
+		for _, tag := range infra.Status.PlatformStatus.AWS.ResourceTags {
+			if tag.Key == "red-hat-clustertype" {
+				return tag.Value, nil
+			}
+		}
+		return "", fmt.Errorf("key \"red-hat-clustertype\" not in AWS resource tags")
+	default:
+		return "Unknown", fmt.Errorf("no platform information found for type %s", infra.Status.PlatformStatus.Type)
+
+	}
 }

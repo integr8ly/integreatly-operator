@@ -383,6 +383,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	log.Info("set cluster metric")
+	err = r.setRHOAMClusterMetric()
+	if err != nil {
+		log.Error("error setting RHOAM cluster metric:", err)
+	}
+
 	installationQuota := &quota.Quota{}
 	for _, stage := range installType.GetInstallStages() {
 		var err error
@@ -1459,6 +1465,25 @@ func (r *RHMIReconciler) composeAlertMetric(route string, namespace string, rc *
 	alerts = formatAlerts(alertResp.Data.Alerts)
 
 	return alerts.Alerts, nil
+}
+
+func (r *RHMIReconciler) setRHOAMClusterMetric() error {
+
+	infra, err := resources.GetClusterInfrastructure(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster infrastructure information: %w", err)
+	}
+
+	clusterType, err := resources.GetClusterType(infra)
+	if err != nil {
+		if clusterType == "Unknown" {
+			metrics.SetRHOAMCluster(clusterType, 1)
+		}
+		return fmt.Errorf("error getting cluster type: %w", err)
+	}
+
+	metrics.SetRHOAMCluster(clusterType, 1)
+	return nil
 }
 
 func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
