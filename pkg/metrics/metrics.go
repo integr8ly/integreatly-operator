@@ -80,6 +80,7 @@ var (
 		},
 		[]string{
 			"stage",
+			"status",
 			"version",
 			"to_version",
 		},
@@ -213,7 +214,8 @@ func SetRhmiVersions(stage string, version string, toVersion string, firstInstal
 	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
 
 	RHOAMVersion.Reset()
-	RHOAMVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
+	status := resources.InstallationState(version, toVersion)
+	RHOAMVersion.WithLabelValues(stage, status, version, toVersion).Set(float64(firstInstallTimestamp))
 }
 
 func SetRHOAMAlerts(alerts []AlertMetric) {
