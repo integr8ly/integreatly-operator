@@ -322,7 +322,7 @@ create/olm/bundle:
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@ - oc new-project $(NAMESPACE)
-	@oc label namespace $(NAMESPACE) monitoring-key=middleware --overwrite
+	@oc label namespace $(NAMESPACE) monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 	@oc project $(NAMESPACE)
 
 .PHONY: kustomize cluster/prepare/configmaps
