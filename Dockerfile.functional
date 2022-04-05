@@ -22,8 +22,9 @@ RUN make test/compile/functional
 
 FROM registry.access.redhat.com/ubi8/ubi:latest
 # Install chrome for tests
-COPY test-dependancy/*.repo /etc/yum.repos.d/
-RUN dnf -y install google-chrome-stable && dnf clean all
+ADD https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm /root/google-chrome-stable_current_x86_64.rpm
+
+RUN yum -y install /root/google-chrome-stable_current_x86_64.rpm; yum clean all
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
