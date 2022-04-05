@@ -79,9 +79,9 @@ products:
     manifestsDir: integreatly-apicurito
   cloud-resources:
     channel: "rhmi"
-    installFrom: "index"
-    package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.38.0"
+    installFrom: index
+    package: rhmi-cloud-resources
+    index: quay.io/integreatly/cloud-resource-operator:index-v0.38.0
   codeready-workspaces:
     channel: rhmi
     installFrom: local
@@ -104,10 +104,9 @@ products:
     manifestsDir: integreatly-monitoring
   observability:
     channel: alpha
-    installFrom: index
     package: observability-operator
-    installFrom: "index"
-    index: "quay.io/rhoas/observability-operator-index:v3.0.9"
+    installFrom: index
+    index: quay.io/rhoas/observability-operator-index:v3.0.9
   rhsso:
     channel: rhmi
     installFrom: local
