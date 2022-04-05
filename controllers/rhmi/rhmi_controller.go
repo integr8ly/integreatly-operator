@@ -205,7 +205,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=*
 
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
-// +kubebuilder:rbac:groups="*",resources=configmaps;secrets;subscriptions,verbs=get;list;watch
+// +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch
 
 // Role permissions
 

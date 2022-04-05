@@ -135,8 +135,13 @@ func TestRhoamVersionMetricExposed(t TestingTB, ctx *TestingContext) {
 }
 
 func TestAdditionalBlackboxTargets(t TestingTB, ctx *TestingContext) {
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
 	// get all active targets in prometheus
-	expectedBlackboxTargets := getBlackboxTargets()
+	expectedBlackboxTargets := getBlackboxTargets(rhmi.Spec.Type)
 	targetsResult, err := getPrometheusTargets(ctx)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -157,13 +162,26 @@ func TestAdditionalBlackboxTargets(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getBlackboxTargets() []string {
-	return []string{
-		"3scale-admin-ui",
-		"3scale-developer-console-ui",
-		"3scale-system-admin-ui",
-		"grafana-ui",
-		"rhsso-ui",
-		"rhssouser-ui",
+func getBlackboxTargets(installType string) []string {
+	var blackboxTargets []string
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
+		blackboxTargets = []string{
+			"3scale-admin-ui",
+			"3scale-developer-console-ui",
+			"3scale-system-admin-ui",
+			"grafana-ui",
+			"rhsso-ui",
+			"rhssouser-ui",
+		}
+	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		blackboxTargets = []string{
+			"3scale-admin-ui",
+			"3scale-developer-console-ui",
+			"3scale-system-admin-ui",
+			"grafana-ui",
+			"rhsso-ui",
+		}
 	}
+
+	return blackboxTargets
 }
