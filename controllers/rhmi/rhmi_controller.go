@@ -1386,7 +1386,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 }
 
 func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHMI, rc *rest.Config, configManager *config.Manager) error {
-	var alerts []metrics.AlertMetric
+	var alerts []resources.AlertMetric
 
 	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
 	if err != nil {
@@ -1411,8 +1411,8 @@ func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHM
 	return nil
 }
 
-func (r *RHMIReconciler) composeAlertMetric(route string, namespace string, rc *rest.Config) ([]metrics.AlertMetric, error) {
-	var alerts metrics.AlertMetrics
+func (r *RHMIReconciler) composeAlertMetric(route string, namespace string, rc *rest.Config) ([]resources.AlertMetric, error) {
+	var alerts resources.AlertMetrics
 	endpoint := "/api/v1/alerts"
 
 	url, err := r.getURLFromRoute(route, namespace, rc)
@@ -1623,8 +1623,8 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 func formatAlerts(alerts []struct {
 	Labels models.LabelSet `json:"labels"`
 	State  string          `json:"state"`
-}) metrics.AlertMetrics {
-	alertMetrics := metrics.AlertMetrics{}
+}) resources.AlertMetrics {
+	alertMetrics := resources.AlertMetrics{}
 
 	for _, alert := range alerts {
 		if alert.Labels["alertname"] == "DeadMansSwitch" {
@@ -1633,7 +1633,7 @@ func formatAlerts(alerts []struct {
 			continue
 		}
 		if !alertMetrics.Contains(alert) {
-			alertMetrics.Alerts = append(alertMetrics.Alerts, metrics.AlertMetric{
+			alertMetrics.Alerts = append(alertMetrics.Alerts, resources.AlertMetric{
 				Name:     alert.Labels["alertname"],
 				Severity: alert.Labels["severity"],
 				State:    alert.State,
