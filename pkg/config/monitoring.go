@@ -45,6 +45,7 @@ var managedAPITemplateList = []string{
 	"critical-slo-managed-api-alerts",
 	"cro-resources",
 	"rhoam-rhsso-availability-slo",
+	"rhoam-fleet-wide-view",
 }
 
 func NewMonitoring(config ProductConfig) *Monitoring {

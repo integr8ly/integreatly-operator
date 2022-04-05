@@ -197,3 +197,115 @@ func TestVersions(t *testing.T) {
 		})
 	}
 }
+
+func TestGetClusterType(t *testing.T) {
+	type testScenario struct {
+		Name     string
+		Input    *configv1.Infrastructure
+		Expected string
+		Error    bool
+	}
+
+	scenarios := []testScenario{
+		{
+			Name: "Get AWS cluster type",
+			Input: &configv1.Infrastructure{
+				Status: configv1.InfrastructureStatus{
+					InfrastructureName: "",
+					Platform:           "",
+					PlatformStatus: &configv1.PlatformStatus{
+						Type: configv1.AWSPlatformType,
+						AWS: &configv1.AWSPlatformStatus{
+							Region:           "",
+							ServiceEndpoints: nil,
+							ResourceTags: []configv1.AWSResourceTag{
+								{
+									Key:   "red-hat-clustertype",
+									Value: "OSD",
+								},
+							},
+						},
+					},
+					EtcdDiscoveryDomain:    "",
+					APIServerURL:           "",
+					APIServerInternalURL:   "",
+					ControlPlaneTopology:   "",
+					InfrastructureTopology: "",
+				},
+			},
+			Expected: "OSD",
+			Error:    false,
+		},
+		{
+			Name: "Get AWS error on cluster type",
+			Input: &configv1.Infrastructure{
+				Status: configv1.InfrastructureStatus{
+					InfrastructureName: "",
+					Platform:           "",
+					PlatformStatus: &configv1.PlatformStatus{
+						Type: configv1.AWSPlatformType,
+						AWS: &configv1.AWSPlatformStatus{
+							Region:           "",
+							ServiceEndpoints: nil,
+							ResourceTags: []configv1.AWSResourceTag{
+								{
+									Key:   "Missing Key",
+									Value: "OSD",
+								},
+							},
+						},
+					},
+					EtcdDiscoveryDomain:    "",
+					APIServerURL:           "",
+					APIServerInternalURL:   "",
+					ControlPlaneTopology:   "",
+					InfrastructureTopology: "",
+				},
+			},
+			Expected: "",
+			Error:    true,
+		},
+		{
+			Name: "Get Unknown on cluster type and Error",
+			Input: &configv1.Infrastructure{
+				Status: configv1.InfrastructureStatus{
+					InfrastructureName: "",
+					Platform:           "",
+					PlatformStatus: &configv1.PlatformStatus{
+						Type: "Unknown Type",
+						AWS: &configv1.AWSPlatformStatus{
+							Region:           "",
+							ServiceEndpoints: nil,
+							ResourceTags: []configv1.AWSResourceTag{
+								{
+									Key:   "Missing Key",
+									Value: "OSD",
+								},
+							},
+						},
+					},
+					EtcdDiscoveryDomain:    "",
+					APIServerURL:           "",
+					APIServerInternalURL:   "",
+					ControlPlaneTopology:   "",
+					InfrastructureTopology: "",
+				},
+			},
+			Expected: "Unknown",
+			Error:    true,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		actual, err := GetClusterType(scenario.Input)
+
+		if actual != scenario.Expected {
+			t.Fatalf("Test: %s; Infrstructure does not contain the expected result; Actual: %s, Expected: %s", scenario.Name, actual, scenario.Expected)
+		}
+
+		if scenario.Error && err == nil {
+			t.Fatalf("Test: %s; Failed to raise error when error was expected", scenario.Name)
+		}
+
+	}
+}

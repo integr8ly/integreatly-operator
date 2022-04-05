@@ -20,6 +20,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/alertmanager/api/v2/models"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -865,15 +866,71 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 
 func InstallationState(version string, toVersion string) string {
 
-	if len(version) == 0 && len(toVersion) == 0 {
-		return "Unknown State"
-	} else if len(version) == 0 && len(toVersion) > 0 {
+	if len(version) == 0 && len(toVersion) > 0 {
 		return "Installation"
 	} else if len(version) > 0 && len(toVersion) > 0 {
 		return "Upgrade"
 	} else if len(version) > 0 && len(toVersion) == 0 {
 		return "Installed"
+	} else {
+		return "Unknown State"
+	}
+}
+
+type AlertMetric struct {
+	Name     string
+	Severity string
+	State    string
+	Value    int64
+}
+
+type AlertMetrics struct {
+	Alerts []AlertMetric
+}
+
+func (a *AlertMetric) ContainsName(name string) bool {
+	if a.Name == name {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) ContainsSeverity(severity string) bool {
+	if a.Severity == severity {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) ContainsState(state string) bool {
+	if a.State == state {
+		return true
+	}
+	return false
+}
+
+func (a *AlertMetric) Contains(alert struct {
+	Labels models.LabelSet `json:"labels"`
+	State  string          `json:"state"`
+}) bool {
+
+	if a.ContainsName(alert.Labels["alertname"]) && a.ContainsSeverity(alert.Labels["severity"]) && a.ContainsState(alert.State) {
+		return true
 	}
 
-	return ""
+	return false
+}
+
+func (a *AlertMetrics) Contains(alert struct {
+	Labels models.LabelSet `json:"labels"`
+	State  string          `json:"state"`
+}) bool {
+
+	for _, current := range a.Alerts {
+		if current.Contains(alert) {
+			return true
+		}
+	}
+
+	return false
 }

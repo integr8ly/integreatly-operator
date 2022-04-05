@@ -4,7 +4,7 @@ import (
 	"context"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/prometheus/alertmanager/api/v2/models"
 	corev1 "k8s.io/api/core/v1"
@@ -144,7 +144,7 @@ func TestFormatAlerts(t *testing.T) {
 		},
 	}
 
-	expected := metrics.AlertMetrics{Alerts: []metrics.AlertMetric{
+	expected := resources.AlertMetrics{Alerts: []resources.AlertMetric{
 		{
 			Name:     "dummy",
 			Severity: "High",
@@ -179,7 +179,7 @@ func TestFormatAlerts(t *testing.T) {
 
 }
 
-func compare(actual []metrics.AlertMetric, expected []metrics.AlertMetric) bool {
+func compare(actual []resources.AlertMetric, expected []resources.AlertMetric) bool {
 
 	if len(actual) != len(expected) {
 		return false
