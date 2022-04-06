@@ -3,7 +3,6 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -201,31 +200,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
 		return phase, err
-	}
-
-	//get the keycloak-operator CSV for v15.0.2
-	csv := &olmv1alpha1.ClusterServiceVersion{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: r.Config.GetOperatorNamespace(),
-		Name:      "keycloak-operator.v15.0.2",
-	}, csv)
-	if err != nil {
-		r.Log.Warning("could not get CSV 'keycloak-operator.v15.0.2' in namespace '" + r.Config.GetOperatorNamespace() + "' to inject keycloak 7.5 images into: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	//update or inject the env vars required
-	csv, updated, err := r.ReconcileCSVEnvVars(csv, map[string]string{
-		"RELATED_IMAGE_RHSSO_OPENJDK": "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-17",
-		"RELATED_IMAGE_RHSSO_OPENJ9":  "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-17",
-	})
-
-	if updated {
-		//write the modified CSV back to the cluster
-		err = serverClient.Update(ctx, csv)
-		if err != nil {
-			r.Log.Warning("could not write CSV 'keycloak-operator-v15.0.2' in order to inject keycloak 7.5 images: " + err.Error())
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
 	}
 
 	// Setting a name for keycloak-edge to "keycloak" for managed-api install type.
