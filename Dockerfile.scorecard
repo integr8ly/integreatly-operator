@@ -17,7 +17,13 @@ COPY test/scorecard ./test/scorecard
 # Build
 RUN GOOS=linux GOARCH=amd64 make scorecard/compile
 
-FROM kudobuilder/kuttl:v0.11.1
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+
+#  kubectl 1.18
+RUN curl -Lso /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+# kuttl v0.11.1
+RUN curl -Lso /usr/local/bin/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.11.1/kubectl-kuttl_0.11.1_linux_x86_64
+RUN chmod +x /usr/local/bin/*
 
 ENV HOME=/opt/scorecard-test-kuttl \
     USER_NAME=scorecard-test-kuttl \
