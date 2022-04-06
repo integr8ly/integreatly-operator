@@ -245,6 +245,18 @@ make scorecard/service_account/prepare
 # Example:
 make scorecard/test/run SCORECARD_TEST_NAME=basic-check-spec-test
 ```
+
+**Note**
+
+If you are doing some changes to the code of the scorecard test image (`Dockerfile.scorecard`, files in `test/scorecard` folder), you can test them by creating a new image in your quay.io account
+
+```bash
+export IMAGE=quay.io/<YOUR-ACCOUNT-ID>/scorecard-test-kuttl:<your-tag>
+make scorecard/build/push IMAGE=$IMAGE
+```
+
+And update the `image` field in the test you want to run in `bundle/tests/scorecard/config.yaml` file to point to your image in quay.io
+
 ## Uninstalling RHOAM
 This section covers uninstallation of RHOAM if it was installed via locally, OLM or on ROSA
 
