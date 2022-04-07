@@ -28,6 +28,8 @@ SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
 ROLE_ARN ?= "arn:aws:iam::485026278258:role/12345"
+S3_ACCESS_KEY_ID ?= "123"
+S3_SECRET_ACCESS_KEY ?= "secret"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -392,8 +394,9 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/addon-params
 cluster/prepare/addon-params:
-	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) StsRoleARN=$(ROLE_ARN) USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
-
+	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) StsRoleARN=$(ROLE_ARN) \
+		S3_ACCESS_KEY_ID=$(S3_ACCESS_KEY_ID) S3_SECRET_ACCESS_KEY=$(S3_SECRET_ACCESS_KEY) \
+ 		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:

@@ -10,6 +10,7 @@ import (
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -24,6 +25,7 @@ import (
 	v12 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -789,6 +791,15 @@ var ingressRouterService = &corev1.Service{
 	},
 }
 
+var cloudCredential = &cloudcredentialv1.CloudCredential{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: sts.ClusterCloudCredentialName,
+	},
+	Spec: cloudcredentialv1.CloudCredentialSpec{
+		CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -864,6 +875,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		rhssoPostgres,
 		ingressRouterService,
 		smtpSec,
+		cloudCredential,
 	}
 }
 func getValidInstallation(installationType integreatlyv1alpha1.InstallationType) *integreatlyv1alpha1.RHMI {

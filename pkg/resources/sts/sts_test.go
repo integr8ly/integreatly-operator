@@ -64,7 +64,7 @@ func TestIsClusterSTS(t *testing.T) {
 				ctx: context.TODO(),
 				client: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: clusterCloudCredentialName,
+						Name: ClusterCloudCredentialName,
 					},
 					Spec: cloudcredentialv1.CloudCredentialSpec{
 						CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
@@ -81,7 +81,7 @@ func TestIsClusterSTS(t *testing.T) {
 				ctx: context.TODO(),
 				client: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: clusterCloudCredentialName,
+						Name: ClusterCloudCredentialName,
 					},
 					Spec: cloudcredentialv1.CloudCredentialSpec{
 						CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
