@@ -9,6 +9,7 @@ import (
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -19,6 +20,8 @@ const (
 	CredsSecretName             = "sts-credentials"
 	CredsSecretRoleARNKeyName   = "role_arn"
 	CredsSecretTokenPathKeyName = "web_identity_token_file"
+	CredsRoleEnvKey             = "ROLE_ARN"
+	CredsTokenPathEnvKey        = "TOKEN_PATH"
 )
 
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
@@ -66,5 +69,21 @@ func GetSTSCredentials(ctx context.Context, client k8sclient.Client, namespace s
 	if roleARN == "" || tokenPath == "" {
 		return "", "", fmt.Errorf("sts credentials secret can't be empty")
 	}
+	return roleARN, tokenPath, nil
+}
+
+// GetSTSCredentialsFromEnvVar Gets the role arn and token file path from environment variable
+// Should only be used in functional test container
+func GetSTSCredentialsFromEnvVar() (string, string, error) {
+	roleARN, found := os.LookupEnv(CredsRoleEnvKey)
+	if !found {
+		return "", "", fmt.Errorf("%s key should not be empty", CredsRoleEnvKey)
+	}
+
+	tokenPath, found := os.LookupEnv(CredsTokenPathEnvKey)
+	if !found {
+		return "", "", fmt.Errorf("%s key should not be empty", CredsRoleEnvKey)
+	}
+
 	return roleARN, tokenPath, nil
 }
