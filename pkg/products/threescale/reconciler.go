@@ -5,8 +5,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
@@ -972,14 +975,44 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
+	r.log.Info("checking if STS mode")
+	isSTS, err := sts.IsClusterSTS(ctx, serverClient, r.log)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking STS mode: %w", err)
+	}
+	addOnSecretNamespace := r.ConfigManager.GetOperatorNamespace()
+
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 		// Map known key names from CRO, and append any additional values that may be used for Minio
+		// In case of STS cluster - get AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from addon secret (temporary solution)
 		for key, value := range blobStorageSec.Data {
 			switch key {
 			case "credentialKeyID":
-				credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+				if isSTS {
+					credentialKeyID, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3AccessKeyId)
+					if err != nil {
+						return fmt.Errorf("Error getting addon parameter %s: %w", sts.CredsS3AccessKeyId, err)
+					}
+					if !found {
+						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3AccessKeyId, addon.DefaultSecretName)
+					}
+					credSec.Data["AWS_ACCESS_KEY_ID"] = []byte(credentialKeyID)
+				} else {
+					credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+				}
 			case "credentialSecretKey":
-				credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+				if isSTS {
+					credentialSecretKey, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3SecretAccessKey)
+					if err != nil {
+						return fmt.Errorf("Error getting addon parameter %s: %w", sts.CredsS3SecretAccessKey, err)
+					}
+					if !found {
+						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3SecretAccessKey, addon.DefaultSecretName)
+					}
+					credSec.Data["AWS_SECRET_ACCESS_KEY"] = []byte(credentialSecretKey)
+				} else {
+					credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+				}
 			case "bucketName":
 				credSec.Data["AWS_BUCKET"] = blobStorageSec.Data["bucketName"]
 			case "bucketRegion":
