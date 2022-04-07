@@ -9,12 +9,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -116,6 +116,7 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	_ = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	const namespace = "test"
 
@@ -133,8 +134,8 @@ func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 			name: "test: can't get secret",
 			args: args{
 				client: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-						return fmt.Errorf("get error")
+					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+						return fmt.Errorf("listError")
 					},
 				},
 				namespace: namespace,
