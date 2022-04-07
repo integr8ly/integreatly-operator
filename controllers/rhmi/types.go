@@ -83,36 +83,15 @@ var (
 				Name: integreatlyv1alpha1.BootstrapStage,
 			},
 			{
-				Name: integreatlyv1alpha1.CloudResourcesStage,
+				Name: integreatlyv1alpha1.InstallStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductCloudResources: {
-						Name: integreatlyv1alpha1.ProductCloudResources,
-					},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.ObservabilityStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductObservability: {
-						Name: integreatlyv1alpha1.ProductObservability,
-					},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.AuthenticationStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductRHSSO: {
-						Name: integreatlyv1alpha1.ProductRHSSO,
-					},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.ProductsStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.Product3Scale:    {Name: integreatlyv1alpha1.Product3Scale},
-					integreatlyv1alpha1.ProductRHSSOUser: {Name: integreatlyv1alpha1.ProductRHSSOUser},
-					integreatlyv1alpha1.ProductMarin3r:   {Name: integreatlyv1alpha1.ProductMarin3r},
-					integreatlyv1alpha1.ProductGrafana:   {Name: integreatlyv1alpha1.ProductGrafana},
+					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
+					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability},
+					integreatlyv1alpha1.ProductRHSSO:          {Name: integreatlyv1alpha1.ProductRHSSO},
+					integreatlyv1alpha1.Product3Scale:         {Name: integreatlyv1alpha1.Product3Scale},
+					integreatlyv1alpha1.ProductRHSSOUser:      {Name: integreatlyv1alpha1.ProductRHSSOUser},
+					integreatlyv1alpha1.ProductMarin3r:        {Name: integreatlyv1alpha1.ProductMarin3r},
+					integreatlyv1alpha1.ProductGrafana:        {Name: integreatlyv1alpha1.ProductGrafana},
 				},
 			},
 		},
