@@ -6,9 +6,31 @@ coverage:
   precision: 2
   round: down
   range: "20...100"
+  ignore:
+    - "make"
+    - "config"
+    - "openshift-ci"
+    - "bundles"
+    - "deploy"
+    - "envs"
+    - "guides"
+    - "hack"
+    - "manifests"
+    - "packagemanifests"
+    - "prodsec-manifests"
+    - "products"
+    - "templates"
+    - "test-cases"
+    - "test-dependancy"
+    - "tmp"
+    - "vendor"
+    - "version"
 
   status:
-    project: no
+    project:
+      default:
+        target: auto
+        threshold: 0%
     patch: no
     changes: no
 
