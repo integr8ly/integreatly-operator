@@ -151,7 +151,7 @@ func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn empty",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("")})),
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("")})),
 				namespace: namespace,
 			},
 			wantErr: true,
@@ -160,7 +160,7 @@ func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex not match",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("notAnARN")})),
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("notAnARN")})),
 				namespace: namespace,
 			},
 			wantErr: true,
@@ -169,7 +169,7 @@ func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex match",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
 				namespace: namespace,
 			},
 			wantErr: false,
@@ -178,7 +178,7 @@ func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex match for AWS GovCloud (US) Regions",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.AddonStsArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
 				namespace: namespace,
 			},
 			wantErr: false,
