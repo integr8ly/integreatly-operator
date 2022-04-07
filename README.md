@@ -148,6 +148,7 @@ Prerequisites:
 - `ocm` command available ( the newest CLI can be downloaded [here](https://github.com/openshift-online/ocm-cli/releases) and you install it with `mv (your downloaded file) /usr/local/bin/ocm`) (necessary only if using OSD cluster)
 - OC session with cluster admin permissions in a target cluster
 - OCM session (necessary only if using OSD cluster)
+- `openssl` command available on your machine 
 
 | Variable                  | Format  | Type     | Default        | Details                                                                     |
 |---------------------------|---------|:--------:|----------------|-----------------------------------------------------------------------------|
