@@ -39,7 +39,8 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "customer-monitoring"
+	defaultInstallationNamespace = "observability"
+	manifestPackage              = "integreatly-grafana"
 	defaultGrafanaName           = "grafana"
 	defaultRoutename             = defaultGrafanaName + "-route"
 	rateLimitDashBoardName       = "rate-limit"
@@ -621,7 +622,7 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.C
 
 func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
 
-	grafanaConsoleURL := installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductGrafana].Host
+	grafanaConsoleURL := installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductGrafana].Host
 	if grafanaConsoleURL != "" {
 		return grafanaConsoleURL, nil
 	}
