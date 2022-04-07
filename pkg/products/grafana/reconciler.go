@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "observability"
+	defaultInstallationNamespace = "customer-monitoring"
 	manifestPackage              = "integreatly-grafana"
 	defaultGrafanaName           = "grafana"
 	defaultRoutename             = defaultGrafanaName + "-route"
