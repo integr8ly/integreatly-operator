@@ -3,12 +3,12 @@ package sts
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -19,6 +19,8 @@ const (
 	CredsSecretName             = "sts-credentials"
 	CredsSecretRoleARNKeyName   = "role_arn"
 	CredsSecretTokenPathKeyName = "web_identity_token_file"
+	CredsRoleEnvKey             = "ROLE_ARN"
+	CredsTokenPathEnvKey        = "TOKEN_PATH"
 )
 
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
@@ -38,10 +40,9 @@ func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logge
 
 // GetSTSRoleARN retrieves the role ARN addon parameter to be used by CRO
 func GetSTSRoleARN(ctx context.Context, client k8sclient.Client, namespace string) (string, error) {
-	stsRoleArn, stsFound, err := addon.GetStringParameterByInstallType(
+	stsRoleArn, stsFound, err := addon.GetStringParameter(
 		ctx,
 		client,
-		integreatlyv1alpha1.InstallationTypeManagedApi,
 		namespace,
 		RoleArnParameterName,
 	)
@@ -66,5 +67,21 @@ func GetSTSCredentials(ctx context.Context, client k8sclient.Client, namespace s
 	if roleARN == "" || tokenPath == "" {
 		return "", "", fmt.Errorf("sts credentials secret can't be empty")
 	}
+	return roleARN, tokenPath, nil
+}
+
+// GetSTSCredentialsFromEnvVar Gets the role arn and token file path from environment variable
+// Should only be used in functional test container
+func GetSTSCredentialsFromEnvVar() (string, string, error) {
+	roleARN, found := os.LookupEnv(CredsRoleEnvKey)
+	if !found {
+		return "", "", fmt.Errorf("%s key should not be empty", CredsRoleEnvKey)
+	}
+
+	tokenPath, found := os.LookupEnv(CredsTokenPathEnvKey)
+	if !found {
+		return "", "", fmt.Errorf("%s key should not be empty", CredsRoleEnvKey)
+	}
+
 	return roleARN, tokenPath, nil
 }
