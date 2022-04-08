@@ -50,16 +50,6 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						},
 						Expr: intstr.FromString("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25"),
 					},
-					{
-						Alert: "CronJobsFailed",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "Job {{ $labels.namespace  }} / {{  $labels.job  }} has failed",
-						},
-						Expr:   intstr.FromString("clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0"),
-						For:    "5m",
-						Labels: map[string]string{"severity": "warning", "product": installationName},
-					},
 				},
 			},
 
