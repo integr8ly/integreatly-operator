@@ -135,7 +135,6 @@ func MergeEnvs(a []v1.EnvVar, b []v1.EnvVar) []v1.EnvVar {
 		found := false
 		for _, aa := range a {
 			if aa.Name == bb.Name {
-				aa.Value = bb.Value
 				found = true
 				break
 			}
@@ -218,4 +217,33 @@ func FilterClientScopesByNames(clientScopes []v1alpha1.KeycloakClientScope, name
 	}
 
 	return filteredScopes
+}
+
+func SanitizeResourceNameWithAlphaNum(text string) string {
+	// we only want letters and numbers
+	reg := []rune(SanitizeResourceName(text))
+
+	// we guarantee first and last char is an alpha and not a dot or a dash
+	if !unicode.IsLetter(reg[0]) && !unicode.IsNumber(reg[0]) {
+		reg = append([]rune{'a'}, reg...)
+	}
+	if !unicode.IsLetter(reg[len(reg)-1]) && !unicode.IsNumber(reg[len(reg)-1]) {
+		reg = append(reg, 'a')
+	}
+
+	return string(reg)
+}
+
+func AddPodLabels(cr *v1alpha1.Keycloak, labels map[string]string) map[string]string {
+	// We add the Pod Labels defined in the constants
+	for key, value := range PodLabels {
+		labels[key] = value
+	}
+
+	// We add the PodLabel labels coming from CR Env Vars
+	for key, value := range cr.Spec.KeycloakDeploymentSpec.PodLabels {
+		labels[key] = value
+	}
+
+	return labels
 }

@@ -25,7 +25,7 @@ type KeycloakRealmSpec struct {
 type KeycloakAPIRealm struct {
 	// +kubebuilder:validation:Required
 	// +optional
-	ID string `json:"id"`
+	ID string `json:"id,omitempty"`
 	// Realm name.
 	// +kubebuilder:validation:Required
 	Realm string `json:"realm"`
@@ -57,6 +57,9 @@ type KeycloakAPIRealm struct {
 	// TODO: change to values and use kubebuilder default annotation once supported
 	// +optional
 	EventsEnabled *bool `json:"eventsEnabled,omitempty"`
+	// Enabled event types
+	// +optional
+	EnabledEventTypes []string `json:"enabledEventTypes,omitempty"`
 	// Enable events recording
 	// TODO: change to values and use kubebuilder default annotation once supported
 	// +optional
@@ -171,6 +174,10 @@ type KeycloakAPIRealm struct {
 	// +optional
 	Roles *RolesRepresentation `json:"roles,omitempty"`
 
+	// Default role
+	// +optional
+	DefaultRole *RoleRepresentation `json:"defaultRole,omitempty"`
+
 	// Scope Mappings
 	// +optional
 	ScopeMappings []ScopeMappingRepresentation `json:"scopeMappings,omitempty"`
@@ -184,6 +191,10 @@ type KeycloakAPIRealm struct {
 	// Access Token Lifespan
 	// +optional
 	AccessTokenLifespan *int32 `json:"accessTokenLifespan,omitempty"`
+
+	// User Managed Access Allowed
+	// +optional
+	UserManagedAccessAllowed *bool `json:"userManagedAccessAllowed,omitempty"`
 }
 
 type RoleRepresentationArray []RoleRepresentation

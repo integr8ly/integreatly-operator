@@ -92,6 +92,10 @@ type DeploymentSpec struct {
 
 type KeycloakDeploymentSpec struct {
 	DeploymentSpec `json:",inline"`
+	// List of labels to set in the keycloak pods
+	// +optional
+	PodLabels map[string]string `json:"podlabels,omitempty"`
+
 	// Experimental section
 	// NOTE: This section might change or get removed without any notice. It may also cause
 	// the deployment to behave in an unpredictable fashion. Please use with care.
@@ -121,6 +125,9 @@ type ExperimentalSpec struct {
 	// Affinity settings
 	//+optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+	// ServiceAccountName settings
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 type VolumesSpec struct {
@@ -176,8 +183,7 @@ type KeycloakExternalAccess struct {
 }
 
 type KeycloakExternalDatabase struct {
-	// If set to true, the Operator will use an external database.
-	// pointing to Keycloak.
+	// If set to true, the Operator will use an external database pointing to Keycloak. The embedded database (externalDatabase.enabled = false) is deprecated.
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -229,7 +235,7 @@ type KeycloakStatus struct {
 	// An internal URL (service name) to be used by the admin client.
 	InternalURL string `json:"internalURL"`
 	// External URL for accessing Keycloak instance from outside the cluster. Is identical to external.URL if it's specified, otherwise is computed (e.g. from Ingress).
-	ExternalURL string `json:"externalURL"`
+	ExternalURL string `json:"externalURL,omitempty"`
 	// The secret where the admin credentials are to be found.
 	CredentialSecret string `json:"credentialSecret"`
 }

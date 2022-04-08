@@ -449,7 +449,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 
 	// Get an authenticated keycloak api client for the instance
 	keycloakFactory := common.LocalConfigKeycloakFactory{}
-	authenticated, err := keycloakFactory.AuthenticatedClient(*kc)
+	authenticated, err := keycloakFactory.AuthenticatedClient(*kc, false)
 	if err != nil {
 		return fmt.Errorf("Unable to authenticate to the Keycloak API: %s", err)
 	}
