@@ -133,7 +133,10 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 	}
 
 	expectedDashboards := getExpectedCustomerDashboard(rhmi.Spec.Type)
-	verifyExpectedDashboards(t, expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
+	err = verifyExpectedDashboards(expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
+	if err != nil {
+		t.Fatalf("Verify Expected Dashboards failed: ", err)
+	}
 }
 
 func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext) {
@@ -171,13 +174,13 @@ func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext)
 	}
 
 	expectedDashboards := getExpectedMiddlewareDashboard(rhmi.Spec.Type)
-	verifyExpectedDashboards(t, expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
-
+	err = verifyExpectedDashboards(expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
+	if err != nil {
+		t.Fatalf("Verify Expected Dashboards failed: ", err)
+	}
 }
 
-func verifyExpectedDashboards(t TestingTB, expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) {
-	// TODO this function should return it's results back to the test function that is calling it.
-	// All test that use this function have been marked as skipped due to this.
+func verifyExpectedDashboards(expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) error {
 	var expectedDashboardTitles []string
 	for _, dashboard := range expectedDashboards {
 		expectedDashboardTitles = append(expectedDashboardTitles, dashboard.Title)
@@ -191,17 +194,31 @@ func verifyExpectedDashboards(t TestingTB, expectedDashboards []dashboardsTestRu
 	dashboardDiffMissing := difference(expectedDashboardTitles, actualDashboardTitles)
 
 	if len(dashboardDiffUnexpected) > 0 {
-		t.Logf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))
+		// The workload dashboard is added for upgrade pipelines and needs to be allowed for.
+		if allowOnlyWorkLoadDashboard(dashboardDiffUnexpected) {
+			return nil
+		}
+		return fmt.Errorf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))
 	}
 
 	if len(dashboardDiffMissing) > 0 {
-		t.Logf("missing dashboards found: %s", strings.Join(dashboardDiffMissing, ", "))
+		return fmt.Errorf("missing dashboards found: %s", strings.Join(dashboardDiffMissing, ", "))
 	}
 
-	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
-		// Seen as flaky in OSDe2e from v1.3.0, see https://issues.redhat.com/browse/MGDAPI-1367
-		t.Skip("missing or too many dashboards found, marking E03 as flaky https://issues.redhat.com/browse/MGDAPI-1367")
+	return nil
+}
+
+func allowOnlyWorkLoadDashboard(unexpected []string) bool {
+	workLoadDashboard := "Workload App"
+	if len(unexpected) != 1 {
+		return false
 	}
+	for _, dashboard := range unexpected {
+		if dashboard == workLoadDashboard {
+			return true
+		}
+	}
+	return false
 }
 
 func getExpectedCustomerDashboard(installType string) []dashboardsTestRule {
