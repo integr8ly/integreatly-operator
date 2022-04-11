@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.17
 
 require (
-	github.com/3scale-ops/marin3r v0.8.0
+	github.com/3scale-ops/marin3r v0.10.0
 	github.com/3scale/3scale-operator v0.7.0
 	github.com/3scale/3scale-porta-go-client v0.0.4
 	github.com/3scale/apicast-operator v0.4.0
@@ -18,7 +18,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77
 	github.com/chromedp/chromedp v0.7.6
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
-	github.com/envoyproxy/go-control-plane v0.9.8
+	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.20.3
 	github.com/go-openapi/strfmt v0.20.1
@@ -34,8 +34,8 @@ require (
 	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.7
 	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
-	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.13.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -52,20 +52,20 @@ require (
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.22.1
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
-	sigs.k8s.io/controller-runtime v0.9.2
-	sigs.k8s.io/yaml v1.2.0
+	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
+	sigs.k8s.io/controller-runtime v0.10.0
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
-	cloud.google.com/go v0.65.0 // indirect
+	cloud.google.com/go v0.81.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
@@ -78,13 +78,13 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/che-incubator/kubernetes-image-puller-operator v0.0.0-20200901231735-f852a5a3ea5c // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
-	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403 // indirect
+	github.com/cncf/xds/go v0.0.0-20211001041855-01bcc9b48dfe // indirect
 	github.com/coreos/prometheus-operator v0.40.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
-	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-logr/zapr v0.2.0 // indirect
@@ -122,23 +122,24 @@ require (
 	github.com/otiai10/copy v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.26.0 // indirect
+	github.com/prometheus/common v0.31.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
+	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.5.0 // indirect
-	go.uber.org/zap v1.15.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gomodules.xyz/jsonpatch/v2 v2.0.1 // indirect
-	google.golang.org/appengine v1.6.6 // indirect
-	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
-	google.golang.org/grpc v1.32.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
+	google.golang.org/grpc v1.38.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

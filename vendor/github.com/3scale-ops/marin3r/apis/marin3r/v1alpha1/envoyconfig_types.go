@@ -71,7 +71,7 @@ type EnvoyConfigSpec struct {
 	// +optional
 	Serialization *string `json:"serialization,omitempty"`
 	// EnvoyAPI is the version of envoy's API to use. Defaults to v3.
-	// +kubebuilder:validation:Enum=v2;v3
+	// +kubebuilder:validation:Enum=v3
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	EnvoyAPI *string `json:"envoyAPI,omitempty"`
@@ -83,28 +83,27 @@ type EnvoyConfigSpec struct {
 // EnvoyResources holds each envoy api resource type
 type EnvoyResources struct {
 	// Endpoints is a list of the envoy ClusterLoadAssignment resource type.
-	// V2 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/endpoint.proto
-	// V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/endpoint/v3/endpoint.proto
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/endpoint/v3/endpoint.proto
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Endpoints []EnvoyResource `json:"endpoints,omitempty"`
 	// Clusters is a list of the envoy Cluster resource type.
-	// V2 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster.proto
-	// V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Clusters []EnvoyResource `json:"clusters,omitempty"`
 	// Routes is a list of the envoy Route resource type.
-	// V2 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route.proto
-	// V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Routes []EnvoyResource `json:"routes,omitempty"`
+	// ScopedRoutes is a list of the envoy ScopeRoute resource type.
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/scoped_route.proto
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	ScopedRoutes []EnvoyResource `json:"scopedRoutes,omitempty"`
 	// Listeners is a list of the envoy Listener resource type.
-	// V2 referece: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto
-	// V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Listeners []EnvoyResource `json:"listeners,omitempty"`
 	// Runtimes is a list of the envoy Runtime resource type.
-	// V2 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/discovery/v2/rtds.proto
-	// V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/runtime/v3/rtds.proto
+	// API V3 reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/runtime/v3/rtds.proto
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Runtimes []EnvoyResource `json:"runtimes,omitempty"`
 	// Secrets is a list of references to Kubernetes Secret objects.
@@ -201,7 +200,7 @@ type ConfigRevisionRef struct {
 // +kubebuilder:object:root=true
 
 // EnvoyConfig holds the configuration for a given envoy nodeID. The spec of an EnvoyConfig
-// object holds the envoy resources that conform the desired configuration for the given nodeID
+// object holds the Envoy resources that conform the desired configuration for the given nodeID
 // and that the discovery service will send to any envoy client that identifies itself with that
 // nodeID.
 // +kubebuilder:subresource:status
