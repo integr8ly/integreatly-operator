@@ -47,6 +47,7 @@ var authenticationStageTimeout = time.Minute * 30
 var productsStageTimout = time.Minute * 30
 var solutionExplorerStageTimeout = time.Minute * 10
 var deploymentTimeout = time.Minute * 25
+var installStageTimeout = time.Minute * 40
 var failed = false
 var artifactsDirEnv = "ARTIFACT_DIR"
 
@@ -108,22 +109,16 @@ var _ = BeforeSuite(func(done Done) {
 	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
 	Expect(err).NotTo(HaveOccurred())
 
-	// wait for cloud resource phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, bootStrapStageTimeout, string(rhmiv1alpha1.BootstrapStage))
-	Expect(err).NotTo(HaveOccurred())
+	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+		// wait for cloud resource phase to complete (10 minutes timeout)
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		//Observability Operator
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
 		Expect(err).NotTo(HaveOccurred())
-
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.ObservabilityStage))
-		Expect(err).NotTo(HaveOccurred())
-
 	} else {
 		// AMO, wait for middleware-monitoring to deploy
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
@@ -138,9 +133,11 @@ var _ = BeforeSuite(func(done Done) {
 	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
 	Expect(err).NotTo(HaveOccurred())
 
-	// wait for authentication phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
-	Expect(err).NotTo(HaveOccurred())
+	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+		// wait for authentication phase to complete (10 minutes timeout)
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	//Product Stage - verify operators deploy
 	products := map[string]string{
@@ -170,13 +167,17 @@ var _ = BeforeSuite(func(done Done) {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	// wait for products phase to complete (30 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, productsStageTimout, string(rhmiv1alpha1.ProductsStage))
-	Expect(err).NotTo(HaveOccurred())
+	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+		// wait for products phase to complete (30 minutes timeout)
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, productsStageTimout, string(rhmiv1alpha1.ProductsStage))
+		Expect(err).NotTo(HaveOccurred())
 
-	// wait for solution-explorer operator to deploy
-	if installType == string(rhmiv1alpha1.InstallationTypeManaged) {
+		// wait for solution-explorer operator to deploy
 		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, solutionExplorerStageTimeout, string(rhmiv1alpha1.SolutionExplorerStage))
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		// wait for installation phase to complete (40 minutes timeout)
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
 		Expect(err).NotTo(HaveOccurred())
 	}
 	// +kubebuilder:scaffold:scheme

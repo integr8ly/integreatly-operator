@@ -43,21 +43,10 @@ var (
 	}
 
 	managedApiExpectedStageProducts = map[string][]string{
-		"authentication": {
+		"installation": {
 			"rhsso",
-		},
-
-		"bootstrap": {},
-
-		"cloud-resources": {
 			"cloud-resources",
-		},
-
-		"observability": {
 			"observability",
-		},
-
-		"products": {
 			"rhssouser",
 			"3scale",
 			"marin3r",
