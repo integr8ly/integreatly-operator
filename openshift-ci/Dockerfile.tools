@@ -47,3 +47,6 @@ RUN curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE
 # install chrome
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
     && yum install -y --setopt=tsflags=nodocs ./google-chrome-stable_current_*.rpm
+
+# install gosec
+RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $GOPATH/bin v2.11.0
