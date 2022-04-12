@@ -199,14 +199,14 @@ func SetRhmiVersions(stage string, version string, toVersion string, firstInstal
 	RHOAMVersion.WithLabelValues(stage, status, version, toVersion).Set(float64(firstInstallTimestamp))
 }
 
-func SetRHOAMAlerts(alerts []resources.AlertMetric) {
+func SetRHOAMAlerts(alerts resources.AlertMetrics) {
 	RHOAMAlert.Reset()
-	for index := range alerts {
+	for key, value := range alerts {
 		RHOAMAlert.With(prometheus.Labels{
-			"alert":    alerts[index].Name,
-			"severity": alerts[index].Severity,
-			"state":    alerts[index].State,
-		}).Set(float64(alerts[index].Value))
+			"alert":    string(key.Name),
+			"severity": string(key.Severity),
+			"state":    string(key.State),
+		}).Set(float64(value))
 	}
 }
 

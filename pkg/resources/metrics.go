@@ -20,7 +20,8 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/alertmanager/api/v2/models"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -878,59 +879,9 @@ func InstallationState(version string, toVersion string) string {
 }
 
 type AlertMetric struct {
-	Name     string
-	Severity string
-	State    string
-	Value    int64
+	Name     model.LabelValue
+	Severity model.LabelValue
+	State    v1.AlertState
 }
 
-type AlertMetrics struct {
-	Alerts []AlertMetric
-}
-
-func (a *AlertMetric) ContainsName(name string) bool {
-	if a.Name == name {
-		return true
-	}
-	return false
-}
-
-func (a *AlertMetric) ContainsSeverity(severity string) bool {
-	if a.Severity == severity {
-		return true
-	}
-	return false
-}
-
-func (a *AlertMetric) ContainsState(state string) bool {
-	if a.State == state {
-		return true
-	}
-	return false
-}
-
-func (a *AlertMetric) Contains(alert struct {
-	Labels models.LabelSet `json:"labels"`
-	State  string          `json:"state"`
-}) bool {
-
-	if a.ContainsName(alert.Labels["alertname"]) && a.ContainsSeverity(alert.Labels["severity"]) && a.ContainsState(alert.State) {
-		return true
-	}
-
-	return false
-}
-
-func (a *AlertMetrics) Contains(alert struct {
-	Labels models.LabelSet `json:"labels"`
-	State  string          `json:"state"`
-}) bool {
-
-	for _, current := range a.Alerts {
-		if current.Contains(alert) {
-			return true
-		}
-	}
-
-	return false
-}
+type AlertMetrics map[AlertMetric]int

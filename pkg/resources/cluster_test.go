@@ -211,13 +211,9 @@ func TestGetClusterType(t *testing.T) {
 			Name: "Get AWS cluster type",
 			Input: &configv1.Infrastructure{
 				Status: configv1.InfrastructureStatus{
-					InfrastructureName: "",
-					Platform:           "",
 					PlatformStatus: &configv1.PlatformStatus{
 						Type: configv1.AWSPlatformType,
 						AWS: &configv1.AWSPlatformStatus{
-							Region:           "",
-							ServiceEndpoints: nil,
 							ResourceTags: []configv1.AWSResourceTag{
 								{
 									Key:   "red-hat-clustertype",
@@ -226,11 +222,6 @@ func TestGetClusterType(t *testing.T) {
 							},
 						},
 					},
-					EtcdDiscoveryDomain:    "",
-					APIServerURL:           "",
-					APIServerInternalURL:   "",
-					ControlPlaneTopology:   "",
-					InfrastructureTopology: "",
 				},
 			},
 			Expected: "OSD",
@@ -240,13 +231,9 @@ func TestGetClusterType(t *testing.T) {
 			Name: "Get AWS error on cluster type",
 			Input: &configv1.Infrastructure{
 				Status: configv1.InfrastructureStatus{
-					InfrastructureName: "",
-					Platform:           "",
 					PlatformStatus: &configv1.PlatformStatus{
 						Type: configv1.AWSPlatformType,
 						AWS: &configv1.AWSPlatformStatus{
-							Region:           "",
-							ServiceEndpoints: nil,
 							ResourceTags: []configv1.AWSResourceTag{
 								{
 									Key:   "Missing Key",
@@ -255,11 +242,6 @@ func TestGetClusterType(t *testing.T) {
 							},
 						},
 					},
-					EtcdDiscoveryDomain:    "",
-					APIServerURL:           "",
-					APIServerInternalURL:   "",
-					ControlPlaneTopology:   "",
-					InfrastructureTopology: "",
 				},
 			},
 			Expected: "",
@@ -269,13 +251,9 @@ func TestGetClusterType(t *testing.T) {
 			Name: "Get Unknown on cluster type and Error",
 			Input: &configv1.Infrastructure{
 				Status: configv1.InfrastructureStatus{
-					InfrastructureName: "",
-					Platform:           "",
 					PlatformStatus: &configv1.PlatformStatus{
 						Type: "Unknown Type",
 						AWS: &configv1.AWSPlatformStatus{
-							Region:           "",
-							ServiceEndpoints: nil,
 							ResourceTags: []configv1.AWSResourceTag{
 								{
 									Key:   "Missing Key",
@@ -284,14 +262,9 @@ func TestGetClusterType(t *testing.T) {
 							},
 						},
 					},
-					EtcdDiscoveryDomain:    "",
-					APIServerURL:           "",
-					APIServerInternalURL:   "",
-					ControlPlaneTopology:   "",
-					InfrastructureTopology: "",
 				},
 			},
-			Expected: "Unknown",
+			Expected: "",
 			Error:    true,
 		},
 	}

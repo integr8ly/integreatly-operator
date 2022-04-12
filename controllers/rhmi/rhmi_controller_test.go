@@ -6,7 +6,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/prometheus/alertmanager/api/v2/models"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -109,92 +110,68 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 }
 
 func TestFormatAlerts(t *testing.T) {
-	input := []struct {
-		Labels models.LabelSet `json:"labels"`
-		State  string          `json:"state"`
-	}{
+	input := []v1.Alert{
 		{
-			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
 			State:  "Firing",
 		},
 		{
-			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
 			State:  "Firing",
 		},
 		{
-			Labels: map[string]string{"alertname": "dummy", "severity": "Low"},
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
 			State:  "Firing",
 		},
 		{
-			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
 			State:  "Pending",
 		},
 		{
-			Labels: map[string]string{"alertname": "dummy", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
 			State:  "Pending",
 		},
 
 		{
-			Labels: map[string]string{"alertname": "dummy two", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
 			State:  "Firing",
 		},
 		{
-			Labels: map[string]string{"alertname": "dummy two", "severity": "High"},
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "High"},
 			State:  "Firing",
 		},
 	}
-
-	expected := resources.AlertMetrics{Alerts: []resources.AlertMetric{
+	expected := resources.AlertMetrics{
 		{
 			Name:     "dummy",
 			Severity: "High",
-			Value:    2,
 			State:    "Firing",
-		},
+		}: 2,
 		{
 			Name:     "dummy",
 			Severity: "Low",
-			Value:    1,
 			State:    "Firing",
-		},
+		}: 1,
 		{
 			Name:     "dummy",
 			Severity: "High",
-			Value:    2,
 			State:    "Pending",
-		},
+		}: 2,
 		{
 			Name:     "dummy two",
 			Severity: "High",
-			Value:    2,
 			State:    "Firing",
-		},
-	}}
+		}: 2,
+	}
 
 	actual := formatAlerts(input)
 
-	if !compare(actual.Alerts, expected.Alerts) {
+	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("alert metrics not equal; Actual: %v, Expected: %v", actual, expected)
 	}
 
-}
-
-func compare(actual []resources.AlertMetric, expected []resources.AlertMetric) bool {
-
-	if len(actual) != len(expected) {
-		return false
-	}
-
-	for _, a := range actual {
-		found := false
-		for _, b := range expected {
-			if a.Name == b.Name && a.Value == b.Value && a.State == b.State && a.Severity == b.Severity {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
