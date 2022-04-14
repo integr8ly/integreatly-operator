@@ -65,9 +65,9 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.ThreeScaleUserAction)
 	customMetrics.Registry.MustRegister(integreatlymetrics.Quota)
-	customMetrics.Registry.MustRegister(integreatlymetrics.NumTenants)
+	customMetrics.Registry.MustRegister(integreatlymetrics.TotalNumTenants)
+	customMetrics.Registry.MustRegister(integreatlymetrics.NumReconciledTenants)
 	customMetrics.Registry.MustRegister(integreatlymetrics.NoActivated3ScaleTenantAccount)
-	customMetrics.Registry.MustRegister(integreatlymetrics.NoTenantRealm)
 
 	integreatlymetrics.OperatorVersion.Add(1)
 	utilruntime.Must(v1.Install(clientgoscheme.Scheme))
