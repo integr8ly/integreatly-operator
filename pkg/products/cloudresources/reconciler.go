@@ -107,7 +107,7 @@ func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
 }
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
-	product := installation.Status.Stages[integreatlyv1alpha1.CloudResourcesStage].Products[integreatlyv1alpha1.ProductCloudResources]
+	product := installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductCloudResources]
 	return version.VerifyProductAndOperatorVersion(
 		product,
 		string(integreatlyv1alpha1.VersionCloudResources),
