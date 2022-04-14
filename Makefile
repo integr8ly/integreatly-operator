@@ -569,3 +569,7 @@ olm/bundle:
 .PHONY: coverage
 coverage:
 	hack/codecov.sh
+
+.PHONY: gosec/exclude
+gosec/exclude:
+	gosec -exclude=G101,G104,G107,G204,G304,G306,G307,G401,G402,G404,G501,G601 ./...
