@@ -129,12 +129,12 @@ func main() {
 			osExit1(err, ctx, client, namespace, namespacePrefix, cleanupAPI, api)
 		}
 
-		overallSuccess = overallSuccess && success && !allSkipped
+		overallSuccess = overallSuccess && success
 
 		time.Sleep(time.Second)
 	}
 
-	if !overallSuccess {
+	if !overallSuccess || allSkipped {
 		fmt.Println("Test failed, not all iterations succeeded")
 		fmt.Println("Note: Counter reset can cause false failures due to current count being higher than previous count")
 		osExit1(errors.New("cleaning up after a failure"), ctx, client, namespace, namespacePrefix, cleanupAPI, api)
