@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -10,7 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
@@ -163,32 +163,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
 		return phase, err
-	}
-
-	//get the keycloak-operator CSV for v15.0.2
-	csv := &olmv1alpha1.ClusterServiceVersion{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: r.Config.GetOperatorNamespace(),
-		Name:      "keycloak-operator.v15.0.2",
-	}, csv)
-
-	if err != nil {
-		r.Log.Warning("could not get CSV 'keycloak-operator.v15.0.2' in namespace '" + r.Config.GetOperatorNamespace() + "' to inject keycloak 7.5 images into: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	//update or inject the env vars required
-	csv, updated, err := r.ReconcileCSVEnvVars(csv, map[string]string{
-		"RELATED_IMAGE_RHSSO_OPENJDK": "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-17",
-		"RELATED_IMAGE_RHSSO_OPENJ9":  "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-17",
-	})
-
-	if updated {
-		//write the modified CSV back to the cluster
-		err = serverClient.Update(ctx, csv)
-		if err != nil {
-			r.Log.Warning("could not write CSV 'keycloak-operator-v15.0.2' in order to inject keycloak 7.5 images: " + err.Error())
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
 	}
 
 	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon, routeName)
@@ -475,7 +449,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 
 	// Get an authenticated keycloak api client for the instance
 	keycloakFactory := common.LocalConfigKeycloakFactory{}
-	authenticated, err := keycloakFactory.AuthenticatedClient(*kc)
+	authenticated, err := keycloakFactory.AuthenticatedClient(*kc, false)
 	if err != nil {
 		return fmt.Errorf("Unable to authenticate to the Keycloak API: %s", err)
 	}

@@ -33,7 +33,7 @@ require (
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.7
-	github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb
+	github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible

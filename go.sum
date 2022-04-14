@@ -1042,8 +1042,9 @@ github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaR
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/kelseyhightower/envconfig v1.3.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
-github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb h1:+AFpy5UBa51bGAL4nLV5gRkKJ7B/35t98CcCoLdx0n0=
 github.com/keycloak/keycloak-operator v0.0.0-20210506103913-57d81e278bcb/go.mod h1:RlJaeafxnSyJ9MzfPSGUmTz4BpvEmKwLe8cjzWRJ3G8=
+github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956 h1:6X4/+viS/IbERM/xK9lwc+WeWQIi2tXDczHW3NvFCVk=
+github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956/go.mod h1:q/tOrPIZPK4etiQevY5sDhhtYW5PkmGybtMEhpj8qyY=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

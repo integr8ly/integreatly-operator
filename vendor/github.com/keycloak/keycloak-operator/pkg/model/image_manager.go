@@ -15,11 +15,11 @@ const (
 	RHMIBackupContainer   = "RELATED_IMAGE_RHMI_BACKUP_CONTAINER"
 	PostgresqlImage       = "RELATED_IMAGE_POSTGRESQL"
 
-	DefaultKeycloakImage         = "quay.io/keycloak/keycloak:13.0.0"
-	DefaultRHSSOImageOpenJ9      = "registry.redhat.io/rh-sso-7/sso74-openj9-openshift-rhel8:7.4"
-	DefaultRHSSOImageOpenJDK     = "registry.redhat.io/rh-sso-7/sso74-openshift-rhel8:7.4"
-	DefaultKeycloakInitContainer = "quay.io/keycloak/keycloak-init-container:master"
-	DefaultRHSSOInitContainer    = "registry.redhat.io/rh-sso-7-tech-preview/sso74-init-container-rhel8:7.4"
+	DefaultKeycloakImage         = "quay.io/keycloak/keycloak:legacy"
+	DefaultRHSSOImageOpenJ9      = "registry.redhat.io/rh-sso-7/sso75-openj9-openshift-rhel8:7.5"
+	DefaultRHSSOImageOpenJDK     = "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5"
+	DefaultKeycloakInitContainer = "quay.io/keycloak/keycloak-init-container:legacy"
+	DefaultRHSSOInitContainer    = "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container:7.5"
 	DefaultRHMIBackupContainer   = "quay.io/integreatly/backup-container:1.0.16"
 	DefaultPostgresqlImage       = "registry.access.redhat.com/rhscl/postgresql-10-rhel7:1"
 )

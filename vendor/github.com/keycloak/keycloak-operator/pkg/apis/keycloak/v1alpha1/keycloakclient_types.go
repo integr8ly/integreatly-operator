@@ -164,6 +164,9 @@ type KeycloakAPIClient struct {
 	// Authorization settings for this resource server.
 	// +optional
 	AuthorizationSettings *KeycloakResourceServer `json:"authorizationSettings,omitempty"`
+	// Authentication Flow Binding Overrides.
+	// +optional
+	AuthenticationFlowBindingOverrides map[string]string `json:"authenticationFlowBindingOverrides,omitempty"`
 }
 
 type KeycloakProtocolMapper struct {
@@ -381,4 +384,8 @@ func init() {
 
 func (i *KeycloakClient) UpdateStatusSecondaryResources(kind string, resourceName string) {
 	i.Status.SecondaryResources = UpdateStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
+}
+
+func (i *KeycloakClient) DeleteFromStatusSecondaryResources(kind string, resourceName string) {
+	DeleteFromStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
 }
