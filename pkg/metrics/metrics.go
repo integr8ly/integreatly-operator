@@ -186,12 +186,10 @@ func ResetThreeScaleUserAction() {
 }
 
 func SetTotalNumTenants(numTenants int) {
-	//TotalNumTenants.Reset()
 	TotalNumTenants.Set(float64(numTenants))
 }
 
 func SetNumReconciledTenants(numTenants int) {
-	//NumReconciledTenants.Reset()
 	NumReconciledTenants.Set(float64(numTenants))
 }
 
