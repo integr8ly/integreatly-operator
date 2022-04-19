@@ -117,7 +117,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		if err := r.deleteConsoleLink(ctx, client); err != nil {
+		if err = r.deleteConsoleLink(ctx, client); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -138,7 +138,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileSecrets(ctx, client, installation, &grafanav1alpha1.Grafana{})
+	phase, err = r.reconcileSecrets(ctx, client, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -146,7 +146,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
 		return phase, err
 	}
 
@@ -206,7 +206,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, cr *grafanav1alpha1.Grafana) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "grafana-k8s-proxy",
