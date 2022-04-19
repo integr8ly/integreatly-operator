@@ -14,7 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -38,7 +38,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "customer-monitoring"
-	manifestPackage              = "integreatly-grafana"
 	defaultGrafanaName           = "grafana"
 	defaultRoutename             = defaultGrafanaName + "-route"
 	rateLimitDashBoardName       = "rate-limit"
@@ -58,7 +57,7 @@ type Reconciler struct {
 	recorder      record.EventRecorder
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
 	return nil
 }
 
@@ -349,7 +348,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 				Termination: "reencrypt",
 			},
 			Client: &grafanav1alpha1.GrafanaClient{
-				PreferService: true,
+				PreferService: boolPtr(true),
 			},
 			ServiceAccount: &grafanav1alpha1.GrafanaServiceAccount{
 				Skip:        boolPtr(true),
@@ -470,7 +469,7 @@ func (r *Reconciler) reconcileServiceAccount(ctx context.Context, serverClient k
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling subscription")
 
 	target := marketplace.Target{

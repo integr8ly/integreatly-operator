@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -22,7 +22,7 @@ func (s *Grafana) GetWatchableCRDs() []runtime.Object {
 		&grafanav1alpha1.Grafana{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Grafana",
-				APIVersion: grafanav1alpha1.SchemeGroupVersion.String(),
+				APIVersion: grafanav1alpha1.GroupVersion.String(),
 			},
 		},
 	}
