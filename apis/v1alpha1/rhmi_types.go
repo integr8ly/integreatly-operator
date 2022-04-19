@@ -101,7 +101,7 @@ var (
 	VersionMonitoringSpec      ProductVersion = "1.0"
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
 	VersionMarin3r             ProductVersion = "0.10.0"
-	VersionGrafana             ProductVersion = "3.10.4"
+	VersionGrafana             ProductVersion = "4.2.0"
 	VersionObservability       ProductVersion = "3.0.9"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
@@ -132,7 +132,7 @@ var (
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 	OperatorVersionMarin3r             OperatorVersion = "0.10.0"
-	OperatorVersionGrafana             OperatorVersion = "3.10.4"
+	OperatorVersionGrafana             OperatorVersion = "4.2.0"
 	OperatorVersionObservability       OperatorVersion = "3.0.9"
 
 	// Event reasons to be used when emitting events

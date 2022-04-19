@@ -1,4 +1,4 @@
 packageName: rhmi-grafana
 channels:
-- currentCSV: grafana-operator.v3.10.4
+- currentCSV: grafana-operator.v4.2.0
   name: rhmi
