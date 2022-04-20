@@ -1109,7 +1109,12 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		r.log.Info("Failed to get admin token in reconcileOutgoingEmailAddresss: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	_, err = r.tsClient.SetFromEmailAddress("test@rhmw.io", *accessToken)
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		existingSMTPFromAddress = "test@rhmw.io"
+	}
+
+	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
 	if err != nil {
 		r.log.Error("Failed to set email from address:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
