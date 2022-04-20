@@ -228,7 +228,7 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
-        serviceAccountName: grafana-operator-controller-manager
+        serviceAccountName: grafana-serviceaccount
       deployments:
       - name: grafana-operator-controller-manager
         spec:
@@ -271,6 +271,8 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: GRAFANA_PLUGINS_INIT_CONTAINER_IMAGE_TAG
+                  value: "0.0.6"
                 image: quay.io/grafana-operator/grafana-operator:v4.2.0
                 imagePullPolicy: Always
                 livenessProbe:
@@ -295,7 +297,7 @@ spec:
                     memory: 100Mi
                 securityContext:
                   allowPrivilegeEscalation: false
-              serviceAccountName: grafana-operator-controller-manager
+              serviceAccountName: grafana-serviceaccount
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
