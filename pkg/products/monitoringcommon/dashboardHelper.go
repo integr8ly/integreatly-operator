@@ -45,6 +45,9 @@ func GetSpecDetailsForDashboard(dashboard string, rhmi *v1alpha1.RHMI, container
 	case "multitenancy-detailed":
 		return monitoringcommon.MonitoringGrafanaDBMultitenancyDetailedJSON, "multitenancy-detailed.json", nil
 
+	case "rhoam-fleet-wide-view":
+		return monitoringcommon.ObservatoriumFleetWideJSON, "rhoam-fleet-wide-view.json", nil
+
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")
 

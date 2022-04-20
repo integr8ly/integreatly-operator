@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"os"
 )
 
 const (
@@ -103,6 +104,10 @@ func (m *Observability) GetDashboards(installType integreatlyv1alpha1.Installati
 	case integreatlyv1alpha1.InstallationTypeManaged, integreatlyv1alpha1.InstallationTypeSelfManaged, integreatlyv1alpha1.InstallationTypeWorkshop:
 		return rhmiTemplateList
 	case integreatlyv1alpha1.InstallationTypeManagedApi:
+		_, found := os.LookupEnv("FLEET_VIEW")
+		if found {
+			managedAPITemplateList = append(managedAPITemplateList, "rhoam-fleet-wide-view")
+		}
 		return managedAPITemplateList
 	case integreatlyv1alpha1.InstallationTypeMultitenantManagedApi:
 		return multitenantManagedAPITemplateList
