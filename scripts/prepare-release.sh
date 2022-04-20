@@ -237,7 +237,7 @@ set_related_images() {
               if [[ "$excludedItem" == "$relatedImageName" ]]; then
                 excluded=true
               fi
-          done
+            done
           # if item is not on exclusion list and is not already in the images list, add it in.
           if [ "$excluded" != true ]; then
             if [[ "$containerImageField" != *"$relatedImageURL"* ]]; then
@@ -248,6 +248,16 @@ set_related_images() {
       fi
     fi
   done
+
+  length=$(yq e -o=j ./products/additional-images.yaml| jq -r '.additionalImages' | jq length)
+  # Get supported components
+  for (( i=0; i<${length}; i++))
+    do
+      img_name=$(yq e ".additionalImages[$i]".name ./products/additional-images.yaml)
+      img_url=$(yq e ".additionalImages[$i].url" ./products/additional-images.yaml)
+
+      containerImageField="$containerImageField{\"component_name\":\"${img_name}\",\"component_url\":\"${img_url}\"},"
+    done
 
   containerImageRemovedLastCharacter=${containerImageField%?}
   containerImageField="$containerImageRemovedLastCharacter]"
