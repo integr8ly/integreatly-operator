@@ -8,12 +8,13 @@ import (
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/util/retry"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -145,18 +146,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	//uninstall 3.x.x of grafana-operator
-	//this is only required in the case of upgrade from 3.10.4 -> 4.2.0
-	//the code can be remove later but it will be controlled by the names of the subscriptions.
-	phase, err = r.uninstallSubscription(ctx, client, operatorNamespace)
+	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
+	// Restarts the grafana-operator-controller-manager
+	// This is only required when upgrading the grafana operator from 3.10.4 -> 4.2.0
+	// This code can be removed later but it will only scale the deployment during the specific upgrade path detailed above
+	phase, err = r.restartGrafanaOperatorControllerManagerDeployment(ctx, client, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to scale grafana-operator-controller-manager Deployment", err)
 		return phase, err
 	}
 
@@ -267,34 +268,72 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) uninstallSubscription(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) restartGrafanaOperatorControllerManagerDeployment(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	deploymentName := "grafana-operator-controller-manager"
+	csvName := "grafana-operator.v3.10.4"
 
-	r.log.Info("custom uninstallation of 3.10.4 of grafana operator to allow upgrade to 4.x.x")
-	subscription := &v1alpha1.Subscription{
+	// Confirm that the upgrade is from 3.10.4 to 4.2.0 using the Grafana Operator CSV
+	csv := &v1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.GrafanaSubscriptionName,
-			Namespace: operatorNamespace,
+			Name:      csvName,
+			Namespace: namespace,
 		}}
 
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: constants.GrafanaSubscriptionName, Namespace: operatorNamespace}, subscription)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: csv.Name, Namespace: csv.Namespace}, csv)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	// if the rhmi-grafana subscription is not found in the cluster, we are in install so we don't need to try to delete the older version
-	// return phasecompleted
-	if k8serr.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseCompleted, nil
+
+	// If the grafana-operator.v3.10.4 CSV exists and is in the process of being replaced, scale the deployment to 0
+	if csv.Status.Phase == "Replacing" {
+		phase, err := r.scaleDeployment(ctx, client, deploymentName, namespace, 0)
+		if err != nil {
+			return phase, nil
+		}
 	}
 
-	// if the rhmi-grafana subscription is not 3.10.4 we'll return, it means we have moved to 4.2.0
-	if subscription.Status.InstalledCSV != "grafana-operator.v3.10.4" {
-		return integreatlyv1alpha1.PhaseCompleted, nil
+	// Check if the deployment is scaled to 0, and if so, scale it back up to 1
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploymentName,
+			Namespace: namespace,
+		},
 	}
-
-	err = client.Delete(ctx, subscription)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: deployment.Name, Namespace: deployment.Namespace}, deployment)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	if deployment.Status.Replicas == 0 {
+		phase, err := r.scaleDeployment(ctx, client, deploymentName, namespace, 1)
+		if err != nil {
+			return phase, nil
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) scaleDeployment(ctx context.Context, client k8sclient.Client, name string, namespace string, scaleValue int32) (integreatlyv1alpha1.StatusPhase, error) {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := client.Get(ctx, k8sclient.ObjectKey{Name: deployment.Name, Namespace: deployment.Namespace}, deployment)
+		if err != nil {
+			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", deployment.Name, namespace, err)
+		}
+
+		deployment.Spec.Replicas = &scaleValue
+		err = client.Update(ctx, deployment)
+		return err
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
