@@ -8,6 +8,7 @@ import (
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -144,6 +145,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	//uninstall 3.x.x of grafana-operator
+	//this is only required in the case of upgrade from 3.10.4 -> 4.2.0
+	//the code can be remove later but it will be controlled by the names of the subscriptions.
+	phase, err = r.uninstallSubscription(ctx, client, operatorNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
@@ -253,6 +263,37 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	}
 	if opRes != controllerutil.OperationResultNone {
 		r.log.Infof("Operation result grafana dashboard", l.Fields{"grafanaDashboard": grafanaDB.Name, "result": opRes})
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) uninstallSubscription(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+
+	r.log.Info("custom uninstallation of 3.10.4 of grafana operator to allow upgrade to 4.x.x")
+	subscription := &v1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.GrafanaSubscriptionName,
+			Namespace: operatorNamespace,
+		}}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: constants.GrafanaSubscriptionName, Namespace: operatorNamespace}, subscription)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	// if the rhmi-grafana subscription is not found in the cluster, we are in install so we don't need to try to delete the older version
+	// return phasecompleted
+	if k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	// if the rhmi-grafana subscription is not 3.10.4 we'll return, it means we have moved to 4.2.0
+	if subscription.Status.InstalledCSV != "grafana-operator.v3.10.4" {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	err = client.Delete(ctx, subscription)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
