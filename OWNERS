@@ -1,28 +1,29 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
+- briangallagher
 - laurafitzgerald
+- MStokluska
 - philbrookes
 - pmccarthy
-- briangallagher
-- MStokluska
 
 reviewers:
+- adam-cattermole
 - austincunningham
-- briangallagher
 - Boomatang
+- briangallagher
+- bryankeane0
 - carlkyrillos
+- cecobask
+- den-rgb
+- jjkiely
 - kevfan
 - laurafitzgerald
 - makslion
 - MStokluska
+- Patryk-Stefanski
 - philbrookes
 - pmccarthy
 - trepel
 - valerymo
-- jjkiely
-- bryankeane0
-- den-rgb
-- Patryk-Stefanski
-- adam-cattermole
 
