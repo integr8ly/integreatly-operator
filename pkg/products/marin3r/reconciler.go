@@ -154,7 +154,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		k8sclient.MatchingLabels(map[string]string{
 			"marin3r.3scale.net/envoy-api": "v2",
 		}),
-		k8sclient.InNamespace("redhat-rhoam-3scale"),
+		k8sclient.InNamespace(fmt.Sprintf("%s3scale", installation.Spec.NamespacePrefix)),
 	}
 	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
 	_ = client.List(ctx, envoyConfigRevisions, listOptions...)
