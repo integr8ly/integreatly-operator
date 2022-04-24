@@ -251,7 +251,7 @@ func TestReconcileEnvoyConfigRevisionsDeletion(t *testing.T) {
 		serverClient func() k8sclient.Client
 		installation *integreatlyv1alpha1.RHMI
 		want         integreatlyv1alpha1.StatusPhase
-		testFunction func(context.Context, k8sclient.Client, string) error
+		testFunction func(context.Context, k8sclient.Client) error
 	}{
 		{
 			name: "Basic V2 config revision gets deleted",
@@ -387,18 +387,51 @@ func TestReconcileEnvoyConfigRevisionsDeletion(t *testing.T) {
 			want:         integreatlyv1alpha1.PhaseCompleted,
 			testFunction: confirmThatConfigRevisionsV3areThereAndV2areGone,
 		},
+		{
+			name: "Confirm that V2 has been deleted on rhoami ns",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(scheme, &v1alpha1.EnvoyConfigRevisionList{
+					Items: []v1alpha1.EnvoyConfigRevision{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Finalizers: []string{
+									"envoyconfigrevisions.marin3r.3scale.net",
+								},
+								Labels: map[string]string{
+									"marin3r.3scale.net/envoy-api": "v2",
+								},
+								Namespace: "redhat-rhoami-3scale",
+								Name:      "apicast-ratelimit",
+							},
+							TypeMeta: v1.TypeMeta{
+								APIVersion: "V2",
+							},
+							Spec:   v1alpha1.EnvoyConfigRevisionSpec{},
+							Status: v1alpha1.EnvoyConfigRevisionStatus{},
+						},
+					},
+				})
+			},
+			installation: &integreatlyv1alpha1.RHMI{
+				Spec: integreatlyv1alpha1.RHMISpec{
+					NamespacePrefix: "redhat-rhoami-",
+				},
+			},
+			want:         integreatlyv1alpha1.PhaseCompleted,
+			testFunction: confirmThatConfigRevisionsAreCleared,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serverClient := tt.serverClient()
 
-			phase, err := reconcileEnvoyConfigRevisionsDeletion(context.TODO(), serverClient, *tt.installation)
+			phase, err := reconcileEnvoyConfigRevisionsDeletion(context.TODO(), serverClient, tt.installation.Spec.NamespacePrefix)
 
 			if err != nil || phase != tt.want {
 				t.Errorf("Found error and phase not completed")
 			}
 
-			err = tt.testFunction(context.TODO(), serverClient, tt.installation.Spec.NamespacePrefix)
+			err = tt.testFunction(context.TODO(), serverClient)
 			if err != nil {
 				t.Errorf("ConfigRevisions not cleaned %s", err)
 			}
@@ -406,7 +439,7 @@ func TestReconcileEnvoyConfigRevisionsDeletion(t *testing.T) {
 	}
 }
 
-func confirmThatConfigRevisionsAreCleared(ctx context.Context, client k8sclient.Client, nsPrefix string) error {
+func confirmThatConfigRevisionsAreCleared(ctx context.Context, client k8sclient.Client) error {
 	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
 	err := client.List(ctx, envoyConfigRevisions)
 	if err != nil {
@@ -427,7 +460,7 @@ func confirmThatConfigRevisionsAreCleared(ctx context.Context, client k8sclient.
 	return nil
 }
 
-func confirmThatConfigRevisionsV3areThereAndV2areGone(ctx context.Context, client k8sclient.Client, nsPrefix string) error {
+func confirmThatConfigRevisionsV3areThereAndV2areGone(ctx context.Context, client k8sclient.Client) error {
 	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
 	err := client.List(ctx, envoyConfigRevisions)
 	if err != nil {

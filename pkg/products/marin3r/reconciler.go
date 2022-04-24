@@ -147,7 +147,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	phase, err = reconcileEnvoyConfigRevisionsDeletion(ctx, client, *r.installation)
+	phase, err = reconcileEnvoyConfigRevisionsDeletion(ctx, client, r.installation.Spec.NamespacePrefix)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile the envoyConfigRevisionsV2"), err)
 		return phase, err
@@ -525,12 +525,12 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func reconcileEnvoyConfigRevisionsDeletion(ctx context.Context, client k8sclient.Client, installation integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func reconcileEnvoyConfigRevisionsDeletion(ctx context.Context, client k8sclient.Client, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(map[string]string{
 			"marin3r.3scale.net/envoy-api": "v2",
 		}),
-		k8sclient.InNamespace(fmt.Sprintf("%s3scale", installation.Spec.NamespacePrefix)),
+		k8sclient.InNamespace(fmt.Sprintf("%s3scale", namespacePrefix)),
 	}
 
 	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
@@ -551,10 +551,12 @@ func reconcileEnvoyConfigRevisionsDeletion(ctx context.Context, client k8sclient
 		// Fetch object again before removing finalizer to ensure that configRevision has not been deleted already by client.Delete call above - this can happen if for any reason
 		// there was no Finalizer on envoyConfigRevision
 		err = client.Get(ctx, k8sclient.ObjectKey{Name: envoyConfigRevision.Name, Namespace: envoyConfigRevision.Namespace}, &v1alpha1.EnvoyConfigRevision{})
-		if k8serr.IsNotFound(err) {
-			// if configRevision is not found, we are good to go
-			continue
-		} else if err != nil {
+		if err != nil {
+			if k8serr.IsNotFound(err) {
+				// if configRevision is not found, we are good to go
+				continue
+			}
+
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
