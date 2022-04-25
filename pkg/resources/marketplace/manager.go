@@ -77,7 +77,10 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 			Name:      "3scale-operator.v0.9.0",
 		},
 	}
-	serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: csv.Namespace, Name: csv.Name}, csv)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: csv.Namespace, Name: csv.Name}, csv)
+	if err != nil {
+		log.Error("failed marketplace manager to get 3scale csv", err)
+	}
 	//catalog source is ready create the other stuff
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -93,7 +96,10 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	sandboxRhmiCR := &integreatlyv1alpha1.RHMI{}
 
 	// don't like hard coding but can't see another way to get the rhoam sandbox CR at this point
-	serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: "sandbox-rhoam-operator", Name: "rhoam"}, sandboxRhmiCR)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: "sandbox-rhoam-operator", Name: "rhoam"}, sandboxRhmiCR)
+	if err != nil {
+		log.Error("failed marketplace manager to get sandbox rhmi CR  in namespace rhoam",err)
+	}
 
 	//TODO can maybe return this to a create only function after all clusters are updated in production
 	//err = serverClient.Create(ctx, og)
