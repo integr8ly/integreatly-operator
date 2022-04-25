@@ -203,7 +203,7 @@ func CreateAWSSession(ctx context.Context, client client.Client) (*session.Sessi
 		return nil, err
 	}
 	if isSTS {
-		roleARN, tokenPath, err := sts.GetSTSCredentials(ctx, client, common.CloudResourceOperatorNamespace)
+		roleARN, tokenPath, err := sts.GetSTSCredentialsFromEnvVar()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get STS credentials: %w", err)
 		}
