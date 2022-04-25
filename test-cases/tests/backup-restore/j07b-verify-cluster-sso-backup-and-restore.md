@@ -72,15 +72,22 @@ Once verified. Delete the throwaway Postgres
 oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
 ```
 
-3. Run the backup and restore script
+3. **Non-STS** - Run the backup and restore script
 
 ```sh
 cd test/scripts/backup-restore
 NS_PREFIX=redhat-rhoam ./j07-verify-rhsso-backup-and-restore.sh | tee test-output.txt
 ```
 
-4. Wait for the script to finish without errors
-5. Verify in the `test-output.txt` log that the test finished successfully.
+4. **STS** - Reach out to QE for the `osdCcsAdmin` credentials in order to run the backup and restore script
+
+```sh
+cd test/scripts/backup-restore
+AWS_ACCESS_KEY_ID=<aws_access_key_id> AWS_SECRET_ACCESS_KEY=<aws_secret_access_key> NS_PREFIX=redhat-rhoam ./j07-verify-rhsso-backup-and-restore.sh | tee test-output.txt
+```
+
+5. Wait for the script to finish without errors
+6. Verify in the `test-output.txt` log that the test finished successfully.
 
 **Note**
 Sometimes there could be a difference between the DB dump files, caused by a changed order of lines in these files. That is not considered to be an issue. More details: https://issues.redhat.com/browse/MGDAPI-2380
