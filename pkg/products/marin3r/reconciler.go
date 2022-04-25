@@ -147,24 +147,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	// Ensures that for an upgrade scenario we are removing V2 EnvoyConfigRevision before
-	// initializing an upgrade to marin3r 0.10.0
-	// TODO remove after the next release from here
-	listOptions := []k8sclient.ListOption{
-		k8sclient.MatchingLabels(map[string]string{
-			"marin3r.3scale.net/envoy-api": "v2",
-		}),
-		k8sclient.InNamespace(fmt.Sprintf("%s3scale", installation.Spec.NamespacePrefix)),
+	phase, err = reconcileEnvoyConfigRevisionsDeletion(ctx, client, r.installation.Spec.NamespacePrefix)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile the envoyConfigRevisionsV2"), err)
+		return phase, err
 	}
-	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
-	_ = client.List(ctx, envoyConfigRevisions, listOptions...)
-	for _, envoyConfigRevision := range envoyConfigRevisions.Items {
-		err = client.Delete(ctx, &envoyConfigRevision)
-		if err != nil || !k8serr.IsNotFound(err) {
-			return phase, err
-		}
-	}
-	// to here
 
 	r.RateLimitConfig = productConfig.GetRateLimitConfig()
 
@@ -534,6 +521,55 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 		}
 	}
 	// END of removal
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func reconcileEnvoyConfigRevisionsDeletion(ctx context.Context, client k8sclient.Client, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
+	listOptions := []k8sclient.ListOption{
+		k8sclient.MatchingLabels(map[string]string{
+			"marin3r.3scale.net/envoy-api": "v2",
+		}),
+		k8sclient.InNamespace(fmt.Sprintf("%s3scale", namespacePrefix)),
+	}
+
+	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
+	err := client.List(ctx, envoyConfigRevisions, listOptions...)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, envoyConfigRevision := range envoyConfigRevisions.Items {
+		// Attempt to delete envoyConfigRevision if there's no deletion timestamp present
+		if envoyConfigRevision.DeletionTimestamp == nil {
+			err := client.Delete(ctx, &envoyConfigRevision)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+		}
+
+		// Fetch object again before removing finalizer to ensure that configRevision has not been deleted already by client.Delete call above - this can happen if for any reason
+		// there was no Finalizer on envoyConfigRevision
+		err = client.Get(ctx, k8sclient.ObjectKey{Name: envoyConfigRevision.Name, Namespace: envoyConfigRevision.Namespace}, &v1alpha1.EnvoyConfigRevision{})
+		if err != nil {
+			if k8serr.IsNotFound(err) {
+				// if configRevision is not found, we are good to go
+				continue
+			}
+
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		// ConfigRevision is found, clear the finalizer
+		_, err = controllerutil.CreateOrUpdate(ctx, client, &envoyConfigRevision, func() error {
+			envoyConfigRevision.Finalizers = []string{}
+			return nil
+		})
+
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
