@@ -44,7 +44,7 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 		if err != nil {
 			t.Fatal("Failed to create an SMTP client", err)
 		}
-		err = client.StartTLS(&tls.Config{ServerName: host})
+		err = client.StartTLS(&tls.Config{ServerName: host, MinVersion: tls.VersionTLS12})
 		if err != nil {
 			t.Fatal("Failed to encrypt the communication between an SMTP client and a server", err)
 		}

@@ -8,7 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	"io"
 	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
@@ -38,8 +41,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	goctx "context"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
@@ -117,8 +118,13 @@ func NewTestingHTTPClient(kubeConfig *rest.Config) (*http.Client, error) {
 		return nil, fmt.Errorf("failed to create new cookie jar: %v", err)
 	}
 
+	/* #nosec */
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: selfSignedCerts},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: selfSignedCerts}, // gosec G402, Used only in tests, cluster checked for self-signed certs
+	}
+
+	if selfSignedCerts {
+		fmt.Println("TLS insecure skip verify is enabled")
 	}
 
 	httpClient := &http.Client{
@@ -288,7 +294,12 @@ func verifyCRUDLPermissions(t TestingTB, openshiftClient *resources.OpenshiftCli
 	}
 
 	resp, err = openshiftClient.DoOpenshiftPostRequest(expectedPermission.ListPath, bodyBytes)
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Log("Responses body close error: ", err)
+		}
+	}(resp.Body)
 	if err != nil {
 		t.Errorf("failed to perform CREATE request with error : %s", err)
 	}
