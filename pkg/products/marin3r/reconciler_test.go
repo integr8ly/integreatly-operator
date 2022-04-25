@@ -301,7 +301,7 @@ func TestReconcileEnvoyConfigRevisionsDeletion(t *testing.T) {
 								},
 								Namespace:         "redhat-rhoam-3scale",
 								Name:              "apicast-ratelimit",
-								DeletionTimestamp: &v1.Time{time.Now()},
+								DeletionTimestamp: &v1.Time{Time: time.Now()},
 							},
 							TypeMeta: v1.TypeMeta{
 								APIVersion: "V2",
