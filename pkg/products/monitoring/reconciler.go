@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	defaultInstallationNamespace = "middleware-monitoring"
 	defaultMonitoringName        = "middleware-monitoring"

@@ -39,6 +39,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	defaultInstallationNamespace = "apicurito"
 	manifestPackage              = "integreatly-apicurito"

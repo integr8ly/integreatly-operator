@@ -49,6 +49,7 @@ func TestRHMIConfigCROStrategyOverride(t TestingTB, testingCtx *TestingContext) 
 		},
 	}
 	// expected windows built from `expectedMaintenanceAndBackup
+	/* #nosec G101 -- This is a false positive */
 	expectedBackupWindow := "12:05-13:05"
 	expectedMaintenanceWindow := "thu:14:15-thu:15:15"
 

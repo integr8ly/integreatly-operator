@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	OpenshiftPathListProjects     = "/api/kubernetes/apis/project.openshift.io/v1/projects"
 	OpenshiftPathGetProject       = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"

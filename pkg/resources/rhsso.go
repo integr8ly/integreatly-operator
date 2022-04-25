@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	DatabaseSecretName         = "keycloak-db-secret"
 	DatabaseSecretKeyDatabase  = "POSTGRES_DATABASE"
@@ -50,6 +51,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		return nil, fmt.Errorf("failed to get postgres credential secret while reconciling rhsso postgres credentials, %s: %w", name, err)
 	}
 	// create secret using the default name which the keycloak operator expects
+	/* #nosec G101 -- This is a false positive */
 	keycloakSec := &corev1.Secret{
 		ObjectMeta: controllerruntime.ObjectMeta{
 			Name:      DatabaseSecretName,
@@ -62,6 +64,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 			keycloakSec.Data = map[string][]byte{}
 		}
 		// based on https://github.com/keycloak/keycloak-operator/blob/d6203c6206bcf011023a289620f93d03cd755810/docs/external-database.asciidoc
+		/* #nosec G101 -- This is a false positive */
 		keycloakSec.Data[DatabaseSecretKeyDatabase] = postgresSec.Data["database"]
 		keycloakSec.Data[DatabaseSecretKeyExtPort] = postgresSec.Data["port"]
 		keycloakSec.Data[DatabaseSecretKeyExtHost] = postgresSec.Data["host"]
