@@ -22,6 +22,7 @@ IN_PROW ?= "false"
 # if 500 then 50M
 # if 1 then 100k
 DEV_QUOTA ?= "1"
+ROLE_ARN ?= "arn:aws:iam::485026278258:role/12345"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -310,7 +311,7 @@ ifeq ($(INSTALLATION_TYPE), managed)
 endif
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/quota
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/addon-params
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -339,7 +340,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -371,9 +372,10 @@ cluster/prepare/dms:
 	@-oc create secret generic $(NAMESPACE_PREFIX)deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
 
-.PHONY: cluster/prepare/quota
-cluster/prepare/quota:
-	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) -f config/secrets/quota-secret.yaml | oc apply -f -
+.PHONY: cluster/prepare/addon-params
+cluster/prepare/addon-params:
+	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) StsRoleARN=$(ROLE_ARN) -f config/secrets/addon-params-secret.yaml | oc apply -f -
+
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:
@@ -549,7 +551,7 @@ bundle-rhmi: manifests kustomize
 .PHONY: bundle-rhoam
 bundle-rhoam: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhoam | operator-sdk generate bundle -q --output-dir ./bundles/managed-api-service/$(TAG) --kustomize-dir config/manifests-rhoam --version $(TAG) $(BUNDLE_METADATA_OPTS) 
+	$(KUSTOMIZE) build config/manifests-rhoam | operator-sdk generate bundle -q --output-dir ./bundles/managed-api-service/$(TAG) --kustomize-dir config/manifests-rhoam --version $(TAG) $(BUNDLE_METADATA_OPTS)
 
 .PHONY: packagemanifests
 packagemanifests: manifests kustomize
@@ -562,7 +564,7 @@ bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 # USAGE: make olm/bundle BUNDLE_TAG="quay.io/mstoklus/integreatly-index:1.15.2" VERSION=1.15.2 OLM_TYPE=managed-api-service will build a bundle from 1.15.2 bundles/managed-api-service directory.
-.PHONY: olm/bundle 
+.PHONY: olm/bundle
 olm/bundle:
 	docker build -f bundles/$(OLM_TYPE)/bundle.Dockerfile -t $(BUNDLE_TAG) --build-arg version=$(VERSION) .
 

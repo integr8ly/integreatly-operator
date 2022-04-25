@@ -2,12 +2,16 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -103,5 +107,104 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 				t.Errorf("getAlertingNamespace() got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_validateAddOnStsRoleArnParameterPattern(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+
+	const namespace = "test"
+
+	type args struct {
+		client    client.Client
+		namespace string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "test: can't get secret",
+			args: args{
+				client: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("get error")
+					},
+				},
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn not found",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme),
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn empty",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("")})),
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn regex not match",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("notAnARN")})),
+				namespace: namespace,
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "test: role arn regex match",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
+				namespace: namespace,
+			},
+			wantErr: false,
+			want:    true,
+		},
+		{
+			name: "test: role arn regex match for AWS GovCloud (US) Regions",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{sts.RoleArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
+				namespace: namespace,
+			},
+			wantErr: false,
+			want:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := validateAddOnStsRoleArnParameterPattern(tt.args.client, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateAddOnStsRoleArnParameterPattern() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("validateAddOnStsRoleArnParameterPattern() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func buildAddonSecret(namespace string, secretData map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "addon-managed-api-service-parameters",
+			Namespace: namespace,
+		},
+		Data: secretData,
 	}
 }
