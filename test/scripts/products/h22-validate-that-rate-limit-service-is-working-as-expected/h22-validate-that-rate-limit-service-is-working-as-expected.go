@@ -272,7 +272,10 @@ func testCountIncreases(r *redisCounter, endpoint string, numberOfRequests int) 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			requestEndpoint(endpoint)
+			err, _ := requestEndpoint(endpoint)
+			if err != nil {
+				fmt.Printf("Error with requested end point, %s", err)
+			}
 		}()
 	}
 	wg.Wait()
@@ -609,15 +612,19 @@ func (r *redisCounter) keyIsString(key string) (bool, error) {
 }
 
 func newThreescaleClient(installation *integreatlyv1alpha1.RHMI) threescale.ThreeScaleInterface {
+	/* #nosec */
 	httpc := &http.Client{
 		Timeout: time.Second * 10,
 		Transport: &http.Transport{
 			DisableKeepAlives: true,
 			IdleConnTimeout:   time.Second * 10,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts}, // gosec G402, value is read from CR config
 		},
 	}
 
+	if installation.Spec.SelfSignedCerts {
+		fmt.Println("TLS insecure skip verify is enabled")
+	}
 	return threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
 }
 

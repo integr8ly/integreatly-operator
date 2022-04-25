@@ -5,7 +5,9 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	k8s "github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -36,10 +38,11 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 
 	caCert, err := ioutil.ReadFile(rootCAFile)
 	// if running locally, CA certificate isn't available in expected path
-	if os.IsNotExist(err) && IsRunLocally() {
+	if os.IsNotExist(err) && k8s.IsRunLocally() {
 		or.Log.Warning("GetOauthEndPoint() will skip certificate verification - this is acceptable only if operator is running locally")
+		/* #nosec */
 		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // gosec G402 skipped as only ran when operator is running locally (used in rhmi only)
 		}
 		or.client.Transport = tr
 		or.client.Timeout = time.Second * 10
@@ -50,8 +53,9 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
 
+		/* #nosec */
 		tlsConfig := &tls.Config{
-			RootCAs: caCertPool,
+			RootCAs: caCertPool, // gosec G402 skipped as only used in rhmi
 		}
 		tlsConfig.BuildNameToCertificate()
 		transport := &http.Transport{TLSClientConfig: tlsConfig, DisableKeepAlives: true}
@@ -62,7 +66,12 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get oauth server config from well known endpoint %s: %w", url, err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			or.Log.Error("Closing response body error: ", err)
+		}
+	}(resp.Body)
 	dec := json.NewDecoder(resp.Body)
 	ret := &OauthServerConfig{}
 	if err := dec.Decode(ret); err != nil {
