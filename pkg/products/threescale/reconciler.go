@@ -1092,7 +1092,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetOperatorNamespace())
+	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
 
 	if err != nil {
 		if !k8serr.IsNotFound(err) {

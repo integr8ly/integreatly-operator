@@ -19,17 +19,16 @@ type alertManagerConfig struct {
 	Global map[string]string `yaml:"global"`
 }
 
-func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, operatorNs string) (string, error) {
+func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, ns string) (string, error) {
 	amSecret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Name: alertManagerConfigSecretName,
-		Namespace: operatorNs}, amSecret)
-
+	err := client.Get(ctx, types.NamespacedName{
+		Name:      alertManagerConfigSecretName,
+		Namespace: ns,
+	}, amSecret)
 	if err != nil {
 		return "", err
 	}
-
 	monitoring := amSecret.Data[alertManagerConfigSecretFileName]
-
 	var config alertManagerConfig
 	err = yaml.Unmarshal(monitoring, &config)
 	if err != nil {
