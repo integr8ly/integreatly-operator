@@ -18,6 +18,7 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 	scenarios := []struct {
 		Name       string
 		FakeClient k8sclient.Client
+		WantRes    string
 		WantErr    bool
 	}{
 		{
@@ -28,22 +29,45 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 					Namespace: "test",
 				},
 				Data: map[string][]byte{
-					"alertmanager.yaml": []byte(`
-global:
-  smtp_from: test
-`),
-				},
-			}, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test",
-					Name:      "test",
+					"alertmanager.yaml": []byte("global:\n  smtp_from: noreply-alert@devshift.net"),
 				},
 			}),
+			WantRes: "noreply-alert@devshift.net",
+			WantErr: false,
 		},
 		{
 			Name:       "failed to retrieve alert manager config secret",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
+			WantRes:    "",
 			WantErr:    true,
+		},
+		{
+			Name: "failed to find alertmanager.yaml in alertmanager-application-monitoring secret data",
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      alertManagerConfigSecretName,
+					Namespace: "test",
+				},
+				Data: map[string][]byte{
+					"fake": []byte("fake:\n test: yes"),
+				},
+			}),
+			WantRes: "",
+			WantErr: true,
+		},
+		{
+			Name: "failed to find smtp_from in alert manager config map",
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      alertManagerConfigSecretName,
+					Namespace: "test",
+				},
+				Data: map[string][]byte{
+					"alertmanager.yaml": []byte("global:"),
+				},
+			}),
+			WantRes: "",
+			WantErr: true,
 		},
 		{
 			Name: "failed to unmarshal yaml from secret data",
@@ -53,23 +77,22 @@ global:
 					Namespace: "test",
 				},
 				Data: map[string][]byte{
-					"alertmanager.yaml": []byte(`invalid yaml`),
-				},
-			}, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "test",
-					Name:      "test",
+					"alertmanager.yaml": []byte("invalid yaml"),
 				},
 			}),
+			WantRes: "",
 			WantErr: true,
 		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			_, err := GetExistingSMTPFromAddress(context.TODO(), scenario.FakeClient, "test")
+			smtpFrom, err := GetExistingSMTPFromAddress(context.TODO(), scenario.FakeClient, "test")
 			if !scenario.WantErr && err != nil {
 				t.Fatalf("unexpected error: %v", err)
+			}
+			if scenario.WantRes != smtpFrom {
+				t.Fatalf("unexpected result from GetExistingSMTPFromAddress(): got %s, want %s", smtpFrom, scenario.WantRes)
 			}
 		})
 	}
