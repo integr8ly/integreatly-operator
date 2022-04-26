@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
@@ -536,6 +537,9 @@ func reconcileEnvoyConfigRevisionsDeletion(ctx context.Context, client k8sclient
 	envoyConfigRevisions := &v1alpha1.EnvoyConfigRevisionList{}
 	err := client.List(ctx, envoyConfigRevisions, listOptions...)
 	if err != nil {
+		if strings.Contains(err.Error(), "no matches for kind") {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
