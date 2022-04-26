@@ -113,6 +113,8 @@ var (
 		},
 		[]string{
 			"type",
+			"externalID",
+			"version",
 		},
 	)
 
@@ -210,10 +212,12 @@ func SetRHOAMAlerts(alerts resources.AlertMetrics) {
 	}
 }
 
-func SetRHOAMCluster(cluster string, value int64) {
+func SetRHOAMCluster(cluster string, externalID string, version string, value int64) {
 	RHOAMCluster.Reset()
 	RHOAMCluster.With(prometheus.Labels{
-		"type": cluster,
+		"type":       cluster,
+		"externalID": externalID,
+		"version":    version,
 	}).Set(float64(value))
 }
 

@@ -1467,6 +1467,21 @@ func (r *RHMIReconciler) composeAlertMetric(route string, namespace string) (res
 
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
+	openshiftVersion, err := resources.GetClusterVersion(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting openshift version: %w", err)
+	}
+
 	infra, err := resources.GetClusterInfrastructure(context.TODO(), r.Client)
 	if err != nil {
 		return fmt.Errorf("error getting cluster infrastructure information: %w", err)
@@ -1475,12 +1490,12 @@ func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 	clusterType, err := resources.GetClusterType(infra)
 	if err != nil {
 		if clusterType == "" {
-			metrics.SetRHOAMCluster("Unknown", 1)
+			metrics.SetRHOAMCluster("Unknown", string(externalClusterId), openshiftVersion, 1)
 		}
 		return fmt.Errorf("error getting cluster type: %w", err)
 	}
 
-	metrics.SetRHOAMCluster(clusterType, 1)
+	metrics.SetRHOAMCluster(clusterType, string(externalClusterId), openshiftVersion, 1)
 	return nil
 }
 
