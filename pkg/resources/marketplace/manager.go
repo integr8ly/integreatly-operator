@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -79,7 +80,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: csv.Namespace, Name: csv.Name}, csv)
 	if err != nil {
-		log.Error("failed marketplace manager to get 3scale csv", err)
+		log.Error("marketplace manager failed to get 3scale csv", err)
 	}
 	//catalog source is ready create the other stuff
 	og := &v1.OperatorGroup{
@@ -93,12 +94,16 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		},
 	}
 	//get the rhmi CR to check if its a sandbox install
-	sandboxRhmiCR := &integreatlyv1alpha1.RHMI{}
+	rhmiCR := &integreatlyv1alpha1.RHMI{}
 
-	// don't like hard coding but can't see another way to get the rhoam sandbox CR at this point
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: "sandbox-rhoam-operator", Name: "rhoam"}, sandboxRhmiCR)
+	rhoamWatchNamespace, err := k8s.GetWatchNamespace()
 	if err != nil {
-		log.Error("failed marketplace manager to get sandbox rhmi CR  in namespace rhoam",err)
+		log.Error("marketplace manager failed to get rhoam watch namespace", err)
+	}
+	// don't like hard coding but can't see another way to get the rhoam sandbox CR at this point
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: rhoamWatchNamespace, Name: "rhoam"}, rhmiCR)
+	if err != nil {
+		log.Error("marketplace manager failed to get sandbox rhmi CR  in namespace rhoam", err)
 	}
 
 	//TODO can maybe return this to a create only function after all clusters are updated in production
@@ -108,7 +113,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		og.Name = OperatorGroupName
 		og.Labels = map[string]string{"integreatly": t.SubscriptionName}
 		if csv.Status.Phase == "Succeeded" && csv.Status.Reason == "InstallSucceeded" {
-			if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(sandboxRhmiCR.Spec.Type)) {
+			if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmiCR.Spec.Type)) {
 				og.Spec.TargetNamespaces = operatorGroupNamespaces
 			}
 		}
