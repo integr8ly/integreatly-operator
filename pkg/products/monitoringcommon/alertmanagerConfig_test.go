@@ -156,7 +156,9 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			Name:      config.AlertManagerConfigSecretName,
 			Namespace: defaultInstallationNamespace,
 		},
-		Data: map[string][]byte{},
+		Data: map[string][]byte{
+			"alertmanager.yaml": []byte("global:\n  smtp_from: noreply-alert@devshift.org"),
+		},
 		Type: corev1.SecretTypeOpaque,
 	}
 	alertmanagerRoute := &v1.Route{

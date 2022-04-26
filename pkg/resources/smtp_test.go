@@ -29,10 +29,10 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 					Namespace: "test",
 				},
 				Data: map[string][]byte{
-					"alertmanager.yaml": []byte("global:\n  smtp_from: noreply-alert@devshift.net"),
+					"alertmanager.yaml": []byte("global:\n  smtp_from: noreply-alert@devshift.org"),
 				},
 			}),
-			WantRes: "noreply-alert@devshift.net",
+			WantRes: "noreply-alert@devshift.org",
 			WantErr: false,
 		},
 		{
