@@ -346,6 +346,16 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		return r.handleUninstall(installation, installType, request)
 	}
 
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
 	// If no current or target version is set this is the first installation of rhmi.
 	if upgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
 		installation.Status.ToVersion = version.GetVersionByType(installation.Spec.Type)
@@ -353,12 +363,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err := r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 	}
 
 	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
@@ -430,7 +440,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
@@ -1399,13 +1409,23 @@ func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHM
 		return fmt.Errorf("getting observability configuration failed: %w", err)
 	}
 
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
 	for namespace, _ := range alertingNamespaces {
 		if namespace == observability.GetNamespace() {
 			alerts, err = r.composeAlertMetric("prometheus", namespace)
 			if err != nil {
 				return fmt.Errorf("composing alert metric failed: %w", err)
 			}
-			metrics.SetRHOAMAlerts(alerts)
+			metrics.SetRHOAMAlerts(alerts, string(externalClusterId))
 			return nil
 		}
 	}

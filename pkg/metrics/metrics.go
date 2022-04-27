@@ -81,6 +81,7 @@ var (
 			"status",
 			"version",
 			"to_version",
+			"externalID",
 		},
 	)
 
@@ -103,6 +104,7 @@ var (
 			"alert",
 			"severity",
 			"state",
+			"externalID",
 		},
 	)
 
@@ -192,22 +194,23 @@ func SetRHMIStatus(installation *integreatlyv1alpha1.RHMI) {
 	}
 }
 
-func SetRhmiVersions(stage string, version string, toVersion string, firstInstallTimestamp int64) {
+func SetRhmiVersions(stage string, version string, toVersion string, externalID string, firstInstallTimestamp int64) {
 	RHMIVersion.Reset()
 	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
 
 	RHOAMVersion.Reset()
 	status := resources.InstallationState(version, toVersion)
-	RHOAMVersion.WithLabelValues(stage, status, version, toVersion).Set(float64(firstInstallTimestamp))
+	RHOAMVersion.WithLabelValues(stage, status, version, toVersion, externalID).Set(float64(firstInstallTimestamp))
 }
 
-func SetRHOAMAlerts(alerts resources.AlertMetrics) {
+func SetRHOAMAlerts(alerts resources.AlertMetrics, externalID string) {
 	RHOAMAlert.Reset()
 	for key, value := range alerts {
 		RHOAMAlert.With(prometheus.Labels{
-			"alert":    string(key.Name),
-			"severity": string(key.Severity),
-			"state":    string(key.State),
+			"alert":      string(key.Name),
+			"severity":   string(key.Severity),
+			"state":      string(key.State),
+			"externalID": externalID,
 		}).Set(float64(value))
 	}
 }
