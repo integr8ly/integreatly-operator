@@ -84,6 +84,7 @@ var (
 		{
 			[]TestCase{
 				{"M02B - Verify RHOAM version metric is exposed in Prometheus", TestRhoamVersionMetricExposed},
+				{"Validate resource requirements are set", ValidateResourceRequirements},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
