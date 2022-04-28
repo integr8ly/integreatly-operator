@@ -23,7 +23,7 @@ github.com/3scale/3scale-operator/pkg/apis/capabilities/v1alpha1
 github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1
 github.com/3scale/3scale-operator/pkg/common
 github.com/3scale/3scale-operator/version
-# github.com/3scale/3scale-porta-go-client v0.0.4
+# github.com/3scale/3scale-porta-go-client v0.6.0
 ## explicit; go 1.13
 github.com/3scale/3scale-porta-go-client/client
 # github.com/3scale/apicast-operator v0.4.0

@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const (
@@ -27,11 +28,32 @@ var httpReqError = errors.New("error building http request")
 // Returns a custom AdminPortal which integrates with the users Account Management API.
 // Supported schemes are http and https
 func NewAdminPortal(scheme string, host string, port int) (*AdminPortal, error) {
-	url2, err := verifyUrl(fmt.Sprintf("%s://%s:%d", scheme, host, port))
+	rawURL := fmt.Sprintf("%s://%s", scheme, host)
+	if port != 0 {
+		rawURL = fmt.Sprintf("%s:%d", rawURL, port)
+	}
+	url2, err := verifyUrl(rawURL)
 	if err != nil {
 		return nil, err
 	}
-	return &AdminPortal{scheme, host, port, url2}, nil
+
+	return &AdminPortal{
+		rawURL: url2.String(),
+		url:    url2,
+	}, nil
+}
+
+// Returns a custom AdminPortal which integrates with the users Account Management API.
+func NewAdminPortalFromStr(portaURL string) (*AdminPortal, error) {
+	parsed, err := url.ParseRequestURI(portaURL)
+	if err != nil {
+		return nil, err
+	}
+	portaURL = strings.TrimSuffix(portaURL, "/")
+	return &AdminPortal{
+		rawURL: portaURL,
+		url:    parsed,
+	}, nil
 }
 
 // Creates a ThreeScaleClient to communicate with Account Management API.
@@ -40,7 +62,11 @@ func NewThreeScale(backEnd *AdminPortal, credential string, httpClient *http.Cli
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	return &ThreeScaleClient{backEnd, credential, httpClient}
+	return &ThreeScaleClient{
+		adminPortal: backEnd,
+		credential:  credential,
+		httpClient:  httpClient,
+	}
 }
 
 func NewParams() Params {
@@ -57,39 +83,76 @@ func (c *ThreeScaleClient) SetCredentials(credential string) {
 	c.credential = credential
 }
 
+// SetHook sets the callback which gets invoked upon response from 3scale
+// Note, this is not supported by all endpoints, refer to endpoints documentation
+func (c *ThreeScaleClient) SetHook(cb AfterResponseCB) {
+	c.afterResponse = cb
+}
+
 // Request builder for GET request to the provided endpoint
 func (c *ThreeScaleClient) buildGetReq(ep string) (*http.Request, error) {
-	path := &url.URL{Path: ep}
-	req, err := http.NewRequest("GET", c.adminPortal.baseUrl.ResolveReference(path).String(), nil)
+	req, err := http.NewRequest("GET", c.adminPortal.rawURL+ep, nil)
 	req.Header.Set("Accept", "application/xml")
+	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
+	return req, err
+}
+
+// Request builder for GET request to the provided endpoint for json payloads
+func (c *ThreeScaleClient) buildGetJSONReq(ep string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", c.adminPortal.rawURL+ep, nil)
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
 	return req, err
 }
 
 // Request builder for POST request to the provided endpoint
 func (c *ThreeScaleClient) buildPostReq(ep string, body io.Reader) (*http.Request, error) {
-	path := &url.URL{Path: ep}
-	req, err := http.NewRequest("POST", c.adminPortal.baseUrl.ResolveReference(path).String(), body)
+	req, err := http.NewRequest("POST", c.adminPortal.rawURL+ep, body)
 	req.Header.Set("Accept", "application/xml")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
+	return req, err
+}
+
+// Request builder for POST request to the provided endpoint
+func (c *ThreeScaleClient) buildPostJSONReq(ep string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest("POST", c.adminPortal.rawURL+ep, body)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
 	return req, err
 }
 
 // Request builder for PUT request to the provided endpoint
 func (c *ThreeScaleClient) buildUpdateReq(ep string, body io.Reader) (*http.Request, error) {
-	path := &url.URL{Path: ep}
-	req, err := http.NewRequest("PUT", c.adminPortal.baseUrl.ResolveReference(path).String(), body)
+	req, err := http.NewRequest("PUT", c.adminPortal.rawURL+ep, body)
 	req.Header.Set("Accept", "application/xml")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
 	return req, err
 }
 
+// Request builder for PUT request to the provided endpoint with json content type
+func (c *ThreeScaleClient) buildUpdateJSONReq(ep string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest("PUT", c.adminPortal.rawURL+ep, body)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
+	return req, err
+}
+
+// Request builder for PATCH request to the provided endpoint with json content type
+func (c *ThreeScaleClient) buildPatchJSONReq(ep string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest("PATCH", c.adminPortal.rawURL+ep, body)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
+	return req, err
+}
+
 // Request builder for DELETE request to the provided endpoint
 func (c *ThreeScaleClient) buildDeleteReq(ep string, body io.Reader) (*http.Request, error) {
-	path := &url.URL{Path: ep}
-	req, err := http.NewRequest("DELETE", c.adminPortal.baseUrl.ResolveReference(path).String(), body)
+	req, err := http.NewRequest("DELETE", c.adminPortal.rawURL+ep, body)
 	req.Header.Set("Accept", "application/xml")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))
@@ -98,8 +161,7 @@ func (c *ThreeScaleClient) buildDeleteReq(ep string, body io.Reader) (*http.Requ
 
 // Request builder for PUT request to the provided endpoint
 func (c *ThreeScaleClient) buildPutReq(ep string, body io.Reader) (*http.Request, error) {
-	path := &url.URL{Path: ep}
-	req, err := http.NewRequest("PUT", c.adminPortal.baseUrl.ResolveReference(path).String(), body)
+	req, err := http.NewRequest("PUT", c.adminPortal.rawURL+ep, body)
 	req.Header.Set("Accept", "application/xml")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", "Basic "+basicAuth("", c.credential))

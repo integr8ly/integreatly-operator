@@ -9,6 +9,7 @@ const (
 	accountList = "/admin/api/accounts.json"
 )
 
+// Deprecated: Use ListDeveloperAccounts instead
 func (c *ThreeScaleClient) ListAccounts() (*AccountList, error) {
 	req, err := c.buildGetReq(accountList)
 	if err != nil {
