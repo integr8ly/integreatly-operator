@@ -8,6 +8,7 @@ products:
       - 1.9.0
       - 1.12.0
       - 1.15.0
+      - 1.20.0
 estimate: 1h
 tags:
   - destructive
@@ -78,6 +79,8 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=json
 8. Go to OpenShift console search for config map `quota-config-managed-api-service` in redhat-rhoam-operator namespace. See the section where a quota config for 5 million (`"name": "5"`) is defined
 
 9. Compare the values of resources with what you get by running this command from the terminal
+
+> Note: you might encounter `no matches found` errors if using zsh, it is recommended to use bash.
 
 ```bash
 backend_listener_replicas=$(oc get dc backend-listener -n redhat-rhoam-3scale --no-headers=true | awk '{print $4}')
