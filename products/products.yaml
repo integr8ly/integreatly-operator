@@ -67,7 +67,7 @@ products:
     manifestsDir: "integreatly-unifiedpush"
     quayScan: false
   - name: observability-operator
-    version: v3.0.9
+    version: v3.0.10
     url: "https://github.com/redhat-developer/observability-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-observability-operator"
