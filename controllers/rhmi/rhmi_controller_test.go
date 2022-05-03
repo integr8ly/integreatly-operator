@@ -59,7 +59,7 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 			})},
 			want: map[string]string{
 				"openshift-monitoring":       "alertmanager-main",
-				"redhat-rhoam-observability": "rhoam-alertmanager",
+				"redhat-rhoam-observability": "alertmanager",
 			},
 		},
 		{

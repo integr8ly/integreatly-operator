@@ -244,8 +244,8 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
 				}
-				if sub.Status.InstalledCSV != sub.Status.CurrentCSV {
-					t.Fatalf("expected installedCSV %s to be the same as currentCSV  %s", sub.Status.InstalledCSV, sub.Status.CurrentCSV)
+				if !res.Requeue {
+					t.Fatalf("expected reconciler to await manual approval of the upgrade")
 				}
 			},
 			catalogsourceClient: getCatalogSourceClient(""),
