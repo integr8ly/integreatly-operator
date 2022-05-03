@@ -14,6 +14,7 @@ products:
       - 1.9.0
       - 1.12.0
       - 1.15.0
+      - 1.20.0
 estimate: 1h
 tags:
   - destructive

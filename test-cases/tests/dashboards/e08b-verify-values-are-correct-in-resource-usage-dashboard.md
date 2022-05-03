@@ -15,6 +15,7 @@ products:
       - 1.10.0
       - 1.13.0
       - 1.16.0
+      - 1.20.0
 ---
 
 # E08B - Verify values are correct in Resource usage dashboard
@@ -34,3 +35,4 @@ More info: <https://issues.redhat.com/browse/INTLY-7869>
 5. Open `resource usage by pod` dashboard
 6. Look at **memory** and **cpu** values for pods and compare them with actual cpu/memory usage/limits (in OpenShift console) (verify at least Keycloak and 2 other pods)
    > Values in the Grafana dashboard should correspond to actual values shown by OpenShift console
+   > Small differences are allowed - especially in memory consumption - due to slightly different promQL queries being used
