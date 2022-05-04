@@ -23,11 +23,11 @@ var quotaConfig = `
                 "resources":{
                     "requests":{
                         "cpu":0.5,
-                        "memory":"470Mi"
+                        "memory":"600Mi"
                     },
                     "limits":{
                         "cpu":1,
-                        "memory":"520Mi"
+                        "memory":"700Mi"
                     }
                 }
             },
