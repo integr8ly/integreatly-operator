@@ -16,29 +16,31 @@ report_coverage_prow() {
     BUILD_NUMBER="" PULL_REQUEST_NUMBER=${PULL_NUMBER} goveralls \
            -coverprofile=$COVER_PROFILE \
            -service=prow \
-           -repotoken $COVERALLS_TOKEN
+           -repotoken "$COVERALLS_TOKEN"
 }
 
 report_coverage_travis() {
     goveralls -coverprofile=$COVER_PROFILE \
            -service=travis-ci \
-           -repotoken $COVERALLS_TOKEN
+           -repotoken "$COVERALLS_TOKEN"
 }
 
 echo Running tests:
-go test -covermode=count -coverpkg=./pkg/... -coverprofile=$COVER_PROFILE.tmp ./pkg/...
-cat $COVER_PROFILE.tmp | grep -v "zz_generated" > $COVER_PROFILE
+# tests with negated `unittests` build tag will not be ran
+go test -tags=unittests -covermode=count -coverprofile=$COVER_PROFILE.tmp ./apis/... ./controllers/... ./pkg/...
+< $COVER_PROFILE.tmp grep -v "zz_generated" > $COVER_PROFILE
 
-if [[ ! -z "${REPORT_COVERAGE}" ]]; then
+
+if [[ -n "${REPORT_COVERAGE}" ]]; then
 
     go get github.com/mattn/goveralls
     go install -v github.com/mattn/goveralls
 
-    if [[ ! -z "${PROW_JOB_ID}" ]]; then
+    if [[ -n "${PROW_JOB_ID}" ]]; then
         report_coverage_prow || echo "push to coveralls failed"
     fi
 
-    if [[ ! -z "${TRAVIS_BUILD_NUMBER}" ]]; then
+    if [[ -n "${TRAVIS_BUILD_NUMBER}" ]]; then
         report_coverage_travis || echo "push to coveralls failed"
     fi
 

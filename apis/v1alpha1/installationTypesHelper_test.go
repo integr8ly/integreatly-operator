@@ -66,7 +66,7 @@ func TestIsMultitenant(t *testing.T) {
 	}{
 		{
 			name:            "test that isMultitenant returns true",
-			installType:     InstallationTypeManagedApi,
+			installType:     InstallationTypeMultitenantManagedApi,
 			expectedOutcome: true,
 		},
 		{

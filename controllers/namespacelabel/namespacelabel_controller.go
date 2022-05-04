@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"strings"
 	"time"
 
@@ -158,7 +159,7 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 			r.log.Error("could not retrieve %s namespace:", err)
 		}
 
-		rhmiCr, err := resources.GetRhmiCr(r.Client, ctx, request.NamespacedName.Namespace, log)
+		rhmiCr, err := rhmi.GetRhmiCr(r.Client, ctx, request.NamespacedName.Namespace, log)
 		if err != nil || rhmiCr == nil {
 			return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
 		}
@@ -241,7 +242,7 @@ func Uninstall(v string, request ctrl.Request, r *NamespaceLabelReconciler) erro
 
 	r.log.Info("Uninstall label has been set")
 
-	rhmiCr, err := resources.GetRhmiCr(r.Client, context.TODO(), request.NamespacedName.Namespace, log)
+	rhmiCr, err := rhmi.GetRhmiCr(r.Client, context.TODO(), request.NamespacedName.Namespace, log)
 	if err != nil {
 		// Error reading the object - requeue the request.
 		return err

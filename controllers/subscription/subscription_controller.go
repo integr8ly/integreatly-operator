@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"strings"
 	"time"
 
@@ -147,7 +148,7 @@ func (r *SubscriptionReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 		}
 	}
 
-	rhmiCr, err := resources.GetRhmiCr(r.Client, context.TODO(), request.NamespacedName.Namespace, log)
+	rhmiCr, err := rhmi.GetRhmiCr(r.Client, context.TODO(), request.NamespacedName.Namespace, log)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
