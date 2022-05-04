@@ -19,22 +19,27 @@ type alertManagerConfig struct {
 	Global map[string]string `yaml:"global"`
 }
 
-func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, operatorNs string) (string, error) {
+func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, ns string) (string, error) {
 	amSecret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Name: alertManagerConfigSecretName,
-		Namespace: operatorNs}, amSecret)
-
+	err := client.Get(ctx, types.NamespacedName{
+		Name:      alertManagerConfigSecretName,
+		Namespace: ns,
+	}, amSecret)
 	if err != nil {
 		return "", err
 	}
-
-	monitoring := amSecret.Data[alertManagerConfigSecretFileName]
-
+	monitoring, ok := amSecret.Data[alertManagerConfigSecretFileName]
+	if !ok {
+		return "", fmt.Errorf("failed to find %s in %s secret data", alertManagerConfigSecretFileName, alertManagerConfigSecretName)
+	}
 	var config alertManagerConfig
 	err = yaml.Unmarshal(monitoring, &config)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse alert monitoring yaml: %w", err)
 	}
-
-	return config.Global["smtp_from"], nil
+	smtpFrom, ok := config.Global["smtp_from"]
+	if !ok {
+		return "", fmt.Errorf("failed to find smtp_from in alert manager config map")
+	}
+	return smtpFrom, nil
 }
