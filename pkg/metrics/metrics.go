@@ -117,23 +117,17 @@ var (
 		},
 	)
 
-	NumTenants = prometheus.NewGaugeVec(
+	TotalNumTenants = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "num_tenants",
-			Help: "Total number of tenants on the cluster",
-		},
-		[]string{
-			"num_tenants",
+			Name: "total_num_tenants",
+			Help: "Total number of tenants (APIManagementTenant CRs) on the cluster",
 		},
 	)
 
-	NoTenantRealm = prometheus.NewGaugeVec(
+	NumReconciledTenants = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "no_tenant_realm",
-			Help: "Users/Tenants whose realm has not yet provisioned",
-		},
-		[]string{
-			"username",
+			Name: "num_reconciled_tenants",
+			Help: "Number of reconciled tenants (APIManagementTenant CRs) on the cluster",
 		},
 	)
 
@@ -191,17 +185,12 @@ func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
 }
 
-func SetNumTenants(numTenants string) {
-	NumTenants.Reset()
-	NumTenants.WithLabelValues(numTenants).Set(float64(1))
+func SetTotalNumTenants(numTenants int) {
+	TotalNumTenants.Set(float64(numTenants))
 }
 
-func ResetNoTenantRealms() {
-	NoTenantRealm.Reset()
-}
-
-func SetNoTenantRealm(username string) {
-	NoTenantRealm.WithLabelValues(username).Set(float64(1))
+func SetNumReconciledTenants(numTenants int) {
+	NumReconciledTenants.Set(float64(numTenants))
 }
 
 func ResetNoActivated3ScaleTenantAccount() {

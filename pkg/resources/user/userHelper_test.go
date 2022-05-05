@@ -606,6 +606,158 @@ func TestGetMultitenantUsers(t *testing.T) {
 	}
 }
 
+func TestGetTotalAPIManagementTenantsCount(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+	_ = integreatlyv1alpha1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedNumCRs int
+	}{
+		{
+			Name: "Test that total number of APIManagementTenants is returned correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
+								Annotations:       map[string]string{"tenant": "yes"},
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								UID:               types.UID("test-2"),
+								Annotations:       map[string]string{"tenant": "yes"},
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								UID:               types.UID("test-3"),
+								Annotations:       map[string]string{"tenant": "yes"},
+							},
+						},
+					},
+				},
+				&integreatlyv1alpha1.APIManagementTenantList{
+					Items: []integreatlyv1alpha1.APIManagementTenant{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								Namespace:         "test-1-dev",
+								UID:               types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-2",
+								Namespace:         "test-2-dev",
+								UID:               types.UID("test-2"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-3",
+								Namespace:         "test-3-dev",
+								UID:               types.UID("test-3"),
+							},
+						},
+					},
+				},
+			),
+			ExpectedNumCRs: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			totalNumTenants, err := GetTotalAPIManagementTenantsCount(context.TODO(), tt.FakeClient)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if totalNumTenants != tt.ExpectedNumCRs {
+				t.Fatalf("incorrect number of APIManagementTenant CRs returned, expected %v, got %v", tt.ExpectedNumCRs, totalNumTenants)
+			}
+
+		})
+	}
+}
+
+func TestGetReconciledAPIManagementTenantsCount(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+	_ = integreatlyv1alpha1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedNumCRs int
+	}{
+		{
+			Name: "Test that number of reconciled APIManagementTenants is returned correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
+								Annotations:       map[string]string{"tenant": "yes"},
+							},
+						},
+					},
+				},
+				&integreatlyv1alpha1.APIManagementTenantList{
+					Items: []integreatlyv1alpha1.APIManagementTenant{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "bad-namespace",
+								Namespace:         "test-1-foobar",
+								UID:               types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "nonexistent-user",
+								Namespace:         "test-2-dev",
+								UID:               types.UID("test-2"),
+							},
+						},
+					},
+				},
+			),
+			ExpectedNumCRs: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			numReconciledTenants, err := GetReconciledAPIManagementTenantsCount(context.TODO(), tt.FakeClient)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if numReconciledTenants != tt.ExpectedNumCRs {
+				t.Fatalf("incorrect number of APIManagementTenant CRs returned, expected %v, got %v", tt.ExpectedNumCRs, numReconciledTenants)
+			}
+
+		})
+	}
+}
+
 func confirmThatCorrectNumberOfUsersIsReturned(users []MultiTenantUser) error {
 	if len(users) != 3 {
 		return fmt.Errorf("incorrect number of users returned, expected 3, got %v", len(users))

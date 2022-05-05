@@ -47,6 +47,19 @@ var managedAPITemplateList = []string{
 	"rhoam-rhsso-availability-slo",
 }
 
+var multitenantManagedAPITemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-managed-api-alerts",
+	"cro-resources",
+	"rhoam-rhsso-availability-slo",
+	"multitenancy-detailed",
+}
+
 func NewMonitoring(config ProductConfig) *Monitoring {
 	return &Monitoring{Config: config}
 }
@@ -165,7 +178,7 @@ func (m *Monitoring) GetDashboards(installType integreatlyv1alpha1.InstallationT
 	case integreatlyv1alpha1.InstallationTypeManagedApi:
 		return managedAPITemplateList
 	case integreatlyv1alpha1.InstallationTypeMultitenantManagedApi:
-		return managedAPITemplateList
+		return multitenantManagedAPITemplateList
 	default:
 		return rhmiTemplateList
 	}

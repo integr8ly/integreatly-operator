@@ -313,14 +313,33 @@ func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
 	return email
 }
 
-func GetMultiTenantUsersCount(ctx context.Context, serverClient k8sclient.Client, log l.Logger) (int, error) {
-	users := &usersv1.UserList{}
-	err := serverClient.List(ctx, users)
+func GetTotalAPIManagementTenantsCount(ctx context.Context, serverClient k8sclient.Client) (int, error) {
+	tenants := &integreatlyv1alpha1.APIManagementTenantList{}
+
+	err := serverClient.List(ctx, tenants)
 	if err != nil {
 		return 0, err
 	}
 
-	return len(users.Items), nil
+	return len(tenants.Items), nil
+}
+
+func GetReconciledAPIManagementTenantsCount(ctx context.Context, serverClient k8sclient.Client) (int, error) {
+	tenants := &integreatlyv1alpha1.APIManagementTenantList{}
+
+	err := serverClient.List(ctx, tenants)
+	if err != nil {
+		return 0, err
+	}
+
+	numReconciledTenants := 0
+	for _, tenant := range tenants.Items {
+		if tenant.Status.ProvisioningStatus == integreatlyv1alpha1.ThreeScaleAccountReady {
+			numReconciledTenants += 1
+		}
+	}
+
+	return numReconciledTenants, nil
 }
 
 func SanitiseTenantUserName(username string) string {

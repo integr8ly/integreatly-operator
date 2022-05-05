@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -278,12 +277,17 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclient.Client) error {
-	num, err := userHelper.GetMultiTenantUsersCount(ctx, serverClient, r.log)
+	total, err := userHelper.GetTotalAPIManagementTenantsCount(ctx, serverClient)
+	if err != nil {
+		return err
+	}
+	reconciled, err := userHelper.GetReconciledAPIManagementTenantsCount(ctx, serverClient)
 	if err != nil {
 		return err
 	}
 	r.log.Info("Setting tenant metrics")
-	metrics.SetNumTenants(strconv.FormatInt(int64(num), 10))
+	metrics.SetTotalNumTenants(total)
+	metrics.SetNumReconciledTenants(reconciled)
 	return nil
 }
 
