@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -270,17 +269,28 @@ func ReadAndFormatManifestYamlFile(path string) (string, error) {
 
 // Gets the version number from the package yaml string
 func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
-	r, _ := regexp.Compile(`[a-zA-Z]\.[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)($|\n)`)
-	matches := r.FindStringSubmatch(packageYaml)
+	format1 := `.(V|v|)([0-9]+)(.)([0-9]+)(.|-)([0-9]+)($|\n)`
+	format2 := `.(V|v|)([0-9]+)(.)([0-9]+)(.|-)([0-9]+)(-)([0-9]+)(.)([0-9]+)(.p)($|\n)`
+	r, _ := regexp.Compile(format1 + "|" + format2)
+	matches := removeEmptyStrings(r.FindStringSubmatch(packageYaml))
 	if len(matches) < 5 {
-		return "", errors.New("Invalid csv version from manifest package")
+		return "", errors.New("invalid csv version from manifest package")
 	}
+	if matches[1] == "v" {
+		return strings.Join(matches[2:], ""), nil
+	} else {
+		return strings.Join(matches[1:], ""), nil
+	}
+}
 
-	major, _ := strconv.Atoi(matches[1])
-	minor, _ := strconv.Atoi(matches[2])
-	patch, _ := strconv.Atoi(matches[4])
-
-	return fmt.Sprintf("%d.%d.%d", major, minor, patch), nil
+func removeEmptyStrings(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, str)
+		}
+	}
+	return r
 }
 
 // Get the manifest directory for when running locally vs when in container image

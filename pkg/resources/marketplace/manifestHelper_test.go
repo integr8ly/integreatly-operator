@@ -70,17 +70,17 @@ func TestGetCurrentCSVFromManifest(t *testing.T) {
                                 channels:
                                 - name: integreatly
                                 currentCSV: 3scale-operator.v1.9-7`,
-			ExpectedVer: "1.9.7",
+			ExpectedVer: "1.9-7",
 			ExpectedErr: false,
 		},
 		{
-			Name: "Test 4 - Error due to invalid version with too many dots",
-			PackageYamlString: `channels:
-                                - currentCSV: cloud-resources.v10.9.8.7.6
-                                name: integreatly
-                                defaultChannel: integreatly
-                                packageName: integreatly-cloud-resources`,
-			ExpectedErr: true,
+			Name: "Test 4 - get version from a version of this format: 3scale-operator.v0.8.3-0.1649688682.p",
+			PackageYamlString: `packageName: integreatly-amq-online
+                                channels:
+                                - name: integreatly
+                                currentCSV: 3scale-operator.v0.8.3-0.1649688682.p`,
+			ExpectedVer: "0.8.3-0.1649688682.p",
+			ExpectedErr: false,
 		},
 		{
 			Name:              "Test 5 - Error with invalid string entirely",

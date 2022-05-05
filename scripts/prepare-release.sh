@@ -301,10 +301,10 @@ if [[ -n "$SERVICE_AFFECTING" ]]; then
  set_csv_service_affecting_field "$SERVICE_AFFECTING"
 fi
 
-# The following is disabled to unblock rc1 cut of 1.13.0 - it should be renabled before final release.
-if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
- set_related_images
-fi
+# The following is disabled to unblock 1.21.0 - it should be re-enabled after release.
+#if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
+# set_related_images
+#fi
 
 # Move bundle.Dockerfile to the bundle folder
 mv bundle.Dockerfile bundles/$OLM_TYPE/$VERSION
