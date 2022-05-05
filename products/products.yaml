@@ -25,8 +25,8 @@ products:
     manifestsDir: "integreatly-cloud-resources"
     quayScan: true
   - name: grafana-operator
-    version: v3.10.4
-    url: "https://github.com/integr8ly/grafana-operator"
+    version: v4.2.0
+    url: "https://github.com/grafana-operator/grafana-operator"
     installType: "rhoam/rhmi"
     manifestsDir: "integreatly-grafana"
     quayScan: true
@@ -67,7 +67,7 @@ products:
     manifestsDir: "integreatly-unifiedpush"
     quayScan: false
   - name: observability-operator
-    version: v3.0.9
+    version: v3.0.10
     url: "https://github.com/redhat-developer/observability-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-observability-operator"

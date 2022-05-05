@@ -26,12 +26,11 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-querystring v1.0.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
+	github.com/grafana-operator/grafana-operator/v4 v4.2.0
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.33.0
-	github.com/integr8ly/grafana-operator v2.0.0+incompatible
-	github.com/integr8ly/grafana-operator/v3 v3.10.3
 	github.com/integr8ly/keycloak-client v0.1.7
 	github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956
 	github.com/onsi/ginkgo v1.16.5
@@ -46,7 +45,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.11.0
-	github.com/redhat-developer/observability-operator/v3 v3.0.9
+	github.com/redhat-developer/observability-operator/v3 v3.0.10
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
@@ -107,6 +106,7 @@ require (
 	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
@@ -133,7 +133,7 @@ require (
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
+	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gomodules.xyz/jsonpatch/v2 v2.0.1 // indirect

@@ -11,7 +11,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	v1 "github.com/openshift/api/route/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

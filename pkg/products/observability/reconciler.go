@@ -3,8 +3,8 @@ package observability
 import (
 	"context"
 	"fmt"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"

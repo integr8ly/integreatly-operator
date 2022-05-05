@@ -63,6 +63,7 @@ type SelfContained struct {
 	DisableObservatorium                  *bool                    `json:"disableObservatorium,omitempty"`
 	DisablePagerDuty                      *bool                    `json:"disablePagerDuty,omitempty"`
 	DisableDeadmansSnitch                 *bool                    `json:"disableDeadmansSnitch,omitempty"`
+	DisableSmtp                           *bool                    `json:"disableSmtp,omitempty"`
 	DisableBlackboxExporter               *bool                    `json:"disableBlackboxExporter,omitempty"`
 	SelfSignedCerts                       *bool                    `json:"selfSignedCerts,omitempty"`
 	OverrideSelectors                     *bool                    `json:"overrideSelectors,omitempty"`
@@ -152,6 +153,10 @@ func (in *Observability) PagerDutyDisabled() bool {
 
 func (in *Observability) DeadMansSnitchDisabled() bool {
 	return in.Spec.SelfContained != nil && in.Spec.SelfContained.DisableDeadmansSnitch != nil && *in.Spec.SelfContained.DisableDeadmansSnitch
+}
+
+func (in *Observability) SmtpDisabled() bool {
+	return in.Spec.SelfContained != nil && in.Spec.SelfContained.DisableSmtp != nil && *in.Spec.SelfContained.DisableSmtp
 }
 
 func (in *Observability) BlackboxExporterDisabled() bool {

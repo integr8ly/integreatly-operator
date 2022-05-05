@@ -124,8 +124,9 @@ func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
 	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
+		err = k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
 		log.Error("Error getting install plan ref on subscription, %v", err)
-		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
+		return nil, sub, err
 	}
 
 	ip := &coreosv1alpha1.InstallPlan{}

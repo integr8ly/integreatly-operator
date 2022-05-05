@@ -2,13 +2,13 @@ package monitoringcommon
 
 import (
 	"context"
-	v1alpha12 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	monitoringcommon "github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon/dashboards"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
@@ -20,14 +20,14 @@ func Test_getSpecDetailsForDashboard(t *testing.T) {
 		t.Fatal(err)
 	}
 	version := &configv1.ClusterVersion{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: "version",
 		},
 		Status: configv1.ClusterVersionStatus{
 			History: []configv1.UpdateHistory{
 				{
 					State:          "",
-					StartedTime:    v1.Time{},
+					StartedTime:    metav1.Time{},
 					CompletionTime: nil,
 					Version:        "4.9.0-rc123",
 					Image:          "",
@@ -161,18 +161,18 @@ func Test_getPluginsForGrafanaDashboard(t *testing.T) {
 	tests := []struct {
 		testName  string
 		dashboard string
-		want      v1alpha12.PluginList
+		want      grafanav1alpha1.PluginList
 	}{
 		{
 			testName:  "get empty PluginList when dashboard name isn't set",
 			dashboard: "",
-			want:      v1alpha12.PluginList{},
+			want:      grafanav1alpha1.PluginList{},
 		},
 		{
 			testName:  "successfully get correct PluginList when dashboard name is endpointsdetailed",
 			dashboard: "endpointsdetailed",
-			want: v1alpha12.PluginList{
-				v1alpha12.GrafanaPlugin{
+			want: grafanav1alpha1.PluginList{
+				grafanav1alpha1.GrafanaPlugin{
 					Name:    "natel-discrete-panel",
 					Version: "0.0.9",
 				},

@@ -16,7 +16,7 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"

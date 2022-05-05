@@ -8,13 +8,15 @@ import (
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/util/retry"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -38,7 +40,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "customer-monitoring"
-	manifestPackage              = "integreatly-grafana"
 	defaultGrafanaName           = "grafana"
 	defaultRoutename             = defaultGrafanaName + "-route"
 	rateLimitDashBoardName       = "rate-limit"
@@ -58,7 +59,7 @@ type Reconciler struct {
 	recorder      record.EventRecorder
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
 	return nil
 }
 
@@ -118,7 +119,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		if err := r.deleteConsoleLink(ctx, client); err != nil {
+		if err = r.deleteConsoleLink(ctx, client); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -139,7 +140,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileSecrets(ctx, client, installation, &grafanav1alpha1.Grafana{})
+	phase, err = r.reconcileSecrets(ctx, client, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -147,7 +148,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileSubscription(ctx, client, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.GrafanaSubscriptionName), err)
+		return phase, err
+	}
+
+	// Restarts the grafana-operator-controller-manager
+	// This is only required when upgrading the grafana operator from 3.10.4 -> 4.2.0
+	// This code can be removed later but it will only scale the deployment during the specific upgrade path detailed above
+	phase, err = r.restartGrafanaOperatorControllerManagerDeployment(ctx, client, operatorNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to scale grafana-operator-controller-manager Deployment", err)
 		return phase, err
 	}
 
@@ -207,7 +217,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, cr *grafanav1alpha1.Grafana) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "grafana-k8s-proxy",
@@ -255,6 +265,75 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	if opRes != controllerutil.OperationResultNone {
 		r.log.Infof("Operation result grafana dashboard", l.Fields{"grafanaDashboard": grafanaDB.Name, "result": opRes})
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) restartGrafanaOperatorControllerManagerDeployment(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	deploymentName := "grafana-operator-controller-manager"
+	csvName := "grafana-operator.v3.10.4"
+
+	// Confirm that the upgrade is from 3.10.4 to 4.2.0 using the Grafana Operator CSV
+	csv := &v1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      csvName,
+			Namespace: namespace,
+		}}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: csv.Name, Namespace: csv.Namespace}, csv)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// If the grafana-operator.v3.10.4 CSV exists and is in the process of being replaced, scale the deployment to 0
+	if csv.Status.Phase == "Replacing" {
+		phase, err := r.scaleDeployment(ctx, client, deploymentName, namespace, 0)
+		if err != nil {
+			return phase, nil
+		}
+	}
+
+	// Check if the deployment is scaled to 0, and if so, scale it back up to 1
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploymentName,
+			Namespace: namespace,
+		},
+	}
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: deployment.Name, Namespace: deployment.Namespace}, deployment)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if deployment.Status.Replicas == 0 {
+		phase, err := r.scaleDeployment(ctx, client, deploymentName, namespace, 1)
+		if err != nil {
+			return phase, nil
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) scaleDeployment(ctx context.Context, client k8sclient.Client, name string, namespace string, scaleValue int32) (integreatlyv1alpha1.StatusPhase, error) {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := client.Get(ctx, k8sclient.ObjectKey{Name: deployment.Name, Namespace: deployment.Namespace}, deployment)
+		if err != nil {
+			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", deployment.Name, namespace, err)
+		}
+
+		deployment.Spec.Replicas = &scaleValue
+		err = client.Update(ctx, deployment)
+		return err
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -349,7 +428,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 				Termination: "reencrypt",
 			},
 			Client: &grafanav1alpha1.GrafanaClient{
-				PreferService: true,
+				PreferService: boolPtr(true),
 			},
 			ServiceAccount: &grafanav1alpha1.GrafanaServiceAccount{
 				Skip:        boolPtr(true),
@@ -470,7 +549,7 @@ func (r *Reconciler) reconcileServiceAccount(ctx context.Context, serverClient k
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling subscription")
 
 	target := marketplace.Target{
