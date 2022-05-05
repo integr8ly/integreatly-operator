@@ -181,6 +181,10 @@ metadata:
     support: Red Hat
     tectonic-visibility: ocs
     description: 3scale Operator to provision 3scale and publish/manage API
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.s390x: supported
   name: 3scale-operator.v0.9.0
   namespace: placeholder
 spec:
@@ -358,7 +362,7 @@ spec:
                 - name: RELATED_IMAGE_SYSTEM
                   value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:5c86256707462d0b4224b2e091a3a43ed3d1805d26aab2eebb00dd735abf78b1
                 - name: RELATED_IMAGE_ZYNC
-                  value: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:70ff6ec5d68b3abccd751efe60f8b301ffdd256c622038b1b659ffbc6fd67504
+                  value: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:11e9a8388ddbbc09ab879f3f2d7e405edad42413ae177d6e6e23a5bb1bc21344
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
                   value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:fce81e20c81ee3fb299d127c6d6dcc6220b09bf92c0c9c505a2f343bdacc676e
                 - name: RELATED_IMAGE_BACKEND_REDIS
@@ -381,10 +385,10 @@ spec:
                 resources:
                   limits:
                     cpu: 100m
-                    memory: 100Mi
+                    memory: 300Mi
                   requests:
                     cpu: 100m
-                    memory: 100Mi
+                    memory: 300Mi
               serviceAccountName: 3scale-operator
               terminationGracePeriodSeconds: 10
       permissions:
@@ -898,7 +902,7 @@ spec:
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: false
+  - supported: true
     type: AllNamespaces
   keywords:
   - 3scale
@@ -930,7 +934,7 @@ spec:
   - name: system
     image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:5c86256707462d0b4224b2e091a3a43ed3d1805d26aab2eebb00dd735abf78b1
   - name: zync
-    image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:70ff6ec5d68b3abccd751efe60f8b301ffdd256c622038b1b659ffbc6fd67504
+    image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:11e9a8388ddbbc09ab879f3f2d7e405edad42413ae177d6e6e23a5bb1bc21344
   - name: system_memcached
     image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:fce81e20c81ee3fb299d127c6d6dcc6220b09bf92c0c9c505a2f343bdacc676e
   - name: backend_redis
