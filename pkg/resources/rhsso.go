@@ -22,12 +22,12 @@ import (
 )
 
 const (
-	databaseSecretName         = "keycloak-db-secret"
-	databaseSecretKeyDatabase  = "POSTGRES_DATABASE"
-	databaseSecretKeyExtPort   = "POSTGRES_EXTERNAL_PORT"
-	databaseSecretKeyExtHost   = "POSTGRES_EXTERNAL_ADDRESS"
-	databaseSecretKeyPassword  = "POSTGRES_PASSWORD"
-	databaseSecretKeyUsername  = "POSTGRES_USERNAME"
+	DatabaseSecretName         = "keycloak-db-secret"
+	DatabaseSecretKeyDatabase  = "POSTGRES_DATABASE"
+	DatabaseSecretKeyExtPort   = "POSTGRES_EXTERNAL_PORT"
+	DatabaseSecretKeyExtHost   = "POSTGRES_EXTERNAL_ADDRESS"
+	DatabaseSecretKeyPassword  = "POSTGRES_PASSWORD"
+	DatabaseSecretKeyUsername  = "POSTGRES_USERNAME"
 	databaseSecretKeySuperuser = "POSTGRES_SUPERUSER"
 )
 
@@ -52,7 +52,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 	// create secret using the default name which the keycloak operator expects
 	keycloakSec := &corev1.Secret{
 		ObjectMeta: controllerruntime.ObjectMeta{
-			Name:      databaseSecretName,
+			Name:      DatabaseSecretName,
 			Namespace: ns,
 		},
 	}
@@ -62,11 +62,11 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 			keycloakSec.Data = map[string][]byte{}
 		}
 		// based on https://github.com/keycloak/keycloak-operator/blob/d6203c6206bcf011023a289620f93d03cd755810/docs/external-database.asciidoc
-		keycloakSec.Data[databaseSecretKeyDatabase] = postgresSec.Data["database"]
-		keycloakSec.Data[databaseSecretKeyExtPort] = postgresSec.Data["port"]
-		keycloakSec.Data[databaseSecretKeyExtHost] = postgresSec.Data["host"]
-		keycloakSec.Data[databaseSecretKeyPassword] = postgresSec.Data["password"]
-		keycloakSec.Data[databaseSecretKeyUsername] = postgresSec.Data["username"]
+		keycloakSec.Data[DatabaseSecretKeyDatabase] = postgresSec.Data["database"]
+		keycloakSec.Data[DatabaseSecretKeyExtPort] = postgresSec.Data["port"]
+		keycloakSec.Data[DatabaseSecretKeyExtHost] = postgresSec.Data["host"]
+		keycloakSec.Data[DatabaseSecretKeyPassword] = postgresSec.Data["password"]
+		keycloakSec.Data[DatabaseSecretKeyUsername] = postgresSec.Data["username"]
 		keycloakSec.Data[databaseSecretKeySuperuser] = []byte("false")
 		return nil
 	})
