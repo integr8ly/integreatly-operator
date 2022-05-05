@@ -102,7 +102,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		log.Error("marketplace manager failed to get rhoam watch namespace : ", err)
 	}
 	// Using rhmi.GetRhmiCr to get the rhmi CR surprise, surprise
-	rhmiCR, err = rhmi.GetRhmiCr(serverClient,ctx,rhoamWatchNamespace,log)
+	rhmiCR, err = rhmi.GetRhmiCr(serverClient, ctx, rhoamWatchNamespace, log)
 	if err != nil {
 		log.Error("marketplace manager failed to get rhmi CR in namespace rhoam : ", err)
 	}
