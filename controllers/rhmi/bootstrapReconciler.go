@@ -22,6 +22,7 @@ import (
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -30,7 +31,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
+
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -202,6 +204,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, errors.Wrap(err, "Failed to remove existing prometheus rules from rhoam-operator namespace")
 		}
 
+	}
+
+	phase, err = r.reconcileCustomSMTP(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
+		return phase, errors.Wrap(err, "reconciling custom SMTP has failed ")
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
@@ -760,6 +768,43 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 
 	installationQuota.SetIsUpdated(isQuotaUpdated)
 	return nil
+}
+
+func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
+
+	smtp, err := cs.GetCustomAddonValues(serverClient, r.installation.Namespace)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	validation := cs.ParameterValidation(smtp)
+	if validation == cs.Valid {
+		phase, err := cs.CreateOrUpdateCustomSMTPSecret(ctx, serverClient, smtp, r.installation.Namespace)
+		if err != nil {
+			return phase, err
+		}
+		r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
+		r.installation.Status.CustomSmtp.Active = true
+
+	} else if validation == cs.Partial {
+		phase, err := cs.DeleteCustomSMTP(ctx, serverClient, r.installation.Namespace)
+		if err != nil {
+			return phase, err
+		}
+
+		errorString := cs.ParameterErrors(smtp)
+		r.installation.Status.CustomSmtp.Active = false
+		r.installation.Status.CustomSmtp.Error = fmt.Sprintf("Custom SMTP partial configured, missing fields: %s", errorString)
+
+	} else {
+		phase, err := cs.DeleteCustomSMTP(ctx, serverClient, r.installation.Namespace)
+		if err != nil {
+			return phase, err
+		}
+		r.installation.Status.CustomSmtp = nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {

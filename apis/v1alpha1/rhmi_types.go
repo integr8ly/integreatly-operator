@@ -210,6 +210,11 @@ type AlertingEmailAddresses struct {
 	CSSRE        string `json:"cssre"`
 }
 
+type CustomSmtpStatus struct {
+	Active bool   `json:"active"`
+	Error  string `json:"error,omitempty"`
+}
+
 // RHMIStatus defines the observed state of RHMI
 type RHMIStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -225,6 +230,7 @@ type RHMIStatus struct {
 	ToVersion          string                        `json:"toVersion,omitempty"`
 	Quota              string                        `json:"quota,omitempty"`
 	ToQuota            string                        `json:"toQuota,omitempty"`
+	CustomSmtp         *CustomSmtpStatus             `json:"customSmtp,omitempty"`
 }
 
 type RHMIStageStatus struct {
