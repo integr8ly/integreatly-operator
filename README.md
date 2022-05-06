@@ -1,6 +1,7 @@
 [![codecov](https://codecov.io/gh/integr8ly/integreatly-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/integr8ly/integreatly-operator)
 # Integreatly Operator
 
+test 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
 
 An Integreatly Operator can be installed using three different flavours: `managed`, `managed-api` or `multitenant-managed-api`
