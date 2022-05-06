@@ -1672,7 +1672,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			"totalAccounts":       len(accountsToBeDeleted),
 		},
 	)
-	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
+	err = r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
 		r.log.Error("Error deleting tenant accounts:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
