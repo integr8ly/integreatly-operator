@@ -6,6 +6,7 @@ import (
 	"fmt"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"os"
 
@@ -505,7 +506,18 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
+	secretName := r.installation.Spec.SMTPSecret
+
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Active {
+		r.log.Info("configuring user smtp for 3scale notifications")
+		secretName = cs.CustomSecret
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: secretName, Namespace: r.installation.Namespace}, credSec)
+	if err != nil {
+		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
+	}
+
 	if err != nil {
 		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
 	}
@@ -1105,12 +1117,24 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
+	var existingSMTPFromAddress string
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Active {
+		existingSMTPFromAddress, err = cs.GetFromAddress(ctx, serverClient, r.installation.Namespace)
 
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
-			return integreatlyv1alpha1.PhaseFailed, nil
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				r.log.Error("error getting smtp_from address from custom smtp secret", err)
+				return integreatlyv1alpha1.PhaseFailed, nil
+			}
+		}
+	} else {
+		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
+
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
+				return integreatlyv1alpha1.PhaseFailed, nil
+			}
 		}
 	}
 	if existingSMTPFromAddress == "" {
