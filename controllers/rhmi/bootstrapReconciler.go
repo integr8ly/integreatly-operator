@@ -778,30 +778,40 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 	}
 
 	validation := cs.ParameterValidation(smtp)
-	if validation == cs.Valid {
+
+	switch validation {
+	case cs.Valid:
 		phase, err := cs.CreateOrUpdateCustomSMTPSecret(ctx, serverClient, smtp, r.installation.Namespace)
 		if err != nil {
 			return phase, err
 		}
-		r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
-		r.installation.Status.CustomSmtp.Active = true
 
-	} else if validation == cs.Partial {
+		if r.installation.Status.CustomSmtp == nil {
+			r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
+		}
+		r.installation.Status.CustomSmtp.Enabled = true
+		r.installation.Status.CustomSmtp.Error = ""
+	case cs.Partial:
 		phase, err := cs.DeleteCustomSMTP(ctx, serverClient, r.installation.Namespace)
 		if err != nil {
 			return phase, err
 		}
 
 		errorString := cs.ParameterErrors(smtp)
-		r.installation.Status.CustomSmtp.Active = false
-		r.installation.Status.CustomSmtp.Error = fmt.Sprintf("Custom SMTP partial configured, missing fields: %s", errorString)
-
-	} else {
+		if r.installation.Status.CustomSmtp == nil {
+			r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
+		}
+		r.installation.Status.CustomSmtp.Enabled = false
+		r.installation.Status.CustomSmtp.Error = fmt.Sprintf("Custom SMTP partially configured, missing fields: %s", errorString)
+	case cs.Blank:
 		phase, err := cs.DeleteCustomSMTP(ctx, serverClient, r.installation.Namespace)
 		if err != nil {
+			r.installation.Status.CustomSmtp.Enabled = false
 			return phase, err
 		}
 		r.installation.Status.CustomSmtp = nil
+	default:
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("unknown validation state found: %s", validation)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

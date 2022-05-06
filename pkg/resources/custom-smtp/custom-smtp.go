@@ -74,6 +74,9 @@ func GetCustomAddonValues(serverClient k8sclient.Client, namespace string) (*Cus
 	return customSmtp, nil
 }
 
+//ParameterValidation If any field is populated then we consider this an attempt to use custom smtp and mark it as valid.
+//In which case, if the mandatory fields are not all populated we mark it as partial in order to report back to the
+//customer which fields need rectification.
 func ParameterValidation(smtp *CustomSmtp) ValidationResponse {
 
 	valid, partial := false, false
@@ -146,6 +149,9 @@ func ParameterErrors(smtp *CustomSmtp) string {
 }
 
 func CreateOrUpdateCustomSMTPSecret(ctx context.Context, serverClient k8sclient.Client, smtp *CustomSmtp, namespace string) (v1alpha1.StatusPhase, error) {
+	if smtp == nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("nill pointer passed for smtp details")
+	}
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -155,10 +161,6 @@ func CreateOrUpdateCustomSMTPSecret(ctx context.Context, serverClient k8sclient.
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, secret, func() error {
-		if smtp == nil {
-			return fmt.Errorf("nill pointer passed for smtp details")
-		}
-
 		if secret.Data == nil {
 			secret.Data = map[string][]byte{}
 		}
@@ -171,7 +173,7 @@ func CreateOrUpdateCustomSMTPSecret(ctx context.Context, serverClient k8sclient.
 
 		return nil
 	}); err != nil {
-		return v1alpha1.PhaseInProgress, err
+		return v1alpha1.PhaseFailed, err
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -186,9 +188,10 @@ func DeleteCustomSMTP(ctx context.Context, serverClient k8sclient.Client, namesp
 		Namespace: namespace,
 	}, secret)
 
-	if k8serr.IsNotFound(err) {
-		return v1alpha1.PhaseCompleted, nil
-	} else if err != nil {
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseCompleted, nil
+		}
 		return v1alpha1.PhaseFailed, err
 	}
 

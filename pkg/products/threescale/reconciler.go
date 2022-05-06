@@ -508,7 +508,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	credSec := &corev1.Secret{}
 	secretName := r.installation.Spec.SMTPSecret
 
-	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Active {
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Enabled {
 		r.log.Info("configuring user smtp for 3scale notifications")
 		secretName = cs.CustomSecret
 	}
@@ -518,9 +518,6 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
 	}
 
-	if err != nil {
-		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
-	}
 	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "system-smtp",
@@ -1118,14 +1115,12 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 	}
 
 	var existingSMTPFromAddress string
-	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Active {
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Enabled {
 		existingSMTPFromAddress, err = cs.GetFromAddress(ctx, serverClient, r.installation.Namespace)
 
 		if err != nil {
-			if !k8serr.IsNotFound(err) {
-				r.log.Error("error getting smtp_from address from custom smtp secret", err)
-				return integreatlyv1alpha1.PhaseFailed, nil
-			}
+			r.log.Error("error getting smtp_from address from custom smtp secret", err)
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	} else {
 		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
@@ -1135,6 +1130,7 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 				r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
 				return integreatlyv1alpha1.PhaseFailed, nil
 			}
+			r.log.Warning("failure finding secret alertmanager-application-monitoring: " + err.Error())
 		}
 	}
 	if existingSMTPFromAddress == "" {

@@ -107,12 +107,12 @@ spec:
             properties:
               customSmtp:
                 properties:
-                  active:
+                  enabled:
                     type: boolean
                   error:
                     type: string
                 required:
-                - active
+                - enabled
                 type: object
               gitHubOAuthEnabled:
                 type: boolean
