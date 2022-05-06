@@ -376,6 +376,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "result": or})
+	
+	r.Log.Infof("About to run AuthenticatedClient with URL::: ", l.Fields{"URL::: ": kc.Status.ExternalURL})
 
 	// create keycloak authentication delay flow and adds to openshift idp
 	authenticated, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
