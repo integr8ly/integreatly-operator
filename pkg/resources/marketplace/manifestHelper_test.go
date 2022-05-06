@@ -74,12 +74,12 @@ func TestGetCurrentCSVFromManifest(t *testing.T) {
 			ExpectedErr: false,
 		},
 		{
-			Name: "Test 4 - get version from a version of this format: 3scale-operator.v0.8.3-0.1649688682.p",
+			Name: "Test 4 - get version from a version of this format: 3scale-operator.v0.8.3+0.1649688682.p",
 			PackageYamlString: `packageName: integreatly-amq-online
                                 channels:
                                 - name: integreatly
-                                currentCSV: 3scale-operator.v0.8.3-0.1649688682.p`,
-			ExpectedVer: "0.8.3-0.1649688682.p",
+                                currentCSV: 3scale-operator.v0.8.3+0.1649688682.p`,
+			ExpectedVer: "0.8.3+0.1649688682.p",
 			ExpectedErr: false,
 		},
 		{

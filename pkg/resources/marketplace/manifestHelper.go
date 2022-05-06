@@ -267,10 +267,12 @@ func ReadAndFormatManifestYamlFile(path string) (string, error) {
 	return formattedString.String(), nil
 }
 
-// Gets the version number from the package yaml string
+// GetCurrentCSVFromManifest Gets the version number from the package yaml string
+// Allowed formats include regular semantic versions, however recently ones of the
+// following format had to be accounted for: 3scale-operator.v0.8.3-0.1649688682.p
 func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
 	format1 := `.(V|v|)([0-9]+)(.)([0-9]+)(.|-)([0-9]+)($|\n)`
-	format2 := `.(V|v|)([0-9]+)(.)([0-9]+)(.|-)([0-9]+)(-)([0-9]+)(.)([0-9]+)(.p)($|\n)`
+	format2 := `.(V|v|)([0-9]+)(.)([0-9]+)(.|-)([0-9]+)(-|\+)([0-9]+)(.)([0-9]+)(.p)($|\n)`
 	r, _ := regexp.Compile(format1 + "|" + format2)
 	matches := removeEmptyStrings(r.FindStringSubmatch(packageYaml))
 	if len(matches) < 5 {
