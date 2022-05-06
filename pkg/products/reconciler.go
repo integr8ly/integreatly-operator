@@ -99,14 +99,20 @@ type Interface interface {
 
 func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log l.Logger, productsInstalllationLoader marketplace.ProductsInstallationLoader) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
+	/* #nosec */
 	oauthHttpClient := &http.Client{
 		Timeout: time.Second * 10,
 		Transport: &http.Transport{
 			DisableKeepAlives: true,
 			IdleConnTimeout:   time.Second * 10,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts}, // gosec G402, value is read from CR config
 		},
 	}
+
+	if installation.Spec.SelfSignedCerts {
+		log.Warning("TLS insecure skip verify is enabled")
+	}
+
 	oauthResolver := resources.NewOauthResolver(oauthHttpClient, log)
 	oauthResolver.Host = rc.Host
 	recorder := mgr.GetEventRecorderFor(string(product))
@@ -184,13 +190,18 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 			return nil, err
 		}
 
+		/* #nosec */
 		httpc := &http.Client{
 			Timeout: time.Second * 10,
 			Transport: &http.Transport{
 				DisableKeepAlives: true,
 				IdleConnTimeout:   time.Second * 10,
-				TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+				TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts}, // gosec G402, value is read from CR config
 			},
+		}
+
+		if installation.Spec.SelfSignedCerts {
+			log.Warning("TLS insecure skip verify is enabled")
 		}
 
 		tsClient := threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
