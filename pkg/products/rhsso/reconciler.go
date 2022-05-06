@@ -52,7 +52,7 @@ var (
 	routeName                 = "keycloak-edge"
 	// tmp fix
 	failureCounter = 1
-	failuresLimit  = 5
+	failuresLimit  = 15
 )
 
 const (
