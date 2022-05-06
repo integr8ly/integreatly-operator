@@ -211,8 +211,8 @@ type AlertingEmailAddresses struct {
 }
 
 type CustomSmtpStatus struct {
-	Active bool   `json:"active"`
-	Error  string `json:"error,omitempty"`
+	Enabled bool   `json:"enabled"`
+	Error   string `json:"error,omitempty"`
 }
 
 // RHMIStatus defines the observed state of RHMI

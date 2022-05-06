@@ -243,7 +243,7 @@ func TestCreateOrUpdateCustomSMTPSecret(t *testing.T) {
 				smtp:      nil,
 				namespace: namespace,
 			},
-			want:    v1alpha1.PhaseInProgress,
+			want:    v1alpha1.PhaseFailed,
 			wantErr: true,
 		},
 	}
