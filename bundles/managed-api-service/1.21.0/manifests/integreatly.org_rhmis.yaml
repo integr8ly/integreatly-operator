@@ -89,6 +89,15 @@ spec:
             status:
               description: RHMIStatus defines the observed state of RHMI
               properties:
+                customSmtp:
+                  properties:
+                    enabled:
+                      type: boolean
+                    error:
+                      type: string
+                  required:
+                    - enabled
+                  type: object
                 gitHubOAuthEnabled:
                   type: boolean
                 lastError:
