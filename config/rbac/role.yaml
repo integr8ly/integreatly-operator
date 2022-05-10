@@ -384,6 +384,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - secrets
+  verbs:
+  - delete
+- apiGroups:
+  - ""
+  resources:
   - services
   - services/finalizers
   verbs:

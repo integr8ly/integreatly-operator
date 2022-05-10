@@ -210,6 +210,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Role permissions
 
 // +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=delete,namespace=integreatly-operator
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=delete,namespace=integreatly-operator
 
