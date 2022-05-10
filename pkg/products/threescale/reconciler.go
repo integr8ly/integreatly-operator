@@ -108,6 +108,12 @@ var (
 		"zync-database",
 		"zync-que",
 	}
+
+	AnnotationDeploymentConfigs = []string{
+		"apicast-production",
+		"apicast-staging",
+		"backend-listener",
+	}
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
@@ -430,6 +436,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("ensureDeploymentConfigsReady", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs are ready", err)
+		return phase, err
+	}
+
+	err = r.addResourceThreshold(ctx, serverClient)
+	r.log.Info("ensureDeploymentConfigsReadyForEnvoy-SidecarContainer")
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs for envoy-sidecar were ready", err)
 		return phase, err
 	}
 
@@ -3074,6 +3087,32 @@ func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8s
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add ssoReady annotation to user %s: %v", userToAnnotate.Name, err)
+	}
+
+	return nil
+}
+
+func (r *Reconciler) addResourceThreshold(ctx context.Context, client k8sclient.Client) error {
+	for _, name := range AnnotationDeploymentConfigs {
+		annotation := &appsv1.DeploymentConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: r.Config.GetNamespace(),
+			},
+		}
+		_, err := controllerutil.CreateOrUpdate(context.TODO(), client, annotation, func() error {
+			if annotation.Spec.Template.ObjectMeta.Annotations == nil {
+				annotation.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+			}
+			annotation.Spec.Template.ObjectMeta.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
+			annotation.Spec.Template.ObjectMeta.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"
+			annotation.Spec.Template.ObjectMeta.Annotations["marin3r.3scale.net/resources.limits.cpu"] = "210m"
+			annotation.Spec.Template.ObjectMeta.Annotations["marin3r.3scale.net/resources.limits.memory"] = "100Mi"
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to add annotations %s: %v", annotation.Name, err)
+		}
 	}
 
 	return nil
