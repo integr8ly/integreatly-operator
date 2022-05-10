@@ -2862,6 +2862,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		apicastStagingDCName,
 		"gateway",
 		ApicastEnvoyProxyPort,
+		serverClient,
 	)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
@@ -2875,6 +2876,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		apicastProductionDCName,
 		"gateway",
 		ApicastEnvoyProxyPort,
+		serverClient,
 	)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
@@ -2888,6 +2890,7 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		BackendServiceName,
 		"http",
 		BackendEnvoyProxyPort,
+		serverClient,
 	)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
