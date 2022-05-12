@@ -29,7 +29,7 @@ func TestInstallationState(t *testing.T) {
 				Version   string
 				ToVersion string
 			}{Version: "", ToVersion: "1.1.0"},
-			Expected: "Installation",
+			Expected: "Installing",
 		},
 		{
 			Name: "Upgrade installation",
@@ -37,7 +37,7 @@ func TestInstallationState(t *testing.T) {
 				Version   string
 				ToVersion string
 			}{Version: "1.1.0", ToVersion: "1.2.0"},
-			Expected: "Upgrade",
+			Expected: "Upgrading",
 		},
 		{
 			Name: "Installed state",

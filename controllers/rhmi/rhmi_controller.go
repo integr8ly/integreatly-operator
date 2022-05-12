@@ -385,8 +385,8 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		log.Error("Error reconciling alerts for the rhmi installation", err)
 	}
 
-	log.Info("set alerts metric")
-	err = r.composeAndSetAlertMetric(installation, configManager)
+	log.Info("set alerts summary metric")
+	err = r.composeAndSetAlertsSummaryMetric(installation, configManager)
 	if err != nil {
 		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
 			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
@@ -1396,7 +1396,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	return installation, nil
 }
 
-func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
+func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
 	var alerts resources.AlertMetrics
 
 	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
@@ -1425,7 +1425,7 @@ func (r *RHMIReconciler) composeAndSetAlertMetric(installation *rhmiv1alpha1.RHM
 			if err != nil {
 				return fmt.Errorf("composing alert metric failed: %w", err)
 			}
-			metrics.SetRHOAMAlerts(alerts, string(externalClusterId))
+			metrics.SetRHOAMAlertsSummary(alerts, string(externalClusterId))
 			return nil
 		}
 	}
@@ -1657,8 +1657,8 @@ func formatAlerts(alerts []v1.Alert) resources.AlertMetrics {
 
 	for _, alert := range alerts {
 		if alert.Labels["alertname"] == "DeadMansSwitch" {
-			// DeadManSwitch alert is always fire and only a problem if not firing.
-			// Skipping the inclusion to have a more accurate metric.
+			// DeadManSwitch alert is always firing.
+			// Skipping its inclusion for a more accurate metric.
 			continue
 		}
 

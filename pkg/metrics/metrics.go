@@ -95,9 +95,9 @@ var (
 		},
 	)
 
-	RHOAMAlert = prometheus.NewGaugeVec(
+	RHOAMAlertsSummary = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "rhoam_alerts",
+			Name: "rhoam_alerts_summary",
 			Help: "RHOAM alerts summary, excludes DeadManSwitch",
 		},
 		[]string{
@@ -111,7 +111,7 @@ var (
 	RHOAMCluster = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_cluster",
-			Help: "Gives Cluster type for the RHOAM installation",
+			Help: "Provides Cluster information for the RHOAM installation",
 		},
 		[]string{
 			"type",
@@ -203,10 +203,10 @@ func SetRhmiVersions(stage string, version string, toVersion string, externalID 
 	RHOAMVersion.WithLabelValues(stage, status, version, toVersion, externalID).Set(float64(firstInstallTimestamp))
 }
 
-func SetRHOAMAlerts(alerts resources.AlertMetrics, externalID string) {
-	RHOAMAlert.Reset()
+func SetRHOAMAlertsSummary(alerts resources.AlertMetrics, externalID string) {
+	RHOAMAlertsSummary.Reset()
 	for key, value := range alerts {
-		RHOAMAlert.With(prometheus.Labels{
+		RHOAMAlertsSummary.With(prometheus.Labels{
 			"alert":      string(key.Name),
 			"severity":   string(key.Severity),
 			"state":      string(key.State),
