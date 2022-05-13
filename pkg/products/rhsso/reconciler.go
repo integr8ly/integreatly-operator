@@ -190,7 +190,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile components", err)
 
-		if strings.Contains(err.Error(), "invalid character") {
+		mtrReconciled, found := os.LookupEnv("MTR_RECONCILED")
+		if (mtrReconciled != "true" || !found) && strings.Contains(err.Error(), "invalid character") {
+			r.Log.Info("Not found MTR_RECONCILED or it is false. Attempting tmp fix")
+
 			if !encountered {
 				timeoutTime = time.Now().Add(failureTimeout)
 				encountered = true
@@ -742,12 +745,6 @@ func GetInstanceLabels() map[string]string {
 }
 
 func (r *Reconciler) connectToPostgres(ns string, ctx context.Context, client k8sclient.Client) bool {
-	mtrReconciled, found := os.LookupEnv("MTR_RECONCILED")
-	if mtrReconciled == "true" || found {
-		r.Log.Info("Found MTR_RECONCILED. Disabling connection to rds")
-		return false
-	}
-
 	r.Log.Info("Testing connection to the Postgres rhsso-postgres-rhoam")
 
 	keycloakSec := &corev1.Secret{
