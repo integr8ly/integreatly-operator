@@ -16,8 +16,8 @@ LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
 LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=3scale-operator
-LABEL operators.operatorframework.io.bundle.channels.v1=threescale-2.12-dev
-LABEL operators.operatorframework.io.bundle.channel.default.v1=threescale-2.12-dev
+LABEL operators.operatorframework.io.bundle.channels.v1=threescale-2.12
+LABEL operators.operatorframework.io.bundle.channel.default.v1=threescale-2.12
 
 LABEL com.redhat.component="3scale-operator-bundle-container" \
       name="3scale-amp2/3scale-rhel7-operator-metadata" \
@@ -32,5 +32,5 @@ LABEL com.redhat.component="3scale-operator-bundle-container" \
 COPY bundle /manifests/
 COPY metadata /metadata/
 
-ADD 3scale-operator-bundle-container-2.12.0-128.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-128.json
-LABEL "release"="128" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-05-12T06:13:19.529664" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="daff3732c119dbdd936cc9c482bee6b4a3c0df0e" "com.redhat.build-host"="cpt-1008.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-amp2/3scale-rhel7-operator-metadata/images/2.12.0-128"
+ADD 3scale-operator-bundle-container-2.12.0-129.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-129.json
+LABEL "release"="129" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-05-12T21:03:13.497894" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="b0527358a2a106c22d22d6d2d96eccfc9a30f003" "com.redhat.build-host"="cpt-1002.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-amp2/3scale-rhel7-operator-metadata/images/2.12.0-129"
