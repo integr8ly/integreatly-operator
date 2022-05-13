@@ -177,7 +177,7 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 
 // GetCrdDetails reads the crd file
 func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
-	yamlFile, err := ioutil.ReadFile(currentFolder + string(os.PathSeparator) + f.Name())
+	yamlFile, err := ioutil.ReadFile(filepath.Clean(currentFolder + string(os.PathSeparator) + f.Name()))
 
 	err = yaml.Unmarshal(yamlFile, &crdConfig)
 	if err != nil {
@@ -241,8 +241,7 @@ func ProcessYamlFile(path string, stringList *strings.Builder) error {
 // Process each line of files from manifest for correct yaml format to use in config map
 func ReadAndFormatManifestYamlFile(path string) (string, error) {
 	var formattedString strings.Builder
-
-	content, err := ioutil.ReadFile(path)
+	content, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", err
 	}
