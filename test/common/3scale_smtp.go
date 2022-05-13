@@ -53,18 +53,33 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 
+	defer restartThreeScalePods(t, ctx, inst)
+
 	t.Log("Create Namespace, Deployment and Service for SMTP-Server")
 	err = createNamespace(ctx, t)
 	if err != nil {
 		t.Logf("%v", err)
 	}
 
-	defer removeNamespace(t, ctx)
+	defer func(t TestingTB, ctx *TestingContext) {
+		err := removeNamespace(t, ctx)
+		if err != nil {
+			t.Logf("error cleaning up namespace, %v", err)
+		}
+	}(t, ctx)
 
 	_, isCreated, err := patchSecret(ctx, t)
 	if err != nil {
 		t.Log(err)
 	}
+
+	defer func(t TestingTB, ctx *TestingContext, isCreated bool) {
+		t.Log("Reset SMTP details")
+		_, err = resetSecret(ctx, t, isCreated)
+		if err != nil {
+			t.Log(err)
+		}
+	}(t, ctx, isCreated)
 
 	t.Log("Wait for reconciliation of SMTP details")
 	err = checkSMTPReconciliation(ctx, t)
@@ -72,16 +87,31 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Unable to reconcile smtp details : %v ", err)
 	}
 
+	restartThreeScalePods(t, ctx, inst)
+
+	t.Log("Send Test email")
+	sendTestEmail(ctx, t)
+
+	t.Log("confirm email received")
+	err = checkEmail(ctx, t, emailAddress)
+	if err != nil {
+		t.Fatal("No email found")
+	}
+}
+
+func restartThreeScalePods(t TestingTB, ctx *TestingContext, inst *rhmiv1alpha1.RHMI) {
 	// Scale down system-app and system-sidekiq in order to load new smtp config
+	t.Log("Redeploy 3Scale pods")
 	for _, dc := range []string{"system-app", "system-sidekiq"} {
 		t.Logf("Scaling down dc '%s' to 0 replicas in '%s' namespace", dc, threescaleNamespace)
 		scaleDeploymentConfig(t, dc, threescaleNamespace, 0, ctx.Client)
 	}
 
 	t.Log("Checking pods are ready")
-	threescaleConfig := config.NewThreeScale(map[string]string{})
-	replicas := threescaleConfig.GetReplicasConfig(inst)
-	if err := check3ScaleReplicasAreReady(ctx, t, replicas, retryInterval, timeout); err != nil {
+	threeScaleConfig := config.NewThreeScale(map[string]string{})
+	replicas := threeScaleConfig.GetReplicasConfig(inst)
+	err := check3ScaleReplicasAreReady(ctx, t, replicas, retryInterval, timeout)
+	if err != nil {
 		t.Logf("Replicas not Ready within timeout: %v", err)
 	}
 
@@ -92,22 +122,6 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Log(err)
 	}
-
-	t.Log("Send Test email")
-	sendTestEmail(ctx, t)
-
-	t.Log("confirm email received")
-	err = checkEmail(ctx, t, emailAddress)
-	if err != nil {
-		t.Fatal("No email found")
-	}
-
-	t.Log("Reset email details")
-	_, err = resetSecret(ctx, t, isCreated)
-	if err != nil {
-		t.Log(err)
-	}
-
 }
 
 func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, timeout time.Duration) error {
@@ -182,8 +196,8 @@ func checkEmail(ctx *TestingContext, t TestingTB, email string) error {
 	//Check that we have received the test email
 	receivedEmail := false
 	pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
-	if err != nil {
-		t.Logf("Couldn't find pods: %v", err)
+	if err != nil || len(pods.Items) == 0 {
+		return fmt.Errorf("couldn't find pods: %v", err)
 	}
 	for _, pod := range pods.Items {
 		fmt.Println(pod.Name, pod.Status.PodIP)
