@@ -37,6 +37,9 @@ const (
 // APIManagerSpec defines the desired state of APIManager
 // +k8s:openapi-gen=true
 type APIManagerSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
 	APIManagerCommonSpec `json:",inline"`
 	// +optional
 	Apicast *ApicastSpec `json:"apicast,omitempty"`
@@ -48,6 +51,9 @@ type APIManagerSpec struct {
 	Zync *ZyncSpec `json:"zync,omitempty"`
 	// +optional
 	HighAvailability *HighAvailabilitySpec `json:"highAvailability,omitempty"`
+	// +optional
+	ExternalComponents *ExternalComponentsSpec `json:"externalComponents,omitempty"`
+
 	// +optional
 	PodDisruptionBudget *PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty"`
 	// +optional
@@ -475,6 +481,32 @@ type HighAvailabilitySpec struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// +optional
 	ExternalZyncDatabaseEnabled *bool `json:"externalZyncDatabaseEnabled,omitempty"`
+}
+
+type ExternalComponentsSpec struct {
+	// +optional
+	System *ExternalSystemComponents `json:"system,omitempty"`
+	// +optional
+	Backend *ExternalBackendComponents `json:"backend,omitempty"`
+	// +optional
+	Zync *ExternalZyncComponents `json:"zync,omitempty"`
+}
+
+type ExternalSystemComponents struct {
+	// +optional
+	Redis bool `json:"redis,omitempty"`
+	// +optional
+	Database bool `json:"database,omitempty"`
+}
+
+type ExternalBackendComponents struct {
+	// +optional
+	Redis bool `json:"redis,omitempty"`
+}
+
+type ExternalZyncComponents struct {
+	// +optional
+	Database bool `json:"database,omitempty"`
 }
 
 type PodDisruptionBudgetSpec struct {

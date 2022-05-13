@@ -82,6 +82,14 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
+            - config.openshift.io
+          resources:
+            - clusterversions
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups:
           - ""
           resources:
           - configmaps

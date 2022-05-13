@@ -591,6 +591,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		},
 		Spec: threescalev1.APIManagerSpec{
 			HighAvailability:    &threescalev1.HighAvailabilitySpec{},
+			ExternalComponents:  &threescalev1.ExternalComponentsSpec{},
 			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{},
 			Monitoring:          &threescalev1.MonitoringSpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
@@ -639,8 +640,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
-
-		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
+		apim.Spec.ExternalComponents = &threescalev1.ExternalComponentsSpec{
+			System: &threescalev1.ExternalSystemComponents{
+				Redis:    true,
+				Database: true,
+			},
+			Backend: &threescalev1.ExternalBackendComponents{
+				Redis: true,
+			},
+			Zync: &threescalev1.ExternalZyncComponents{
+				Database: true,
+			},
+		}
 		apim.Spec.APIManagerCommonSpec.ResourceRequirementsEnabled = &resourceRequirements
 		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
 		apim.Spec.System.FileStorageSpec = fss
