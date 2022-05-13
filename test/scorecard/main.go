@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/operator-framework/api/pkg/apis/scorecard/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ func main() {
 	flag.StringVar(&kuttlTestOutputFolder, "kuttl-test-output-folder", "/tmp", "path to the folder with output from kuttl test")
 	flag.Parse()
 
-	jsonFile, err := os.Open(kuttlTestOutputFolder + "/kuttl-test.json")
+	jsonFile, err := os.Open(filepath.Clean(kuttlTestOutputFolder + "/kuttl-test.json"))
 	if err != nil {
 		printErrorStatus(fmt.Errorf("could not open kuttl report %v", err))
 		return
@@ -188,13 +189,13 @@ type Testsuites struct {
 }
 
 func getKuttlLogs() string {
-	stderrFile, err := ioutil.ReadFile(kuttlTestOutputFolder + "/kuttl.stderr")
+	stderrFile, err := ioutil.ReadFile(filepath.Clean(kuttlTestOutputFolder + "/kuttl.stderr"))
 	if err != nil {
 		printErrorStatus(fmt.Errorf("could not open kuttl stderr file %v", err))
 		return err.Error()
 	}
 
-	stdoutFile, err := ioutil.ReadFile(kuttlTestOutputFolder + "/kuttl.stdout")
+	stdoutFile, err := ioutil.ReadFile(filepath.Clean(kuttlTestOutputFolder + "/kuttl.stdout"))
 	if err != nil {
 		printErrorStatus(fmt.Errorf("could not open kuttl stdout file %v", err))
 		return err.Error()

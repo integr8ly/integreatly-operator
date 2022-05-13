@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"os"
+	"path/filepath"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
@@ -184,7 +185,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
-	emailConfigContents, err := ioutil.ReadFile(path)
+	emailConfigContents, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read alertmanager custom email template file: %w", err)
 	}
