@@ -342,6 +342,24 @@ func GetReconciledAPIManagementTenantsCount(ctx context.Context, serverClient k8
 	return numReconciledTenants, nil
 }
 
+func GetFailedAPIManagementTenantsCount(ctx context.Context, serverClient k8sclient.Client) (int, error) {
+	tenants := &integreatlyv1alpha1.APIManagementTenantList{}
+
+	err := serverClient.List(ctx, tenants)
+	if err != nil {
+		return 0, err
+	}
+
+	numFailedTenants := 0
+	for _, tenant := range tenants.Items {
+		if tenant.Status.ProvisioningStatus == integreatlyv1alpha1.WontProvisionTenant {
+			numFailedTenants += 1
+		}
+	}
+
+	return numFailedTenants, nil
+}
+
 func SanitiseTenantUserName(username string) string {
 	// Regex for only alphanumeric values
 	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")

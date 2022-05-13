@@ -131,6 +131,13 @@ var (
 		},
 	)
 
+	NumFailedTenants = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "num_failed_tenants",
+			Help: "Number of tenants (APIManagementTenant CRs) on the cluster that didn't reconcile",
+		},
+	)
+
 	NoActivated3ScaleTenantAccount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "no_activated_3scale_tenant_account",
@@ -191,6 +198,10 @@ func SetTotalNumTenants(numTenants int) {
 
 func SetNumReconciledTenants(numTenants int) {
 	NumReconciledTenants.Set(float64(numTenants))
+}
+
+func SetNumFailedTenants(numTenants int) {
+	NumFailedTenants.Set(float64(numTenants))
 }
 
 func ResetNoActivated3ScaleTenantAccount() {
