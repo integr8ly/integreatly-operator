@@ -2,10 +2,10 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
-tags:
-  - manual-selection
+    targets:
+      - 1.21.0
+estimate: 10m
 ---
 
 # H33 - Verify that 3scale invitation mail works as expected
