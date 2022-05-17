@@ -15,6 +15,7 @@ products:
       - 1.12.0
       - 1.15.0
       - 1.18.0
+      - 1.21.0
 ---
 
 # E07B - Verify drill down links

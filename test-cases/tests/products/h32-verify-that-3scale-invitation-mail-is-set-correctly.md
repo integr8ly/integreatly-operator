@@ -2,10 +2,9 @@
 products:
   - name: rhoam
     environments:
-      - osd-fresh-install
       - osd-post-upgrade
 tags:
-  - manual-selection
+  - per-release
 ---
 
 # H32 - Verify that 3scale invitation mail is set correctly
