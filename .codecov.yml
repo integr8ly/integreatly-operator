@@ -25,6 +25,7 @@ coverage:
     - "tmp"
     - "vendor"
     - "version"
+    - "test"
 
   status:
     project:

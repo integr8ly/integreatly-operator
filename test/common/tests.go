@@ -78,6 +78,8 @@ var (
 		{
 			[]TestCase{
 				{"M01 - Verify multitenancy works as expected", TestMultitenancy},
+				//{"MT02 - Performance test simulate parallel Tenants creation", TestMultitenancyPerformance},
+				// MT02 test will be used for manual Performance verification Only. Not include in Test suite!
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
