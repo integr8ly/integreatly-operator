@@ -59,7 +59,6 @@ var (
 	UninstallStage               StageName = "uninstallation"
 	UninstallProductsStage       StageName = "uninstall - products"
 	UninstallMonitoringStage     StageName = "uninstall - monitoring"
-	UninstallObservabilityStage  StageName = "uninstall - observability"
 	UninstallCloudResourcesStage StageName = "uninstall - cloud-resources"
 	UninstallBootstrap           StageName = "uninstall - bootstrap"
 
