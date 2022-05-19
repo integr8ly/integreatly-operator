@@ -293,9 +293,14 @@ func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclien
 	if err != nil {
 		return err
 	}
+	failed, err := userHelper.GetFailedAPIManagementTenantsCount(ctx, serverClient)
+	if err != nil {
+		return err
+	}
 	r.log.Info("Setting tenant metrics")
 	metrics.SetTotalNumTenants(total)
 	metrics.SetNumReconciledTenants(reconciled)
+	metrics.SetNumFailedTenants(failed)
 	return nil
 }
 

@@ -67,6 +67,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.Quota)
 	customMetrics.Registry.MustRegister(integreatlymetrics.TotalNumTenants)
 	customMetrics.Registry.MustRegister(integreatlymetrics.NumReconciledTenants)
+	customMetrics.Registry.MustRegister(integreatlymetrics.NumFailedTenants)
 	customMetrics.Registry.MustRegister(integreatlymetrics.NoActivated3ScaleTenantAccount)
 
 	integreatlymetrics.OperatorVersion.Add(1)

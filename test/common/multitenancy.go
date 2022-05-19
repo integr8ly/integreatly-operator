@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	goctx "context"
 	"fmt"
 	"github.com/headzoo/surf"
 	brow "github.com/headzoo/surf/browser"
@@ -42,7 +41,7 @@ func TestMultitenancy(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Testing IDP with 2 regular users and 2 admins gets created
-	err = createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)
+	err = createTestingIDP(t, context.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)
 	if err != nil {
 		t.Errorf("error while creating testing IDP: %s", err)
 	}
@@ -150,7 +149,7 @@ func getTenant3scaleRoute(t TestingTB, ctx *TestingContext, testUser string) err
 	routeFound := false
 	routes := &routev1.RouteList{}
 
-	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
+	err := ctx.Client.List(context.TODO(), routes, &k8sclient.ListOptions{
 		Namespace: ThreeScaleProductNamespace,
 	})
 

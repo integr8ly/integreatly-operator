@@ -420,6 +420,12 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 
 	return []alertsTestRule{
 		{
+			File: ObservabilityNamespacePrefix + "multitenancy-api-management-tenant-alerts.yaml",
+			Rules: []string{
+				"ApiManagementTenantCRFailed",
+			},
+		},
+		{
 			File: ObservabilityNamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
 			Rules: []string{
 				"Marin3rDiscoveryServiceEndpointDown",
