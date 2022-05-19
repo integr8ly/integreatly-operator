@@ -598,7 +598,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			},
 			System: &threescalev1.SystemSpec{
 				DatabaseSpec: &threescalev1.SystemDatabaseSpec{
-					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
+					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{
+						Image:                     nil,
+						PersistentVolumeClaimSpec: nil,
+						Affinity:                  nil,
+						Tolerations:               nil,
+						Resources:                 nil,
+					},
 				},
 				FileStorageSpec: &threescalev1.SystemFileStorageSpec{
 					S3: &threescalev1.SystemS3Spec{},
