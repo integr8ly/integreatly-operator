@@ -11,7 +11,7 @@ var (
 	ALL_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				// Add all tests that can be executed prior to a completed installation here
+				//Add all tests that can be executed prior to a completed installation here
 				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
 				{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
 			},
@@ -42,7 +42,7 @@ var (
 		},
 		{
 			[]TestCase{
-				// Keep test as first on the list, as it ensures that all products are reported as complete
+				//Keep test as first on the list, as it ensures that all products are reported as complete
 				{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus},
 				{"Test RHMI installation CR metric", TestRHMICRMetrics},
 				{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
@@ -78,6 +78,7 @@ var (
 		{
 			[]TestCase{
 				{"M01 - Verify multitenancy works as expected", TestMultitenancy},
+				//MT02 test will be used for manual Performance verification Only. Not include in Test suite!
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
@@ -161,7 +162,7 @@ var (
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
-		// Add all destructive tests here that should not be executed as part of the happy path tests
+		//Add all destructive tests here that should not be executed as part of the happy path tests
 		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
 	}
 )

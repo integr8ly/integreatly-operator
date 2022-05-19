@@ -17,9 +17,22 @@ const (
 
 func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 	// make project
-	project, err := makeProject(ctx)
+	project, err := getProject(ctx)
 	if err != nil {
-		t.Fatalf("failed to create project %v", err)
+		projectCreateTimeout := 20 * time.Second
+		projectCreateRetryInterval := 1 * time.Second
+		wait.Poll(projectCreateRetryInterval, projectCreateTimeout, func() (done bool, err error) {
+			project, err = makeProject(ctx)
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		})
+	} else {
+		project, err = makeProject(ctx)
+		if err != nil {
+			t.Fatalf("failed to create project %v", err)
+		}
 	}
 
 	// get admin token from system seed

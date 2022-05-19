@@ -180,6 +180,19 @@ func makeProject(ctx *TestingContext) (*projectv1.Project, error) {
 	return project, nil
 }
 
+func getProject(ctx *TestingContext) (*projectv1.Project, error) {
+	project := &projectv1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: projectNamespace,
+		},
+	}
+	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: project.Name, Namespace: project.Namespace}, project)
+	if err != nil {
+		return nil, err
+	}
+	return project, nil
+}
+
 func getRoutes(ctx *TestingContext, routeName string) (routev1.Route, error) {
 	routes := &routev1.RouteList{}
 
