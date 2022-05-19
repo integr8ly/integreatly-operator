@@ -116,6 +116,10 @@ var (
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
 				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
+				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
+				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
+				// Keep H11 as last 3scale IDP Test as test causes 3scale deployments to be rescaled at the end of test
+				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},

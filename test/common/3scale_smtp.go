@@ -3,14 +3,15 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
-	"math/rand"
-	"strings"
-	"time"
-
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/test/utils"
+	"golang.org/x/net/context"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	"math/rand"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
+	"time"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	k8sv1 "k8s.io/api/apps/v1"
@@ -23,11 +24,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	testNamespace = "smtp-server"
+	none          = "None"
+	partial       = "Partial"
+	full          = "Full"
 )
 
 var (
@@ -53,6 +58,15 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 
+	okToTest, err := customSmtpParameters(inst, none, ctx.Client)
+	if err != nil {
+		t.Error("test failure getting the custom SMTP state", err)
+	}
+
+	if !okToTest {
+		t.Skip("Addon custom smtp values are configured. This test is not ok to run.")
+	}
+
 	defer restartThreeScalePods(t, ctx, inst)
 
 	t.Log("Create Namespace, Deployment and Service for SMTP-Server")
@@ -61,12 +75,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 		t.Logf("%v", err)
 	}
 
-	defer func(t TestingTB, ctx *TestingContext) {
-		err := removeNamespace(t, ctx)
-		if err != nil {
-			t.Logf("error cleaning up namespace, %v", err)
-		}
-	}(t, ctx)
+	defer removeNamespaceLogErrors(t, ctx)
 
 	_, isCreated, err := patchSecret(ctx, t)
 	if err != nil {
@@ -96,6 +105,211 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	err = checkEmail(ctx, t, emailAddress)
 	if err != nil {
 		t.Fatal("No email found")
+	}
+}
+
+func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
+	inst, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get RHMI instance %v", err)
+	}
+
+	managed, err := utils.OperatorIsHiveManaged(ctx.Client, inst)
+	if err != nil {
+		t.Errorf("error getting hive managed labels: %v", err)
+	}
+
+	if !managed {
+		t.Log("Create Namespace, Deployment and Service for SMTP-Server")
+		err = createNamespace(ctx, t)
+		if err != nil {
+			t.Logf("%v", err)
+		}
+
+		defer removeNamespaceLogErrors(t, ctx)
+
+		serviceIP, err = getServiceIP(ctx)
+		if err != nil {
+			t.Errorf("setup error getting service address: %v", err)
+		}
+		secret := &v1.Secret{}
+		data, err := copyAddonSecretData(secret, ctx, err, inst)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		// add custom values
+		_, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, secret, func() error {
+
+			secret.Data["custom-smtp-username"] = []byte(emailUsername)
+			secret.Data["custom-smtp-port"] = []byte(emailPort)
+			secret.Data["custom-smtp-password"] = []byte(emailPassword)
+			secret.Data["custom-smtp-address"] = []byte(serviceIP)
+			secret.Data["custom-smtp-from_address"] = []byte(emailAddress)
+
+			return nil
+		})
+		if err != nil {
+			return
+		}
+
+		defer resetSecretData(t, ctx, data, secret)
+
+	}
+	// check if addon secret has all the fields required
+	okToTest, err := customSmtpParameters(inst, full, ctx.Client)
+	if err != nil {
+		t.Error("test failure getting the custom SMTP state", err)
+	}
+
+	if !okToTest {
+		t.Skip("Addon custom smtp values are not fully configured. This test is not ok to run.")
+	}
+
+	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		inst, err = GetRHMI(ctx.Client, true)
+		if err != nil {
+			t.Logf("failed to get RHOAM instance %v", err)
+			return false, nil
+		}
+
+		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == true {
+			t.Log("CR conditions meet")
+			return true, nil
+		}
+		t.Log("CR conditions not meet.")
+		return false, nil
+
+	})
+
+	if inst.Status.CustomSmtp.Error != "" {
+		t.Fatal("Unexpected error in the custom smtp status block")
+	}
+
+	// test that the 3scale smtp secret has the same values as the custom-smtp secret
+	err = compareSMTPSecrets(inst, ctx.Client, "custom-smtp")
+	if err != nil {
+		t.Errorf("unable to compare SMTP secrets, ", err)
+	}
+
+	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
+		if err != nil || len(pods.Items) == 0 {
+			t.Errorf("couldn't find pods: %v", err)
+		}
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == "Running" {
+				t.Log("Found running pods")
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+
+	restartThreeScalePods(t, ctx, inst)
+
+	t.Log("Send Test email")
+	sendTestEmail(ctx, t)
+
+	if managed {
+		t.Log("Manual checking of received emails required")
+	} else {
+		t.Log("confirm email received")
+		err = checkEmail(ctx, t, emailAddress)
+		if err != nil {
+			t.Fatalf("No email found: %v", err)
+		}
+	}
+
+}
+
+func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
+	inst, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get RHMI instance %v", err)
+	}
+
+	managed, err := utils.OperatorIsHiveManaged(ctx.Client, inst)
+	if err != nil {
+		t.Errorf("error getting hive managed labels: %v", err)
+	}
+
+	if !managed {
+		// copy the current custom smtp values
+		secret := &v1.Secret{}
+		data, err := copyAddonSecretData(secret, ctx, err, inst)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		// add my own partial values
+		_, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, secret, func() error {
+
+			secret.Data["custom-smtp-username"] = []byte("Partial")
+			secret.Data["custom-smtp-port"] = []byte("")
+			secret.Data["custom-smtp-password"] = []byte("Values")
+			secret.Data["custom-smtp-address"] = []byte("")
+			secret.Data["custom-smtp-from_address"] = []byte("")
+
+			return nil
+		})
+		if err != nil {
+			return
+		}
+
+		defer resetSecretData(t, ctx, data, secret)
+	}
+
+	okToTest, err := customSmtpParameters(inst, partial, ctx.Client)
+	if err != nil {
+		t.Error("test failure getting the custom SMTP state", err)
+	}
+
+	if !okToTest {
+		t.Skip("Addon custom smtp values are not partial configured. This test is not ok to run.")
+	}
+
+	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		inst, err = GetRHMI(ctx.Client, true)
+		if err != nil {
+			t.Logf("failed to get RHOAM instance %v", err)
+			return false, nil
+		}
+
+		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == false {
+			t.Log("CR conditions meet")
+			return true, nil
+		}
+		t.Log("CR conditions not meet.")
+		return false, nil
+
+	})
+
+	if err != nil {
+		t.Fatalf("RHOAM status block not configure correctly, %v", err)
+	}
+
+	if inst.Status.CustomSmtp.Error == "" {
+		t.Fatal("No error found in the custom " +
+			"smtp status block")
+	}
+
+	err = compareSMTPSecrets(inst, ctx.Client, "redhat-rhoam-smtp")
+	if err != nil {
+		t.Errorf("unable to compare SMTP secrets, ", err)
+	}
+
+	customSmtp := &v1.Secret{}
+	err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      "custom-smtp",
+		Namespace: inst.Namespace,
+	}, customSmtp)
+	// On partial configured instances there should be no custom smtp secret
+	if err != nil && !k8errors.IsNotFound(err) {
+		t.Fatalf("Failed trying getting secret, %v", err)
+	}
+	if err == nil {
+		t.Fatal("No error received when getting missing secret")
 	}
 }
 
@@ -478,4 +692,159 @@ func scaleDeploymentConfig(t TestingTB, name string, namespace string, replicas 
 	if retryErr != nil {
 		t.Logf("update failed: %v", retryErr)
 	}
+}
+
+func removeNamespaceLogErrors(t TestingTB, ctx *TestingContext) {
+	err := removeNamespace(t, ctx)
+	if err != nil {
+		t.Logf("error cleaning up namespace, %v", err)
+	}
+}
+
+func resetSecretData(t TestingTB, ctx *TestingContext, data map[string][]byte, secret *v1.Secret) {
+	t.Log("Resetting data")
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, secret, func() error {
+		secret.Data = make(map[string][]byte)
+		for key, value := range data {
+			secret.Data[key] = value
+		}
+		return nil
+	})
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func copyAddonSecretData(secret *v1.Secret, ctx *TestingContext, err error, inst *rhmiv1alpha1.RHMI) (map[string][]byte, error) {
+	// copy the current custom smtp values
+	err = addonSecret(inst, ctx.Client, secret)
+	if err != nil {
+		return nil, fmt.Errorf("error getting addon: %v", err)
+	}
+
+	data := make(map[string][]byte)
+	for key, value := range secret.Data {
+		data[key] = value
+	}
+	return data, nil
+}
+
+func compareSMTPSecrets(inst *rhmiv1alpha1.RHMI, client k8sclient.Client, rhoamSecret string) error {
+
+	// get the rhoam custom smtp secret
+	customSmtp := &v1.Secret{}
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      rhoamSecret,
+		Namespace: inst.Namespace,
+	}, customSmtp)
+	if err != nil {
+		return err
+	}
+
+	// get the 3scale smtp secret
+	smtp3scale := &v1.Secret{}
+	err = client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      "system-smtp",
+		Namespace: fmt.Sprintf("%s3scale", inst.Spec.NamespacePrefix),
+	}, smtp3scale)
+
+	if err != nil {
+		return err
+	}
+	// compare the values on the secrets
+
+	message := ""
+	pass := true
+	if string(customSmtp.Data["host"]) != string(smtp3scale.Data["address"]) {
+		pass = false
+		message = message + "Mismatch in host name, "
+	}
+
+	if string(customSmtp.Data["password"]) != string(smtp3scale.Data["password"]) {
+		pass = false
+		message = message + "Mismatch in password, "
+	}
+
+	if string(customSmtp.Data["port"]) != string(smtp3scale.Data["port"]) {
+		pass = false
+		message = message + "Mismatch in port, "
+	}
+
+	if string(customSmtp.Data["username"]) != string(smtp3scale.Data["username"]) {
+		pass = false
+		message = message + "Mismatch in username, "
+	}
+
+	if !pass {
+		return fmt.Errorf(message)
+	}
+
+	return nil
+}
+
+func customSmtpParameters(inst *rhmiv1alpha1.RHMI, require string, client k8sclient.Client) (bool, error) {
+
+	fields := []string{"custom-smtp-username", "custom-smtp-port", "custom-smtp-password",
+		"custom-smtp-address", "custom-smtp-from_address"}
+
+	secret := &v1.Secret{}
+	err := addonSecret(inst, client, secret)
+	if err != nil {
+		return false, err
+	}
+
+	switch require {
+	case none:
+		for index := range fields {
+			value, ok := secret.Data[fields[index]]
+			if ok {
+				if string(value) != "" {
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	case partial:
+		isPartial := 0
+		for index := range fields {
+			value, ok := secret.Data[fields[index]]
+			if ok {
+				if string(value) == "" {
+					isPartial++
+				}
+			} else {
+				isPartial++
+			}
+		}
+		if isPartial < len(fields) && isPartial > 0 {
+			return true, nil
+		}
+		return false, nil
+	case full:
+		for index := range fields {
+			value, ok := secret.Data[fields[index]]
+
+			if ok {
+				if string(value) == "" {
+					return false, nil
+				}
+			}
+			if !ok {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func addonSecret(inst *rhmiv1alpha1.RHMI, client k8sclient.Client, secret *v1.Secret) error {
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      fmt.Sprintf("addon-%s-service-parameters", inst.Spec.Type),
+		Namespace: inst.Namespace,
+	}, secret)
+	if err != nil {
+		return err
+	}
+	return nil
 }
