@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_cd917f2bf0fcc38a1c5bc429f2228192f11fd4210dd0c63d0d14697b395eb498
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_a01509748b6ee04f3a0843126cd4fa715ddceb302da55f7b7405ec13bde04e75
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -307,7 +307,7 @@ spec:
 
     ### License
     3scale Operator is licensed under the [Apache 2.0 license](https://github.com/3scale/3scale-operator/blob/master/LICENSE)
-  displayName: Red Hat Integration - 3scale dev
+  displayName: Red Hat Integration - 3scale
   icon:
   - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+
     mediatype: image/svg+xml
@@ -359,15 +359,15 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_BACKEND
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_eb9a3406e268c415da7997fffb4f97a9345c1bcb425c4bdc86ebbe8bd5172bd9
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_50f1dd979c38e35ad47d66847b12fa44bd0b74e62175a919dbf25fe2a740e642
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_b571cb383662009c6f84f948b79fdd2d10612041cee548fc867cbc33bd6be02d
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_a01ecb2ab85ee75df6b0e94a6c4dda511c23620caf01bb4411d170119422b892
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_8a0e93cc94c874e0a2a6ae33d7abdf64d788ae9bdd9ea3f55a92f29db94cbc30
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_dc750ca80888d0bcaa5fe7cb932ef37e5a4c826e6571a6fc23e6b3d6cf9a5eb7
                 - name: RELATED_IMAGE_ZYNC
-                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_15661720b1abd6121c7fd2027f9df0560021bcfdf6ff0fa3ac7c1ceaa7be394c
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_28fc1e9630448135cbbe6242c55edc858ba78f67ef8113ecf7d518cd6b55184f
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_22ab03ba1ed35026dd81d3dce5476f7d03a222a4fb1bd7283e7c95b05aac7dc3
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_fce81e20c81ee3fb299d127c6d6dcc6220b09bf92c0c9c505a2f343bdacc676e
                 - name: RELATED_IMAGE_BACKEND_REDIS
                   value: quay.io/integreatly/delorean:rhscl-redis-5-rhel7_37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
                 - name: RELATED_IMAGE_SYSTEM_REDIS
@@ -380,7 +380,7 @@ spec:
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_549454058176b61dfe34ca7cbe851f3b73e5a0268d2c6be4a4333a9b1239d6cd
                 - name: RELATED_IMAGE_OC_CLI
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_044a3e8031f64f8701e083f594a4e1b960011b8e63844fe17874696860b885ba
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_cd917f2bf0fcc38a1c5bc429f2228192f11fd4210dd0c63d0d14697b395eb498
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_a01509748b6ee04f3a0843126cd4fa715ddceb302da55f7b7405ec13bde04e75
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -920,23 +920,23 @@ spec:
     name: Miguel Soriano
   - email: eastizle+3scaleoperator@redhat.com
     name: Eguzki Astiz
-  maturity: dev
+  maturity: stable
   provider:
-    name: Red Hat dev
+    name: Red Hat
   relatedImages:
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:cd917f2bf0fcc38a1c5bc429f2228192f11fd4210dd0c63d0d14697b395eb498
-    name: 3scale-rhel7-operator-cd917f2bf0fcc38a1c5bc429f2228192f11fd4210dd0c63d0d14697b395eb498-annotation
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:cd917f2bf0fcc38a1c5bc429f2228192f11fd4210dd0c63d0d14697b395eb498
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:a01509748b6ee04f3a0843126cd4fa715ddceb302da55f7b7405ec13bde04e75
+    name: 3scale-rhel7-operator-a01509748b6ee04f3a0843126cd4fa715ddceb302da55f7b7405ec13bde04e75-annotation
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:a01509748b6ee04f3a0843126cd4fa715ddceb302da55f7b7405ec13bde04e75
     name: manager
-  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:eb9a3406e268c415da7997fffb4f97a9345c1bcb425c4bdc86ebbe8bd5172bd9
+  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:50f1dd979c38e35ad47d66847b12fa44bd0b74e62175a919dbf25fe2a740e642
     name: backend
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:b571cb383662009c6f84f948b79fdd2d10612041cee548fc867cbc33bd6be02d
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:a01ecb2ab85ee75df6b0e94a6c4dda511c23620caf01bb4411d170119422b892
     name: apicast
-  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:8a0e93cc94c874e0a2a6ae33d7abdf64d788ae9bdd9ea3f55a92f29db94cbc30
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:dc750ca80888d0bcaa5fe7cb932ef37e5a4c826e6571a6fc23e6b3d6cf9a5eb7
     name: system
-  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:15661720b1abd6121c7fd2027f9df0560021bcfdf6ff0fa3ac7c1ceaa7be394c
+  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:28fc1e9630448135cbbe6242c55edc858ba78f67ef8113ecf7d518cd6b55184f
     name: zync
-  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:22ab03ba1ed35026dd81d3dce5476f7d03a222a4fb1bd7283e7c95b05aac7dc3
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:fce81e20c81ee3fb299d127c6d6dcc6220b09bf92c0c9c505a2f343bdacc676e
     name: system_memcached
   - image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
     name: backend_redis
