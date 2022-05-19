@@ -319,6 +319,10 @@ cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps clust
 create/olm/bundle:
 	./scripts/bundle-rhmi-operators.sh
 
+.PHONY: create/3scale/index
+create/3scale/index:
+	./scripts/create-3scale-index.sh
+
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@ - oc new-project $(NAMESPACE)
