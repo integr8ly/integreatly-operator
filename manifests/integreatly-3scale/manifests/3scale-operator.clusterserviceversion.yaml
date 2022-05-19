@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:44785d2c3e517536997b0df0223b8f82dd5a38baea999a87ed41aa4087a82e24
+    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:fa1edeff7741d0b00e713c6338fed20fd34c089f128815abbd774bf29dfb9bcf
     createdAt: "2019-05-30T22:40:00Z"
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
@@ -181,11 +181,6 @@ metadata:
     support: Red Hat
     tectonic-visibility: ocs
     description: 3scale Operator to provision 3scale and publish/manage API
-    operators.openshift.io/valid-subscription: '["Red Hat Integration", "Red Hat 3scale API Management"]'
-  labels:
-    operatorframework.io/arch.amd64: supported
-    operatorframework.io/arch.ppc64le: supported
-    operatorframework.io/arch.s390x: supported
   name: 3scale-operator.v0.9.0
   namespace: placeholder
 spec:
@@ -314,14 +309,6 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - config.openshift.io
-          resources:
-          - clusterversions
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
           - console.openshift.io
           resources:
           - consolelinks
@@ -347,9 +334,9 @@ spec:
                 com.company: Red_Hat
                 control-plane: controller-manager
                 rht.comp: 3scale
-                rht.comp_ver: master
+                rht.comp_ver: "2.12"
                 rht.prod_name: Red_Hat_Integration
-                rht.prod_ver: master
+                rht.prod_ver: 2021.Q4
                 rht.subcomp: 3scale_operator
                 rht.subcomp_t: infrastructure
             spec:
@@ -365,28 +352,28 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_BACKEND
-                  value: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:eb9a3406e268c415da7997fffb4f97a9345c1bcb425c4bdc86ebbe8bd5172bd9
+                  value: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:542dbb750439bdc10d632571b3aeb4913818e3a3f056f689002e9af1f6cfcf7a
                 - name: RELATED_IMAGE_APICAST
-                  value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:b571cb383662009c6f84f948b79fdd2d10612041cee548fc867cbc33bd6be02d
+                  value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:14c01cbc43b3756850fa9732d9a2f588792ec375d6834866f04a28fbc6c04738
                 - name: RELATED_IMAGE_SYSTEM
-                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:8a0e93cc94c874e0a2a6ae33d7abdf64d788ae9bdd9ea3f55a92f29db94cbc30
+                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:928ea704460dffb4cf4aae0c41979112a26df2736846352d85422d4cdab7ec3b
                 - name: RELATED_IMAGE_ZYNC
-                  value: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:15661720b1abd6121c7fd2027f9df0560021bcfdf6ff0fa3ac7c1ceaa7be394c
+                  value: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:24efb5c713da20ed39f3c38a3f499a5905ab3107c709cd60eb564a4678cdf78e
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                  value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:22ab03ba1ed35026dd81d3dce5476f7d03a222a4fb1bd7283e7c95b05aac7dc3
+                  value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:5ca124c2c37bb2e522e606959422362198ee449c94920e10981589ce8be09b66
                 - name: RELATED_IMAGE_BACKEND_REDIS
-                  value: registry.redhat.io/rhscl/redis-5-rhel7@sha256:37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
+                  value: registry.redhat.io/rhscl/redis-5-rhel7@sha256:56aeb96ca9f727b9981a2ea5395d83bcb843bfbcaf865e9809dab8e267548df2
                 - name: RELATED_IMAGE_SYSTEM_REDIS
-                  value: registry.redhat.io/rhscl/redis-5-rhel7@sha256:37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
+                  value: registry.redhat.io/rhscl/redis-5-rhel7@sha256:56aeb96ca9f727b9981a2ea5395d83bcb843bfbcaf865e9809dab8e267548df2
                 - name: RELATED_IMAGE_SYSTEM_MYSQL
-                  value: registry.redhat.io/rhel8/mysql-80@sha256:1dfdc3499ec8dea5d9a275214b498dd1ea13464dbefa8bdae4e6d42c6692b4c6
+                  value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:88d5bc2fbdf703c0b0e072751af2cd54fb527649433f38feb359489b252ec905
                 - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
-                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:549454058176b61dfe34ca7cbe851f3b73e5a0268d2c6be4a4333a9b1239d6cd
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
                 - name: RELATED_IMAGE_ZYNC_POSTGRESQL
-                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:549454058176b61dfe34ca7cbe851f3b73e5a0268d2c6be4a4333a9b1239d6cd
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
                 - name: RELATED_IMAGE_OC_CLI
-                  value: registry.redhat.io/openshift4/ose-cli@sha256:044a3e8031f64f8701e083f594a4e1b960011b8e63844fe17874696860b885ba
-                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:44785d2c3e517536997b0df0223b8f82dd5a38baea999a87ed41aa4087a82e24
+                  value: registry.redhat.io/openshift4/ose-cli@sha256:3e9d4491159d943642fc3ce26e2453d948b7abe44a1728f6429fb15c49700b04
+                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:fa1edeff7741d0b00e713c6338fed20fd34c089f128815abbd774bf29dfb9bcf
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -394,10 +381,10 @@ spec:
                 resources:
                   limits:
                     cpu: 100m
-                    memory: 300Mi
+                    memory: 100Mi
                   requests:
                     cpu: 100m
-                    memory: 300Mi
+                    memory: 100Mi
               serviceAccountName: 3scale-operator
               terminationGracePeriodSeconds: 10
       permissions:
@@ -911,7 +898,7 @@ spec:
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - 3scale
@@ -930,31 +917,31 @@ spec:
   provider:
     name: Red Hat dev
   version: 0.9.0
-  replaces: 3scale-operator.v0.8.3
+  replaces: 3scale-operator.v0.8.2
   relatedImages:
-  - name: 3scale-rhel7-operator-44785d2c3e517536997b0df0223b8f82dd5a38baea999a87ed41aa4087a82e24-annotation
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:44785d2c3e517536997b0df0223b8f82dd5a38baea999a87ed41aa4087a82e24
+  - name: 3scale-rhel7-operator-fa1edeff7741d0b00e713c6338fed20fd34c089f128815abbd774bf29dfb9bcf-annotation
+    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:fa1edeff7741d0b00e713c6338fed20fd34c089f128815abbd774bf29dfb9bcf
   - name: manager
-    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:44785d2c3e517536997b0df0223b8f82dd5a38baea999a87ed41aa4087a82e24
+    image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:fa1edeff7741d0b00e713c6338fed20fd34c089f128815abbd774bf29dfb9bcf
   - name: backend
-    image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:eb9a3406e268c415da7997fffb4f97a9345c1bcb425c4bdc86ebbe8bd5172bd9
+    image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:542dbb750439bdc10d632571b3aeb4913818e3a3f056f689002e9af1f6cfcf7a
   - name: apicast
-    image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:b571cb383662009c6f84f948b79fdd2d10612041cee548fc867cbc33bd6be02d
+    image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:14c01cbc43b3756850fa9732d9a2f588792ec375d6834866f04a28fbc6c04738
   - name: system
-    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:8a0e93cc94c874e0a2a6ae33d7abdf64d788ae9bdd9ea3f55a92f29db94cbc30
+    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:928ea704460dffb4cf4aae0c41979112a26df2736846352d85422d4cdab7ec3b
   - name: zync
-    image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:15661720b1abd6121c7fd2027f9df0560021bcfdf6ff0fa3ac7c1ceaa7be394c
+    image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:24efb5c713da20ed39f3c38a3f499a5905ab3107c709cd60eb564a4678cdf78e
   - name: system_memcached
-    image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:22ab03ba1ed35026dd81d3dce5476f7d03a222a4fb1bd7283e7c95b05aac7dc3
+    image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:5ca124c2c37bb2e522e606959422362198ee449c94920e10981589ce8be09b66
   - name: backend_redis
-    image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
+    image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:56aeb96ca9f727b9981a2ea5395d83bcb843bfbcaf865e9809dab8e267548df2
   - name: system_redis
-    image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:37f3116bc5ad22857915a7460b1f0f422f18c933dede191998bf99084f0de0b8
+    image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:56aeb96ca9f727b9981a2ea5395d83bcb843bfbcaf865e9809dab8e267548df2
   - name: system_mysql
-    image: registry.redhat.io/rhel8/mysql-80@sha256:1dfdc3499ec8dea5d9a275214b498dd1ea13464dbefa8bdae4e6d42c6692b4c6
+    image: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:88d5bc2fbdf703c0b0e072751af2cd54fb527649433f38feb359489b252ec905
   - name: system_postgresql
-    image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:549454058176b61dfe34ca7cbe851f3b73e5a0268d2c6be4a4333a9b1239d6cd
+    image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
   - name: zync_postgresql
-    image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:549454058176b61dfe34ca7cbe851f3b73e5a0268d2c6be4a4333a9b1239d6cd
+    image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c9fe30ba965144c918f67ab61feda55eb80e5e47c32fdbbe36831b78d56890a8
   - name: oc_cli
-    image: registry.redhat.io/openshift4/ose-cli@sha256:044a3e8031f64f8701e083f594a4e1b960011b8e63844fe17874696860b885ba
+    image: registry.redhat.io/openshift4/ose-cli@sha256:3e9d4491159d943642fc3ce26e2453d948b7abe44a1728f6429fb15c49700b04
