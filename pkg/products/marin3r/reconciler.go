@@ -248,9 +248,9 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 
 	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
-		if productsStage, ok := installation.Status.Stages[integreatlyv1alpha1.ProductsStage]; ok {
-			if productsStage.Products != nil {
-				grafanaProduct, grafanaProductExists := productsStage.Products[integreatlyv1alpha1.ProductGrafana]
+		if installStage, ok := installation.Status.Stages[integreatlyv1alpha1.InstallStage]; ok {
+			if installStage.Products != nil {
+				grafanaProduct, grafanaProductExists := installStage.Products[integreatlyv1alpha1.ProductGrafana]
 				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
 				if !grafanaProductExists ||
 					(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&
