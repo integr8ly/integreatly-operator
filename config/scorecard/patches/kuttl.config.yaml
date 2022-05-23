@@ -7,7 +7,7 @@
     image: quay.io/integreatly/scorecard-test-kuttl:master
     labels:
       cluster-product: ocp
-      cluster-size: small
+      cluster-size: medium
       phase: msp-main
       test: happy-path
     storage:

@@ -2,6 +2,8 @@ apiVersion: integreatly.org/v1alpha1
 kind: RHMI
 metadata:
   name: rhoam
+  annotations:
+    in_prow: 'true'
 spec:
   useClusterStorage: 'true'
   selfSignedCerts: true
