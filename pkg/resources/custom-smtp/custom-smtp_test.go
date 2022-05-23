@@ -3,6 +3,7 @@ package custom_smtp
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,16 +13,20 @@ import (
 	"testing"
 )
 
+var (
+	namespace = "test"
+)
+
 func TestGetCustomAddonValues(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	_ = v1alpha12.SchemeBuilder.AddToScheme(scheme)
 
 	type args struct {
 		serverClient k8sclient.Client
 		namespace    string
 	}
 
-	namespace := "test"
 	tests := []struct {
 		name    string
 		args    args
