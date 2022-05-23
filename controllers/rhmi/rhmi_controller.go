@@ -281,10 +281,9 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	customerAlertingEmailAddress, ok, err := addon.GetStringParameterByInstallType(
+	customerAlertingEmailAddress, ok, err := addon.GetStringParameter(
 		context.TODO(),
 		r.Client,
-		rhmiv1alpha1.InstallationType(installation.Spec.Type),
 		installation.Namespace,
 		"notification-email",
 	)
@@ -1348,10 +1347,9 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 			priorityClassName = managedServicePriorityClassName
 		}
 
-		customerAlertingEmailAddress, _, err := addon.GetStringParameterByInstallType(
+		customerAlertingEmailAddress, _, err := addon.GetStringParameter(
 			ctx,
 			serverClient,
-			rhmiv1alpha1.InstallationType(installType),
 			namespace,
 			"notification-email",
 		)

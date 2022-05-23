@@ -824,7 +824,7 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {
 	// Check for normal addon quota parameter
-	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), serverClient, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.QuotaParamName)
+	quotaParam, found, err := addon.GetStringParameter(context.TODO(), serverClient, namespace, addon.QuotaParamName)
 	if err != nil {
 		return "", fmt.Errorf("error checking for quota secret %w", err)
 	}
@@ -838,7 +838,7 @@ func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient
 	// if trial-quota is not found then check for an Environment Variable QUOTA
 	// if neither are found then return an error as there is no QUOTA value for the installation to use and it's required by the reconcilers.
 	if isInstallationOlderThan1Minute(installation) {
-		quotaParam, found, err = addon.GetStringParameterByInstallType(context.TODO(), serverClient, rhmiv1alpha1.InstallationTypeManagedApi, namespace, addon.TrialQuotaParamName)
+		quotaParam, found, err = addon.GetStringParameter(context.TODO(), serverClient, namespace, addon.TrialQuotaParamName)
 		if err != nil {
 			return "", fmt.Errorf("error checking for quota secret %w", err)
 		}

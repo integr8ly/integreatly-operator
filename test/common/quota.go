@@ -84,7 +84,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	verifyConfiguration(t, ctx.Client, quotaConfig)
 
 	initialQuotaName := installation.Status.Quota
-	initialQuotaValue, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHOAMOperatorNamespace, addon.QuotaParamName)
+	initialQuotaValue, found, err := addon.GetStringParameter(context.TODO(), ctx.Client, RHOAMOperatorNamespace, addon.QuotaParamName)
 	if !found {
 		t.Fatalf("failed to quota parameter '%s' from the parameter secret %v", addon.QuotaParamName, err)
 	}
@@ -419,7 +419,7 @@ func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 		return nil, err
 	}
 
-	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHOAMOperatorNamespace, addon.QuotaParamName)
+	quotaParam, found, err := addon.GetStringParameter(context.TODO(), c, RHOAMOperatorNamespace, addon.QuotaParamName)
 	if !found {
 		t.Fatal(fmt.Sprintf("failed to quota parameter '%s' from the parameter secret", addon.QuotaParamName), err)
 		return nil, err

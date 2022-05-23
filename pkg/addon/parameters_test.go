@@ -2,9 +2,9 @@ package addon
 
 import (
 	"context"
-	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -14,188 +14,122 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestGetParameter(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
-	_ = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+type SecretType string
 
+var (
+	bytesSecret  SecretType = "bytes"
+	stringSecret SecretType = "string"
+	intSecret    SecretType = "int"
+	boolSecret   SecretType = "bool"
+	noneSecret   SecretType = "none"
+
+	addonSubscription        = "addon-managed-api-service"
+	olmSubscriptionType      = "managed-api-service"
+	internalSubscriptionType = "addon-managed-api-service-internal"
+	noneSubscription         = "none"
+
+	testRHOAMnamespace  = "redhat-rhoam-operator"
+	testRHOAMInamespace = "redhat-rhoami-operator"
+
+	stringSecretValue   = "the boop"
+	intSecretValue      = 420
+	boolSecretValue     = "true"
+	bytesSecretValue    = "boop"
+	defaultParameterKey = "parameter"
+)
+
+func TestGetParameter(t *testing.T) {
+	type args struct {
+		ctx       context.Context
+		client    client.Client
+		namespace string
+		parameter string
+	}
 	scenarios := []struct {
-		Name               string
-		ExistingParameters map[string][]byte
-		Parameter          string
-		ExpectedFound      bool
-		ExpectedValue      []byte
-		Client             client.Client
-		WantErr            bool
+		Name      string
+		args      args
+		wantFound bool
+		wantValue []byte
+		wantErr   bool
 	}{
 		{
-			Name: "Parameter found",
-			ExistingParameters: map[string][]byte{
-				"test": []byte("foo"),
+			Name:      "Parameter found",
+			wantFound: true,
+			wantValue: []byte(bytesSecretValue),
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, addonSubscription),
 			},
-			ExpectedFound: true,
-			ExpectedValue: []byte("foo"),
-			Parameter:     "test",
-			Client: fake.NewFakeClientWithScheme(scheme,
-				&integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "redhat-test-operator",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-					},
-				},
-				&corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "addon-managed-api-service-parameters",
-						Namespace: "redhat-test-operator",
-					},
-					Data: map[string][]byte{
-						"test": []byte("foo"),
-					},
-				}),
 		},
 		{
-			Name: "Parameter not found: not in secret",
-			ExistingParameters: map[string][]byte{
-				"test": []byte("foo"),
+			Name:      "Parameter not found: not in secret",
+			wantFound: false,
+			args: args{
+				parameter: "boop",
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, stringSecret, addonSubscription),
 			},
-			ExpectedFound: false,
-			Parameter:     "bar",
-			Client: fake.NewFakeClientWithScheme(scheme,
-				&integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "redhat-test-operator",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-					},
-				},
-				&corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "addon-managed-api-service-parameters",
-						Namespace: "redhat-test-operator",
-					},
-					Data: map[string][]byte{
-						"test": []byte("foo"),
-					},
-				}),
 		},
 		{
-			Name:               "Parameter not found: secret not defined",
-			ExistingParameters: nil,
-			ExpectedFound:      false,
-			Parameter:          "test",
-			Client: fake.NewFakeClientWithScheme(scheme, &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					Name:      "managed-api",
-					Namespace: "redhat-test-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-				},
-			}),
+			Name:      "Parameter not found: secret not defined",
+			wantFound: false,
+			wantErr:   true,
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, noneSecret, addonSubscription),
+			},
 		},
 		{
-			Name:               "Error retrieving RHMI CR",
-			ExistingParameters: nil,
-			ExpectedFound:      false,
-			Parameter:          "test",
-			Client: &clientMock.SigsClientInterfaceMock{
-				ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-					return genericError
-				},
+			Name:      "Parameter from const found",
+			wantFound: true,
+			wantValue: []byte(bytesSecretValue),
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, noneSubscription),
 			},
-			WantErr: true,
+		},
+		{
+			Name:      "Secret from RHOAMI namespace retrieved",
+			wantFound: true,
+			wantValue: []byte(bytesSecretValue),
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMInamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMInamespace, bytesSecret, internalSubscriptionType),
+			},
+		},
+		{
+			Name:      "OLM installations treated well",
+			wantFound: true,
+			wantValue: []byte(bytesSecretValue),
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, olmSubscriptionType),
+			},
 		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			result, ok, err := GetParameter(context.TODO(), scenario.Client, "redhat-test-operator", scenario.Parameter)
-			if (err != nil) != scenario.WantErr {
-				t.Fatalf("GetParameter() error = %v, wantErr %v", err, scenario.WantErr)
+			result, ok, err := GetParameter(context.TODO(), scenario.args.client, scenario.args.namespace, scenario.args.parameter)
+			if (err != nil) != scenario.wantErr {
+				t.Fatalf("GetParameter() error = %v, wantErr %v", err, scenario.wantErr)
 			}
-			if ok != scenario.ExpectedFound {
-				t.Fatalf("GetParameter() ok = %v, ExpectedFound %v", ok, scenario.ExpectedFound)
+			if ok != scenario.wantFound {
+				t.Fatalf("GetParameter() ok = %v, wantFound %v", ok, scenario.wantFound)
 			}
-			if string(result) != string(scenario.ExpectedValue) {
-				t.Fatalf("GetParameter() result = %v, ExpectedValue %v", result, scenario.ExpectedValue)
-			}
-		})
-	}
-}
-
-func TestGetStringParameterByInstallType(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
-	type args struct {
-		ctx              context.Context
-		client           client.Client
-		installationType integreatlyv1alpha1.InstallationType
-		namespace        string
-		parameter        string
-	}
-	tests := []struct {
-		name      string
-		args      args
-		wantValue string
-		wantOk    bool
-		wantErr   bool
-	}{
-		{
-			name: "retrieve the string value for an addon parameter given the installation type",
-			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "addon-managed-api-service-parameters",
-						Namespace: "ns",
-					},
-					Data: map[string][]byte{
-						"parameter": []byte("param value"),
-					},
-				}),
-				installationType: integreatlyv1alpha1.InstallationTypeManagedApi,
-				namespace:        "ns",
-				parameter:        "parameter",
-			},
-			wantValue: "param value",
-			wantOk:    true,
-			wantErr:   false,
-		},
-		{
-			name: "failed to retrieve secret",
-			args: args{
-				ctx: context.TODO(),
-				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-						return genericError
-					},
-				},
-			},
-			wantValue: "",
-			wantOk:    false,
-			wantErr:   true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			value, ok, err := GetStringParameterByInstallType(tt.args.ctx, tt.args.client, tt.args.installationType, tt.args.namespace, tt.args.parameter)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetStringParameterByInstallType() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if value != tt.wantValue {
-				t.Errorf("GetStringParameterByInstallType() value = %v, wantValue %v", value, tt.wantValue)
-			}
-			if ok != tt.wantOk {
-				t.Errorf("GetStringParameterByInstallType() ok = %v, wantOk %v", ok, tt.wantOk)
+			if string(result) != string(scenario.wantValue) {
+				t.Fatalf("GetParameter() result = %v, wantValue %v", result, scenario.wantValue)
 			}
 		})
 	}
@@ -227,46 +161,14 @@ func TestGetStringParameter(t *testing.T) {
 		{
 			name: "retrieve the string value for an addon parameter",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("param value"),
-						},
-					}),
-				namespace: "ns",
-				parameter: "parameter",
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMInamespace, stringSecret, addonSubscription),
+				namespace: testRHOAMInamespace,
+				parameter: defaultParameterKey,
 			},
-			wantValue: "param value",
+			wantValue: stringSecretValue,
 			wantOk:    true,
 			wantErr:   false,
-		},
-		{
-			name: "failed to retrieve RHMI CR",
-			args: args{
-				ctx: context.TODO(),
-				client: &clientMock.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-						return genericError
-					},
-				},
-			},
-			wantValue: "",
-			wantOk:    false,
-			wantErr:   true,
 		},
 	}
 	for _, tt := range tests {
@@ -312,72 +214,22 @@ func TestGetIntParameter(t *testing.T) {
 		{
 			name: "retrieve the integer value for an addon parameter",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("666"),
-						},
-					}),
-				namespace: "ns",
-				parameter: "parameter",
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, intSecret, olmSubscriptionType),
+				namespace: testRHOAMnamespace,
+				parameter: defaultParameterKey,
 			},
-			wantValue: 666,
+			wantValue: intSecretValue,
 			wantOk:    true,
 			wantErr:   false,
 		},
 		{
-			name: "failed to retrieve RHMI CR",
-			args: args{
-				ctx: context.TODO(),
-				client: &clientMock.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-						return genericError
-					},
-				},
-			},
-			wantValue: 0,
-			wantOk:    false,
-			wantErr:   true,
-		},
-		{
 			name: "failed to parse string to integer",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("param value"),
-						},
-					}),
-				namespace: "ns",
-				parameter: "parameter",
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, stringSecret, olmSubscriptionType),
+				namespace: testRHOAMnamespace,
+				parameter: defaultParameterKey,
 			},
 			wantValue: 0,
 			wantOk:    true,
@@ -427,72 +279,22 @@ func TestGetBoolParameter(t *testing.T) {
 		{
 			name: "retrieve the boolean value for an addon parameter",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("true"),
-						},
-					}),
-				namespace: "ns",
-				parameter: "parameter",
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, boolSecret, addonSubscription),
+				namespace: testRHOAMnamespace,
+				parameter: defaultParameterKey,
 			},
 			wantValue: true,
 			wantOk:    true,
 			wantErr:   false,
 		},
 		{
-			name: "failed to retrieve RHMI CR",
-			args: args{
-				ctx: context.TODO(),
-				client: &clientMock.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
-						return genericError
-					},
-				},
-			},
-			wantValue: false,
-			wantOk:    false,
-			wantErr:   true,
-		},
-		{
 			name: "failed to parse string to boolean",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("param value"),
-						},
-					}),
-				namespace: "ns",
-				parameter: "parameter",
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, stringSecret, addonSubscription),
+				namespace: testRHOAMnamespace,
+				parameter: defaultParameterKey,
 			},
 			wantValue: false,
 			wantOk:    true,
@@ -517,15 +319,6 @@ func TestGetBoolParameter(t *testing.T) {
 }
 
 func TestExistsParameterByInstallation(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := integreatlyv1alpha1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -541,36 +334,14 @@ func TestExistsParameterByInstallation(t *testing.T) {
 		{
 			name: "parameter exists",
 			args: args{
-				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
-					&integreatlyv1alpha1.RHMI{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "managed-api",
-							Namespace: "ns",
-						},
-						Spec: integreatlyv1alpha1.RHMISpec{
-							Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: v1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"parameter": []byte("param value"),
-						},
-					}),
+				ctx:    context.TODO(),
+				client: getDefaultClient(testRHOAMnamespace, bytesSecret, addonSubscription),
 				install: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "ns",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+						Namespace: testRHOAMnamespace,
 					},
 				},
-				parameter: "parameter",
+				parameter: defaultParameterKey,
 			},
 			want:    true,
 			wantErr: false,
@@ -587,5 +358,66 @@ func TestExistsParameterByInstallation(t *testing.T) {
 				t.Errorf("ExistsParameterByInstallation() found = %v, want %v", found, tt.want)
 			}
 		})
+	}
+}
+
+func getDefaultClient(namespace string, secretType SecretType, subscriptionType string) client.Client {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	_ = v1alpha1.AddToScheme(scheme)
+
+	return fake.NewFakeClientWithScheme(scheme, getValidInits(namespace, secretType, subscriptionType)...)
+}
+
+func getValidInits(namespace string, secretType SecretType, subscriptionType string) []runtime.Object {
+	if subscriptionType == noneSubscription {
+		return []runtime.Object{getSecretByType(namespace, secretType, subscriptionType)}
+	} else {
+		return append([]runtime.Object{
+			&v1alpha1.Subscription{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      subscriptionType,
+					Namespace: namespace,
+				},
+			},
+		}, getSecretByType(namespace, secretType, subscriptionType))
+	}
+}
+
+func getSecretByType(namespace string, secretType SecretType, subscriptionType string) *corev1.Secret {
+	if secretType == noneSecret {
+		return &corev1.Secret{}
+	}
+	var value string
+
+	switch secretType {
+	case intSecret:
+		value = strconv.Itoa(intSecretValue)
+	case boolSecret:
+		value = boolSecretValue
+	case bytesSecret:
+		value = bytesSecretValue
+	case stringSecret:
+		value = stringSecretValue
+	}
+
+	name := "addon-managed-api-service-parameters"
+	switch subscriptionType {
+	case addonSubscription:
+		name = "addon-managed-api-service-parameters"
+	case internalSubscriptionType:
+		name = "addon-managed-api-service-internal-parameters"
+	case olmSubscriptionType:
+		name = "addon-managed-api-service-parameters"
+	}
+
+	return &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"parameter": []byte(value),
+		},
 	}
 }

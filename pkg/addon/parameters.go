@@ -3,76 +3,75 @@ package addon
 import (
 	"context"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"regexp"
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	rhmiresources "github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	QuotaParamName      = "addon-managed-api-service"
 	TrialQuotaParamName = "trial-quota"
+	ManagedAPIService   = "managed-api-service"
+	RHMI                = "rhmi"
+	DefaultSecretName   = "addon-managed-api-service-parameters"
 )
 
-// GetParameter retrieves the value for an addon parameter by finding the RHMI
-// CR and selecting the addon name for its installation type.
+var (
+	log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "addon"})
+)
+
+// GetParameter retrieves the value for an addon parameter by finding the Subscription
+// CR and selecting the addon name from a secret associated with it.
 func GetParameter(ctx context.Context, client k8sclient.Client, namespace, parameter string) ([]byte, bool, error) {
-	rhmi, err := rhmiresources.GetRhmiCr(client, ctx, namespace, log)
+	secret, err := GetAddonParametersSecret(ctx, client, namespace)
 	if err != nil {
 		return nil, false, err
-	}
-
-	return GetParameterByInstallation(
-		ctx,
-		client,
-		rhmi,
-		parameter,
-	)
-}
-
-func GetParameterByInstallation(ctx context.Context, client k8sclient.Client, install *integreatlyv1alpha1.RHMI, parameter string) ([]byte, bool, error) {
-	return GetParameterByInstallType(
-		ctx,
-		client,
-		integreatlyv1alpha1.InstallationType(install.Spec.Type),
-		install.Namespace,
-		parameter,
-	)
-}
-
-// GetParameterByInstallType retrieves the value for an addon parameter by
-// selecting the addon name for installationType
-func GetParameterByInstallType(ctx context.Context, client k8sclient.Client, installationType integreatlyv1alpha1.InstallationType, namespace, parameter string) ([]byte, bool, error) {
-	addonName := GetName(installationType)
-	secretName := fmt.Sprintf("addon-%s-parameters", addonName)
-
-	secret := &corev1.Secret{}
-	if err := client.Get(ctx, k8sclient.ObjectKey{
-		Name:      secretName,
-		Namespace: namespace,
-	}, secret); err != nil {
-		if errors.IsNotFound(err) {
-			return nil, false, nil
-		}
-
-		return nil, false, fmt.Errorf("failed to retrieve parameters secret: %v", err)
 	}
 
 	value, ok := secret.Data[parameter]
 	return value, ok, nil
 }
 
-// GetStringParameterByInstallType retrieves the string value for an addon
-// parameter given the installation type
-func GetStringParameterByInstallType(ctx context.Context, client k8sclient.Client, installationType integreatlyv1alpha1.InstallationType, namespace, parameter string) (string, bool, error) {
-	value, ok, err := GetParameterByInstallType(ctx, client, installationType, namespace, parameter)
-	if err != nil || !ok {
-		return "", ok, err
+// GetAddonParametersSecret retrieves addon parameters secret, provided operator namespace.
+func GetAddonParametersSecret(ctx context.Context, client k8sclient.Client, namespace string) (*corev1.Secret, error) {
+	parametersSecretName := DefaultSecretName
+
+	opts := &k8sclient.ListOptions{
+		Namespace: namespace,
 	}
-	return string(value), ok, nil
+	subsciptions := &v1alpha1.SubscriptionList{}
+	if err := client.List(ctx, subsciptions, opts); err != nil {
+		return nil, err
+	}
+	if len(subsciptions.Items) > 1 {
+		return nil, fmt.Errorf("recieved %d subscriptions in %s namespace. Expected one", len(subsciptions.Items), namespace)
+	}
+	if len(subsciptions.Items) == 1 {
+		parametersSecretName = subsciptions.Items[0].Name + "-parameters"
+
+		// catch olm and sandbox installations
+		hasAddonPrefix, err := regexp.MatchString("^addon-*", parametersSecretName)
+		if err != nil {
+			return nil, err
+		}
+		if !hasAddonPrefix {
+			parametersSecretName = "addon-" + parametersSecretName
+		}
+	}
+
+	secret := &corev1.Secret{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: namespace,
+		Name:      parametersSecretName,
+	}, secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
 }
 
 // GetStringParameter retrieves the string value for an addon parameter
@@ -107,7 +106,8 @@ func GetBoolParameter(ctx context.Context, client k8sclient.Client, namespace, p
 	return valueBool, ok, err
 }
 
+// ExistsParameterByInstallation checks for existence of given parameter in parameters secret
 func ExistsParameterByInstallation(ctx context.Context, client k8sclient.Client, install *integreatlyv1alpha1.RHMI, parameter string) (bool, error) {
-	_, found, err := GetParameterByInstallation(ctx, client, install, parameter)
+	_, found, err := GetParameter(ctx, client, install.Namespace, parameter)
 	return found, err
 }
