@@ -11,7 +11,7 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 
 	// Get SMTP secret from rhmi-operator namespace
 	kc := ctx.KubeClient
-	smtpSecret, err := resources.GetSMTPSecret(kc, RHMIOperatorNamespace, SMTPSecretName)
+	smtpSecret, err := resources.GetSMTPSecret(kc, RHOAMOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		t.Fatal("Failed to get an SMTP secret", err)
 	}

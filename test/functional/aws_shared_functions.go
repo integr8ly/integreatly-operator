@@ -106,7 +106,7 @@ func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *
 	for _, r := range expectedRedis {
 		// get elasticache cr
 		redis := &crov1.Redis{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHMIOperatorNamespace, Name: r}, redis); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, redis); err != nil {
 			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s redis cr : %v", r, err))
 		}
 		// ensure phase is completed
@@ -138,7 +138,7 @@ func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integrea
 	for _, r := range expectedPostgres {
 		// get rds cr
 		postgres := &crov1.Postgres{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHMIOperatorNamespace, Name: r}, postgres); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, postgres); err != nil {
 			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s postgres cr : %v", r, err))
 		}
 		// ensure phase is completed
@@ -165,7 +165,7 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 	for _, r := range expectedBlobStorage {
 		// get rds cr
 		blobStorage := &crov1.BlobStorage{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHMIOperatorNamespace, Name: r}, blobStorage); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, blobStorage); err != nil {
 			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s blobStorage cr : %v", r, err))
 		}
 		// ensure phase is completed

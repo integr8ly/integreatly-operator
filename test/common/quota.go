@@ -84,7 +84,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	verifyConfiguration(t, ctx.Client, quotaConfig)
 
 	initialQuotaName := installation.Status.Quota
-	initialQuotaValue, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
+	initialQuotaValue, found, err := addon.GetStringParameterByInstallType(context.TODO(), ctx.Client, rhmiv1alpha1.InstallationTypeManagedApi, RHOAMOperatorNamespace, addon.QuotaParamName)
 	if !found {
 		t.Fatalf("failed to quota parameter '%s' from the parameter secret %v", addon.QuotaParamName, err)
 	}
@@ -413,13 +413,13 @@ func checkResources(t TestingTB, productName string, configReplicas, crReplicas 
 
 func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 	// verify the config map is in place and can be parsed
-	quotaConfigMap, err := getConfigMap(t, c, quota.ConfigMapName, RHMIOperatorNamespace)
+	quotaConfigMap, err := getConfigMap(t, c, quota.ConfigMapName, RHOAMOperatorNamespace)
 	if err != nil {
 		t.Fatal(err)
 		return nil, err
 	}
 
-	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHMIOperatorNamespace, addon.QuotaParamName)
+	quotaParam, found, err := addon.GetStringParameterByInstallType(context.TODO(), c, rhmiv1alpha1.InstallationTypeManagedApi, RHOAMOperatorNamespace, addon.QuotaParamName)
 	if !found {
 		t.Fatal(fmt.Sprintf("failed to quota parameter '%s' from the parameter secret", addon.QuotaParamName), err)
 		return nil, err
@@ -453,7 +453,7 @@ func changeQuota(t TestingTB, c k8sclient.Client,
 	newSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "addon-managed-api-service-parameters",
-			Namespace: RHMIOperatorNamespace,
+			Namespace: RHOAMOperatorNamespace,
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(context.TODO(), c, newSecret, func() error {

@@ -143,7 +143,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	// from the _network key
 	strategyMap := &v1.ConfigMap{}
 	err = testingCtx.Client.Get(ctx, types.NamespacedName{
-		Namespace: common.RHMIOperatorNamespace,
+		Namespace: common.RHOAMOperatorNamespace,
 		Name:      strategyMapName,
 	}, strategyMap)
 	if err != nil {
