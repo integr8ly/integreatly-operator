@@ -51,6 +51,8 @@ spec:
                 - businessUnit
                 - cssre
                 type: object
+              autoscalingEnabled:
+                type: boolean
               deadMansSnitchSecret:
                 description: "DeadMansSnitchSecret is the name of a secret in the
                   installation namespace containing connection details for Dead Mans

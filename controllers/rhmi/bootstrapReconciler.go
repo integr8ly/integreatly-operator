@@ -193,6 +193,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 
+	// Create autoscaling config map
+	phase, err = r.createAutoscalingConfigMap(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to create autoscaling config map", err)
+		return phase, errors.Wrap(err, "Failed to create autoscaling config map")
+	}
+
 	phase, err = r.reconcileCustomSMTP(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
@@ -644,11 +651,14 @@ func (r *Reconciler) generateSecret(length int) string {
 
 func (r *Reconciler) processQuota(installation *integreatlyv1alpha1.RHMI, namespace string,
 	installationQuota *quota.Quota, serverClient k8sclient.Client) error {
+	var err error
+	quotaParam := "500"
 	isQuotaUpdated := false
 
-	quotaParam, err := getSecretQuotaParam(installation, serverClient, namespace)
-	if err != nil {
-		return err
+	if installation.Spec.AutoscalingEnabled != true {
+		if quotaParam, err = getSecretQuotaParam(installation, serverClient, namespace); err != nil {
+			return err
+		}
 	}
 
 	// get the quota config map from the cluster
@@ -786,4 +796,40 @@ func getSecretQuotaParam(installation *integreatlyv1alpha1.RHMI, serverClient k8
 	}
 
 	return "", fmt.Errorf("waiting for quota parameter for 1 minute after creation of cr")
+}
+
+func (r *Reconciler) createAutoscalingConfigMap(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	autoscalingConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "autoscaling-config",
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      autoscalingConfig.ObjectMeta.Name,
+		Namespace: r.installation.Namespace,
+	}, autoscalingConfig)
+
+	// If configmap doesn't exist - i.e. an error is received, create and populate it
+	if err != nil && k8serr.IsNotFound(err) {
+		if autoscalingConfig.Data == nil {
+			autoscalingConfig.Data = map[string]string{}
+		}
+
+		autoscalingConfig.Data["backend-listener"] = "40"
+		autoscalingConfig.Data["backend-worker"] = "60"
+		autoscalingConfig.Data["apicast-production"] = "40"
+		autoscalingConfig.Data["ratelimit"] = "40"
+		autoscalingConfig.Data["keycloak"] = "40"
+
+		err := serverClient.Create(ctx, autoscalingConfig)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseAwaitingOperator, nil
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
