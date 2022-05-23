@@ -20,6 +20,8 @@ package resources
 import (
 	"context"
 	"fmt"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -862,3 +864,24 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 
 	return rule, nil
 }
+
+func InstallationState(version string, toVersion string) string {
+
+	if len(version) == 0 && len(toVersion) > 0 {
+		return "Installing"
+	} else if len(version) > 0 && len(toVersion) > 0 {
+		return "Upgrading"
+	} else if len(version) > 0 && len(toVersion) == 0 {
+		return "Installed"
+	} else {
+		return "Unknown State"
+	}
+}
+
+type AlertMetric struct {
+	Name     model.LabelValue
+	Severity model.LabelValue
+	State    v1.AlertState
+}
+
+type AlertMetrics map[AlertMetric]int

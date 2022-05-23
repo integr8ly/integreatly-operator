@@ -4,7 +4,10 @@ import (
 	"context"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,4 +107,71 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFormatAlerts(t *testing.T) {
+	input := []v1.Alert{
+		{
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
+			State:  "Pending",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
+			State:  "Pending",
+		},
+
+		{
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
+			State:  "Firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "High"},
+			State:  "Firing",
+		},
+	}
+	expected := resources.AlertMetrics{
+		{
+			Name:     "dummy",
+			Severity: "High",
+			State:    "Firing",
+		}: 2,
+		{
+			Name:     "dummy",
+			Severity: "Low",
+			State:    "Firing",
+		}: 1,
+		{
+			Name:     "dummy",
+			Severity: "High",
+			State:    "Pending",
+		}: 2,
+		{
+			Name:     "dummy two",
+			Severity: "High",
+			State:    "Firing",
+		}: 2,
+	}
+
+	actual := formatAlerts(input)
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("alert metrics not equal; Actual: %v, Expected: %v", actual, expected)
+	}
+
 }

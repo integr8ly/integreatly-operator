@@ -3,12 +3,10 @@ package metrics
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/version"
-
 	"github.com/prometheus/client_golang/prometheus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -80,8 +78,10 @@ var (
 		},
 		[]string{
 			"stage",
+			"status",
 			"version",
 			"to_version",
+			"externalID",
 		},
 	)
 
@@ -92,6 +92,31 @@ var (
 		},
 		[]string{
 			"stage",
+		},
+	)
+
+	RHOAMAlertsSummary = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_alerts_summary",
+			Help: "RHOAM alerts summary, excludes DeadManSwitch",
+		},
+		[]string{
+			"alert",
+			"severity",
+			"state",
+			"externalID",
+		},
+	)
+
+	RHOAMCluster = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_cluster",
+			Help: "Provides Cluster information for the RHOAM installation",
+		},
+		[]string{
+			"type",
+			"externalID",
+			"version",
 		},
 	)
 
@@ -176,12 +201,34 @@ func SetRHMIStatus(installation *integreatlyv1alpha1.RHMI) {
 	}
 }
 
-func SetRhmiVersions(stage string, version string, toVersion string, firstInstallTimestamp int64) {
+func SetRhmiVersions(stage string, version string, toVersion string, externalID string, firstInstallTimestamp int64) {
 	RHMIVersion.Reset()
 	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
 
 	RHOAMVersion.Reset()
-	RHOAMVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
+	status := resources.InstallationState(version, toVersion)
+	RHOAMVersion.WithLabelValues(stage, status, version, toVersion, externalID).Set(float64(firstInstallTimestamp))
+}
+
+func SetRHOAMAlertsSummary(alerts resources.AlertMetrics, externalID string) {
+	RHOAMAlertsSummary.Reset()
+	for key, value := range alerts {
+		RHOAMAlertsSummary.With(prometheus.Labels{
+			"alert":      string(key.Name),
+			"severity":   string(key.Severity),
+			"state":      string(key.State),
+			"externalID": externalID,
+		}).Set(float64(value))
+	}
+}
+
+func SetRHOAMCluster(cluster string, externalID string, version string, value int64) {
+	RHOAMCluster.Reset()
+	RHOAMCluster.With(prometheus.Labels{
+		"type":       cluster,
+		"externalID": externalID,
+		"version":    version,
+	}).Set(float64(value))
 }
 
 func SetThreeScaleUserAction(httpStatus int, username, action string) {
