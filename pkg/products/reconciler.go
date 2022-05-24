@@ -16,7 +16,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -142,8 +141,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "", log)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
