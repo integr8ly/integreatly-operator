@@ -87,7 +87,7 @@ If you are working against a fresh cluster it will need to be prepared using the
 Ensure you are logged into a cluster by `oc whoami`.
 Include the `INSTALLATION_TYPE`. See [here](#3-configuration-optional) about this and other optional configuration variables.
 ```shell
-INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> make cluster/prepare/local
+make cluster/prepare/local
 ```
 
 
@@ -102,18 +102,19 @@ Please see the table below for other configuration options.
 INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make deploy/integreatly-rhmi-cr.yml
 ```
 
-| Variable | Options | Type | Default | Details |
-|----------|---------|:----:|---------|-------|
-| INSTALLATION_TYPE     | `managed`, `managed-api` or `multitenant-managed-api` | **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
-| IN_PROW               | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters |
-| USE_CLUSTER_STORAGE   | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift. |
+| Variable            | Options | Type | Default | Details                                                                                                                         |
+|---------------------|---------|:----:|---------|---------------------------------------------------------------------------------------------------------------------------------|
+| INSTALLATION_TYPE   | `managed`, `managed-api` or `multitenant-managed-api` | **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
+| IN_PROW             | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters                                                           |
+| USE_CLUSTER_STORAGE | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift.                                     |
+| LOCAL               | `true` or `false`         | Optional      |`true`     | If `true`, uses local-rhoam-operator as default namespace.                                 |
 
 
 ### 5. Run integreatly-operator
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
 The operator can now be run locally:
 ```shell
-INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> make code/run
+make code/run
 ```
 If you want to run the operator from a specific image, you can specify the image and run `make cluster/deploy`
 ```shell
@@ -143,7 +144,33 @@ Once the installation completed the command wil result in following output:
 
 ## Uninstalling RHOAM
 ### Local and OLM installation type
-If you installed RHOAM locally or through a catalog source then you can uninstall one of two ways:
+If you installed RHOAM locally then you can uninstall one of two ways:
+
+
+A) Create a configmap and add a deletion label (Prefered way of uninstallation).
+```sh 
+oc create configmap managed-api-service -n local-rhoam-operator
+oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n local-rhoam-operator
+```
+
+B) Delete the RHOAM cr.
+```sh 
+oc delete rhmi rhoam -n local-rhoam-operator
+```
+
+In both scenarios wait until the RHOAM cr is removed and then run the following command to delete the namespace.
+```sh 
+oc delete namespace local-rhoam-operator
+```
+
+#### Note: After uninstalling RHOAM you should clean up the cluster by running the following command.
+```sh
+make cluster/cleanup && make cluster/cleanup/crds
+```
+
+### OLM installation type
+If you installed RHOAM through a catalog source then you can uninstall one of two ways:
+
 
 A) Create a configmap and add a deletion label (Prefered way of uninstallation).
 ```sh 
@@ -163,8 +190,7 @@ oc delete namespace redhat-rhoam-operator
 
 #### Note: After uninstalling RHOAM you should clean up the cluster by running the following command.
 ```sh
-export INSTALLATION_TYPE=managed-api
-make cluster/cleanup && make cluster/cleanup/crds
+LOCAL=false make cluster/cleanup && make cluster/cleanup/crds
 ```
 
 ## More Info

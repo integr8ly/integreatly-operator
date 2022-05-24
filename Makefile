@@ -65,7 +65,9 @@ endif
 
 export SELF_SIGNED_CERTS   ?= true
 # Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
-export INSTALLATION_TYPE   ?= managed
+export INSTALLATION_TYPE ?= managed-api
+export LOCAL ?= true
+export CLUSTER_CONFIG ?= redhat-rhoam
 
 export ALERT_SMTP_FROM ?= noreply-alert@devshift.org
 export USE_CLUSTER_STORAGE ?= true
@@ -76,6 +78,16 @@ export BU_ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
 
 ifeq ($(shell test -e envs/$(INSTALLATION_TYPE).env && echo -n yes),yes)
 	include envs/$(INSTALLATION_TYPE).env
+endif
+
+ifeq ($(INSTALLATION_TYPE),multitenant-managed-api)
+	export CLUSTER_CONFIG:=redhat-sandbox
+endif
+
+ifeq ($(LOCAL), true)
+	export INSTALLATION_SHORTHAND:=local-rhoam
+	export NAMESPACE_PREFIX:=local-rhoam-
+	export NAMESPACE:=$(NAMESPACE_PREFIX)operator
 endif
 
 define wait_command
@@ -204,12 +216,14 @@ image/build/push: image/build image/push
 
 ############ E2E TEST COMMANDS ############
 .PHONY: test/e2e/prow
+test/e2e/prow: export LOCAL := false
 test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/prow: export INSTALLATION_TYPE := managed
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
 test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
+test/e2e/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/prow: export INSTALLATION_NAME := rhmi
 test/e2e/prow: export INSTALLATION_SHORTHAND := rhmi
@@ -217,12 +231,14 @@ test/e2e/prow: IN_PROW = "true"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
+test/e2e/rhoam/prow: export LOCAL := false
 test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/rhoam/prow: export WATCH_NAMESPACE := redhat-rhoam-operator
 test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhoam-
+test/e2e/rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
@@ -230,12 +246,15 @@ test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e/multitenant-rhoam/prow
+test/e2e/multitenant-rhoam/prow: export CLUSTER_CONFIG:=redhat-sandbox
+test/e2e/multitenant-rhoam/prow: export LOCAL := false
 test/e2e/multitenant-rhoam/prow: export component := integreatly-operator
 test/e2e/multitenant-rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_TYPE := multitenant-managed-api
 test/e2e/multitenant-rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/multitenant-rhoam/prow: export WATCH_NAMESPACE := sandbox-rhoam-operator
 test/e2e/multitenant-rhoam/prow: export NAMESPACE_PREFIX := sandbox-rhoam-
+test/e2e/multitenant-rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
@@ -289,7 +308,7 @@ test/products:
 cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
 	@ - oc create -f config/rbac/service_account.yaml
 	@ - cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_FORMAT}
-	@ - $(KUSTOMIZE) build config/redhat-$(INSTALLATION_SHORTHAND) | oc apply -f -
+	@ - $(KUSTOMIZE) build config/$(CLUSTER_CONFIG) | oc apply -f -
 
 .PHONY: test/unit
 test/unit: export WATCH_NAMESPACE=testing-namespaces-operator
@@ -344,7 +363,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize  cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -404,7 +423,6 @@ cluster/cleanup: kustomize
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-$(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc delete -f -
-	
 
 .PHONY: cluster/cleanup/serviceaccount
 cluster/cleanup/serviceaccount: kustomize
