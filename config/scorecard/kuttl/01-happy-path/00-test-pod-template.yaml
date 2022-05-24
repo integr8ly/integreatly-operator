@@ -26,7 +26,7 @@ spec:
       image: "quay.io/integreatly/integreatly-operator-test-harness:master"
       args:
         - '-ginkgo.focus'
-        - '(A0[1-9])|(A1[0-5,7-9])|(A2[2-4,6-9])|(A32)|(C04)|(E0[1-9])|(F02)'
+        - '(A03)'
     - resources: {}
       terminationMessagePath: /dev/termination-log
       name: sidecar
