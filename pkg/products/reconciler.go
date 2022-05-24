@@ -15,7 +15,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/products/datasync"
@@ -166,8 +165,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder, log)
-	case integreatlyv1alpha1.ProductApicurito:
-		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
 		client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second

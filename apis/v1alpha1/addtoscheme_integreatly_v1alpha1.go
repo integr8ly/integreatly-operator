@@ -18,8 +18,6 @@ import (
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 
-	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
-	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
@@ -77,8 +75,6 @@ func init() {
 		solutionExplorerv1alpha1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
-		apicurioregistry.SchemeBuilder.AddToScheme,
-		apicurito.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 		monitoring.SchemeBuilder.AddToScheme,
 		appsv1.AddToScheme,

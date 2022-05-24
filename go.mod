@@ -7,13 +7,11 @@ require (
 	github.com/3scale/3scale-operator v0.9.0
 	github.com/3scale/3scale-porta-go-client v0.6.0
 	github.com/3scale/apicast-operator v0.4.0
-	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f
 	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/antchfx/xmlquery v1.3.5
-	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.44.39
 	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77
 	github.com/chromedp/chromedp v0.7.6
