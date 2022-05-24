@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+# Make sure there is no test container in the current namespace
+- apiVersion: v1
+  kind: Pod
+  name: rhoam-test-container
