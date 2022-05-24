@@ -12,7 +12,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/webapp"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -76,13 +75,6 @@ func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
 		return nil, err
 	}
 
-	webappNotifierClient := webapp.NewLazyUpgradeNotifier(func() (k8sclient.Client, error) {
-		restConfig := controllerruntime.GetConfigOrDie()
-		return k8sclient.New(restConfig, k8sclient.Options{
-			Scheme: mgr.GetScheme(),
-		})
-	})
-
 	csvLocator := csvlocator.NewCachedCSVLocator(csvlocator.NewConditionalCSVLocator(
 		csvlocator.SwitchLocators(
 			csvlocator.ForReference,
@@ -96,7 +88,6 @@ func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
 		Scheme:              mgr.GetScheme(),
 		operatorNamespace:   operatorNs,
 		catalogSourceClient: catalogSourceClient,
-		webbappNotifier:     webappNotifierClient,
 		csvLocator:          csvLocator,
 	}, nil
 }
@@ -108,7 +99,6 @@ type SubscriptionReconciler struct {
 	operatorNamespace   string
 	mgr                 manager.Manager
 	catalogSourceClient catalogsourceClient.CatalogSourceClientInterface
-	webbappNotifier     webapp.UpgradeNotifier
 	csvLocator          csvlocator.CSVLocator
 }
 
@@ -176,13 +166,6 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (ctrl.Result, error) {
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
 		log.Info("no upgrade available")
-
-		namespaceSegments := strings.Split(rhmiSubscription.Namespace, "-")
-		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
-		if err := r.webbappNotifier.ClearNotification(namespacePrefix); err != nil {
-			return ctrl.Result{}, err
-		}
-
 		return ctrl.Result{}, nil
 	}
 	log.Infof("Verifying the fields in the RHMI Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})

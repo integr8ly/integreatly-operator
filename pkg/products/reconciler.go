@@ -21,7 +21,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
-	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -138,16 +137,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 			return nil, err
 		}
 		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{}, log, productDeclaration)
-		if err != nil {
-			return nil, err
-		}
-	case integreatlyv1alpha1.ProductSolutionExplorer:
-		oauthv1Client, err := oauthClient.NewForConfig(rc)
-		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
-		if err != nil {
-			return nil, err
-		}
-		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver, recorder, log, productDeclaration)
 		if err != nil {
 			return nil, err
 		}

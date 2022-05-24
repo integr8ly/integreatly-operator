@@ -10,7 +10,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/webapp"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 	v1 "k8s.io/api/core/v1"
@@ -265,7 +264,6 @@ func TestSubscriptionReconciler(t *testing.T) {
 				Scheme:              scheme,
 				catalogSourceClient: scenario.catalogsourceClient,
 				operatorNamespace:   operatorNamespace,
-				webbappNotifier:     &webapp.NoOp{},
 				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
 			}
 			res, err := reconciler.Reconcile(scenario.Request)
