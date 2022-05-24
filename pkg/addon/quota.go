@@ -694,7 +694,6 @@ var mtQuotaConfig = `
 func GetQuotaConfig(installType string) string {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return strings.TrimSpace(mtQuotaConfig)
-	} else {
-		return strings.TrimSpace(quotaConfig)
 	}
+	return strings.TrimSpace(quotaConfig)
 }

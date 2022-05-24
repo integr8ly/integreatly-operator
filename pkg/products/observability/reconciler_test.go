@@ -2,37 +2,42 @@ package observability
 
 import (
 	"context"
+	"errors"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	projectv1 "github.com/openshift/api/project/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var localProductDeclaration = marketplace.LocalProductDeclaration("observability-operator")
+var (
+	localProductDeclaration = marketplace.LocalProductDeclaration("observability-operator")
+	genericError            = errors.New("generic error")
+)
 
 func TestNewReconciler(t *testing.T) {
 	type args struct {
 		configManager      config.ConfigReadWriter
-		installation       *integreatlyv1alpha1.RHMI
+		installation       *v1alpha1.RHMI
 		mpm                marketplace.MarketplaceInterface
 		recorder           record.EventRecorder
 		logger             logger.Logger
@@ -41,10 +46,66 @@ func TestNewReconciler(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Reconciler
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "could not retrieve observability config",
+			args: args{
+				configManager: &config.ConfigReadWriterMock{
+					ReadObservabilityFunc: func() (*config.Observability, error) {
+						return nil, genericError
+					},
+				},
+				installation: &v1alpha1.RHMI{
+					Spec: v1alpha1.RHMISpec{},
+				},
+				logger: l.Logger{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "error writing config",
+			args: args{
+				configManager: &config.ConfigReadWriterMock{
+					ReadObservabilityFunc: func() (*config.Observability, error) {
+						return &config.Observability{
+							Config: config.ProductConfig{},
+						}, nil
+					},
+					WriteConfigFunc: func(config config.ConfigReadable) error {
+						return genericError
+					},
+				},
+				installation: &v1alpha1.RHMI{
+					Spec: v1alpha1.RHMISpec{},
+				},
+				logger: l.Logger{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "success",
+			args: args{
+				configManager: &config.ConfigReadWriterMock{
+					ReadObservabilityFunc: func() (*config.Observability, error) {
+						return &config.Observability{
+							Config: config.ProductConfig{},
+						}, nil
+					},
+					WriteConfigFunc: func(config config.ConfigReadable) error {
+						return nil
+					},
+				},
+				installation: &v1alpha1.RHMI{
+					Spec: v1alpha1.RHMISpec{
+						OperatorsInProductNamespace: true,
+					},
+				},
+				logger:             l.Logger{},
+				productDeclaration: localProductDeclaration,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,8 +114,8 @@ func TestNewReconciler(t *testing.T) {
 				t.Errorf("NewReconciler() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewReconciler() got = %v, want %v", got, tt.want)
+			if !tt.wantErr && got == nil {
+				t.Fatalf("NewReconciler() got = %v, want non nil", got)
 			}
 		})
 	}
@@ -65,7 +126,7 @@ func TestReconciler_GetPreflightObject(t *testing.T) {
 		Reconciler    *resources.Reconciler
 		ConfigManager config.ConfigReadWriter
 		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
+		installation  *v1alpha1.RHMI
 		mpm           marketplace.MarketplaceInterface
 		log           logger.Logger
 		extraParams   map[string]string
@@ -80,20 +141,16 @@ func TestReconciler_GetPreflightObject(t *testing.T) {
 		args   args
 		want   runtime.Object
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "retrieve preflight object",
+			fields: fields{},
+			args:   args{},
+			want:   nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				Reconciler:    tt.fields.Reconciler,
-				ConfigManager: tt.fields.ConfigManager,
-				Config:        tt.fields.Config,
-				installation:  tt.fields.installation,
-				mpm:           tt.fields.mpm,
-				log:           tt.fields.log,
-				extraParams:   tt.fields.extraParams,
-				recorder:      tt.fields.recorder,
-			}
+			r := &Reconciler{}
 			if got := r.GetPreflightObject(tt.args.ns); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetPreflightObject() = %v, want %v", got, tt.want)
 			}
@@ -106,7 +163,7 @@ func TestReconciler_Reconcile(t *testing.T) {
 		Reconciler    *resources.Reconciler
 		ConfigManager *config.ConfigReadWriterMock
 		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
+		installation  *v1alpha1.RHMI
 		mpm           *marketplace.MarketplaceInterfaceMock
 		log           logger.Logger
 		extraParams   map[string]string
@@ -114,8 +171,8 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}
 	type args struct {
 		ctx          context.Context
-		installation *integreatlyv1alpha1.RHMI
-		product      *integreatlyv1alpha1.RHMIProductStatus
+		installation *v1alpha1.RHMI
+		product      *v1alpha1.RHMIProductStatus
 		client       client.Client
 		in4          quota.ProductConfig
 		uninstall    bool
@@ -158,14 +215,14 @@ func TestReconciler_VerifyVersion(t *testing.T) {
 		Reconciler    *resources.Reconciler
 		ConfigManager config.ConfigReadWriter
 		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
+		installation  *v1alpha1.RHMI
 		mpm           marketplace.MarketplaceInterface
 		log           logger.Logger
 		extraParams   map[string]string
 		recorder      record.EventRecorder
 	}
 	type args struct {
-		installation *integreatlyv1alpha1.RHMI
+		installation *v1alpha1.RHMI
 	}
 	tests := []struct {
 		name   string
@@ -200,57 +257,26 @@ func TestReconciler_VerifyVersion(t *testing.T) {
 	}
 }
 
-func TestReconciler_preUpgradeBackupExecutor(t *testing.T) {
-	type fields struct {
-		Reconciler    *resources.Reconciler
-		ConfigManager config.ConfigReadWriter
-		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
-		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
-		extraParams   map[string]string
-		recorder      record.EventRecorder
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   backup.BackupExecutor
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				Reconciler:    tt.fields.Reconciler,
-				ConfigManager: tt.fields.ConfigManager,
-				Config:        tt.fields.Config,
-				installation:  tt.fields.installation,
-				mpm:           tt.fields.mpm,
-				log:           tt.fields.log,
-				extraParams:   tt.fields.extraParams,
-				recorder:      tt.fields.recorder,
-			}
-			if got := r.preUpgradeBackupExecutor(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("preUpgradeBackupExecutor() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestReconciler_reconcileComponents(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 	type fields struct {
 		Reconciler    *resources.Reconciler
 		ConfigManager config.ConfigReadWriter
 		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
+		installation  *v1alpha1.RHMI
 		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
+		log           l.Logger
 		extraParams   map[string]string
 		recorder      record.EventRecorder
 	}
 	type args struct {
-		ctx          context.Context
-		serverClient client.Client
+		ctx              context.Context
+		serverClient     k8sclient.Client
+		productNamespace string
+		nsPrefix         string
 	}
 	tests := []struct {
 		name    string
@@ -259,7 +285,56 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		want    v1alpha1.StatusPhase
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "created observability component, await successful reconcile",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      blackboxExporterPrefix,
+						Namespace: "ns",
+					},
+					Secrets: []corev1.ObjectReference{
+						{
+							Name:      "blackbox-exporter-token",
+							Namespace: "ns",
+						},
+					},
+				}),
+				productNamespace: "ns",
+			},
+			want:    v1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+		{
+			name: "error creating observability component",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return genericError
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "successful reconcile",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+						return nil
+					},
+				},
+			},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -273,7 +348,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				extraParams:   tt.fields.extraParams,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, defaultInstallationNamespace, "redhat-rhoam-")
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.args.productNamespace, tt.args.nsPrefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -290,16 +365,15 @@ func TestReconciler_reconcileSubscription(t *testing.T) {
 		Reconciler    *resources.Reconciler
 		ConfigManager config.ConfigReadWriter
 		Config        *config.Observability
-		installation  *integreatlyv1alpha1.RHMI
+		installation  *v1alpha1.RHMI
 		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
+		log           l.Logger
 		extraParams   map[string]string
 		recorder      record.EventRecorder
 	}
 	type args struct {
 		ctx               context.Context
-		serverClient      client.Client
-		in2               *integreatlyv1alpha1.RHMI
+		serverClient      k8sclient.Client
 		productNamespace  string
 		operatorNamespace string
 	}
@@ -310,7 +384,34 @@ func TestReconciler_reconcileSubscription(t *testing.T) {
 		want    v1alpha1.StatusPhase
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "failed to prepare target",
+			fields: fields{
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				log: getLogger(),
+			},
+			args:    args{},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "successfully reconcile subscription",
+			fields: fields{
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
+						return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+					},
+				}).WithProductDeclaration(*localProductDeclaration),
+				log: getLogger(),
+			},
+			args:    args{},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -367,20 +468,20 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		ExpectedStatus v1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.RHMI
-		Product        *integreatlyv1alpha1.RHMIProductStatus
+		Installation   *v1alpha1.RHMI
+		Product        *v1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 		Uninstall      bool
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			FakeClient:     clientMock.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, installation),
 			FakeConfig: &config.ConfigReadWriterMock{
 				WriteConfigFunc: func(config config.ConfigReadable) error {
 					return nil
@@ -411,7 +512,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: basicInstallation(),
-			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
+			Product:      &v1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 			Uninstall:    false,
 		},
@@ -444,7 +545,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := v1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
+	if err := v1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := projectv1.AddToScheme(scheme); err != nil {
@@ -457,21 +558,18 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, nil
 }
 
-func basicInstallation() *integreatlyv1alpha1.RHMI {
-	return &integreatlyv1alpha1.RHMI{
+func basicInstallation() *v1alpha1.RHMI {
+	return &v1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",
-			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+			APIVersion: v1alpha1.GroupVersion.String(),
 		},
-		Spec: integreatlyv1alpha1.RHMISpec{
-			//SMTPSecret:           mockSMTPSecretName,
-			//PagerDutySecret:      mockPagerdutySecretName,
-			//DeadMansSnitchSecret: mockDMSSecretName,
-			Type: string(integreatlyv1alpha1.InstallationTypeManaged),
+		Spec: v1alpha1.RHMISpec{
+			Type: string(v1alpha1.InstallationTypeManaged),
 		},
 	}
 }
@@ -481,5 +579,113 @@ func setupRecorder() record.EventRecorder {
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: v1alpha1.ProductApicurioRegistry})
+}
+
+func TestCreatePrometheusProbe(t *testing.T) {
+	type args struct {
+		ctx     context.Context
+		client  k8sclient.Client
+		inst    *v1alpha1.RHMI
+		cfg     *config.Observability
+		name    string
+		module  string
+		targets v1.ProbeTargetStaticConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    v1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "retry if namespace field is empty",
+			args: args{
+				ctx: context.TODO(),
+				cfg: &config.Observability{},
+			},
+			want:    v1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+		{
+			name: "retry if the URL(s) is not yet known",
+			args: args{
+				ctx: context.TODO(),
+				cfg: &config.Observability{
+					Config: map[string]string{"NAMESPACE": "ns"},
+				},
+				targets: v1.ProbeTargetStaticConfig{},
+			},
+			want:    v1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+		{
+			name: "failed to create probe",
+			args: args{
+				ctx: context.TODO(),
+				cfg: &config.Observability{
+					Config: map[string]string{"NAMESPACE": "ns"},
+				},
+				targets: v1.ProbeTargetStaticConfig{
+					Targets: []string{"testUrl"},
+				},
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: "ns",
+					},
+				},
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+						return genericError
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "success creating probe",
+			args: args{
+				ctx: context.TODO(),
+				cfg: &config.Observability{
+					Config: map[string]string{"NAMESPACE": "ns"},
+				},
+				targets: v1.ProbeTargetStaticConfig{
+					Targets: []string{"testUrl"},
+				},
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: "ns",
+					},
+				},
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return nil
+					},
+					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+						return nil
+					},
+				},
+			},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreatePrometheusProbe(tt.args.ctx, tt.args.client, tt.args.inst, tt.args.cfg, tt.args.name, tt.args.module, tt.args.targets)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreatePrometheusProbe() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("CreatePrometheusProbe() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

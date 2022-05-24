@@ -16,9 +16,10 @@ JOB_TYPE=${JOB_TYPE:-"local"}
 # regularly getting OOM-killed; so do this rather than boost the pod resources
 # unreasonably.
 COV_THREAD_COUNT=${COV_THREAD_COUNT:-4}
-#make -C "${REPO_ROOT}" go-test TESTOPTS="-coverprofile=${COVER_PROFILE}.tmp -covermode=atomic -coverpkg=./... -p ${COV_THREAD_COUNT}"
-go test -mod=vendor -coverprofile=${COVER_PROFILE}.tmp -covermode=atomic -coverpkg=./pkg/... -p ${COV_THREAD_COUNT} ./pkg/...
 
+echo Running tests:
+# tests with negated `unittests` build tag will not be run
+go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" ./apis/... ./controllers/... ./pkg/...
 # Remove generated files from coverage profile
 grep -v "zz_generated" "${COVER_PROFILE}.tmp" > "${COVER_PROFILE}"
 rm -f "${COVER_PROFILE}.tmp"
