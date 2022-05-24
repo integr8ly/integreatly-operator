@@ -16,7 +16,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/datasync"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
@@ -198,8 +197,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = ups.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductCloudResources:
 		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
-	case integreatlyv1alpha1.ProductDataSync:
-		reconciler, err = datasync.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductMarin3r:
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductGrafana:
