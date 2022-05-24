@@ -8,7 +8,6 @@
 
 * [`e2e`](./e2e)
   This is used to initialise and run tests defined in `common` directory using the operator-sdk. Existing tests there should be refactored to move to the `common` directory.
-  
   To run the `e2e` tests, execute:
   
   ```
