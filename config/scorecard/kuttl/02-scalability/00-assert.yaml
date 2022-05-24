@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rhoam-test-container
+status:
+  containerStatuses:
+    - name: sidecar
+      ready: true
+    - name: test
+      started: true
+      ready: true

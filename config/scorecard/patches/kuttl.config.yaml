@@ -14,3 +14,19 @@
       spec:
         mountPath:
           path: logs/artifacts
+- op: add
+  path: /stages/0/tests/-
+  value:
+    entrypoint:
+    - entrypoint
+    - 02-scalability
+    image: quay.io/integreatly/scorecard-test-kuttl:master
+    labels:
+      cluster-product: ocp
+      cluster-size: medium
+      phase: msp-main
+      test: scalability
+    storage:
+      spec:
+        mountPath:
+          path: logs/artifacts
