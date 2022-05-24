@@ -7,7 +7,6 @@
   This is where you should add your tests. They will be included in both the `e2e` and `functional` suites. See the next section about how to add tests here.
 
 * [`e2e`](./e2e)
-  
   This is used to initialise and run tests defined in `common` directory using the operator-sdk. Existing tests there should be refactored to move to the `common` directory.
   
   To run the `e2e` tests, execute:
