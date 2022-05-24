@@ -10,7 +10,6 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f
-	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/antchfx/xmlquery v1.3.5
 	github.com/aws/aws-sdk-go v1.44.39
 	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77

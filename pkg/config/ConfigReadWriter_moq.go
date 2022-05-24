@@ -30,32 +30,8 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 // 			GetOperatorNamespaceFunc: func() string {
 // 				panic("mock out the GetOperatorNamespace method")
 // 			},
-// 			ReadAMQOnlineFunc: func() (*AMQOnline, error) {
-// 				panic("mock out the ReadAMQOnline method")
-// 			},
-// 			ReadAMQStreamsFunc: func() (*AMQStreams, error) {
-// 				panic("mock out the ReadAMQStreams method")
-// 			},
-// 			ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
-// 				panic("mock out the ReadApicurioRegistry method")
-// 			},
-// 			ReadApicuritoFunc: func() (*Apicurito, error) {
-// 				panic("mock out the ReadApicurito method")
-// 			},
 // 			ReadCloudResourcesFunc: func() (*CloudResources, error) {
 // 				panic("mock out the ReadCloudResources method")
-// 			},
-// 			ReadCodeReadyFunc: func() (*CodeReady, error) {
-// 				panic("mock out the ReadCodeReady method")
-// 			},
-// 			ReadDataSyncFunc: func() (*DataSync, error) {
-// 				panic("mock out the ReadDataSync method")
-// 			},
-// 			ReadFuseFunc: func() (*Fuse, error) {
-// 				panic("mock out the ReadFuse method")
-// 			},
-// 			ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
-// 				panic("mock out the ReadFuseOnOpenshift method")
 // 			},
 // 			ReadGrafanaFunc: func() (*Grafana, error) {
 // 				panic("mock out the ReadGrafana method")
@@ -81,14 +57,8 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 // 			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
 // 				panic("mock out the ReadRHSSOUser method")
 // 			},
-// 			ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
-// 				panic("mock out the ReadSolutionExplorer method")
-// 			},
 // 			ReadThreeScaleFunc: func() (*ThreeScale, error) {
 // 				panic("mock out the ReadThreeScale method")
-// 			},
-// 			ReadUpsFunc: func() (*Ups, error) {
-// 				panic("mock out the ReadUps method")
 // 			},
 // 			WriteConfigFunc: func(config ConfigReadable) error {
 // 				panic("mock out the WriteConfig method")
@@ -115,32 +85,8 @@ type ConfigReadWriterMock struct {
 	// GetOperatorNamespaceFunc mocks the GetOperatorNamespace method.
 	GetOperatorNamespaceFunc func() string
 
-	// ReadAMQOnlineFunc mocks the ReadAMQOnline method.
-	ReadAMQOnlineFunc func() (*AMQOnline, error)
-
-	// ReadAMQStreamsFunc mocks the ReadAMQStreams method.
-	ReadAMQStreamsFunc func() (*AMQStreams, error)
-
-	// ReadApicurioRegistryFunc mocks the ReadApicurioRegistry method.
-	ReadApicurioRegistryFunc func() (*ApicurioRegistry, error)
-
-	// ReadApicuritoFunc mocks the ReadApicurito method.
-	ReadApicuritoFunc func() (*Apicurito, error)
-
 	// ReadCloudResourcesFunc mocks the ReadCloudResources method.
 	ReadCloudResourcesFunc func() (*CloudResources, error)
-
-	// ReadCodeReadyFunc mocks the ReadCodeReady method.
-	ReadCodeReadyFunc func() (*CodeReady, error)
-
-	// ReadDataSyncFunc mocks the ReadDataSync method.
-	ReadDataSyncFunc func() (*DataSync, error)
-
-	// ReadFuseFunc mocks the ReadFuse method.
-	ReadFuseFunc func() (*Fuse, error)
-
-	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
-	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
 
 	// ReadGrafanaFunc mocks the ReadGrafana method.
 	ReadGrafanaFunc func() (*Grafana, error)
@@ -166,14 +112,8 @@ type ConfigReadWriterMock struct {
 	// ReadRHSSOUserFunc mocks the ReadRHSSOUser method.
 	ReadRHSSOUserFunc func() (*RHSSOUser, error)
 
-	// ReadSolutionExplorerFunc mocks the ReadSolutionExplorer method.
-	ReadSolutionExplorerFunc func() (*SolutionExplorer, error)
-
 	// ReadThreeScaleFunc mocks the ReadThreeScale method.
 	ReadThreeScaleFunc func() (*ThreeScale, error)
-
-	// ReadUpsFunc mocks the ReadUps method.
-	ReadUpsFunc func() (*Ups, error)
 
 	// WriteConfigFunc mocks the WriteConfig method.
 	WriteConfigFunc func(config ConfigReadable) error
@@ -195,32 +135,8 @@ type ConfigReadWriterMock struct {
 		// GetOperatorNamespace holds details about calls to the GetOperatorNamespace method.
 		GetOperatorNamespace []struct {
 		}
-		// ReadAMQOnline holds details about calls to the ReadAMQOnline method.
-		ReadAMQOnline []struct {
-		}
-		// ReadAMQStreams holds details about calls to the ReadAMQStreams method.
-		ReadAMQStreams []struct {
-		}
-		// ReadApicurioRegistry holds details about calls to the ReadApicurioRegistry method.
-		ReadApicurioRegistry []struct {
-		}
-		// ReadApicurito holds details about calls to the ReadApicurito method.
-		ReadApicurito []struct {
-		}
 		// ReadCloudResources holds details about calls to the ReadCloudResources method.
 		ReadCloudResources []struct {
-		}
-		// ReadCodeReady holds details about calls to the ReadCodeReady method.
-		ReadCodeReady []struct {
-		}
-		// ReadDataSync holds details about calls to the ReadDataSync method.
-		ReadDataSync []struct {
-		}
-		// ReadFuse holds details about calls to the ReadFuse method.
-		ReadFuse []struct {
-		}
-		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
-		ReadFuseOnOpenshift []struct {
 		}
 		// ReadGrafana holds details about calls to the ReadGrafana method.
 		ReadGrafana []struct {
@@ -248,14 +164,8 @@ type ConfigReadWriterMock struct {
 		// ReadRHSSOUser holds details about calls to the ReadRHSSOUser method.
 		ReadRHSSOUser []struct {
 		}
-		// ReadSolutionExplorer holds details about calls to the ReadSolutionExplorer method.
-		ReadSolutionExplorer []struct {
-		}
 		// ReadThreeScale holds details about calls to the ReadThreeScale method.
 		ReadThreeScale []struct {
-		}
-		// ReadUps holds details about calls to the ReadUps method.
-		ReadUps []struct {
 		}
 		// WriteConfig holds details about calls to the WriteConfig method.
 		WriteConfig []struct {
@@ -272,15 +182,7 @@ type ConfigReadWriterMock struct {
 	lockGetGHOauthClientsSecretName sync.RWMutex
 	lockGetOauthClientsSecretName   sync.RWMutex
 	lockGetOperatorNamespace        sync.RWMutex
-	lockReadAMQOnline               sync.RWMutex
-	lockReadAMQStreams              sync.RWMutex
-	lockReadApicurioRegistry        sync.RWMutex
-	lockReadApicurito               sync.RWMutex
 	lockReadCloudResources          sync.RWMutex
-	lockReadCodeReady               sync.RWMutex
-	lockReadDataSync                sync.RWMutex
-	lockReadFuse                    sync.RWMutex
-	lockReadFuseOnOpenshift         sync.RWMutex
 	lockReadGrafana                 sync.RWMutex
 	lockReadMarin3r                 sync.RWMutex
 	lockReadMonitoring              sync.RWMutex
@@ -289,9 +191,7 @@ type ConfigReadWriterMock struct {
 	lockReadProduct                 sync.RWMutex
 	lockReadRHSSO                   sync.RWMutex
 	lockReadRHSSOUser               sync.RWMutex
-	lockReadSolutionExplorer        sync.RWMutex
 	lockReadThreeScale              sync.RWMutex
-	lockReadUps                     sync.RWMutex
 	lockWriteConfig                 sync.RWMutex
 	lockreadConfigForProduct        sync.RWMutex
 }
@@ -400,110 +300,6 @@ func (mock *ConfigReadWriterMock) GetOperatorNamespaceCalls() []struct {
 	return calls
 }
 
-// ReadAMQOnline calls ReadAMQOnlineFunc.
-func (mock *ConfigReadWriterMock) ReadAMQOnline() (*AMQOnline, error) {
-	if mock.ReadAMQOnlineFunc == nil {
-		panic("ConfigReadWriterMock.ReadAMQOnlineFunc: method is nil but ConfigReadWriter.ReadAMQOnline was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadAMQOnline.Lock()
-	mock.calls.ReadAMQOnline = append(mock.calls.ReadAMQOnline, callInfo)
-	mock.lockReadAMQOnline.Unlock()
-	return mock.ReadAMQOnlineFunc()
-}
-
-// ReadAMQOnlineCalls gets all the calls that were made to ReadAMQOnline.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadAMQOnlineCalls())
-func (mock *ConfigReadWriterMock) ReadAMQOnlineCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadAMQOnline.RLock()
-	calls = mock.calls.ReadAMQOnline
-	mock.lockReadAMQOnline.RUnlock()
-	return calls
-}
-
-// ReadAMQStreams calls ReadAMQStreamsFunc.
-func (mock *ConfigReadWriterMock) ReadAMQStreams() (*AMQStreams, error) {
-	if mock.ReadAMQStreamsFunc == nil {
-		panic("ConfigReadWriterMock.ReadAMQStreamsFunc: method is nil but ConfigReadWriter.ReadAMQStreams was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadAMQStreams.Lock()
-	mock.calls.ReadAMQStreams = append(mock.calls.ReadAMQStreams, callInfo)
-	mock.lockReadAMQStreams.Unlock()
-	return mock.ReadAMQStreamsFunc()
-}
-
-// ReadAMQStreamsCalls gets all the calls that were made to ReadAMQStreams.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadAMQStreamsCalls())
-func (mock *ConfigReadWriterMock) ReadAMQStreamsCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadAMQStreams.RLock()
-	calls = mock.calls.ReadAMQStreams
-	mock.lockReadAMQStreams.RUnlock()
-	return calls
-}
-
-// ReadApicurioRegistry calls ReadApicurioRegistryFunc.
-func (mock *ConfigReadWriterMock) ReadApicurioRegistry() (*ApicurioRegistry, error) {
-	if mock.ReadApicurioRegistryFunc == nil {
-		panic("ConfigReadWriterMock.ReadApicurioRegistryFunc: method is nil but ConfigReadWriter.ReadApicurioRegistry was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadApicurioRegistry.Lock()
-	mock.calls.ReadApicurioRegistry = append(mock.calls.ReadApicurioRegistry, callInfo)
-	mock.lockReadApicurioRegistry.Unlock()
-	return mock.ReadApicurioRegistryFunc()
-}
-
-// ReadApicurioRegistryCalls gets all the calls that were made to ReadApicurioRegistry.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadApicurioRegistryCalls())
-func (mock *ConfigReadWriterMock) ReadApicurioRegistryCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadApicurioRegistry.RLock()
-	calls = mock.calls.ReadApicurioRegistry
-	mock.lockReadApicurioRegistry.RUnlock()
-	return calls
-}
-
-// ReadApicurito calls ReadApicuritoFunc.
-func (mock *ConfigReadWriterMock) ReadApicurito() (*Apicurito, error) {
-	if mock.ReadApicuritoFunc == nil {
-		panic("ConfigReadWriterMock.ReadApicuritoFunc: method is nil but ConfigReadWriter.ReadApicurito was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadApicurito.Lock()
-	mock.calls.ReadApicurito = append(mock.calls.ReadApicurito, callInfo)
-	mock.lockReadApicurito.Unlock()
-	return mock.ReadApicuritoFunc()
-}
-
-// ReadApicuritoCalls gets all the calls that were made to ReadApicurito.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadApicuritoCalls())
-func (mock *ConfigReadWriterMock) ReadApicuritoCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadApicurito.RLock()
-	calls = mock.calls.ReadApicurito
-	mock.lockReadApicurito.RUnlock()
-	return calls
-}
-
 // ReadCloudResources calls ReadCloudResourcesFunc.
 func (mock *ConfigReadWriterMock) ReadCloudResources() (*CloudResources, error) {
 	if mock.ReadCloudResourcesFunc == nil {
@@ -527,110 +323,6 @@ func (mock *ConfigReadWriterMock) ReadCloudResourcesCalls() []struct {
 	mock.lockReadCloudResources.RLock()
 	calls = mock.calls.ReadCloudResources
 	mock.lockReadCloudResources.RUnlock()
-	return calls
-}
-
-// ReadCodeReady calls ReadCodeReadyFunc.
-func (mock *ConfigReadWriterMock) ReadCodeReady() (*CodeReady, error) {
-	if mock.ReadCodeReadyFunc == nil {
-		panic("ConfigReadWriterMock.ReadCodeReadyFunc: method is nil but ConfigReadWriter.ReadCodeReady was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadCodeReady.Lock()
-	mock.calls.ReadCodeReady = append(mock.calls.ReadCodeReady, callInfo)
-	mock.lockReadCodeReady.Unlock()
-	return mock.ReadCodeReadyFunc()
-}
-
-// ReadCodeReadyCalls gets all the calls that were made to ReadCodeReady.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadCodeReadyCalls())
-func (mock *ConfigReadWriterMock) ReadCodeReadyCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadCodeReady.RLock()
-	calls = mock.calls.ReadCodeReady
-	mock.lockReadCodeReady.RUnlock()
-	return calls
-}
-
-// ReadDataSync calls ReadDataSyncFunc.
-func (mock *ConfigReadWriterMock) ReadDataSync() (*DataSync, error) {
-	if mock.ReadDataSyncFunc == nil {
-		panic("ConfigReadWriterMock.ReadDataSyncFunc: method is nil but ConfigReadWriter.ReadDataSync was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadDataSync.Lock()
-	mock.calls.ReadDataSync = append(mock.calls.ReadDataSync, callInfo)
-	mock.lockReadDataSync.Unlock()
-	return mock.ReadDataSyncFunc()
-}
-
-// ReadDataSyncCalls gets all the calls that were made to ReadDataSync.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadDataSyncCalls())
-func (mock *ConfigReadWriterMock) ReadDataSyncCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadDataSync.RLock()
-	calls = mock.calls.ReadDataSync
-	mock.lockReadDataSync.RUnlock()
-	return calls
-}
-
-// ReadFuse calls ReadFuseFunc.
-func (mock *ConfigReadWriterMock) ReadFuse() (*Fuse, error) {
-	if mock.ReadFuseFunc == nil {
-		panic("ConfigReadWriterMock.ReadFuseFunc: method is nil but ConfigReadWriter.ReadFuse was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadFuse.Lock()
-	mock.calls.ReadFuse = append(mock.calls.ReadFuse, callInfo)
-	mock.lockReadFuse.Unlock()
-	return mock.ReadFuseFunc()
-}
-
-// ReadFuseCalls gets all the calls that were made to ReadFuse.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadFuseCalls())
-func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadFuse.RLock()
-	calls = mock.calls.ReadFuse
-	mock.lockReadFuse.RUnlock()
-	return calls
-}
-
-// ReadFuseOnOpenshift calls ReadFuseOnOpenshiftFunc.
-func (mock *ConfigReadWriterMock) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
-	if mock.ReadFuseOnOpenshiftFunc == nil {
-		panic("ConfigReadWriterMock.ReadFuseOnOpenshiftFunc: method is nil but ConfigReadWriter.ReadFuseOnOpenshift was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadFuseOnOpenshift.Lock()
-	mock.calls.ReadFuseOnOpenshift = append(mock.calls.ReadFuseOnOpenshift, callInfo)
-	mock.lockReadFuseOnOpenshift.Unlock()
-	return mock.ReadFuseOnOpenshiftFunc()
-}
-
-// ReadFuseOnOpenshiftCalls gets all the calls that were made to ReadFuseOnOpenshift.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadFuseOnOpenshiftCalls())
-func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadFuseOnOpenshift.RLock()
-	calls = mock.calls.ReadFuseOnOpenshift
-	mock.lockReadFuseOnOpenshift.RUnlock()
 	return calls
 }
 
@@ -847,32 +539,6 @@ func (mock *ConfigReadWriterMock) ReadRHSSOUserCalls() []struct {
 	return calls
 }
 
-// ReadSolutionExplorer calls ReadSolutionExplorerFunc.
-func (mock *ConfigReadWriterMock) ReadSolutionExplorer() (*SolutionExplorer, error) {
-	if mock.ReadSolutionExplorerFunc == nil {
-		panic("ConfigReadWriterMock.ReadSolutionExplorerFunc: method is nil but ConfigReadWriter.ReadSolutionExplorer was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadSolutionExplorer.Lock()
-	mock.calls.ReadSolutionExplorer = append(mock.calls.ReadSolutionExplorer, callInfo)
-	mock.lockReadSolutionExplorer.Unlock()
-	return mock.ReadSolutionExplorerFunc()
-}
-
-// ReadSolutionExplorerCalls gets all the calls that were made to ReadSolutionExplorer.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadSolutionExplorerCalls())
-func (mock *ConfigReadWriterMock) ReadSolutionExplorerCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadSolutionExplorer.RLock()
-	calls = mock.calls.ReadSolutionExplorer
-	mock.lockReadSolutionExplorer.RUnlock()
-	return calls
-}
-
 // ReadThreeScale calls ReadThreeScaleFunc.
 func (mock *ConfigReadWriterMock) ReadThreeScale() (*ThreeScale, error) {
 	if mock.ReadThreeScaleFunc == nil {
@@ -896,32 +562,6 @@ func (mock *ConfigReadWriterMock) ReadThreeScaleCalls() []struct {
 	mock.lockReadThreeScale.RLock()
 	calls = mock.calls.ReadThreeScale
 	mock.lockReadThreeScale.RUnlock()
-	return calls
-}
-
-// ReadUps calls ReadUpsFunc.
-func (mock *ConfigReadWriterMock) ReadUps() (*Ups, error) {
-	if mock.ReadUpsFunc == nil {
-		panic("ConfigReadWriterMock.ReadUpsFunc: method is nil but ConfigReadWriter.ReadUps was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadUps.Lock()
-	mock.calls.ReadUps = append(mock.calls.ReadUps, callInfo)
-	mock.lockReadUps.Unlock()
-	return mock.ReadUpsFunc()
-}
-
-// ReadUpsCalls gets all the calls that were made to ReadUps.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadUpsCalls())
-func (mock *ConfigReadWriterMock) ReadUpsCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadUps.RLock()
-	calls = mock.calls.ReadUps
-	mock.lockReadUps.RUnlock()
 	return calls
 }
 

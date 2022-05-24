@@ -84,9 +84,6 @@ github.com/PuerkitoBio/urlesc
 # github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f
 ## explicit
 github.com/RHsyseng/operator-utils/pkg/olm
-# github.com/aerogear/unifiedpush-operator v0.5.0
-## explicit
-github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/andybalholm/cascadia v1.1.0
 ## explicit
 github.com/andybalholm/cascadia

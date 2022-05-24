@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -83,7 +82,6 @@ func init() {
 		usersv1.AddToScheme,
 		confv1.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
-		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
 		consolev1.AddToScheme,
