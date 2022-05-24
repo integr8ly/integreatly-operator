@@ -16,7 +16,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/products/datasync"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
@@ -145,8 +144,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
