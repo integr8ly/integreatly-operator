@@ -15,8 +15,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/amqstreams"
-	"github.com/integr8ly/integreatly-operator/pkg/products/apicurioregistry"
 	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
@@ -35,7 +33,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"net/http"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -129,8 +126,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 	}
 
 	switch product {
-	case integreatlyv1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
@@ -157,8 +152,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
 		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "", log)
-	case integreatlyv1alpha1.ProductAMQOnline:
-		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
@@ -173,8 +166,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder, log)
-	case integreatlyv1alpha1.ProductApicurioRegistry:
-		reconciler, err = apicurioregistry.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductApicurito:
 		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.Product3Scale:
