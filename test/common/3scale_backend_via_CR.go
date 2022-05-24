@@ -98,11 +98,16 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 
 	//delete secret
 	if err := ctx.Client.Delete(goctx.TODO(), secret); err != nil {
-		t.Fatalf("Failed to delete secret with error: %v", err)
+		t.Fatalf("failed to delete secret with error: %v", err)
 	}
 
-	// delete project
-	if err := ctx.Client.Delete(goctx.TODO(), project); err != nil {
-		t.Fatalf("Failed to delete testing namespace with error: %v", err)
-	}
+	projectCreateTimeout := 20 * time.Second
+	projectCreateRetryInterval := 1 * time.Second
+	wait.Poll(projectCreateRetryInterval, projectCreateTimeout, func() (done bool, err error) {
+
+		// delete project
+		ctx.Client.Delete(goctx.TODO(), project)
+
+		return true, nil
+	})
 }
