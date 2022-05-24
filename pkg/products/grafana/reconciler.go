@@ -5,8 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -623,7 +622,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
-		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-grafana", monitoringv1alpha1.BlackboxtargetData{
+		err = monitoringcommon.CreateBlackboxTarget(ctx, "integreatly-grafana", integreatlyv1alpha1.BlackboxtargetData{
 			Url:     r.Config.GetHost(),
 			Service: "grafana-ui",
 		}, cfg, r.installation, client)

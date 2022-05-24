@@ -17,7 +17,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
@@ -139,8 +138,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-	case integreatlyv1alpha1.ProductMonitoring:
-		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.Product3Scale:

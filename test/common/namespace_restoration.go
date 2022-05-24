@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
@@ -355,18 +354,13 @@ func removeMonitoringFinalizers(ctx *TestingContext, nameSpace string) error {
 		return err
 	}
 
-	err = removeApplicationMonitoringFinalizers(ctx, nameSpace)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // Poll removal of all finalizers from BlackBoxTargets from a namespace
 func removeBlackBoxTargetFinalizers(ctx *TestingContext, nameSpace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		blackBoxes := &monitoringv1alpha1.BlackboxTargetList{}
+		blackBoxes := &integreatlyv1alpha1.BlackboxTargetList{}
 
 		err = ctx.Client.List(goctx.TODO(), blackBoxes, &k8sclient.ListOptions{
 			Namespace: nameSpace,
@@ -380,37 +374,6 @@ func removeBlackBoxTargetFinalizers(ctx *TestingContext, nameSpace string) error
 			blackBox := blackBoxes.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &blackBox, func() error {
 				blackBox.Finalizers = []string{}
-				return nil
-			})
-
-			if err != nil {
-				return false, err
-			}
-		}
-
-		return true, nil
-	})
-
-	return err
-}
-
-// Poll removal of all finalizers from ApplicationMonitorings from a namespace
-func removeApplicationMonitoringFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		applicationMonitorings := &monitoringv1alpha1.ApplicationMonitoringList{}
-
-		err = ctx.Client.List(goctx.TODO(), applicationMonitorings, &k8sclient.ListOptions{
-			Namespace: nameSpace,
-		})
-
-		if err != nil {
-			return false, err
-		}
-
-		for i := range applicationMonitorings.Items {
-			applicationMonitoring := applicationMonitorings.Items[i]
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &applicationMonitoring, func() error {
-				applicationMonitoring.Finalizers = []string{}
 				return nil
 			})
 

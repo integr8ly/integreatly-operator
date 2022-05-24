@@ -15,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -36,7 +37,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -49,7 +49,6 @@ import (
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
@@ -2235,7 +2234,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
-		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
+		err = monitoringcommon.CreateBlackboxTarget(ctx, "integreatly-3scale-admin-ui", integreatlyv1alpha1.BlackboxtargetData{
 			Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 			Service: "3scale-admin-ui",
 		}, cfg, r.installation, client)
@@ -2252,7 +2251,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
-		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
+		err = monitoringcommon.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", integreatlyv1alpha1.BlackboxtargetData{
 			Url:     "https://" + threescaleRoute.Spec.Host,
 			Service: "3scale-developer-console-ui",
 		}, cfg, r.installation, client)
@@ -2266,7 +2265,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
-		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
+		err = monitoringcommon.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", integreatlyv1alpha1.BlackboxtargetData{
 			Url:     "https://" + threescaleRoute.Spec.Host,
 			Service: "3scale-system-admin-ui",
 		}, cfg, r.installation, client)

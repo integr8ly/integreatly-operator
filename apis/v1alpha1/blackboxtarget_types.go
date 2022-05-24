@@ -31,11 +31,9 @@ type BlackboxTargetStatus struct {
 	Phase int `json:"phase"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+//+kubebuilder:object:root=true
 
 // BlackboxTarget is the Schema for the blackboxtargets API
-// +k8s:openapi-gen=true
-// +kubebuilder:resource:path=blackboxtargets,scope=Namespaced
 type BlackboxTarget struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -44,7 +42,7 @@ type BlackboxTarget struct {
 	Status BlackboxTargetStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+//+kubebuilder:object:root=true
 
 // BlackboxTargetList contains a list of BlackboxTarget
 type BlackboxTargetList struct {

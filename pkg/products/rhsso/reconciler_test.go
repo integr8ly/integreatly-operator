@@ -29,7 +29,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -133,10 +132,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = oauthv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = monitoringv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -803,6 +798,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ExpectedError         string
 		FakeConfig            *config.ConfigReadWriterMock
 		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
 		FakeMPM               *marketplace.MarketplaceInterfaceMock
 		Installation          *integreatlyv1alpha1.RHMI
 		Product               *integreatlyv1alpha1.RHMIProductStatus

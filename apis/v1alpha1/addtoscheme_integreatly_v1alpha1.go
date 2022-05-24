@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -73,7 +72,6 @@ func init() {
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
-		monitoring.SchemeBuilder.AddToScheme,
 		appsv1.AddToScheme,
 		imagev1.AddToScheme,
 		oauthv1.AddToScheme,

@@ -3,15 +3,16 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
+	"strings"
+
 	"github.com/Masterminds/semver"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -625,7 +626,7 @@ func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, client k8scli
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 		}
 
-		err = monitoring.CreateBlackboxTarget(ctx, targetName, monitoringv1alpha1.BlackboxtargetData{
+		err = monitoringcommon.CreateBlackboxTarget(ctx, targetName, integreatlyv1alpha1.BlackboxtargetData{
 			Url:     url,
 			Service: service,
 		}, cfg, r.Installation, client)

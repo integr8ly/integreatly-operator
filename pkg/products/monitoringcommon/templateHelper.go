@@ -3,6 +3,7 @@ package monitoringcommon
 import (
 	"bytes"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,8 +14,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 )
 
 type Parameters struct {
@@ -61,7 +60,7 @@ func GetTemplatePath() string {
 
 // Takes a list of strings, wraps each string in double quotes and joins them
 // Used for building yaml arrays
-func joinQuote(values []monitoring.BlackboxtargetData) string {
+func joinQuote(values []v1alpha1.BlackboxtargetData) string {
 	var result []string
 	for _, s := range values {
 		result = append(result, fmt.Sprintf("\"%v@%v@%v\"", s.Module, s.Service, s.Url))

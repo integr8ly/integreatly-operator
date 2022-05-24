@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	monitoringv1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -233,10 +232,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = crov1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

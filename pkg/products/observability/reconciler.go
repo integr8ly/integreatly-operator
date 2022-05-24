@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -189,21 +188,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s configmap which is required to disable observability operator initilisting it's own cr", configMapNoInit), err)
 		return phase, err
-	}
-
-	monitoringConfg, err := r.ConfigManager.ReadMonitoring()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	r.log.Info("check AMO is uninstalled before progressing with Observability Installation")
-	amo := &v1alpha1.ApplicationMonitoringList{}
-
-	err = client.List(ctx, amo, &k8sclient.ListOptions{
-		Namespace: monitoringConfg.GetOperatorNamespace(),
-	})
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to check AMO is uninstalled"), err)
 	}
 
 	phase, err = r.reconcileBlackboxExporter(ctx, client, r.Config)
