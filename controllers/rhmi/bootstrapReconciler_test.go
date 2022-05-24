@@ -7,6 +7,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -706,8 +707,131 @@ func Test_tenantExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if got := tenantExists(tt.args.user, tt.args.tenants); got != tt.want {
 				t.Errorf("tenantExists() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+
+	type fields struct {
+		FakeConfigManager config.ConfigReadWriter
+		Config            *config.ThreeScale
+		FakeMpm           marketplace.MarketplaceInterface
+		installation      *integreatlyv1alpha1.RHMI
+		Reconciler        *resources.Reconciler
+		recorder          record.EventRecorder
+		log               l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "test addon-managed-api-service-parameters secret found",
+			fields: fields{
+				FakeConfigManager: &config.ConfigReadWriterMock{
+					GetAddonManagedApiServiceParametersSecretNameFunc: func() string {
+						return "addon-managed-api-service-parameters"
+					},
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				Config:  &config.ThreeScale{},
+				FakeMpm: &marketplace.MarketplaceInterfaceMock{},
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: rhoamOperatorNs,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						NamespacePrefix: "redhat-rhoam-",
+					},
+				},
+				Reconciler: &resources.Reconciler{},
+				recorder:   record.NewFakeRecorder(50),
+				log:        l.Logger{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "addon-managed-api-service-parameters",
+						Namespace: rhoamOperatorNs,
+					},
+				},
+					getNamespaces(),
+				),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "test addon-managed-api-service-parameters secret not found",
+			fields: fields{
+				FakeConfigManager: &config.ConfigReadWriterMock{
+					GetAddonManagedApiServiceParametersSecretNameFunc: func() string {
+						return "addon-managed-api-service-parameters"
+					},
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				Config:  &config.ThreeScale{},
+				FakeMpm: &marketplace.MarketplaceInterfaceMock{},
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: rhoamOperatorNs,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						NamespacePrefix: "redhat-rhoam-",
+					},
+				},
+				Reconciler: &resources.Reconciler{},
+				recorder:   record.NewFakeRecorder(50),
+				log:        l.Logger{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{ObjectMeta: v1.ObjectMeta{
+					Name: "",
+				},
+				}, getNamespaces()),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.FakeConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.FakeMpm,
+				installation:  tt.fields.installation,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.reconcileAddonManagedApiServiceParameters(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileAddonManagedApiServiceParameters() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileAddonManagedApiServiceParameters() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -18,6 +18,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 // 		// make and configure a mocked ConfigReadWriter
 // 		mockedConfigReadWriter := &ConfigReadWriterMock{
+// 			GetAddonManagedApiServiceParametersSecretNameFunc: func() string {
+// 				panic("mock out the GetAddonManagedApiServiceParametersSecretName method")
+// 			},
 // 			GetBackupsSecretNameFunc: func() string {
 // 				panic("mock out the GetBackupsSecretName method")
 // 			},
@@ -103,6 +106,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 // 	}
 type ConfigReadWriterMock struct {
+	// GetAddonManagedApiServiceParametersSecretNameFunc mocks the GetAddonManagedApiServiceParametersSecretName method.
+	GetAddonManagedApiServiceParametersSecretNameFunc func() string
+
 	// GetBackupsSecretNameFunc mocks the GetBackupsSecretName method.
 	GetBackupsSecretNameFunc func() string
 
@@ -183,6 +189,9 @@ type ConfigReadWriterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetAddonManagedApiServiceParametersSecretName holds details about calls to the GetAddonManagedApiServiceParametersSecretName method.
+		GetAddonManagedApiServiceParametersSecretName []struct {
+		}
 		// GetBackupsSecretName holds details about calls to the GetBackupsSecretName method.
 		GetBackupsSecretName []struct {
 		}
@@ -268,32 +277,59 @@ type ConfigReadWriterMock struct {
 			Product integreatlyv1alpha1.ProductName
 		}
 	}
-	lockGetBackupsSecretName        sync.RWMutex
-	lockGetGHOauthClientsSecretName sync.RWMutex
-	lockGetOauthClientsSecretName   sync.RWMutex
-	lockGetOperatorNamespace        sync.RWMutex
-	lockReadAMQOnline               sync.RWMutex
-	lockReadAMQStreams              sync.RWMutex
-	lockReadApicurioRegistry        sync.RWMutex
-	lockReadApicurito               sync.RWMutex
-	lockReadCloudResources          sync.RWMutex
-	lockReadCodeReady               sync.RWMutex
-	lockReadDataSync                sync.RWMutex
-	lockReadFuse                    sync.RWMutex
-	lockReadFuseOnOpenshift         sync.RWMutex
-	lockReadGrafana                 sync.RWMutex
-	lockReadMarin3r                 sync.RWMutex
-	lockReadMonitoring              sync.RWMutex
-	lockReadMonitoringSpec          sync.RWMutex
-	lockReadObservability           sync.RWMutex
-	lockReadProduct                 sync.RWMutex
-	lockReadRHSSO                   sync.RWMutex
-	lockReadRHSSOUser               sync.RWMutex
-	lockReadSolutionExplorer        sync.RWMutex
-	lockReadThreeScale              sync.RWMutex
-	lockReadUps                     sync.RWMutex
-	lockWriteConfig                 sync.RWMutex
-	lockreadConfigForProduct        sync.RWMutex
+	lockGetAddonManagedApiServiceParametersSecretName sync.RWMutex
+	lockGetBackupsSecretName                          sync.RWMutex
+	lockGetGHOauthClientsSecretName                   sync.RWMutex
+	lockGetOauthClientsSecretName                     sync.RWMutex
+	lockGetOperatorNamespace                          sync.RWMutex
+	lockReadAMQOnline                                 sync.RWMutex
+	lockReadAMQStreams                                sync.RWMutex
+	lockReadApicurioRegistry                          sync.RWMutex
+	lockReadApicurito                                 sync.RWMutex
+	lockReadCloudResources                            sync.RWMutex
+	lockReadCodeReady                                 sync.RWMutex
+	lockReadDataSync                                  sync.RWMutex
+	lockReadFuse                                      sync.RWMutex
+	lockReadFuseOnOpenshift                           sync.RWMutex
+	lockReadGrafana                                   sync.RWMutex
+	lockReadMarin3r                                   sync.RWMutex
+	lockReadMonitoring                                sync.RWMutex
+	lockReadMonitoringSpec                            sync.RWMutex
+	lockReadObservability                             sync.RWMutex
+	lockReadProduct                                   sync.RWMutex
+	lockReadRHSSO                                     sync.RWMutex
+	lockReadRHSSOUser                                 sync.RWMutex
+	lockReadSolutionExplorer                          sync.RWMutex
+	lockReadThreeScale                                sync.RWMutex
+	lockReadUps                                       sync.RWMutex
+	lockWriteConfig                                   sync.RWMutex
+	lockreadConfigForProduct                          sync.RWMutex
+}
+
+// GetAddonManagedApiServiceParametersSecretName calls GetAddonManagedApiServiceParametersSecretNameFunc.
+func (mock *ConfigReadWriterMock) GetAddonManagedApiServiceParametersSecretName() string {
+	if mock.GetAddonManagedApiServiceParametersSecretNameFunc == nil {
+		panic("ConfigReadWriterMock.GetAddonManagedApiServiceParametersSecretNameFunc: method is nil but ConfigReadWriter.GetAddonManagedApiServiceParametersSecretName was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetAddonManagedApiServiceParametersSecretName.Lock()
+	mock.calls.GetAddonManagedApiServiceParametersSecretName = append(mock.calls.GetAddonManagedApiServiceParametersSecretName, callInfo)
+	mock.lockGetAddonManagedApiServiceParametersSecretName.Unlock()
+	return mock.GetAddonManagedApiServiceParametersSecretNameFunc()
+}
+
+// GetAddonManagedApiServiceParametersSecretNameCalls gets all the calls that were made to GetAddonManagedApiServiceParametersSecretName.
+// Check the length with:
+//     len(mockedConfigReadWriter.GetAddonManagedApiServiceParametersSecretNameCalls())
+func (mock *ConfigReadWriterMock) GetAddonManagedApiServiceParametersSecretNameCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetAddonManagedApiServiceParametersSecretName.RLock()
+	calls = mock.calls.GetAddonManagedApiServiceParametersSecretName
+	mock.lockGetAddonManagedApiServiceParametersSecretName.RUnlock()
+	return calls
 }
 
 // GetBackupsSecretName calls GetBackupsSecretNameFunc.
