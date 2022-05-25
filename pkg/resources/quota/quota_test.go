@@ -85,7 +85,7 @@ func TestGetQuota(t *testing.T) {
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
-						pointerToQuota,
+						pointerToQuota,	
 					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
@@ -107,6 +107,7 @@ func TestGetQuota(t *testing.T) {
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
+				autoscalingEnabled: false,
 			},
 			validate: func(quota *Quota, t *testing.T) {
 				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
@@ -199,7 +200,7 @@ func TestGetQuota(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
+			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return

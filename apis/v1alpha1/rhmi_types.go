@@ -165,6 +165,7 @@ type RHMISpec struct {
 	PriorityClassName      string                 `json:"priorityClassName,omitempty"`
 	AlertingEmailAddresses AlertingEmailAddresses `json:"alertingEmailAddresses,omitempty"`
 	AlertFromAddress       string                 `json:"alertFromAddress,omitempty"`
+	AutoscalingEnabled     bool   				  `json:"autoscalingEnabled,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product

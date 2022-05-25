@@ -55,6 +55,7 @@ type Quota struct {
 	productConfigs  map[v1alpha1.ProductName]QuotaProductConfig
 	isUpdated       bool
 	rateLimitConfig marin3rconfig.RateLimitConfig
+	autoscalingEnabled bool
 }
 
 //go:generate moq -out product_config_moq.go . ProductConfig
@@ -69,9 +70,9 @@ type ProductConfig interface {
 var _ ProductConfig = QuotaProductConfig{}
 
 type QuotaProductConfig struct {
-	productName     v1alpha1.ProductName
-	resourceConfigs map[string]ResourceConfig
-	quota           *Quota
+	productName        v1alpha1.ProductName
+	resourceConfigs    map[string]ResourceConfig
+	quota              *Quota
 }
 
 type ResourceConfig struct {
@@ -86,7 +87,7 @@ type quotaConfigReceiver struct {
 	Resources map[string]ResourceConfig     `json:"resources,omitempty"`
 }
 
-func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota) error {
+func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota, autoscalingEnabled bool) error {
 	allQuotas := &[]quotaConfigReceiver{}
 	err := json.Unmarshal([]byte(QuotaConfig.Data[ConfigMapData]), allQuotas)
 	if err != nil {
@@ -108,6 +109,12 @@ func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota)
 
 	retQuota.name = quotaReceiver.Name
 	retQuota.productConfigs = map[v1alpha1.ProductName]QuotaProductConfig{}
+	if autoscalingEnabled {
+		retQuota.autoscalingEnabled = true
+	} else {
+		retQuota.autoscalingEnabled = false
+	}
+	
 
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
@@ -132,6 +139,10 @@ func (s *Quota) GetProduct(productName v1alpha1.ProductName) QuotaProductConfig 
 	return s.productConfigs[productName]
 }
 
+func (s *Quota) GetQuotaAutoscalingState() bool {
+	return s.autoscalingEnabled
+}
+
 func (s *Quota) GetName() string {
 	return s.name
 }
@@ -142,6 +153,10 @@ func (s *Quota) IsUpdated() bool {
 
 func (s *Quota) SetIsUpdated(isUpdated bool) {
 	s.isUpdated = isUpdated
+}
+
+func (s *Quota) SetAutoscaling(autoscalingEnabled bool) {
+	s.autoscalingEnabled = autoscalingEnabled
 }
 
 func (p QuotaProductConfig) GetResourceConfig(ddcssName string) (corev1.ResourceRequirements, bool) {
@@ -255,7 +270,7 @@ func (p QuotaProductConfig) mutatePodTemplate(template *corev1.PodTemplateSpec, 
 
 func (p QuotaProductConfig) mutateReplicas(replicas *int32, name string) {
 	configReplicas := p.resourceConfigs[name].Replicas
-	if p.quota.isUpdated || *replicas < configReplicas || *replicas == 0 {
+	if (p.quota.isUpdated || *replicas < configReplicas || *replicas == 0)  && p.quota.autoscalingEnabled != true {
 		*replicas = configReplicas
 	}
 }

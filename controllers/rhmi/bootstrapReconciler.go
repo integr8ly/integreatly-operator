@@ -765,7 +765,7 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 	}
 
 	// Updates the installation quota to the quota param if the quota is updated
-	err = quota.GetQuota(quotaParam, configMap, installationQuota)
+	err = quota.GetQuota(quotaParam, configMap, installationQuota, installation.Spec.AutoscalingEnabled)
 	if err != nil {
 		return err
 	}
