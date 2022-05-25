@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/autoscaling"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"gopkg.in/yaml.v2"
@@ -80,6 +81,13 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
+	if r.Installation.Spec.AutoscalingEnabled {
+		phase, err = autoscaling.ReconcileHPA(ctx, client, quota.RateLimitName, r.Namespace, 1, *int32(1))
+		if phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+	}
+
 	phase, err = r.reconcileService(ctx, client)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
@@ -145,6 +153,9 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			Name:      quota.RateLimitName,
 			Namespace: r.Namespace,
 		},
+	}
+	if r.Installation.Spec.AutoscalingEnabled == true {
+
 	}
 
 	key := k8sclient.ObjectKeyFromObject(deployment)

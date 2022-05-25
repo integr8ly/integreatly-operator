@@ -130,6 +130,7 @@ func TestGetQuota(t *testing.T) {
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
+				autoscalingEnabled: false,
 			},
 			validate: func(quota *Quota, t *testing.T) {
 				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
@@ -305,7 +306,7 @@ func TestGetQuota(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetQuota(context.TODO(), tt.args.client, tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
+			err := GetQuota(context.TODO(), tt.args.client, tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -669,7 +669,7 @@ func (r *Reconciler) processQuota(installation *integreatlyv1alpha1.RHMI, namesp
 	}
 
 	// Updates the installation quota to the quota param if the quota is updated
-	err = quota.GetQuota(context.TODO(), serverClient, quotaParam, configMap, installationQuota)
+	err = quota.GetQuota(context.TODO(), serverClient, quotaParam, configMap, installationQuota, installation.Spec.AutoscalingEnabled)
 	if err != nil {
 		return err
 	}
