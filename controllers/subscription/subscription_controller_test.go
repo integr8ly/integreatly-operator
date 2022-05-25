@@ -66,22 +66,6 @@ func TestSubscriptionReconciler(t *testing.T) {
 		},
 	}
 
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-config",
-			Namespace: operatorNamespace,
-		},
-		Spec: integreatlyv1alpha1.RHMIConfigSpec{
-			Upgrade: integreatlyv1alpha1.Upgrade{
-				NotBeforeDays:      intPtr(10),
-				WaitForMaintenance: boolPtr(true),
-			},
-			Maintenance: integreatlyv1alpha1.Maintenance{
-				ApplyFrom: "Thu 00:00",
-			},
-		},
-	}
-
 	rhmiCR := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi",
@@ -258,7 +242,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			APIObject := scenario.APISubscription
-			client := fakeclient.NewFakeClientWithScheme(scheme, APIObject, installPlan, rhmiConfig, rhmiCR)
+			client := fakeclient.NewFakeClientWithScheme(scheme, APIObject, installPlan, rhmiCR)
 			reconciler := SubscriptionReconciler{
 				Client:              client,
 				Scheme:              scheme,
