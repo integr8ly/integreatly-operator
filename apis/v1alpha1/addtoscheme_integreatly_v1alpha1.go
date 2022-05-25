@@ -20,10 +20,6 @@ import (
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	enmasseAdmin "github.com/integr8ly/integreatly-operator/apis-products/enmasse/admin/v1beta1"
-	enmasse "github.com/integr8ly/integreatly-operator/apis-products/enmasse/enmasse/v1beta1"
-	enmassev1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
-	enmassev1beta2 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta2"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -64,10 +60,6 @@ func init() {
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1beta1.SchemeBuilder.AddToScheme,
-		enmasse.SchemeBuilder.AddToScheme,
-		enmassev1beta2.SchemeBuilder.AddToScheme,
-		enmassev1beta1.SchemeBuilder.AddToScheme,
-		enmasseAdmin.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
