@@ -316,6 +316,17 @@ spec:
                 - patch
                 - update
             - apiGroups:
+                - apps.3scale.net
+              resources:
+                - '*'
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
                 - integreatly.org
               resources:
                 - rhmis
