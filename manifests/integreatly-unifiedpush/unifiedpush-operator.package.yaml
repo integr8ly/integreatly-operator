@@ -1,4 +1,0 @@
-packageName: rhmi-unifiedpush
-channels:
-- currentCSV: unifiedpush-operator.v0.5.0
-  name: rhmi
