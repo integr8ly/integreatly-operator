@@ -77,7 +77,6 @@ cd integreatly-operator
 For development work the required vcpu and ram can be lower than that stated in the [service definition](https://access.redhat.com/articles/5534341#scalability-and-service-levels-15).
 Different quotas require different values.
 Table belong are typical requested values needed for RHOAM on a cluster with cluster storage set to True.
-
 | Quota        | vCPU     | RAM     |
 |--------------|----------|---------|
 | 100 Thousand | 6.5 vCPU | 22 Gb   |
