@@ -13,7 +13,6 @@ var (
 			[]TestCase{
 				// Add all tests that can be executed prior to a completed installation here
 				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
-				{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
@@ -21,12 +20,6 @@ var (
 
 	HAPPY_PATH_TESTS = []TestSuite{
 		//Add all happy path tests to be executed after RHMI installation is completed here
-		{
-			[]TestCase{
-				{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
-			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
-		},
 		{
 			[]TestCase{
 				{"A32 - Validate SSO config", TestSSOconfig},
@@ -57,8 +50,6 @@ var (
 				{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 				{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
-				{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
-				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
@@ -110,7 +101,6 @@ var (
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
-				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
 				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
 				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
 			},

@@ -101,7 +101,6 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Verify RHMI Developer permissions around RHMI & RHMI Config
-	verifyRHMIDeveloperRHMIConfigPermissions(t, openshiftClient)
 	verifyRHMIDeveloperRHMIPermissions(t, openshiftClient)
 
 	verifyRHMIDeveloper3ScaleRoutePermissions(t, openshiftClient)
@@ -181,32 +180,6 @@ func testManagedApiDeveloperProjects(masterURL string, openshiftClient *resource
 	}
 
 	return nil
-}
-
-func verifyRHMIDeveloperRHMIConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
-	t.Log("Verifying RHMI Developer permissions for RHMIConfig Resource")
-
-	expectedPermission := ExpectedPermissions{
-		ExpectedCreateStatusCode: 403,
-		ExpectedReadStatusCode:   403,
-		ExpectedUpdateStatusCode: 403,
-		ExpectedDeleteStatusCode: 403,
-		ExpectedListStatusCode:   403,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHOAMOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHOAMOperatorNamespace, "rhmi-config"),
-		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-rhmi-config",
-				Namespace: RHOAMOperatorNamespace,
-			},
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1alpha1",
-				Kind:       "RHMIConfig",
-			},
-		},
-	}
-
-	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }
 
 func verifyRHMIDeveloperRHMIPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {

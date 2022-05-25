@@ -9,7 +9,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -104,12 +103,6 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 
 	// Verify Dedicated admins permissions around secrets
 	verifyDedicatedAdminSecretPermissions(t, openshiftClient, rhmi.Spec.Type)
-
-	// Verify Dedicated admin permissions around RHMI Config
-	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
-
-	// Verify Dedicated admin permissions around RHMI
-	verifyDedicatedAdminRHMIPermissions(t, openshiftClient)
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
@@ -213,33 +206,6 @@ func getProductNamespaces(installType string) []string {
 	}
 }
 
-// Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
-func verifyDedicatedAdminRHMIConfigPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
-	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
-
-	expectedPermission := ExpectedPermissions{
-		ExpectedCreateStatusCode: 403,
-		ExpectedReadStatusCode:   200,
-		ExpectedUpdateStatusCode: 403,
-		ExpectedDeleteStatusCode: 403,
-		ExpectedListStatusCode:   200,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHOAMOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHOAMOperatorNamespace, "rhmi-config"),
-		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-rhmi-config",
-				Namespace: RHOAMOperatorNamespace,
-			},
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1alpha1",
-				Kind:       "RHMIConfig",
-			},
-		},
-	}
-
-	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
-}
-
 func verifyDedicatedAdminAMQOnlineRolePermissions(t TestingTB, ctx *TestingContext) {
 	t.Log("Verifying Dedicated admin AMQ Online resource role / role binding")
 
@@ -284,31 +250,4 @@ func verifyDedicatedAdminAMQOnlineRolePermissions(t TestingTB, ctx *TestingConte
 	if !haveCorrectPermission {
 		t.Fatalf("Incorrect permissions found for %s role in %s namespace. Excpected %s as a policy rule ", role.Name, role.Namespace, expectedRule)
 	}
-}
-
-// Verify Dedicated admin permissions for RHMI Resource - CRUDL
-func verifyDedicatedAdminRHMIPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient) {
-	t.Log("Verifying Dedicated admin permissions for RHMI Resource")
-
-	expectedPermission := ExpectedPermissions{
-		ExpectedCreateStatusCode: 403,
-		ExpectedReadStatusCode:   200,
-		ExpectedUpdateStatusCode: 403,
-		ExpectedDeleteStatusCode: 403,
-		ExpectedListStatusCode:   200,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHOAMOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHOAMOperatorNamespace, "rhoam"),
-		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-rhoam",
-				Namespace: RHOAMOperatorNamespace,
-			},
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1alpha1",
-				Kind:       "RHMI",
-			},
-		},
-	}
-
-	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }

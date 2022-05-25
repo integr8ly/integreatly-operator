@@ -171,9 +171,8 @@ func TestApproveUpgrade(t *testing.T) {
 		Context         context.Context
 		EventRecorder   record.EventRecorder
 		RhmiInstallPlan *olmv1alpha1.InstallPlan
-		Config          *integreatlyv1alpha1.RHMIConfig
 		RHMI            *integreatlyv1alpha1.RHMI
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error)
+		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
@@ -181,14 +180,8 @@ func TestApproveUpgrade(t *testing.T) {
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: defaultNamespace,
-				},
-			},
-			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			RHMI:            rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -205,21 +198,8 @@ func TestApproveUpgrade(t *testing.T) {
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: defaultNamespace,
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For: "13 Jul 2020 00:00",
-						},
-					},
-				},
-			},
-			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			RHMI:            rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -227,10 +207,6 @@ func TestApproveUpgrade(t *testing.T) {
 
 				if updatedRhmiInstallPlan.Spec.Approved != true {
 					t.Fatalf("Expected installplan.Spec.Approved to be true")
-				}
-
-				if config.Status.Upgrade.Scheduled != nil {
-					t.Fatalf("Expected scheduled field to be empty")
 				}
 			},
 		},
@@ -243,9 +219,7 @@ func TestApproveUpgrade(t *testing.T) {
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
-			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: defaultNamespace}, updatedConfig)
-			scenario.Verify(retrievedInstallPlan, updatedConfig, rhmi, err)
+			scenario.Verify(retrievedInstallPlan, rhmi, err)
 		})
 	}
 }

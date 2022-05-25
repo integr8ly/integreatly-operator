@@ -137,12 +137,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to reconcile addon parameters secret")
 	}
 
-	phase, err = r.reconcilerRHMIConfigCR(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config", err)
-		return phase, errors.Wrap(err, "failed to reconcile customer config")
-	}
-
 	phase, err = r.reconcileRHMIConfigPermissions(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config dedicated admin permissions", err)
@@ -443,24 +437,6 @@ func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClien
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-config",
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiConfig, func() error {
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling the Customer Config CR: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
