@@ -17,7 +17,7 @@ require (
 	github.com/eclipse/che-operator v0.0.0-20201214125341-cce874092f25
 	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/go-openapi/spec v0.20.3
+	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-openapi/strfmt v0.20.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6

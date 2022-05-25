@@ -29,7 +29,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -120,10 +119,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

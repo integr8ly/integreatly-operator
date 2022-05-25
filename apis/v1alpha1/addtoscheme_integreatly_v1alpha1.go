@@ -20,7 +20,6 @@ import (
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
@@ -56,7 +55,6 @@ func init() {
 		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		authv1.AddToScheme,
-		kafkav1alpha1.SchemeBuilder.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1beta1.SchemeBuilder.AddToScheme,

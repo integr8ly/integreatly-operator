@@ -8,7 +8,6 @@ import (
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -208,10 +207,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
