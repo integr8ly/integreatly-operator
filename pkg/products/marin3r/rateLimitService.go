@@ -43,7 +43,7 @@ type RateLimitServiceReconciler struct {
 const (
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
-	rateLimitImage                = "quay.io/3scale/limitador:0.5.0"
+	rateLimitImage                = "quay.io/3scale/limitador:v0.5.1"
 )
 
 func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
