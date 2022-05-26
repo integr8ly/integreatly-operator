@@ -5,10 +5,9 @@ import (
 	"fmt"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"net/http"
+	"os"
 	"strings"
 )
-
-const GithubToken = "GITHUB_TOKEN"
 
 /*
 type prometheusAPIResponse struct {
@@ -62,7 +61,7 @@ func TestVerifyAlertLinksInSPOSs(t TestingTB, ctx *TestingContext) {
 						}
 
 						req.Header.Add("Accept", `application/json`)
-						req.Header.Add("Authorization", fmt.Sprintf("token %s", GithubToken))
+						req.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("GITHUB_TOKEN")))
 						resp, err := client.Do(req)
 						if err != nil {
 							t.Fatalf("Failed to make http request %s", err)
