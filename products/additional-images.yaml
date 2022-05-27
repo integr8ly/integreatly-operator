@@ -7,7 +7,7 @@ additionalImages:
   - name: marin3r-limitador
     url: "quay.io/3scale/limitador:v0.5.1"
   - name: observability-grafana-plugins-init
-    url: "quay.io/integreatly/grafana_plugins_init:0.0.3"
+    url: "quay.io/grafana-operator/grafana_plugins_init:0.0.6"
   - name: observability-origin-oauth-proxy
     url: "quay.io/openshift/origin-oauth-proxy:4.8"
   - name: observability-prometheus-operator
