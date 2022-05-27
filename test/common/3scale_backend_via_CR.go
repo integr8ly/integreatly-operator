@@ -17,11 +17,12 @@ const (
 	backendName           = "backend-sample"
 	systemBackendName     = "backend1"
 	backendPrivateBaseURL = "https://api.example.com"
+	projectNamespace3     = "test-project3"
 )
 
 func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	// make project
-	project, err := makeProject(ctx)
+	project, err := makeProject(ctx, projectNamespace3)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -43,7 +44,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	secret, err := genSecret(ctx, map[string][]byte{
 		"adminURL": []byte(adminURL),
 		"token":    []byte(*accessToken),
-	})
+	}, projectNamespace3)
 	if err != nil {
 		t.Fatalf("failed to create secret %v", err)
 	}
@@ -52,7 +53,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	backendCR := &threescaleBv1.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      backendName,
-			Namespace: projectNamespace,
+			Namespace: projectNamespace3,
 		},
 		Spec: threescaleBv1.BackendSpec{
 			Name:           backendName,

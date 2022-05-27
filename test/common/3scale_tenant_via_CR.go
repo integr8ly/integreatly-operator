@@ -36,7 +36,7 @@ const (
 // Tests that a user in group dedicated-admins can create an integration
 func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 	// make project
-	project, err := makeProject(ctx)
+	project, err := makeProject(ctx, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -44,7 +44,7 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 	//make secret
 	secret, err := genSecret(ctx, map[string][]byte{
 		"admin_password": []byte("admin"),
-	})
+	}, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create secret %v", err)
 	}
@@ -165,10 +165,10 @@ func getToken(ctx *TestingContext, namespace, tokenType string) (*string, error)
 	return &accessToken, nil
 }
 
-func makeProject(ctx *TestingContext) (*projectv1.Project, error) {
+func makeProject(ctx *TestingContext, namespace string) (*projectv1.Project, error) {
 	project := &projectv1.Project{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: projectNamespace,
+			Name: namespace,
 		},
 	}
 	if err := ctx.Client.Create(goctx.TODO(), project); err != nil {
@@ -199,11 +199,11 @@ func getRoutes(ctx *TestingContext, routeName string) (routev1.Route, error) {
 	return routeFound, nil
 }
 
-func genSecret(ctx *TestingContext, datamap map[string][]byte) (*corev1.Secret, error) {
+func genSecret(ctx *TestingContext, datamap map[string][]byte, namespace string) (*corev1.Secret, error) {
 	secretRef := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      projectAdminSecret,
-			Namespace: projectNamespace,
+			Namespace: namespace,
 		},
 		Data: datamap,
 	}

@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	productName = "product-sample"
-	adminRoute  = "3scale-admin.apps"
+	productName       = "product-sample"
+	adminRoute        = "3scale-admin.apps"
+	projectNamespace2 = "test-project2"
 )
 
 func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 	// make project
-	project, err := makeProject(ctx)
+	project, err := makeProject(ctx, projectNamespace2)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -39,7 +40,7 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 	secret, err := genSecret(ctx, map[string][]byte{
 		"adminURL": []byte(adminURL),
 		"token":    []byte(*accessToken),
-	})
+	}, projectNamespace2)
 	if err != nil {
 		t.Fatalf("failed to create secret %v", err)
 	}
@@ -48,7 +49,7 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 	productCR := &threescaleBv1.Product{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      projectName,
-			Namespace: projectNamespace,
+			Namespace: projectNamespace2,
 		},
 		Spec: threescaleBv1.ProductSpec{
 			Name: productName,
