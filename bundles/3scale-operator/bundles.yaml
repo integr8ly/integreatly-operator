@@ -1,0 +1,19 @@
+bundles:
+  - name: 3scale-operator.v0.8.0
+    image: quay.io/integreatly/3scale-bundle:v0.8.0
+  - name: 3scale-operator.v0.8.0+0.1634606167.p
+    image: quay.io/integreatly/3scale-bundle:v0.8.0-0.1634606167
+  - name: 3scale-operator.v0.8.1
+    image: quay.io/integreatly/3scale-bundle:v0.8.1
+  - name: 3scale-operator.v0.8.2
+    image: quay.io/integreatly/3scale-bundle:v0.8.2
+  - name: 3scale-operator.v0.8.3
+    image: quay.io/integreatly/3scale-bundle:v0.8.3
+  - name: 3scale-operator.v0.8.3+0.1645735250.p
+    image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1645735250
+  - name: 3scale-operator.v0.8.3+0.1646619125.p
+    image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1646619125
+  - name: 3scale-operator.v0.8.3+0.1646742992.p
+    image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1646742992
+  - name: 3scale-operator.v0.8.3+0.1649688682.p
+    image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1649688682
