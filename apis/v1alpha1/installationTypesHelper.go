@@ -4,10 +4,6 @@ func IsRHOAM(installType InstallationType) bool {
 	return installType == InstallationTypeManagedApi || installType == InstallationTypeMultitenantManagedApi
 }
 
-func IsRHMI(installType InstallationType) bool {
-	return installType == InstallationTypeManaged
-}
-
 func IsRHOAMMultitenant(installType InstallationType) bool {
 	return IsRHOAM(installType) && isMultitenant(installType)
 }

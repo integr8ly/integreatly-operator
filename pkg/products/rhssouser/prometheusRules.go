@@ -2,7 +2,6 @@ package rhssouser
 
 import (
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -15,26 +14,18 @@ import (
 func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
-	namespace := r.Config.GetNamespace()
-	operatorNamespace := r.Config.GetOperatorNamespace()
-	alertName := "ksm-endpoint-alerts"
-	operatorAlertName := "ksm-endpoint-alerts"
-	userSsoAlerts := "rhssouser-general"
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			logger.Warning("failed to get observability config")
-			return nil
-		}
-
-		namespace = observabilityConfig.GetNamespace()
-		operatorNamespace = observabilityConfig.GetNamespace()
-
-		alertName = "user-sso-ksm-endpoint-alerts"
-		operatorAlertName = "user-sso-operator-ksm-endpoint-alerts"
-		userSsoAlerts = "rhssouser-general"
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		logger.Warning("failed to get observability config")
+		return nil
 	}
+
+	namespace := observabilityConfig.GetNamespace()
+	operatorNamespace := observabilityConfig.GetNamespace()
+
+	alertName := "user-sso-ksm-endpoint-alerts"
+	operatorAlertName := "user-sso-operator-ksm-endpoint-alerts"
+	userSsoAlerts := "rhssouser-general"
 
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "RHSSO User",

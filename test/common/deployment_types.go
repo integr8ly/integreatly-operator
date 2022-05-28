@@ -183,31 +183,29 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		},
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
-		ratelimitCR := &k8sappsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      quota.RateLimitName,
-				Namespace: Marin3rProductNamespace,
-			},
-		}
+	ratelimitCR := &k8sappsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      quota.RateLimitName,
+			Namespace: Marin3rProductNamespace,
+		},
+	}
 
-		key, err := k8sclient.ObjectKeyFromObject(ratelimitCR)
-		if err != nil {
-			t.Fatalf("Error getting key from ratelimit Deployment: %v", err)
-		}
+	key, err := k8sclient.ObjectKeyFromObject(ratelimitCR)
+	if err != nil {
+		t.Fatalf("Error getting key from ratelimit Deployment: %v", err)
+	}
 
-		err = ctx.Client.Get(context.TODO(), key, ratelimitCR)
-		if err != nil {
-			if !k8sError.IsNotFound(err) {
-				t.Fatalf("Error obtaining ratelimit CR: %v", err)
-			}
+	err = ctx.Client.Get(context.TODO(), key, ratelimitCR)
+	if err != nil {
+		if !k8sError.IsNotFound(err) {
+			t.Fatalf("Error obtaining ratelimit CR: %v", err)
 		}
-		deployment["marin3rDeployment"] = Namespace{
-			Name: Marin3rProductNamespace,
-			Products: []Product{
-				{Name: "ratelimit", ExpectedReplicas: *ratelimitCR.Spec.Replicas},
-			},
-		}
+	}
+	deployment["marin3rDeployment"] = Namespace{
+		Name: Marin3rProductNamespace,
+		Products: []Product{
+			{Name: "ratelimit", ExpectedReplicas: *ratelimitCR.Spec.Replicas},
+		},
 	}
 
 	return deployment[deploymentName]
@@ -306,14 +304,12 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				continue
 			}
 
-			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && product.Name == "ratelimit" {
-				pods := &corev1.PodList{}
-				err = ctx.Client.List(context.TODO(), pods, GetListOptions(Marin3rProductNamespace, "app=ratelimit")...)
-				if err != nil {
-					t.Fatalf("failed to get pods for Ratelimit: %v", err)
-				}
-				checkDeploymentPods(t, pods, product, namespace, deployment)
+			pods := &corev1.PodList{}
+			err = ctx.Client.List(context.TODO(), pods, GetListOptions(Marin3rProductNamespace, "app=ratelimit")...)
+			if err != nil {
+				t.Fatalf("failed to get pods for Ratelimit: %v", err)
 			}
+			checkDeploymentPods(t, pods, product, namespace, deployment)
 			// Verify that the expected replicas are also available, means they are up and running and consumable by users
 			if deployment.Status.AvailableReplicas < product.ExpectedReplicas {
 				t.Errorf("Deployment %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
@@ -407,54 +403,37 @@ func TestDeploymentConfigExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				)
 				continue
 			}
-			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-				if product.Name == "apicast-production" {
-					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=apicast-production")...)
-					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-					}
-					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-				} else if product.Name == "backend-listener" {
-					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentConfig=backend-listener")...)
-					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-					}
-					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
-
-				} else if product.Name == "backend-worker" {
-					pods := &corev1.PodList{}
-					err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=backend-worker")...)
-					if err != nil {
-						t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
-					}
-					checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
+			if product.Name == "apicast-production" {
+				pods := &corev1.PodList{}
+				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=apicast-production")...)
+				if err != nil {
+					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
 				}
-			} else if deploymentConfig.Status.AvailableReplicas < product.ExpectedReplicas {
-				t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
-					product.Name,
-					namespace.Name,
-					deploymentConfig.Status.AvailableReplicas,
-					product.ExpectedReplicas,
-				)
-				continue
+				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
+
+			} else if product.Name == "backend-listener" {
+				pods := &corev1.PodList{}
+				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentConfig=backend-listener")...)
+				if err != nil {
+					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
+				}
+				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
+
+			} else if product.Name == "backend-worker" {
+				pods := &corev1.PodList{}
+				err = ctx.Client.List(context.TODO(), pods, GetListOptions(ThreeScaleProductNamespace, "deploymentconfig=backend-worker")...)
+				if err != nil {
+					t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
+				}
+				checkDeploymentConfigPods(t, pods, product, namespace, deploymentConfig)
 			}
 		}
 	}
 }
 
 func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingContext) []Namespace {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
-		return []Namespace{
-			getDeploymentConfiguration("threeScaleDeploymentConfig", inst, t, ctx),
-		}
-	}
 	return []Namespace{
 		getDeploymentConfiguration("threeScaleDeploymentConfig", inst, t, ctx),
-		getDeploymentConfiguration("fuseDeploymentConfig", inst, t, ctx),
-		getDeploymentConfiguration("solutionExplorerDeploymentConfig", inst, t, ctx),
 	}
 }
 
@@ -508,7 +487,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		},
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) || integreatlyv1alpha1.IsRHMI(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		statefulSets = append(statefulSets, []Namespace{
 			{
 				Name: NamespacePrefix + "user-sso",

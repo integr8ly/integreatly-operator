@@ -89,10 +89,6 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		t.Skip("Skipping test as this is not a managed api install")
-	}
-
 	priorityClass := &schedulingv1.PriorityClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: rhmi.Spec.PriorityClassName,

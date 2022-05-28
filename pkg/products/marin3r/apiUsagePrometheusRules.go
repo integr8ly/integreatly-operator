@@ -26,16 +26,13 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	if err != nil {
 		return nil, err
 	}
-	namespace := r.Config.GetNamespace()
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get observability config: %e", err)
-		}
-
-		namespace = observabilityConfig.GetNamespace()
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get observability config: %e", err)
 	}
+
+	namespace := observabilityConfig.GetNamespace()
 
 	alerts, err := mapAlertsConfiguration(r.log, namespace, r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
 	if err != nil {

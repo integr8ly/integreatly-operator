@@ -687,15 +687,13 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, client k8sclient.C
 				// delete it from the cluster
 				// consider parameterising this to rhoam
 
-				if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-					for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-						if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
-							err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
-							if err != nil {
-								return integreatlyv1alpha1.PhaseFailed, err
-							}
-							continue copyOut
+				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+					if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
+						err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
+						if err != nil {
+							return integreatlyv1alpha1.PhaseFailed, err
 						}
+						continue copyOut
 					}
 				}
 
@@ -725,15 +723,13 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, client k8sclient.C
 			// on upgrade don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed
 			// those service monitors were created by AMO to self monitor
 			// the can be removed in the case of RHOAM
-			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-					if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
-						err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
-						if err != nil {
-							return integreatlyv1alpha1.PhaseFailed, err
-						}
-						continue cleanUpOut
+			for _, s := range sm.Spec.NamespaceSelector.MatchNames {
+				if s == fmt.Sprintf("%smiddleware-monitoring-operator", r.Config.GetNamespacePrefix()) {
+					err = r.removeServiceMonitor(ctx, client, sm.Namespace, sm.Name)
+					if err != nil {
+						return integreatlyv1alpha1.PhaseFailed, err
 					}
+					continue cleanUpOut
 				}
 			}
 

@@ -105,12 +105,6 @@ func TestDedicatedAdminUserPermissions(t TestingTB, ctx *TestingContext) {
 	verifyDedicatedAdminSecretPermissions(t, openshiftClient, rhmi.Spec.Type)
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
-
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-
-		// Verify dedicated admin Role / Role binding for AMQ Online resources
-		verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
-	}
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace

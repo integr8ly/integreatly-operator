@@ -3,7 +3,6 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -504,10 +503,7 @@ func (r *Reconciler) ReconcileStatefulSet(ctx context.Context, serverClient k8sc
 	}
 
 	// Include the PodPriority mutation only if the install type is Managed API
-	mutatePodPriority := resources.NoopMutate
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-		mutatePodPriority = resources.MutatePodPriority(r.Installation.Spec.PriorityClassName)
-	}
+	mutatePodPriority := resources.MutatePodPriority(r.Installation.Spec.PriorityClassName)
 
 	return resources.UpdatePodTemplateIfExists(
 		ctx,
@@ -620,40 +616,25 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-		cfg, err := r.ConfigManager.ReadMonitoring()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
-		}
-
-		err = monitoringcommon.CreateBlackboxTarget(ctx, targetName, integreatlyv1alpha1.BlackboxtargetData{
-			Url:     url,
-			Service: service,
-		}, cfg, r.Installation, client)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rhsso blackbox target: %w", err)
-		}
-	}
+	// FIXME possible this function could be completely removed
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-		cfg, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
-		}
+	cfg, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
+	}
 
-		phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", prometheus.ProbeTargetStaticConfig{
-			Targets: []string{url},
-			Labels: map[string]string{
-				"service": service,
-			},
-		})
+	phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", prometheus.ProbeTargetStaticConfig{
+		Targets: []string{url},
+		Labels: map[string]string{
+			"service": service,
+		},
+	})
 
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, fmt.Errorf("failed to create rhsso prometheus probe: %w", err)
-		}
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, fmt.Errorf("failed to create rhsso prometheus probe: %w", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -735,57 +716,53 @@ func (r *Reconciler) IsOperatorInstallComplete(kc *keycloak.Keycloak, operatorVe
 }
 
 func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Client, productName string, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-		ssoAlert := &monitoringv1.PrometheusRule{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "keycloak",
-				Namespace: productNamespace,
-			},
-		}
+	ssoAlert := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: productNamespace,
+		},
+	}
 
-		err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: ssoAlert.Name, Namespace: ssoAlert.Namespace}, ssoAlert)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: ssoAlert.Name, Namespace: ssoAlert.Namespace}, ssoAlert)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
-		if ssoAlert.Spec.Groups == nil {
+	if ssoAlert.Spec.Groups == nil {
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
-		for groupIdx, alertGroup := range ssoAlert.Spec.Groups {
-			if alertGroup.Name == "general.rules" {
-				for idx, alertRule := range alertGroup.Rules {
-					if alertRule.Alert == "KeycloakInstanceNotAvailable" {
-						ssoAlert.Spec.Groups[groupIdx].Rules = removeRule(ssoAlert.Spec.Groups[0].Rules, idx)
-					}
+	for groupIdx, alertGroup := range ssoAlert.Spec.Groups {
+		if alertGroup.Name == "general.rules" {
+			for idx, alertRule := range alertGroup.Rules {
+				if alertRule.Alert == "KeycloakInstanceNotAvailable" {
+					ssoAlert.Spec.Groups[groupIdx].Rules = removeRule(ssoAlert.Spec.Groups[0].Rules, idx)
 				}
 			}
 		}
+	}
 
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
-		observabilityAlert := &monitoringv1.PrometheusRule{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      productName,
-				Namespace: observabilityConfig.GetNamespace(),
-			},
-		}
-
-		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
-			observabilityAlert.Labels = ssoAlert.Labels
-			observabilityAlert.Spec = ssoAlert.Spec
-
-			return nil
-		})
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-		if opRes != controllerutil.OperationResultNone {
-			r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": observabilityAlert.Name, "result": opRes})
-		}
+	observabilityAlert := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      productName,
+			Namespace: observabilityConfig.GetNamespace(),
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
+		observabilityAlert.Labels = ssoAlert.Labels
+		observabilityAlert.Spec = ssoAlert.Spec
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": observabilityAlert.Name, "result": opRes})
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

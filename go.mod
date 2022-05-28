@@ -21,7 +21,6 @@ require (
 	github.com/go-openapi/strfmt v0.20.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
-	github.com/google/go-querystring v1.0.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/grafana-operator/grafana-operator/v4 v4.2.0
 	github.com/headzoo/surf v1.0.0

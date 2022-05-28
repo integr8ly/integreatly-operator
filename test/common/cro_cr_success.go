@@ -50,17 +50,10 @@ func getRedisToCheck(installType string, installationName string) []string {
 	commonRedis := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
 		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
-	}
-
-	managedApiRedis := []string{
 		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonRedis, managedApiRedis...)
-	} else {
-		return commonRedis
-	}
+	return commonRedis
 }
 
 func getBlobStorageToCheck(installType, installationName string) []string {
@@ -68,15 +61,7 @@ func getBlobStorageToCheck(installType, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
 	}
 
-	rhmi2 := []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
-	}
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return common
-	}
-
-	return append(common, rhmi2...)
+	return common
 }
 
 func TestCROPostgresSuccessfulState(t TestingTB, ctx *TestingContext) {

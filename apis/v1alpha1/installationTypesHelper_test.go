@@ -4,33 +4,6 @@ import (
 	"testing"
 )
 
-func TestRHMIInstallType(t *testing.T) {
-	tests := []struct {
-		name            string
-		installType     InstallationType
-		expectedOutcome bool
-	}{
-		{
-			name:            "test that isRHMI returns true",
-			installType:     InstallationTypeManaged,
-			expectedOutcome: true,
-		},
-		{
-			name:            "test that isRHMI returns false",
-			installType:     InstallationTypeManagedApi,
-			expectedOutcome: false,
-		},
-	}
-	for _, c := range tests {
-		t.Run(c.name, func(t *testing.T) {
-			v := IsRHMI(c.installType)
-			if v != c.expectedOutcome {
-				t.Errorf("Outcome does not match expected value - got %v; expecting %v", v, c.expectedOutcome)
-			}
-		})
-	}
-}
-
 func TestRHOAMInstallType(t *testing.T) {
 	tests := []struct {
 		name            string

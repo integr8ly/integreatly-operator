@@ -8,7 +8,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/google/go-querystring/query"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
@@ -57,47 +56,10 @@ func TestRHMIDeveloperUserPermissions(t TestingTB, ctx *TestingContext) {
 	t.Log("retrieved rhmi developer user tokens")
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
-	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		// test rhmi developer projects are as expected
-		t.Log("testing rhmi 2 developer projects")
-		if err := testRHMI2DeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
-			t.Fatalf("test failed - %v", err)
-		}
-	} else {
-		// test managed api developer projects are as expected
-		t.Log("testing managed api developer projects")
-		if err := testManagedApiDeveloperProjects(masterURL, openshiftClient); err != nil {
-			t.Fatalf("test failed - %v", err)
-		}
-	}
-
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		// get fuse pods for rhmi developer
-		podlist, err := openshiftClient.ListPods(fuseNamespace)
-		if err != nil {
-			t.Fatalf("error occured while getting pods : %v", err)
-		}
-
-		// log through rhmi developer fuse podlist
-		for _, p := range podlist.Items {
-			if p.Status.Phase == "Running" {
-				logOpt := LogOptions{p.Spec.Containers[0].Name, "false", "10"}
-				lv, err := query.Values(logOpt)
-				if err != nil {
-					t.Fatal(err)
-				}
-				// verify an rhmi developer can access the pods logs
-				podPath := fmt.Sprintf(resources.OpenshiftPathListPods, p.Namespace)
-				resp, err := openshiftClient.GetRequest(fmt.Sprintf("%s/%s/log?%s", podPath, p.Name, lv.Encode()))
-				if err != nil {
-					t.Fatalf("error occurred making oc get request: %v", err)
-				}
-				if resp.StatusCode != 200 {
-					t.Fatalf("test-failed - status code %d RHMI developer unable to access fuse logs in pod %s : %v", resp.StatusCode, p.Name, err)
-				}
-			}
-		}
+	// test managed api developer projects are as expected
+	t.Log("testing managed api developer projects")
+	if err := testManagedApiDeveloperProjects(masterURL, openshiftClient); err != nil {
+		t.Fatalf("test failed - %v", err)
 	}
 
 	// Verify RHMI Developer permissions around RHMI & RHMI Config

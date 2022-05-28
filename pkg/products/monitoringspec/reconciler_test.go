@@ -62,9 +62,7 @@ func basicInstallation(installationType integreatlyv1alpha1.InstallationType) *i
 
 func getNamespaceByInstallType(installationType integreatlyv1alpha1.InstallationType) string {
 	defaultInstallationNamespace := "observability"
-	if !integreatlyv1alpha1.IsRHOAM(installationType) {
-		defaultInstallationNamespace = "monitoring"
-	}
+
 	return defaultInstallationNamespace
 }
 

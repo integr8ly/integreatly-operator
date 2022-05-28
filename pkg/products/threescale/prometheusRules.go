@@ -3,7 +3,6 @@ package threescale
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
@@ -17,29 +16,22 @@ import (
 func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx context.Context, serverClient k8sclient.Client) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
-	namespace := r.Config.GetNamespace()
-	operatorNamespace := r.Config.GetOperatorNamespace()
-	alertNamePrefix := ""
-	operatorAlertNamePrefix := ""
-
 	//clusterVersion
 	containerCpuMetric, err := metrics.GetContainerCPUMetric(ctx, serverClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			logger.Warning("failed to get observability config")
-			return nil, nil
-		}
-
-		namespace = observabilityConfig.GetNamespace()
-		operatorNamespace = observabilityConfig.GetNamespace()
-		alertNamePrefix = "3scale-"
-		operatorAlertNamePrefix = "3scale-operator-"
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		logger.Warning("failed to get observability config")
+		return nil, nil
 	}
+
+	namespace := observabilityConfig.GetNamespace()
+	operatorNamespace := observabilityConfig.GetNamespace()
+	alertNamePrefix := "3scale-"
+	operatorAlertNamePrefix := "3scale-operator-"
 
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,

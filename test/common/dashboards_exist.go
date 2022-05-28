@@ -228,21 +228,14 @@ func allowOnlyWorkLoadDashboard(unexpected []string) bool {
 }
 
 func getExpectedCustomerDashboard(installType string) []dashboardsTestRule {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return customerRHOAMDashboards
-	}
-	return nil
+	return customerRHOAMDashboards
 }
 
 func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-			return append(commonExpectedDashboards, multitenantRHOAMDashboards...)
-		}
-		return commonExpectedDashboards
-	} else {
-		return append(commonExpectedDashboards, rhmi2ExpectedDashboards...)
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return append(commonExpectedDashboards, multitenantRHOAMDashboards...)
 	}
+	return commonExpectedDashboards
 }
 
 func getGrafanaPods(t TestingTB, ctx *TestingContext, ns string) corev1.PodList {
