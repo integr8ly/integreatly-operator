@@ -37,8 +37,8 @@ const (
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
 	rateLimitImage                = "quay.io/3scale/limitador:v0.5.1"
-	maxHpaReplicaCount         = 3
-	minHpaReplicaCount         = 2
+	maxHpaReplicaCount            = 3
+	minHpaReplicaCount            = 2
 )
 
 type RateLimitServiceReconciler struct {
@@ -84,7 +84,7 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	}
 
 	defaultNumberOfReplicas := int32(minHpaReplicaCount)
-	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, "Deployment", quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}

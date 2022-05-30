@@ -128,7 +128,6 @@ func GetQuota(ctx context.Context, c client.Client, quotaParam string, QuotaConf
 		retQuota.autoscalingEnabled = false
 	}
 
-
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
 		pc := QuotaProductConfig{

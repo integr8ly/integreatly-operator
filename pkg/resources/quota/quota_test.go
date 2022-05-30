@@ -36,11 +36,11 @@ func TestGetQuota(t *testing.T) {
 	pointerToQuota := &Quota{}
 
 	type args struct {
-		QuotaId     string
-		QuotaConfig *corev1.ConfigMap
-		Quota       *Quota
-		isUpdated   bool
-		client      client.Client
+		QuotaId            string
+		QuotaConfig        *corev1.ConfigMap
+		Quota              *Quota
+		isUpdated          bool
+		client             client.Client
 		autoscalingEnabled bool
 	}
 	tests := []struct {
@@ -73,11 +73,11 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "test successful parsing of config map to quota object for 1 million quota on AWS",
 			args: args{
-				QuotaId:     DEVQUOTAPARAM,
-				QuotaConfig: getQuotaConfig(nil),
-				Quota:       pointerToQuota,
-				isUpdated:   false,
-				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
+				QuotaId:            DEVQUOTAPARAM,
+				QuotaConfig:        getQuotaConfig(nil),
+				Quota:              pointerToQuota,
+				isUpdated:          false,
+				client:             fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 				autoscalingEnabled: false,
 			},
 			want: &Quota{
@@ -149,11 +149,11 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "test successful parsing of config map to quota object for TWENTY million Quota on AWS",
 			args: args{
-				QuotaId:     TWENTYMILLIONQUOTAPARAM,
-				QuotaConfig: getQuotaConfig(nil),
-				Quota:       pointerToQuota,
-				isUpdated:   false,
-				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
+				QuotaId:            TWENTYMILLIONQUOTAPARAM,
+				QuotaConfig:        getQuotaConfig(nil),
+				Quota:              pointerToQuota,
+				isUpdated:          false,
+				client:             fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 				autoscalingEnabled: false,
 			},
 			want: &Quota{
@@ -312,6 +312,7 @@ func TestGetQuota(t *testing.T) {
 				QuotaConfig:        getQuotaConfig(nil),
 				Quota:              pointerToQuota,
 				isUpdated:          false,
+				client:             fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 				autoscalingEnabled: true,
 			},
 			want: &Quota{
