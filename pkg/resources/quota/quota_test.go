@@ -26,10 +26,11 @@ func TestGetQuota(t *testing.T) {
 	pointerToQuota := &Quota{}
 
 	type args struct {
-		QuotaId     string
-		QuotaConfig *corev1.ConfigMap
-		Quota       *Quota
-		isUpdated   bool
+		QuotaId            string
+		QuotaConfig        *corev1.ConfigMap
+		Quota              *Quota
+		isUpdated          bool
+		autoscalingEnabled bool
 	}
 	tests := []struct {
 		name     string
@@ -50,10 +51,11 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "test successful parsing of config map to quota object for 1 million quota",
 			args: args{
-				QuotaId:     DEVQUOTAPARAM,
-				QuotaConfig: getQuotaConfig(nil),
-				Quota:       pointerToQuota,
-				isUpdated:   false,
+				QuotaId:            DEVQUOTAPARAM,
+				QuotaConfig:        getQuotaConfig(nil),
+				Quota:              pointerToQuota,
+				isUpdated:          false,
+				autoscalingEnabled: false,
 			},
 			want: &Quota{
 				name: DEVQUOTACONFIGNAME,
@@ -85,7 +87,7 @@ func TestGetQuota(t *testing.T) {
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
 							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
-						pointerToQuota,	
+						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
@@ -107,7 +109,6 @@ func TestGetQuota(t *testing.T) {
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
-				autoscalingEnabled: false,
 			},
 			validate: func(quota *Quota, t *testing.T) {
 				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
@@ -125,10 +126,11 @@ func TestGetQuota(t *testing.T) {
 		{
 			name: "test successful parsing of config map to quota object for TWENTY million Quota",
 			args: args{
-				QuotaId:     TWENTYMILLIONQUOTAPARAM,
-				QuotaConfig: getQuotaConfig(nil),
-				Quota:       pointerToQuota,
-				isUpdated:   false,
+				QuotaId:            TWENTYMILLIONQUOTAPARAM,
+				QuotaConfig:        getQuotaConfig(nil),
+				Quota:              pointerToQuota,
+				isUpdated:          false,
+				autoscalingEnabled: false,
 			},
 			want: &Quota{
 				name: TWENTYMILLIONQUOTACONFIGNAME,
@@ -197,10 +199,86 @@ func TestGetQuota(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "test autoscaling enabled sets ratelimit dc replicas to 0",
+			args: args{
+				QuotaId:            DEVQUOTAPARAM,
+				QuotaConfig:        getQuotaConfig(nil),
+				Quota:              pointerToQuota,
+				isUpdated:          false,
+				autoscalingEnabled: true,
+			},
+			want: &Quota{
+				name: DEVQUOTACONFIGNAME,
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
+					v1alpha1.Product3Scale: {
+						productName: v1alpha1.Product3Scale,
+						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[ApicastProductionName] = ResourceConfig{
+								Replicas: int32(1),
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("50m"),
+										corev1.ResourceMemory: resource.MustParse("50Mi"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("150m"),
+										corev1.ResourceMemory: resource.MustParse("100Mi"),
+									},
+								},
+							}
+							rcs[ApicastStagingName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendListenerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						quota: pointerToQuota,
+					},
+					v1alpha1.ProductGrafana: {
+						v1alpha1.ProductGrafana,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+					v1alpha1.ProductMarin3r: {
+						v1alpha1.ProductMarin3r,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[RateLimitName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+					v1alpha1.ProductRHSSOUser: {
+						v1alpha1.ProductRHSSOUser,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[KeycloakName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+				},
+				isUpdated: false,
+				rateLimitConfig: marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 1,
+				},
+				autoscalingEnabled: true,
+			},
+			validate: func(quota *Quota, t *testing.T) {
+				gotReplicas := quota.GetProduct(v1alpha1.ProductMarin3r).GetReplicas(RateLimitName)
+				wantReplicas := int32(0)
+				if gotReplicas != wantReplicas {
+					t.Errorf("Expected ratelimit replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
+				}
+				gotRequestsPerUnit := quota.GetProduct(v1alpha1.Product3Scale).GetRateLimitConfig().RequestsPerUnit
+				wantRequestsPerUnit := uint32(1)
+				if gotRequestsPerUnit != wantRequestsPerUnit {
+					t.Errorf("Expected requests per unti to be '%v' but got '%v'", wantRequestsPerUnit, gotRequestsPerUnit)
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, false)
+			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota, tt.args.autoscalingEnabled)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -859,6 +937,56 @@ func TestProductConfig_Configure(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "validate dc replica count not being reset when autoscaling is enabled",
+			fields: fields{
+				productName: v1alpha1.ProductMarin3r,
+				resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+					rcs[BackendListenerName] = ResourceConfig{
+						Replicas: int32(5),
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.24"),
+								corev1.ResourceMemory: resource.MustParse("449"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.24"),
+								corev1.ResourceMemory: resource.MustParse("499"),
+							},
+						},
+					}
+				}),
+				quota: &Quota{
+					isUpdated:          false,
+					autoscalingEnabled: true,
+				},
+			},
+			args: args{obj: getDeployment(BackendListenerName, func(d *appsv1.Deployment) {
+				d.Spec.Template.Spec.Containers = []corev1.Container{
+					{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.25"),
+								corev1.ResourceMemory: resource.MustParse("450"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("0.3"),
+								corev1.ResourceMemory: resource.MustParse("500"),
+							},
+						},
+					},
+				}
+			}),
+			},
+			validate: func(obj metav1.Object, r map[string]ResourceConfig, t *testing.T) {
+				dSpec := obj.(*appsv1.Deployment).Spec
+				dReplicas := dSpec.Replicas
+				configReplicas := int32(0)
+				if *dReplicas != configReplicas {
+					t.Errorf("deployment replicas not as expected, \n got = %v, \n want= %v ", *dReplicas, configReplicas)
+				}
+			},
 		},
 	}
 	for _, tt := range tests {

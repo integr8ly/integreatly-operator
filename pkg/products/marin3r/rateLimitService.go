@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
- 
 )
 
 const (
@@ -33,6 +32,8 @@ const (
 	multitenantLimitConfigMap  = "multitenant-config"
 	multitenantRateLimit       = "mulitenantLimit"
 	multitenantDescriptorValue = "per-mt-limit"
+	maxHpaReplicaCount         = 3
+	minHpaReplicaCount         = 2
 )
 
 type RateLimitServiceReconciler struct {
@@ -68,7 +69,7 @@ type limitadorLimit struct {
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
 // It reconciles a ConfigMap to configure the service, a Deployment to run it, and
 // exposes it as a Service
-func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {	
+func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -79,11 +80,10 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
-	if r.Installation.Spec.AutoscalingEnabled {
-		phase, err = autoscaling.ReconcileHPA(ctx, client, quota.RateLimitName, r.Namespace, 1, *int32(1))
-		if phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+	defaultNumberOfReplicas := int32(minHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
 	return r.reconcileService(ctx, client)
@@ -155,10 +155,6 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			Name:      quota.RateLimitName,
 			Namespace: r.Namespace,
 		},
-	}
-
-	if r.Installation.Spec.AutoscalingEnabled == true {
-		
 	}
 
 	key, err := k8sclient.ObjectKeyFromObject(deployment)

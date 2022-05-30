@@ -3,14 +3,17 @@ package marin3r
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	v2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +23,9 @@ import (
 
 func TestRateLimitService(t *testing.T) {
 	scheme := newScheme()
+	v2beta1.AddToScheme(scheme)
+	minReplicasValue := int32(2)
+	targetUtil := int32(60)
 
 	scenarios := []struct {
 		Name          string
@@ -221,6 +227,149 @@ func TestRateLimitService(t *testing.T) {
 					}
 					return nil
 				}),
+			),
+		},
+
+		{
+			Name: "confirm that HPA was created for rate limiting",
+			Reconciler: NewRateLimitServiceReconciler(marin3rconfig.RateLimitConfig{
+				Unit:            "minute",
+				RequestsPerUnit: 1,
+			},
+				&integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: "redhat-rhoam-operator",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						AutoscalingEnabled: true,
+					},
+				}, "redhat-test-marin3r", "ratelimit-redis"),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			InitObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ratelimit-redis",
+						Namespace: "redhat-test-marin3r",
+					},
+					Data: map[string][]byte{
+						"URL": []byte("test-url"),
+					},
+				},
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "autoscaling-config",
+						Namespace: "redhat-rhoam-operator",
+					},
+					Data: map[string]string{
+						"ratelimit": "60",
+					},
+				},
+			},
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseCompleted),
+				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
+
+					hpaList := v2beta1.HorizontalPodAutoscalerList{}
+					err := client.List(context.TODO(), &hpaList)
+					if err != nil {
+						return fmt.Errorf("failed to obtain expected hpa: %v", err)
+					}
+					for _, hpa := range hpaList.Items {
+						if hpa.Name != "ratelimit" {
+							return fmt.Errorf("required ratelimit hpa not found")
+						}
+						if hpa.Spec.MaxReplicas != int32(3) {
+							return fmt.Errorf("ratelimit hpa max replicas values incorrect got: %v, want: %v", hpa.Spec.MaxReplicas, 3)
+						}
+						if *hpa.Spec.MinReplicas != int32(minReplicasValue) {
+							return fmt.Errorf("ratelimit hpa min replicas values incorrect got: %v, want: %v", *hpa.Spec.MinReplicas, minReplicasValue)
+						}
+						if *hpa.Spec.Metrics[0].Resource.TargetAverageUtilization != targetUtil {
+							return fmt.Errorf("ratelimit targetUtils values incorrect got: %v, want: %v", *hpa.Spec.Metrics[0].Resource.TargetAverageUtilization, targetUtil)
+						}
+					}
+					return nil
+				},
+			),
+		},
+		{
+			Name: "confirm that HPA was deleted for rate limiting",
+			Reconciler: NewRateLimitServiceReconciler(marin3rconfig.RateLimitConfig{
+				Unit:            "minute",
+				RequestsPerUnit: 1,
+			},
+				&integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: "redhat-rhoam-operator",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						AutoscalingEnabled: false,
+					},
+				}, "redhat-test-marin3r", "ratelimit-redis"),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			InitObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ratelimit-redis",
+						Namespace: "redhat-test-marin3r",
+					},
+					Data: map[string][]byte{
+						"URL": []byte("test-url"),
+					},
+				},
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "autoscaling-config",
+						Namespace: "redhat-rhoam-operator",
+					},
+					Data: map[string]string{
+						"ratelimit": "60",
+					},
+				},
+				&v2beta1.HorizontalPodAutoscaler{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ratelimit",
+						Namespace: "redhat-rhoam-marin3r",
+					},
+					Spec: v2beta1.HorizontalPodAutoscalerSpec{
+						MinReplicas: &minReplicasValue,
+						MaxReplicas: int32(3),
+						Metrics: []v2beta1.MetricSpec{
+							{
+								Resource: &v2beta1.ResourceMetricSource{
+									TargetAverageUtilization: &targetUtil,
+									Name:                     "cpu",
+								},
+							},
+						},
+					},
+				},
+			},
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseCompleted),
+				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
+					hpaList := v2beta1.HorizontalPodAutoscalerList{}
+					err := client.List(context.TODO(), &hpaList)
+					if err != nil {
+						return fmt.Errorf("failed to obtain expected hpa: %v", err)
+					}
+					if len(hpaList.Items) != 0 {
+						return fmt.Errorf("failed to delete hpa, expecting: 0 hpas, found: %v", len(hpaList.Items))
+					}
+					return nil
+				},
 			),
 		},
 	}
