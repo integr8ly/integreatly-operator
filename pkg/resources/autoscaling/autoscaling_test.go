@@ -4,7 +4,7 @@ import (
 	"context"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	v2beta1 "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +23,7 @@ var minReplicas = int32(1)
 
 func TestReconciler_ReconcileHPA(t *testing.T) {
 	scheme := runtime.NewScheme()
-	v2beta1.AddToScheme(scheme)
+	autoscaling.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
 
 	lowTargetUtil := int32(20)
@@ -46,6 +46,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 	tests := []struct {
 		Name               string
 		Installation       integreatlyv1alpha1.RHMI
+		HpaTargetKind      string
 		HpaTargetName      string
 		HpaTargetNs        string
 		MinReplicas        *int32
@@ -65,6 +66,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 					AutoscalingEnabled: true,
 				},
 			},
+			HpaTargetKind:      "Deployment",
 			HpaTargetName:      "ratelimit",
 			HpaTargetNs:        testNamespace,
 			MinReplicas:        &minReplicas,
@@ -87,6 +89,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 					AutoscalingEnabled: false,
 				},
 			},
+			HpaTargetKind:      "Deployment",
 			HpaTargetName:      "ratelimit",
 			HpaTargetNs:        testNamespace,
 			MinReplicas:        &minReplicas,
@@ -110,6 +113,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 					AutoscalingEnabled: true,
 				},
 			},
+			HpaTargetKind:      "Deployment",
 			HpaTargetName:      "backend-listener",
 			HpaTargetNs:        testNamespace,
 			MinReplicas:        &minReplicas,
@@ -148,7 +152,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			phase, err := ReconcileHPA(context.TODO(), tt.FakeClient, tt.Installation, tt.HpaTargetName, tt.HpaTargetNs, tt.MinReplicas, tt.MaxReplicas)
+			phase, err := ReconcileHPA(context.TODO(), tt.FakeClient, tt.Installation, tt.HpaTargetKind, tt.HpaTargetName, tt.HpaTargetNs, tt.MinReplicas, tt.MaxReplicas)
 			if err != nil {
 				t.Fatalf("Expected %s phase but got %s", tt.ExpectedStatus, phase)
 			}
@@ -166,7 +170,7 @@ func TestReconciler_ReconcileHPA(t *testing.T) {
 }
 
 func verifyHpaExistsWithCorrectValues(client k8sclient.Client, targetName string, expectedTargetUtil *int32) bool {
-	hpa := v2beta1.HorizontalPodAutoscaler{
+	hpa := autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      targetName,
 			Namespace: testNamespace,
@@ -178,7 +182,7 @@ func verifyHpaExistsWithCorrectValues(client k8sclient.Client, targetName string
 		return false
 	}
 
-	currentTargetUtil := hpa.Spec.Metrics[0].Resource.TargetAverageUtilization
+	currentTargetUtil := hpa.Spec.TargetCPUUtilizationPercentage
 	if *currentTargetUtil != *expectedTargetUtil {
 		return false
 	}
@@ -194,32 +198,25 @@ func verifyHpaExistsWithCorrectValues(client k8sclient.Client, targetName string
 	return true
 }
 
-func retrieveExistsingHPA(targetName string, minReplicas *int32, maxReplicas int32, targetUtil *int32) *v2beta1.HorizontalPodAutoscaler {
-	return &v2beta1.HorizontalPodAutoscaler{
+func retrieveExistsingHPA(targetName string, minReplicas *int32, maxReplicas int32, targetUtil *int32) *autoscaling.HorizontalPodAutoscaler {
+	return &autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      targetName,
 			Namespace: testNamespace,
 		},
-		Spec: v2beta1.HorizontalPodAutoscalerSpec{
+		Spec: autoscaling.HorizontalPodAutoscalerSpec{
 			MinReplicas: minReplicas,
 			MaxReplicas: maxReplicas,
-			ScaleTargetRef: v2beta1.CrossVersionObjectReference{
+			ScaleTargetRef: autoscaling.CrossVersionObjectReference{
 				Name: targetName,
 			},
-			Metrics: []v2beta1.MetricSpec{
-				{
-					Resource: &v2beta1.ResourceMetricSource{
-						Name:                     corev1.ResourceCPU,
-						TargetAverageUtilization: targetUtil,
-					},
-				},
-			},
+			TargetCPUUtilizationPercentage: targetUtil,
 		},
 	}
 }
 
 func verifyHpaIsRemoved(client k8sclient.Client, targetName string, expectedTargetUtil *int32) bool {
-	hpa := v2beta1.HorizontalPodAutoscaler{
+	hpa := autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      targetName,
 			Namespace: testNamespace,

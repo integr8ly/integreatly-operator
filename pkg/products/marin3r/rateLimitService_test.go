@@ -11,7 +11,7 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v2beta1 "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +23,7 @@ import (
 
 func TestRateLimitService(t *testing.T) {
 	scheme := newScheme()
-	v2beta1.AddToScheme(scheme)
+	autoscaling.AddToScheme(scheme)
 	minReplicasValue := int32(2)
 	targetUtil := int32(60)
 
@@ -275,7 +275,7 @@ func TestRateLimitService(t *testing.T) {
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
 				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
 
-					hpaList := v2beta1.HorizontalPodAutoscalerList{}
+					hpaList := autoscaling.HorizontalPodAutoscalerList{}
 					err := client.List(context.TODO(), &hpaList)
 					if err != nil {
 						return fmt.Errorf("failed to obtain expected hpa: %v", err)
@@ -290,8 +290,8 @@ func TestRateLimitService(t *testing.T) {
 						if *hpa.Spec.MinReplicas != int32(minReplicasValue) {
 							return fmt.Errorf("ratelimit hpa min replicas values incorrect got: %v, want: %v", *hpa.Spec.MinReplicas, minReplicasValue)
 						}
-						if *hpa.Spec.Metrics[0].Resource.TargetAverageUtilization != targetUtil {
-							return fmt.Errorf("ratelimit targetUtils values incorrect got: %v, want: %v", *hpa.Spec.Metrics[0].Resource.TargetAverageUtilization, targetUtil)
+						if *hpa.Spec.TargetCPUUtilizationPercentage != targetUtil {
+							return fmt.Errorf("ratelimit targetUtils values incorrect got: %v, want: %v", *hpa.Spec.TargetCPUUtilizationPercentage, targetUtil)
 						}
 					}
 					return nil
@@ -337,22 +337,15 @@ func TestRateLimitService(t *testing.T) {
 						"ratelimit": "60",
 					},
 				},
-				&v2beta1.HorizontalPodAutoscaler{
+				&autoscaling.HorizontalPodAutoscaler{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "ratelimit",
-						Namespace: "redhat-rhoam-marin3r",
+						Namespace: "redhat-test-marin3r",
 					},
-					Spec: v2beta1.HorizontalPodAutoscalerSpec{
-						MinReplicas: &minReplicasValue,
-						MaxReplicas: int32(3),
-						Metrics: []v2beta1.MetricSpec{
-							{
-								Resource: &v2beta1.ResourceMetricSource{
-									TargetAverageUtilization: &targetUtil,
-									Name:                     "cpu",
-								},
-							},
-						},
+					Spec: autoscaling.HorizontalPodAutoscalerSpec{
+						MinReplicas:                    &minReplicasValue,
+						MaxReplicas:                    int32(3),
+						TargetCPUUtilizationPercentage: &targetUtil,
 					},
 				},
 			},
@@ -360,7 +353,7 @@ func TestRateLimitService(t *testing.T) {
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
 				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
-					hpaList := v2beta1.HorizontalPodAutoscalerList{}
+					hpaList := autoscaling.HorizontalPodAutoscalerList{}
 					err := client.List(context.TODO(), &hpaList)
 					if err != nil {
 						return fmt.Errorf("failed to obtain expected hpa: %v", err)

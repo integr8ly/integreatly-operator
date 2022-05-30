@@ -53,7 +53,7 @@ require (
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.1
+	k8s.io/api v0.24.1
 	k8s.io/apiextensions-apiserver v0.21.2
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v12.0.0+incompatible

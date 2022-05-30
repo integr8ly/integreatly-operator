@@ -7,17 +7,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - autoscaling
-  resources:
-  - horizontalpodautoscalers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
   - ""
   resources:
   - configmaps
@@ -115,6 +104,17 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
   - watch
 - apiGroups:
   - config.openshift.io

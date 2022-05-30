@@ -81,7 +81,7 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	}
 
 	defaultNumberOfReplicas := int32(minHpaReplicaCount)
-	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, "Deployment", quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}

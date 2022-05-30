@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	v2beta1 "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func ReconcileHPA(ctx context.Context, client k8sclient.Client, installation integreatlyv1alpha1.RHMI, hpaTargetName string, hpaTargetNamespace string, minReplicas *int32, maxReplicas int32) (integreatlyv1alpha1.StatusPhase, error) {
-	hpa := v2beta1.HorizontalPodAutoscaler{
+func ReconcileHPA(ctx context.Context, client k8sclient.Client, installation integreatlyv1alpha1.RHMI, hpaTargetKind string, hpaTargetName string, hpaTargetNamespace string, minReplicas *int32, maxReplicas int32) (integreatlyv1alpha1.StatusPhase, error) {
+	hpa := autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      hpaTargetName,
 			Namespace: hpaTargetNamespace,
@@ -53,22 +53,13 @@ func ReconcileHPA(ctx context.Context, client k8sclient.Client, installation int
 	}
 	convertedTargetUtilization := int32(targetUtilization)
 
-	// setup metrics, get target util from cm
-	metrics := []v2beta1.MetricSpec{
-		{
-			Type: v2beta1.ResourceMetricSourceType,
-			Resource: &v2beta1.ResourceMetricSource{
-				Name:                     "cpu",
-				TargetAverageUtilization: &convertedTargetUtilization,
-			},
-		},
-	}
-
 	_, err = controllerutil.CreateOrUpdate(ctx, client, &hpa, func() error {
 		hpa.Spec.ScaleTargetRef.Name = hpaTargetName
+		hpa.Spec.ScaleTargetRef.Kind = hpaTargetKind
+		hpa.Spec.ScaleTargetRef.APIVersion = "apps/v1"
 		hpa.Spec.MaxReplicas = maxReplicas
 		hpa.Spec.MinReplicas = minReplicas
-		hpa.Spec.Metrics = metrics
+		hpa.Spec.TargetCPUUtilizationPercentage = &convertedTargetUtilization
 
 		return nil
 	})
