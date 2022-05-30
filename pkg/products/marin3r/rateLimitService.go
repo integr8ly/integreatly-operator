@@ -37,6 +37,8 @@ const (
 	RateLimitingConfigMapName     = "ratelimit-config"
 	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
 	rateLimitImage                = "quay.io/3scale/limitador:v0.5.1"
+	maxHpaReplicaCount         = 3
+	minHpaReplicaCount         = 2
 )
 
 type RateLimitServiceReconciler struct {
@@ -81,11 +83,10 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
-	if r.Installation.Spec.AutoscalingEnabled {
-		phase, err = autoscaling.ReconcileHPA(ctx, client, quota.RateLimitName, r.Namespace, 1, *int32(1))
-		if phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+	defaultNumberOfReplicas := int32(minHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
 	phase, err = r.reconcileService(ctx, client)
@@ -153,9 +154,6 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			Name:      quota.RateLimitName,
 			Namespace: r.Namespace,
 		},
-	}
-	if r.Installation.Spec.AutoscalingEnabled == true {
-
 	}
 
 	key := k8sclient.ObjectKeyFromObject(deployment)
