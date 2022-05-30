@@ -2,6 +2,8 @@ package aws
 
 import (
 	"context"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
@@ -13,12 +15,11 @@ import (
 	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 const (
-	redisMetricProviderName        = "aws elasticache metrics provider"
 	cloudWatchElastiCacheDimension = "CacheClusterId"
+	redisMetricProviderName        = "aws elasticache metrics provider"
 )
 
 var _ providers.RedisMetricsProvider = (*RedisMetricsProvider)(nil)
@@ -34,7 +35,7 @@ func NewAWSRedisMetricsProvider(client client.Client, logger *logrus.Entry) *Red
 	return &RedisMetricsProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"providers": redisMetricProviderName}),
-		CredentialManager: NewCredentialMinterCredentialManager(client),
+		CredentialManager: NewCredentialManager(client),
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
 	}
 }
@@ -64,7 +65,7 @@ func (r *RedisMetricsProvider) ScrapeRedisMetrics(ctx context.Context, redis *v1
 	}
 
 	// create a session from redis strategy (region) and reconciled aws keys
-	sess, err := CreateSessionFromStrategy(ctx, r.Client, providerCreds.AccessKeyID, providerCreds.SecretAccessKey, redisStrategyConfig)
+	sess, err := CreateSessionFromStrategy(ctx, r.Client, providerCreds, redisStrategyConfig)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to create aws session to scrape elasticache cloud watch metrics")
 	}
@@ -81,7 +82,7 @@ func (r *RedisMetricsProvider) ScrapeRedisMetrics(ctx context.Context, redis *v1
 }
 
 func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Context, cloudWatchApi cloudwatchiface.CloudWatchAPI, redis *v1alpha1.Redis, elastiCacheApi elasticacheiface.ElastiCacheAPI, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
-	resourceID, err := BuildInfraNameFromObject(ctx, r.Client, redis.ObjectMeta, DefaultAwsIdentifierLength)
+	resourceID, err := BuildInfraNameFromObject(ctx, r.Client, redis.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return nil, errorUtil.Errorf("error occurred building instance name: %v", err)
 	}

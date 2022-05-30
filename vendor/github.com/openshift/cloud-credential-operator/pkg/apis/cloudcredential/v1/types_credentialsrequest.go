@@ -46,15 +46,27 @@ const (
 // CredentialsRequestSpec defines the desired state of CredentialsRequest
 type CredentialsRequestSpec struct {
 	// SecretRef points to the secret where the credentials should be stored once generated.
+	// +kubebuilder:validation:Required
+	// +required
 	SecretRef corev1.ObjectReference `json:"secretRef"`
 
 	// ProviderSpec contains the cloud provider specific credentials specification.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	ProviderSpec *runtime.RawExtension `json:"providerSpec,omitempty"`
+
+	// ServiceAccountNames contains a list of ServiceAccounts that will use permissions associated with this
+	// CredentialsRequest. This is not used by CCO, but the information is needed for being able to properly
+	// set up access control in the cloud provider when the ServiceAccounts are used as part of the cloud
+	// credentials flow.
+	// +optional
+	ServiceAccountNames []string `json:"serviceAccountNames,omitempty"`
 }
 
 // CredentialsRequestStatus defines the observed state of CredentialsRequest
 type CredentialsRequestStatus struct {
 	// Provisioned is true once the credentials have been initially provisioned.
+	// +kubebuilder:validation:Required
+	// +required
 	Provisioned bool `json:"provisioned"`
 
 	// LastSyncTimestamp is the time that the credentials were last synced.
@@ -63,9 +75,19 @@ type CredentialsRequestStatus struct {
 	// LastSyncGeneration is the generation of the credentials request resource
 	// that was last synced. Used to determine if the object has changed and
 	// requires a sync.
+	// +kubebuilder:validation:Required
+	// +required
 	LastSyncGeneration int64 `json:"lastSyncGeneration"`
 
+	// LastSyncCloudCredsSecretResourceVersion is the resource version of the
+	// cloud credentials secret resource when the credentials request resource
+	// was last synced. Used to determine if the the cloud credentials have
+	// been updated since the last sync.
+	// +optional
+	LastSyncCloudCredsSecretResourceVersion string `json:"lastSyncCloudCredsSecretResourceVersion,omitempty"`
+
 	// ProviderStatus contains cloud provider specific status.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	ProviderStatus *runtime.RawExtension `json:"providerStatus,omitempty"`
 
 	// Conditions includes detailed status for the CredentialsRequest
@@ -83,6 +105,8 @@ type CredentialsRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	// +kubebuilder:validation:Required
+	// +required
 	Spec   CredentialsRequestSpec   `json:"spec"`
 	Status CredentialsRequestStatus `json:"status,omitempty"`
 }
@@ -99,8 +123,12 @@ type CredentialsRequestList struct {
 // CredentialsRequestCondition contains details for any of the conditions on a CredentialsRequest object
 type CredentialsRequestCondition struct {
 	// Type is the specific type of the condition
+	// +kubebuilder:validation:Required
+	// +required
 	Type CredentialsRequestConditionType `json:"type"`
 	// Status is the status of the condition
+	// +kubebuilder:validation:Required
+	// +required
 	Status corev1.ConditionStatus `json:"status"`
 	// LastProbeTime is the last time we probed the condition
 	LastProbeTime metav1.Time `json:"lastProbeTime,omitempty"`
@@ -131,12 +159,23 @@ const (
 	// CredentialsDeprovisionFailure is true whenever there is an error when trying
 	// to clean up any previously-created cloud resources
 	CredentialsDeprovisionFailure CredentialsRequestConditionType = "CredentialsDeprovisionFailure"
+	// Ignored is true when the CredentialsRequest's ProviderSpec is for
+	// a different infrastructure platform than what the cluster has been
+	// deployed to. This is normal as the release image contains CredentialsRequests for all
+	// possible clouds/infrastructure, and cloud-credential-operator will only act on the
+	// CredentialsRequests where the cloud/infra matches.
+	Ignored CredentialsRequestConditionType = "Ignored"
+	// StaleCredentials is true when CredentialsRequest is no longer required and has to be cleaned ip
+	StaleCredentials CredentialsRequestConditionType = "StaleCredentials"
 )
 
-func init() {
-	SchemeBuilder.Register(
-		&CredentialsRequest{}, &CredentialsRequestList{},
-		&AWSProviderStatus{}, &AWSProviderSpec{},
-		&AzureProviderStatus{}, &AzureProviderSpec{},
-	)
-}
+var (
+	// FailureConditionTypes is a list of all conditions where the overall controller status would not
+	// be healthy.
+	FailureConditionTypes = []CredentialsRequestConditionType{
+		InsufficientCloudCredentials,
+		MissingTargetNamespace,
+		CredentialsProvisionFailure,
+		CredentialsDeprovisionFailure,
+	}
+)

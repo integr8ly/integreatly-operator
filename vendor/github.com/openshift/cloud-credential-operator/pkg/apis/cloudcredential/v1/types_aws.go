@@ -38,9 +38,11 @@ type StatementEntry struct {
 	Action []string `json:"action"`
 	// Resource specifies the object(s) this statement should apply to. (or "*" for all)
 	Resource string `json:"resource"`
+	// PolicyCondition specifies under which condition StatementEntry will apply
+	PolicyCondition IAMPolicyCondition `json:"policyCondition,omitempty"`
 }
 
-// AWSStatus containes the status of the credentials request in AWS.
+// AWSProviderStatus containes the status of the credentials request in AWS.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type AWSProviderStatus struct {
 	metav1.TypeMeta `json:",inline"`
@@ -49,3 +51,11 @@ type AWSProviderStatus struct {
 	// Policy is the name of the policy attached to the user in AWS.
 	Policy string `json:"policy"`
 }
+
+// IAMPolicyCondition - map of condition types, with associated key - value mapping
+// +k8s:deepcopy-gen=false
+type IAMPolicyCondition map[string]IAMPolicyConditionKeyValue
+
+// IAMPolicyConditionKeyValue - mapping of values for the chosen type
+// +k8s:deepcopy-gen=false
+type IAMPolicyConditionKeyValue map[string]interface{}

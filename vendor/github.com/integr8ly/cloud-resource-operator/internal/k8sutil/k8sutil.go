@@ -2,6 +2,7 @@ package k8sutil
 
 import (
 	"fmt"
+	"github.com/spf13/afero"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+var AppFS = afero.NewOsFs()
 
 // GetWatchNamespace returns the Namespace the operator should be watching for changes
 func GetWatchNamespace() (string, error) {
@@ -34,8 +37,8 @@ var ErrRunLocal = fmt.Errorf("operator run mode forced to local")
 
 // GetOperatorNamespace returns the namespace the operator should be running in.
 func GetOperatorNamespace() (string, error) {
-	if isRunModeLocal() {
-		return "", ErrRunLocal
+	if IsRunModeLocal() {
+		return GetWatchNamespace() // Return the watched namespace for when running locally
 	}
 	nsBytes, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
@@ -67,13 +70,13 @@ func GetGVKsFromAddToScheme(addToSchemeFunc func(*runtime.Scheme) error) ([]sche
 	return ownGVKs, nil
 }
 
-func isRunModeLocal() bool {
+func IsRunModeLocal() bool {
 	return !isRunModeCluster()
 }
 
 // IsRunInCluster checks if the operator is run in cluster
 func isRunModeCluster() bool {
-	_, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount")
+	_, err := AppFS.Stat("/var/run/secrets/kubernetes.io/serviceaccount")
 	if err == nil {
 		return true
 	}

@@ -1,11 +1,11 @@
 /*
 Strategy Setup
 
-A utility to abstract the various strategy map ConfigMaps from the service using CRO (RHMI)
+A utility to abstract the various strategy map ConfigMaps from the service using CRO
 
 Problem Statement:
  - We require strategy map ConfigMaps to be in place to provide configuration used to provision cloud resources
- - Each provider overrides null configuration with expected RHMI specific defaults
+ - Each provider overrides null configuration with expected specific defaults
  - Non null configuration provided via strategy map is consumed by CRO as configuration for the provisioning of cloud resources
  - Strategy maps provide the source of truth for the expected state of a cloud resource
  - Strategy maps are used to update and modify the state of provisioned cloud resources
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	// exported tiers to be used by RHMI operator
+	// exported tiers to be used by RHOAM operator
 	TierProduction  = "production"
 	TierDevelopment = "development"
 
@@ -39,7 +39,7 @@ type StrategyTimeConfig struct {
 	MaintenanceStartTime string
 }
 
-// ReconcileStrategyMaps to be used to reconcile strategy maps expected in RHMI installs
+// ReconcileStrategyMaps to be used to reconcile strategy maps expected in RHOAM installs
 // A single function which can check the infrastructure and provision the correct strategy config map
 func ReconcileStrategyMaps(ctx context.Context, client client.Client, timeConfig *StrategyTimeConfig, tier, namespace string) error {
 	// reconciles aws specific strategy map
