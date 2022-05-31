@@ -17,9 +17,14 @@ case $OLM_TYPE in
     PACKAGE_NAME=managed-api-service
     OPERATOR_TYPE=rhoam
     ;;
+  "multitenant-managed-api-service")
+    PREVIOUS_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}') || echo "No previous version"
+    PACKAGE_NAME=multitenant-managed-api-service
+    OPERATOR_TYPE=multitenant-rhoam
+    ;;
   *)
     echo "Invalid OLM_TYPE set"
-    echo "Use \"integreatly-operator\" or \"managed-api-service\""
+    echo "Use \"integreatly-operator\" or \"managed-api-service\" or \"multitenant-managed-api-service\""
     exit 1
     ;;
 esac
@@ -87,6 +92,11 @@ set_version() {
           "${SED_INLINE[@]}" -E "s/managedAPIVersion\s+=\s+\"$PREVIOUS_VERSION\"/managedAPIVersion = \"$VERSION\"/g" version/version.go
           yq e -i ".channels[0].currentCSV=\"$OLM_TYPE.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
           ;;
+        "multitenant-managed-api-service")
+          "${SED_INLINE[@]}" -E "s/MULTITENANT_RHOAM_TAG\s+\?=\s+$PREVIOUS_VERSION/MULTITENANT_RHOAM_TAG \?= $VERSION/g" Makefile
+          "${SED_INLINE[@]}" -E "s/multitenantManagedAPIVersion\s+=\s+\"$PREVIOUS_VERSION\"/multitenantManagedAPIVersion = \"$VERSION\"/g" version/version.go
+          yq e -i ".channels[0].currentCSV=\"$OLM_TYPE.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
+          ;;
         *)
           echo "No version found for install type : $(OLM_TYPE)"
           ;;
@@ -106,6 +116,9 @@ set_installation_type() {
         "managed-api-service")
           yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "managed-api" ' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
           ;;
+        "multitenant-managed-api-service")
+          yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].env.[] | select(.name=="INSTALLATION_TYPE") | .value) = "multitenant-managed-api" ' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+          ;;
         *)
           echo "No INSTALLATION_TYPE found for install type : $(OLM_TYPE)"
           echo "using default INSTALLATION_TYPE found in deploy/operator.yaml"
@@ -116,7 +129,7 @@ set_installation_type() {
 
 set_descriptions() {
   case $OLM_TYPE in
-   "integreatly-operator")
+    "integreatly-operator")
       echo "using default descriptions"
       ;;
     "managed-api-service")
@@ -142,10 +155,15 @@ set_descriptions() {
 
 set_clusterPermissions() {
   case $OLM_TYPE in
-   "integreatly-operator")
+    "integreatly-operator")
       echo "using default permissions"
       ;;
     "managed-api-service")
+      echo "Updating permissions"
+      yq e -i '.spec.maintainers[0].email="rhoam-support@redhat.com"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i '.spec.maintainers[0].name="rhoam"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      ;;
+    "multitenant-managed-api-service")
       echo "Updating permissions"
       yq e -i '.spec.maintainers[0].email="rhoam-support@redhat.com"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
       yq e -i '.spec.maintainers[0].name="rhoam"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
@@ -155,16 +173,21 @@ set_clusterPermissions() {
 
 set_images() {
   case $OLM_TYPE in
-   "integreatly-operator")
-  : "${IMAGE_TAG:=v${SEMVER}}"
-  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
-  ;;
-  "managed-api-service")
-   : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
-  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
-  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
-  ;;
+    "integreatly-operator")
+      : "${IMAGE_TAG:=v${SEMVER}}"
+      yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      ;;
+    "managed-api-service")
+      : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
+      yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      ;;
+    "multitenant-managed-api-service")
+      : "${IMAGE_TAG:=v${SEMVER}}"
+      yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:$IMAGE_TAG\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+      ;;
   esac
 }
 
@@ -312,7 +335,7 @@ if [[ -n "$SERVICE_AFFECTING" ]]; then
 fi
 
 # The following is disabled to unblock rc1 cut of 1.13.0 - it should be renabled before final release.
-if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
+if [[ "${OLM_TYPE}" == "managed-api-service" ]] || [[ "${OLM_TYPE}" == "multitenant-managed-api-service" ]]; then
  set_related_images
 fi
 

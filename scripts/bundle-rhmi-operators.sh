@@ -7,8 +7,8 @@
 # Function:
 # Script creates olm bundle/bundles and index/indexes for RHOAM/RHMI 
 # Usage:
-# make create/olm/bundle OLM_TYPE=<managed||managed-api> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
-# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can either be integreatly-operator (RHMI) or managed-api-service (RHOAM)
+# make create/olm/bundle OLM_TYPE=<managed||managed-api||multitenant-managed-api-service> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
+# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can be integreatly-operator (RHMI), managed-api-service (RHOAM), or multitenant-managed-api-service (Multitenant RHOAM)
 # UPGRADE - defaults to false, if upgrade is false the oldest version specified in the BUNDLE_VERSIONS will have it's replaces removed, otherwise, replaces will stay
 # BUNDLE_VERSIONS - specifies the versions that are going to have the bundles build. Versions must exists in the bundle/OLM_TYPE folder and must be listed in a descending order
 # ORG - organization of where to push the bundles and indexes 
@@ -29,9 +29,12 @@ case $OLM_TYPE in
   "managed-api-service")
     LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
     ;;
+  "multitenant-managed-api-service")
+    LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
+    ;;
   *)
     echo "Invalid OLM_TYPE set"
-    echo "Use \"integreatly-operator\" or \"managed-api-service\""
+    echo "Use \"integreatly-operator\" or \"managed-api-service\" or \"multitenant-managed-api-service\""
     exit 1
     ;;
 esac
@@ -103,7 +106,7 @@ generate_bundles() {
     $BUILD_TOOL build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION --build-arg manifest_path=./bundles/$OLM_TYPE/temp/$VERSION/manifests --build-arg metadata_path=./bundles/$OLM_TYPE/temp/$VERSION/metadata --build-arg version=$VERSION .
     $BUILD_TOOL push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
     operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    cd ./bundles/managed-api-service/temp
+    cd ./bundles/${OLM_TYPE}/temp
   done
 }
 

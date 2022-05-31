@@ -1,0 +1,4 @@
+resources:
+- ../redhat-sandbox
+- ../samples
+- ../scorecard

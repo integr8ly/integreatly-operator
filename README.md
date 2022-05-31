@@ -93,7 +93,7 @@ If you are working against a fresh cluster it will need to be prepared using the
 Ensure you are logged into a cluster by `oc whoami`.
 Include the `INSTALLATION_TYPE`. See [here](#3-configuration-optional) about this and other optional configuration variables.
 ```shell
-INSTALLATION_TYPE=<managed/managed-api> make cluster/prepare/local
+INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> make cluster/prepare/local
 ```
 
 
