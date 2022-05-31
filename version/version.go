@@ -12,9 +12,10 @@ const (
 )
 
 var (
-	version           = "2.9.0"
-	managedAPIVersion = "1.24.0"
-	log               = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "version"})
+	version                      = "2.9.0"
+	managedAPIVersion            = "1.24.0"
+	multitenantManagedAPIVersion = "1.23.0"
+	log                          = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "version"})
 )
 
 func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStatus, expectedProductVersion string, expectedOpVersion string) bool {
@@ -39,7 +40,9 @@ func GetVersion() string {
 }
 
 func GetVersionByType(installType string) string {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		return multitenantManagedAPIVersion
+	} else if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedAPIVersion
 	} else {
 		return version
