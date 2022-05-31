@@ -23,6 +23,7 @@ import (
 	"fmt"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"io"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -1308,7 +1309,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
-	namespace, err := resources.GetWatchNamespace()
+	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
 	}
@@ -1636,7 +1637,7 @@ func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
 }
 
 func getInstallation() (*rhmiv1alpha1.RHMI, error) {
-	namespace, err := resources.GetWatchNamespace()
+	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
 	}

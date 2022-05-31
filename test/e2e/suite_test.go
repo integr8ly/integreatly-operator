@@ -40,7 +40,6 @@ var testEnv *envtest.Environment
 var installType string
 var err error
 var retryInterval = time.Second * 30
-var bootStrapStageTimeout = time.Minute * 5
 var cloudResourcesStageTimeout = time.Minute * 10
 var monitoringStageTimeout = time.Minute * 10
 var authenticationStageTimeout = time.Minute * 30

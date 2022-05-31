@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"os"
 	"strings"
 
@@ -100,7 +101,7 @@ func main() {
 		QuoteEmptyFields: false,
 	})
 
-	watchNamespace, err := resources.GetWatchNamespace()
+	watchNamespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
 			"the manager will watch and manage resources in all namespaces")
