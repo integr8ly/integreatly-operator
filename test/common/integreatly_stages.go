@@ -60,7 +60,6 @@ var (
 			"rhsso",
 			"cloud-resources",
 			"observability",
-			"rhssouser",
 			"3scale",
 			"marin3r",
 			"grafana",
