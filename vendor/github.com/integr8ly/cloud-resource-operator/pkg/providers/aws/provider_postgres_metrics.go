@@ -15,6 +15,8 @@ package aws
 
 import (
 	"context"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
@@ -24,7 +26,6 @@ import (
 	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 const (
@@ -45,7 +46,7 @@ func NewAWSPostgresMetricsProvider(client client.Client, logger *logrus.Entry) *
 	return &PostgresMetricsProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"providers": postgresMetricProviderName}),
-		CredentialManager: NewCredentialMinterCredentialManager(client),
+		CredentialManager: NewCredentialManager(client),
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
 	}
 }
@@ -76,7 +77,7 @@ func (p PostgresMetricsProvider) ScrapePostgresMetrics(ctx context.Context, post
 	}
 
 	// create a session from postgres strategy (region) and reconciled aws keys
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds.AccessKeyID, providerCreds.SecretAccessKey, postgresStrategyConfig)
+	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, postgresStrategyConfig)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to create aws session to scrape rds cloud watch metrics")
 	}
@@ -95,7 +96,7 @@ func (p PostgresMetricsProvider) ScrapePostgresMetrics(ctx context.Context, post
 // scrapeRDSCloudWatchMetricData fetches cloud watch metrics for rds
 // and parses it to a GenericCloudMetric in order to return to the controller
 func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Context, cloudWatchApi cloudwatchiface.CloudWatchAPI, postgres *v1alpha1.Postgres, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
-	resourceID, err := BuildInfraNameFromObject(ctx, p.Client, postgres.ObjectMeta, DefaultAwsIdentifierLength)
+	resourceID, err := BuildInfraNameFromObject(ctx, p.Client, postgres.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return nil, errorUtil.Errorf("error occurred building instance name: %v", err)
 	}

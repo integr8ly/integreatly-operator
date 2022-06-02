@@ -39,17 +39,15 @@ import (
 )
 
 const (
-	defaultSubnetPostfix          = "subnet-group"
-	defaultSecurityGroupPostfix   = "security-group"
 	defaultAWSPrivateSubnetTagKey = "kubernetes.io/role/internal-elb"
+	defaultSecurityGroupPostfix   = "security-group"
 	defaultSubnetGroupDesc        = "Subnet group created and managed by the Cloud Resource Operator"
 	// In AWS this must be between 16 and 28
+	// We want to use the least host addresses possible, so that we can support clusters provisioned in VPCs with small CIDR masks
+	// 28 has too few hosts available to be future-proof for RHOAM products, so use 27 to avoid a migration being required in the future
 	// Note: The larger the mask, the less hosts available in the network
-	// We want to use the least host addresses possible, so that we can support clusters provisioned in VPCs with small
-	// CIDR masks
-	// 28 has too few hosts available to be future-proof for RHMI products, so use 27 to avoid a migration being
-	// required in the future
-	defaultSubnetMask = 27
+	defaultSubnetMask    = 27
+	defaultSubnetPostfix = "subnet-group"
 )
 
 // ensures a subnet group is in place for the creation of a resource
@@ -62,7 +60,7 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 	logger.Infof("ensuring security group is correct for cluster %s", clusterID)
 
 	// build security group name
-	secName, err := BuildInfraName(ctx, c, defaultSecurityGroupPostfix, DefaultAwsIdentifierLength)
+	secName, err := BuildInfraName(ctx, c, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	logger.Info(fmt.Sprintf("setting resource security group %s", secName))
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
@@ -262,29 +260,15 @@ func createPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.E
 // tags a private subnet with the default aws private subnet tag
 func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, sub *ec2.Subnet, logger *logrus.Entry) error {
 	logger.Infof("tagging cloud resource subnet %s", *sub.SubnetId)
-	// get cluster id
-	clusterID, err := resources.GetClusterID(ctx, c)
+	tags, err := getDefaultSubnetTags(ctx, c)
 	if err != nil {
-		return errorUtil.Wrap(err, "error getting clusterID")
+		return err
 	}
-	organizationTag := resources.GetOrganizationTag()
-
 	_, err = ec2Svc.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{
 			aws.String(*sub.SubnetId),
 		},
-		Tags: []*ec2.Tag{
-			{
-				Key:   aws.String(defaultAWSPrivateSubnetTagKey),
-				Value: aws.String("1"),
-			}, {
-				Key:   aws.String(fmt.Sprintf("%sclusterID", organizationTag)),
-				Value: aws.String(clusterID),
-			}, {
-				Key:   aws.String("Name"),
-				Value: aws.String(DefaultRHMISubnetNameTagValue),
-			},
-		},
+		Tags: tags,
 	})
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to tag subnet")
@@ -292,10 +276,45 @@ func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2A
 	return nil
 }
 
+// retrieves default subnet tags
+func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, error) {
+	// get cluster id
+	clusterID, err := resources.GetClusterID(ctx, c)
+	if err != nil {
+		return nil, errorUtil.Wrap(err, "error getting clusterID")
+	}
+	organizationTag := resources.GetOrganizationTag()
+
+	tags := []*tag{
+		{
+			key:   defaultAWSPrivateSubnetTagKey,
+			value: "1",
+		}, {
+			key:   fmt.Sprintf("%sclusterID", organizationTag),
+			value: clusterID,
+		}, {
+			key:   tagDisplayName,
+			value: defaultSubnetNameTagValue,
+		}, buildManagedTag(),
+	}
+	infraTags, err := getUserInfraTags(ctx, c)
+	if err != nil {
+		msg := "Failed to get user infrastructure tags"
+		return nil, errorUtil.Wrapf(err, msg)
+	}
+	if infraTags != nil {
+		// merge tags into single array, where any duplicate
+		// values in infra are discarded in favour of the default tags
+		tags = mergeTags(tags, infraTags)
+	}
+
+	return genericToEc2Tags(tags), nil
+}
+
 // Builds a list of valid subnet CIDR blocks
 // Valid meaning it:
 // - Exists within the cluster VPC CIDR block
-// - Supports the amount of hosts that CRO requires by default for all RHMI products
+// - Supports the amount of hosts that CRO requires by default for all RHOAM products
 func buildSubnetAddress(vpc *ec2.Vpc, logger *logrus.Entry) ([]net.IPNet, error) {
 	logger.Infof("calculating subnet mask and address for vpc cidr %s", *vpc.CidrBlock)
 	if *vpc.CidrBlock == "" {
@@ -457,14 +476,27 @@ func getSubnets(ec2Svc ec2iface.EC2API) ([]*ec2.Subnet, error) {
 	return subs, nil
 }
 
+func getVPCIDByClusterSubnets(ec2Svc ec2iface.EC2API, clusterID string) (string, error) {
+	listOutput, err := ec2Svc.DescribeSubnets(&ec2.DescribeSubnetsInput{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, sub := range listOutput.Subnets {
+		for _, tag := range sub.Tags {
+			if tag != nil && (*tag.Value == "owned" || *tag.Value == "shared") &&
+				*tag.Key == getOSDClusterTagKey(clusterID) {
+				return *sub.VpcId, nil
+			}
+		}
+	}
+	return "", errorUtil.New(fmt.Sprintf("failed to get cluster vpc id, no vpc found with osd cluster tag: could not find cluster associated subnets with clusterID %s", clusterID))
+}
+
 // function to get vpc of a cluster
 func getClusterVpc(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) (*ec2.Vpc, error) {
 	// first call to aws api from the network provider is to get cluster vpc
 	// polling to allow credential minter time to reconcile credentials
-	vpcs, err := ec2Svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "error getting vpcs")
-	}
 
 	// get cluster id
 	clusterID, err := resources.GetClusterID(ctx, c)
@@ -472,22 +504,24 @@ func getClusterVpc(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2API,
 		return nil, errorUtil.Wrap(err, "error getting clusterID")
 	}
 
-	// find associated vpc to cluster
-	var foundVPC *ec2.Vpc
-	logger.Infof("searching for cluster %s vpc", clusterID)
-	for _, vpc := range vpcs.Vpcs {
-		for _, tag := range vpc.Tags {
-			if *tag.Value == fmt.Sprintf("%s-vpc", clusterID) {
-				foundVPC = vpc
-			}
-		}
+	vpcId, err := getVPCIDByClusterSubnets(ec2Svc, clusterID)
+	if err != nil {
+		return nil, errorUtil.Wrap(err, "error getting vpc id from associated subnets")
 	}
 
-	if foundVPC == nil {
+	vpcs, err := ec2Svc.DescribeVpcs(&ec2.DescribeVpcsInput{VpcIds: []*string{aws.String(vpcId)}})
+	if err != nil {
+		return nil, errorUtil.Wrap(err, fmt.Sprintf("error getting vpc with id %s", vpcId))
+	}
+
+	if len(vpcs.Vpcs) == 0 {
 		return nil, errorUtil.New("error, no vpc found")
 	}
-	logger.Infof("found cluster %s vpc %s", clusterID, *foundVPC.VpcId)
-	return foundVPC, nil
+	if len(vpcs.Vpcs) > 1 {
+		return nil, errorUtil.New("error, more than one vpc found associated with cluster subnets")
+	}
+	logger.Infof("found cluster %s vpc %s", clusterID, *vpcs.Vpcs[0].VpcId)
+	return vpcs.Vpcs[0], nil
 }
 
 // getSecurityGroup a utility function for returning cro resource security group
@@ -510,4 +544,8 @@ func getSecurityGroup(ec2Svc ec2iface.EC2API, secName string) (*ec2.SecurityGrou
 	}
 
 	return foundSecGroup, nil
+}
+
+func getOSDClusterTagKey(clusterID string) string {
+	return fmt.Sprintf("%s%s", clusterOwnedTagKeyPrefix, clusterID)
 }

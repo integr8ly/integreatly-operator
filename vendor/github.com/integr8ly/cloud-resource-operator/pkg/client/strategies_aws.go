@@ -1,7 +1,7 @@
 /*
 AWS Strategy Setup
 
-A utility to abstract the various strategy map ConfigMaps from the service using CRO (RHMI)
+A utility to abstract the various strategy map ConfigMaps from the service using CRO
 
 Problem Statement:
  - We require an AWS strategy map ConfigMaps to be in place to provide configuration used to provision AWS cloud resources
@@ -149,7 +149,7 @@ func reconcileRedisStrategy(config, tier, backupTimeStart, maintenanceTimeStart 
 	}
 
 	// check create db instance input against expected values
-	// snapshot window and maintenance window are expected values via RHMIconfig
+	// snapshot window and maintenance window are expected values via config
 	// todo we may want to handle more strategy input, we should add functionality to check every value
 	if elasticacheCreateConfig.SnapshotWindow == nil || *elasticacheCreateConfig.SnapshotWindow != backupTimeStart {
 		elasticacheCreateConfig.SnapshotWindow = aws.String(backupTimeStart)
@@ -254,7 +254,7 @@ func buildAWSWindows(timeConfig *StrategyTimeConfig) (string, string, error) {
 	awsBackupString := fmt.Sprintf("%02d:%02d-%02d:%02d", parsedBackupTime.Hour(), parsedBackupTime.Minute(), parsedBackupTimePlusOneHour.Hour(), parsedBackupTimePlusOneHour.Minute())
 
 	// ensure backup and maintenance time ranges do not overlap
-	// we expect RHMI operator to validate the ranges, as a sanity check we preform an extra validation here
+	// we expect RHOAM operator to validate the ranges, as a sanity check we preform an extra validation here
 	// this is to avoid an obscure error message from AWS when we apply the times
 	// http://baodad.blogspot.com/2014/06/date-range-overlap.html
 	// (StartA <= EndB)  and  (EndA >= StartB)

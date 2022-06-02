@@ -2,8 +2,9 @@ package resources
 
 import (
 	"context"
-	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"reflect"
+
+	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	"github.com/pkg/errors"
 

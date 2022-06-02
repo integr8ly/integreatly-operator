@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 
 	"github.com/integr8ly/cloud-resource-operator/internal/k8sutil"
 
@@ -26,7 +28,7 @@ import (
 const (
 	DefaultConfigMapName = "cloud-resources-aws-strategies"
 
-	DefaultFinalizer = "finalizers.cloud-resources-operator.integreatly.org"
+	DefaultFinalizer = "cloud-resources-operator.integreatly.org/finalizers"
 
 	defaultReconcileTime = time.Second * 30
 
@@ -122,7 +124,7 @@ func BuildDefaultConfigMap(name, namespace string) *v1.ConfigMap {
 	}
 }
 
-// BuildSubnetGroupName builds and returns an id used for infra resources
+// BuildInfraName builds and returns an id used for infra resources
 func BuildInfraName(ctx context.Context, c client.Client, postfix string, n int) (string, error) {
 	// get cluster id
 	clusterID, err := resources.GetClusterID(ctx, c)
@@ -157,18 +159,32 @@ func BuildTimestampedInfraNameFromObjectCreation(ctx context.Context, c client.C
 	return resources.ShortenString(fmt.Sprintf("%s-%s-%s-%s", clusterID, om.Namespace, om.Name, om.GetObjectMeta().GetCreationTimestamp()), n), nil
 }
 
-func CreateSessionFromStrategy(ctx context.Context, c client.Client, keyID, secretKey string, strategy *StrategyConfig) (*session.Session, error) {
+func CreateSessionFromStrategy(ctx context.Context, c client.Client, credentials *Credentials, strategy *StrategyConfig) (*session.Session, error) {
 	region, err := GetRegionFromStrategyOrDefault(ctx, c, strategy)
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "failed to get region from strategy while creating aws session")
 	}
-	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(keyID, secretKey, ""),
-	})
-	if err != nil {
-		return nil, errorUtil.Wrapf(err, "failed to create aws session from strategy, region=%s keyID=%s", region, keyID)
+
+	awsConfig := aws.Config{
+		Region: aws.String(region),
 	}
+	// Check if STS credentials are passed
+	if len(credentials.RoleArn) > 0 {
+		// If running locally and STS role to assume is created, assume this role locally
+		// Local IAM user must be a principle in the role created with the sts:AssumeRole action
+		// Otherwise assume running in a pod in STS cluster
+		if k8sutil.IsRunModeLocal() {
+			sess := session.Must(session.NewSession(&awsConfig))
+			awsConfig.Credentials = stscreds.NewCredentials(sess, credentials.RoleArn)
+		} else {
+			svc := sts.New(session.Must(session.NewSession(&awsConfig)))
+			credentialsProvider := stscreds.NewWebIdentityRoleProvider(svc, credentials.RoleArn, "Red-Hat-cloud-resources-operator", credentials.TokenFilePath)
+			awsConfig.Credentials = awsCredentials.NewCredentials(credentialsProvider)
+		}
+	} else {
+		awsConfig.Credentials = awsCredentials.NewStaticCredentials(credentials.AccessKeyID, credentials.SecretAccessKey, "")
+	}
+	sess := session.Must(session.NewSession(&awsConfig))
 	return sess, nil
 }
 
