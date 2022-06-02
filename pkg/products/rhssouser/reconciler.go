@@ -3,6 +3,7 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/autoscaling"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -96,6 +97,11 @@ type Reconciler struct {
 	*rhssocommon.Reconciler
 	isUpgrade bool
 }
+
+const (
+	maxHpaReplicaCount = 3
+	minHpaReplicaCount = 2
+)
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
 	if productDeclaration == nil {
@@ -279,6 +285,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ExportAlerts(ctx, serverClient, string(r.Config.GetProductName()), r.Config.GetNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to export alerts to the observability namespace", err)
+		return phase, err
+	}
+
+	defaultNumberOfReplicas := int32(minHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, serverClient, *r.Installation, "StatefulSet", "keycloak", productNamespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile autoscaling", err)
 		return phase, err
 	}
 

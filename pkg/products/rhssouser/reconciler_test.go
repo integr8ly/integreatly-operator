@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -456,6 +457,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 
 func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 	scheme, err := getBuildScheme()
+	autoscaling.AddToScheme(scheme)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -717,6 +719,10 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 
 func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 	scheme, err := getBuildScheme()
+	autoscaling.AddToScheme(scheme)
+	minReplicasValue := int32(2)
+	maxReplicasValue := int32(3)
+	targetUtil := int32(60)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -894,6 +900,28 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "autoscaling-config",
+			Namespace: "redhat-rhoam-operator",
+		},
+		Data: map[string]string{
+			"keycloak": "40",
+		},
+	}
+
+	hpa := &autoscaling.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimit",
+			Namespace: "redhat-test-usersso",
+		},
+		Spec: autoscaling.HorizontalPodAutoscalerSpec{
+			MinReplicas:                    &minReplicasValue,
+			MaxReplicas:                    int32(3),
+			TargetCPUUtilizationPercentage: &targetUtil,
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -910,6 +938,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 		ProductConfig         *quota.ProductConfigMock
 		Uninstall             bool
+		Assertion             func(k8sclient.Client) error
 	}{
 		{
 			Name:            "RHOAM - test successful reconcile",
@@ -950,6 +979,120 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				},
 			},
 			Uninstall: false,
+			Assertion: nil,
+		},
+		{
+			Name:            "Test keycloak HPA CR creates successfully",
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv, configMap),
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:      basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "codeready-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation:          installation,
+			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			Uninstall: false,
+			Assertion: func(client k8sclient.Client) error {
+				hpaList := autoscaling.HorizontalPodAutoscalerList{}
+				err := client.List(context.TODO(), &hpaList)
+				if err != nil {
+					return fmt.Errorf("failed to obtain expected hpa: %v", err)
+				}
+				for _, hpa := range hpaList.Items {
+					if hpa.Name != "keycloak" {
+						return fmt.Errorf("required keycloak hpa not found")
+					}
+					if hpa.Spec.MaxReplicas != maxReplicasValue {
+						return fmt.Errorf("keycloak hpa max replicas values incorrect got: %v, want: %v", hpa.Spec.MaxReplicas, maxReplicasValue)
+					}
+					if *hpa.Spec.MinReplicas != minReplicasValue {
+						return fmt.Errorf("keycloak hpa min replicas values incorrect got: %v, want: %v", *hpa.Spec.MinReplicas, minReplicasValue)
+					}
+					if *hpa.Spec.TargetCPUUtilizationPercentage != targetUtil {
+						return fmt.Errorf("keycloak targetUtils values incorrect got: %v, want: %v", *hpa.Spec.TargetCPUUtilizationPercentage, targetUtil)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			Name:            "Test keycloak HPA CR deletes successfully",
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv, configMap, hpa),
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:      basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "codeready-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation:          installation,
+			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			Uninstall: false,
+			Assertion: func(client k8sclient.Client) error {
+				hpaList := autoscaling.HorizontalPodAutoscalerList{}
+				err := client.List(context.TODO(), &hpaList)
+				if err != nil {
+					return fmt.Errorf("failed to obtain expected hpa: %v", err)
+				}
+				if len(hpaList.Items) != 0 {
+					return fmt.Errorf("failed to delete hpa, expecting: 0 hpas, found: %v", len(hpaList.Items))
+				}
+				return nil
+			},
 		},
 	}
 
@@ -982,6 +1125,11 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+			if tc.Assertion != nil {
+				if tc.Assertion(tc.FakeClient); err != nil {
+					t.Fatalf("Assertion failed with err: '%v'", err)
+				}
 			}
 		})
 	}
