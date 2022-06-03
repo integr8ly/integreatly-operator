@@ -174,10 +174,10 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 		}
 
 		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == true {
-			t.Log("CR conditions meet")
+			t.Log("CR conditions met")
 			return true, nil
 		}
-		t.Log("CR conditions not meet.")
+		t.Log("CR conditions not met.")
 		return false, nil
 
 	})
@@ -192,20 +192,21 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 		t.Errorf("unable to compare SMTP secrets, ", err)
 	}
 
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
-		if err != nil || len(pods.Items) == 0 {
-			t.Errorf("couldn't find pods: %v", err)
-		}
-		for _, pod := range pods.Items {
-			if pod.Status.Phase == "Running" {
-				t.Log("Found running pods")
-				return true, nil
+	if !managed {
+		err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+			pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(goctx.TODO(), metav1.ListOptions{})
+			if err != nil || len(pods.Items) == 0 {
+				t.Errorf("couldn't find pods: %v", err)
 			}
-		}
-		return false, nil
-	})
-
+			for _, pod := range pods.Items {
+				if pod.Status.Phase == "Running" {
+					t.Log("Found running pods")
+					return true, nil
+				}
+			}
+			return false, nil
+		})
+	}
 	restartThreeScalePods(t, ctx, inst)
 
 	t.Log("Send Test email")
@@ -277,10 +278,10 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 		}
 
 		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == false {
-			t.Log("CR conditions meet")
+			t.Log("CR conditions met")
 			return true, nil
 		}
-		t.Log("CR conditions not meet.")
+		t.Log("CR conditions not met.")
 		return false, nil
 
 	})
