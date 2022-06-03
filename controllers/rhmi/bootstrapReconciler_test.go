@@ -247,6 +247,121 @@ func TestReconciler_reconcilePrometheusRules(t *testing.T) {
 	}
 }
 
+func TestReconciler_createAutoscalingConfigMap(t *testing.T) {
+	scheme := runtime.NewScheme()
+	corev1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name           string
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *integreatlyv1alpha1.RHMI
+		Recorder       record.EventRecorder
+		InitialObjs    []runtime.Object
+		Assertion      func(k8sclient.Client) error
+	}{
+		{
+			Name:           "Test autoscaling configmap isn't reconciled when it already exists",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeConfig: &config.ConfigReadWriterMock{
+				GetOperatorNamespaceFunc: func() string {
+					return rhoamOperatorNs
+				},
+			},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: rhoamOperatorNs,
+				},
+				Spec: integreatlyv1alpha1.RHMISpec{
+					NamespacePrefix: "redhat-rhoam-",
+				},
+			},
+			Recorder: record.NewFakeRecorder(50),
+			InitialObjs: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "autoscaling-config",
+						Namespace: rhoamOperatorNs,
+					},
+					Data: map[string]string{"test": "test"},
+				},
+			},
+			Assertion: assertConfigMapNotChanged,
+		},
+		{
+			Name:           "Test autoscaling configmap is created when it is doesn't exist",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeConfig: &config.ConfigReadWriterMock{
+				GetOperatorNamespaceFunc: func() string {
+					return rhoamOperatorNs
+				},
+			},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: rhoamOperatorNs,
+				},
+				Spec: integreatlyv1alpha1.RHMISpec{
+					NamespacePrefix: "redhat-rhoam-",
+				},
+			},
+			Recorder: record.NewFakeRecorder(50),
+			InitialObjs: []runtime.Object{
+				&corev1.ConfigMap{},
+			},
+			Assertion: assertConfigMapCreated,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			reconciler, err := NewBootstrapReconciler(tt.FakeConfig, tt.Installation, tt.FakeMPM, tt.Recorder, l.NewLogger())
+			if err != nil {
+				t.Fatalf("Error creating bootstrap reconciler: %s", err)
+			}
+			client := fake.NewFakeClientWithScheme(scheme, tt.InitialObjs...)
+			phase, err := reconciler.createAutoscalingConfigMap(context.TODO(), client)
+
+			if phase != tt.ExpectedStatus {
+				t.Fatalf("Expected %s phase but got %s", tt.ExpectedStatus, phase)
+			}
+
+			if err := tt.Assertion(client); err != nil {
+				t.Fatalf("Failed assertion: %v", err)
+			}
+		})
+	}
+}
+
+func assertConfigMapNotChanged(client k8sclient.Client) error {
+	configMap := &corev1.ConfigMap{}
+	_ = client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      "autoscaling-config",
+		Namespace: rhoamOperatorNs,
+	}, configMap)
+
+	testMap := map[string]string{"test": "test"}
+	if configMap.Data["test"] != testMap["test"] {
+		return errors.New("test map was updated when it shouldn't have been")
+	}
+	return nil
+}
+
+func assertConfigMapCreated(client k8sclient.Client) error {
+	configMap := &corev1.ConfigMap{}
+	_ = client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      "autoscaling-config",
+		Namespace: rhoamOperatorNs,
+	}, configMap)
+
+	testMap := map[string]string{"backend-listener": "40"}
+	if configMap.Data["backend-listener"] != testMap["backend-listener"] {
+		return errors.New("test map wasn't created when it should have been")
+	}
+	return nil
+}
+
 func assertRoleBindingNotFound(client k8sclient.Client) error {
 	configRole := &rbacv1.Role{}
 	err := client.Get(context.TODO(), k8sclient.ObjectKey{

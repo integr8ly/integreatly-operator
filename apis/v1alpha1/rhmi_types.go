@@ -198,6 +198,7 @@ type RHMISpec struct {
 	//
 	// url
 	DeadMansSnitchSecret string `json:"deadMansSnitchSecret,omitempty"`
+	AutoscalingEnabled   bool   `json:"autoscalingEnabled,omitempty"`
 }
 
 type PullSecretSpec struct {
