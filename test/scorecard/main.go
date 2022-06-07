@@ -38,7 +38,12 @@ func main() {
 		printErrorStatus(fmt.Errorf("could not open kuttl report %v", err))
 		return
 	}
-	defer jsonFile.Close()
+	defer func(jsonFile *os.File) {
+		err := jsonFile.Close()
+		if err != nil {
+			printErrorStatus(fmt.Errorf("os issue closing file: %v", err))
+		}
+	}(jsonFile)
 
 	var byteValue []byte
 	byteValue, err = ioutil.ReadAll(jsonFile)

@@ -118,7 +118,10 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 		webhook.Register.RegisterToServer(webhookConfig.scheme, webhookServer)
 	}
 
-	bldr.Complete()
+	err = bldr.Complete()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -346,7 +349,12 @@ func (webhookConfig *IntegreatlyWebhookConfig) saveCertFromSecret(secretData map
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fmt.Printf("os file closer: %v", err)
+		}
+	}(f)
 
 	_, err = f.Write(value)
 	return err
