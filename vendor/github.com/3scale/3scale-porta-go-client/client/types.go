@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"net/url"
@@ -9,18 +10,20 @@ import (
 
 // AdminPortal defines a 3scale adminPortal service
 type AdminPortal struct {
-	scheme  string
-	host    string
-	port    int
-	baseUrl *url.URL
+	rawURL string
+	url    *url.URL
 }
 
 // ThreeScaleClient interacts with 3scale Service Management API
 type ThreeScaleClient struct {
-	adminPortal *AdminPortal
-	credential  string
-	httpClient  *http.Client
+	adminPortal   *AdminPortal
+	credential    string
+	httpClient    *http.Client
+	afterResponse AfterResponseCB
 }
+
+// AfterResponseCB provides a hook that can be used to infer details of the underlying HTTP request/response
+type AfterResponseCB func(statusCode int, timeTaken time.Duration)
 
 // Application - API response for create app endpoint
 type Application struct {
@@ -329,6 +332,7 @@ type ProxyRule struct {
 
 type Params map[string]string
 
+// Deprecated: Use DeveloperUser instead
 type User struct {
 	ID        int64  `json:"id"`
 	State     string `json:"state"`
@@ -337,10 +341,12 @@ type User struct {
 	AccountID int64  `json:"account_id"`
 }
 
+// Deprecated: Use DeveloperUserItem instead
 type UserElem struct {
 	User User `json:"user"`
 }
 
+// Deprecated: Use DeveloperUser instead
 type UserList struct {
 	Users []UserElem `json:"users"`
 }
@@ -360,6 +366,51 @@ type AccountElem struct {
 
 type AccountList struct {
 	Accounts []AccountElem `json:"accounts"`
+}
+
+type BillingAddressSpec struct {
+	Company     *string `json:"company,omitempty"`
+	Address     *string `json:"address,omitempty"`
+	Address1    *string `json:"address1,omitempty"`
+	Address2    *string `json:"address2,omitempty"`
+	PhoneNumber *string `json:"phone_number,omitempty"`
+	City        *string `json:"city,omitempty"`
+	Country     *string `json:"country,omitempty"`
+	State       *string `json:"state,omitempty"`
+	Zip         *string `json:"zip,omitempty"`
+}
+
+type DeveloperAccountItem struct {
+	ID                     *int64              `json:"id,omitempty"`
+	State                  *string             `json:"state,omitempty"`
+	CreditCardStored       *bool               `json:"credit_card_stored,omitempty"`
+	MonthlyBillingEnabled  *bool               `json:"monthly_billing_enabled,omitempty"`
+	MonthlyChargingEnabled *bool               `json:"monthly_charging_enabled,omitempty"`
+	VatRate                *string             `json:"vat_rate,omitempty"`
+	OrgName                *string             `json:"org_name,omitempty"`
+	City                   *string             `json:"city,omitempty"`
+	OrgLegalAddress        *string             `json:"org_legaladdress,omitempty"`
+	BillingAddress         *BillingAddressSpec `json:"billing_address,omitempty"`
+	BussinessCategory      *string             `json:"business_category,omitempty"`
+	OrgLegaladdressCont    *string             `json:"org_legaladdress_cont,omitempty"`
+	VatCode                *string             `json:"vat_code,omitempty"`
+	TelephoneNumber        *string             `json:"telephone_number,omitempty"`
+	FiscalCode             *string             `json:"fiscale_code,omitempty"`
+	StateRegion            *string             `json:"state_region,omitempty"`
+	Country                *string             `json:"country,omitempty"`
+	Zip                    *string             `json:"zip,omitempty"`
+	PrimaryBussiness       *string             `json:"primary_business,omitempty"`
+	PoNumber               *string             `json:"po_number,omitempty"`
+	CreatedAt              *string             `json:"created_at,omitempty"`
+	UpdatedAt              *string             `json:"updated_at,omitempty"`
+}
+
+type DeveloperAccount struct {
+	Element DeveloperAccountItem `json:"account"`
+}
+
+type DeveloperAccountList struct {
+	Items []DeveloperAccount `json:"accounts"`
 }
 
 type AccessToken struct {
@@ -536,6 +587,9 @@ type ProxyItem struct {
 	UpdatedAt                  string `json:"updated_at"`
 	LockVersion                int    `json:"lock_version"`
 	OidcIssuerEndpoint         string `json:"oidc_issuer_endpoint"`
+	OidcIssuerType             string `json:"oidc_issuer_type,omitempty"`
+	JwtClaimWithClientID       string `json:"jwt_claim_with_client_id,omitempty"`
+	JwtClaimWithClientIDType   string `json:"jwt_claim_with_client_id_type,omitempty"`
 }
 
 type ProxyJSON struct {
@@ -609,4 +663,104 @@ type ApplicationPlanPricingRule struct {
 // ApplicationPlanPricingRuleList - Holds a list of Application Plan pricing rules serialized/Unserialized in json format
 type ApplicationPlanPricingRuleList struct {
 	Rules []ApplicationPlanPricingRule `json:"pricing_rules"`
+}
+
+// PolicyConfig defines policy definition
+type PolicyConfig struct {
+	// Name defines the policy unique name
+	Name string `json:"name"`
+
+	// Version defines the policy version
+	Version string `json:"version"`
+
+	// Configuration defines the policy configuration
+	Configuration map[string]interface{} `json:"configuration"`
+
+	// Version defines the policy version
+	Enabled bool `json:"enabled"`
+}
+
+// PoliciesConfigList - Holds a list of policy configs serialized/Unserialized in json format
+type PoliciesConfigList struct {
+	Policies []PolicyConfig `json:"policies_config"`
+}
+
+// OIDCConfigurationItem - Holds an OIDC configuration item object
+type OIDCConfigurationItem struct {
+	ID                        int64 `json:"id,omitempty"`
+	StandardFlowEnabled       bool  `json:"standard_flow_enabled"`
+	ImplicitFlowEnabled       bool  `json:"implicit_flow_enabled"`
+	ServiceAccountsEnabled    bool  `json:"service_accounts_enabled"`
+	DirectAccessGrantsEnabled bool  `json:"direct_access_grants_enabled"`
+}
+
+// OIDCConfiguration - Holds an OIDC configuration object
+type OIDCConfiguration struct {
+	Element OIDCConfigurationItem `json:"oidc_configuration"`
+}
+
+type ActiveDocItem struct {
+	ID                     *int64  `json:"id,omitempty"`
+	SystemName             *string `json:"system_name,omitempty"`
+	Name                   *string `json:"name,omitempty"`
+	Description            *string `json:"description,omitempty"`
+	Published              *bool   `json:"published,omitempty"`
+	SkipSwaggerValidations *bool   `json:"skip_swagger_validations,omitempty"`
+	Body                   *string `json:"body,omitempty"`
+	ServiceID              *int64  `json:"service_id,omitempty"`
+	CreatedAt              *string `json:"created_at,omitempty"`
+	UpdatedAt              *string `json:"updated_at,omitempty"`
+}
+
+type ActiveDoc struct {
+	Element ActiveDocItem `json:"api_doc"`
+}
+
+type ActiveDocList struct {
+	ActiveDocs []ActiveDoc `json:"api_docs"`
+}
+
+type APIcastPolicySchema struct {
+	Summary       *string          `json:"summary,omitempty"`
+	Description   *[]string        `json:"description,omitempty"`
+	Name          *string          `json:"name,omitempty"`
+	Schema        *string          `json:"$schema,omitempty"`
+	Version       *string          `json:"version,omitempty"`
+	Configuration *json.RawMessage `json:"configuration,omitempty"`
+}
+
+type APIcastPolicyItem struct {
+	ID        *int64               `json:"id,omitempty"`
+	Name      *string              `json:"name,omitempty"`
+	Version   *string              `json:"version,omitempty"`
+	Schema    *APIcastPolicySchema `json:"schema,omitempty"`
+	CreatedAt *string              `json:"created_at,omitempty"`
+	UpdatedAt *string              `json:"updated_at,omitempty"`
+}
+
+type APIcastPolicy struct {
+	Element APIcastPolicyItem `json:"policy"`
+}
+
+type APIcastPolicyRegistry struct {
+	Items []APIcastPolicy `json:"policies"`
+}
+
+type DeveloperUserItem struct {
+	ID        *int64  `json:"id,omitempty"`
+	State     *string `json:"state,omitempty"`
+	Role      *string `json:"role,omitempty"`
+	Username  *string `json:"username,omitempty"`
+	Password  *string `json:"password,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+type DeveloperUser struct {
+	Element DeveloperUserItem `json:"user"`
+}
+
+type DeveloperUserList struct {
+	Items []DeveloperUser `json:"users"`
 }

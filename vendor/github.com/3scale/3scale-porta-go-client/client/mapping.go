@@ -63,11 +63,11 @@ func (c *ThreeScaleClient) UpdateMappingRule(svcId string, id string, params Par
 	}
 
 	resp, err := c.httpClient.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil {
 		return m, err
 	}
+
+	defer resp.Body.Close()
 
 	err = handleXMLResp(resp, http.StatusOK, &m)
 	return m, err
@@ -85,11 +85,10 @@ func (c *ThreeScaleClient) DeleteMappingRule(svcId string, id string) error {
 	}
 
 	resp, err := c.httpClient.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	return handleXMLResp(resp, http.StatusOK, nil)
 }

@@ -66,8 +66,9 @@ github.com/3scale-ops/marin3r v0.10.0 h1:KqdRBpfbZhZ3yVZx+AkLPivCz4/Xv0+DeTDfbUR
 github.com/3scale-ops/marin3r v0.10.0/go.mod h1:1ptfvMq4M3mazV9dx/iM2swYEKr+45W7st+URoclgKA=
 github.com/3scale/3scale-operator v0.7.0 h1:98lKWk6d5Lu+wPS5tn0ikZGtzOsiAe2BQlsS60pd7J0=
 github.com/3scale/3scale-operator v0.7.0/go.mod h1:G2jfrlmdPGTOnDxyJ8JdsSZlB+xZqv3lBtwJTFtVVIo=
-github.com/3scale/3scale-porta-go-client v0.0.4 h1:xzqOa3L/4RGzQJsBpPTjFvJiSrwmkYan4ZZUJZVz6nM=
 github.com/3scale/3scale-porta-go-client v0.0.4/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
+github.com/3scale/3scale-porta-go-client v0.6.0 h1:RYIBxx57WNTfJ746IIqq40xASHKT2+vhG++59nDQbkQ=
+github.com/3scale/3scale-porta-go-client v0.6.0/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/3scale/apicast-operator v0.4.0 h1:CqE2I0ooGQGWLEqguh/7yHZERWSXV1cRvhej6vZEnLg=
 github.com/3scale/apicast-operator v0.4.0/go.mod h1:SZpVbZnAWJGfZ8qfLDYPpqVTUTB8xT8r/3oepGej6rU=
 github.com/AlecAivazis/survey/v2 v2.3.2/go.mod h1:TH2kPCDU3Kqq7pLbnCWwZXDBjnhZtmsCle5EiYDJ2fg=
