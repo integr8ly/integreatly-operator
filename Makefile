@@ -88,8 +88,16 @@ BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=false"
+# BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
+BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(TAG) $(BUNDLE_METADATA_OPTS)
+
+# USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
+# You can enable this value if you would like to use SHA Based Digests
+# To enable set flag to true
+USE_IMAGE_DIGESTS ?= false
+ifeq ($(USE_IMAGE_DIGESTS), true)
+    BUNDLE_GEN_FLAGS += --use-image-digests
+endif
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -147,9 +155,6 @@ code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/
 code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) .
 
-deploy/crds/integreatly.org_rhmis_crd.yaml: controller-gen apis/v1alpha1/rhmi_types.go
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:artifacts:config=config/crd/bases
-
 pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: apis/v1alpha1/rhmi_types.go
 	$(OPENAPI_GEN) --logtostderr=true -o "" \
 		-i ./apis/v1alpha1/ \
@@ -162,8 +167,8 @@ apis/integreatly/v1alpha1/zz_generated.deepcopy.go: controller-gen apis/v1alpha1
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: code/gen
-code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml apis/integreatly/v1alpha1/zz_generated.deepcopy.go
-	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..."
+code/gen: setup/moq apis/integreatly/v1alpha1/zz_generated.deepcopy.go
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@go generate ./...
 	mv ./config/crd/bases/integreatly.org_apimanagementtenants.yaml ./config/crd-sandbox/bases
 
@@ -491,67 +496,28 @@ kubebuilder/check: code/gen
 	git diff --exit-code config/crd/bases
 	git diff --exit-code config/rbac/role.yaml
 
-# # Run tests
-# ENVTEST_ASSETS_DIR = $(shell pwd)/testbin
-# test: generate fmt vet manifests
-# 	mkdir -p $(ENVTEST_ASSETS_DIR)
-# 	test -f $(ENVTEST_ASSETS_DIR)/setup-envtest.sh || curl -sSLo $(ENVTEST_ASSETS_DIR)/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.6.3/hack/setup-envtest.sh
-# 	source $(ENVTEST_ASSETS_DIR)/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
-
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
-
-kustomize:
-ifeq (, $(shell which kustomize))
-	@{ \
-	set -e ;\
-	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
-	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
-	}
-KUSTOMIZE=$(GOBIN)/kustomize
-else
-KUSTOMIZE=$(shell which kustomize)
-endif
-
 # Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
 bundle: manifests kustomize
-	operator-sdk generate kustomize manifests -q
+	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(TAG) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	$(OPERATOR_SDK) bundle validate ./bundle
 
 .PHONY: bundle-rhmi
 bundle-rhmi: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhmi | operator-sdk generate bundle -q --output-dir ./bundles/integreatly-operator/$(TAG) --version $(TAG) $(BUNDLE_METADATA_OPTS)
+	$(KUSTOMIZE) build config/manifests-rhmi | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS) --output-dir ./bundles/integreatly-operator/$(TAG)
 
 .PHONY: bundle-rhoam
 bundle-rhoam: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhoam | operator-sdk generate bundle -q --output-dir ./bundles/managed-api-service/$(TAG) --kustomize-dir config/manifests-rhoam --version $(TAG) $(BUNDLE_METADATA_OPTS) 
+	$(KUSTOMIZE) build config/manifests-rhoam | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS) --output-dir ./bundles/managed-api-service/$(TAG) --kustomize-dir config/manifests-rhoam
 
 .PHONY: packagemanifests
 packagemanifests: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-$(OPERATOR-TYPE) | operator-sdk generate packagemanifests --kustomize-dir=config/manifests-$(OPERATOR-TYPE) --output-dir packagemanifests/$(OPERATOR-NAME) --version $(TAG)
+	$(KUSTOMIZE) build config/manifests-$(OPERATOR-TYPE) | $(OPERATOR_SDK) generate packagemanifests --kustomize-dir=config/manifests-$(OPERATOR-TYPE) --output-dir packagemanifests/$(OPERATOR-NAME) --version $(TAG)
 
 # Build the bundle image.
 .PHONY: bundle-build
@@ -570,3 +536,35 @@ coverage:
 .PHONY: gosec/exclude
 gosec/exclude:
 	gosec -exclude=G104,G107,G404,G601 ./...
+
+##@ Build Dependencies
+
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+## Tool Binaries
+KUSTOMIZE ?= $(LOCALBIN)/kustomize
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+ENVTEST ?= $(LOCALBIN)/setup-envtest
+
+## Tool Versions
+KUSTOMIZE_VERSION ?= v4.5.2
+CONTROLLER_TOOLS_VERSION ?= v0.8.0
+
+KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
+.PHONY: kustomize
+kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
+$(KUSTOMIZE): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+
+.PHONY: controller-gen
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: envtest
+envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+$(ENVTEST): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
