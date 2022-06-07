@@ -95,9 +95,9 @@ var (
 	THREESCALE_CLUSTER_SCOPED_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				//{"H29 - Verify that backend can be created via backend CR", Test3scaleBackendViaCR},
-				//{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
-				//{"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
+				{"H29 - Verify that backend can be created via backend CR", Test3scaleBackendViaCR},
+				{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
+				// {"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
