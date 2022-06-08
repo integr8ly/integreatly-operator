@@ -209,6 +209,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
 // +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch
 
+// For accessing limitador api from pod
+// +kubebuilder:rbac:groups="",resources=pods,verbs=create
+
 // Role permissions
 
 // +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator

@@ -3,7 +3,12 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
+	"reflect"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -21,6 +26,20 @@ import (
 func TestRateLimitService(t *testing.T) {
 	scheme := newScheme()
 
+	rateLimitPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimit",
+			Namespace: "redhat-test-marin3r",
+			Labels:    map[string]string{"app": quota.RateLimitName},
+		},
+	}
+
+	podExecutorMock := &resources.PodExecutorInterfaceMock{
+		ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+			return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
+		},
+	}
+
 	scenarios := []struct {
 		Name          string
 		Reconciler    *RateLimitServiceReconciler
@@ -34,7 +53,8 @@ func TestRateLimitService(t *testing.T) {
 				Unit:            "minute",
 				RequestsPerUnit: 1,
 			},
-				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
+				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis",
+				podExecutorMock),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
@@ -50,6 +70,7 @@ func TestRateLimitService(t *testing.T) {
 						"URL": []byte("test-url"),
 					},
 				},
+				rateLimitPod,
 			},
 			Assert: allOf(
 				assertNoError,
@@ -104,6 +125,7 @@ func TestRateLimitService(t *testing.T) {
 						"URL": []byte("test-url"),
 					},
 				},
+				rateLimitPod,
 			},
 			Reconciler: NewRateLimitServiceReconciler(
 				marin3rconfig.RateLimitConfig{
@@ -113,6 +135,7 @@ func TestRateLimitService(t *testing.T) {
 				&integreatlyv1alpha1.RHMI{},
 				"redhat-test-marin3r",
 				"ratelimit-redis",
+				podExecutorMock,
 			),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
@@ -163,7 +186,7 @@ func TestRateLimitService(t *testing.T) {
 				Unit:            "minute",
 				RequestsPerUnit: 1,
 			},
-				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
+				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis", resources.PodExecutor{}),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
 					return nil
@@ -193,6 +216,7 @@ func TestRateLimitService(t *testing.T) {
 						"URL": []byte("test-url"),
 					},
 				},
+				rateLimitPod,
 			},
 			Reconciler: NewRateLimitServiceReconciler(
 				marin3rconfig.RateLimitConfig{
@@ -206,6 +230,7 @@ func TestRateLimitService(t *testing.T) {
 				},
 				"redhat-test-marin3r",
 				"ratelimit-redis",
+				podExecutorMock,
 			),
 			ProductConfig: &quota.ProductConfigMock{
 				ConfigureFunc: func(obj metav1.Object) error {
@@ -309,5 +334,416 @@ func assertEnvs(assertions map[string]func(string) error) func(*appsv1.Deploymen
 		}
 
 		return nil
+	}
+}
+
+func TestRateLimitServiceReconciler_differentLimitSettings(t *testing.T) {
+	type fields struct {
+		Namespace       string
+		RedisSecretName string
+		Installation    *integreatlyv1alpha1.RHMI
+		RateLimitConfig marin3rconfig.RateLimitConfig
+		Config          *config.Marin3r
+	}
+	type args struct {
+		redisLimits   []limitadorLimit
+		currentLimits []limitadorLimit
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "test true when list size is different",
+			args: args{
+				redisLimits: []limitadorLimit{},
+				currentLimits: []limitadorLimit{
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test true when list is different",
+			args: args{
+				redisLimits: []limitadorLimit{
+					{
+						Namespace: "test1",
+						MaxValue:  1,
+					},
+				},
+				currentLimits: []limitadorLimit{
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test slices are sorted by Namespace first for comparison",
+			args: args{
+				redisLimits: []limitadorLimit{
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+					{
+						Namespace: "test2",
+						MaxValue:  12,
+					},
+				},
+				currentLimits: []limitadorLimit{
+					{
+						Namespace: "test2",
+						MaxValue:  12,
+					},
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test slices are sorted by MaxValue if matching Namespace",
+			args: args{
+				redisLimits: []limitadorLimit{
+					{
+						Namespace: "test",
+						MaxValue:  12,
+					},
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+				},
+				currentLimits: []limitadorLimit{
+					{
+						Namespace: "test",
+						MaxValue:  1,
+					},
+					{
+						Namespace: "test",
+						MaxValue:  12,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RateLimitServiceReconciler{
+				Namespace:       tt.fields.Namespace,
+				RedisSecretName: tt.fields.RedisSecretName,
+				Installation:    tt.fields.Installation,
+				RateLimitConfig: tt.fields.RateLimitConfig,
+			}
+			if got := r.differentLimitSettings(tt.args.redisLimits, tt.args.currentLimits); got != tt.want {
+				t.Errorf("differentLimitSettings() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
+	scheme := newScheme()
+
+	type fields struct {
+		Namespace       string
+		RedisSecretName string
+		Installation    *integreatlyv1alpha1.RHMI
+		RateLimitConfig marin3rconfig.RateLimitConfig
+		PodExecutor     resources.PodExecutorInterface
+	}
+	type args struct {
+		ctx    context.Context
+		client k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []limitadorLimit
+		wantErr bool
+	}{
+		{
+			name: "test get rhoam limitator config",
+			fields: fields{
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+					},
+				},
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
+			},
+			want: []limitadorLimit{
+				{
+					Namespace: ratelimit.RateLimitDomain,
+					MaxValue:  1,
+					Seconds:   1,
+					Conditions: []string{
+						fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+					},
+					Variables: []string{
+						genericKey,
+					},
+				},
+			},
+		},
+		{
+			name: "test error get rhoam limitator config",
+			fields: fields{
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+					},
+				},
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "notUnit", RequestsPerUnit: 1},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test get rhoam multitenant limitator config",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      multitenantLimitConfigMap,
+						Namespace: "test",
+					},
+					Data: map[string]string{
+						multitenantRateLimit: "10",
+					},
+				}),
+			},
+			fields: fields{
+				Namespace: "test",
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+					},
+				},
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
+			},
+			want: []limitadorLimit{
+				{
+					Namespace: ratelimit.RateLimitDomain,
+					MaxValue:  1,
+					Seconds:   1,
+					Conditions: []string{
+						fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
+					},
+					Variables: []string{
+						genericKey,
+					},
+				},
+				{
+					Namespace: ratelimit.RateLimitDomain,
+					MaxValue:  10,
+					Seconds:   1,
+					Conditions: []string{
+						fmt.Sprintf("%s == %s", headerMatch, multitenantDescriptorValue),
+					},
+					Variables: []string{
+						headerKey,
+					},
+				},
+			},
+		},
+		{
+			name: "test error get rhoam multitenant limitator config",
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme),
+			},
+			fields: fields{
+				Namespace: "test",
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+					},
+				},
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "notUnit", RequestsPerUnit: 1},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RateLimitServiceReconciler{
+				Namespace:       tt.fields.Namespace,
+				RedisSecretName: tt.fields.RedisSecretName,
+				Installation:    tt.fields.Installation,
+				RateLimitConfig: tt.fields.RateLimitConfig,
+				PodExecutor:     tt.fields.PodExecutor,
+			}
+			got, err := r.getLimitadorSetting(tt.args.ctx, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getLimitadorSetting() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getLimitadorSetting() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
+	scheme := newScheme()
+
+	const namespace = "redhat-test-marin3r"
+
+	rateLimitPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimit",
+			Namespace: namespace,
+			Labels:    map[string]string{"app": quota.RateLimitName},
+		},
+	}
+
+	type fields struct {
+		Namespace       string
+		RedisSecretName string
+		Installation    *integreatlyv1alpha1.RHMI
+		RateLimitConfig marin3rconfig.RateLimitConfig
+		PodExecutor     resources.PodExecutorInterface
+	}
+	type args struct {
+		ctx    context.Context
+		client k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "test phase failed listing rate limit pods",
+			fields: fields{
+				Namespace: namespace,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+					return fmt.Errorf("listError")
+				}},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test phase waiting components in rate limits pods are not up yet",
+			fields: fields{
+				Namespace: namespace,
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme),
+			},
+			want: integreatlyv1alpha1.PhaseAwaitingComponents,
+		},
+		{
+			name: "test phase failed if unable to list limits from rate limit pod",
+			fields: fields{
+				Namespace: namespace,
+				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+					return "", "", fmt.Errorf("listError")
+				}},
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test phase failed marshalling json response",
+			fields: fields{
+				Namespace: namespace,
+				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+					return "notJson", "", nil
+				}},
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test phase in progress after deleting rate limit pod due to differences",
+			fields: fields{
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+					},
+				},
+				Namespace:       namespace,
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
+				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
+				}},
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+			},
+			want: integreatlyv1alpha1.PhaseInProgress,
+		},
+		{
+			name: "test phase complete when no differences found",
+			fields: fields{
+				Installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+					},
+				},
+				Namespace:       namespace,
+				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "minute", RequestsPerUnit: 1},
+				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
+				}},
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RateLimitServiceReconciler{
+				Namespace:       tt.fields.Namespace,
+				RedisSecretName: tt.fields.RedisSecretName,
+				Installation:    tt.fields.Installation,
+				RateLimitConfig: tt.fields.RateLimitConfig,
+				PodExecutor:     tt.fields.PodExecutor,
+			}
+			got, err := r.ensureLimits(tt.args.ctx, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ensureLimits() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ensureLimits() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
