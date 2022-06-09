@@ -136,6 +136,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
 
+// Permissions for HPA
+// +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;create;update;delete;list;watch
+
 // We need to create consolelinks which are cluster level objects
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consolelinks,verbs=get;create;update;delete
 

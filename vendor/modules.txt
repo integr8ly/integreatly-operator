@@ -970,7 +970,7 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.22.1 => k8s.io/api v0.20.6
+# k8s.io/api v0.24.1 => k8s.io/api v0.20.6
 ## explicit; go 1.15
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1

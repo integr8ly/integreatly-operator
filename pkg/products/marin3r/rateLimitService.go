@@ -10,6 +10,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/autoscaling"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -31,6 +32,8 @@ const (
 	multitenantLimitConfigMap  = "multitenant-config"
 	multitenantRateLimit       = "mulitenantLimit"
 	multitenantDescriptorValue = "per-mt-limit"
+	maxHpaReplicaCount         = 3
+	minHpaReplicaCount         = 2
 )
 
 type RateLimitServiceReconciler struct {
@@ -73,6 +76,12 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	}
 
 	phase, err = r.reconcileDeployment(ctx, client, productConfig)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	defaultNumberOfReplicas := int32(minHpaReplicaCount)
+	phase, err = autoscaling.ReconcileHPA(ctx, client, *r.Installation, "Deployment", quota.RateLimitName, r.Namespace, &defaultNumberOfReplicas, maxHpaReplicaCount)
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
