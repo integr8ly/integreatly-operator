@@ -3,7 +3,7 @@
 # url - url to quay / redhat registry repo of the component
 additionalImages:
   - name: 3scale-openshift-servce-mesh
-    url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.0-1"
+    url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.2-2"
   - name: marin3r-limitador
     url: "quay.io/3scale/limitador:v0.5.1"
   - name: observability-grafana-plugins-init
