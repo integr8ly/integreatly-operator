@@ -579,7 +579,7 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956
+# github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
 ## explicit; go 1.13
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common

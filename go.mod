@@ -32,7 +32,7 @@ require (
 	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.39.0
 	github.com/integr8ly/keycloak-client v0.1.8
-	github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956
+	github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
