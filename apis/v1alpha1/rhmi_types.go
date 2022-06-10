@@ -48,6 +48,7 @@ var (
 	InstallationTypeMultitenantManagedApi InstallationType = "multitenant-managed-api"
 
 	BootstrapStage               StageName = "bootstrap"
+	InstallStage                 StageName = "installation"
 	CloudResourcesStage          StageName = "cloud-resources"
 	MonitoringStage              StageName = "monitoring"
 	ObservabilityStage           StageName = "observability"

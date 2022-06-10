@@ -73,7 +73,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
 	return version.VerifyProductAndOperatorVersion(
-		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductObservability],
+		installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductObservability],
 		string(integreatlyv1alpha1.VersionObservability),
 		string(integreatlyv1alpha1.OperatorVersionObservability),
 	)

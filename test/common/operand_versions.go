@@ -30,33 +30,21 @@ var (
 	}
 
 	managedApiProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
-		integreatlyv1alpha1.AuthenticationStage: {
-			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
-		},
-		integreatlyv1alpha1.ObservabilityStage: {
-			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.VersionObservability,
-		},
-		integreatlyv1alpha1.CloudResourcesStage: {
+		integreatlyv1alpha1.InstallStage: {
+			integreatlyv1alpha1.ProductRHSSO:          integreatlyv1alpha1.VersionRHSSO,
+			integreatlyv1alpha1.ProductObservability:  integreatlyv1alpha1.VersionObservability,
 			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
-		},
-		integreatlyv1alpha1.ProductsStage: {
-			integreatlyv1alpha1.Product3Scale:    integreatlyv1alpha1.Version3Scale,
-			integreatlyv1alpha1.ProductRHSSOUser: integreatlyv1alpha1.VersionRHSSOUser,
+			integreatlyv1alpha1.Product3Scale:         integreatlyv1alpha1.Version3Scale,
+			integreatlyv1alpha1.ProductRHSSOUser:      integreatlyv1alpha1.VersionRHSSOUser,
 		},
 	}
 
 	mtManagedApiProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
-		integreatlyv1alpha1.AuthenticationStage: {
-			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
-		},
-		integreatlyv1alpha1.ObservabilityStage: {
-			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.VersionObservability,
-		},
-		integreatlyv1alpha1.CloudResourcesStage: {
+		integreatlyv1alpha1.InstallStage: {
+			integreatlyv1alpha1.ProductRHSSO:          integreatlyv1alpha1.VersionRHSSO,
+			integreatlyv1alpha1.ProductObservability:  integreatlyv1alpha1.VersionObservability,
 			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
-		},
-		integreatlyv1alpha1.ProductsStage: {
-			integreatlyv1alpha1.Product3Scale: integreatlyv1alpha1.Version3Scale,
+			integreatlyv1alpha1.Product3Scale:         integreatlyv1alpha1.Version3Scale,
 		},
 	}
 )

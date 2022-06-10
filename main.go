@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"os"
 	"strings"
 
@@ -40,7 +41,6 @@ import (
 	tenantcontroller "github.com/integr8ly/integreatly-operator/controllers/tenant"
 	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"github.com/openshift/api/apps/v1"
 	"github.com/sirupsen/logrus"
@@ -100,7 +100,7 @@ func main() {
 		QuoteEmptyFields: false,
 	})
 
-	watchNamespace, err := resources.GetWatchNamespace()
+	watchNamespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
 			"the manager will watch and manage resources in all namespaces")
@@ -242,7 +242,7 @@ func setupWebhooks(mgr ctrl.Manager) error {
 	// The webhooks feature can't work when the operator runs locally, as it
 	// needs to be accessible by kubernetes and depends on the TLS certificates
 	// being mounted
-	webhooks.Config.Enabled = resources.IsRunInCluster()
+	webhooks.Config.Enabled = k8s.IsRunInCluster()
 
 	if err := webhooks.Config.SetupServer(mgr); err != nil {
 		return err
