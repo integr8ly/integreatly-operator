@@ -1,5 +1,5 @@
 channels:
-  - currentCSV: multitenant-managed-api-service.v1.21.0
+  - currentCSV: multitenant-managed-api-service.v1.22.0
     name: rhmi
 defaultChannel: rhmi
 packageName: multitenant-managed-api-service

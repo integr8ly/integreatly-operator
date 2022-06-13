@@ -287,6 +287,12 @@ set_related_images() {
   printf -v m "$containerImageField" ; m="$m" yq e -i ".metadata.annotations.containerImages= strenv(m)" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
 }
 
+update_smtp_from() {
+  echo "Updating the CSV's 'ALERT_SMTP_FROM' value for multitenant RHOAM"
+
+  yq e -i '(.spec.install.spec.deployments.[0].spec.template.spec.containers[0].env.[] | select(.name == "ALERT_SMTP_FROM").value) |= "noreply-alert@rhmw.io"' bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+}
+
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
  exit 1
@@ -342,6 +348,11 @@ fi
 if [[ "${PREPARE_FOR_NEXT_RELEASE}" = true ]]; then
   yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:master\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
   yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:master\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+fi
+
+# If building bundles for multitenant RHOAM, update the ALERT_SMTP_FROM value for the Developer Sandbox clusters
+if [[ "${OLM_TYPE}" == "multitenant-managed-api-service" ]]; then
+ update_smtp_from
 fi
 
 # Move bundle.Dockerfile to the bundle folder

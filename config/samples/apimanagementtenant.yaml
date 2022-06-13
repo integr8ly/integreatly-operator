@@ -1,0 +1,6 @@
+apiVersion: integreatly.org/v1alpha1
+kind: APIManagementTenant
+metadata:
+  name: example
+  namespace: USERNAME-dev
+spec: {}
