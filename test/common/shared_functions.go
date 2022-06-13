@@ -433,7 +433,7 @@ func writeObjToYAMLFile(obj interface{}, out string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(out, data, 0644)
+	return ioutil.WriteFile(out, data, 0600)
 }
 
 func WriteRHMICRToFile(client dynclient.Client, file string) error {
