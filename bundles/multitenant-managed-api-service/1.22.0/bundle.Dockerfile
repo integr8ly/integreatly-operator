@@ -16,6 +16,6 @@ LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 # Copy files to locations specified by labels.
-COPY bundles/multitenant-managed-api-service/1.21.0/manifests /manifests/
-COPY bundles/multitenant-managed-api-service/1.21.0/metadata /metadata/
-COPY bundles/multitenant-managed-api-service/1.21.0/tests/scorecard /tests/scorecard/
+COPY bundles/multitenant-managed-api-service/1.22.0/manifests /manifests/
+COPY bundles/multitenant-managed-api-service/1.22.0/metadata /metadata/
+COPY bundles/multitenant-managed-api-service/1.22.0/tests/scorecard /tests/scorecard/
