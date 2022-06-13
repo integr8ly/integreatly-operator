@@ -613,6 +613,28 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 		},
 	}
 
+	rateLimitPodPending := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimitPending",
+			Namespace: namespace,
+			Labels:    map[string]string{"app": quota.RateLimitName},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodPending,
+		},
+	}
+
+	rateLimitPodFailed := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimitFailed",
+			Namespace: namespace,
+			Labels:    map[string]string{"app": quota.RateLimitName},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodFailed,
+		},
+	}
+
 	type fields struct {
 		Namespace       string
 		RedisSecretName string
@@ -641,6 +663,30 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
 					return fmt.Errorf("listError")
 				}},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test phase failed if pod is pending",
+			fields: fields{
+				Namespace: namespace,
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPodPending),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test phase failed if pod has failed",
+			fields: fields{
+				Namespace: namespace,
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, rateLimitPodFailed),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,

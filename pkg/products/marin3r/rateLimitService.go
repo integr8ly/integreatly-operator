@@ -550,6 +550,12 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
+	for _, pod := range rateLimitPods.Items {
+		if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodFailed {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("waiting for rate limit pods to be ready")
+		}
+	}
+
 	// Get current limits in redis
 	limitadorClient := NewLimitadorClient(r.PodExecutor, r.Namespace, rateLimitPods.Items[0].Name)
 	limitadorLimitsInRedis, err := limitadorClient.GetLimitsByName(ratelimit.RateLimitDomain)
