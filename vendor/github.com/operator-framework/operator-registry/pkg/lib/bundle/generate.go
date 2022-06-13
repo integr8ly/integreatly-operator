@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -32,7 +33,7 @@ const (
 )
 
 type AnnotationMetadata struct {
-	Annotations map[string]string `yaml:"annotations"`
+	Annotations map[string]string `yaml:"annotations" json:"annotations"`
 }
 
 // GenerateFunc builds annotations.yaml with mediatype, manifests &
@@ -76,6 +77,45 @@ func GenerateFunc(directory, outputDir, packageName, channels, channelDefault st
 		return err
 	}
 
+	// Channels and packageName are required fields where as default channel is automatically filled if unspecified
+	// and that either of the required field is missing. We are interpreting the bundle information through
+	// bundle directory embedded in the package folder.
+	if channels == "" || packageName == "" {
+		var notProvided []string
+		if channels == "" {
+			notProvided = append(notProvided, "channels")
+		}
+		if packageName == "" {
+			notProvided = append(notProvided, "package name")
+		}
+		log.Infof("Bundle %s information not provided, inferring from parent package directory",
+			strings.Join(notProvided, " and "))
+
+		i, err := NewBundleDirInterperter(directory)
+		if err != nil {
+			return fmt.Errorf("please manually input channels and packageName, "+
+				"error interpreting bundle from directory %s, %v", directory, err)
+		}
+
+		if channels == "" {
+			channels = strings.Join(i.GetBundleChannels(), ",")
+			if channels == "" {
+				return fmt.Errorf("error interpreting channels, please manually input channels instead")
+			}
+			log.Infof("Inferred channels: %s", channels)
+		}
+
+		if packageName == "" {
+			packageName = i.GetPackageName()
+			log.Infof("Inferred package name: %s", packageName)
+		}
+
+		if channelDefault == "" {
+			channelDefault = i.GetDefaultChannel()
+			log.Infof("Inferred default channel: %s", channelDefault)
+		}
+	}
+
 	log.Info("Building annotations.yaml")
 
 	// Generate annotations.yaml
@@ -107,7 +147,7 @@ func GenerateFunc(directory, outputDir, packageName, channels, channelDefault st
 	} else if err != nil {
 		return err
 	} else {
-		log.Info("A bundle.Dockerfile already exists in current working directory")
+		log.Infof("A bundle.Dockerfile already exists in current working directory: %s", workingDir)
 	}
 
 	return nil
@@ -150,7 +190,7 @@ func CopyYamlOutput(annotationsContent []byte, manifestDir, outputDir, workingDi
 	} else if err != nil {
 		return "", "", err
 	} else {
-		log.Info("An annotations.yaml already exists in directory")
+		log.Infof("An annotations.yaml already exists in the directory: %s", MetadataDir)
 		if err = ValidateAnnotations(file, annotationsContent); err != nil {
 			return "", "", err
 		}
@@ -232,53 +272,22 @@ func ValidateAnnotations(existing, expected []byte) error {
 		return err
 	}
 
-	if len(fileAnnotations.Annotations) != len(expectedAnnotations.Annotations) {
-		return fmt.Errorf("Unmatched number of fields. Expected (%d) vs existing (%d)",
-			len(expectedAnnotations.Annotations), len(fileAnnotations.Annotations))
-	}
-
+	// Ensure each expected annotation key and value exist in existing.
+	var errs []error
 	for label, item := range expectedAnnotations.Annotations {
-		value, ok := fileAnnotations.Annotations[label]
-		if ok == false {
-			return fmt.Errorf("Missing field: %s", label)
+		value, hasAnnotation := fileAnnotations.Annotations[label]
+		if !hasAnnotation {
+			errs = append(errs, fmt.Errorf("Missing field: %s", label))
+			continue
 		}
 
 		if item != value {
-			return fmt.Errorf(`Expect field "%s" to have value "%s" instead of "%s"`,
-				label, item, value)
+			errs = append(errs, fmt.Errorf("Expect field %q to have value %q instead of %q",
+				label, item, value))
 		}
 	}
 
-	return nil
-}
-
-// ValidateChannelDefault validates provided default channel to ensure it exists in
-// provided channel list.
-func ValidateChannelDefault(channels, channelDefault string) (string, error) {
-	var chanDefault string
-	var chanErr error
-	channelList := strings.Split(channels, ",")
-
-	if channelDefault != "" {
-		for _, channel := range channelList {
-			if channel == channelDefault {
-				chanDefault = channelDefault
-				break
-			}
-		}
-		if chanDefault == "" {
-			chanDefault = channelList[0]
-			chanErr = fmt.Errorf(`The channel list "%s" doesn't contain channelDefault "%s"`, channels, channelDefault)
-		}
-	} else {
-		chanDefault = channelList[0]
-	}
-
-	if chanDefault != "" {
-		return chanDefault, chanErr
-	} else {
-		return chanDefault, fmt.Errorf("Invalid channels is provied: %s", channels)
-	}
+	return utilerrors.NewAggregate(errs)
 }
 
 // GenerateAnnotations builds annotations.yaml with mediatype, manifests &
@@ -287,21 +296,18 @@ func ValidateChannelDefault(channels, channelDefault string) (string, error) {
 func GenerateAnnotations(mediaType, manifests, metadata, packageName, channels, channelDefault string) ([]byte, error) {
 	annotations := &AnnotationMetadata{
 		Annotations: map[string]string{
-			MediatypeLabel:      mediaType,
-			ManifestsLabel:      manifests,
-			MetadataLabel:       metadata,
-			PackageLabel:        packageName,
-			ChannelsLabel:       channels,
-			ChannelDefaultLabel: channelDefault,
+			MediatypeLabel: mediaType,
+			ManifestsLabel: manifests,
+			MetadataLabel:  metadata,
+			PackageLabel:   packageName,
+			ChannelsLabel:  channels,
 		},
 	}
 
-	chanDefault, err := ValidateChannelDefault(channels, channelDefault)
-	if err != nil {
-		return nil, err
+	// Only add defaultChannel annotation if present
+	if channelDefault != "" {
+		annotations.Annotations[ChannelDefaultLabel] = channelDefault
 	}
-
-	annotations.Annotations[ChannelDefaultLabel] = chanDefault
 
 	afile, err := yaml.Marshal(annotations)
 	if err != nil {
@@ -317,20 +323,17 @@ func GenerateAnnotations(mediaType, manifests, metadata, packageName, channels, 
 func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMetadataDir, workingDir, packageName, channels, channelDefault string) ([]byte, error) {
 	var fileContent string
 
-	chanDefault, err := ValidateChannelDefault(channels, channelDefault)
-	if err != nil {
-		return nil, err
-	}
-
 	relativeManifestDirectory, err := filepath.Rel(workingDir, copyManifestDir)
 	if err != nil {
 		return nil, err
 	}
+	relativeManifestDirectory = filepath.ToSlash(relativeManifestDirectory)
 
 	relativeMetadataDirectory, err := filepath.Rel(workingDir, copyMetadataDir)
 	if err != nil {
 		return nil, err
 	}
+	relativeMetadataDirectory = filepath.ToSlash(relativeMetadataDirectory)
 
 	// FROM
 	fileContent += "FROM scratch\n\n"
@@ -341,16 +344,20 @@ func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMet
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", MetadataLabel, metadata)
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", PackageLabel, packageName)
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", ChannelsLabel, channels)
-	fileContent += fmt.Sprintf("LABEL %s=%s\n\n", ChannelDefaultLabel, chanDefault)
+
+	// Only add defaultChannel annotation if present
+	if channelDefault != "" {
+		fileContent += fmt.Sprintf("LABEL %s=%s\n\n", ChannelDefaultLabel, channelDefault)
+	}
 
 	// CONTENT
 	fileContent += fmt.Sprintf("COPY %s %s\n", relativeManifestDirectory, "/manifests/")
-	fileContent += fmt.Sprintf("COPY %s %s%s\n", filepath.Join(relativeMetadataDirectory, AnnotationsFile), "/metadata/", AnnotationsFile)
+	fileContent += fmt.Sprintf("COPY %s %s\n", relativeMetadataDirectory, "/metadata/")
 
 	return []byte(fileContent), nil
 }
 
-// Write `fileName` file with `content` into a `directory`
+// WriteFile writes `fileName` file with `content` into a `directory`
 // Note: Will overwrite the existing `fileName` file if it exists
 func WriteFile(fileName, directory string, content []byte) error {
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
@@ -359,7 +366,7 @@ func WriteFile(fileName, directory string, content []byte) error {
 			return err
 		}
 	}
-
+	log.Infof("Writing %s in %s", fileName, directory)
 	err := ioutil.WriteFile(filepath.Join(directory, fileName), content, DefaultPermission)
 	if err != nil {
 		return err
@@ -431,4 +438,13 @@ func copyManifestDir(from, to string, overwrite bool) error {
 	}
 
 	return nil
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }

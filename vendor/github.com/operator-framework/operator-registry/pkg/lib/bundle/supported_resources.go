@@ -1,41 +1,50 @@
 package bundle
 
 const (
-	CSVKind                = "ClusterServiceVersion"
-	CRDKind                = "CustomResourceDefinition"
-	SecretKind             = "Secret"
-	ClusterRoleKind        = "ClusterRole"
-	ClusterRoleBindingKind = "ClusterRoleBinding"
-	ServiceAccountKind     = "ServiceAccount"
-	ServiceKind            = "Service"
-	RoleKind               = "Role"
-	RoleBindingKind        = "RoleBinding"
-	PrometheusRuleKind     = "PrometheusRule"
-	ServiceMonitorKind     = "ServiceMonitor"
+	CSVKind                   = "ClusterServiceVersion"
+	CRDKind                   = "CustomResourceDefinition"
+	SecretKind                = "Secret"
+	ClusterRoleKind           = "ClusterRole"
+	ClusterRoleBindingKind    = "ClusterRoleBinding"
+	ConfigMapKind             = "ConfigMap"
+	ServiceAccountKind        = "ServiceAccount"
+	ServiceKind               = "Service"
+	RoleKind                  = "Role"
+	RoleBindingKind           = "RoleBinding"
+	PrometheusRuleKind        = "PrometheusRule"
+	ServiceMonitorKind        = "ServiceMonitor"
+	PodDisruptionBudgetKind   = "PodDisruptionBudget"
+	PriorityClassKind         = "PriorityClass"
+	VerticalPodAutoscalerKind = "VerticalPodAutoscaler"
+	ConsoleYamlSampleKind     = "ConsoleYamlSample"
 )
 
-var supportedResources map[string]bool
+// Namespaced indicates whether the resource is namespace scoped (true) or cluster-scoped (false).
+type Namespaced bool
 
-// Add a list of supported resources to the map
 // Key: Kind name
-// Value: If namaspaced kind, true. Otherwise, false
-func init() {
-	supportedResources = make(map[string]bool, 11)
-
-	supportedResources[CSVKind] = true
-	supportedResources[CRDKind] = false
-	supportedResources[ClusterRoleKind] = false
-	supportedResources[ClusterRoleBindingKind] = false
-	supportedResources[ServiceKind] = true
-	supportedResources[ServiceAccountKind] = true
-	supportedResources[RoleKind] = true
-	supportedResources[RoleBindingKind] = true
-	supportedResources[PrometheusRuleKind] = true
-	supportedResources[ServiceMonitorKind] = true
+// Value: If namespaced kind, true. Otherwise, false
+var supportedResources = map[string]Namespaced{
+	CSVKind:                   true,
+	CRDKind:                   false,
+	ClusterRoleKind:           false,
+	ClusterRoleBindingKind:    false,
+	ServiceKind:               true,
+	ServiceAccountKind:        true,
+	RoleKind:                  true,
+	RoleBindingKind:           true,
+	PrometheusRuleKind:        true,
+	ServiceMonitorKind:        true,
+	SecretKind:                true,
+	ConfigMapKind:             true,
+	PodDisruptionBudgetKind:   true,
+	PriorityClassKind:         false,
+	VerticalPodAutoscalerKind: false,
+	ConsoleYamlSampleKind:     false,
 }
 
 // IsSupported checks if the object kind is OLM-supported and if it is namespaced
-func IsSupported(kind string) (bool, bool) {
+func IsSupported(kind string) (bool, Namespaced) {
 	namespaced, ok := supportedResources[kind]
 	return ok, namespaced
 }
