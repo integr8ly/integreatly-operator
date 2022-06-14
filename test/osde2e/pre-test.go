@@ -58,7 +58,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 			request := ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 				Resource("rhmis").
 				Name(resourceName).
-				Namespace(common.RHMIOperatorNamespace).
+				Namespace(common.RHOAMOperatorNamespace).
 				RequestURI("/apis/integreatly.org/v1alpha1").Body(rhmiCRBytes).Do(context.TODO())
 			_, err := request.Raw()
 
@@ -73,7 +73,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 			smtpSec := &v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprint(common.NamespacePrefix + smtpSecretName),
-					Namespace: common.RHMIOperatorNamespace,
+					Namespace: common.RHOAMOperatorNamespace,
 				},
 				Data: map[string][]byte{
 					"host":     []byte("test"),
@@ -95,7 +95,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 			pagerDuty := v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      common.NamespacePrefix + pagerDutySecretName,
-					Namespace: common.RHMIOperatorNamespace,
+					Namespace: common.RHOAMOperatorNamespace,
 				},
 				Data: map[string][]byte{
 					"serviceKey": []byte("test"),
@@ -113,7 +113,7 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 			dms := v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      common.NamespacePrefix + deadMansSnitchName,
-					Namespace: common.RHMIOperatorNamespace,
+					Namespace: common.RHOAMOperatorNamespace,
 				},
 				Data: map[string][]byte{
 					"url": []byte("https://dms.example.com"),
@@ -141,7 +141,7 @@ func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	watchNS := common.GetNamespacePrefix()
 	nsSegments := strings.Split(watchNS, "-")
 	crName := nsSegments[1]
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: crName, Namespace: common.RHMIOperatorNamespace}, rhmi); err != nil {
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: crName, Namespace: common.RHOAMOperatorNamespace}, rhmi); err != nil {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil
@@ -150,7 +150,7 @@ func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 func getSecret(client dynclient.Client, secretName string) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: secretName, Namespace: common.RHMIOperatorNamespace}, secret); err != nil {
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: secretName, Namespace: common.RHOAMOperatorNamespace}, secret); err != nil {
 		return nil, fmt.Errorf("Error getting secret")
 	}
 	return secret, nil

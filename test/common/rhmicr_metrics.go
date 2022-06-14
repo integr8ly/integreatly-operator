@@ -25,7 +25,7 @@ func TestRHMICRMetrics(t TestingTB, ctx *TestingContext) {
 
 	output, err := execToPod("curl --silent localhost:8383/metrics",
 		rhmiOperatorPod.Name,
-		RHMIOperatorNamespace,
+		RHOAMOperatorNamespace,
 		"rhmi-operator",
 		ctx)
 	if err != nil {
@@ -77,7 +77,7 @@ func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
 		k8sclient.MatchingLabels(map[string]string{
 			"name": "rhmi-operator",
 		}),
-		k8sclient.InNamespace(RHMIOperatorNamespace),
+		k8sclient.InNamespace(RHOAMOperatorNamespace),
 	}
 
 	rhmiOperatorPod := &corev1.PodList{}
@@ -88,7 +88,7 @@ func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
 	}
 
 	if len(rhmiOperatorPod.Items) == 0 {
-		return nil, fmt.Errorf("%v pod doesn't exist in namespace: %v (err: %v)", podName, RHMIOperatorNamespace, err)
+		return nil, fmt.Errorf("%v pod doesn't exist in namespace: %v (err: %v)", podName, RHOAMOperatorNamespace, err)
 	}
 
 	return &rhmiOperatorPod.Items[0], nil

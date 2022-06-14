@@ -24,7 +24,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				Namespace: r.Config.GetNamespace(),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
+						Alert: "RHOAMSolutionExplorerTutorialWebAppServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -42,7 +42,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				Namespace: r.Config.GetOperatorNamespace(),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMSolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

@@ -375,10 +375,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		overrideSelectors := true
 		disabled := true
 
-		if &oo.Spec == nil {
-			oo.Spec = observability.ObservabilitySpec{}
-		}
-
 		oo.Spec.AlertManagerDefaultName = r.Config.GetAlertManagerOverride()
 		oo.Spec.GrafanaDefaultName = r.Config.GetGrafanaOverride()
 		oo.Spec.PrometheusDefaultName = r.Config.GetPrometheusOverride()

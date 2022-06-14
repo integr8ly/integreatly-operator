@@ -101,7 +101,7 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 		t.Logf("Failed to set SKIP_FLAKES env var %s", err)
 	}
 	common.NamespacePrefix = possibleNS
-	common.RHMIOperatorNamespace = common.NamespacePrefix + "operator"
+	common.RHOAMOperatorNamespace = common.NamespacePrefix + "operator"
 	common.MonitoringOperatorNamespace = common.NamespacePrefix + "middleware-monitoring-operator"
 	common.MonitoringFederateNamespace = common.NamespacePrefix + "middleware-monitoring-federate"
 	common.ObservabilityNamespacePrefix = common.NamespacePrefix + "observability-"

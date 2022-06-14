@@ -36,7 +36,7 @@ var ClusterRunType OperatorRunType = "Cluster"
 // LocalRunType represents when the operator is run locally
 var LocalRunType OperatorRunType = "Local"
 
-var runTypesBySubscription map[string]OperatorRunType = map[string]OperatorRunType{
+var runTypesBySubscription = map[string]OperatorRunType{
 	// RHOAM - Add-on
 	addonPrefixed(ManagedAPIService): AddonRunType,
 	// RHOAM - OLM
@@ -110,16 +110,6 @@ func OperatorInstalledViaOLM(ctx context.Context, client k8sclient.Client, insta
 	}
 
 	return runType == OLMRunType, nil
-}
-
-// OperatorInstalledViaAddon checks if the operator was installed via Add-on flow
-func OperatorInstalledViaAddon(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
-	runType, err := InferOperatorRunType(ctx, client, installation)
-	if err != nil {
-		return false, err
-	}
-
-	return runType == AddonRunType, nil
 }
 
 // Operator is managed by Hive

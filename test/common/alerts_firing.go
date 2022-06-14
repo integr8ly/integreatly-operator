@@ -48,7 +48,7 @@ var (
 
 	// Applicable to all install types
 	commonPodNamespaces = []string{
-		RHMIOperatorNamespace,
+		RHOAMOperatorNamespace,
 		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOProductNamespace,
@@ -110,8 +110,8 @@ func (e *alertsFiringError) isValid() bool {
 
 func smtpMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB) bool {
 	smtpSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: SMTPSecretName, Namespace: RHMIOperatorNamespace}, smtpSecret); err != nil {
-		t.Logf("SMTP secret is missing from %s namespace, expecting %s to fire\n", RHMIOperatorNamespace, missingSmtpSecret)
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: SMTPSecretName, Namespace: RHOAMOperatorNamespace}, smtpSecret); err != nil {
+		t.Logf("SMTP secret is missing from %s namespace, expecting %s to fire\n", RHOAMOperatorNamespace, missingSmtpSecret)
 		return true
 	}
 	return false
@@ -119,8 +119,8 @@ func smtpMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB
 
 func dmsSecretMissing(ctx context.Context, serverClient k8sclient.Client, t TestingTB) bool {
 	dmsSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: DMSSecretName, Namespace: RHMIOperatorNamespace}, dmsSecret); err != nil {
-		t.Logf("DeadMansSnitch secret is missing from %s namespace, expecting %s to fire\n", RHMIOperatorNamespace, dmsSecretAlertName)
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: DMSSecretName, Namespace: RHOAMOperatorNamespace}, dmsSecret); err != nil {
+		t.Logf("DeadMansSnitch secret is missing from %s namespace, expecting %s to fire\n", RHOAMOperatorNamespace, dmsSecretAlertName)
 		return true
 	}
 	return false

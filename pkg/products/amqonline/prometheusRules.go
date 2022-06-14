@@ -63,7 +63,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				Namespace: r.Config.GetNamespace(),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIAMQOnlineNoneAuthServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineNoneAuthServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -73,7 +73,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineAddressSpaceControllerServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -83,7 +83,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIAMQOnlineConsoleServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineConsoleServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -93,7 +93,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIAMQOnlineRegistryCsServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -103,7 +103,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIAMQOnlineStandardAuthServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineStandardAuthServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -113,7 +113,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+						Alert: "RHOAMAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),

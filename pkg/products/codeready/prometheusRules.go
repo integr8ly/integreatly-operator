@@ -22,7 +22,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 				GroupName: "codeready-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMICodeReadyCheHostServiceEndpointDown",
+						Alert: "RHOAMCodeReadyCheHostServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -32,7 +32,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMICodeReadyDevfileRegistryServiceEndpointDown",
+						Alert: "RHOAMCodeReadyDevfileRegistryServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -42,7 +42,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMICodeReadyPluginRegistryServiceEndpointDown",
+						Alert: "RHOAMCodeReadyPluginRegistryServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -60,7 +60,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 				GroupName: "code-ready-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMCodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

@@ -183,7 +183,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			GroupName: "middleware-monitoring-operator-endpoint.rules",
 			Rules: []monitoringv1.Rule{
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -193,7 +193,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -203,7 +203,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -213,7 +213,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -223,7 +223,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -233,7 +233,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -243,7 +243,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: "RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+					Alert: "RHOAMMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlEndpointAvailableAlert,
 						"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -260,7 +260,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			GroupName: "general.rules",
 			Rules: []monitoringv1.Rule{
 				{
-					Alert: "RHMICSVRequirementsNotMet",
+					Alert: "RHOAMCSVRequirementsNotMet",
 					Annotations: map[string]string{
 						"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.namespace}}'. Phase is {{$labels.phase}}",
 					},

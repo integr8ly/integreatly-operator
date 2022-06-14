@@ -175,14 +175,14 @@ func GetInstallType(config *rest.Config) (string, error) {
 func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, error) {
 	installationList := &rhmiv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(RHMIOperatorNamespace),
+		k8sclient.InNamespace(RHOAMOperatorNamespace),
 	}
 	err := client.List(context.TODO(), installationList, listOpts...)
 	if err != nil {
 		return nil, err
 	}
 	if len(installationList.Items) == 0 && failNotExist == true {
-		return nil, fmt.Errorf("rhmi CRs does not exist: %v namespace: '%v', list: %v", err, RHMIOperatorNamespace, installationList)
+		return nil, fmt.Errorf("rhmi CRs does not exist: %v namespace: '%v', list: %v", err, RHOAMOperatorNamespace, installationList)
 	}
 	if len(installationList.Items) == 0 && failNotExist == false {
 		return nil, nil

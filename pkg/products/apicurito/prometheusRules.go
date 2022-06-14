@@ -43,7 +43,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				GroupName: "apicurito-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIApicuritoServiceEndpointDown",
+						Alert: "RHOAMApicuritoServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -53,7 +53,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+						Alert: "RHOAMApicuritoFuseApicuritoGeneratorServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -71,7 +71,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				Namespace: r.Config.GetOperatorNamespace(),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

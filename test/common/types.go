@@ -18,7 +18,7 @@ var (
 	NamespacePrefix                   = GetNamespacePrefix()
 	OpenShiftConsoleRoute             = "console"
 	OpenShiftConsoleNamespace         = "openshift-console"
-	RHMIOperatorNamespace             = NamespacePrefix + "operator"
+	RHOAMOperatorNamespace            = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
 	ObservabilityOperatorNamespace    = NamespacePrefix + "observability-operator"

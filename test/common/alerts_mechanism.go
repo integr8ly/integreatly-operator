@@ -35,7 +35,7 @@ const (
 )
 
 var keycloakAlertsToTest = map[string]string{
-	"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
+	"RHOAMRhssoKeycloakOperatorMetricsServiceEndpointDown": "none",
 }
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
@@ -98,7 +98,7 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 func verifySecrets(kubeClient kubernetes.Interface) error {
 	var pagerdutyKey, dmsURL string
 	dmsSecretFound := true
-	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
+	res, err := kubeClient.CoreV1().Secrets(RHOAMOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
 		dmsSecretFound = false
 	}
@@ -112,7 +112,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		}
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"pagerduty", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(RHOAMOperatorNamespace).Get(goctx.TODO(), NamespacePrefix+"pagerduty", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -125,7 +125,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("secret key is undefined in pager duty secret")
 	}
 
-	smtp, err := resources.GetSMTPSecret(kubeClient, RHMIOperatorNamespace, SMTPSecretName)
+	smtp, err := resources.GetSMTPSecret(kubeClient, RHOAMOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		return err
 	}
