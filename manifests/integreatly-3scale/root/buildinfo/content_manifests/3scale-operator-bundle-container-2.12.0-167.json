@@ -138,40 +138,40 @@
                     "purl": "pkg:golang/fmt"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps%2Fv1alpha1@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps%2Fv1alpha1@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcmd@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcmd@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcomponent@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcomponent@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fproduct@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fproduct@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fprometheusrules@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fprometheusrules@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Ftemplate%2Fadapters@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Ftemplate%2Fadapters@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Ftemplate@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Ftemplate@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fassets@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fassets@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcommon@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcommon@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcrypto%2Frand@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcrypto%2Frand@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhelper@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhelper@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fversion@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fversion@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
                     "purl": "pkg:golang/github.com%2FRHsyseng%2Foperator-utils%2Fpkg%2Folm@v0.0.0-20200506183821-e3b4a2ba9c30"
@@ -372,9 +372,6 @@
                     "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fbuild%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fconfig%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
-                },
-                {
                     "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fconsole%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
                 },
                 {
@@ -514,9 +511,6 @@
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fcrypto%2Fssh%2Fterminal@v0.0.0-20200414173820-0848c9571904"
-                },
-                {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod%2Fsemver@v0.5.1"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet%2Fcontext%2Fctxhttp@v0.0.0-20200520004742-59133d7f0dd7"
@@ -1458,7 +1452,7 @@
                     "purl": "pkg:golang/vendor%2Fgolang.org%2Fx%2Ftext%2Funicode%2Fnorm"
                 }
             ],
-            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp@v0.2.1-0.20220613121256-8d48e58887b7",
+            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp@v0.2.1-0.20220613121456-ded96ce0e120",
             "sources": [
                 {
                     "purl": "pkg:golang/bazil.org%2Ffuse@v0.0.0-20160811212531-371fbbdaa898"
@@ -2844,7 +2838,7 @@
                     "purl": "pkg:golang/golang.org%2Fx%2Fmobile@v0.0.0-20190719004257-d2bd2a29d028"
                 },
                 {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.5.1"
+                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.2.0"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet@v0.0.0-20200520004742-59133d7f0dd7"
@@ -3084,7 +3078,7 @@
         },
         {
             "dependencies": [],
-            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Fcrds@v0.2.1-0.20220613121256-8d48e58887b7",
+            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Fcrds@v0.2.1-0.20220613121456-ded96ce0e120",
             "sources": [
                 {
                     "purl": "pkg:golang/bazil.org%2Ffuse@v0.0.0-20160811212531-371fbbdaa898"
@@ -4470,7 +4464,7 @@
                     "purl": "pkg:golang/golang.org%2Fx%2Fmobile@v0.0.0-20190719004257-d2bd2a29d028"
                 },
                 {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.5.1"
+                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.2.0"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet@v0.0.0-20200520004742-59133d7f0dd7"
@@ -4710,7 +4704,7 @@
         },
         {
             "dependencies": [],
-            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Fmanifests-version@v0.2.1-0.20220613121256-8d48e58887b7",
+            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Fmanifests-version@v0.2.1-0.20220613121456-ded96ce0e120",
             "sources": [
                 {
                     "purl": "pkg:golang/bazil.org%2Ffuse@v0.0.0-20160811212531-371fbbdaa898"
@@ -6096,7 +6090,7 @@
                     "purl": "pkg:golang/golang.org%2Fx%2Fmobile@v0.0.0-20190719004257-d2bd2a29d028"
                 },
                 {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.5.1"
+                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.2.0"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet@v0.0.0-20200520004742-59133d7f0dd7"
@@ -6336,7 +6330,7 @@
         },
         {
             "dependencies": [],
-            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Funitcontrollers@v0.2.1-0.20220613121256-8d48e58887b7",
+            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Ftest%2Funitcontrollers@v0.2.1-0.20220613121456-ded96ce0e120",
             "sources": [
                 {
                     "purl": "pkg:golang/bazil.org%2Ffuse@v0.0.0-20160811212531-371fbbdaa898"
@@ -7722,7 +7716,7 @@
                     "purl": "pkg:golang/golang.org%2Fx%2Fmobile@v0.0.0-20190719004257-d2bd2a29d028"
                 },
                 {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.5.1"
+                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.2.0"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet@v0.0.0-20200520004742-59133d7f0dd7"
@@ -8104,61 +8098,61 @@
                     "purl": "pkg:golang/fmt"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps%2Fv1alpha1@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps%2Fv1alpha1@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fapps@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fcapabilities%2Fv1alpha1@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fcapabilities%2Fv1alpha1@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fcapabilities%2Fv1beta1@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fapis%2Fcapabilities%2Fv1beta1@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fcontrollers%2Fapps@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fcontrollers%2Fapps@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fcontrollers%2Fcapabilities@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fcontrollers%2Fcapabilities@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcomponent@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fcomponent@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Foperator@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Foperator@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fproduct@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2F3scale%2Famp%2Fproduct@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fassets@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fassets@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fbackup@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fbackup@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcommon@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcommon@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcontroller%2Fhelper@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcontroller%2Fhelper@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcrypto%2Frand@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fcrypto%2Frand@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhandlers@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhandlers@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhelper@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Fhelper@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Freconcilers@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Freconcilers@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Frestore@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fpkg%2Frestore@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fversion@v0.2.1-0.20220613121256-8d48e58887b7"
+                    "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator%2Fversion@v0.2.1-0.20220613121456-ded96ce0e120"
                 },
                 {
                     "purl": "pkg:golang/github.com%2F3scale%2F3scale-porta-go-client%2Fclient@v0.6.0"
@@ -8320,9 +8314,6 @@
                     "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fapps%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
                 },
                 {
-                    "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fconfig%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
-                },
-                {
                     "purl": "pkg:golang/github.com%2Fopenshift%2Fapi%2Fconsole%2Fv1@v0.0.0-20200527184302-a843dc3262a0"
                 },
                 {
@@ -8417,9 +8408,6 @@
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fcrypto%2Fssh%2Fterminal@v0.0.0-20200414173820-0848c9571904"
-                },
-                {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod%2Fsemver@v0.5.1"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet%2Fcontext%2Fctxhttp@v0.0.0-20200520004742-59133d7f0dd7"
@@ -9460,7 +9448,7 @@
                     "purl": "pkg:golang/vendor%2Fgolang.org%2Fx%2Ftext%2Funicode%2Fnorm"
                 }
             ],
-            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator@v0.2.1-0.20220613121256-8d48e58887b7",
+            "purl": "pkg:golang/github.com%2F3scale%2F3scale-operator@v0.2.1-0.20220613121456-ded96ce0e120",
             "sources": [
                 {
                     "purl": "pkg:golang/bazil.org%2Ffuse@v0.0.0-20160811212531-371fbbdaa898"
@@ -10846,7 +10834,7 @@
                     "purl": "pkg:golang/golang.org%2Fx%2Fmobile@v0.0.0-20190719004257-d2bd2a29d028"
                 },
                 {
-                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.5.1"
+                    "purl": "pkg:golang/golang.org%2Fx%2Fmod@v0.2.0"
                 },
                 {
                     "purl": "pkg:golang/golang.org%2Fx%2Fnet@v0.0.0-20200520004742-59133d7f0dd7"

@@ -314,14 +314,6 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - config.openshift.io
-          resources:
-          - clusterversions
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
           - console.openshift.io
           resources:
           - consolelinks
@@ -347,9 +339,9 @@ spec:
                 com.company: Red_Hat
                 control-plane: controller-manager
                 rht.comp: 3scale
-                rht.comp_ver: master
+                rht.comp_ver: "2.12"
                 rht.prod_name: Red_Hat_Integration
-                rht.prod_ver: master
+                rht.prod_ver: 2021.Q4
                 rht.subcomp: 3scale_operator
                 rht.subcomp_t: infrastructure
             spec:
@@ -930,7 +922,7 @@ spec:
   provider:
     name: Red Hat dev
   version: 0.9.0
-  replaces: 3scale-operator.v0.8.3
+  replaces: 3scale-operator.v0.8.4
   relatedImages:
   - name: 3scale-rhel7-operator-111341c8661b35f9cd50df60e6e81a2fe9b999868075743b631e3791d608828f-annotation
     image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:111341c8661b35f9cd50df60e6e81a2fe9b999868075743b631e3791d608828f
