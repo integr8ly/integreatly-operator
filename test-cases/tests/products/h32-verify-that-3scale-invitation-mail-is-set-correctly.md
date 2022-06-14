@@ -19,10 +19,10 @@ tags:
 
 2. Navigate to API management in the quick access menu at the top of the console page.
 
-3. From the drop-down menu at the top navigate to Audience > Developer Portal > Domain & Access
+3. From the drop-down menu at the top navigate to Audience > Developer Portal > Settings > Domain & Access
 
 4. Verify that the outgoing email is `noreply-alert@rhmw.io`
 
 5. Change the outgoing email and update the account.
 
-6. Verify that the outgoing email is reverted to `noreply-alert@rhmw.io`
+6. After ~4min ,verify that the outgoing email is reverted to `noreply-alert@rhmw.io`
