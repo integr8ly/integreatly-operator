@@ -3,9 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"golang.org/x/net/context"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
@@ -114,7 +114,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 
-	managed, err := utils.OperatorIsHiveManaged(ctx.Client, inst)
+	managed, err := addon.OperatorIsHiveManaged(context.TODO(), ctx.Client, inst)
 	if err != nil {
 		t.Errorf("error getting hive managed labels: %v", err)
 	}
@@ -230,7 +230,7 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 
-	managed, err := utils.OperatorIsHiveManaged(ctx.Client, inst)
+	managed, err := addon.OperatorIsHiveManaged(context.TODO(), ctx.Client, inst)
 	if err != nil {
 		t.Errorf("error getting hive managed labels: %v", err)
 	}

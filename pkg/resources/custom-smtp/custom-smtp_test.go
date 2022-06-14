@@ -13,10 +13,6 @@ import (
 	"testing"
 )
 
-var (
-	namespace = "test"
-)
-
 func TestGetCustomAddonValues(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
@@ -25,11 +21,9 @@ func TestGetCustomAddonValues(t *testing.T) {
 	type args struct {
 		serverClient k8sclient.Client
 		namespace    string
-		instanceType v1alpha1.InstallationType
 	}
 
 	namespace := "test"
-	instanceType := v1alpha1.InstallationTypeManagedApi
 	tests := []struct {
 		name    string
 		args    args
@@ -53,8 +47,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 							"custom-smtp-username":     []byte("test_user_01"),
 						},
 					}),
-				namespace:    namespace,
-				instanceType: instanceType,
+				namespace: namespace,
 			},
 			want: &CustomSmtp{
 				FromAddress: "from_address",
@@ -80,8 +73,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 							"custom-smtp-password":     []byte("has value"),
 						},
 					}),
-				namespace:    namespace,
-				instanceType: instanceType,
+				namespace: namespace,
 			},
 			want: &CustomSmtp{
 				FromAddress: "has value",
@@ -100,8 +92,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 							Namespace: namespace,
 						},
 						Data: nil}),
-				namespace:    namespace,
-				instanceType: instanceType,
+				namespace: namespace,
 			},
 			want:    &CustomSmtp{},
 			wantErr: false,
@@ -116,8 +107,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 							Namespace: namespace,
 						},
 						Data: nil}),
-				namespace:    namespace,
-				instanceType: instanceType,
+				namespace: namespace,
 			},
 			want:    nil,
 			wantErr: true,
@@ -125,7 +115,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetCustomAddonValues(tt.args.serverClient, tt.args.namespace, tt.args.instanceType)
+			got, err := GetCustomAddonValues(tt.args.serverClient, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetCustomAddonValues() error = %v, wantErr %v", err, tt.wantErr)
 				return

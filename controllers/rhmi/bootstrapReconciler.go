@@ -777,7 +777,7 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 
 func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
 
-	smtp, err := cs.GetCustomAddonValues(serverClient, r.installation.Namespace, integreatlyv1alpha1.InstallationType(r.installation.Spec.Type))
+	smtp, err := cs.GetCustomAddonValues(serverClient, r.installation.Namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
