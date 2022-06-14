@@ -13,5 +13,5 @@ additionalImages:
   - name: observability-prometheus-operator
     url: "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"
   - name: rhsso-sso-openshift
-    url: "quay.io/keycloak/keycloak-operator:18.0.0-legacy"
+    url: "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-27"
 
