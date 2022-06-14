@@ -17,3 +17,5 @@ bundles:
     image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1646742992
   - name: 3scale-operator.v0.8.3+0.1649688682.p
     image: quay.io/integreatly/3scale-bundle:v0.8.3-0.1649688682
+  - name: 3scale-operator.v0.8.4
+    image: quay.io/integreatly/3scale-bundle:v0.8.4
