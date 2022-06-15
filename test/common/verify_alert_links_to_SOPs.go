@@ -20,7 +20,7 @@ func TestVerifyAlertLinksInSOPs(t TestingTB, ctx *TestingContext) {
 
 	var apiLinks []string
 	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
-	testResp := getSOPAlertLinkStatus(testUrl)
+	testResp := getSOPAlertLinkStatus(t, testUrl)
 
 	if testResp.StatusCode != 200 {
 		t.Log("Response status: ", testUrl, testResp.Status)
