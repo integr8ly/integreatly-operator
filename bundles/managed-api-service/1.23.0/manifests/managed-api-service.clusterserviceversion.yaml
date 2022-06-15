@@ -51,15 +51,16 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.23.0-rc1
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.10"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
-    operators.operatorframework.io/builder: operator-sdk-v1.12.0
+    operators.operatorframework.io/builder: operator-sdk-v1.11.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
+    serviceAffecting: "false"
     containerImages: |-
       [
-        {"component_name":"3scale-operator.v0.8.3-0.1649688682.p","component_url":"registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:69fdd166808dcc23bc03fce9e9c53ceaa459410a19173deac78837734f1a2e48"},{"component_name":"backend","component_url":"registry.redhat.io/3scale-amp2/backend-rhel8@sha256:1662c92f37a9e54a210f2022027c312b7d778d2481191fe020d5fe40d1adf39d"},{"component_name":"apicast","component_url":"registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:14c01cbc43b3756850fa9732d9a2f588792ec375d6834866f04a28fbc6c04738"},{"component_name":"system","component_url":"registry.redhat.io/3scale-amp2/system-rhel7@sha256:bce53953b3fa2bdf92b15fc760d343b30423814a8d802ebc6a38efa414f61fb9"},{"component_name":"zync","component_url":"registry.redhat.io/3scale-amp2/zync-rhel8@sha256:62b24bde0123a22241e02e6f7b9c7a55794e586b852420e587cc034a8cf76e9e"},{"component_name":"system_memcached","component_url":"registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:aef06f236ee59c75c4d82db620c83b4211e16cbc56ef1355359fa39881c5ae24"},{"component_name":"cloud-resources.v0.39.0","component_url":"quay.io/integreatly/cloud-resource-operator:v0.39.0"},{"component_name":"grafana-operator.v4.2.0","component_url":"quay.io/grafana-operator/grafana-operator:v4.2.0"},{"component_name":"marin3r.v0.10.0","component_url":"quay.io/3scale/marin3r:v0.10.0"},{"component_name":"keycloak-operator.v17.0.0","component_url":"quay.io/keycloak/keycloak-operator:17.0.0"},{"component_name":"observability-operator.v3.0.8","component_url":"quay.io/rhoas/observability-operator:v3.0.8"},{"component_name":"3scale-openshift-servce-mesh","component_url":"registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.0-1"},{"component_name":"marin3r-limitador","component_url":"quay.io/3scale/limitador:v0.5.1"},{"component_name":"observability-grafana-plugins-init","component_url":"quay.io/grafana-operator/grafana_plugins_init:0.0.6"},{"component_name":"observability-origin-oauth-proxy","component_url":"quay.io/openshift/origin-oauth-proxy:4.8"},{"component_name":"observability-prometheus-operator","component_url":"quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"},{"component_name":"rhsso-sso-openshift","component_url":"registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-17"}]
+        {"component_name":"3scale-operator.v0.8.4","component_url":"registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:d9ecd9ffb167908d2825b96491edbc138b5b08456775feaaaf99b6fd4f50c19e"},{"component_name":"backend","component_url":"registry.redhat.io/3scale-amp2/backend-rhel8@sha256:c01bd40b54dabbbdb70e34ab1b2e23dd86f16d6381ea07606cb12c96b952f3a3"},{"component_name":"apicast","component_url":"registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:f0e9f64c353fdbee3bf7ec0eaf070c3b75330ef659a881ec4ebc874ba584d085"},{"component_name":"system","component_url":"registry.redhat.io/3scale-amp2/system-rhel7@sha256:9989cbbcb37f0a1421ca61a8412efab22b23723e5e987177542166124c30f4f0"},{"component_name":"zync","component_url":"registry.redhat.io/3scale-amp2/zync-rhel8@sha256:35f8ed5e67d87976b2317648d5422d62ed523f69075d30d4ff94a07210d3fc29"},{"component_name":"system_memcached","component_url":"registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:7a379aa1503d7f839e4b3250ad864506f2b417fe728d43fb29cd78c041089e0f"},{"component_name":"cloud-resources.v0.39.0","component_url":"quay.io/integreatly/cloud-resource-operator:v0.39.0"},{"component_name":"grafana-operator.v4.2.0","component_url":"quay.io/grafana-operator/grafana-operator:v4.2.0"},{"component_name":"marin3r.v0.10.0","component_url":"quay.io/3scale/marin3r:v0.10.0"},{"component_name":"keycloak-operator.v18.0.0","component_url":"quay.io/keycloak/keycloak-operator:18.0.0-legacy"},{"component_name":"observability-operator.v3.0.8","component_url":"quay.io/rhoas/observability-operator:v3.0.8"},{"component_name":"3scale-openshift-servce-mesh","component_url":"registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.2-2"},{"component_name":"marin3r-limitador","component_url":"quay.io/3scale/limitador:v0.5.1"},{"component_name":"observability-grafana-plugins-init","component_url":"quay.io/grafana-operator/grafana_plugins_init:0.0.6"},{"component_name":"observability-origin-oauth-proxy","component_url":"quay.io/openshift/origin-oauth-proxy:4.8"},{"component_name":"observability-prometheus-operator","component_url":"quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"},{"component_name":"rhsso-sso-openshift","component_url":"registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-27"}]
   name: managed-api-service.v1.23.0
   namespace: placeholder
 spec:
@@ -174,6 +175,12 @@ spec:
                 - nodes
               verbs:
                 - list
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - create
             - apiGroups:
                 - ""
               resourceNames:
@@ -509,6 +516,8 @@ spec:
                     command:
                       - rhmi-operator
                     env:
+                      - name: INSTALLATION_TYPE
+                        value: managed-api
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -523,15 +532,13 @@ spec:
                         value: "true"
                       - name: LOG_LEVEL
                         value: info
-                      - name: INSTALLATION_TYPE
-                        value: managed-api
                       - name: REBALANCE_PODS
                         value: "true"
                       - name: ALERT_SMTP_FROM
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.23.0-rc1
                     imagePullPolicy: Always
                     name: rhmi-operator
                     ports:
