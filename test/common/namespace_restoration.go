@@ -52,51 +52,6 @@ var (
 		},
 	}
 
-	rhmiSpecificStages = []StageDeletion{
-		{
-			productStageName: integreatlyv1alpha1.ProductsStage,
-			namespaces: []string{
-				AMQOnlineOperatorNamespace,
-				ApicuritoProductNamespace,
-				ApicuritoOperatorNamespace,
-				CodeReadyProductNamespace,
-				CodeReadyOperatorNamespace,
-				FuseProductNamespace,
-				FuseOperatorNamespace,
-				RHSSOUserProductNamespace,
-				RHSSOUserOperatorNamespace,
-				ThreeScaleProductNamespace,
-				ThreeScaleOperatorNamespace,
-				UPSProductNamespace,
-				UPSOperatorNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace)
-			},
-		},
-		{
-			productStageName: integreatlyv1alpha1.SolutionExplorerStage,
-			namespaces: []string{
-				SolutionExplorerProductNamespace,
-				SolutionExplorerOperatorNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return nil
-			},
-		},
-		{
-			productStageName: integreatlyv1alpha1.MonitoringStage,
-			namespaces: []string{
-				MonitoringOperatorNamespace,
-				MonitoringFederateNamespace,
-				MonitoringSpecNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeMonitoringFinalizers(ctx, MonitoringOperatorNamespace)
-			},
-		},
-	}
-
 	managedApiStages = []StageDeletion{
 		{
 			productStageName: integreatlyv1alpha1.ProductsStage,
@@ -420,12 +375,10 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 }
 
 func getStagesForInstallType(installType string) []StageDeletion {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonStages, managedApiStages...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonStages, mtManagedApiStages...)
 	} else {
-		return append(commonStages, rhmiSpecificStages...)
+		return append(commonStages, managedApiStages...)
 	}
 }
 

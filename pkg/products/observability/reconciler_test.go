@@ -572,7 +572,7 @@ func basicInstallation() *v1alpha1.RHMI {
 			APIVersion: v1alpha1.GroupVersion.String(),
 		},
 		Spec: v1alpha1.RHMISpec{
-			Type: string(v1alpha1.InstallationTypeManaged),
+			Type: string(v1alpha1.InstallationTypeManagedApi),
 		},
 	}
 }
@@ -582,7 +582,7 @@ func setupRecorder() record.EventRecorder {
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: v1alpha1.ProductApicurioRegistry})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: "Dummy Product"})
 }
 
 func TestCreatePrometheusProbe(t *testing.T) {

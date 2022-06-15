@@ -17,7 +17,7 @@ func TestRHOAMInstallType(t *testing.T) {
 		},
 		{
 			name:            "test that isRHOAM returns false",
-			installType:     InstallationTypeManaged,
+			installType:     "Dummy Type",
 			expectedOutcome: false,
 		},
 	}
@@ -44,7 +44,7 @@ func TestIsMultitenant(t *testing.T) {
 		},
 		{
 			name:            "test that isMultitenant returns false",
-			installType:     InstallationTypeManaged,
+			installType:     "Dummy Type",
 			expectedOutcome: false,
 		},
 	}
@@ -71,7 +71,7 @@ func TestRHOAMMultitenant(t *testing.T) {
 		},
 		{
 			name:            "test that isMultitenant returns false",
-			installType:     InstallationTypeManaged,
+			installType:     "Dummy Type",
 			expectedOutcome: false,
 		},
 	}
@@ -102,13 +102,8 @@ func TestManagedInstallType(t *testing.T) {
 			expectedOutcome: true,
 		},
 		{
-			name:            "test that installation is managed",
-			installType:     InstallationTypeManaged,
-			expectedOutcome: true,
-		},
-		{
 			name:            "test that installation is not managed",
-			installType:     InstallationTypeSelfManaged,
+			installType:     "Dummy Type",
 			expectedOutcome: false,
 		},
 	}

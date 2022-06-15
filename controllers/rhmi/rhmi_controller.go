@@ -1357,7 +1357,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 		logrus.Infof("Creating a %s rhmi CR with UCS %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
-			installType = string(rhmiv1alpha1.InstallationTypeManaged)
+			installType = string(rhmiv1alpha1.InstallationTypeManagedApi)
 		}
 
 		if priorityClassName == "" {

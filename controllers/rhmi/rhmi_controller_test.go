@@ -73,23 +73,6 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 				"redhat-rhoam-observability": "alertmanager",
 			},
 		},
-		{
-			name: "Test - RHMI / Other install types - openshift-monitoring and middleware monitoring is returned",
-			args: args{
-				installation:  &rhmiv1alpha1.RHMI{Spec: rhmiv1alpha1.RHMISpec{Type: string(rhmiv1alpha1.InstallationTypeManaged)}},
-				configManager: &config.Manager{},
-			},
-			fields: fields{Client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: resourceName},
-				Data: map[string]string{
-					"middleware-monitoring": "OPERATOR_NAMESPACE: redhat-rhmi-middleware-monitoring-operator",
-				},
-			})},
-			want: map[string]string{
-				"openshift-monitoring":                       "alertmanager-main",
-				"redhat-rhmi-middleware-monitoring-operator": "alertmanager-route",
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

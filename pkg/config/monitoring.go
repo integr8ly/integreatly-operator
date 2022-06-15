@@ -173,8 +173,6 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 
 func (m *Monitoring) GetDashboards(installType integreatlyv1alpha1.InstallationType) []string {
 	switch installType {
-	case integreatlyv1alpha1.InstallationTypeManaged, integreatlyv1alpha1.InstallationTypeSelfManaged, integreatlyv1alpha1.InstallationTypeWorkshop:
-		return rhmiTemplateList
 	case integreatlyv1alpha1.InstallationTypeManagedApi:
 		return managedAPITemplateList
 	case integreatlyv1alpha1.InstallationTypeMultitenantManagedApi:

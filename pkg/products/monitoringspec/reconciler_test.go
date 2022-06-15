@@ -264,7 +264,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	//Service monitor inside fuse namespace
 	fusesm := createServicemonitor("fuse-fuse-servicemon", "fuse")
 
-	managedInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManaged)
 	managedApiInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi)
 
 	cases := []struct {
@@ -280,68 +279,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Recorder       record.EventRecorder
 		Uninstall      bool
 	}{
-		{
-			Name:           "test successful reconcile for installationtypemanaged",
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedInstallation, fusesm, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged),
-					Labels: map[string]string{
-						resources.OwnerLabelKey: string(managedInstallation.GetUID()),
-					},
-				},
-				Status: corev1.NamespaceStatus{
-					Phase: corev1.NamespaceActive,
-				},
-			}, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "fuse",
-					Labels: map[string]string{
-						resources.OwnerLabelKey: string(managedInstallation.GetUID()),
-						"monitoring-key":        "middleware",
-					},
-				},
-				Status: corev1.NamespaceStatus{
-					Phase: corev1.NamespaceActive,
-				},
-			}),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
-					return config.NewMonitoringSpec(config.ProductConfig{
-						"NAMESPACE":          "",
-						"OPERATOR_NAMESPACE": managedInstallation.Namespace,
-					}), nil
-				},
-				WriteConfigFunc: func(config config.ConfigReadable) error {
-					return nil
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-					return nil
-				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "monitoring-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-							},
-						}, &operatorsv1alpha1.Subscription{
-							Status: operatorsv1alpha1.SubscriptionStatus{
-								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "monitoring-install-plan",
-								},
-							},
-						}, nil
-				},
-			},
-			Installation: managedInstallation,
-			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder:     setupRecorder(),
-			Uninstall:    false,
-		},
 		{
 			Name:           "test successful reconcile for installationtypemanagedapi",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -462,7 +399,6 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 	}
 	// initialise runtime objects
 
-	managedInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManaged)
 	managedApiInstallation := basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi)
 
 	//Create a UPS servicemonitor in just monitoring namespace - stale one
@@ -472,11 +408,6 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 	}
 	upssmmanagedapi.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
 
-	upssmmanaged := createServicemonitor("ups-servicemon", getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged))
-	if len(upssmmanaged.Labels) == 0 {
-		upssmmanaged.Labels = make(map[string]string)
-	}
-	upssmmanaged.Labels[clonedServiceMonitorLabelKey] = clonedServiceMonitorLabelValue
 	//Create a rolebinding in fuse namespace
 	rb := createRoleBinding(roleBindingName, "fuse")
 	role := createRole(roleRefName, "fuse")
@@ -543,59 +474,6 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 				},
 			},
 			Installation: managedApiInstallation,
-			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder:     setupRecorder(),
-			Uninstall:    false,
-		},
-		{
-			Name:           "test successful reconcile with cleanup for install type managed",
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, managedInstallation, getMonitoringNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged), upssmmanaged, rb, role,
-				&corev1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "fuse",
-						Labels: map[string]string{
-							resources.OwnerLabelKey: string(basicInstallation(integreatlyv1alpha1.InstallationTypeManagedApi).GetUID()),
-							"monitoring-key":        "middleware",
-						},
-					},
-					Status: corev1.NamespaceStatus{
-						Phase: corev1.NamespaceActive,
-					},
-				}),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
-					return config.NewMonitoringSpec(config.ProductConfig{
-						"NAMESPACE":          "",
-						"OPERATOR_NAMESPACE": getNamespaceByInstallType(integreatlyv1alpha1.InstallationTypeManaged),
-					}), nil
-				},
-				WriteConfigFunc: func(config config.ConfigReadable) error {
-					return nil
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-					return nil
-				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "monitoring-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-							},
-						}, &operatorsv1alpha1.Subscription{
-							Status: operatorsv1alpha1.SubscriptionStatus{
-								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "monitoring-install-plan",
-								},
-							},
-						}, nil
-				},
-			},
-			Installation: managedInstallation,
 			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 			Uninstall:    false,

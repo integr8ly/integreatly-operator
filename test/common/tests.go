@@ -14,7 +14,7 @@ var (
 				// Add all tests that can be executed prior to a completed installation here
 				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 
@@ -65,7 +65,7 @@ var (
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -104,14 +104,7 @@ var (
 				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
 				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
-		},
-		{
-			[]TestCase{
-				{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
-				{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
-			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -141,13 +134,13 @@ var (
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
 				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
 		{
 			[]TestCase{

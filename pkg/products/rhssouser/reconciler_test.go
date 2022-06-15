@@ -480,11 +480,11 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 		Status: integreatlyv1alpha1.RHMIStatus{
 			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
-				"codeready-stage": {
-					Name: "codeready-stage",
+				"threeScale-stage": {
+					Name: "threeScale-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+						integreatlyv1alpha1.Product3Scale: {
+							Name:  integreatlyv1alpha1.Product3Scale,
 							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
@@ -804,7 +804,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				"rhsso-stage": {
 					Name: "rhsso-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+						integreatlyv1alpha1.Product3Scale: {
 							Name:  integreatlyv1alpha1.ProductRHSSO,
 							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},

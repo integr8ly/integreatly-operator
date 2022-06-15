@@ -37,32 +37,14 @@ func TestGetSubscription(t *testing.T) {
 			ExpectSubscriptionFound: true,
 		},
 		{
-			Name:                    "RHMI Add-on",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
-			SubscriptionName:        existingSubscription("addon-rhmi"),
-			ExpectSubscriptionFound: true,
-		},
-		{
 			Name:                    "OLM Installation / RHOAM",
 			InstallType:             integreatlyv1alpha1.InstallationTypeManagedApi,
 			SubscriptionName:        existingSubscription("integreatly"),
 			ExpectSubscriptionFound: true,
 		},
 		{
-			Name:                    "OLM Installation / RHMI",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
-			SubscriptionName:        existingSubscription("integreatly"),
-			ExpectSubscriptionFound: true,
-		},
-		{
 			Name:                    "Local run / RHOAM",
 			InstallType:             integreatlyv1alpha1.InstallationTypeManagedApi,
-			SubscriptionName:        noSubscription(),
-			ExpectSubscriptionFound: false,
-		},
-		{
-			Name:                    "Local run / RHMI",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
 			SubscriptionName:        noSubscription(),
 			ExpectSubscriptionFound: false,
 		},

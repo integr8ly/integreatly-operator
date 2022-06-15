@@ -110,12 +110,6 @@ var _ = BeforeSuite(func() {
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
 		Expect(err).NotTo(HaveOccurred())
 
-		if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
-			// wait for cloud resource phase to complete (10 minutes timeout)
-			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
-			Expect(err).NotTo(HaveOccurred())
-		}
-
 		//Observability Operator
 	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
 	Expect(err).NotTo(HaveOccurred())

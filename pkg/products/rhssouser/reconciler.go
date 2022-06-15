@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	corev1 "k8s.io/api/core/v1"
-	k8sresource "k8s.io/apimachinery/pkg/api/resource"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -340,18 +337,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			//Set keycloak Update Strategy to Rolling as default
 			r.Log.Info("Setting keycloak migration strategy to rolling")
 			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
-		}
-
-		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("750m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1500m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-			}
-			//OSD has more resources than PROW, so adding an exception
-			numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
-			if kc.Spec.Instances < numberOfReplicas {
-				kc.Spec.Instances = numberOfReplicas
-			}
 		}
 
 		err = productConfig.Configure(kc)

@@ -638,7 +638,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	ExternalComponentsTrue := true
 
 	// create the 3scale api manager
-	resourceRequirements := r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeWorkshop)
+	resourceRequirements := true
 	apim := &threescalev1.APIManager{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiManagerName,
@@ -1412,9 +1412,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
-	isWorkshop := installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)
-
-	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
+	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, r.tsClient, *accessToken)
 	if err != nil {
 		r.log.Info("Failed to sync openshift admin membership: " + err.Error())
 		return integreatlyv1alpha1.PhaseInProgress, err
@@ -2106,7 +2104,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
-func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers *Users, systemAdminUsername string, isWorkshop bool, tsClient ThreeScaleInterface, accessToken string) error {
+func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers *Users, systemAdminUsername string, tsClient ThreeScaleInterface, accessToken string) error {
 	for _, tsUser := range newTsUsers.Users {
 		// skip if ts user is the system user admin
 		if tsUser.UserDetails.Username == systemAdminUsername {
@@ -2114,7 +2112,7 @@ func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers
 		}
 
 		// In workshop mode, developer users also get admin permissions in 3scale
-		if (userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) || isWorkshop) && tsUser.UserDetails.Role != adminRole {
+		if (userIsOpenshiftAdmin(tsUser, openshiftAdminGroup)) && tsUser.UserDetails.Role != adminRole {
 			res, err := tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return err

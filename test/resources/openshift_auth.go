@@ -11,7 +11,6 @@ import (
 
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -79,16 +78,6 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	userSyncTimeout := time.Minute * 5
 
 	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
-
-		fuseNamespace := fmt.Sprintf("%v%v", namespacePrefix, integreatlyv1alpha1.ProductFuse)
-		// ensure the fuse project can be seen by the user
-		if _, err := openshiftClient.GetProject(fuseNamespace); err != nil {
-			// fuse project not available to the user yet
-			if strings.Contains(err.Error(), "forbidden") {
-				return false, nil
-			}
-			return false, fmt.Errorf("failed to get fuse project: %v", err)
-		}
 
 		// ensure that a generated keycloak user cr has been created for the user
 		generatedKeycloakUsers := &keycloak.KeycloakUserList{}

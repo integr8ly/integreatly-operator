@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
@@ -431,23 +430,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 }
 
 func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	blobStorageName := fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installation.Name)
-	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, defaultInstallationNamespace, installation.Spec.Type, croUtil.TierProduction, blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile blob storage request: %w", err)
-	}
-
-	// wait for the blob storage cr to reconcile
-	if blobStorage.Status.Phase != crov1alpha1Types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
+	// TODO need to see about removing this function all together
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

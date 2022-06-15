@@ -14,7 +14,6 @@ import (
 
 var (
 	installationNames = map[string]string{
-		string(integreatlyv1alpha1.InstallationTypeManaged):               "rhmi",
 		string(integreatlyv1alpha1.InstallationTypeManagedApi):            "rhoam",
 		string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi): "rhoam",
 	}

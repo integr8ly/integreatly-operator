@@ -445,9 +445,6 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 
 	var rhssoExpectedReplicas int32 = 2
 	var rhssoUserExpectedReplicas int32 = 3
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		rhssoUserExpectedReplicas = 2
-	}
 	if resources.RunningInProw(rhmi) {
 		rhssoExpectedReplicas = 1
 		rhssoUserExpectedReplicas = 1

@@ -17,5 +17,5 @@ func isMultitenant(installType InstallationType) bool {
 }
 
 func IsManaged(installType InstallationType) bool {
-	return installType == InstallationTypeManaged || installType == InstallationTypeManagedApi || isMultitenant(installType)
+	return installType == InstallationTypeManagedApi || isMultitenant(installType)
 }

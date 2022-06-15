@@ -6,8 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
 	"github.com/integr8ly/integreatly-operator/test/common"
 )
 
@@ -68,11 +66,6 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 		if err != nil {
 			testErrors = append(testErrors, err.Error())
 		}
-	}
-
-	// Expect both backup and three scale bucket for managed install
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && (!*backupsFound || !*threeScaleFound) {
-		testErrors = append(testErrors, "Failed to find appropriate resource names for buckets for managed install")
 	}
 
 	// Expect just three scale bucket for managed api install
