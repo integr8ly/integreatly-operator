@@ -278,12 +278,6 @@ func rhmi2ExpectedRules(installationName string) []alertsTestRule {
 				"RHOAMUPSUnifiedpushProxyServiceEndpointDown",
 			},
 		},
-		{
-			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
-			Rules: []string{
-				"RHOAMInstallationControllerIsInReconcilingErrorState",
-			},
-		},
 	}
 }
 
@@ -407,9 +401,9 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "rhoam-installation-controller-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
 			Rules: []string{
-				"RHOAMInstallationControllerIsInReconcilingErrorState",
+				"RHOAMIsInReconcilingErrorState",
 			},
 		},
 	}
@@ -479,9 +473,9 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "rhoam-installation-controller-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "rhoam-rhmi-controller-alerts.yaml",
 			Rules: []string{
-				"RHOAMInstallationControllerIsInReconcilingErrorState",
+				"RHOAMIsInReconcilingErrorState",
 			},
 		},
 		{
