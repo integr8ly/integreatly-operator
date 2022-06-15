@@ -2,6 +2,7 @@
 set -e
 
 COVER_PROFILE=coverage.out
+COV_THREAD_COUNT=${COV_THREAD_COUNT:-4}
 
 report_coverage_prow() {
     if [[ -z "${COVERALLS_TOKEN_PATH}" ]]; then
@@ -26,10 +27,11 @@ report_coverage_travis() {
 }
 
 echo Running tests:
-# tests with negated `unittests` build tag will not be ran
-go test -tags=unittests -covermode=count -coverprofile=$COVER_PROFILE.tmp ./apis/... ./controllers/... ./pkg/...
-< $COVER_PROFILE.tmp grep -v "zz_generated" > $COVER_PROFILE
-
+# tests with negated `unittests` build tag will not be run
+go test -tags=unittests -covermode=atomic -coverprofile="$COVER_PROFILE".tmp -p "$COV_THREAD_COUNT" ./apis/... ./controllers/... ./pkg/...
+# Remove generated files from coverage profile
+grep -v "zz_generated" "${COVER_PROFILE}.tmp" > "${COVER_PROFILE}"
+rm -f "${COVER_PROFILE}.tmp"
 
 if [[ -n "${REPORT_COVERAGE}" ]]; then
 

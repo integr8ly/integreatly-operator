@@ -19,7 +19,7 @@ products:
     manifestsDir: "integreatly-apicurito"
     quayScan: false
   - name: cloud-resource-operator
-    version: v0.38.0
+    version: v0.39.0
     url: "https://github.com/integr8ly/cloud-resource-operator"
     installType: "rhoam/rhmi"
     manifestsDir: "integreatly-cloud-resources"
@@ -43,13 +43,13 @@ products:
     manifestsDir: "integreatly-monitoring"
     quayScan: true
   - name: keycloak-operator
-    version: 17.0.0
+    version: 18.0.0
     url: "https://github.com/keycloak/keycloak-operator"
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-rhsso"
     quayScan: true
   - name: keycloak-client
-    version: v0.1.7
+    version: v0.1.8
     url: "https://github.com/integr8ly/keycloak-client"
     installType: "rhmi/rhoam"
     manifestsDir: "integreatly-keycloak-client"

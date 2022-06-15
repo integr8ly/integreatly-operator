@@ -7,32 +7,18 @@ coverage:
   round: down
   range: "20...100"
   ignore:
-    - "make"
-    - "config"
-    - "openshift-ci"
-    - "bundles"
-    - "deploy"
-    - "envs"
-    - "guides"
-    - "hack"
-    - "manifests"
-    - "packagemanifests"
-    - "prodsec-manifests"
-    - "products"
-    - "templates"
-    - "test-cases"
-    - "test-dependancy"
-    - "tmp"
-    - "vendor"
-    - "version"
+    - "**/*_types.go"
+    - "**/*_moq.go"
+    - "pkg/config"
+    - "pkg/metrics"
 
   status:
     project:
       default:
         target: auto
         threshold: 0%
-    patch: no
-    changes: no
+    patch: false
+    changes: false
 
 parsers:
   gcov:
@@ -45,4 +31,4 @@ parsers:
 comment:
   layout: "reach,diff,flags,tree"
   behavior: default
-  require_changes: no
+  require_changes: false

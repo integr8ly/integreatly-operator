@@ -75,7 +75,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
-						For:    "5m",
+						For:    "8m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 				},

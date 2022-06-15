@@ -46,6 +46,7 @@ func (sm StatusMessage) WrapError(err error) StatusMessage {
 type ResourceTypeStatus struct {
 	Strategy  string        `json:"strategy,omitempty"`
 	Provider  string        `json:"provider,omitempty"`
+	Version   string        `json:"version,omitempty"`
 	SecretRef *SecretRef    `json:"secretRef,omitempty"`
 	Phase     StatusPhase   `json:"phase,omitempty"`
 	Message   StatusMessage `json:"message,omitempty"`

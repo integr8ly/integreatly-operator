@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -207,9 +209,13 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
 // +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch
 
+// For accessing limitador api from pod
+// +kubebuilder:rbac:groups="",resources=pods,verbs=create
+
 // Role permissions
 
 // +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=delete,namespace=integreatly-operator
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=delete,namespace=integreatly-operator
 
@@ -343,6 +349,16 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		return r.handleUninstall(installation, installType, request)
 	}
 
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
 	// If no current or target version is set this is the first installation of rhmi.
 	if upgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
 		installation.Status.ToVersion = version.GetVersionByType(installation.Spec.Type)
@@ -350,12 +366,12 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err := r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 	}
 
 	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
@@ -370,6 +386,22 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_, err = r.newAlertsReconciler(installation).ReconcileAlerts(context.TODO(), alertsClient)
 	if err != nil {
 		log.Error("Error reconciling alerts for the rhmi installation", err)
+	}
+
+	log.Info("set alerts summary metric")
+	err = r.composeAndSetAlertsSummaryMetric(installation, configManager)
+	if err != nil {
+		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
+			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
+		} else {
+			log.Error("error setting alerts metric:", err)
+		}
+	}
+
+	log.Info("set cluster metric")
+	err = r.setRHOAMClusterMetric()
+	if err != nil {
+		log.Error("error setting RHOAM cluster metric:", err)
 	}
 
 	installationQuota := &quota.Quota{}
@@ -411,7 +443,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
@@ -1367,6 +1399,129 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	return installation, nil
 }
 
+func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
+	var alerts resources.AlertMetrics
+
+	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
+	if err != nil {
+		return fmt.Errorf("getting alerting namespace failed: %w", err)
+	}
+
+	observability, err := configManager.ReadObservability()
+	if err != nil {
+		return fmt.Errorf("getting observability configuration failed: %w", err)
+	}
+
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
+	for namespace, _ := range alertingNamespaces {
+		if namespace == observability.GetNamespace() {
+			alerts, err = r.composeAlertMetric("prometheus", namespace)
+			if err != nil {
+				return fmt.Errorf("composing alert metric failed: %w", err)
+			}
+			metrics.SetRHOAMAlertsSummary(alerts, string(externalClusterId))
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (r *RHMIReconciler) composeAlertMetric(route string, namespace string) (resources.AlertMetrics, error) {
+	endpoint := "/api/v1/alerts"
+
+	url, err := r.getURLFromRoute(route, namespace, r.restConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error getting route : %w", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s%s", url, endpoint), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error on request : %w", err)
+	}
+	var bearer = "Bearer " + r.restConfig.BearerToken
+	req.Header.Add("Authorization", bearer)
+
+	client := &http.Client{}
+	client.Timeout = time.Second * 10
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error on response : %w", err)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("reader close failure", err)
+		}
+	}(resp.Body)
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read body : %w", err)
+	}
+
+	var alertResp struct {
+		Status string `json:"status"`
+		Data   struct {
+			Alerts []v1.Alert `json:"alerts"`
+		} `json:"data"`
+	}
+
+	err = json.Unmarshal(body, &alertResp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	alerts := formatAlerts(alertResp.Data.Alerts)
+
+	return alerts, nil
+}
+
+func (r *RHMIReconciler) setRHOAMClusterMetric() error {
+
+	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster version information: %w", err)
+	}
+
+	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting external cluster ID: %w", err)
+	}
+
+	openshiftVersion, err := resources.GetClusterVersion(clusterVersionCR)
+	if err != nil {
+		return fmt.Errorf("error getting openshift version: %w", err)
+	}
+
+	infra, err := resources.GetClusterInfrastructure(context.TODO(), r.Client)
+	if err != nil {
+		return fmt.Errorf("error getting cluster infrastructure information: %w", err)
+	}
+
+	clusterType, err := resources.GetClusterType(infra)
+	if err != nil {
+		if clusterType == "" {
+			metrics.SetRHOAMCluster("Unknown", string(externalClusterId), openshiftVersion, 1)
+		}
+		return fmt.Errorf("error getting cluster type: %w", err)
+	}
+
+	metrics.SetRHOAMCluster(clusterType, string(externalClusterId), openshiftVersion, 1)
+	return nil
+}
+
 func reconcileQuotaConfig(ctx context.Context, serverClient k8sclient.Client, installation *rhmiv1alpha1.RHMI) error {
 	if !rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		return nil
@@ -1498,4 +1653,31 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
+}
+
+func formatAlerts(alerts []v1.Alert) resources.AlertMetrics {
+	alertMetrics := make(resources.AlertMetrics)
+
+	for _, alert := range alerts {
+		if alert.Labels["alertname"] == "DeadMansSwitch" {
+			// DeadManSwitch alert is always firing.
+			// Skipping its inclusion for a more accurate metric.
+			continue
+		}
+
+		alertMetricKey := resources.AlertMetric{
+			Name:     alert.Labels["alertname"],
+			Severity: alert.Labels["severity"],
+			State:    alert.State,
+		}
+
+		_, exists := alertMetrics[alertMetricKey]
+		if exists {
+			alertMetrics[alertMetricKey]++
+		} else {
+			alertMetrics[alertMetricKey] = 1
+		}
+	}
+
+	return alertMetrics
 }

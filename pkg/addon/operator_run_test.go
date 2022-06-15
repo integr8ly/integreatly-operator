@@ -2,6 +2,10 @@ package addon
 
 import (
 	"context"
+	"errors"
+	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -12,6 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+var genericError = errors.New("generic error")
 
 func TestGetSubscription(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -152,6 +158,16 @@ func TestCPaaSSubscription(t *testing.T) {
 			ExpectedError: false,
 			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{wrongLabel}...),
 		},
+		{
+			Name:          "error getting list of subscriptions",
+			ExpectedFound: false,
+			ExpectedError: true,
+			Client: &clientMock.SigsClientInterfaceMock{
+				ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+					return genericError
+				},
+			},
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -282,6 +298,339 @@ func TestOperatorHiveManaged(t *testing.T) {
 			}
 			if err == nil && !isHiveManaged && tt.HiveManaged {
 				t.Fatal("error operator is hive managed but reporting that it's not")
+			}
+		})
+	}
+}
+
+func TestInferOperatorRunType(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := operatorsv1alpha1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = appsv1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type args struct {
+		ctx          context.Context
+		client       client.Client
+		installation *integreatlyv1alpha1.RHMI
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    OperatorRunType
+		wantErr bool
+	}{
+		{
+			name: "failed to get subscription",
+			args: args{
+				ctx: context.TODO(),
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return genericError
+					},
+				},
+				installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "infer operator run type from subscription",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.Subscription{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name:      ManagedAPIService,
+						Namespace: "ns",
+					},
+				}),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+			want:    OLMRunType,
+		},
+		{
+			name: "operator run type is cluster",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &appsv1.Deployment{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam-operator",
+						Namespace: "ns",
+					},
+				}),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+			},
+			wantErr: false,
+			want:    ClusterRunType,
+		},
+		{
+			name: "fallback to local run type",
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+			want:    LocalRunType,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := InferOperatorRunType(tt.args.ctx, tt.args.client, tt.args.installation)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InferOperatorRunType() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("InferOperatorRunType() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOperatorInstalledViaOLM(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := operatorsv1alpha1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type args struct {
+		ctx          context.Context
+		client       client.Client
+		installation *integreatlyv1alpha1.RHMI
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "failed to infer operator run type",
+			args: args{
+				ctx: context.TODO(),
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return genericError
+					},
+				},
+				installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: true,
+			want:    false,
+		},
+		{
+			name: "operator run type is olm",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.Subscription{
+					TypeMeta: v1.TypeMeta{},
+					ObjectMeta: v1.ObjectMeta{
+						Name:      ManagedAPIService,
+						Namespace: "ns",
+					},
+				}),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+			want:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := OperatorInstalledViaOLM(tt.args.ctx, tt.args.client, tt.args.installation)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OperatorInstalledViaOLM() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("OperatorInstalledViaOLM() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetCatalogSource(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := operatorsv1alpha1.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type args struct {
+		ctx          context.Context
+		client       client.Client
+		installation *integreatlyv1alpha1.RHMI
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "failed to get subscription",
+			args: args{
+				ctx: context.TODO(),
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return genericError
+					},
+				},
+				installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "rhoam cpaas subscription",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.SubscriptionList{
+					Items: []operatorsv1alpha1.Subscription{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Namespace: "ns",
+								Labels: map[string]string{
+									"operators.coreos.com/managed-api-service.redhat-rhoam-operator": "test",
+								},
+							},
+							Spec: &operatorsv1alpha1.SubscriptionSpec{},
+						},
+					},
+				},
+					&operatorsv1alpha1.CatalogSource{},
+				),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "subscription is nil",
+			args: args{
+				ctx:    context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "retrieved catalog source from the subscription",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme,
+					&operatorsv1alpha1.Subscription{
+						ObjectMeta: v1.ObjectMeta{
+							Name:      ManagedAPIService,
+							Namespace: "ns",
+						},
+						Spec: &operatorsv1alpha1.SubscriptionSpec{},
+					},
+					&operatorsv1alpha1.CatalogSource{},
+				),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: false,
+			want:    "",
+		},
+		{
+			name: "failed to retrieve catalog source",
+			args: args{
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme,
+					&operatorsv1alpha1.Subscription{
+						ObjectMeta: v1.ObjectMeta{
+							Name:      ManagedAPIService,
+							Namespace: "ns",
+						},
+						Spec: &operatorsv1alpha1.SubscriptionSpec{},
+					},
+				),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Namespace: "ns",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: ManagedAPIService,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetCatalogSource(tt.args.ctx, tt.args.client, tt.args.installation)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetCatalogSource() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != nil && got.Name != tt.want {
+				t.Errorf("GetCatalogSource() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

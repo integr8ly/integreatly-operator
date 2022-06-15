@@ -45,7 +45,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIUserRhssoKeycloakServiceEndpointDown",
+						Alert: "RHOAMUserRhssoKeycloakServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -55,7 +55,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+						Alert: "RHOAMUserRhssoKeycloakDiscoveryServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -73,7 +73,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				GroupName: "user-rhsso-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+						Alert: "RHOAMUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -83,7 +83,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+						Alert: "RHOAMUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

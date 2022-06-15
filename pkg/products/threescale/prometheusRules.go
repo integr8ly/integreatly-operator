@@ -53,9 +53,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIThreeScaleApicastProductionServiceEndpointDown",
+						Alert: "RHOAMThreeScaleApicastProductionServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMIThreeScaleApicastProductionServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMThreeScaleApicastProductionServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='apicast-production', namespace='%s'} < 1", r.Config.GetNamespace())),
@@ -63,9 +63,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleApicastStagingServiceEndpointDown",
+						Alert: "RHOAMThreeScaleApicastStagingServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMIThreeScaleApicastStagingServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMThreeScaleApicastStagingServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='apicast-staging', namespace='%s'} < 1", r.Config.GetNamespace())),
@@ -73,9 +73,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleBackendListenerServiceEndpointDown",
+						Alert: "RHOAMThreeScaleBackendListenerServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMIThreeScaleBackendListenerServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMThreeScaleBackendListenerServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='backend-listener', namespace='%s'} < 1", r.Config.GetNamespace())),
@@ -83,7 +83,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleSystemDeveloperServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemDeveloperServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -93,7 +93,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleSystemMasterServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemMasterServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -103,7 +103,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleSystemMemcacheServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemMemcacheServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -113,7 +113,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleSystemProviderServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemProviderServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -123,7 +123,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleSystemSphinxServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemSphinxServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -133,9 +133,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleZyncServiceEndpointDown",
+						Alert: "RHOAMThreeScaleZyncServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMIThreeScaleZyncServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMThreeScaleZyncServiceEndpointDown,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='zync', namespace='%s'} < 1", r.Config.GetNamespace())),
@@ -143,9 +143,9 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleZyncDatabaseServiceEndpointDown",
+						Alert: "RHOAMThreeScaleZyncDatabaseServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMIThreeScaleZyncDatabaseServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMThreeScaleZyncDatabaseServiceEndpointDown,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='zync-database', namespace='%s'} < 1", r.Config.GetNamespace())),
@@ -161,7 +161,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				Namespace: operatorNamespace,
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -171,7 +171,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIThreeScaleOperatorServiceEndpointDown",
+						Alert: "RHOAMThreeScaleOperatorServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

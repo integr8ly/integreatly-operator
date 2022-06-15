@@ -43,16 +43,16 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 				GroupName: "cloud-resources-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMICloudResourceOperatorMetricsServiceEndpointDown",
+						Alert: "RHOAMCloudResourceOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMICloudResourceOperatorMetricsServiceEndpointDown,
+							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorMetricsServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{namespace='%s', endpoint='operator-metrics-service'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					}, {
-						Alert: "RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMCloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -61,9 +61,9 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					}, {
-						Alert: "RHMICloudResourceOperatorVPCActionFailed",
+						Alert: "RHOAMCloudResourceOperatorVPCActionFailed",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlRHMICloudResourceOperatorVPCActionFailed,
+							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorVPCActionFailed,
 							"message": "CRO failed to perform an action on a VPC.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("cro_vpc_action{namespace='%s', status='failed', error!=''} > 0", r.Config.GetOperatorNamespace())),
@@ -98,7 +98,7 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 	metricsCheck = sanitize(metricsCheck)
 
 	alertsReconciler.Alerts[0].Rules = append(alertsReconciler.Alerts[0].Rules, monitoringv1.Rule{
-		Alert: "RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
+		Alert: "RHOAMCloudResourceOperatorElasticCacheSnapshotsNotFound",
 		Annotations: map[string]string{
 			"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 			"message": fmt.Sprintf("Elastic Cache snapshot not found or not available for tagging."),

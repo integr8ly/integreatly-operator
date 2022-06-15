@@ -465,6 +465,126 @@ func TestUsersReturnedByProvider(t *testing.T) {
 	}
 }
 
+func TestGetIdentitiesByProviderName(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name                  string
+		ProviderName          string
+		ExpectedNumIdentities int
+		FakeClient            k8sclient.Client
+	}{
+		{
+			Name:                  "Test that identities are returned correctly when given correct provider name",
+			ProviderName:          "testing-idp",
+			ExpectedNumIdentities: 2,
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-1",
+								UID:  types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-2",
+								UID:  types.UID("test-2"),
+							},
+						},
+					},
+				},
+				&userv1.IdentityList{
+					Items: []userv1.Identity{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testing-idp:test-1",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-1",
+								UID:  types.UID("test-1"),
+							},
+							ProviderName: "testing-idp",
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testing-idp:test-2",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-2",
+								UID:  types.UID("test-2"),
+							},
+							ProviderName: "testing-idp",
+						},
+					},
+				},
+			),
+		},
+		{
+			Name:                  "Test that identities are returned correctly when given incorrect provider name",
+			ProviderName:          "bad-provider-name",
+			ExpectedNumIdentities: 0,
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-1",
+								UID:  types.UID("test-1"),
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "test-2",
+								UID:  types.UID("test-2"),
+							},
+						},
+					},
+				},
+				&userv1.IdentityList{
+					Items: []userv1.Identity{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testing-idp:test-1",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-1",
+								UID:  types.UID("test-1"),
+							},
+							ProviderName: "testing-idp",
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "testing-idp:test-2",
+							},
+							User: corev1.ObjectReference{
+								Name: "test-2",
+								UID:  types.UID("test-2"),
+							},
+							ProviderName: "testing-idp",
+						},
+					},
+				},
+			),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			identitiesList, err := GetIdentitiesByProviderName(context.TODO(), tt.FakeClient, tt.ProviderName)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if len(identitiesList.Items) != tt.ExpectedNumIdentities {
+				t.Fatalf("incorrect number of Identities was returned, expected %v, got %v", tt.ExpectedNumIdentities, len(identitiesList.Items))
+			}
+
+		})
+	}
+}
+
 func assertThatUsersAreReturnedCorrectly(usersList userv1.UserList) error {
 	if len(usersList.Items) != 2 {
 		return fmt.Errorf("not all users have been found, expected amount of users is 2, actual is %v", len(usersList.Items))
@@ -746,6 +866,76 @@ func TestGetReconciledAPIManagementTenantsCount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			numReconciledTenants, err := GetReconciledAPIManagementTenantsCount(context.TODO(), tt.FakeClient)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if numReconciledTenants != tt.ExpectedNumCRs {
+				t.Fatalf("incorrect number of APIManagementTenant CRs returned, expected %v, got %v", tt.ExpectedNumCRs, numReconciledTenants)
+			}
+
+		})
+	}
+}
+
+func TestGetFailedAPIManagementTenantsCount(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = userv1.AddToScheme(scheme)
+	_ = integreatlyv1alpha1.AddToScheme(scheme)
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedNumCRs int
+	}{
+		{
+			Name: "Test that number of failed APIManagementTenant CRs is returned correctly",
+			FakeClient: fake.NewFakeClientWithScheme(scheme,
+				&userv1.UserList{
+					Items: []userv1.User{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "test-1",
+								UID:               types.UID("test-1"),
+								Annotations:       map[string]string{"tenant": "yes"},
+							},
+						},
+					},
+				},
+				&integreatlyv1alpha1.APIManagementTenantList{
+					Items: []integreatlyv1alpha1.APIManagementTenant{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "bad-namespace",
+								Namespace:         "test-1-foobar",
+								UID:               types.UID("test-1"),
+							},
+							Status: integreatlyv1alpha1.APIManagementTenantStatus{
+								ProvisioningStatus: integreatlyv1alpha1.WontProvisionTenant,
+							},
+						},
+						{
+							ObjectMeta: v1.ObjectMeta{
+								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
+								Name:              "nonexistent-user",
+								Namespace:         "test-2-dev",
+								UID:               types.UID("test-2"),
+							},
+							Status: integreatlyv1alpha1.APIManagementTenantStatus{
+								ProvisioningStatus: integreatlyv1alpha1.WontProvisionTenant,
+							},
+						},
+					},
+				},
+			),
+			ExpectedNumCRs: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			numReconciledTenants, err := GetFailedAPIManagementTenantsCount(context.TODO(), tt.FakeClient)
 			if err != nil {
 				t.Fatalf("Failed test with: %v", err)
 			}

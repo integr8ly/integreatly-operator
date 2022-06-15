@@ -93,7 +93,7 @@ var (
 	VersionMonitoring          ProductVersion = "1.8.0"
 	Version3Scale              ProductVersion = "2.11.0"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.38.0"
+	VersionCloudResources      ProductVersion = "0.39.0"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.5"
@@ -120,13 +120,13 @@ var (
 	OperatorVersionAMQOnline        OperatorVersion = "1.4"
 	OperatorVersionMonitoring       OperatorVersion = "1.8.0"
 	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
-	OperatorVersionRHSSO            OperatorVersion = "17.0.0"
-	OperatorVersionRHSSOUser        OperatorVersion = "17.0.0"
+	OperatorVersionRHSSO            OperatorVersion = "18.0.0"
+	OperatorVersionRHSSOUser        OperatorVersion = "18.0.0"
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.8.3"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.38.0"
+	OperatorVersionCloudResources      OperatorVersion = "0.39.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
@@ -210,6 +210,11 @@ type AlertingEmailAddresses struct {
 	CSSRE        string `json:"cssre"`
 }
 
+type CustomSmtpStatus struct {
+	Enabled bool   `json:"enabled"`
+	Error   string `json:"error,omitempty"`
+}
+
 // RHMIStatus defines the observed state of RHMI
 type RHMIStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -225,6 +230,7 @@ type RHMIStatus struct {
 	ToVersion          string                        `json:"toVersion,omitempty"`
 	Quota              string                        `json:"quota,omitempty"`
 	ToQuota            string                        `json:"toQuota,omitempty"`
+	CustomSmtp         *CustomSmtpStatus             `json:"customSmtp,omitempty"`
 }
 
 type RHMIStageStatus struct {

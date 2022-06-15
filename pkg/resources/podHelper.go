@@ -12,14 +12,25 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-// ExecCmd exec command on specific pod and wait the command's output.
-//func ExecuteRemoteCommand(ns string, podName string, command string, container string) (string, string, error) {
-func ExecuteRemoteCommand(ns string, podName string, command string, log l.Logger) (string, string, error) {
-	cmd := []string{
-		"/bin/bash",
-		"-c",
-		command,
+//go:generate moq -out pod_executor_moq.go . PodExecutorInterface
+type PodExecutorInterface interface {
+	ExecuteRemoteCommand(ns string, podName string, command []string) (string, string, error)
+}
+
+type PodExecutor struct {
+	Log l.Logger
+}
+
+var _ PodExecutorInterface = &PodExecutor{}
+
+func NewPodExecutor(log l.Logger) *PodExecutor {
+	return &PodExecutor{
+		Log: log,
 	}
+}
+
+// ExecuteRemoteCommand exec command on specific pod and wait the command's output.
+func (p PodExecutor) ExecuteRemoteCommand(ns string, podName string, command []string) (string, string, error) {
 
 	kubeClient, restConfig, err := getClient()
 	if err != nil {
@@ -29,7 +40,7 @@ func ExecuteRemoteCommand(ns string, podName string, command string, log l.Logge
 	req := kubeClient.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
 		Namespace(ns).SubResource("exec")
 	option := &v1.PodExecOptions{
-		Command: cmd,
+		Command: command,
 		Stdin:   false,
 		Stdout:  true,
 		Stderr:  true,
@@ -48,7 +59,7 @@ func ExecuteRemoteCommand(ns string, podName string, command string, log l.Logge
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
-	log.Infof("Executing", l.Fields{"command": command, "pod": podName})
+	p.Log.Infof("Executing", l.Fields{"command": command, "pod": podName})
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdout: buf,

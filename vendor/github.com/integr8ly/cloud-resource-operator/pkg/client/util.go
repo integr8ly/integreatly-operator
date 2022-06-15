@@ -60,9 +60,6 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
-			Labels: map[string]string{
-				"productName": productName,
-			},
 		},
 	}
 
@@ -77,6 +74,7 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 
 	// Create or update the resource
 	_, err := controllerutil.CreateOrUpdate(ctx, client, pg, func() error {
+		pg.Labels = map[string]string{"productName": productName}
 		pg.Spec.Type = deploymentType
 		pg.Spec.Tier = tier
 		pg.Spec.SecretRef = &croType.SecretRef{

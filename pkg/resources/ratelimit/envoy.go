@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	EnvoyImage      = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.0-1"
+	EnvoyImage      = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.2-2"
 	EnvoyAPIVersion = "v3"
 )
 

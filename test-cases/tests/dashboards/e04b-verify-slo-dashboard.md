@@ -17,6 +17,7 @@ products:
       - 1.10.0
       - 1.13.0
       - 1.16.0
+      - 1.21.0
 estimate: 30m
 tags:
   - destructive
@@ -34,7 +35,7 @@ Note: this test should only be performed at a time it will not affect other ongo
    3. Make sure all keycloak stateful sets are scaled down to 0, you can use code #2 and #3 below
    4. Make sure all product pods are scaled down to 0, you can use code #4 below
 2. Check the dashboard `Critical SLO summary` after some time (~20min)
-   > All panels should show alerts firing
+   > All panels except for Marin3r one should show alerts firing
 3. Bring back up the pods in the 3scale namespace
    > redhat-rhoam-3scale -> Workloads -> Deployment Configs -> Scale to 1
 

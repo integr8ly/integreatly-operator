@@ -211,13 +211,13 @@ func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resourc
 	}
 
 	// check dedicated admin can get github oauth secret
-	resp, err := openshiftClient.GetRequest(fmt.Sprintf(resources.OpenshiftPathGetSecret, RHMIOperatorNamespace) + "/github-oauth-secret")
+	resp, err := openshiftClient.GetRequest(fmt.Sprintf(resources.OpenshiftPathGetSecret, RHOAMOperatorNamespace) + "/github-oauth-secret")
 	if err != nil {
 		t.Errorf("error occurred while executing oc get request: %v", err)
 	}
 
 	if resp.StatusCode != 200 {
-		t.Errorf("test-failed - status code found : %d expected status code : 200 - RHMI dedicated admin should have access to github oauth secret in %s", resp.StatusCode, RHMIOperatorNamespace)
+		t.Errorf("test-failed - status code found : %d expected status code : 200 - RHMI dedicated admin should have access to github oauth secret in %s", resp.StatusCode, RHOAMOperatorNamespace)
 	}
 }
 
@@ -241,12 +241,12 @@ func verifyDedicatedAdminRHMIConfigPermissions(t TestingTB, openshiftClient *res
 		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
 		ExpectedListStatusCode:   200,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
+		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHOAMOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHOAMOperatorNamespace, "rhmi-config"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhmi-config",
-				Namespace: RHMIOperatorNamespace,
+				Namespace: RHOAMOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1alpha1",
@@ -496,12 +496,12 @@ func verifyDedicatedAdminRHMIPermissions(t TestingTB, openshiftClient *resources
 		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
 		ExpectedListStatusCode:   200,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHMIOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "rhoam"),
+		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHOAMOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHOAMOperatorNamespace, "rhoam"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhoam",
-				Namespace: RHMIOperatorNamespace,
+				Namespace: RHOAMOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1alpha1",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"os"
 
@@ -492,10 +493,18 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
+	secretName := r.installation.Spec.SMTPSecret
+
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Enabled {
+		r.log.Info("configuring user smtp for 3scale notifications")
+		secretName = cs.CustomSecret
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: secretName, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
 		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
 	}
+
 	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "system-smtp",
@@ -823,7 +832,8 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	stdout, stderr, err := resources.ExecuteRemoteCommand(ns, podname, "bundle exec rake zync:resync:domains", r.log)
+	stdout, stderr, err := resources.NewPodExecutor(r.log).ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
+		"-c", "bundle exec rake zync:resync:domains"})
 	if err != nil {
 		r.log.Error("Failed to resync 3Scale routes", err)
 		return integreatlyv1alpha1.PhaseFailed, nil
@@ -1092,12 +1102,23 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	existingSMTPFromAddress, err := resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
+	var existingSMTPFromAddress string
+	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Enabled {
+		existingSMTPFromAddress, err = cs.GetFromAddress(ctx, serverClient, r.installation.Namespace)
 
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
-			return integreatlyv1alpha1.PhaseFailed, nil
+		if err != nil {
+			r.log.Error("error getting smtp_from address from custom smtp secret", err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	} else {
+		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
+
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
+				return integreatlyv1alpha1.PhaseFailed, nil
+			}
+			r.log.Warning("failure finding secret alertmanager-application-monitoring: " + err.Error())
 		}
 	}
 	if existingSMTPFromAddress == "" {
@@ -1635,7 +1656,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			"totalAccounts":       len(accountsToBeDeleted),
 		},
 	)
-	r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
+	err = r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
 		r.log.Error("Error deleting tenant accounts:", err)
 		return integreatlyv1alpha1.PhaseFailed, err

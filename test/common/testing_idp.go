@@ -378,7 +378,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 
 		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Annotations = map[string]string{
-				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-namespace": RHOAMOperatorNamespace,
 				"integreatly-name":      installationName,
 			}
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
@@ -448,7 +448,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 			Name:      keycloakClientName,
 			Namespace: keycloakClientNamespace,
 			Annotations: map[string]string{
-				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-namespace": RHOAMOperatorNamespace,
 				"integreatly-name":      installationName,
 			},
 		},
@@ -629,7 +629,7 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakRealm, func() error {
 		keycloakRealm.Annotations = map[string]string{
-			"integreatly-namespace": RHMIOperatorNamespace,
+			"integreatly-namespace": RHOAMOperatorNamespace,
 			"integreatly-name":      installationName,
 		}
 		keycloakRealm.Spec = keycloakRealmSpec

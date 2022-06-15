@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -616,5 +617,98 @@ func getNamespaces() *corev1.NamespaceList {
 				},
 			},
 		},
+	}
+}
+
+func Test_tenantExists(t *testing.T) {
+	type args struct {
+		user    string
+		tenants []userHelper.MultiTenantUser
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Empty list of tenants given",
+			args: args{
+				user:    "username",
+				tenants: []userHelper.MultiTenantUser{},
+			},
+			want: false,
+		},
+		{
+			name: "Tenant list is nil",
+			args: args{
+				user:    "username",
+				tenants: nil,
+			},
+			want: false,
+		},
+		{
+			name: "Name not in tenant list given",
+			args: args{
+				user: "tenantName",
+				tenants: []userHelper.MultiTenantUser{
+					{
+						TenantName: "tenantName01",
+					},
+					{
+						TenantName: "tenantName02",
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Name in list of tenants, list length 1",
+			args: args{
+				user: "tenantName",
+				tenants: []userHelper.MultiTenantUser{
+					{
+						TenantName: "tenantName",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Name in list of tenants, list length 2",
+			args: args{
+				user: "tenantName",
+				tenants: []userHelper.MultiTenantUser{
+					{
+						TenantName: "tenantName01",
+					},
+					{
+						TenantName: "tenantName",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Tenant name is empty string",
+			args: args{
+				user: "",
+				tenants: []userHelper.MultiTenantUser{
+					{
+						TenantName: "tenantName01",
+					},
+					{
+						TenantName: "tenantName02",
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tenantExists(tt.args.user, tt.args.tenants); got != tt.want {
+				t.Errorf("tenantExists() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

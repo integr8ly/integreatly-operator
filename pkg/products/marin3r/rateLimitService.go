@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
-	"strconv"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,19 +16,25 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sort"
+	"strconv"
 )
 
 const (
-	genericKey                 = "generic_key"
-	headerMatch                = "header_match"
-	headerKey                  = "tenant"
-	mtUnit                     = "minute"
-	possibleTenants            = 200
-	multitenantLimitConfigMap  = "multitenant-config"
-	multitenantRateLimit       = "mulitenantLimit"
-	multitenantDescriptorValue = "per-mt-limit"
+	genericKey                    = "generic_key"
+	headerMatch                   = "header_match"
+	headerKey                     = "tenant"
+	mtUnit                        = "minute"
+	possibleTenants               = 200
+	multitenantLimitConfigMap     = "multitenant-config"
+	multitenantRateLimit          = "mulitenantLimit"
+	multitenantDescriptorValue    = "per-mt-limit"
+	RateLimitingConfigMapName     = "ratelimit-config"
+	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
+	rateLimitImage                = "quay.io/3scale/limitador:v0.5.1"
 )
 
 type RateLimitServiceReconciler struct {
@@ -38,29 +42,25 @@ type RateLimitServiceReconciler struct {
 	RedisSecretName string
 	Installation    *integreatlyv1alpha1.RHMI
 	RateLimitConfig marin3rconfig.RateLimitConfig
+	PodExecutor     resources.PodExecutorInterface
 }
 
-const (
-	RateLimitingConfigMapName     = "ratelimit-config"
-	RateLimitingConfigMapDataName = "apicast-ratelimiting.yaml"
-	rateLimitImage                = "quay.io/3scale/limitador:0.5.0"
-)
-
-func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string, podExecutor resources.PodExecutorInterface) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
 		Installation:    installation,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
+		PodExecutor:     podExecutor,
 	}
 }
 
 type limitadorLimit struct {
-	Namespace  string   `yaml:"namespace"`
-	MaxValue   uint32   `yaml:"max_value"`
-	Seconds    uint64   `yaml:"seconds"`
-	Conditions []string `yaml:"conditions"`
-	Variables  []string `yaml:"variables"`
+	Namespace  string   `yaml:"namespace" json:"namespace"`
+	MaxValue   uint32   `yaml:"max_value" json:"max_value"`
+	Seconds    uint64   `yaml:"seconds" json:"seconds"`
+	Conditions []string `yaml:"conditions" json:"conditions"`
+	Variables  []string `yaml:"variables" json:"variables"`
 }
 
 // ReconcileRateLimitService creates the resources to deploy the rate limit service
@@ -77,7 +77,12 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 		return phase, err
 	}
 
-	return r.reconcileService(ctx, client)
+	phase, err = r.reconcileService(ctx, client)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	return r.ensureLimits(ctx, client)
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -91,18 +96,9 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		var limitadorLimit []limitadorLimit
-
-		if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-			limitadorLimit, err = r.getRHOAMLimitadorSetting()
-			if err != nil {
-				return fmt.Errorf("failed to marshall rate limit config: %v", err)
-			}
-		} else {
-			limitadorLimit, err = r.getMultitenantRHOAMLimitadorSetting(ctx, client)
-			if err != nil {
-				return fmt.Errorf("failed to marshall rate limit config: %v", err)
-			}
+		limitadorLimit, err := r.getLimitadorSetting(ctx, client)
+		if err != nil {
+			return err
 		}
 
 		limitadorConfigYamlMarshalled, err := yaml.Marshal(limitadorLimit)
@@ -492,10 +488,10 @@ func (r *RateLimitServiceReconciler) getRHOAMLimitadorSetting() ([]limitadorLimi
 			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
 			Seconds:   unitInSeconds,
 			Conditions: []string{
-				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+				fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
 			},
 			Variables: []string{
-				"generic_key",
+				genericKey,
 			},
 		},
 	}, nil
@@ -519,10 +515,10 @@ func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx con
 			MaxValue:  r.RateLimitConfig.RequestsPerUnit,
 			Seconds:   unitInSeconds,
 			Conditions: []string{
-				fmt.Sprintf("generic_key == %s", ratelimit.RateLimitDescriptorValue),
+				fmt.Sprintf("%s == %s", genericKey, ratelimit.RateLimitDescriptorValue),
 			},
 			Variables: []string{
-				"generic_key",
+				genericKey,
 			},
 		},
 		{
@@ -530,11 +526,94 @@ func (r *RateLimitServiceReconciler) getMultitenantRHOAMLimitadorSetting(ctx con
 			MaxValue:  limitPerTenant,
 			Seconds:   unitInSeconds,
 			Conditions: []string{
-				fmt.Sprintf("header_match == %s", multitenantDescriptorValue),
+				fmt.Sprintf("%s == %s", headerMatch, multitenantDescriptorValue),
 			},
 			Variables: []string{
-				"tenant",
+				headerKey,
 			},
 		},
 	}, nil
+}
+
+func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	// List rate limit pods
+	rateLimitPods := &corev1.PodList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(r.Namespace),
+		k8sclient.MatchingLabels(map[string]string{"app": quota.RateLimitName}),
+	}
+	if err := client.List(ctx, rateLimitPods, opts...); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if len(rateLimitPods.Items) == 0 {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// Get current limits in redis
+	limitadorClient := NewLimitadorClient(r.PodExecutor, r.Namespace, rateLimitPods.Items[0].Name)
+	limitadorLimitsInRedis, err := limitadorClient.GetLimitsByName(ratelimit.RateLimitDomain)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Get limits from configuration
+	limitadorSetting, err := r.getLimitadorSetting(ctx, client)
+
+	// If there are difference, delete a pod to reload the limits from the config map
+	if r.differentLimitSettings(limitadorLimitsInRedis, limitadorSetting) {
+		if err := client.Delete(ctx, &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      rateLimitPods.Items[0].Name,
+				Namespace: rateLimitPods.Items[0].Namespace,
+			},
+		}); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *RateLimitServiceReconciler) getLimitadorSetting(ctx context.Context, client k8sclient.Client) ([]limitadorLimit, error) {
+	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
+		limitadorLimit, err := r.getRHOAMLimitadorSetting()
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshall rate limit config: %v", err)
+		}
+		return limitadorLimit, nil
+	}
+
+	limitadorLimit, err := r.getMultitenantRHOAMLimitadorSetting(ctx, client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshall rate limit config: %v", err)
+	}
+
+	return limitadorLimit, nil
+}
+
+func (r *RateLimitServiceReconciler) differentLimitSettings(redisLimits []limitadorLimit, currentLimits []limitadorLimit) bool {
+	if len(redisLimits) != len(currentLimits) {
+		return true
+	}
+
+	sortByNamespaceAndMaxValue(redisLimits)
+	sortByNamespaceAndMaxValue(currentLimits)
+
+	if !reflect.DeepEqual(redisLimits, currentLimits) {
+		return true
+	}
+
+	return false
+}
+
+func sortByNamespaceAndMaxValue(elems []limitadorLimit) {
+	sort.Slice(elems, func(i, j int) bool {
+		if elems[i].Namespace != elems[j].Namespace {
+			return elems[i].Namespace < elems[j].Namespace
+		}
+		return elems[i].MaxValue < elems[j].MaxValue
+	})
 }

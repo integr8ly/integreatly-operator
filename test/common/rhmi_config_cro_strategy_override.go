@@ -75,7 +75,7 @@ func VerifyCROStrategyMap(context context.Context, client client.Client, expecte
 	var foundErrors []string
 
 	croStrategyConfig := &v12.ConfigMap{}
-	if err := client.Get(context, types.NamespacedName{Name: CROStrategyConfigMap, Namespace: RHMIOperatorNamespace}, croStrategyConfig); err != nil {
+	if err := client.Get(context, types.NamespacedName{Name: CROStrategyConfigMap, Namespace: RHOAMOperatorNamespace}, croStrategyConfig); err != nil {
 		return fmt.Errorf("unable to get %s config map : %v", CROStrategyConfigMap, err)
 	}
 

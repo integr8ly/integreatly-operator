@@ -11,7 +11,7 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 
 	// Get SMTP secret from rhmi-operator namespace
 	kc := ctx.KubeClient
-	smtpSecret, err := resources.GetSMTPSecret(kc, RHMIOperatorNamespace, SMTPSecretName)
+	smtpSecret, err := resources.GetSMTPSecret(kc, RHOAMOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		t.Fatal("Failed to get an SMTP secret", err)
 	}
@@ -44,7 +44,7 @@ func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 		if err != nil {
 			t.Fatal("Failed to create an SMTP client", err)
 		}
-		err = client.StartTLS(&tls.Config{ServerName: host})
+		err = client.StartTLS(&tls.Config{ServerName: host, MinVersion: tls.VersionTLS12})
 		if err != nil {
 			t.Fatal("Failed to encrypt the communication between an SMTP client and a server", err)
 		}

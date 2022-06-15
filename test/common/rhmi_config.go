@@ -208,7 +208,7 @@ func verifyCr(t TestingTB, ctx *TestingContext) {
 
 	rhmiConfig := &v1alpha1.RHMIConfig{}
 
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace}, rhmiConfig)
+	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHOAMOperatorNamespace}, rhmiConfig)
 	if err != nil {
 		t.Fatalf("Failed to verify RHMI Config resource %v", err)
 	}
@@ -235,7 +235,7 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 
 	if err := client.Get(
 		goctx.TODO(),
-		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
+		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHOAMOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
 		return err
@@ -263,7 +263,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t TestingTB) error {
 	rhmiConfig := &v1alpha1.RHMIConfig{}
 	if err := ctx.Client.Get(
 		goctx.TODO(),
-		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
+		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHOAMOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
 		t.Logf("Error getting RHMIConfig instance: %v", err)
@@ -282,7 +282,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t TestingTB) error {
 	// Get the updated RHMIConfig instance
 	if err := ctx.Client.Get(
 		goctx.TODO(),
-		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
+		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHOAMOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
 		t.Logf("Error getting RHMIConfig instance: %v", err)
@@ -314,7 +314,7 @@ func RHMIConfigTemplate() *v1alpha1.RHMIConfig {
 	return &v1alpha1.RHMIConfig{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      RHMIConfigCRName,
-			Namespace: RHMIOperatorNamespace,
+			Namespace: RHOAMOperatorNamespace,
 		},
 	}
 }

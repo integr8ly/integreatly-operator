@@ -31,7 +31,7 @@ SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.21.0
+RHOAM_TAG ?= 1.23.0
 
 export SKIP_FLAKES := true
 
@@ -319,6 +319,10 @@ cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps clust
 create/olm/bundle:
 	./scripts/bundle-rhmi-operators.sh
 
+.PHONY: create/3scale/index
+create/3scale/index:
+	./scripts/create-3scale-index.sh
+
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@ - oc new-project $(NAMESPACE)
@@ -572,4 +576,4 @@ coverage:
 
 .PHONY: gosec/exclude
 gosec/exclude:
-	gosec -exclude=G101,G104,G107,G204,G304,G306,G307,G401,G402,G404,G501,G601 ./...
+	gosec -exclude=G101,G104,G107,G401,G404,G501,G601 ./...

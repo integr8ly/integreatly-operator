@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/cloud-resource-operator/pkg/annotations"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 
@@ -84,7 +85,7 @@ func NewAWSBlobStorageProvider(client client.Client, logger *logrus.Entry) *Blob
 	return &BlobStorageProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"provider": blobstorageProviderName}),
-		CredentialManager: NewCredentialMinterCredentialManager(client),
+		CredentialManager: NewCredentialManager(client),
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
 	}
 }
@@ -126,15 +127,6 @@ func (p *BlobStorageProvider) CreateStorage(ctx context.Context, bs *v1alpha1.Bl
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	// create the credentials to be used by the end-user, whoever created the blobstorage instance
-	endUserCredsName := buildEndUserCredentialsNameFromBucket(*bucketCreateCfg.Bucket)
-	p.Logger.Infof("creating end-user credentials with name %s for managing s3 bucket %s", endUserCredsName, *bucketCreateCfg.Bucket)
-	endUserCreds, _, err := p.CredentialManager.ReoncileBucketOwnerCredentials(ctx, endUserCredsName, bs.Namespace, *bucketCreateCfg.Bucket)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to reconcile s3 end-user credentials for blob storage instance %s", bs.Name)
-		return nil, croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
-	}
-
 	// create the credentials to be used by the aws resource providers, not to be used by end-user
 	p.Logger.Infof("creating provider credentials for creating s3 buckets, in namespace %s", bs.Namespace)
 	providerCreds, err := p.CredentialManager.ReconcileProviderCredentials(ctx, bs.Namespace)
@@ -145,7 +137,7 @@ func (p *BlobStorageProvider) CreateStorage(ctx context.Context, bs *v1alpha1.Bl
 
 	// setup aws s3 sdk session
 	p.Logger.Infof("creating new aws sdk session in region %s", stratCfg.Region)
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds.AccessKeyID, providerCreds.SecretAccessKey, stratCfg)
+	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, stratCfg)
 	if err != nil {
 		errMsg := "failed to create aws session to create s3 bucket"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -159,14 +151,34 @@ func (p *BlobStorageProvider) CreateStorage(ctx context.Context, bs *v1alpha1.Bl
 		return nil, msg, errorUtil.Wrapf(err, string(msg))
 	}
 
+	// create the credentials to be used by the end-user, whoever created the blobstorage instance
+	endUserCredsName := buildEndUserCredentialsNameFromBucket(*bucketCreateCfg.Bucket)
+	p.Logger.Infof("creating end-user credentials with name %s for managing s3 bucket %s", endUserCredsName, *bucketCreateCfg.Bucket)
+	endUserCreds, err := p.CredentialManager.ReconcileBucketOwnerCredentials(ctx, endUserCredsName, bs.Namespace, *bucketCreateCfg.Bucket)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to reconcile s3 end-user credentials for blob storage instance %s", bs.Name)
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
+	}
+
 	// blobstorageinstance that will be returned if everything is successful
-	bsi := &providers.BlobStorageInstance{
-		DeploymentDetails: &BlobStorageDeploymentDetails{
-			BucketName:          *bucketCreateCfg.Bucket,
-			BucketRegion:        stratCfg.Region,
-			CredentialKeyID:     endUserCreds.AccessKeyID,
-			CredentialSecretKey: endUserCreds.SecretAccessKey,
-		},
+	var bsi *providers.BlobStorageInstance
+	switch p.CredentialManager.(type) {
+	case *STSCredentialManager:
+		bsi = &providers.BlobStorageInstance{
+			DeploymentDetails: &BlobStorageDeploymentDetails{
+				BucketName:   *bucketCreateCfg.Bucket,
+				BucketRegion: stratCfg.Region,
+			},
+		}
+	default:
+		bsi = &providers.BlobStorageInstance{
+			DeploymentDetails: &BlobStorageDeploymentDetails{
+				BucketName:          *bucketCreateCfg.Bucket,
+				BucketRegion:        stratCfg.Region,
+				CredentialKeyID:     endUserCreds.AccessKeyID,
+				CredentialSecretKey: endUserCreds.SecretAccessKey,
+			},
+		}
 	}
 
 	// Adding tags to s3
@@ -183,35 +195,10 @@ func (p *BlobStorageProvider) CreateStorage(ctx context.Context, bs *v1alpha1.Bl
 func (p *BlobStorageProvider) TagBlobStorage(ctx context.Context, bucketName string, bs *v1alpha1.BlobStorage, stratCfgRegion string, s3svc s3iface.S3API) (croType.StatusMessage, error) {
 	p.Logger.Infof("bucket %s found, Adding tags to bucket", bucketName)
 
-	// set tag values that will always be added
-	defaultOrganizationTag := resources.GetOrganizationTag()
-	clusterID, err := resources.GetClusterID(ctx, p.Client)
+	bucketTags, err := p.getDefaultS3Tags(ctx, bs)
 	if err != nil {
-		errMsg := "failed to get cluster id"
-		return croType.StatusMessage(errMsg), errorUtil.Wrapf(err, errMsg)
-	}
-	bucketTags := []*s3.Tag{
-		{
-			Key:   aws.String(defaultOrganizationTag + "clusterID"),
-			Value: aws.String(clusterID),
-		},
-		{
-			Key:   aws.String(defaultOrganizationTag + "resource-type"),
-			Value: aws.String(bs.Spec.Type),
-		},
-		{
-			Key:   aws.String(defaultOrganizationTag + "resource-name"),
-			Value: aws.String(bs.Name),
-		},
-	}
-
-	// check if product name exists and append label
-	if bs.ObjectMeta.Labels["productName"] != "" {
-		productTag := &s3.Tag{
-			Key:   aws.String(defaultOrganizationTag + "product-name"),
-			Value: aws.String(bs.ObjectMeta.Labels["productName"]),
-		}
-		bucketTags = append(bucketTags, productTag)
+		msg := "Failed to build default tags"
+		return croType.StatusMessage(msg), errorUtil.Wrapf(err, msg)
 	}
 
 	// adding the tags to S3
@@ -252,7 +239,7 @@ func (p *BlobStorageProvider) DeleteStorage(ctx context.Context, bs *v1alpha1.Bl
 
 	// create new s3 session
 	p.Logger.Infof("creating new aws sdk session in region %s", stratCfg.Region)
-	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds.AccessKeyID, providerCreds.SecretAccessKey, stratCfg)
+	sess, err := CreateSessionFromStrategy(ctx, p.Client, providerCreds, stratCfg)
 	if err != nil {
 		errMsg := "failed to create aws session to delete s3 bucket"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -340,6 +327,15 @@ func (p *BlobStorageProvider) removeCredsAndFinalizer(ctx context.Context, bs *v
 	p.exposeBlobStorageMetrics(ctx, bs)
 
 	return nil
+}
+
+func (p *BlobStorageProvider) getDefaultS3Tags(ctx context.Context, cr *v1alpha1.BlobStorage) ([]*s3.Tag, error) {
+	tags, _, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	if err != nil {
+		msg := "Failed to get default s3 tags"
+		return nil, errorUtil.Wrapf(err, msg)
+	}
+	return genericToS3Tags(tags), nil
 }
 
 func deleteBucket(s3svc s3iface.S3API, bucketCfg *s3.CreateBucketInput) error {

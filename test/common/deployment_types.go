@@ -101,13 +101,13 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 			},
 		},
 		"rhmiOperatorDeploymentForRhmi2": {
-			Name: RHMIOperatorNamespace,
+			Name: RHOAMOperatorNamespace,
 			Products: []Product{
 				{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
 			},
 		},
 		"rhmiOperatorDeploymentForManagedApi": {
-			Name:     RHMIOperatorNamespace,
+			Name:     RHOAMOperatorNamespace,
 			Products: []Product{},
 		},
 		"rhssoOperatorDeployment": {

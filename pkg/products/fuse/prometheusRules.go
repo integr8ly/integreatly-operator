@@ -22,7 +22,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 				GroupName: "fuse-online-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineBrokerAmqTcpServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -32,7 +32,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineSyndesisMetaServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -42,7 +42,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineSyndesisOauthproxyServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -52,7 +52,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineSyndesisPrometheusServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -62,7 +62,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineSyndesisServerServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineSyndesisServerServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -72,7 +72,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineSyndesisUiServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -90,7 +90,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 				GroupName: "fuse-online-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -100,7 +100,7 @@ func (r *Reconciler) newAlertsReconciler(installType string) resources.AlertReco
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+						Alert: "RHOAMFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

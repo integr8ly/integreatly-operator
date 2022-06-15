@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -72,7 +73,7 @@ func joinQuote(values []monitoring.BlackboxtargetData) string {
 // under ./templates and the filename must be <resource-name>.yaml
 func (h *TemplateHelper) LoadTemplate(name string) ([]byte, error) {
 	path := fmt.Sprintf("%s/%s", h.TemplatePath, name)
-	tpl, err := ioutil.ReadFile(path)
+	tpl, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

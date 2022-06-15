@@ -72,7 +72,6 @@ func GetStringParameterByInstallType(ctx context.Context, client k8sclient.Clien
 	if err != nil || !ok {
 		return "", ok, err
 	}
-
 	return string(value), ok, nil
 }
 

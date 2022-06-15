@@ -192,12 +192,12 @@ func verifyRHMIDeveloperRHMIConfigPermissions(t TestingTB, openshiftClient *reso
 		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
 		ExpectedListStatusCode:   403,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
+		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHOAMOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHOAMOperatorNamespace, "rhmi-config"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhmi-config",
-				Namespace: RHMIOperatorNamespace,
+				Namespace: RHOAMOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1alpha1",
@@ -218,12 +218,12 @@ func verifyRHMIDeveloperRHMIPermissions(t TestingTB, openshiftClient *resources.
 		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
 		ExpectedListStatusCode:   403,
-		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHMIOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHMIOperatorNamespace, "rhoam"),
+		ListPath:                 fmt.Sprintf(resources.PathListRHMI, RHOAMOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMI, RHOAMOperatorNamespace, "rhoam"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhoam",
-				Namespace: RHMIOperatorNamespace,
+				Namespace: RHOAMOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1alpha1",

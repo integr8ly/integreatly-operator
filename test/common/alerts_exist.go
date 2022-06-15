@@ -122,8 +122,8 @@ func rhmi2ExpectedRules(installationName string) []alertsTestRule {
 		{
 			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
-				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+				"RHOAMUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
@@ -192,96 +192,96 @@ func rhmi2ExpectedRules(installationName string) []alertsTestRule {
 		{
 			File: NamespacePrefix + "apicurito-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIApicuritoServiceEndpointDown",
-				"RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+				"RHOAMApicuritoServiceEndpointDown",
+				"RHOAMApicuritoFuseApicuritoGeneratorServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "amq-online-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIAMQOnlineNoneAuthServiceEndpointDown",
-				"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
-				"RHMIAMQOnlineConsoleServiceEndpointDown",
-				"RHMIAMQOnlineRegistryCsServiceEndpointDown",
-				"RHMIAMQOnlineStandardAuthServiceEndpointDown",
-				"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+				"RHOAMAMQOnlineNoneAuthServiceEndpointDown",
+				"RHOAMAMQOnlineAddressSpaceControllerServiceEndpointDown",
+				"RHOAMAMQOnlineConsoleServiceEndpointDown",
+				"RHOAMAMQOnlineRegistryCsServiceEndpointDown",
+				"RHOAMAMQOnlineStandardAuthServiceEndpointDown",
+				"RHOAMAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+				"RHOAMFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+				"RHOAMUPSOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "codeready-workspaces-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMICodeReadyCheHostServiceEndpointDown",
-				"RHMICodeReadyDevfileRegistryServiceEndpointDown",
-				"RHMICodeReadyPluginRegistryServiceEndpointDown",
+				"RHOAMCodeReadyCheHostServiceEndpointDown",
+				"RHOAMCodeReadyDevfileRegistryServiceEndpointDown",
+				"RHOAMCodeReadyPluginRegistryServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "apicurito-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
+				"RHOAMSolutionExplorerTutorialWebAppServiceEndpointDown",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUserRhssoKeycloakServiceEndpointDown",
-				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMSolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMCodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "fuse-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
-				"RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
-				"RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
-				"RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
-				"RHMIFuseOnlineSyndesisServerServiceEndpointDown",
-				"RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+				"RHOAMFuseOnlineBrokerAmqTcpServiceEndpointDown",
+				"RHOAMFuseOnlineSyndesisMetaServiceEndpointDown",
+				"RHOAMFuseOnlineSyndesisOauthproxyServiceEndpointDown",
+				"RHOAMFuseOnlineSyndesisPrometheusServiceEndpointDown",
+				"RHOAMFuseOnlineSyndesisServerServiceEndpointDown",
+				"RHOAMFuseOnlineSyndesisUiServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUPSUnifiedPushServiceEndpointDown",
-				"RHMIUPSUnifiedpushProxyServiceEndpointDown",
+				"RHOAMUPSUnifiedPushServiceEndpointDown",
+				"RHOAMUPSUnifiedpushProxyServiceEndpointDown",
 			},
 		},
 		{
 			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
 			Rules: []string{
-				"RHMIInstallationControllerIsInReconcilingErrorState",
+				"RHOAMInstallationControllerIsInReconcilingErrorState",
 			},
 		},
 	}
@@ -325,8 +325,8 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 		{
 			File: ObservabilityNamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUserRhssoKeycloakServiceEndpointDown",
-				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
@@ -358,8 +358,8 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 		{
 			File: ObservabilityNamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
-				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+				"RHOAMUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+				"RHOAMUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
@@ -419,6 +419,12 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 func mtManagedApiSpecificRules() []alertsTestRule {
 
 	return []alertsTestRule{
+		{
+			File: ObservabilityNamespacePrefix + "multitenancy-api-management-tenant-alerts.yaml",
+			Rules: []string{
+				"ApiManagementTenantCRFailed",
+			},
+		},
 		{
 			File: ObservabilityNamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
 			Rules: []string{
@@ -574,16 +580,16 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 		{
 			File: ObservabilityNamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIThreeScaleApicastProductionServiceEndpointDown",
-				"RHMIThreeScaleApicastStagingServiceEndpointDown",
-				"RHMIThreeScaleBackendListenerServiceEndpointDown",
-				"RHMIThreeScaleSystemDeveloperServiceEndpointDown",
-				"RHMIThreeScaleSystemMasterServiceEndpointDown",
-				"RHMIThreeScaleSystemMemcacheServiceEndpointDown",
-				"RHMIThreeScaleSystemProviderServiceEndpointDown",
-				"RHMIThreeScaleSystemSphinxServiceEndpointDown",
-				"RHMIThreeScaleZyncDatabaseServiceEndpointDown",
-				"RHMIThreeScaleZyncServiceEndpointDown",
+				"RHOAMThreeScaleApicastProductionServiceEndpointDown",
+				"RHOAMThreeScaleApicastStagingServiceEndpointDown",
+				"RHOAMThreeScaleBackendListenerServiceEndpointDown",
+				"RHOAMThreeScaleSystemDeveloperServiceEndpointDown",
+				"RHOAMThreeScaleSystemMasterServiceEndpointDown",
+				"RHOAMThreeScaleSystemMemcacheServiceEndpointDown",
+				"RHOAMThreeScaleSystemProviderServiceEndpointDown",
+				"RHOAMThreeScaleSystemSphinxServiceEndpointDown",
+				"RHOAMThreeScaleZyncDatabaseServiceEndpointDown",
+				"RHOAMThreeScaleZyncServiceEndpointDown",
 			},
 		},
 		{
@@ -596,49 +602,49 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 		{
 			File: ObservabilityNamespacePrefix + "cro-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
-				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMICloudResourceOperatorElasticCacheSnapshotsNotFound",
-				"RHMICloudResourceOperatorVPCActionFailed",
+				"RHOAMCloudResourceOperatorMetricsServiceEndpointDown",
+				"RHOAMCloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMCloudResourceOperatorElasticCacheSnapshotsNotFound",
+				"RHOAMCloudResourceOperatorVPCActionFailed",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
-				"RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
+				"RHOAMMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIRhssoKeycloakServiceEndpointDown",
-				"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
+				"RHOAMRhssoKeycloakServiceEndpointDown",
+				"RHOAMRhssoKeycloakDiscoveryServiceEndpointDown",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
+				"RHOAMRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
-				"RHMIThreeScaleOperatorServiceEndpointDown",
+				"RHOAMThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMThreeScaleOperatorServiceEndpointDown",
 			},
 		},
 		{
 			File: ObservabilityNamespacePrefix + "install-upgrade-alerts.yaml",
 			Rules: []string{
-				"RHMICSVRequirementsNotMet",
+				"RHOAMCSVRequirementsNotMet",
 			},
 		},
 		{
@@ -902,93 +908,93 @@ func rhmi2ExpectedAWSRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-codeready-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-codeready-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Codeready-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+				"Codeready-Postgres-RHOAMPostgresResourceDeletionStatusPhaseFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-ups-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-ups-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Ups-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+				"Ups-Postgres-RHOAMPostgresResourceDeletionStatusPhaseFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-fuse-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-resource-deletion-status-phase-failed-rule-fuse-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Fuse-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+				"Fuse-Postgres-RHOAMPostgresResourceDeletionStatusPhaseFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-ups-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-ups-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Ups-Postgres-RhmiPostgresConnectionFailed",
+				"Ups-Postgres-RHOAMPostgresConnectionFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-ups-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-ups-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Ups-Postgres-RhmiPostgresInstanceUnavailable",
+				"Ups-Postgres-RHOAMPostgresInstanceUnavailable",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-codeready-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-codeready-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Codeready-Postgres-RhmiPostgresInstanceUnavailable",
+				"Codeready-Postgres-RHOAMPostgresInstanceUnavailable",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-codeready-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-codeready-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Codeready-Postgres-RhmiPostgresConnectionFailed",
+				"Codeready-Postgres-RHOAMPostgresConnectionFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-connectivity-rule-fuse-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-connectivity-rule-fuse-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Fuse-Postgres-RhmiPostgresConnectionFailed",
+				"Fuse-Postgres-RHOAMPostgresConnectionFailed",
 			},
 		},
 		{
-			File: fmt.Sprintf("%s-availability-rule-fuse-postgres-%s.yaml", RHMIOperatorNamespace, installationName),
+			File: fmt.Sprintf("%s-availability-rule-fuse-postgres-%s.yaml", RHOAMOperatorNamespace, installationName),
 			Rules: []string{
-				"Fuse-Postgres-RhmiPostgresInstanceUnavailable",
+				"Fuse-Postgres-RHOAMPostgresInstanceUnavailable",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-fuse-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Fuse-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+				"Fuse-Postgres-RHOAMPostgresResourceStatusPhaseFailed",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-ups-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Ups-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+				"Ups-Postgres-RHOAMPostgresResourceStatusPhaseFailed",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-ups-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Ups-Postgres-RhmiPostgresResourceStatusPhasePending",
+				"Ups-Postgres-RHOAMPostgresResourceStatusPhasePending",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-fuse-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Fuse-Postgres-RhmiPostgresResourceStatusPhasePending",
+				"Fuse-Postgres-RHOAMPostgresResourceStatusPhasePending",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-failed-rule-codeready-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Codeready-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+				"Codeready-Postgres-RHOAMPostgresResourceStatusPhaseFailed",
 			},
 		},
 		{
 			File: fmt.Sprintf("%soperator-resource-status-phase-pending-rule-codeready-postgres-%s.yaml", NamespacePrefix, installationName),
 			Rules: []string{
-				"Codeready-Postgres-RhmiPostgresResourceStatusPhasePending",
+				"Codeready-Postgres-RHOAMPostgresResourceStatusPhasePending",
 			},
 		},
 	}

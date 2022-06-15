@@ -26,6 +26,13 @@ tags:
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 In case the current cluster is not available for some reason, you can perform this test case on the "fresh install" cluster
 
+## Prerequisites
+
+- yq
+- jq
+- oc
+- aws
+
 ## Steps
 
 ### Postgres
@@ -73,7 +80,7 @@ oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
 
 ```sh
 cd test/scripts/backup-restore
-NS_PREFIX=redhat-rhoam ./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
+./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
 ```
 
 4. Wait for the script to finish without errors
