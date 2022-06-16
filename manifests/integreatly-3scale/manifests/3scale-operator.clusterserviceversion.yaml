@@ -172,7 +172,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:dd51e0721367ee26fe05b6073c4ebe9d6e240b4ecdb69bbf988d1d7b55a04f6d
+    containerImage: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:bf9acea8ad343453d87c2abd275a30dbdfc669dfdcb10c3fedb8cabff2734922
     createdAt: "2019-05-30T22:40:00Z"
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
     operators.operatorframework.io/builder: operator-sdk-v1.2.0
@@ -377,7 +377,7 @@ spec:
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c3e163f91606a33ea3f4198d52ff681849acf61b7a399a040bb8e448b6b8b3c8
                 - name: RELATED_IMAGE_OC_CLI
                   value: registry.redhat.io/openshift4/ose-cli@sha256:ce2345dd957992853271bf1d90bf76c2a4b2d0a4357461d11a9ced2a4c3783dd
-                image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:dd51e0721367ee26fe05b6073c4ebe9d6e240b4ecdb69bbf988d1d7b55a04f6d
+                image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:bf9acea8ad343453d87c2abd275a30dbdfc669dfdcb10c3fedb8cabff2734922
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -923,10 +923,10 @@ spec:
   version: 0.9.0-mas
   replaces: 3scale-operator.v0.8.2
   relatedImages:
-  - name: 3scale-rhel7-operator-dd51e0721367ee26fe05b6073c4ebe9d6e240b4ecdb69bbf988d1d7b55a04f6d-annotation
-    image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:dd51e0721367ee26fe05b6073c4ebe9d6e240b4ecdb69bbf988d1d7b55a04f6d
+  - name: 3scale-rhel7-operator-bf9acea8ad343453d87c2abd275a30dbdfc669dfdcb10c3fedb8cabff2734922-annotation
+    image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:bf9acea8ad343453d87c2abd275a30dbdfc669dfdcb10c3fedb8cabff2734922
   - name: manager
-    image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:dd51e0721367ee26fe05b6073c4ebe9d6e240b4ecdb69bbf988d1d7b55a04f6d
+    image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:bf9acea8ad343453d87c2abd275a30dbdfc669dfdcb10c3fedb8cabff2734922
   - name: backend
     image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:ba96bfd06ef2f13b8d1df42d7fcfd60cc22aeb0374a66b8a5256f20b448d35e1
   - name: apicast

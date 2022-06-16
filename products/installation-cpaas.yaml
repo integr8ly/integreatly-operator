@@ -1,7 +1,7 @@
 products:
   3scale:
     channel: threescale-mas
-    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-mas-3scale-rhel7-operator-metadata:2.12.0-179
+    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-mas-3scale-rhel7-operator-metadata:2.12.0-188
     installFrom: implicit
     package: 3scale-operator
   amqonline:
