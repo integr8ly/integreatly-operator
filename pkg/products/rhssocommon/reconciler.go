@@ -3,20 +3,15 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	"strings"
-
 	"github.com/Masterminds/semver"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
+	grafanav1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -27,9 +22,12 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -215,20 +213,23 @@ func (r *Reconciler) CheckGrafanaDashboardCRD(ctx context.Context, oauthClient o
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
 	for _, apiList := range apiLists {
-		if apiList.GroupVersion == monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String() {
+		if apiList.GroupVersion == grafanav1.GroupVersion.String() {
 			for _, res := range apiList.APIResources {
-				if res.Kind == monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind {
+				if res.Kind == "GrafanaDashboard" {
 					r.Log.Info("Found GrafanaDashboard CRD")
 					return integreatlyv1alpha1.PhaseCompleted, nil
 				}
 			}
 		}
 	}
+
 	r.Log.Info("Awaiting GrafanaDashboard CRD")
 	return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 }
 
+// CreateKeycloakRoute
 // workaround: the keycloak operator creates a route with TLS passthrough config
 // this should use the same valid certs as the cluster itself but for some reason the
 // signing operator gives out self signed certs
@@ -725,8 +726,8 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 	}
 
 	if ssoAlert.Spec.Groups == nil {
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
 
 	for groupIdx, alertGroup := range ssoAlert.Spec.Groups {
 		if alertGroup.Name == "general.rules" {

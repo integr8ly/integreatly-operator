@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -1623,12 +1623,12 @@ func Test_CheckGrafanaDashboardCRD(t *testing.T) {
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {
 	return &metav1.APIResourceList{
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: grafanav1alpha1.GroupVersion.String(),
 		APIResources: []metav1.APIResource{
 			{
-				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
-				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
-				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+				Group:   "integreatly.org",
+				Version: "v1alpha1",
+				Kind:    "GrafanaDashboard",
 			},
 		},
 	}
@@ -1637,7 +1637,7 @@ func validGrafanaDashboardResourceList() *metav1.APIResourceList {
 func emptyResourceList() *metav1.APIResourceList {
 	return &metav1.APIResourceList{
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: "integreatly.org/v1alpha1",
 		APIResources: []metav1.APIResource{},
 	}
 }
@@ -1649,7 +1649,7 @@ func invalidResourceList() *metav1.APIResourceList {
 			APIVersion: "invalid",
 		},
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: "integreatly.org/v1alpha1",
 		APIResources: []metav1.APIResource{},
 	}
 }
@@ -1664,9 +1664,9 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 			list = &metav1.APIGroupList{
 				Groups: []metav1.APIGroup{
 					{
-						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Name: "integreatly.org",
 						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
 						},
 					},
 				},

@@ -2,6 +2,8 @@ package marin3r
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"k8s.io/client-go/tools/record"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -25,6 +27,14 @@ import (
 
 const (
 	testNSPrefix = "redhat-rhoam-"
+)
+
+var (
+	localProductDeclaration = marketplace.LocalProductDeclaration("integreatly-marin3r")
+	RateLimitConfig         = marin3rconfig.RateLimitConfig{
+		Unit:            "minute",
+		RequestsPerUnit: 1,
+	}
 )
 
 func getRateLimitConfigMap() *corev1.ConfigMap {
@@ -52,55 +62,29 @@ descriptors:
 	}
 }
 
-func getBasicReconciler() *Reconciler {
-	return &Reconciler{
-		installation: getBasicInstallation(),
-		log:          getLogger(),
-		Config: &config.Marin3r{
-			Config: config.ProductConfig{
-				"NAMESPACE": defaultInstallationNamespace,
-			},
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
+}
+
+func getBasicConfig() *config.ConfigReadWriterMock {
+	return &config.ConfigReadWriterMock{
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE":          "redhat-rhoam-observability",
+				"OPERATOR_NAMESPACE": "redhat-rhoam-observability-operator",
+				"NAMESPACE_PREFIX":   "redhat-rhoam-",
+			}), nil
 		},
-		AlertsConfig: map[string]*marin3rconfig.AlertConfig{
-			"api-usage-alert-level1": {
-				Type:     marin3rconfig.AlertTypeThreshold,
-				RuleName: "RHOAMApiUsageLevel1ThresholdExceeded",
-				Level:    "warning",
-				Threshold: &marin3rconfig.AlertThresholdConfig{
-					MinRate: "80%",
-					MaxRate: strPtr("90%"),
-				},
-				Period: "4h",
-			},
-			"api-usage-alert-level2": {
-				Type:     marin3rconfig.AlertTypeThreshold,
-				RuleName: "RHOAMApiUsageLevel2ThresholdExceeded",
-				Level:    "warning",
-				Threshold: &marin3rconfig.AlertThresholdConfig{
-					MinRate: "90%",
-					MaxRate: strPtr("95%"),
-				},
-				Period: "2h",
-			},
-			"api-usage-alert-level3": {
-				Type:     marin3rconfig.AlertTypeThreshold,
-				RuleName: "RHOAMApiUsageLevel3ThresholdExceeded",
-				Level:    "warning",
-				Threshold: &marin3rconfig.AlertThresholdConfig{
-					MinRate: "95%",
-				},
-				Period: "30m",
-			},
-			"rate-limit-spike": {
-				Type:     marin3rconfig.AlertTypeSpike,
-				RuleName: "RHOAMApiUsageOverLimit",
-				Level:    "warning",
-				Period:   "30m",
-			},
+
+		GetOperatorNamespaceFunc: func() string {
+			return defaultInstallationNamespace
 		},
-		RateLimitConfig: marin3rconfig.RateLimitConfig{
-			Unit:            "minute",
-			RequestsPerUnit: 1,
+		ReadMarin3rFunc: func() (*config.Marin3r, error) {
+			return &config.Marin3r{
+				Config: config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				},
+			}, nil
 		},
 	}
 }
@@ -178,7 +162,9 @@ func TestAlertCreation(t *testing.T) {
 	tests := []struct {
 		name         string
 		serverClient func() k8sclient.Client
-		reconciler   func() *Reconciler
+		FakeConfig   *config.ConfigReadWriterMock
+		FakeMPM      *marketplace.MarketplaceInterfaceMock
+		Recorder     record.EventRecorder
 		installation *integreatlyv1alpha1.RHMI
 		want         integreatlyv1alpha1.StatusPhase
 		wantErr      string
@@ -189,25 +175,32 @@ func TestAlertCreation(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap(), getGrafanaRoute())
 			},
-			reconciler: func() *Reconciler {
-				return getBasicReconciler()
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
+
+			installation: getBasicInstallation(),
+			FakeConfig:   getBasicConfig(),
+			Recorder:     setupRecorder(),
+			want:         integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			name: "returns PhaseInProgress when grafana not installed",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap())
 			},
-			reconciler: func() *Reconciler {
-				return getBasicReconciler()
-			},
-			want: integreatlyv1alpha1.PhaseInProgress,
+			installation: getBasicInstallation(),
+			FakeConfig:   getBasicConfig(),
+			Recorder:     setupRecorder(),
+			want:         integreatlyv1alpha1.PhaseInProgress,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reconciler := tt.reconciler()
+
+			reconciler, err := NewReconciler(getBasicConfig(), tt.installation, tt.FakeMPM, tt.Recorder, getLogger(), localProductDeclaration)
+			reconciler.RateLimitConfig = RateLimitConfig
+			if err != nil {
+				t.Fatalf("Could not create new reconiler")
+			}
+
 			serverClient := tt.serverClient()
 
 			got, err := reconciler.reconcileAlerts(context.TODO(), serverClient, reconciler.installation)
@@ -225,10 +218,6 @@ func TestAlertCreation(t *testing.T) {
 			}
 		})
 	}
-}
-
-func strPtr(str string) *string {
-	return &str
 }
 
 func getLogger() l.Logger {

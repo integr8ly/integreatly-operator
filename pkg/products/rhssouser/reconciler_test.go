@@ -23,7 +23,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -558,6 +557,16 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 	}
 
+	normalRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "user-sso",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
 	group := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "dedicated-admins",
@@ -722,6 +731,45 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
 									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation:          installation,
+			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			Uninstall: false,
+		},
+		{
+			Name:           "test waiting for RHSSO postgres",
+			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
+			FakeConfig:     basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "threeScale-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "threeScale-install-plan",
 								},
 							},
 						}, nil
@@ -1598,12 +1646,12 @@ func getLogger() l.Logger {
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {
 	return &metav1.APIResourceList{
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: grafanav1alpha1.GroupVersion.String(),
 		APIResources: []metav1.APIResource{
 			{
-				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
-				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
-				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+				Group:   "integreatly.org",
+				Version: "v1alpha1",
+				Kind:    "GrafanaDashboard",
 			},
 		},
 	}
@@ -1619,9 +1667,9 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 			list = &metav1.APIGroupList{
 				Groups: []metav1.APIGroup{
 					{
-						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Name: "integreatly.org",
 						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
 						},
 					},
 				},
