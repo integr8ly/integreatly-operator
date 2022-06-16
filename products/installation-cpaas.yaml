@@ -1,64 +1,7 @@
-# Product declaration file. This file declares the available product operators
-# and how to install them.
-# 
-# Currently supports "local", "index" and "implicit" installations.
-#
-# ------------------------------------------------------------------------------
-#
-# Local:
-#
-# Install the operator by creating a CatalogSource pointing to manifests
-# from a ConfigMap reconciled from a local directory.
-#
-# Example:
-#
-# ```
-# product:
-#   installFrom: "local"
-#   manifestsDir: "integreatly-product"
-#   channel: "rhmi"
-# ```
-#
-# ------------------------------------------------------------------------------
-#
-# Index:
-#
-# Install the operator by creating a CatalogSource pointing to an index image
-#
-# * Example:
-#
-# ```
-# product:
-#   installFrom: "index"
-#   index: "quay.io/org/product-index:latest"
-#   channel: "alpha"
-# ```
-#
-# ------------------------------------------------------------------------------
-#
-# Implicit:
-#
-# Install the operator by creating a Subscription assuming that the operator is
-# provided by the same CatalogSource that installed RHOAM.
-#
-# * Example:
-#
-# ```
-# product:
-#   installFrom: "implicit"
-#   channel: "alpha"
-# ```
-#
-# --------------------------------------------------------------------------------
-#
-# Common fields:
-# * `channel`: Name of the channel to point the Subscription to. Defaults to "rhmi"
-# * `package`: Name of the package. Defaults to the subscription name of each product
-#
 products:
   3scale:
     channel: threescale-2.11
-    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:22dbc0f17e3074a1fcbff9f61412031051ed44e7f24b3942b0d583c855693a42
+    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata:2.11.3-3.1655369801
     installFrom: implicit
     package: 3scale-operator
   amqonline:
@@ -78,7 +21,7 @@ products:
     installFrom: local
     manifestsDir: integreatly-apicurito
   cloud-resources:
-    channel: "rhmi"
+    channel: rhmi
     installFrom: index
     package: rhmi-cloud-resources
     index: quay.io/integreatly/cloud-resource-operator:index-v0.39.0
@@ -104,8 +47,8 @@ products:
     manifestsDir: integreatly-monitoring
   observability:
     channel: alpha
-    package: observability-operator
     installFrom: index
+    package: observability-operator
     index: quay.io/rhoas/observability-operator-index:v3.0.10
   rhsso:
     channel: rhmi
