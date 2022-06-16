@@ -94,16 +94,18 @@ function toIssue(
     };
 }
 
-function toIssueLink(run: TestRun) {
+function toIssueLink(inward: Issue, outward: TestRun) {
     return {
-        outwardIssue: { key: run.issue.key },
+        inwardIssue: { key: inward.key },
+        outwardIssue: { key: outward.issue.key },
         type: { name: "Sequence" },
     };
 }
 
-function toIssueBlock(issue: Issue) {
+function toIssueBlock(inward: Issue, outward: Issue) {
     return {
-        outwardIssue: { key: issue.key },
+        inwardIssue: { key: inward.key },
+        outwardIssue: { key: outward.key },
         type: { name: "Blocks" },
     };
 }
@@ -236,9 +238,8 @@ const jira: CommandModule<{}, Args> = {
                             lastDestructive = result;
                             firstDestructive = result;
                         } else {
-                            await jiraApi.addLinkToIssue(
-                                lastDestructive.key,
-                                toIssueBlock(result)
+                            await jiraApi.issueLink(
+                                toIssueBlock(lastDestructive, result)
                             );
                             logger.info(
                                 `'${result.key}' blocked by '${lastDestructive.key}'`
@@ -246,9 +247,8 @@ const jira: CommandModule<{}, Args> = {
                             lastDestructive = result;
                         }
                     } else {
-                        await jiraApi.addLinkToIssue(
-                            result.key,
-                            toIssueBlock(firstDestructive)
+                        await jiraApi.issueLink(
+                            toIssueBlock(result, firstDestructive)
                         );
                         logger.info(
                             `'${firstDestructive.key}' blocked by '${result.key}'`
@@ -257,10 +257,7 @@ const jira: CommandModule<{}, Args> = {
                 }
 
                 if (previousRun) {
-                    await jiraApi.addLinkToIssue(
-                        result.key,
-                        toIssueLink(previousRun)
-                    );
+                    await jiraApi.issueLink(toIssueLink(result, previousRun));
                     logger.info(`   linked to '${previousRun.issue.key}'`);
 
                     if (

@@ -40,16 +40,6 @@ interface Issue {
     [name: string]: any;
 }
 
-interface UpdateIssue {
-    update: {
-        issuelinks: [
-            {
-                add: IssueLink;
-            }
-        ];
-    };
-}
-
 interface Issues {
     issues: Issue[];
 }
@@ -88,15 +78,10 @@ class Jira {
         return this.client.addNewIssue(issue) as Promise<Issue>;
     }
 
-    public updateIssue(key: string, update: UpdateIssue): Promise<unknown> {
-        return this.client.updateIssue(key, update) as Promise<unknown>;
+    public issueLink(link: IssueLink): Promise<unknown> {
+        return this.client.issueLink(link) as Promise<unknown>;
     }
 
-    public addLinkToIssue(issueKey: string, link: IssueLink): Promise<unknown> {
-        return this.updateIssue(issueKey, {
-            update: { issuelinks: [{ add: link }] },
-        });
-    }
     public resolveIssue(key: string): Promise<unknown> {
         return this.client.transitionIssue(key, {
             fields: { resolution: { name: "Won't Do" } },
