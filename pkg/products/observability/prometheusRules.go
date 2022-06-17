@@ -327,7 +327,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0) OR absent(%[1]s_status) OR absent(%[1]s_version)`, installationName)),
 					For:    "10m",
-					Labels: map[string]string{"severity": "critical", "product": installationName},
+					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 			},
 		},
