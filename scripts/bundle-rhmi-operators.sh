@@ -5,10 +5,10 @@
 # - operator-sdk
 # - oc (optional if OC_INSTALL is set)
 # Function:
-# Script creates olm bundle/bundles and index/indexes for RHOAM/RHMI 
+# Script creates olm bundles and indexes for RHOAM
 # Usage:
-# make create/olm/bundle OLM_TYPE=<managed||managed-api||multitenant-managed-api-service> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
-# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can be integreatly-operator (RHMI), managed-api-service (RHOAM), or multitenant-managed-api-service (Multitenant RHOAM)
+# make create/olm/bundle OLM_TYPE=<managed-api-service||multitenant-managed-api-service> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
+# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can be either managed-api-service (RHOAM) or multitenant-managed-api-service (Multitenant RHOAM)
 # UPGRADE - defaults to false, if upgrade is false the oldest version specified in the BUNDLE_VERSIONS will have it's replaces removed, otherwise, replaces will stay
 # BUNDLE_VERSIONS - specifies the versions that are going to have the bundles build. Versions must exists in the bundle/OLM_TYPE folder and must be listed in a descending order
 # ORG - organization of where to push the bundles and indexes 
@@ -19,13 +19,10 @@
 # make create/olm/bundle OLM_TYPE=managed-api-service UPGRADE=false BUNDLE_VERSIONS=1.16.0,1.15.2 ORG=mstoklus
 
 if [[ -z "$OLM_TYPE" ]]; then
-  OLM_TYPE="integreatly-operator"
+  OLM_TYPE="managed-api-service"
 fi
 
 case $OLM_TYPE in
-  "integreatly-operator")
-    LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
-    ;;
   "managed-api-service")
     LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
     ;;
@@ -34,7 +31,7 @@ case $OLM_TYPE in
     ;;
   *)
     echo "Invalid OLM_TYPE set"
-    echo "Use \"integreatly-operator\" or \"managed-api-service\" or \"multitenant-managed-api-service\""
+    echo "Use either \"managed-api-service\" or \"multitenant-managed-api-service\""
     exit 1
     ;;
 esac
@@ -42,7 +39,7 @@ esac
 ORG="${ORG}"
 REG="${REG:-quay.io}"
 BUILD_TOOL="${BUILD_TOOL:-docker}"
-UPGRADE_RHMI="${UPGRADE:-false}"
+UPGRADE_RHOAM="${UPGRADE:-false}"
 VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
 CATALOG_SOURCE_INSTALL="${OC_INSTALL:-false}"
 ROOT=$(pwd)
@@ -81,7 +78,7 @@ copy_bundles() {
 # Remove the replaces field in the csv to allow for a single bundle install or an upgrade install. i.e.
 # The install will not require a previous version to replace.
 check_upgrade_install() {
-  if [ "$UPGRADE_RHMI" = true ] ; then
+  if [ "$UPGRADE_RHOAM" = true ] ; then
     # We can return as the csv will have the replaces field by default
     echo 'Not removing replaces field in CSV'
     return
