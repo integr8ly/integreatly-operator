@@ -80,23 +80,21 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=json
 
 9. Compare the values of resources with what you get by running this command from the terminal
 
-> Note: you might encounter `no matches found` errors if using zsh, it is recommended to use bash.
-
 ```bash
 backend_listener_replicas=$(oc get dc backend-listener -n redhat-rhoam-3scale --no-headers=true | awk '{print $4}')
-backend_listener_resources=$(oc get dc backend-listener -n redhat-rhoam-3scale -o json | jq -r .spec.template.spec.containers[0].resources)
+backend_listener_resources=$(oc get dc backend-listener -n redhat-rhoam-3scale -o json | jq -r '.spec.template.spec.containers[0].resources')
 
 backend_worker_replicas=$(oc get dc backend-worker -n redhat-rhoam-3scale --no-headers=true | awk '{print $4}')
-backend_worker_resources=$(oc get dc backend-worker -n redhat-rhoam-3scale -o json | jq -r .spec.template.spec.containers[0].resources)
+backend_worker_resources=$(oc get dc backend-worker -n redhat-rhoam-3scale -o json | jq -r '.spec.template.spec.containers[0].resources')
 
 apicast_production_replicas=$(oc get dc apicast-production -n redhat-rhoam-3scale --no-headers=true | awk '{print $4}')
-apicast_production_resources=$(oc get dc apicast-production -n redhat-rhoam-3scale -o json | jq -r .spec.template.spec.containers[0].resources)
+apicast_production_resources=$(oc get dc apicast-production -n redhat-rhoam-3scale -o json | jq -r '.spec.template.spec.containers[0].resources')
 
 usersso_replicas=$(oc get statefulset keycloak -n redhat-rhoam-user-sso --no-headers=true | awk '{print $2}')
-usersso_resources=$(oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq -r .spec.template.spec.containers[0].resources)
+usersso_resources=$(oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq -r '.spec.template.spec.containers[0].resources')
 
 ratelimit_replicas=$(oc get deployment ratelimit -n redhat-rhoam-marin3r --no-headers=true | awk '{print $2}')
-ratelimit_resources=$(oc get deployment ratelimit -n redhat-rhoam-marin3r -o json | jq -r .spec.template.spec.containers[0].resources)
+ratelimit_resources=$(oc get deployment ratelimit -n redhat-rhoam-marin3r -o json | jq -r '.spec.template.spec.containers[0].resources')
 
 ratelimit_value=$(oc get configmap ratelimit-config -n redhat-rhoam-marin3r -o json | jq -r '.data["apicast-ratelimiting.yaml"]' | yq e '.[0].max_value' - )
 
