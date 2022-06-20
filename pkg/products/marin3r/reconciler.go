@@ -14,7 +14,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -428,50 +427,6 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
-// TODO - Remove after next release
-func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	r.log.Info("Start reconcilePromStatsdExporter for marin3r")
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      statsdHost,
-			Namespace: namespace,
-		},
-	}
-
-	if err := client.Delete(ctx, deployment); err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// END of removal
-
-// TODO - Remove after next release
-func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	r.log.Info("Start reconcilePromStatsdExporterService for marin3r")
-
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      statsdHost,
-			Namespace: namespace,
-		},
-	}
-
-	if err := client.Delete(ctx, service); err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// END of removal
-
 func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start reconcileServiceMonitor for marin3r")
 
@@ -507,21 +462,6 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
-	// TODO - Remove after next release
-	previousServiceMonitor := &prometheus.ServiceMonitor{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      statsdHost,
-			Namespace: namespace,
-		},
-	}
-
-	if err := client.Delete(ctx, previousServiceMonitor); err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-	// END of removal
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

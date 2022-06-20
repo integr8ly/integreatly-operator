@@ -235,10 +235,6 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		}
 		deployment.Spec.Template.Spec.Containers[0].Name = quota.RateLimitName
 		deployment.Spec.Template.Spec.Containers[0].Image = rateLimitImage
-		// TODO - Remove after next release
-		// Remove command in upgrade scenario
-		deployment.Spec.Template.Spec.Containers[0].Command = nil
-		// END of removal
 		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				MountPath: "/srv/runtime_data/current/config",
