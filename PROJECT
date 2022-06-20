@@ -9,12 +9,6 @@ resources:
     kind: RHMI
     path: github.com/integr8ly/integreatly-operator/api/v1alpha1
     version: v1alpha1
-  - group: integreatly.org
-    controller: true
-    domain: integreatly.org
-    kind: RHMIConfig
-    path: github.com/integr8ly/integreatly-operator/api/v1alpha1
-    version: v1alpha1
 version: "3"
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
