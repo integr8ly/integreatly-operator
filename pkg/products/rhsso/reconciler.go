@@ -203,12 +203,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing to config in rhsso cluster reconciler: %w", err)
 	}
 
-	phase, err = r.ReconcileBlackboxTargets(ctx, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile blackbox targets", err)
-		return phase, err
-	}
-
 	phase, err = r.ReconcilePrometheusProbes(ctx, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile prometheus probes", err)

@@ -366,13 +366,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, serverClient)
-	r.log.Infof("reconcileBlackboxTargets", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
-		return phase, err
-	}
-
 	phase, err = r.reconcilePrometheusProbes(ctx, serverClient)
 	r.log.Infof("reconcilePrometheusProbes", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -2176,11 +2169,6 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// TODO It might be possible to remove this function
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

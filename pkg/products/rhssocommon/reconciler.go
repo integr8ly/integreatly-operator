@@ -616,11 +616,6 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	return nil
 }
 
-func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	// FIXME possible this function could be completely removed
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadObservability()
 	if err != nil {
