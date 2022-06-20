@@ -24,25 +24,14 @@ func getPostgres(installType string, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 	}
 
-	// Applicable to install types used in 2.X
-	rhmi2PostgresToCheck := []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
-		constants.AMQAuthServicePostgres,
-	}
-
 	rhoamPostgresToCheck := []string{
 		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonPostgresToCheck, rhoamPostgresToCheck...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPostgresToCheck
 	} else {
-		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
+		return append(commonPostgresToCheck, rhoamPostgresToCheck...)
 	}
 }
 
