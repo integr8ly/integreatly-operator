@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
@@ -49,7 +50,7 @@ func UpdatePodTemplateIfExists(ctx context.Context, client client.Client, templa
 		return mutation(obj, podTemplate)
 	}
 
-	return UpdateIfExists(ctx, client, mutateFn, obj.(runtime.Object))
+	return k8s.UpdateIfExists(ctx, client, mutateFn, obj.(runtime.Object))
 }
 
 // SetPodTemplate updates the template retrieved by templateSelector

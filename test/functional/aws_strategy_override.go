@@ -3,113 +3,12 @@ package functional
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-/*
-	This test is to verify that changes made to the RHMI config are reflected in the
-	Cloud Resource Operator (CRO) strategy override config map
-	And further reflected in the AWS resource
-	RHMI config allows for Maintenance and Backup times
-	We need to ensure these windows are built and updated in the config map
-
-	We currently have tests A18 and A21 where we test the validation of the RHMI config
-	And the updating of the CRO strategy override config map
-	We will be using this test to full test e2e from updating the config to changing the values in AWS
-*/
-
-type strategytestCase struct {
-	RHMIConfigValues  common.MaintenanceBackup
-	backupWindow      string
-	maintenanceWindow string
-}
-
-var strategyTestCases = []strategytestCase{
-	{
-		RHMIConfigValues: common.MaintenanceBackup{
-			Backup: v1alpha1.Backup{
-				ApplyOn: "20:00",
-			},
-			Maintenance: v1alpha1.Maintenance{
-				ApplyFrom: "sun 21:01",
-			},
-		},
-		backupWindow:      "20:00-21:00",
-		maintenanceWindow: "sun:21:01-sun:22:01",
-	},
-}
-
-// tests e2e cro strategy override
-func CROStrategyOverrideAWSResourceTest(t common.TestingTB, testingContext *common.TestingContext) {
-	ctx := context.TODO()
-	var testErrors []string
-
-	// rhmi config we need to use is the rhmi config provisioned in the RHMI install
-	// this to avoid a conflict of having multiple rhmi configs
-	rhmiConfig := common.RHMIConfigTemplate()
-
-	for _, test := range strategyTestCases {
-		// update rhmi config Backup and Maintenance times to valid expected times
-		if err := common.UpdateRHMIConfigBackupAndMaintenance(ctx, testingContext.Client, rhmiConfig, test.RHMIConfigValues); err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("\nunable to update rhmi config : %v", err))
-			continue
-		}
-
-		// ensure strategy config map is as expected
-		// we have added this poll to allow the operator reconcile on the cr and update the strategy override
-		// we expect the change to be immediate, the poll is help with any potential test flake
-		// continue to poll until no error or timeout - on timeout we handle the polling error
-		var lastPollError error
-		if err := wait.PollImmediate(time.Second*5, time.Second*30, func() (done bool, err error) {
-			lastPollError = common.VerifyCROStrategyMap(ctx, testingContext.Client, test.backupWindow, test.maintenanceWindow)
-			if lastPollError == nil {
-				return true, nil
-			}
-			return false, nil
-		}); err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("\ntest failure : %s : %v", lastPollError, err))
-		}
-
-		// we need to verify if the rds instance have been updated to reflect the new backup and maintenance windows
-		// as we need to wait for the Cloud Resource Operator to reconcile on each RDS resource it may take some time for the windows to be updated
-		// continue to poll until no error or timeout - on timeout we handle the polling error
-		if err := wait.PollImmediate(time.Second*30, time.Second*300, func() (done bool, err error) {
-			lastPollError = verifyRDSMaintenanceBackupWindows(ctx, testingContext.Client, test.backupWindow, test.maintenanceWindow)
-			if lastPollError == nil {
-				return true, nil
-			}
-			return false, nil
-
-		}); err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("\ntest failure : %s : %v", lastPollError, err))
-		}
-
-		// we need to verify if the elasticache instance have been updated to reflect the new backup and maintenance windows
-		// as we need to wait for the Cloud Resource Operator to reconcile on each RDS resource it may take some time for the windows to be updated
-		// continue to poll until no error or timeout - on timeout we handle the polling error
-		if err := wait.PollImmediate(time.Second*30, time.Second*300, func() (done bool, err error) {
-			lastPollError = verifyElasticacheMaintenanceBackupWindows(ctx, testingContext.Client, test.backupWindow, test.maintenanceWindow)
-			if lastPollError == nil {
-				return true, nil
-			}
-			return false, nil
-		}); err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("\ntest failure : %s : %v", lastPollError, err))
-		}
-	}
-
-	if len(testErrors) != 0 {
-		t.Fatalf("strategy override test failed : \n%s", testErrors)
-	}
-}
 
 /*
 From a list of ResourceID's we iterate through them

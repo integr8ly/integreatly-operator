@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"k8s.io/apimachinery/pkg/types"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"strings"
 	"time"
 
@@ -253,7 +254,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 			Name: "postgressnapshots.integreatly.org",
 		},
 	}
-	crdExists, err := resources.Exists(ctx, client, postgresSnapshotCRD)
+	crdExists, err := k8s.Exists(ctx, client, postgresSnapshotCRD)
 	if err != nil {
 		r.log.Error("Error checking Postgres Snapshot CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -354,7 +355,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			Name: "postgres.integreatly.org",
 		},
 	}
-	crdExists, err := resources.Exists(ctx, client, postgresInstancesCRD)
+	crdExists, err := k8s.Exists(ctx, client, postgresInstancesCRD)
 	if err != nil {
 		r.log.Error("Error checking Postgres CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err

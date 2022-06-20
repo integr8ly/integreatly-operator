@@ -3,6 +3,7 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -108,7 +109,7 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 			Name: "keycloaks.keycloak.org",
 		},
 	}
-	crdExists, err := resources.Exists(ctx, serverClient, keycloakCRD)
+	crdExists, err := k8s.Exists(ctx, serverClient, keycloakCRD)
 	if err != nil {
 		r.Log.Error("Error checking Keycloak CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err

@@ -973,7 +973,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 					Namespace: installation.Namespace,
 				},
 			}
-			if exists, err := resources.Exists(context.TODO(), r.Client, secret); err != nil {
+			if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
 				return ctrl.Result{}, err
 			} else if !exists {
 				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
@@ -1113,7 +1113,7 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 			if search == nil {
 				continue
 			}
-			exists, err := resources.Exists(context.TODO(), serverClient, search)
+			exists, err := k8s.Exists(context.TODO(), serverClient, search)
 			if err != nil {
 				return foundProducts, err
 			} else if exists {
