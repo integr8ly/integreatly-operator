@@ -210,21 +210,6 @@ image/build/push: image/build image/push
 
 
 ############ E2E TEST COMMANDS ############
-.PHONY: test/e2e/prow
-test/e2e/prow: export LOCAL := false
-test/e2e/prow: export component := integreatly-operator
-test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
-test/e2e/prow: export INSTALLATION_TYPE := managed
-test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
-test/e2e/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
-test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
-test/e2e/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
-test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
-test/e2e/prow: export INSTALLATION_NAME := rhmi
-test/e2e/prow: export INSTALLATION_SHORTHAND := rhmi
-test/e2e/prow: IN_PROW = "true"
-test/e2e/prow: test/e2e
-
 .PHONY: test/e2e/rhoam/prow
 test/e2e/rhoam/prow: export LOCAL := false
 test/e2e/rhoam/prow: export component := integreatly-operator
@@ -320,9 +305,6 @@ test/e2e/olm: install/olm
 cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.installation.phase}' | grep -q completed, installation phase, 40m, 30)
-ifeq ($(INSTALLATION_TYPE), managed)
-	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
-endif
 
 .PHONY: cluster/prepare
 cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/addon-params
@@ -497,14 +479,6 @@ push/csv:
 .PHONY: gen/push/csv
 gen/push/csv: release/prepare push/csv
 
-# Generate namespace names to be used in docs
-.PHONY: gen/namespaces
-gen/namespaces:
-	echo '// Generated file. Do not edit' > namespaces.asciidoc
-	oc get namespace | \
-	grep redhat-rhmi | \
-	awk -S '{print"- "$$1}' >> namespaces.asciidoc
-
 .PHONY: vendor/check
 vendor/check: vendor/fix
 	git diff --exit-code vendor/
@@ -536,11 +510,6 @@ bundle: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	$(OPERATOR_SDK) bundle validate ./bundle
-
-.PHONY: bundle-rhmi
-bundle-rhmi: manifests kustomize
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
-	$(KUSTOMIZE) build config/manifests-rhmi | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS) --output-dir ./bundles/integreatly-operator/$(TAG)
 
 .PHONY: bundle-rhoam
 bundle-rhoam: manifests kustomize
