@@ -7,8 +7,8 @@
 # Function:
 # Script creates olm bundles and indexes for RHOAM
 # Usage:
-# make create/olm/bundle OLM_TYPE=<managed-api-service||multitenant-managed-api-service> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
-# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can be either managed-api-service (RHOAM) or multitenant-managed-api-service (Multitenant RHOAM)
+# make create/olm/bundle OLM_TYPE=<managed||managed-api> UPGRADE=<true||false> BUNDLE_VERSIONS=<VERSION_n, VERSION_n-X...> ORG=<QUAY ORG> REG=<REGISTRY>
+# OLM_TYPE - must be specified, refers to type of operator lifecycle manager type, can be managed-api-service (RHOAM)
 # UPGRADE - defaults to false, if upgrade is false the oldest version specified in the BUNDLE_VERSIONS will have it's replaces removed, otherwise, replaces will stay
 # BUNDLE_VERSIONS - specifies the versions that are going to have the bundles build. Versions must exists in the bundle/OLM_TYPE folder and must be listed in a descending order
 # ORG - organization of where to push the bundles and indexes 

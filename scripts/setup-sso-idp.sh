@@ -5,7 +5,7 @@ set -o pipefail
 PASSWORD="${PASSWORD:-$(openssl rand -base64 12)}"
 REALM="${REALM:-testing-idp}"
 REALM_DISPLAY_NAME="${REALM_DISPLAY_NAME:-Testing IDP}"
-INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o json | jq -r .items[0].spec.namespacePrefix)}"
+INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o jsonpath='{.items[0].spec.namespacePrefix}')}"
 INSTALLATION_PREFIX=${INSTALLATION_PREFIX%-} # remove trailing dash
 ADMIN_USERNAME="${ADMIN_USERNAME:-customer-admin}"
 DEDICATED_ADMIN_PASSWORD="${DEDICATED_ADMIN_PASSWORD:-$(openssl rand -base64 12)}"

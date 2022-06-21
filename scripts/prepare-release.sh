@@ -231,6 +231,13 @@ else
   SED_INLINE=(sed -i)
 fi
 
+# The `projectName` field in the PROJECT file is used by the operator-sdk CLI
+# to generate the CSV. In order to be compatible with both types of CSVs
+# (RHOAM), we need to temporarily set the `projectName` to the desired
+# OLM type, and save the current value in order to reset it when we're done
+current_project_name=$(yq e '.projectName' PROJECT)
+yq e -i ".projectName=\"$OLM_TYPE\"" PROJECT
+
 update_base_csv
 create_or_update_csv
 
