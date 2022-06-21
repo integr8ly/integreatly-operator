@@ -56,6 +56,12 @@ func IsInvalidLengthError(err error) bool {
 	return ok
 }
 
+type invalidLengthError struct{ len int }
+
+func (err invalidLengthError) Error() string {
+	return fmt.Sprintf("invalid UUID length: %d", err.len)
+}
+
 // Parse decodes s into a UUID or returns an error.  Both the standard UUID
 // forms of xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx and
 // urn:uuid:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx are decoded as well as the

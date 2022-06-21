@@ -182,11 +182,6 @@ func TestGetCrName(t *testing.T) {
 			want:        ManagedApiInstallationName,
 		},
 		{
-			name:        "get RHMI cr name",
-			installType: string(rhmiv1alpha1.InstallationTypeManaged),
-			want:        DefaultInstallationName,
-		},
-		{
 			name:        "get default cr name",
 			installType: "Not a real install type",
 			want:        DefaultInstallationName,
