@@ -3,7 +3,6 @@ automation:
   - INTLY-9992
 products:
   - name: rhoam
-  - name: rhmi
 
 tags:
   - automated

@@ -4,12 +4,6 @@ automation:
 components:
   - product-3scale
 products:
-  - name: rhmi
-    environments:
-      - osd-fresh-install
-    targets:
-      - 2.8.0
-      - 2.7.0
   - name: rhoam
     environments:
       - osd-fresh-install

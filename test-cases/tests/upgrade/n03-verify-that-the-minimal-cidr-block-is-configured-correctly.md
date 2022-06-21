@@ -1,8 +1,5 @@
 ---
 products:
-  - name: rhmi
-    environments:
-      - osd-post-upgrade
   - name: rhoam
     environments:
       - osd-post-upgrade

@@ -1,6 +1,5 @@
 ---
 products:
-  - name: rhmi
   - name: rhoam
 tags:
   - automated
@@ -14,6 +13,7 @@ More info: <https://issues.redhat.com/browse/INTLY-8120>
 
 ## Steps
 
+[//]: # (TODO this is using the wrong namespace)
 1. Login into OpenShift console as kubeadmin
 2. Navigate to `redhat-rhmi-middleware-monitoring-operator` namespace
 3. Open **Networking > Routes**

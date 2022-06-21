@@ -1,6 +1,5 @@
 ---
 products:
-  - name: rhmi
   - name: rhoam
 estimate: 15m
 tags:
@@ -28,5 +27,6 @@ Only RHMI provided dashboards are required to be verified.
 
 ## Steps
 
+[//]: # (TODO this is outlining the wrong namespace)
 1. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator`
    > Verify that all **Dashboards** are present and all **Graphs** are active. It is acceptable for graphs to correctly report 0 activity.
