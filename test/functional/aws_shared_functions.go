@@ -43,14 +43,7 @@ const (
 )
 
 func getExpectedPostgres(installType string, installationName string) []string {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		// expected postgres resources provisioned per product
-		return []string{
-			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		}
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		// expected postgres resources provisioned per product
 		return []string{
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
@@ -59,12 +52,9 @@ func getExpectedPostgres(installType string, installationName string) []string {
 	} else {
 		// expected postgres resources provisioned per product
 		return []string{
-			fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
 		}
 	}
 }

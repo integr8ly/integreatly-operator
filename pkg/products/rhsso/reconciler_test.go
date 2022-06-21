@@ -75,11 +75,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"HOST":      "edge/route",
 			}), nil
 		},
-		ReadMonitoringFunc: func() (*config.Monitoring, error) {
-			return config.NewMonitoring(config.ProductConfig{
-				"NAMESPACE": "middleware-monitoring",
-			}), nil
-		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -815,7 +810,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "codeready-install-plan",
+								Name: "3scale-install-plan",
 							},
 							Status: operatorsv1alpha1.InstallPlanStatus{
 								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
@@ -823,7 +818,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "codeready-install-plan",
+									Name: "3scale-install-plan",
 								},
 							},
 						}, nil

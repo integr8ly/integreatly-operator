@@ -7,34 +7,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// applicable to the rhmi 2 installTypes
-func rhmi2PvcNamespaces() []PersistentVolumeClaim {
-	return []PersistentVolumeClaim{
-		{
-
-			Namespace: NamespacePrefix + "fuse",
-			PersistentVolumeClaimNames: []string{
-				"syndesis-meta",
-				"syndesis-prometheus",
-			},
-		},
-		{
-
-			Namespace: NamespacePrefix + "solution-explorer",
-			PersistentVolumeClaimNames: []string{
-				"user-walkthroughs",
-			},
-		},
-		{
-
-			Namespace: NamespacePrefix + "operator",
-			PersistentVolumeClaimNames: []string{
-				"standard-authservice-postgresql",
-			},
-		},
-	}
-}
-
 // common to all installTypes including managed-api
 func commonPvcNamespaces() []PersistentVolumeClaim {
 	return []PersistentVolumeClaim{

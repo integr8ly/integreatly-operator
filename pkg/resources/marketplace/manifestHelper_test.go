@@ -48,10 +48,10 @@ func TestGetCurrentCSVFromManifest(t *testing.T) {
 	}{
 		{
 			Name: "Test 1 - get current csv from packyaml string",
-			PackageYamlString: `packageName: integreatly-amq-online
+			PackageYamlString: `packageName: integreatly-3scale
                                 channels:
                                 - name: integreatly
-                                currentCSV: amqonline.1.2.2`,
+                                currentCSV: 3scale.1.2.2`,
 			ExpectedVer: "1.2.2",
 			ExpectedErr: false,
 		},

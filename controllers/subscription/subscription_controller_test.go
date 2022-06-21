@@ -34,9 +34,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 }
 
-func intPtr(val int) *int    { return &val }
-func boolPtr(val bool) *bool { return &val }
-
 func TestSubscriptionReconciler(t *testing.T) {
 
 	csv := &v1alpha1.ClusterServiceVersion{
@@ -291,17 +288,6 @@ func TestShouldReconcileSubscription(t *testing.T) {
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
-					Namespace: "testing-namespaces-operator",
-				},
-			},
-			ExpectedResult: true,
-		},
-		{
-			Name:      "RHMI Addon subscription",
-			Namespace: "testing-namespaces-operator",
-			Request: reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "addon-rhmi",
 					Namespace: "testing-namespaces-operator",
 				},
 			},

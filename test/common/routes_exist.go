@@ -48,39 +48,6 @@ var (
 		},
 	}
 
-	amqOnlineRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "console",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "standard-authservice",
-			isTLS: true,
-		},
-	}
-
-	codeReadyRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "codeready",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "devfile-registry",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "plugin-registry",
-			isTLS: true,
-		},
-	}
-
-	fuseRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "syndesis",
-			isTLS: true,
-		},
-	}
-
 	observabilityRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "alertmanager",
@@ -107,20 +74,6 @@ var (
 		},
 	}
 
-	solutionExplorerRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "solution-explorer",
-			isTLS: true,
-		},
-	}
-
-	upsRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "ups-unifiedpush-proxy",
-			isTLS: true,
-		},
-	}
-
 	userSsoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
@@ -139,16 +92,6 @@ var (
 		},
 	}
 
-	apicuritoRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "apicurito",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "fuse-apicurito-generator",
-			isTLS: true,
-		},
-	}
 	customerGrafanaRoutes = []ExpectedRoute{
 		{
 			Name:  "grafana-route",
@@ -156,19 +99,6 @@ var (
 		},
 	}
 )
-
-var rhmi2ExpectedRoutes = map[string][]ExpectedRoute{
-	"3scale":               threeScaleRoutes,
-	"amq-online":           amqOnlineRoutes,
-	"codeready-workspaces": codeReadyRoutes,
-	"fuse":                 fuseRoutes,
-	"observability":        observabilityRoutes,
-	"rhsso":                rhssoRoutes,
-	"solution-explorer":    solutionExplorerRoutes,
-	"ups":                  upsRoutes,
-	"user-sso":             userSsoRoutes,
-	"apicurito":            apicuritoRoutes,
-}
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale":                       threeScaleRoutes,
@@ -216,12 +146,10 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 }
 
 func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return managedApiExpectedRoutes
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return mtManagedApiExpectedRoutes
 	} else {
-		return rhmi2ExpectedRoutes
+		return managedApiExpectedRoutes
 	}
 }
 

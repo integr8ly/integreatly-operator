@@ -4,12 +4,9 @@ import (
 	goctx "context"
 	"fmt"
 	"io/ioutil"
-	"reflect"
 	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -26,25 +23,6 @@ var commonNamespaces = []string{
 	"operator",
 	"rhsso",
 	"rhsso-operator",
-}
-
-// Applicable to install types used in 2.X
-var rhmi2NamespacesPermissions = []string{
-	"amq-online",
-	"amq-online-operator",
-	"apicurito",
-	"apicurito-operator",
-	"cloud-resources-operator",
-	"codeready-workspaces",
-	"codeready-workspaces-operator",
-	"fuse",
-	"fuse-operator",
-	"solution-explorer",
-	"solution-explorer-operator",
-	"ups",
-	"ups-operator",
-	"user-sso",
-	"user-sso-operator",
 }
 
 var managedAPINamespacesPermissions = []string{
@@ -191,57 +169,9 @@ func verifyDedicatedAdminSecretPermissions(t TestingTB, openshiftClient *resourc
 }
 
 func getProductNamespaces(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonNamespaces, managedAPINamespacesPermissions...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonNamespaces
 	} else {
-		return append(commonNamespaces, rhmi2NamespacesPermissions...)
-	}
-}
-
-func verifyDedicatedAdminAMQOnlineRolePermissions(t TestingTB, ctx *TestingContext) {
-	t.Log("Verifying Dedicated admin AMQ Online resource role / role binding")
-
-	roleBinding := &rbacv1.RoleBinding{}
-	if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "dedicated-admins-service-admin", Namespace: AMQOnlineOperatorNamespace}, roleBinding); err != nil {
-		t.Fatalf("error getting dedicated-admins-service-admin role binding in %s namespace: %s", AMQOnlineOperatorNamespace, err)
-	}
-
-	// Verify dedicated admin group is in role binding
-	found := false
-	for _, subject := range roleBinding.Subjects {
-		if subject.Name == "dedicated-admins" && subject.Kind == "Group" {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		t.Fatalf("Did not find dedicated admin group in %s rolebinding in %s namespace", roleBinding.Name, roleBinding.Namespace)
-	}
-
-	// Verify permissions given by the role
-	role := &rbacv1.Role{}
-	if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: roleBinding.RoleRef.Name, Namespace: AMQOnlineOperatorNamespace}, role); err != nil {
-		t.Fatalf("error %s role in %s namespace: %s", roleBinding.RoleRef.Name, AMQOnlineOperatorNamespace, err)
-	}
-
-	haveCorrectPermission := false
-	expectedRule := rbacv1.PolicyRule{
-		Verbs:     []string{"create", "get", "update", "delete", "list", "watch", "patch"},
-		APIGroups: []string{"admin.enmasse.io"},
-		Resources: []string{"addressplans", "addressspaceplans", "brokeredinfraconfigs", "standardinfraconfigs", "authenticationservices"},
-	}
-
-	for _, rule := range role.Rules {
-		if reflect.DeepEqual(rule, expectedRule) {
-			haveCorrectPermission = true
-			break
-		}
-	}
-
-	if !haveCorrectPermission {
-		t.Fatalf("Incorrect permissions found for %s role in %s namespace. Excpected %s as a policy rule ", role.Name, role.Namespace, expectedRule)
+		return append(commonNamespaces, managedAPINamespacesPermissions...)
 	}
 }

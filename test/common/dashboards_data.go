@@ -62,15 +62,6 @@ var (
 	singleTenantRHOAMExpectedServices = []string{
 		"rhssouser-ui",
 	}
-	rhmi2ExpectedServices = []string{
-		"apicurito-ui",
-		"codeready-ui",
-		"amq-service-broker",
-		"webapp-ui",
-		"rhssouser-ui",
-		"syndesis-ui",
-		"ups-ui",
-	}
 	dashboardsNames = []string{
 		"Endpoints Summary",
 		"Endpoints Detailed",
@@ -226,10 +217,8 @@ func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContai
 func getExpectedServices(installType string) []string {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonExpectedServices
-	} else if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonExpectedServices, singleTenantRHOAMExpectedServices...)
 	} else {
-		return append(commonExpectedServices, rhmi2ExpectedServices...)
+		return append(commonExpectedServices, singleTenantRHOAMExpectedServices...)
 	}
 }
 

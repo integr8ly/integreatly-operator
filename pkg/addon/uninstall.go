@@ -82,7 +82,7 @@ func (h *deleteRHMIHandler) Handle(ctx context.Context, request admission.Reques
 	}
 
 	if len(rhmi.Finalizers) != 0 {
-		return admission.Allowed("RHMI Has finalizers")
+		return admission.Allowed("RHMI CR has finalizers")
 	}
 
 	client, err := h.getClient()
@@ -94,7 +94,7 @@ func (h *deleteRHMIHandler) Handle(ctx context.Context, request admission.Reques
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	return admission.Allowed("RHMI Uninstalled")
+	return admission.Allowed("Operator Uninstalled")
 }
 
 func (h *deleteRHMIHandler) getClient() (k8sclient.Client, error) {

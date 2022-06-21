@@ -18,19 +18,6 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - kind: RHMIConfig
-        name: rhmiconfigs.integreatly.org
-        version: v1alpha1
-        description: RHOAMConfig is the Schema for the rhoamconfigs API
-        displayName: RHOAMConfig
-        resources:
-          - kind: ConfigMap
-            name: 'rhoam-config'
-            version: v1
-        statusDescriptors:
-          - description: The status of each of the RHMI Config CR
-            displayName: RHMI Config CR Status
-            path: status
       - kind: RHMI
         name: rhmis.integreatly.org
         version: v1alpha1

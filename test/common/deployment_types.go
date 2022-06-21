@@ -23,16 +23,6 @@ import (
 )
 
 var (
-	rhmi2DeploymentsList = []string{
-		"aMQOnlineOperatorDeployment",
-		"codeReadyOperatorDeployment",
-		"codereadyWorkspacesDeployment",
-		"fuseOperatorDeployment",
-		"solutionExplorerOperatorDeployment",
-		"upsOperatorDeployment",
-		"upsDeployment",
-		"rhssoUserOperatorDeployment",
-	}
 	commonApiDeploymentsList = []string{
 		"threeScaleDeployment",
 		"cloudResourceOperatorDeployment",
@@ -56,40 +46,10 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "threescale-operator-controller-manager-v2", ExpectedReplicas: 1},
 			},
 		},
-		"aMQOnlineOperatorDeployment": {
-			Name: AMQOnlineOperatorNamespace,
-			Products: []Product{
-				{Name: "address-space-controller", ExpectedReplicas: 1},
-				{Name: "console", ExpectedReplicas: 1},
-				{Name: "enmasse-operator", ExpectedReplicas: 1},
-				{Name: "none-authservice", ExpectedReplicas: 1},
-				{Name: "standard-authservice", ExpectedReplicas: 1},
-			},
-		},
 		"cloudResourceOperatorDeployment": {
 			Name: CloudResourceOperatorNamespace,
 			Products: []Product{
 				{Name: "cloud-resource-operator", ExpectedReplicas: 1},
-			},
-		},
-		"codeReadyOperatorDeployment": {
-			Name: CodeReadyOperatorNamespace,
-			Products: []Product{
-				{Name: "codeready-operator", ExpectedReplicas: 1},
-			},
-		},
-		"codereadyWorkspacesDeployment": {
-			Name: NamespacePrefix + "codeready-workspaces",
-			Products: []Product{
-				{Name: "codeready", ExpectedReplicas: 1},
-				{Name: "devfile-registry", ExpectedReplicas: 1},
-				{Name: "plugin-registry", ExpectedReplicas: 1},
-			},
-		},
-		"fuseOperatorDeployment": {
-			Name: FuseOperatorNamespace,
-			Products: []Product{
-				{Name: "syndesis-operator", ExpectedReplicas: 1},
 			},
 		},
 		"observabilityDeployment": {
@@ -100,12 +60,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "prometheus-operator", ExpectedReplicas: 1},
 			},
 		},
-		"rhmiOperatorDeploymentForRhmi2": {
-			Name: RHOAMOperatorNamespace,
-			Products: []Product{
-				{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
-			},
-		},
 		"rhmiOperatorDeploymentForManagedApi": {
 			Name:     RHOAMOperatorNamespace,
 			Products: []Product{},
@@ -114,24 +68,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 			Name: RHSSOOperatorNamespace,
 			Products: []Product{
 				{Name: "rhsso-operator", ExpectedReplicas: 1},
-			},
-		},
-		"solutionExplorerOperatorDeployment": {
-			Name: SolutionExplorerOperatorNamespace,
-			Products: []Product{
-				{Name: "tutorial-web-app-operator", ExpectedReplicas: 1},
-			},
-		},
-		"upsOperatorDeployment": {
-			Name: UPSOperatorNamespace,
-			Products: []Product{
-				{Name: "unifiedpush-operator", ExpectedReplicas: 1},
-			},
-		},
-		"upsDeployment": {
-			Name: NamespacePrefix + "ups",
-			Products: []Product{
-				{Name: "ups", ExpectedReplicas: 1},
 			},
 		},
 		"rhssoUserOperatorDeployment": {
@@ -162,23 +98,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "zync", ExpectedReplicas: 1},
 				{Name: "zync-database", ExpectedReplicas: int32(replicas["zyncDatabase"])},
 				{Name: "zync-que", ExpectedReplicas: int32(replicas["zyncQue"])},
-			},
-		},
-		"fuseDeploymentConfig": {
-			Name: NamespacePrefix + "fuse",
-			Products: []Product{
-				{Name: "syndesis-meta", ExpectedReplicas: 1},
-				{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
-				{Name: "syndesis-prometheus", ExpectedReplicas: 1},
-				{Name: "syndesis-server", ExpectedReplicas: 1},
-				{Name: "syndesis-ui", ExpectedReplicas: 1},
-				{Name: "broker-amq", ExpectedReplicas: 1},
-			},
-		},
-		"solutionExplorerDeploymentConfig": {
-			Name: NamespacePrefix + "solution-explorer",
-			Products: []Product{
-				{Name: "tutorial-web-app", ExpectedReplicas: 1},
 			},
 		},
 	}
@@ -213,21 +132,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 
 func getClusterStorageDeployments(installationName string, installType string) []Namespace {
 
-	rhmi2ClusterStorageDeployments := []Namespace{
-		{
-			Name: NamespacePrefix + "operator",
-			Products: []Product{
-				{Name: constants.CodeReadyPostgresPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.UPSPostgresPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
-				{Name: constants.AMQAuthServicePostgres, ExpectedReplicas: 1},
-			},
-		},
-	}
 	managedApiClusterStorageDeployments := []Namespace{
 		{
 			Name: NamespacePrefix + "operator",
@@ -254,12 +158,10 @@ func getClusterStorageDeployments(installationName string, installType string) [
 		},
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return managedApiClusterStorageDeployments
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return mtManagedApiClusterStorageDeployments
 	} else {
-		return rhmi2ClusterStorageDeployments
+		return managedApiClusterStorageDeployments
 	}
 }
 
@@ -348,13 +250,9 @@ func checkDeploymentConfigPods(t TestingTB, pods *corev1.PodList, product Produc
 }
 
 func getDeployments(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingContext) []Namespace {
-	var rhmi2Deployments []Namespace
 	var commonApiDeployments []Namespace
 	var managedApiDeployments []Namespace
 
-	for _, deployment := range rhmi2DeploymentsList {
-		rhmi2Deployments = append(rhmi2Deployments, getDeploymentConfiguration(deployment, inst, t, ctx))
-	}
 	for _, deployment := range commonApiDeploymentsList {
 		commonApiDeployments = append(commonApiDeployments, getDeploymentConfiguration(deployment, inst, t, ctx))
 	}
@@ -362,12 +260,10 @@ func getDeployments(inst *integreatlyv1alpha1.RHMI, t TestingTB, ctx *TestingCon
 		managedApiDeployments = append(managedApiDeployments, getDeploymentConfiguration(deployment, inst, t, ctx))
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
-		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...), managedApiDeployments...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
 		return append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...)
 	} else {
-		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForRhmi2", inst, t, ctx)}...)
+		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst, t, ctx)}...), managedApiDeployments...)
 	}
 }
 

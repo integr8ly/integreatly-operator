@@ -40,7 +40,7 @@ func TestReconcileAlerts(t *testing.T) {
 			ExistingRules: []*monitoringv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
-					Name:      "rhmi",
+					Name:      "rhoam",
 					Namespace: "testing-namespaces-test",
 				},
 			},
@@ -99,7 +99,7 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
-					Name:              "rhmi",
+					Name:              "rhoam",
 					Namespace:         "testing-namespaces-test",
 					DeletionTimestamp: now(),
 				},
@@ -129,7 +129,7 @@ func TestReconcileAlerts(t *testing.T) {
 			ExistingRules: []*monitoringv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
-					Name:      "rhmi",
+					Name:      "rhoam",
 					Namespace: "testing-namespaces-test",
 				},
 			},

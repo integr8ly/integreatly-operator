@@ -56,22 +56,6 @@ var (
 		ThreeScaleProductNamespace,
 		ThreeScaleOperatorNamespace,
 	}
-	// Applicable to rhmi 2 install types only
-	rhmi2PodNamespaces = []string{
-		AMQOnlineOperatorNamespace,
-		ApicuritoProductNamespace,
-		ApicuritoOperatorNamespace,
-		RHSSOUserProductNamespace,
-		RHSSOUserOperatorNamespace,
-		CodeReadyProductNamespace,
-		CodeReadyOperatorNamespace,
-		FuseProductNamespace,
-		FuseOperatorNamespace,
-		SolutionExplorerProductNamespace,
-		SolutionExplorerOperatorNamespace,
-		UPSProductNamespace,
-		UPSOperatorNamespace,
-	}
 )
 
 // Error implements the error interface and returns a readable output message
@@ -223,12 +207,10 @@ func podLogs(t TestingTB, ctx *TestingContext) {
 }
 
 func getPodNamespaces(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonPodNamespaces, rhoamExpectedPodNamespaces...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPodNamespaces
 	} else {
-		return append(commonPodNamespaces, rhmi2PodNamespaces...)
+		return append(commonPodNamespaces, rhoamExpectedPodNamespaces...)
 	}
 }
 

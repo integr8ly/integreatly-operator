@@ -7,31 +7,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func rhmi2Namespaces() []string {
-	return []string{
-		ObservabilityOperatorNamespace,
-		ObservabilityProductNamespace,
-		AMQOnlineOperatorNamespace,
-		ApicuritoProductNamespace,
-		ApicuritoOperatorNamespace,
-		CloudResourceOperatorNamespace,
-		CodeReadyProductNamespace,
-		CodeReadyOperatorNamespace,
-		FuseProductNamespace,
-		FuseOperatorNamespace,
-		RHSSOUserProductNamespace,
-		RHSSOUserOperatorNamespace,
-		RHSSOProductNamespace,
-		RHSSOOperatorNamespace,
-		SolutionExplorerProductNamespace,
-		SolutionExplorerOperatorNamespace,
-		ThreeScaleProductNamespace,
-		ThreeScaleOperatorNamespace,
-		UPSProductNamespace,
-		UPSOperatorNamespace,
-	}
-}
-
 func managedApiNamespaces() []string {
 	return []string{
 		ObservabilityOperatorNamespace,
@@ -87,11 +62,9 @@ func getNamespaces(t TestingTB, ctx *TestingContext) []string {
 		t.Errorf("error getting RHMI CR: %v", err)
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		return managedApiNamespaces()
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		return mtManagedApiNamespaces()
 	} else {
-		return rhmi2Namespaces()
+		return managedApiNamespaces()
 	}
 }

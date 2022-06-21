@@ -23,8 +23,6 @@ func getAddonName(installation *integreatlyv1alpha1.RHMI) string {
 	switch installation.Spec.Type {
 	case "managed-api":
 		return "managed-api-service"
-	case "managed":
-		return "integreatly-operator"
 	default:
 		return ""
 	}

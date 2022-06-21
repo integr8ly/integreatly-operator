@@ -38,8 +38,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "marin3r"
-	manifestPackage              = "integreatly-marin3r"
-	statsdHost                   = "prom-statsd-exporter"
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
 )

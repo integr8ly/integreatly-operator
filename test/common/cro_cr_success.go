@@ -66,9 +66,6 @@ func TestCROPostgresSuccessfulState(t TestingTB, ctx *TestingContext) {
 	for _, postgresName := range postgresToCheck {
 		// AMQAuthService postgres is always in cluster
 		strategy := originalStrategy
-		if postgresName == constants.AMQAuthServicePostgres {
-			strategy = openShiftProvider
-		}
 
 		postgres := &crov1.Postgres{}
 		err := getResourceAndUnMarshalJsonToResource(ctx, "postgres", postgresName, postgres)

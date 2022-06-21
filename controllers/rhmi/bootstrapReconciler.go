@@ -135,12 +135,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to reconcile addon parameters secret")
 	}
 
-	phase, err = r.reconcileRHMIConfigPermissions(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config dedicated admin permissions", err)
-		return phase, errors.Wrap(err, "failed to reconcile customer config dedicated admin permissions")
-	}
-
 	phase, err = r.retrieveConsoleURLAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
@@ -338,15 +332,9 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 		}
 
 		if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
-			cloudConfig.Data["managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			cloudConfig.Data["self-managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 		} else {
-			cloudConfig.Data["managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
-			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			cloudConfig.Data["self-managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 		}
@@ -693,36 +681,6 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 
-}
-
-func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	configRoleBinding := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmiconfig-dedicated-admins-role-binding",
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-
-	// Get the dedicated admins role binding. If it's not found, return
-	if err := serverClient.Get(ctx, k8sclient.ObjectKey{
-		Name:      "rhmiconfig-dedicated-admins-role-binding",
-		Namespace: r.ConfigManager.GetOperatorNamespace(),
-	}, configRoleBinding); err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	r.log.Info("Found and deleted rhmiconfig-dedicated-admins-role-binding")
-
-	// Delete the role binding
-	if err := serverClient.Delete(ctx, configRoleBinding); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func generateSecret(length int) string {

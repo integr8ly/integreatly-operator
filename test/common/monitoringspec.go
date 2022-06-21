@@ -22,25 +22,6 @@ const (
 
 func getServiceMonitorsByType(monitorsType string) []string {
 	monitors := map[string][]string{
-		"rhmi2ExpectedServiceMonitors": {
-			NamespacePrefix + "amq-online-enmasse-address-space-controller",
-			NamespacePrefix + "amq-online-enmasse-admin",
-			NamespacePrefix + "amq-online-enmasse-broker",
-			NamespacePrefix + "amq-online-enmasse-console",
-			NamespacePrefix + "amq-online-enmasse-iot",
-			NamespacePrefix + "amq-online-enmasse-operator-metrics",
-			NamespacePrefix + "amq-online-enmasse-router",
-			NamespacePrefix + "fuse-syndesis-infra",
-			NamespacePrefix + "fuse-syndesis-integrations",
-			NamespacePrefix + "ups-operator-unifiedpush-operator-metrics",
-			NamespacePrefix + "ups-unifiedpush",
-			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
-			NamespacePrefix + "middleware-monitoring-operator-application-monitoring-operator-metrics",
-			NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
-			NamespacePrefix + "middleware-monitoring-operator-prometheus-servicemonitor",
-			NamespacePrefix + "rhsso-keycloak-service-monitor",
-			NamespacePrefix + "user-sso-keycloak-service-monitor",
-		},
 		"managedApiServiceMonitors": {
 			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
 			NamespacePrefix + "marin3r-ratelimit",
@@ -187,11 +168,9 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 }
 
 func getExpectedServiceMonitors(installType string) []string {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("managedApiServiceMonitors")...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("mtManagedApiServiceMonitors")...)
 	} else {
-		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("rhmi2ExpectedServiceMonitors")...)
+		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("managedApiServiceMonitors")...)
 	}
 }

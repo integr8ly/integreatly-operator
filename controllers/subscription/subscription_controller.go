@@ -35,8 +35,6 @@ var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_
 const (
 	// IntegreatlyPackage - package name is used for Subscription name
 	IntegreatlyPackage              = "integreatly"
-	RHMIAddonSubscription           = "addon-rhmi"
-	RHMIAddonSubscriptionEdge       = "addon-rhmi-internal"
 	ManagedAPIAddonSubscription     = "addon-managed-api-service"
 	ManagedAPIAddonSubscriptionEdge = "addon-managed-api-service-internal"
 	ManagedAPIolmSubscription       = "managed-api-service"
@@ -44,9 +42,7 @@ const (
 
 var subscriptionsToReconcile []string = []string{
 	IntegreatlyPackage,
-	RHMIAddonSubscription,
 	ManagedAPIAddonSubscription,
-	RHMIAddonSubscriptionEdge,
 	ManagedAPIAddonSubscriptionEdge,
 	ManagedAPIolmSubscription,
 }
@@ -168,8 +164,8 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		log.Info("no upgrade available")
 		return ctrl.Result{}, nil
 	}
-	log.Infof("Verifying the fields in the RHMI Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
-	latestRHMIInstallPlan := &olmv1alpha1.InstallPlan{}
+	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
+	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		// gets the subscription with the recreated installplan
 		err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
@@ -178,7 +174,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 			return false, nil
 		}
 
-		latestRHMIInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
+		latestInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
 		if err != nil {
 			log.Infof("Install Plan was not created due to an error", l.Fields{"Error": err})
 			return false, nil
@@ -191,22 +187,22 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		return ctrl.Result{}, err
 	}
 
-	latestRHMICSV, err := r.csvLocator.GetCSV(ctx, r.Client, latestRHMIInstallPlan)
+	latestCSV, err := r.csvLocator.GetCSV(ctx, r.Client, latestInstallPlan)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV)
+	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestCSV)
 
-	if !isServiceAffecting && !latestRHMIInstallPlan.Spec.Approved {
-		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestRHMIInstallPlan, eventRecorder)
-		logrus.Infof("Approving install plan %s ", latestRHMIInstallPlan.Name)
+	if !isServiceAffecting && !latestInstallPlan.Spec.Approved {
+		eventRecorder := r.mgr.GetEventRecorderFor("Operator Upgrade")
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
+		logrus.Infof("Approving install plan %s ", latestInstallPlan.Name)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 
-		// Requeue the reconciler until the RHMI subscription upgrade is complete
+		// Requeue the reconciler until the operator subscription upgrade is complete
 		return ctrl.Result{
 			Requeue:      true,
 			RequeueAfter: 10 * time.Second,

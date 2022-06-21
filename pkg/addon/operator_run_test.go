@@ -55,7 +55,7 @@ func TestGetSubscription(t *testing.T) {
 			installation := &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "installation",
-					Namespace: "rhmi-test-operator",
+					Namespace: "rhoam-test-operator",
 				},
 			}
 
@@ -66,7 +66,7 @@ func TestGetSubscription(t *testing.T) {
 				initObjs = append(initObjs, &operatorsv1alpha1.Subscription{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      *scenario.SubscriptionName,
-						Namespace: "rhmi-test-operator",
+						Namespace: "rhoam-test-operator",
 					},
 				})
 			}

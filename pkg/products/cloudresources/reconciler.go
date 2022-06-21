@@ -214,11 +214,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	phase, err = r.reconcileBackupsStorage(ctx, installation, client)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
 	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, r.installation.Namespace)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to get new alerts reconciler", err)
@@ -427,11 +422,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// everything has been cleaned up, delete the ns
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// TODO need to see about removing this function all together
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

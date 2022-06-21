@@ -25,7 +25,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 	}
 
 	namespace := "testing-namespaces-operator"
-	resourceName := "test-rhmi-postgres"
+	resourceName := "test-rhoam-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
@@ -73,7 +73,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 	}
 
 	namespace := "testing-namespaces-operator"
-	resourceName := "test-rhmi-redis"
+	resourceName := "test-rhoam-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
@@ -121,7 +121,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 	}
 
 	namespace := "testing-namespaces-operator"
-	resourceName := "test-rhmi-postgres"
+	resourceName := "test-rhoam-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
@@ -177,7 +177,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	}
 
 	namespace := "testing-namespaces-operator"
-	resourceName := "test-rhmi-redis"
+	resourceName := "test-rhoam-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)

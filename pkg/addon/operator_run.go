@@ -41,11 +41,6 @@ var runTypesBySubscription = map[string]OperatorRunType{
 	addonPrefixed(ManagedAPIService): AddonRunType,
 	// RHOAM - OLM
 	ManagedAPIService: OLMRunType,
-
-	// RHMI - Add-on
-	addonPrefixed(RHMI): AddonRunType,
-	// RHMI - OLM
-	"integreatly": OLMRunType,
 }
 
 // InferOperatorRunType infers how the operator is being run

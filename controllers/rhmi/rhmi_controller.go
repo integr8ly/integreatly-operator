@@ -83,7 +83,7 @@ import (
 const (
 	deletionFinalizer                = "configmaps/finalizer"
 	previousDeletionFinalizer        = "finalizer/configmaps"
-	DefaultInstallationName          = "rhmi"
+	DefaultInstallationName          = "rhoam"
 	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
@@ -907,7 +907,7 @@ func (r *RHMIReconciler) handleUninstallBootstrap(installation *rhmiv1alpha1.RHM
 
 		phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, &quota.Quota{}, request)
 		if err != nil {
-			merr.Add(fmt.Errorf("Failed to reconcile bootstrap: %w", err))
+			merr.Add(fmt.Errorf("failed to reconcile bootstrap: %w", err))
 		}
 		if phase != rhmiv1alpha1.PhaseCompleted {
 			return true
@@ -1566,33 +1566,33 @@ func getCrName(installType string) string {
 		return ManagedApiInstallationName
 	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
 		return ManagedApiInstallationName
-	} else {
-		return DefaultInstallationName
 	}
+
+	return DefaultInstallationName
 }
 
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
 	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
 	if err != nil {
-		return fmt.Errorf("Failed to get API Group-Resources: %v", err)
+		return fmt.Errorf("failed to get API Group-Resources: %v", err)
 	}
 	cache, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
 	if err != nil {
-		return fmt.Errorf("Failed to create informer cache in %s namespace: %v", namespace, err)
+		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}
 	informer, err := cache.GetInformerForKind(context.TODO(), crd.GetObjectKind().GroupVersionKind())
 	if err != nil {
-		return fmt.Errorf("Failed to create informer for %v: %v", crd, err)
+		return fmt.Errorf("failed to create informer for %v: %v", crd, err)
 	}
 	err = r.controller.Watch(&source.Informer{Informer: informer}, &EnqueueIntegreatlyOwner{log: log})
 	if err != nil {
-		return fmt.Errorf("Failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
+		return fmt.Errorf("failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
 	}
 	// Adding to Manager, which will start it for us with a correct stop channel
 	err = r.mgr.Add(cache)
 	if err != nil {
-		return fmt.Errorf("Failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
+		return fmt.Errorf("failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
 	}
 	r.customInformers[gvk][namespace] = &informer
 
@@ -1603,7 +1603,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 		close(timeoutChannel)
 	}()
 	if !cache.WaitForCacheSync(timeoutChannel) {
-		return fmt.Errorf("Failed to sync cache for %s watch in %s namespace", gvk, namespace)
+		return fmt.Errorf("failed to sync cache for %s watch in %s namespace", gvk, namespace)
 	}
 
 	log.Infof("Cache synced. Successfully initialized.", l.Fields{"watch": gvk, "ns": namespace})

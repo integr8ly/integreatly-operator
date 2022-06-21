@@ -61,35 +61,11 @@ products:
     bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:22dbc0f17e3074a1fcbff9f61412031051ed44e7f24b3942b0d583c855693a42
     installFrom: implicit
     package: 3scale-operator
-  amqonline:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-amq-online
-  amqstreams:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-amq-streams
-  apicurio-registry:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-apicurio-registry
-  apicurito:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-apicurito
   cloud-resources:
     channel: "rhmi"
     installFrom: index
     package: rhmi-cloud-resources
     index: quay.io/integreatly/cloud-resource-operator:index-v0.41.0
-  codeready-workspaces:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-codeready-workspaces
-  fuse:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-fuse-online
   grafana:
     channel: rhmi
     installFrom: local
@@ -98,10 +74,6 @@ products:
     channel: rhmi
     installFrom: local
     manifestsDir: integreatly-marin3r
-  middleware-monitoring:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-monitoring
   observability:
     channel: alpha
     package: observability-operator
@@ -115,11 +87,3 @@ products:
     channel: rhmi
     installFrom: local
     manifestsDir: integreatly-rhsso
-  solution-explorer:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-solution-explorer
-  ups:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-unifiedpush

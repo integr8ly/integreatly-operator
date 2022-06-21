@@ -52,46 +52,6 @@ var commonExpectedDashboards = []dashboardsTestRule{
 	},
 }
 
-// Applicable to install types used in 2.X
-var rhmi2ExpectedDashboards = []dashboardsTestRule{
-	{
-		Title: "Syndesis - Infra - API",
-	},
-	{
-		Title: "Syndesis - Infra - Home",
-	},
-	{
-		Title: "Syndesis - Infra - JVM",
-	},
-	{
-		Title: "Syndesis - Integrations - Camel",
-	},
-	{
-		Title: "Syndesis - Integrations - Home",
-	},
-	{
-		Title: "Syndesis - Integrations - JVM",
-	},
-	{
-		Title: "UnifiedPush Operator",
-	},
-	{
-		Title: "UnifiedPush Server",
-	},
-	{
-		Title: "AMQ Online",
-	},
-	{
-		Title: "EnMasse Brokers",
-	},
-	{
-		Title: "EnMasse Console",
-	},
-	{
-		Title: "EnMasse Routers",
-	},
-}
-
 var customerRHOAMDashboards = []dashboardsTestRule{
 	{
 		Title: "Rate Limiting",

@@ -43,7 +43,6 @@ var cloudResourcesStageTimeout = time.Minute * 10
 var monitoringStageTimeout = time.Minute * 10
 var authenticationStageTimeout = time.Minute * 30
 var productsStageTimout = time.Minute * 30
-var solutionExplorerStageTimeout = time.Minute * 10
 var deploymentTimeout = time.Minute * 25
 var installStageTimeout = time.Minute * 40
 var failed = false
@@ -120,20 +119,8 @@ var _ = BeforeSuite(func() {
 
 		//Product Stage - verify operators deploy
 	products := map[string]string{
-		"3scale":               "3scale-operator",
-		"amq-online":           "enmasse-operator",
-		"codeready-workspaces": "codeready-operator",
-		"fuse":                 "syndesis-operator",
-		"user-sso":             "rhsso-operator",
-		"ups":                  "unifiedpush-operator",
-		"apicurito":            "apicurito-operator",
-	}
-
-		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
-			products = map[string]string{
-				"3scale":   "threescale-operator-controller-manager-v2",
-				"user-sso": "rhsso-operator",
-			}
+		"3scale":   "threescale-operator-controller-manager-v2",
+		"user-sso": "rhsso-operator",
 		}
 		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
 			products = map[string]string{
@@ -208,9 +195,6 @@ func waitForInstallationStageCompletion(k8sClient client.Client, retryInterval, 
 
 func waitForProductDeployment(kubeclient kubernetes.Interface, product, deploymentName string) error {
 	namespace := common.NamespacePrefix + product + "-operator"
-	if deploymentName == "enmasse-operator" {
-		namespace = common.NamespacePrefix + product
-	}
 	if product == "" {
 		namespace = common.NamespacePrefix + "operator"
 	}

@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -185,11 +184,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if err := r.reconcileConsoleLink(ctx, client); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if phase, err = r.reconcileBlackboxTargets(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana blackbox targets", err)
-		return phase, err
 	}
 
 	if phase, err = r.reconcilePrometheusProbes(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -613,24 +607,6 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	}
 
 	return nil
-}
-
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadMonitoring()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	err = monitoringcommon.CreateBlackboxTarget(ctx, "integreatly-grafana", integreatlyv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
-		Service: "grafana-ui",
-	}, cfg, r.installation, client)
-	if err != nil {
-		r.log.Error("Error creating grafana blackbox target", err)
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating grafana blackbox target: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
