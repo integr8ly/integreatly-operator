@@ -7,6 +7,7 @@ products:
       - osd-fresh-install
     targets:
       - 1.19.0
+      - 1.22.0
 estimate: 1h
 ---
 

@@ -124,7 +124,7 @@ var (
 	OperatorVersionRHSSOUser        OperatorVersion = "18.0.0"
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
-	OperatorVersion3Scale              OperatorVersion = "0.8.3"
+	OperatorVersion3Scale              OperatorVersion = "0.8.4"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.39.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"

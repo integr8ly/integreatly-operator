@@ -81,28 +81,6 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 		},
 	}
 
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		installationAlert := resources.AlertConfiguration{
-			AlertName: fmt.Sprintf("%s-installation-controller-alerts", installationName),
-			Namespace: installation.Namespace,
-			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
-			Rules: []monitoringv1.Rule{
-				{
-					Alert: fmt.Sprintf("%sInstallationControllerIsInReconcilingErrorState", strings.ToUpper(installationName)),
-					Annotations: map[string]string{
-						"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-						"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for 5 of the last 10 minutes", strings.ToUpper(installationName)),
-					},
-					Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='error'}[5m]) > 0", installationName)),
-					For:    "10m",
-					Labels: map[string]string{"severity": "warning", "product": installationName},
-				},
-			},
-		}
-
-		alerts = append(alerts, installationAlert)
-	}
-
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,

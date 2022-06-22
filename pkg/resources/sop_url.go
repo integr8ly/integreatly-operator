@@ -26,6 +26,7 @@ const (
 	SopUrlMarin3rEnvoyApicastStagingContainerDown              = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/Marin3rEnvoyApicastStagingContainerDown.asciidoc"
 	SopUrlOperatorInstallDelayed                               = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/OperatorInstallDelayed.asciidoc"
 	SopUrlUpgradeExpectedDurationExceeded                      = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/UpgradeExpectedDurationExceeded.asciidoc"
+	SopUrlRHOAMIsInReconcilingErrorState                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMIsInReconcilingErrorState.asciidoc"
 	SopUrlRHOAMCloudResourceOperatorMetricsServiceEndpointDown = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMCloudResourceOperatorMetricsServiceEndpointDown.asciidoc"
 	SopUrlRHOAMCloudResourceOperatorVPCActionFailed            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMCloudResourceOperatorVPCActionFailed.asciidoc"
 	SopUrlRHOAMThreeScaleApicastProductionServiceEndpointDown  = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/RHOAMThreeScaleApicastProductionServiceEndpointDown.asciidoc"
