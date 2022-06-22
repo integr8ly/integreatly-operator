@@ -11,6 +11,7 @@ products:
       - 1.11.0
       - 1.14.0
       - 1.19.0
+      - 1.22.0
 estimate: 90m
 ---
 
@@ -32,7 +33,6 @@ estimate: 90m
    - useByoc: false
    - quota: 10
    - multiAZ: false
-   - patchCloudResAwsStrCM: false
    - clusterID: api-usage-alerts
    - emailRecipients: <your@email.address>
    - pipelineSteps: provisionCluster, installProduct, setupIdp

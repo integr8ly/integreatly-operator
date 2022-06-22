@@ -11,6 +11,7 @@ products:
       - 1.11.0
       - 1.14.0
       - 1.19.0
+      - 1.22.0
 estimate: 1h
 tags:
   - destructive
@@ -133,7 +134,7 @@ Ensure that the values are as follows (should be so if 20M Quota is used):
 
 _"seconds":60_
 
-_"max_value":13860"_
+_"max_value":13889"_
 
 If the values are **not** correct make sure the 20M Quota is used. If not, change the Quota via editing the RHOAM addon config via OCM.
 
@@ -210,7 +211,7 @@ This will run for 10 minutes at 15,000 requests per min.
 **10. Go back to Prometheus web page**
 
 - Execute this query:
-  `increase(authorized_calls[1m]) + increase(limited_calls[1m])`
+  `sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m]))`
 - Click on the `Graph` button
 
   > Ensure that the graph shows the usage reaches 15,000 requests and remains at the level for 10 minutes (until the test completes).
