@@ -63,7 +63,7 @@ var (
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 				{"C10B - Verify Prometheus blackbox targets", TestAdditionalBlackboxTargets},
-				{"C08B - Verify alert links to SOPs", TestVerifyAlertLinksInSOPs},
+				{"C08B - Verify alert links to SOPs", TestVerifyAlertLinksToSOPs},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},

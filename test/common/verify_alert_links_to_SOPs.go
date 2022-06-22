@@ -12,20 +12,18 @@ import (
 
 var githubToken = os.Getenv("TOKEN_GITHUB")
 
-func TestVerifyAlertLinksInSOPs(t TestingTB, ctx *TestingContext) {
+func TestVerifyAlertLinksToSOPs(t TestingTB, ctx *TestingContext) {
 
 	if githubToken == "" {
-		t.Skip("github token not present")
+		t.Skip("github token not present, use TOKEN_GITHUB environment variable to specify it")
 	}
 
-	var apiLinks []string
+	var sopUrls []string
 	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
 	testResp := getSOPAlertLinkStatus(t, testUrl)
 
 	if testResp.StatusCode != 200 {
-		t.Log("Response status: ", testUrl, testResp.Status)
-	} else {
-		t.Log("Response status: ", testResp.Status)
+		t.Fatal("Response status: ", testUrl, testResp.Status, "current given token does not allow access to sop urls")
 	}
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
@@ -57,7 +55,7 @@ func TestVerifyAlertLinksInSOPs(t TestingTB, ctx *TestingContext) {
 			case prometheusv1.AlertingRule:
 				for annotation, sopUrl := range v.Annotations {
 					if annotation == "sop_url" {
-						apiLinks = append(apiLinks, string(sopUrl))
+						sopUrls = append(sopUrls, string(sopUrl))
 					}
 
 				}
@@ -69,12 +67,12 @@ func TestVerifyAlertLinksInSOPs(t TestingTB, ctx *TestingContext) {
 		}
 	}
 
-	apiLinks = unique(apiLinks)
-	result := validateSOPLinks(t, apiLinks)
+	sopUrls = unique(sopUrls)
+	result := validateSOPUrls(t, sopUrls)
 	fmt.Println(result)
 }
 
-func modifyLink(rawLink string) (url string) {
+func modifySOPUrl(sopUrl string) (apiSOPUrl string) {
 	r := strings.NewReplacer(
 		"github", "api.github",
 		"com/", "com/repos/",
@@ -82,14 +80,14 @@ func modifyLink(rawLink string) (url string) {
 		"tree/master", "contents",
 	)
 
-	url = r.Replace(rawLink)
-	return url
+	apiSOPUrl = r.Replace(sopUrl)
+	return
 }
 
-func unique(s []string) []string {
+func unique(sopUrls []string) []string {
 	inResult := make(map[string]bool)
 	var result []string
-	for _, str := range s {
+	for _, str := range sopUrls {
 		if _, ok := inResult[str]; !ok {
 			inResult[str] = true
 			result = append(result, str)
@@ -98,32 +96,33 @@ func unique(s []string) []string {
 	return result
 }
 
-func validateSOPLinks(t TestingTB, s []string) bool {
-	status := true
+func validateSOPUrls(t TestingTB, sopUrls []string) bool {
+	status := false
 	var countFailedLinks int
-	for _, url := range s {
-		resp := getSOPAlertLinkStatus(t, url)
+	for _, sopUrl := range sopUrls {
+		resp := getSOPAlertLinkStatus(t, sopUrl)
 
 		if resp.StatusCode != 200 {
 			t.Log("Response status :", resp.Status)
-			t.Log(url)
+			t.Log(sopUrl)
 			countFailedLinks++
 		}
 
-		if countFailedLinks != 0 {
-			status = false
-		}
+	}
+
+	if countFailedLinks == 0 {
+		status = true
 	}
 
 	return status
 
 }
 
-func getSOPAlertLinkStatus(t TestingTB, url string) *http.Response {
+func getSOPAlertLinkStatus(t TestingTB, sopurl string) *http.Response {
 
-	url = modifyLink(url)
+	sopurl = modifySOPUrl(sopurl)
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", sopurl, nil)
 	if err != nil {
 		t.Log("%s", err)
 	}
@@ -138,7 +137,7 @@ func getSOPAlertLinkStatus(t TestingTB, url string) *http.Response {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-
+			t.Log("failed to close body")
 		}
 	}(resp.Body)
 
