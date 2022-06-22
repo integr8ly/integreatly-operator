@@ -10,20 +10,20 @@ import (
 	"strings"
 )
 
-var githubToken = os.Getenv("TOKEN_GITHUB")
+var githubToken = os.Getenv("GITHUB_TOKEN")
 
-func TestVerifyAlertLinksToSOPs(t TestingTB, ctx *TestingContext) {
+func TestSopUrls(t TestingTB, ctx *TestingContext) {
 
 	if githubToken == "" {
-		t.Skip("github token not present, use TOKEN_GITHUB environment variable to specify it")
+		t.Skip("Github token not provided, use GITHUB_TOKEN environment variable to specify it")
 	}
 
 	var sopUrls []string
 	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
-	testResp := getSOPAlertLinkStatus(t, testUrl)
+	testResp := getSopUrlStatus(t, testUrl)
 
 	if testResp.StatusCode != 200 {
-		t.Fatal("Response status: ", testUrl, testResp.Status, "current given token does not allow access to sop urls")
+		t.Fatal("Response status: ", testUrl, testResp.Status, "Given token does not allow access to SOP URLs")
 	}
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
@@ -31,7 +31,7 @@ func TestVerifyAlertLinksToSOPs(t TestingTB, ctx *TestingContext) {
 		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err)
+		t.Fatal("Failed to exec to pod:", err)
 	}
 
 	var ApiOutput prometheusAPIResponse
@@ -68,11 +68,11 @@ func TestVerifyAlertLinksToSOPs(t TestingTB, ctx *TestingContext) {
 	}
 
 	sopUrls = unique(sopUrls)
-	result := validateSOPUrls(t, sopUrls)
+	result := validateSopUrls(t, sopUrls)
 	fmt.Println(result)
 }
 
-func modifySOPUrl(sopUrl string) (apiSOPUrl string) {
+func modifySopUrl(sopUrl string) (apiSopUrl string) {
 	r := strings.NewReplacer(
 		"github", "api.github",
 		"com/", "com/repos/",
@@ -80,7 +80,7 @@ func modifySOPUrl(sopUrl string) (apiSOPUrl string) {
 		"tree/master", "contents",
 	)
 
-	apiSOPUrl = r.Replace(sopUrl)
+	apiSopUrl = r.Replace(sopUrl)
 	return
 }
 
@@ -96,11 +96,11 @@ func unique(sopUrls []string) []string {
 	return result
 }
 
-func validateSOPUrls(t TestingTB, sopUrls []string) bool {
+func validateSopUrls(t TestingTB, sopUrls []string) bool {
 	status := false
 	var countFailedLinks int
 	for _, sopUrl := range sopUrls {
-		resp := getSOPAlertLinkStatus(t, sopUrl)
+		resp := getSopUrlStatus(t, sopUrl)
 
 		if resp.StatusCode != 200 {
 			t.Log("Response status :", resp.Status)
@@ -118,9 +118,9 @@ func validateSOPUrls(t TestingTB, sopUrls []string) bool {
 
 }
 
-func getSOPAlertLinkStatus(t TestingTB, sopurl string) *http.Response {
+func getSopUrlStatus(t TestingTB, sopUrl string) *http.Response {
 
-	sopurl = modifySOPUrl(sopurl)
+	sopUrl = modifySopUrl(sopUrl)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", sopurl, nil)
 	if err != nil {
@@ -137,7 +137,7 @@ func getSOPAlertLinkStatus(t TestingTB, sopurl string) *http.Response {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			t.Log("failed to close body")
+			t.Log("Failed to close body")
 		}
 	}(resp.Body)
 
