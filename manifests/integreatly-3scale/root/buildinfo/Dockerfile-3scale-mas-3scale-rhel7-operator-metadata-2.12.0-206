@@ -32,5 +32,5 @@ LABEL com.redhat.component="3scale-operator-bundle-container" \
 COPY bundle /manifests/
 COPY metadata /metadata/
 
-ADD 3scale-operator-bundle-container-2.12.0-188.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-188.json
-LABEL "release"="188" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-06-16T18:32:57.120413" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="71fefe0a7675021ecbf3f3a197f8507efac5c519" "com.redhat.build-host"="cpt-1005.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-mas/3scale-rhel7-operator-metadata/images/2.12.0-188"
+ADD 3scale-operator-bundle-container-2.12.0-206.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-206.json
+LABEL "release"="206" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-06-23T19:39:20.922829" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="e4c8688f60f1844a99bc0c69543e94da3cd82207" "com.redhat.build-host"="cpt-1008.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-mas/3scale-rhel7-operator-metadata/images/2.12.0-206"
