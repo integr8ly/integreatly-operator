@@ -29,8 +29,8 @@ LABEL com.redhat.component="3scale-operator-bundle-container" \
       io.openshift.tags="3scale, api" \
       maintainer="Eguzki Astiz Lezaun <eastizle@redhat.com>"
 
-COPY bundle /manifests/
+COPY manifests /manifests/
 COPY metadata /metadata/
 
-ADD 3scale-operator-bundle-container-2.12.0-205.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-205.json
-LABEL "release"="205" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-06-23T12:34:07.251909" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="27193082bf0e2009da86427ce1b7fcd2b7b5c96c" "com.redhat.build-host"="cpt-1001.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-amp2/3scale-rhel7-operator-metadata/images/2.12.0-205"
+ADD 3scale-operator-bundle-container-2.12.0-33.json /root/buildinfo/content_manifests/3scale-operator-bundle-container-2.12.0-33.json
+LABEL "release"="33" "com.redhat.license_terms"="https://www.redhat.com/agreements" "distribution-scope"="public" "vendor"="Red Hat, Inc." "build-date"="2022-03-01T14:29:56.867707" "architecture"="x86_64" "vcs-type"="git" "vcs-ref"="3da4170ae7b03aaf76cf00a128c776968e88f1ae" "com.redhat.build-host"="cpt-1002.osbs.prod.upshift.rdu2.redhat.com" "io.k8s.description"="3scale operator container image prod metadata" "url"="https://access.redhat.com/containers/#/registry.access.redhat.com/3scale-amp2/3scale-rhel7-operator-metadata/images/2.12.0-33"
