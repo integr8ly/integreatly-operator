@@ -161,7 +161,7 @@ func (r *RHMIConfigReconciler) reconcileValues(rhmiConfig *rhmiconfigv1alpha1.RH
 
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed to create or update rhmiConfig : %v", err)
+		return fmt.Errorf("failed to create or update rhmiConfig - codecov : %v", err)
 	}
 
 	return nil
