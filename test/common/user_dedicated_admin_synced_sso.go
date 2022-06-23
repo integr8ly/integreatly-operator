@@ -262,6 +262,7 @@ func getKeycloakToken(httpClient *http.Client, host string, options keycloakToke
 	return keycloakOpenIDTokenRes, nil
 }
 
+/* #nosec G101 -- This is a false positive */
 func getCredentialsRHSSOUser(ctx context.Context, c client.Client) ([]string, error) {
 	secret := &corev1.Secret{}
 	secretName := "credential-rhssouser"

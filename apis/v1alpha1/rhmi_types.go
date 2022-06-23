@@ -142,7 +142,7 @@ var (
 	EventUpgradeApproved       string = "UpgradeApproved"
 
 	DefaultOriginPullSecretName      = "pull-secret"
-	DefaultOriginPullSecretNamespace = "openshift-config"
+	DefaultOriginPullSecretNamespace = "openshift-config" // #nosec G101 -- This is a false positive
 
 	EnvKeyAlertSMTPFrom = "ALERT_SMTP_FROM"
 	EnvKeyQuota         = "QUOTA"

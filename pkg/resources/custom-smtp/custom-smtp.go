@@ -16,7 +16,7 @@ const (
 	Valid        ValidationResponse = "valid"
 	Partial      ValidationResponse = "partial"
 	Blank        ValidationResponse = "blank"
-	CustomSecret string             = "custom-smtp"
+	CustomSecret string             = "custom-smtp" // #nosec G101 -- This is a false positive
 )
 
 type ValidationResponse string

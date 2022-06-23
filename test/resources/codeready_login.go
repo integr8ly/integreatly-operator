@@ -14,6 +14,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	codereadySSOAuthEndpoint  = "%v/auth/realms/openshift/protocol/openid-connect/auth?client_id=%v&redirect_uri=%v&response_type=code&scope=openid"
 	codereadySSOTokenEndpoint = "%v/auth/realms/openshift/protocol/openid-connect/token"

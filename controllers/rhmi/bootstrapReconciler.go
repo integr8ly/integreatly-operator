@@ -51,7 +51,7 @@ import (
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 )
 
-var tenantOauthclientSecretsName = "tenant-oauth-client-secrets"
+var tenantOauthclientSecretsName = "tenant-oauth-client-secrets" // #nosec G101 -- This is a false positive
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	return &Reconciler{

@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+/* #nosec G101 -- This is a false positive */
 const (
 	pingUrl             = "%v/dashboard/"
 	createWorkspacePath = "%v/api/workspace/devfile"

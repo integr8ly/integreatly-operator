@@ -19,8 +19,8 @@ import (
 )
 
 const deadMansSwitch = "DeadMansSwitch"
-const missingSmtpSecret = "SendgridSmtpSecretExists"
-const dmsSecretAlertName = "DeadMansSnitchSecretExists"
+const missingSmtpSecret = "SendgridSmtpSecretExists"    // #nosec G101 -- This is a false positive
+const dmsSecretAlertName = "DeadMansSnitchSecretExists" // #nosec G101 -- This is a false positive
 
 // alertsTestMetadata contains metadata about the alert
 type alertTestMetadata struct {
