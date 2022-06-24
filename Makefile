@@ -275,13 +275,6 @@ test/products:
 	mkdir -p $(TEST_RESULTS_DIR)
 	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
-.PHONY: test/rhoam/products
-test/rhoam/products: export WATCH_NAMESPACE := $(NAMESPACE)
-test/rhoam/products:
-	mkdir -p $(TEST_RESULTS_DIR)
-	delorean pipeline product-tests --test-config ./test-containers-managed-api.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
-
-
 .PHONY: cluster/deploy
 cluster/deploy: kustomize cluster/cleanup cluster/cleanup/crds cluster/prepare/crd cluster/prepare cluster/prepare/rbac/dedicated-admins deploy/integreatly-rhmi-cr.yml
 	@ - oc create -f config/rbac/service_account.yaml
