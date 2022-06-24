@@ -32,6 +32,9 @@ type AlertReconcilerImpl struct {
 	Log          l.Logger
 	Installation *integreatlyv1alpha1.RHMI
 	Alerts       []AlertConfiguration
+	// RemovedAlerts Should contain Alerts that have been removed or renamed to ensure there is no orphaned
+	// Alerts on clusters after upgrades. These alerts will be deleted as part of ReconcileAlerts
+	RemovedAlerts []AlertConfiguration
 }
 
 var _ AlertReconciler = &AlertReconcilerImpl{}
@@ -47,7 +50,8 @@ type AlertConfiguration struct {
 func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// If the installation was marked for deletion, delete the alerts
 	if r.Installation.DeletionTimestamp != nil {
-		if err := r.deleteAlerts(ctx, client); err != nil {
+		allAlerts := append(r.Alerts, r.RemovedAlerts...)
+		if err := r.deleteAlerts(ctx, client, allAlerts); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -63,6 +67,11 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 			r.Log.Infof("Operation result", l.Fields{"productName": r.ProductName, "alertName": alert.AlertName, "result": string(or)})
 		}
 	}
+
+	if err := r.deleteAlerts(ctx, client, r.RemovedAlerts); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -93,10 +102,10 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 	})
 }
 
-func (r *AlertReconcilerImpl) deleteAlerts(ctx context.Context, client k8sclient.Client) error {
+func (r *AlertReconcilerImpl) deleteAlerts(ctx context.Context, client k8sclient.Client, alerts []AlertConfiguration) error {
 	rule := &monitoringv1.PrometheusRule{}
 
-	for _, alert := range r.Alerts {
+	for _, alert := range alerts {
 		if err := client.Get(ctx, k8sclient.ObjectKey{
 			Name:      alert.AlertName,
 			Namespace: alert.Namespace,

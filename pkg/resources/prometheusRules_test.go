@@ -3,6 +3,8 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/client"
+	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"testing"
 
@@ -20,12 +22,16 @@ import (
 
 func TestReconcileAlerts(t *testing.T) {
 	type testScenario struct {
-		Name          string
-		Installation  *integreatlyv1alpha1.RHMI
-		ExistingRules []*monitoringv1.PrometheusRule
-		Alerts        []AlertConfiguration
-		Assertion     func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
+		Name           string
+		Installation   *integreatlyv1alpha1.RHMI
+		ExistingRules  []*monitoringv1.PrometheusRule
+		Alerts         []AlertConfiguration
+		AlertsToRemove []AlertConfiguration
+		Assertion      func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
+		Client         client.SigsClientInterface
 	}
+
+	var genericError = fmt.Errorf("some error")
 
 	scenarios := []testScenario{
 		// Verify that the reconciler creates the alerts when they don't exist
@@ -38,14 +44,7 @@ func TestReconcileAlerts(t *testing.T) {
 					Namespace: "testing-namespaces-test",
 				},
 			},
-			Alerts: []AlertConfiguration{
-				{
-					AlertName: "test-alert",
-					GroupName: "test-group",
-					Namespace: "testing-namespaces-test",
-					Rules:     rules,
-				},
-			},
+			Alerts: alerts,
 			Assertion: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
 				if err != nil {
 					return fmt.Errorf("unexpected error: %v", err)
@@ -105,37 +104,10 @@ func TestReconcileAlerts(t *testing.T) {
 					DeletionTimestamp: now(),
 				},
 			},
-			Alerts: []AlertConfiguration{
-				{
-					AlertName: "test-alert",
-					GroupName: "test-group",
-					Namespace: "testing-namespaces-test",
-					Rules:     rules,
-				},
-			},
+			Alerts: alerts,
 			Assertion: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
-				// Assert there was no error
-				if err != nil {
-					return fmt.Errorf("unexpected error: %v", err)
-				}
-
-				if phase != integreatlyv1alpha1.PhaseCompleted {
-					return fmt.Errorf("expected phase to be %s, got %s",
-						integreatlyv1alpha1.PhaseCompleted, phase)
-				}
-
-				// Assert that the rule was deleted
-				deletedRule := &monitoringv1.PrometheusRule{}
-				err = client.Get(context.TODO(), k8sclient.ObjectKey{
-					Name:      "test-alert",
-					Namespace: "testing-namespaces-test",
-				}, deletedRule)
-				if err == nil {
-					return fmt.Errorf("expected an error retrieving deleted rule")
-				}
-
-				if !errors.IsNotFound(err) {
-					return fmt.Errorf("expected error to be not found, got %v", err)
+				if err := assertPhaseCompleteAndAlertIsNotFound(client, phase, err); err != nil {
+					return err
 				}
 
 				// Assert that the existing rule is unmodified
@@ -152,6 +124,92 @@ func TestReconcileAlerts(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			Name:          "Alerts marked for removal are deleted as part of reconcile",
+			ExistingRules: []*monitoringv1.PrometheusRule{},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "testing-namespaces-test",
+				},
+			},
+			Alerts:         alerts,
+			AlertsToRemove: alerts,
+			Assertion:      assertPhaseCompleteAndAlertIsNotFound,
+		},
+		{
+			Name:           "Reconcile continues if alerts marked for deletion are not present",
+			ExistingRules:  []*monitoringv1.PrometheusRule{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
+			Alerts:         []AlertConfiguration{},
+			AlertsToRemove: alerts,
+			Assertion:      assertPhaseCompleteAndAlertIsNotFound,
+		},
+		{
+			Name:          "Phase failed deleting alerts during reconcile",
+			ExistingRules: []*monitoringv1.PrometheusRule{},
+			Installation:  &integreatlyv1alpha1.RHMI{},
+			Alerts:        []AlertConfiguration{},
+			Client: &client.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return genericError
+				},
+			},
+			AlertsToRemove: alerts,
+			Assertion:      assertErrorAndPhaseFailed,
+		},
+		{
+			Name:          "Phase failed deleting alerts due to error from getting alerts",
+			ExistingRules: []*monitoringv1.PrometheusRule{},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					DeletionTimestamp: now(),
+				},
+			},
+			Alerts: []AlertConfiguration{},
+			Client: &client.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return genericError
+				},
+			},
+			AlertsToRemove: alerts,
+			Assertion:      assertErrorAndPhaseFailed,
+		},
+		{
+			Name:          "Phase failed deleting alerts due to error on deletion",
+			ExistingRules: []*monitoringv1.PrometheusRule{},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: v1.ObjectMeta{
+					DeletionTimestamp: now(),
+				},
+			},
+			Alerts: []AlertConfiguration{},
+			Client: &client.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return nil
+				},
+				DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+					return genericError
+				},
+			},
+			AlertsToRemove: alerts,
+			Assertion:      assertErrorAndPhaseFailed,
+		},
+		{
+			Name:          "Phase failed creating alerts during reconcile",
+			ExistingRules: []*monitoringv1.PrometheusRule{},
+			Installation:  &integreatlyv1alpha1.RHMI{},
+			Client: &client.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return nil
+				},
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					return genericError
+				},
+			},
+			Alerts:    alerts,
+			Assertion: assertErrorAndPhaseFailed,
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -161,24 +219,73 @@ func TestReconcileAlerts(t *testing.T) {
 			continue
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme, scenario.Installation)
+		serverClient := fake.NewFakeClientWithScheme(scheme, scenario.Installation)
 		for _, rule := range scenario.ExistingRules {
-			client.Create(context.TODO(), rule)
+			if err := serverClient.Create(context.TODO(), rule); err != nil {
+				t.Errorf("Failed to create alert for test: %s", scenario.Name)
+			}
 		}
 
 		alertReconciler := &AlertReconcilerImpl{
-			ProductName:  "Test",
-			Alerts:       scenario.Alerts,
-			Installation: scenario.Installation,
-			Log:          getLogger(),
+			ProductName:   "Test",
+			Alerts:        scenario.Alerts,
+			Installation:  scenario.Installation,
+			Log:           getLogger(),
+			RemovedAlerts: scenario.AlertsToRemove,
 		}
 
-		phase, err := alertReconciler.ReconcileAlerts(context.TODO(), client)
+		// Allow overriding client if defined in the scenario
+		if scenario.Client != nil {
+			serverClient = scenario.Client
+		}
 
-		if assertionError := scenario.Assertion(client, phase, err); assertionError != nil {
+		phase, err := alertReconciler.ReconcileAlerts(context.TODO(), serverClient)
+
+		if assertionError := scenario.Assertion(serverClient, phase, err); assertionError != nil {
 			t.Errorf("%s failed: %v", scenario.Name, assertionError)
 		}
 	}
+}
+
+func assertErrorAndPhaseFailed(_ k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
+	if err == nil {
+		return fmt.Errorf("expected error but got none")
+	}
+
+	if phase != integreatlyv1alpha1.PhaseFailed {
+		return fmt.Errorf("expected phase to be %s, got %s",
+			integreatlyv1alpha1.PhaseFailed, phase)
+	}
+
+	return nil
+}
+
+func assertPhaseCompleteAndAlertIsNotFound(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
+	// Assert there was no error
+	if err != nil {
+		return fmt.Errorf("unexpected error: %v", err)
+	}
+
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return fmt.Errorf("expected phase to be %s, got %s",
+			integreatlyv1alpha1.PhaseCompleted, phase)
+	}
+
+	// Assert that the rule was deleted
+	deletedRule := &monitoringv1.PrometheusRule{}
+	err = client.Get(context.TODO(), k8sclient.ObjectKey{
+		Name:      "test-alert",
+		Namespace: "testing-namespaces-test",
+	}, deletedRule)
+	if err == nil {
+		return fmt.Errorf("expected an error retrieving deleted rule")
+	}
+
+	if !errors.IsNotFound(err) {
+		return fmt.Errorf("expected error to be not found, got %v", err)
+	}
+
+	return nil
 }
 
 func buildSchemePrometheusRules() (*runtime.Scheme, error) {
@@ -194,6 +301,14 @@ func buildSchemePrometheusRules() (*runtime.Scheme, error) {
 }
 
 var (
+	alerts = []AlertConfiguration{
+		{
+			AlertName: "test-alert",
+			GroupName: "test-group",
+			Namespace: "testing-namespaces-test",
+			Rules:     rules,
+		},
+	}
 	rules = []monitoringv1.Rule{
 		{
 			Alert: "TestRule",
