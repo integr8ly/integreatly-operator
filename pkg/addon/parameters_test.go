@@ -2,6 +2,7 @@ package addon
 
 import (
 	"context"
+	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
@@ -27,6 +28,7 @@ var (
 	olmSubscriptionType      = "managed-api-service"
 	internalSubscriptionType = "addon-managed-api-service-internal"
 	noneSubscription         = "none"
+	multipleSubscriptions    = "multiple"
 
 	testRHOAMnamespace  = "redhat-rhoam-operator"
 	testRHOAMInamespace = "redhat-rhoami-operator"
@@ -85,7 +87,7 @@ func TestGetParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:      "Parameter from const found",
+			Name:      "Parameter found: subscription is not present",
 			wantFound: true,
 			wantValue: []byte(bytesSecretValue),
 			args: args{
@@ -96,7 +98,7 @@ func TestGetParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:      "Secret from RHOAMI namespace retrieved",
+			Name:      "Parameter found in RHOAMI namespace",
 			wantFound: true,
 			wantValue: []byte(bytesSecretValue),
 			args: args{
@@ -107,7 +109,7 @@ func TestGetParameter(t *testing.T) {
 			},
 		},
 		{
-			Name:      "OLM installations treated well",
+			Name:      "Parameter found for OLM installations",
 			wantFound: true,
 			wantValue: []byte(bytesSecretValue),
 			args: args{
@@ -115,6 +117,32 @@ func TestGetParameter(t *testing.T) {
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
 				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, olmSubscriptionType),
+			},
+		},
+		{
+			Name:      "Multiple subscriptions fail secret retrieval",
+			wantFound: false,
+			wantErr:   true,
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, multipleSubscriptions),
+			},
+		},
+		{
+			Name:      "parameter not found: failed to list subscriptions",
+			wantFound: false,
+			wantErr:   true,
+			args: args{
+				parameter: defaultParameterKey,
+				namespace: testRHOAMnamespace,
+				ctx:       context.TODO(),
+				client: &clientMock.SigsClientInterfaceMock{
+					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+						return genericError
+					},
+				},
 			},
 		},
 	}
@@ -169,6 +197,17 @@ func TestGetStringParameter(t *testing.T) {
 			wantValue: stringSecretValue,
 			wantOk:    true,
 			wantErr:   false,
+		},
+		{
+			name: "fail to retrieve string parameter: secret not present",
+			args: args{
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, noneSecret, addonSubscription),
+				namespace: testRHOAMnamespace,
+				parameter: defaultParameterKey,
+			},
+			wantErr: true,
+			wantOk:  false,
 		},
 	}
 	for _, tt := range tests {
@@ -235,6 +274,16 @@ func TestGetIntParameter(t *testing.T) {
 			wantOk:    true,
 			wantErr:   true,
 		},
+		{
+			name: "failed to retrieve int parameter: not in a secret",
+			args: args{
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, intSecret, olmSubscriptionType),
+				namespace: testRHOAMnamespace,
+				parameter: "boop",
+			},
+			wantOk: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -299,6 +348,16 @@ func TestGetBoolParameter(t *testing.T) {
 			wantValue: false,
 			wantOk:    true,
 			wantErr:   true,
+		},
+		{
+			name: "failed to retrieve bool parameter: not in a secret",
+			args: args{
+				ctx:       context.TODO(),
+				client:    getDefaultClient(testRHOAMnamespace, boolSecret, addonSubscription),
+				namespace: testRHOAMnamespace,
+				parameter: "boop",
+			},
+			wantOk: false,
 		},
 	}
 	for _, tt := range tests {
@@ -373,14 +432,23 @@ func getValidInits(namespace string, secretType SecretType, subscriptionType str
 	if subscriptionType == noneSubscription {
 		return []runtime.Object{getSecretByType(namespace, secretType, subscriptionType)}
 	} else {
-		return append([]runtime.Object{
+		subs := []runtime.Object{
 			&v1alpha1.Subscription{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      subscriptionType,
 					Namespace: namespace,
 				},
 			},
-		}, getSecretByType(namespace, secretType, subscriptionType))
+		}
+		if subscriptionType == multipleSubscriptions {
+			subs = append(subs, &v1alpha1.Subscription{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "boop",
+					Namespace: namespace,
+				},
+			})
+		}
+		return append(subs, getSecretByType(namespace, secretType, subscriptionType))
 	}
 }
 
