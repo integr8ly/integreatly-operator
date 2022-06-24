@@ -836,8 +836,6 @@ func prepareEmailAddresses(list string) string {
 }
 
 func (r *Reconciler) updateGrafanaImage(operatorNamespace string, ctx context.Context, serverClient k8sclient.Client) error {
-	r.Log.Info("Updating grafana image to quay")
-
 	grafana := &grafanav1alpha1.Grafana{}
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "grafana", Namespace: operatorNamespace}, grafana)
@@ -849,7 +847,7 @@ func (r *Reconciler) updateGrafanaImage(operatorNamespace string, ctx context.Co
 
 	// Hotfix to unblock 1.10. TODO: improve this solution by the next release
 	if len(grafana.Spec.Containers) > 0 {
-		grafana.Spec.Containers[0].Image = "quay.io/openshift/origin-oauth-proxy:4.8"
+		grafana.Spec.Containers[0].Image = "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:9a5ee95f8e99a63a4ad0e8b01683ac03c75337bbbe3d504d199a97f9921eb0c1"
 	}
 
 	err = serverClient.Update(ctx, grafana)
