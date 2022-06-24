@@ -2,7 +2,7 @@ package marin3r
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -377,7 +377,7 @@ func (r *RateLimitServiceReconciler) uniqueKey(ratelimitConfig marin3rconfig.Rat
 		str = fmt.Sprintf("%s/%d/%s", ratelimitConfig.Unit, ratelimitConfig.RequestsPerUnit, currentRateLimit)
 	}
 
-	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(str)))
 }
 
 func GetRateLimitFromConfig(c *corev1.ConfigMap) (*limitadorLimit, error) {
