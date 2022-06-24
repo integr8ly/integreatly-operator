@@ -756,6 +756,36 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
+	hpaEnabledInstall := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "installation",
+			Namespace:  defaultNamespace,
+			Finalizers: []string{"finalizer.user-sso.integreatly.org"},
+			UID:        types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+		},
+		Status: integreatlyv1alpha1.RHMIStatus{
+			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+				"rhsso-stage": {
+					Name: "rhsso-stage",
+					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+							Name:  integreatlyv1alpha1.ProductRHSSO,
+							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
+						},
+					},
+				},
+			},
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type:               string(integreatlyv1alpha1.InstallationTypeManagedApi),
+			AutoscalingEnabled: true,
+		},
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultNamespace,
@@ -1093,6 +1123,47 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				}
 				return nil
 			},
+		},
+		{
+			Name:            "Test reconcile hpa returns failed phase and error",
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv, &corev1.ConfigMap{}, hpa),
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:      basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "codeready-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation:          hpaEnabledInstall,
+			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductConfig: &quota.ProductConfigMock{
+				ConfigureFunc: func(obj metav1.Object) error {
+					return nil
+				},
+			},
+			Uninstall:      false,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			ExpectError:    true,
 		},
 	}
 
