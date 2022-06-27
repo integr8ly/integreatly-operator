@@ -47,6 +47,7 @@ func TestAPIs(t *testing.T) {
 		UseExistingCluster:       &useCluster,
 		AttachControlPlaneOutput: true,
 	}
+	var err error
 	cfg, err = testEnv.Start()
 	if err != nil {
 		t.Fatalf("could not get start test environment %s", err)
