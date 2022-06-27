@@ -31,15 +31,7 @@ type CustomSmtp struct {
 
 func GetCustomAddonValues(serverClient k8sclient.Client, namespace string) (*CustomSmtp, error) {
 
-	addonName := addon.GetName(v1alpha1.InstallationTypeManagedApi)
-	secretName := fmt.Sprintf("addon-%s-parameters", addonName)
-
-	secret := &corev1.Secret{}
-	err := serverClient.Get(context.TODO(), k8sclient.ObjectKey{
-		Name:      secretName,
-		Namespace: namespace,
-	}, secret)
-
+	secret, err := addon.GetAddonParametersSecret(context.TODO(), serverClient, namespace)
 	if err != nil {
 		return nil, err
 	}
