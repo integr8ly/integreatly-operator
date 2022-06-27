@@ -3197,3 +3197,37 @@ func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, clien
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	ok, err := customDomain.HasValidCustomDomainCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
+	if ok {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
+}
+
+func (r *Reconciler) reconcileCustomDomainAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		r.log.Warning(fmt.Sprintf("failed to get observability configuration: %v", err))
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	observabilityNamespace := observabilityConfig.GetNamespace()
+
+	alerts := customDomain.Alerts(r.installation, r.log, observabilityNamespace)
+	_, err = alerts.ReconcileAlerts(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) useCustomDomain() bool {
+	domainStatus := r.installation.Status.CustomDomain
+	if domainStatus == nil {
+		return false
+	}
+	return domainStatus.Enabled
+}
