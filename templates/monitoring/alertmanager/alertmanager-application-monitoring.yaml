@@ -42,6 +42,9 @@ route:
     - match:
         alertname: RHOAMApiUsageRejectedRequestsMismatch
       receiver: BUandCustomer
+    - match:
+        alertname: CustomDomainCRErrorState
+      receiver: SRECustomerBU
 receivers:
   - name: blackhole
   - name: default

@@ -194,6 +194,12 @@ rules:
   - patch
   - update
 - apiGroups:
+  - managed.openshift.io
+  resources:
+  - customdomains
+  verbs:
+  - list
+- apiGroups:
   - marin3r.3scale.net
   resources:
   - envoyconfigs

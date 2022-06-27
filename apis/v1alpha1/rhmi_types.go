@@ -216,6 +216,11 @@ type CustomSmtpStatus struct {
 	Error   string `json:"error,omitempty"`
 }
 
+type CustomDomainStatus struct {
+	Enabled bool   `json:"enabled"`
+	Error   string `json:"error,omitempty"`
+}
+
 // RHMIStatus defines the observed state of RHMI
 type RHMIStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -232,6 +237,7 @@ type RHMIStatus struct {
 	Quota              string                        `json:"quota,omitempty"`
 	ToQuota            string                        `json:"toQuota,omitempty"`
 	CustomSmtp         *CustomSmtpStatus             `json:"customSmtp,omitempty"`
+	CustomDomain       *CustomDomainStatus           `json:"customDomain,omitempty"`
 }
 
 type RHMIStageStatus struct {

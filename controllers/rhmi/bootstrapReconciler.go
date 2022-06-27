@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	"math/rand"
 	"os"
 	"strings"
@@ -614,7 +615,27 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 	}
 
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
-	r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+
+	// TODO need to think abit more about what happens with a bad domain
+	ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
+	if err != nil && !ok {
+		log.Warning(err.Error())
+	}
+
+	if ok {
+		r.installation.Spec.RoutingSubdomain = domain
+
+		if r.installation.Status.CustomDomain == nil {
+			r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
+		}
+		r.installation.Status.CustomDomain.Enabled = true
+		if err != nil {
+			r.installation.Status.CustomDomain.Error = err.Error()
+			r.installation.Status.LastError = err.Error()
+		}
+	} else {
+		r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
