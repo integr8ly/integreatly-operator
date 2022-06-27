@@ -44,15 +44,15 @@ func GetAddonParametersSecret(ctx context.Context, client k8sclient.Client, name
 	opts := &k8sclient.ListOptions{
 		Namespace: namespace,
 	}
-	subsciptions := &v1alpha1.SubscriptionList{}
-	if err := client.List(ctx, subsciptions, opts); err != nil {
+	subscriptions := &v1alpha1.SubscriptionList{}
+	if err := client.List(ctx, subscriptions, opts); err != nil {
 		return nil, err
 	}
-	if len(subsciptions.Items) > 1 {
-		return nil, fmt.Errorf("recieved %d subscriptions in %s namespace. Expected one", len(subsciptions.Items), namespace)
+	if len(subscriptions.Items) > 1 {
+		return nil, fmt.Errorf("received %d subscriptions in %s namespace. Expected one", len(subscriptions.Items), namespace)
 	}
-	if len(subsciptions.Items) == 1 {
-		parametersSecretName = subsciptions.Items[0].Name + "-parameters"
+	if len(subscriptions.Items) == 1 {
+		parametersSecretName = subscriptions.Items[0].Name + "-parameters"
 
 		// catch olm and sandbox installations
 		hasAddonPrefix, _ := regexp.MatchString("^addon-*", parametersSecretName)
