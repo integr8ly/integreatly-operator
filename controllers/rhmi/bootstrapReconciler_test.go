@@ -743,9 +743,6 @@ func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 			name: "test addon-managed-api-service-parameters secret found",
 			fields: fields{
 				FakeConfigManager: &config.ConfigReadWriterMock{
-					GetAddonManagedApiServiceParametersSecretNameFunc: func() string {
-						return "addon-managed-api-service-parameters"
-					},
 					GetOperatorNamespaceFunc: func() string {
 						return "redhat-rhoam-operator"
 					},
@@ -777,41 +774,6 @@ func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
-		},
-		{
-			name: "test addon-managed-api-service-parameters secret not found",
-			fields: fields{
-				FakeConfigManager: &config.ConfigReadWriterMock{
-					GetAddonManagedApiServiceParametersSecretNameFunc: func() string {
-						return "addon-managed-api-service-parameters"
-					},
-					GetOperatorNamespaceFunc: func() string {
-						return "redhat-rhoam-operator"
-					},
-				},
-				Config:  &config.ThreeScale{},
-				FakeMpm: &marketplace.MarketplaceInterfaceMock{},
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Namespace: rhoamOperatorNs,
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						NamespacePrefix: "redhat-rhoam-",
-					},
-				},
-				Reconciler: &resources.Reconciler{},
-				recorder:   record.NewFakeRecorder(50),
-				log:        l.Logger{},
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{ObjectMeta: v1.ObjectMeta{
-					Name: "",
-				},
-				}, getNamespaces()),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

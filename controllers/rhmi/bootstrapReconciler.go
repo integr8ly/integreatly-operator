@@ -596,13 +596,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcileAddonManagedApiServiceParameters(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	AddonManagedApiServiceParametersSecrets := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.ConfigManager.GetAddonManagedApiServiceParametersSecretName(),
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: AddonManagedApiServiceParametersSecrets.Name, Namespace: AddonManagedApiServiceParametersSecrets.Namespace}, AddonManagedApiServiceParametersSecrets)
+	_, err := addon.GetAddonParametersSecret(ctx, serverClient, r.ConfigManager.GetOperatorNamespace())
 	if k8serr.IsNotFound(err) && err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}

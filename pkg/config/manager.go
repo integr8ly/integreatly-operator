@@ -37,7 +37,6 @@ func NewManager(ctx context.Context, client k8sclient.Client, namespace string, 
 type ConfigReadWriter interface {
 	readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
 	GetOauthClientsSecretName() string
-	GetAddonManagedApiServiceParametersSecretName() string
 	GetGHOauthClientsSecretName() string
 	GetBackupsSecretName() string
 	WriteConfig(config ConfigReadable) error
@@ -157,10 +156,6 @@ func (m *Manager) GetOperatorNamespace() string {
 
 func (m *Manager) GetOauthClientsSecretName() string {
 	return "oauth-client-secrets"
-}
-
-func (m *Manager) GetAddonManagedApiServiceParametersSecretName() string {
-	return "addon-managed-api-service-parameters"
 }
 
 func (m *Manager) GetBackupsSecretName() string {

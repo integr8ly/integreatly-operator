@@ -154,55 +154,6 @@ func TestReadConfigForProduct(t *testing.T) {
 
 }
 
-func TestManager_GetAddonManagedApiServiceParametersSecretName(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-	type fields struct {
-		Client       k8sclient.Client
-		Namespace    string
-		cfgmap       *corev1.ConfigMap
-		context      context.Context
-		installation *integreatlyv1alpha1.RHMI
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name: "test completed ",
-			fields: fields{
-				Client: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "addon-managed-api-service-parameters",
-					},
-				},
-					getNameSpaces(),
-				),
-				Namespace:    mockNamespaceName,
-				cfgmap:       &corev1.ConfigMap{},
-				context:      context.TODO(),
-				installation: nil,
-			},
-			want: "addon-managed-api-service-parameters",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Manager{
-				Client:       tt.fields.Client,
-				Namespace:    tt.fields.Namespace,
-				cfgmap:       tt.fields.cfgmap,
-				context:      tt.fields.context,
-				installation: tt.fields.installation,
-			}
-			if got := m.GetAddonManagedApiServiceParametersSecretName(); got != tt.want {
-				t.Errorf("GetAddonManagedApiServiceParametersSecretName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func getNameSpaces() *corev1.NamespaceList {
 	return &corev1.NamespaceList{
 		TypeMeta: metav1.TypeMeta{},

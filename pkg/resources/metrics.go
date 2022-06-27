@@ -190,22 +190,23 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 // Hive creates a secret automatically this is a check for when that service fails or the secret has been removed
 func CreateAddonManagedApiServiceParametersExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
 	installationName := InstallationNames[cr.Spec.Type]
-	addonName := addon.GetName(v1alpha1.InstallationType(cr.Spec.Type))
-	secretName := fmt.Sprintf("addon-%s-parameters", addonName)
-
+	addonParametersSecret, err := addon.GetAddonParametersSecret(ctx, client, cr.Namespace)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
+	}
 	alertName := "AddonManagedApiServiceParametersExists"
 	ruleName := "addon-managed-api-service-parameters-secret-exists-rule"
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='%s'} == 1)", cr.Namespace, secretName),
+		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='%s'} == 1)", cr.Namespace, addonParametersSecret.Name),
 	)
-	alertDescription := fmt.Sprintf("The %s secret has been removed from the %s namespace, this secret should be generated and managed by Hive", secretName, cr.Namespace)
+	alertDescription := fmt.Sprintf("The %s secret has been removed from the %s namespace, this secret should be generated and managed by Hive", addonParametersSecret.Name, cr.Namespace)
 	labels := map[string]string{
 		"severity": "warning",
 		"product":  installationName,
 	}
 
 	ruleNs := cr.Spec.NamespacePrefix + "observability"
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlAddonManagedApiServiceParametersExists, alertFor5Mins, alertExp, labels)
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlAddonManagedApiServiceParametersExists, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
 	}

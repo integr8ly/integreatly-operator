@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 var (
 	observabilityNs         = "redhat-rhoam-observability"
 	observabilityOperatorNs = "redhat-rhoam-observability-operator"
+	rhoamNS                 = "redhat-rhoam-operator"
 )
 
 func TestInstallationState(t *testing.T) {
@@ -77,6 +79,7 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 	scheme := runtime.NewScheme()
 	monitoringv1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
+	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	type args struct {
 		ctx    context.Context
@@ -97,6 +100,20 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "AddonManagedApiServiceParameters",
 					},
+				}, &corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "addon-test-parameters",
+						Namespace: defaultOperatorNamespace,
+					},
+				}, &olmv1alpha1.SubscriptionList{
+					Items: []olmv1alpha1.Subscription{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "test",
+								Namespace: defaultOperatorNamespace,
+							},
+						},
+					},
 				}, getNamespaces()),
 				cr: getRHMIcr(),
 			},
@@ -106,9 +123,23 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 		{
 			name: "test create AddonManagedApiServiceParametersExists alert failure",
 			args: args{
-				ctx:    context.TODO(),
-				client: fake.NewFakeClient(),
-				cr:     getRHMIcr(),
+				ctx: context.TODO(),
+				client: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "addon-testfailed-parameters",
+						Namespace: defaultOperatorNamespace,
+					},
+				}, &olmv1alpha1.SubscriptionList{
+					Items: []olmv1alpha1.Subscription{
+						{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "test",
+								Namespace: defaultOperatorNamespace,
+							},
+						},
+					},
+				}, getNamespaces()),
+				cr: getRHMIcr(),
 			},
 			want:    v1alpha1.PhaseFailed,
 			wantErr: true,
@@ -253,6 +284,14 @@ func getNamespaces() *corev1.NamespaceList {
 			{
 				ObjectMeta: v1.ObjectMeta{
 					Name: observabilityOperatorNs,
+					Labels: map[string]string{
+						"integreatly": "true",
+					},
+				},
+			},
+			{
+				ObjectMeta: v1.ObjectMeta{
+					Name: rhoamNS,
 					Labels: map[string]string{
 						"integreatly": "true",
 					},
