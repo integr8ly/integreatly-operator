@@ -13,10 +13,6 @@ import (
 	"testing"
 )
 
-var (
-	namespace = "test"
-)
-
 func TestGetCustomAddonValues(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
@@ -27,6 +23,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 		namespace    string
 	}
 
+	namespace := "test"
 	tests := []struct {
 		name    string
 		args    args
