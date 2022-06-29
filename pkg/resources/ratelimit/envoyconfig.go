@@ -60,7 +60,8 @@ func DeleteEnvoyConfigsInNamespace(ctx context.Context, client k8sclient.Client,
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	for _, envoyConfig := range envoyConfigs.Items {
+	for i := range envoyConfigs.Items {
+		envoyConfig := envoyConfigs.Items[i]
 		if err := k8sclient.IgnoreNotFound(
 			client.Delete(ctx, &envoyConfig),
 		); err != nil {

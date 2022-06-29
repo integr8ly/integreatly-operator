@@ -412,7 +412,9 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	installationQuota := &quota.Quota{}
-	for _, stage := range installType.GetInstallStages() {
+	installStages := installType.GetInstallStages()
+	for i := range installStages {
+		stage := installStages[i]
 		var err error
 		var stagePhase rhmiv1alpha1.StatusPhase
 		var stageLog = l.NewLoggerWithContext(l.Fields{l.StageLogContext: stage.Name})
@@ -751,8 +753,8 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		return ctrl.Result{}, err
 	}
 
-	for _, alert := range alerts.Items {
-		if err := r.Client.Delete(context.TODO(), &alert); err != nil {
+	for i := range alerts.Items {
+		if err := r.Client.Delete(context.TODO(), &alerts.Items[i]); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -1150,10 +1152,10 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 	productVersionMismatchFound = false
 
 	var mErr error
-	productsAux := make(map[rhmiv1alpha1.ProductName]rhmiv1alpha1.RHMIProductStatus)
 	installation.Status.Stage = stage.Name
 
-	for productName, productStatus := range stage.Products {
+	for productName := range stage.Products {
+		productStatus := stage.Products[productName]
 		productLog := l.NewLoggerWithContext(l.Fields{l.ProductLogContext: productStatus.Name})
 
 		reconciler, err := products.NewReconciler(productStatus.Name, r.restConfig, configManager, installation, r.mgr, productLog, r.productsInstallationLoader)
@@ -1187,24 +1189,24 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		}
 
 		// Verify that watches for this productStatus CRDs have been created
-		config, err := configManager.ReadProduct(productStatus.Name)
+		productConfig, err := configManager.ReadProduct(productStatus.Name)
 		if err != nil {
-			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to read productStatus config for %s: %v", string(productStatus.Name), err)
+			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
 		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
-			for _, crd := range config.GetWatchableCRDs() {
-				namespace := config.GetNamespace()
+			for _, crd := range productConfig.GetWatchableCRDs() {
+				namespace := productConfig.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()
 				if r.customInformers[gvk] == nil {
 					r.customInformers[gvk] = make(map[string]*cache.Informer)
 				}
-				if r.customInformers[gvk][config.GetNamespace()] == nil {
+				if r.customInformers[gvk][productConfig.GetNamespace()] == nil {
 					err = r.addCustomInformer(crd, namespace)
 					if err != nil {
-						return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Failed to create a %s CRD watch for %s: %v", gvk, string(productStatus.Name), err)
+						return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to create a %s CRD watch for %s: %v", gvk, string(productStatus.Name), err)
 					}
-				} else if !(*r.customInformers[gvk][config.GetNamespace()]).HasSynced() {
+				} else if !(*r.customInformers[gvk][productConfig.GetNamespace()]).HasSynced() {
 					return rhmiv1alpha1.PhaseFailed, fmt.Errorf("A %s CRD Informer for %s has not synced", gvk, string(productStatus.Name))
 				}
 			}
@@ -1214,8 +1216,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 		if productStatus.Phase != rhmiv1alpha1.PhaseCompleted {
 			incompleteStage = true
 		}
-		productsAux[productStatus.Name] = productStatus
-		*stage = Stage{Name: stage.Name, Products: productsAux}
+		stage.Products[productName] = productStatus
 	}
 
 	//some products in this stage have not installed successfully yet

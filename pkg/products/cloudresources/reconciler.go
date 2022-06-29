@@ -257,7 +257,8 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres snapshots: %w", err)
 	}
 
-	for _, pgSnap := range pgSnaps.Items {
+	for i := range pgSnaps.Items {
+		pgSnap := pgSnaps.Items[i]
 		r.log.Infof("Deleting postgres snapshot", l.Fields{"name": pgSnap.Name})
 		if err := client.Delete(ctx, &pgSnap); err != nil {
 			r.log.Infof("Failed to delete postgres snapshot", l.Fields{"name": pgSnap.Name})
@@ -275,7 +276,8 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list redis snapshots: %w", err)
 	}
 
-	for _, redisSnap := range redisSnaps.Items {
+	for i := range redisSnaps.Items {
+		redisSnap := redisSnaps.Items[i]
 		r.log.Infof("Deleting redis snapshot", l.Fields{"name": redisSnap.Name})
 		if err := client.Delete(ctx, &redisSnap); err != nil {
 			r.log.Infof("Failed to delete redis snapshot", l.Fields{"name": redisSnap.Name})
@@ -355,7 +357,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres instances: %w", err)
 	}
-	for _, pgInst := range postgresInstances.Items {
+	for i := range postgresInstances.Items {
+		pgInst := postgresInstances.Items[i]
 		if err := client.Delete(ctx, &pgInst); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -370,7 +373,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list redis instances: %w", err)
 	}
-	for _, redisInst := range redisInstances.Items {
+	for i := range redisInstances.Items {
+		redisInst := redisInstances.Items[i]
 		if err := client.Delete(ctx, &redisInst); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -385,7 +389,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list blobStorage instances: %w", err)
 	}
-	for _, bsInst := range blobStorages.Items {
+	for i := range blobStorages.Items {
+		bsInst := blobStorages.Items[i]
 		if err := client.Delete(ctx, &bsInst); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}

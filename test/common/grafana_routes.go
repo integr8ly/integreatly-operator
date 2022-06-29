@@ -139,7 +139,8 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 
 		// Iterate through the SA secrets to find the token
 		var saSecret *corev1.ObjectReference = nil
-		for _, secret := range serviceAccount.Secrets {
+		for i := range serviceAccount.Secrets {
+			secret := serviceAccount.Secrets[i]
 			if strings.HasPrefix(secret.Name, fmt.Sprintf("%s-token", serviceAccountName)) {
 				saSecret = &secret
 				break

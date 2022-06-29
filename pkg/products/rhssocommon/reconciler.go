@@ -123,7 +123,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	for _, user := range users.Items {
+	for i := range users.Items {
+		user := users.Items[i]
 		err = serverClient.Delete(ctx, &user)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -135,7 +136,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	for _, client := range clients.Items {
+	for i := range clients.Items {
+		client := clients.Items[i]
 		err = serverClient.Delete(ctx, &client)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -169,7 +171,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, nil
 	}
-	for _, realm := range realms.Items {
+	for i := range realms.Items {
+		realm := realms.Items[i]
 		err = serverClient.Delete(ctx, &realm)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -182,7 +185,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	// Delete all realm finalizers
-	for _, realm := range realms.Items {
+	for i := range realms.Items {
+		realm := realms.Items[i]
 		realm.SetFinalizers([]string{})
 		err = serverClient.Update(ctx, &realm)
 		if err != nil && !k8serr.IsNotFound(err) {

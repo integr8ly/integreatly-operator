@@ -885,7 +885,8 @@ func deleteTenantUserCR(t TestingTB, ctx *TestingContext) error {
 		return fmt.Errorf("failed at finding users list, error: %v", err)
 	}
 
-	for _, user := range usersList.Items {
+	for i := range usersList.Items {
+		user := usersList.Items[i]
 		if user.Name == testUserForDeletion {
 			err := ctx.Client.Delete(context.TODO(), &user)
 			if err != nil {

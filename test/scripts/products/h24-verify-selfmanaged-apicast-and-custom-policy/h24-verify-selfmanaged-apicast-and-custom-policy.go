@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
+	"golang.org/x/term"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
@@ -32,7 +33,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"golang.org/x/term"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -306,7 +306,8 @@ func deleteManagedApicastRoutes(ctx context.Context, client k8sclient.Client) er
 		log.Error("Error obtaining routes list in "+threeScaleNamespace+" namespace  ", err)
 		return err
 	}
-	for _, route := range routes.Items {
+	for i := range routes.Items {
+		route := routes.Items[i]
 		if strings.Contains(route.Spec.Host, "api-3scale-apicast-") {
 			err := client.Delete(ctx, &route)
 			if err != nil {
