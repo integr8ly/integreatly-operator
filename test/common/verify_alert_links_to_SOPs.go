@@ -11,10 +11,12 @@ import (
 	"sync"
 )
 
-var githubToken = os.Getenv("TOKEN_GITHUB")
-var failedSOPurls = make(chan string)
-var wg sync.WaitGroup
-var countFailedLinks int
+var(
+	githubToken = os.Getenv("TOKEN_GITHUB")
+	failedSOPurls = make(chan string)
+	wg sync.WaitGroup
+	invalidLinksFools = false
+)
 
 func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 
@@ -122,8 +124,7 @@ func unique(s []string) []string {
 }
 
 // validate concurrently that links are accessible
-func validateSOPLinks(t TestingTB, sopUrls []string) bool {
-	status := true
+func validateSOPLinks(t TestingTB, sopUrls []string) {
 	for _, url := range sopUrls {
 		wg.Add(1)
 		go getSOPAlertLinkStatus(t, url, failedSOPurls)
@@ -140,12 +141,9 @@ func validateSOPLinks(t TestingTB, sopUrls []string) bool {
 
 	}
 
-	if countFailedLinks != 0 {
-		status = false
+	if invalidLinksFools {
+		t.Fatal("All is lost - links were invalid [intense crying sounds]")
 	}
-
-	return status
-
 }
 
 func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
@@ -173,7 +171,7 @@ func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 	}(resp.Body)
 	if resp.StatusCode != 200 {
 		failedSOPUrls <- url
-		countFailedLinks++
+		invalidLinksFools = true
 	}
 
 }
