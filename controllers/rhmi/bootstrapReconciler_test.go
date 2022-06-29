@@ -11,6 +11,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -718,6 +719,7 @@ func Test_tenantExists(t *testing.T) {
 func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	type fields struct {
 		FakeConfigManager config.ConfigReadWriter

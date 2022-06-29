@@ -132,8 +132,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileAddonManagedApiServiceParameters(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile addon-managed-api-service-parameters", err)
-		return phase, errors.Wrap(err, "failed to reconcile addon-managed-api-service-parameters secrets")
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile addon parameters", err)
+		return phase, errors.Wrap(err, "failed to reconcile addon parameters secret")
 	}
 
 	phase, err = r.reconcilerRHMIConfigCR(ctx, serverClient)
@@ -597,7 +597,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 
 func (r *Reconciler) reconcileAddonManagedApiServiceParameters(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	_, err := addon.GetAddonParametersSecret(ctx, serverClient, r.ConfigManager.GetOperatorNamespace())
-	if k8serr.IsNotFound(err) && err != nil {
+	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil

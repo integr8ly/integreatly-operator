@@ -153,18 +153,3 @@ func TestReadConfigForProduct(t *testing.T) {
 	}
 
 }
-
-func getNameSpaces() *corev1.NamespaceList {
-	return &corev1.NamespaceList{
-		TypeMeta: metav1.TypeMeta{},
-		ListMeta: metav1.ListMeta{},
-		Items: []corev1.Namespace{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: mockNamespaceName,
-				},
-			},
-		},
-	}
-
-}
