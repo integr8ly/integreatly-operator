@@ -62,7 +62,8 @@ function toIssue(
     fixBuildId: string,
     team: string,
     sprint: number,
-    priority: string
+    priority: string,
+    security: string
 ): Issue {
     let content = prependOriginLink(test.content, test.file, test.url);
 
@@ -90,6 +91,7 @@ function toIssue(
             priority: { name: priority },
             project: { key: projectKey },
             summary: title,
+            security: { name: security },
         },
     };
 }
@@ -177,6 +179,8 @@ const jira: CommandModule<{}, Args> = {
 
         const sprintId = extractSprintId(epic.fields.customfield_12310940);
 
+        const security = "Red Hat Employee";
+
         let previousRuns: TestRun[] = [];
 
         if (args.previousEpic) {
@@ -219,7 +223,8 @@ const jira: CommandModule<{}, Args> = {
                 fixBuild.id,
                 team,
                 sprintId,
-                toPriority(previousRun)
+                toPriority(previousRun),
+                security
             );
 
             if (args.dryRun) {

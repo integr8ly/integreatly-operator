@@ -36,6 +36,7 @@ interface Issue {
         assignee: null | {};
         resolution?: Resolution;
         components: null | [{}];
+        security: { name?: string };
     };
     [name: string]: any;
 }
