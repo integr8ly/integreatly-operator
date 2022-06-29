@@ -839,7 +839,8 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 		}
 	}
 
-	for _, kcUser := range keycloakUsers {
+	for i := range keycloakUsers {
+		kcUser := keycloakUsers[i]
 		osUser := getOpenShiftUser(kcUser, openshiftUsers)
 		if osUser != nil && !kcUserInDedicatedAdmins(kcUser, dedicatedAdmins) && hasAdminPrivileges(&kcUser) {
 			// User in OS and keycloak master realm, represented by a Keycloak CR, but not dedicated-admins group

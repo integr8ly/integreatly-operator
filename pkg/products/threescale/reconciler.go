@@ -2375,7 +2375,8 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 	}
 
 	var foundRoute *routev1.Route
-	for _, rt := range routes.Items {
+	for i := range routes.Items {
+		rt := routes.Items[i]
 		if filterFn(rt) {
 			foundRoute = &rt
 			break
@@ -2528,9 +2529,10 @@ func getGeneratedKeycloakUser(ctx context.Context, serverClient k8sclient.Client
 		return nil, err
 	}
 
-	for _, user := range users.Items {
-		if tsUserIDInKc(tsUser, &user) {
-			return &user, nil
+	for i := range users.Items {
+		kcUser := users.Items[i]
+		if tsUserIDInKc(tsUser, &kcUser) {
+			return &kcUser, nil
 		}
 	}
 

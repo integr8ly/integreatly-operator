@@ -125,7 +125,7 @@ var (
 				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
-				return removObservabilityFinalizers(ctx, ObservabilityProductNamespace)
+				return removeObservabilityFinalizers(ctx, ObservabilityProductNamespace)
 			},
 		},
 	}
@@ -155,7 +155,7 @@ var (
 				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
-				return removObservabilityFinalizers(ctx, ObservabilityProductNamespace)
+				return removeObservabilityFinalizers(ctx, ObservabilityProductNamespace)
 			},
 		},
 	}
@@ -267,7 +267,8 @@ func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error
 			return false, err
 		}
 
-		for _, client := range clients.Items {
+		for i := range clients.Items {
+			client := clients.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &client, func() error {
 				client.Finalizers = []string{}
 				return nil
@@ -297,7 +298,8 @@ func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error 
 			return false, err
 		}
 
-		for _, realm := range realms.Items {
+		for i := range realms.Items {
+			realm := realms.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &realm, func() error {
 				realm.Finalizers = []string{}
 				return nil
@@ -327,7 +329,8 @@ func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
 			return false, err
 		}
 
-		for _, user := range users.Items {
+		for i := range users.Items {
+			user := users.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &user, func() error {
 				user.Finalizers = []string{}
 				return nil
@@ -373,7 +376,8 @@ func removeBlackBoxTargetFinalizers(ctx *TestingContext, nameSpace string) error
 			return false, err
 		}
 
-		for _, blackBox := range blackBoxes.Items {
+		for i := range blackBoxes.Items {
+			blackBox := blackBoxes.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &blackBox, func() error {
 				blackBox.Finalizers = []string{}
 				return nil
@@ -403,7 +407,8 @@ func removeApplicationMonitoringFinalizers(ctx *TestingContext, nameSpace string
 			return false, err
 		}
 
-		for _, applicationMonitoring := range applicationMonitorings.Items {
+		for i := range applicationMonitorings.Items {
+			applicationMonitoring := applicationMonitorings.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &applicationMonitoring, func() error {
 				applicationMonitoring.Finalizers = []string{}
 				return nil
@@ -433,7 +438,8 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 			return false, err
 		}
 
-		for _, envoyConfigRevision := range envoyConfigRevisions.Items {
+		for i := range envoyConfigRevisions.Items {
+			envoyConfigRevision := envoyConfigRevisions.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &envoyConfigRevision, func() error {
 				envoyConfigRevision.Finalizers = []string{}
 				return nil
@@ -460,7 +466,7 @@ func getStagesForInstallType(installType string) []StageDeletion {
 	}
 }
 
-func removObservabilityFinalizers(ctx *TestingContext, namespace string) error {
+func removeObservabilityFinalizers(ctx *TestingContext, namespace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
 		observabilityList := &observabilityoperator.ObservabilityList{}
 
@@ -472,7 +478,8 @@ func removObservabilityFinalizers(ctx *TestingContext, namespace string) error {
 			return false, err
 		}
 
-		for _, observability := range observabilityList.Items {
+		for i := range observabilityList.Items {
+			observability := observabilityList.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &observability, func() error {
 				observability.Finalizers = []string{}
 				return nil

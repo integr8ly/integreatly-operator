@@ -547,7 +547,7 @@ commits/check:
 
 .PHONY: gosec/exclude
 gosec/exclude:
-	gosec -exclude=G404,G601 ./...
+	gosec -exclude=G404 ./...
 
 ##@ Build Dependencies
 

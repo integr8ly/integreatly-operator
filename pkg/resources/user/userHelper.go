@@ -266,7 +266,8 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, ins
 		return nil, fmt.Errorf("Error getting users list")
 	}
 
-	for _, user := range usersList.Items {
+	for i := range usersList.Items {
+		user := usersList.Items[i]
 		if isUserHasTenantAnnotation(&user, installation) {
 			users = append(users, MultiTenantUser{
 				Username:   user.Name,
