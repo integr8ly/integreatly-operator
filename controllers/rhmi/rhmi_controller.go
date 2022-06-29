@@ -1556,6 +1556,8 @@ func getRebalancePods() bool {
 func getCrName(installType string) string {
 	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
 		return ManagedApiInstallationName
+	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+		return ManagedApiInstallationName
 	} else {
 		return DefaultInstallationName
 	}
