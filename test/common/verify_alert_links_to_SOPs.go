@@ -11,10 +11,12 @@ import (
 	"sync"
 )
 
-var githubToken = os.Getenv("TOKEN_GITHUB")
-var failedSOPurls = make(chan string)
-var wg sync.WaitGroup
-var countFailedLinks int
+var (
+	githubToken         = os.Getenv("GITHUB_TOKEN")
+	failedSOPurls       = make(chan string)
+	wg                  sync.WaitGroup
+	failedSOPUrlPresent = false
+)
 
 func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 
@@ -27,30 +29,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 	// test connection to Github API, with single url
 
 	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
-	apiUrl := modifyLink(testUrl)
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", apiUrl, nil)
-	if err != nil {
-		log.Fatal("%s", err)
-	}
-
-	req.Header.Add("Accept", `application/json`)
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", githubToken))
-	testResp, err := client.Do(req)
-	if err != nil {
-		t.Log(err)
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
-		}
-	}(testResp.Body)
-
-	if testResp.StatusCode != 200 {
-		t.Fatal("Response status: ", testUrl, testResp.Status, "Given token does not allow access to SOP URLs")
-	}
+	validateGithubToken(t, testUrl)
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
 		"prometheus-prometheus-0",
@@ -86,17 +65,17 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 				}
 
 			default:
-				fmt.Printf("Unknown rule type %s", v)
+				t.Log("Unknown rule type %s", v)
 
 			}
 		}
 	}
 	sopUrls = unique(sopUrls)
-	validateSOPLinks(t, sopUrls)
+	validateSOPurls(t, sopUrls)
 }
 
 // modify raw link to Github API verison
-func modifyLink(rawLink string) (apiSOPUrl string) {
+func convertToGithubApiUrl(sopUrl string) (apiSOPUrl string) {
 	r := strings.NewReplacer(
 		"github", "api.github",
 		"com/", "com/repos/",
@@ -104,7 +83,7 @@ func modifyLink(rawLink string) (apiSOPUrl string) {
 		"tree/master", "contents",
 	)
 
-	apiSOPUrl = r.Replace(rawLink)
+	apiSOPUrl = r.Replace(sopUrl)
 	return
 }
 
@@ -121,9 +100,35 @@ func unique(s []string) []string {
 	return result
 }
 
+func validateGithubToken(t TestingTB, testUrl string) {
+	apiUrl := convertToGithubApiUrl(testUrl)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", apiUrl, nil)
+	if err != nil {
+		log.Fatal("%s", err)
+	}
+
+	req.Header.Add("Accept", `application/json`)
+	req.Header.Add("Authorization", fmt.Sprintf("token %s", githubToken))
+	testResp, err := client.Do(req)
+	if err != nil {
+		t.Log(err)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Log("failed to close body")
+		}
+	}(testResp.Body)
+
+	if testResp.StatusCode != 200 {
+		t.Fatal("Response status: ", testUrl, testResp.Status, "Given token does not allow access to SOP URLs")
+	}
+}
+
 // validate concurrently that links are accessible
-func validateSOPLinks(t TestingTB, sopUrls []string) bool {
-	status := true
+func validateSOPurls(t TestingTB, sopUrls []string) {
 	for _, url := range sopUrls {
 		wg.Add(1)
 		go getSOPAlertLinkStatus(t, url, failedSOPurls)
@@ -140,18 +145,16 @@ func validateSOPLinks(t TestingTB, sopUrls []string) bool {
 
 	}
 
-	if countFailedLinks != 0 {
-		status = false
+	if failedSOPUrlPresent {
+		t.Fatal("test failed due to the invalid url")
 	}
-
-	return status
 
 }
 
 func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 
 	defer wg.Done()
-	apiUrl := modifyLink(url)
+	apiUrl := convertToGithubApiUrl(url)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -173,7 +176,7 @@ func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 	}(resp.Body)
 	if resp.StatusCode != 200 {
 		failedSOPUrls <- url
-		countFailedLinks++
+		failedSOPUrlPresent = true
 	}
 
 }
