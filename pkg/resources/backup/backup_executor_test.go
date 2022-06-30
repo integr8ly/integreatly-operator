@@ -31,7 +31,7 @@ func TestConcurrentBackup(t *testing.T) {
 	timeFinished := time.Now()
 
 	if err != nil {
-		t.Errorf("Unexpected error performing concurrent backups: %w", err)
+		t.Errorf("Unexpected error performing concurrent backups: %v", err)
 	}
 
 	elapsed := timeFinished.Sub(timeStarted)

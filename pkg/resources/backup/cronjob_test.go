@@ -76,7 +76,7 @@ func TestCronJob(t *testing.T) {
 	// Call `PerformBackup` and assert that no error is returned
 	err := executor.PerformBackup(client, time.Second*10)
 	if err != nil {
-		t.Errorf("Unexpected error running backup from CronJob: %w", err)
+		t.Errorf("Unexpected error running backup from CronJob: %v", err)
 	}
 }
 
@@ -182,7 +182,7 @@ func buildSchemeForCronJob() (*runtime.Scheme, error) {
 func createMockClientForCronJob(t *testing.T, initObjects ...runtime.Object) k8sclient.Client {
 	scheme, err := buildSchemeForCronJob()
 	if err != nil {
-		t.Errorf("Error creating testing scheme: %w", err)
+		t.Errorf("Error creating testing scheme: %v", err)
 	}
 
 	return fake.NewFakeClientWithScheme(scheme, initObjects...)
