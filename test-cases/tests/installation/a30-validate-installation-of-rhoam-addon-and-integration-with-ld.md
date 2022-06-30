@@ -61,18 +61,56 @@ Run following command:
 ```
 # Copy your cluster's name from OCM UI ("test-ldap-idp" by default) and assign it to the env var CLUSTER_NAME
 CLUSTER_NAME=<your-cluster-name>
-# Get cluster's CID
-CID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
-ocm get subs --parameter search="cluster_id = '${CID}'" | jq -r .items[0].metrics[0].health_state
+# Get cluster's ID
+CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
+ocm get subs --parameter search="cluster_id = '${CLUSTER_ID}'" | jq -r .items[0].metrics[0].health_state
 ```
 
 The command should eventually return `healthy`. After cluster is marked as `ready` in OCM UI it should not take more than 30 minutes for this to happen.
 
 **Verify RHOAM installation via addon**
 
-1. Once the cluster is created, you can install the RHOAM addon
-2. Select your cluster -> `Add-ons` and click on `Install`
-3. Fill in the following parameters and click on `Install`
+1. Login to OCM with the token provided.
+
+```bash
+ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
+```
+
+2. Once the cluster is created, you can install the RHOAM addon.
+
+```bash
+NOTIFICATION_EMAIL="<your-username>+ID1@redhat.com"
+```
+
+```bash
+ocm post https://api.stage.openshift.com/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons --body=<<EOF
+{
+   "addon":{
+      "id":"managed-api-service"
+   },
+   "parameters":{
+      "items":[
+         {
+            "id":"addon-resource-required",
+            "value":"true"
+         },
+         {
+            "id":"cidr-range",
+            "value":"10.1.0.0/26"
+         },
+         {
+            "id":"addon-managed-api-service",
+            "value":"10"
+         },
+         {
+            "id":"notification-email",
+            "value":"$NOTIFICATION_EMAIL"
+         }
+      ]
+   }
+}
+EOF
+```
 
 ```
 CIDR range: "10.1.0.0/26" (note this down to use it later for another verification step)
@@ -80,26 +118,26 @@ Notification email: "<your-username>+ID1@redhat.com <your-username>+ID2@redhat.c
 Quota: 1 Million requests per day
 ```
 
-4. You should now login to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
+3. You should now log in to your cluster via `oc` and patch RHMI CR to select the cloud-storage-type of installation:
 
 ```bash
-# See above if you do not have CID populated
+# See above if you do not have CLUSTER_ID populated
 # Get your cluster API URL and kubeadmin password
-API_URL=$(ocm get cluster $CID | jq -r .api.url)
-KUBEADMIN_PASSWORD=$(ocm get cluster $CID/credentials | jq -r .admin.password)
+API_URL=$(ocm get cluster $CLUSTER_ID | jq -r .api.url)
+KUBEADMIN_PASSWORD=$(ocm get cluster $CLUSTER_ID/credentials | jq -r .admin.password)
 # Log in via oc
 oc login $API_URL -u kubeadmin -p $KUBEADMIN_PASSWORD --insecure-skip-tls-verify=true
 # Patch RHMI CR
 oc patch rhmi rhoam -n redhat-rhoam-operator --type=merge -p '{"spec":{"useClusterStorage": "false" }}'
 ```
 
-5. Now the installation of RHOAM should be in progress. You can watch the status of the installation with this command:
+4. Now the installation of RHOAM should be in progress. You can watch the status of the installation with this command:
 
 ```
 watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage"
 ```
 
-6. Once the status is "completed", the installation is finished and you can go to another step
+5. Once the status is "completed", the installation is finished and you can go to another step
 
 > Due to a known issue the OCM UI can display `Installed` despite installation still being in progress
 
@@ -119,7 +157,7 @@ AWS_REGION=$(oc get infrastructure cluster -o jsonpath='{.status.platformStatus.
 aws ec2 describe-vpcs --filters "Name=tag-key,Values=integreatly.org/clusterID" --region $AWS_REGION | jq -r '.Vpcs[0].CidrBlockAssociationSet[0].CidrBlock'
 ```
 
-> Verify that the CIDR block you get on the output matches with the one that was specified in the installation form (via OCM UI) ^
+> Verify that the CIDR block you get on the output matches with the one that was specified in the installation ^
 
 **Note**
 
@@ -127,9 +165,24 @@ The scenario with **default CIDR range**, when user doesn't specify any CIDR, so
 
 **Verify Notification e-mail can be changed to empty string**
 
-1. In OCM UI, select your cluster -> Add-ons -> RHOAM and click the button for configuring parameters
-2. Delete the Notification email value in the form and save it
-3. Run this command
+1. Set notification email to an empty string.
+
+```bash
+ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+{
+   "parameters":{
+      "items":[
+         {
+            "id":"notification-email",
+            "value":""
+         }
+      ]
+   }
+}
+EOF
+```
+
+2. Verify that the alerting email address updates.
 
 ```
 watch "oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .spec.alertingEmailAddress"
@@ -182,42 +235,42 @@ oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.quota
 
 Create the integration with RHOAM via IDP.
 
-5. Back in the OCM console, go to your cluster's details.
+5. Add LDAP as identity provider.
+   5.1 Set LDAP_URL variable.
 
-6. Click on the `Access Control` tab.
+```bash
+LDAP_URL=ldap://${LDAP_PUBLIC_IP}:389/dc=ec2-172-31-37-63,dc=eu-west-1,dc=compute,dc=amazonaws,dc=com?uid?sub
+```
 
-7. Press the `Add identity provider` button.
+5.2 Add LDAP as identity provider.
 
-8. A form will pop up in a modal with three sections:
-
-   4.1 Step 1: Select identity providers type
-
-   - Select the LDAP option in the `Indentity provider` field
-
-     4.2 Step 2: Enter provider type information
-
-   - Leave the fields `Name` and `Mapping method` as it is
-
-   - In `LDAP URL` add the URL we want to use for searching users in the LDAP server
-
-   ```bash
-
-   echo "ldap://${LDAP_PUBLIC_IP}:389/dc=ec2-172-31-37-63,dc=eu-west-1,dc=compute,dc=amazonaws,dc=com?uid?sub"
-   ```
-
-   - Leave the fields Bind DN and Bind password empty
-
-     4.3 Attributes
-
-   - In ID field add `dn`
-
-   - In `Preferred username` enter `uid`
-
-   - In `Name` enter `cn`
-
-   - Click on `Show Advanced Options` and mark the `Insecure` checkbox, so we don't need to configure certs
-
-   - Press the `Confirm` button and wait for the changes to be reconciled
+```bash
+ocm post https://api.stage.openshift.com/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers --body=<<EOF
+{
+   "type":"LDAPIdentityProvider",
+   "name":"LDAP",
+   "id":null,
+   "mapping_method":"claim",
+   "ldap":{
+      "attributes":{
+         "id":[
+            "dn"
+         ],
+         "email":[
+         ],
+         "name":[
+            "cn"
+         ],
+         "preferred_username":[
+            "uid"
+         ]
+      },
+      "insecure":true,
+      "url":"$LDAP_URL"
+   }
+}
+EOF
+```
 
 Verify the integration with the LDAP server for an admin user
 
@@ -311,9 +364,18 @@ Verify the integration with the LDAP server for a regular user
 
 **Verify RHOAM uninstall**
 
-1. Go to OCM UI, select your cluster, go to Add-ons tab
-2. Click on the three dots menu and select "Uninstall add-on"
-   > Verify that RHOAM addon updates the status to "Uninstalling"
+1. Uninstall RHOAM.
+
+```bash
+ocm delete /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
+```
+
+2. Verify RHOAM addon is being uninstalled , state should be `deleteing`.
+
+```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service | jq '.state'
+```
+
 3. Go to OpenShift console of your cluster
    > In a while you should see RHOAM namespaces disappearing
    > Uninstall of RHOAM should finish in ~20 minutes (all `redhat-rhoam-*` namespaces should be gone)
@@ -323,11 +385,50 @@ Verify the integration with the LDAP server for a regular user
 6. Go to `redhat-rhoam-operator` namespace and search for "RHMI"
    > Verify that there's nothing in the results
 7. If there's no subscription or RHMI CR present in `redhat-rhoam-operator` namespace, you have to wait for `hive` to finish the uninstall (sometimes it could take more than 10 minutes)
-8. Go to OCM UI, select your cluster, go to Add-ons tab and verify that RHOAM addon is uninstalled (you should see a button "Install" again)
+8. Check that RHOAM addon is uninstalled. Addon installation with id=managed-api-service shouldn't be listed
+
+```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons
+```
 
 **Verify RHOAM secrets are recreated on reinstall and RHOAM can be uninstalled during "preflight checks" phase**
 
 1. From OCM UI, trigger RHOAM install again
+
+```bash
+NOTIFICATION_EMAIL="<your-username>+ID1@redhat.com"
+```
+
+```bash
+ocm post https://api.stage.openshift.com/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons --body=<<EOF
+{
+   "addon":{
+      "id":"managed-api-service"
+   },
+   "parameters":{
+      "items":[
+         {
+            "id":"addon-resource-required",
+            "value":"true"
+         },
+         {
+            "id":"cidr-range",
+            "value":"10.1.0.0/26"
+         },
+         {
+            "id":"addon-managed-api-service",
+            "value":"10"
+         },
+         {
+            "id":"notification-email",
+            "value":"$NOTIFICATION_EMAIL"
+         }
+      ]
+   }
+}
+EOF
+```
+
 2. Go to OpenShift console and select `redhat-rhoam-operator` namespace
 3. Go to Workloads -> Secrets
    > Verify that `redhat-rhoam-deadmanssnitch`, `redhat-rhoam-pagerduty` and `redhat-rhoam-smtp` are present
@@ -335,7 +436,7 @@ Verify the integration with the LDAP server for a regular user
 5. Delete the addon via ocm CLI
 
 ```bash
-ocm delete /api/clusters_mgmt/v1/clusters/<CLUSTER-ID>/addons/managed-api-service
+ocm delete /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
 ```
 
 7. Go back to OpenShift console and verify RHMI CR was removed as well as and `redhat-rhoam-operator` namespace

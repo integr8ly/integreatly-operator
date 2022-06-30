@@ -25,6 +25,7 @@ tags:
 - ["libra.pem" private key for ssh to PSI openstack load testing instance](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/keys/libra.pem) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - Logged in to a testing cluster as a `kubeadmin`
 - Access to CSQE OCM ORG https://qaprodauth.cloud.redhat.com/beta/openshift/ (login as <kerberos-username>-csqe user) to view the list of provisioned clusters.
+- [JQ](https://stedolan.github.io/jq/)
 
 ## Description
 
@@ -138,10 +139,52 @@ _"max_value":13889"_
 
 If the values are **not** correct make sure the 20M Quota is used. If not, change the Quota via editing the RHOAM addon config via OCM.
 
+1. Login to OCM with provided token
+
+```bash
+ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
+```
+
+2. Set cluster name variable
+
+```bash
+CLUSTER_NAME="<CLUSTER_NAME>"
+```
+
+3. Get cluster id and assign it to a variable
+
+```bash
+CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+```
+
+4. Change quota to 20 million
+
+```bash
+ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+{
+   "parameters":{
+      "items":[
+         {
+            "id":"addon-managed-api-service",
+            "value":"200"
+         }
+      ]
+   }
+}
+EOF
+```
+
+5. Check addon parameters updated successfully
+
+```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
+```
+
 **5. Check that there are no critical alerts firing:**
 
-- Select the test cluster from https://qaprodauth.cloud.redhat.com/beta/openshift/
-- Click the 'monitoring' tab and check there are no critical alerts firing.
+- Login to the openshift console as kubeadmin.
+- Navigate to Observe > Alerting.
+- Check that there are no critical alerts firing.
 
 **6. Configure an endpoint to run the load test using 3scale and promote the endpoint to production:**
 

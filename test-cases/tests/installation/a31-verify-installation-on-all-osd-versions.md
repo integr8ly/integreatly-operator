@@ -41,7 +41,8 @@ We want to validate that RHOAM can be installed via Addon Flow on all currently 
 2. Look for AWS account ID that is free (it doesn't have anything specified in 'Note'). If no account is free, you can use account that is used by nightly pipelines (but don't forget to clean it up for night)
 3. Open the [AWS secrets file from 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) locally and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
 4. Make sure to fill in `openshiftVersion` properly
-5. Most of the parameters are self-explanatory, many can be left as they are or blank
+5. Make sure to use your own ocmAccessToken so you have access to the cluster provisioned by the pipeline.
+6. Most of the parameters are self-explanatory, many can be left as they are or blank
 
 ```
 clusterComputeNodesCount: 6
