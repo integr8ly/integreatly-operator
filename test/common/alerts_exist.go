@@ -648,6 +648,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
+			File: ObservabilityNamespacePrefix + "addon-managed-api-service-parameters-secret-exists-rule.yaml",
+			Rules: []string{
+				"AddonManagedApiServiceParametersExists",
+			},
+		},
+		{
 			File: ObservabilityNamespacePrefix + "deadmanssnitch-secret-exists-rule.yaml",
 			Rules: []string{
 				"DeadMansSnitchSecretExists",

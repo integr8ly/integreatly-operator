@@ -274,6 +274,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	// creates an alert to check for the presents of addon-managed-api-service-parameters secret
+	phase, err = resources.CreateAddonManagedApiServiceParametersExists(ctx, client, installation)
+	r.log.Infof("create addon-managed-api-service-parameters secret alerting rule", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile AddonManagedApiServiceParametersExists alert", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileMonitoring(ctx, client)
 	r.log.Infof("reconcileMonitoring", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {

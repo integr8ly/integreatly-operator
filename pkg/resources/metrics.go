@@ -20,6 +20,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"strings"
@@ -181,6 +182,33 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
+// CreateAddonManagedApiServiceParametersExists creates a PrometheusRule to alert if the addon-managed-api-service-parameters is present
+// Hive creates a secret automatically this is a check for when that service fails or the secret has been removed
+func CreateAddonManagedApiServiceParametersExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
+	installationName := InstallationNames[cr.Spec.Type]
+	addonParametersSecret, err := addon.GetAddonParametersSecret(ctx, client, cr.Namespace)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
+	}
+	alertName := "AddonManagedApiServiceParametersExists"
+	ruleName := "addon-managed-api-service-parameters-secret-exists-rule"
+	alertExp := intstr.FromString(
+		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='%s'} == 1)", cr.Namespace, addonParametersSecret.Name),
+	)
+	alertDescription := fmt.Sprintf("The %s secret has been removed from the %s namespace, this secret should be generated and managed by Hive", addonParametersSecret.Name, cr.Namespace)
+	labels := map[string]string{
+		"severity": "warning",
+		"product":  installationName,
+	}
+
+	ruleNs := cr.Spec.NamespacePrefix + "observability"
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlAddonManagedApiServiceParametersExists, alertFor5Mins, alertExp, labels)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
 	}
 	return v1alpha1.PhaseCompleted, nil
 }

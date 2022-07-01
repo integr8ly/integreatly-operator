@@ -2,6 +2,7 @@ package resources
 
 // Add alert strings here
 const (
+	sopUrlAddonManagedApiServiceParametersExists               = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/AddonManagedApiServiceParameters.asciidoc"
 	sopUrlRhoamBase                                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/"
 	sopUrlPostgresInstanceUnavailable                          = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_instance_unavailable.asciidoc"
 	sopUrlPostgresConnectionFailed                             = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_connection_failed.asciidoc"
