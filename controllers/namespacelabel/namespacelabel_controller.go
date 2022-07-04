@@ -20,11 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,7 +116,7 @@ func (r *NamespaceLabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func New(mgr manager.Manager) *NamespaceLabelReconciler {
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		panic("could not get watch namespace from namespacelabel controller")
 	}

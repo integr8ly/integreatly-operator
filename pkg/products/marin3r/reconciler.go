@@ -62,7 +62,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
 	return version.VerifyProductAndOperatorVersion(
-		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductMarin3r],
+		installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductMarin3r],
 		string(integreatlyv1alpha1.VersionMarin3r),
 		string(integreatlyv1alpha1.OperatorVersionMarin3r),
 	)
@@ -240,9 +240,9 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 
 	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
-		if productsStage, ok := installation.Status.Stages[integreatlyv1alpha1.ProductsStage]; ok {
-			if productsStage.Products != nil {
-				grafanaProduct, grafanaProductExists := productsStage.Products[integreatlyv1alpha1.ProductGrafana]
+		if installStage, ok := installation.Status.Stages[integreatlyv1alpha1.InstallStage]; ok {
+			if installStage.Products != nil {
+				grafanaProduct, grafanaProductExists := installStage.Products[integreatlyv1alpha1.ProductGrafana]
 				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
 				if !grafanaProductExists ||
 					(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&

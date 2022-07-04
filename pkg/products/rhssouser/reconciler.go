@@ -119,7 +119,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
 	return version.VerifyProductAndOperatorVersion(
-		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser],
+		installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductRHSSOUser],
 		string(integreatlyv1alpha1.VersionRHSSOUser),
 		string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
 	)

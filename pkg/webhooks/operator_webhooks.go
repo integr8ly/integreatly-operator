@@ -3,11 +3,11 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -137,7 +137,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 		return nil
 	}
 
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -192,7 +192,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 
 // ReconcileService creates or updates the service that points to the Pod
 func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -222,7 +222,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 }
 
 func createService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -265,7 +265,7 @@ func createService(ctx context.Context, client k8sclient.Client, owner ownerutil
 // setupCerts waits for the secret created for the operator Service to exist, and
 // when it's ready, extracts the certificates and saves them in webhookConfig.CertDir
 func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, client k8sclient.Client) error {
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}
@@ -299,7 +299,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, c
 
 func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.Context, client k8sclient.Client) ([]byte, error) {
 	var caBundle []byte
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
 	}

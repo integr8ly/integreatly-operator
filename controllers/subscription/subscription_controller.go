@@ -2,14 +2,13 @@ package controllers
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"strings"
 	"time"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/sirupsen/logrus"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
@@ -54,7 +53,7 @@ var subscriptionsToReconcile []string = []string{
 }
 
 func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
-	watchNS, err := resources.GetWatchNamespace()
+	watchNS, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not get watch namespace from subscription controller")
 	}

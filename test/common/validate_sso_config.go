@@ -66,7 +66,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 
 	// Validate RHSSO URL from RHOAM CR
 
-	adminRoute := rhmi.Status.Stages[integreatlyv1alpha1.AuthenticationStage].Products[integreatlyv1alpha1.ProductRHSSO].Host
+	adminRoute := rhmi.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductRHSSO].Host
 	browser := surf.NewBrowser()
 	browser.SetCookieJar(ctx.HttpClient.Jar)
 	browser.SetTransport(ctx.HttpClient.Transport)
@@ -80,7 +80,7 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 	}
 	// Validate USER-SSO URL from RHOAM CR
 
-	customerAdminRoute := fmt.Sprintf("%s/auth/", rhmi.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser].Host)
+	customerAdminRoute := fmt.Sprintf("%s/auth/", rhmi.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductRHSSOUser].Host)
 
 	t.Log("Checking the link for dedicated admin is available")
 	// open User SSO route

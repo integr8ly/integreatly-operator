@@ -2,11 +2,11 @@ package common
 
 import (
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"net/http"
 	"strings"
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -107,7 +107,7 @@ type SubscriptionCheck struct {
 }
 
 func GetNamespacePrefix() string {
-	ns, err := resources.GetWatchNamespace()
+	ns, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return ""
 	}

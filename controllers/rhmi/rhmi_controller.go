@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"io"
 	"io/ioutil"
@@ -444,6 +445,9 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+			// remove the code for next release
+			removeOldStages(installation)
+			// end of removal
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
 		}
@@ -1310,7 +1314,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
-	namespace, err := resources.GetWatchNamespace()
+	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
 	}
@@ -1640,7 +1644,7 @@ func isInstallationOlderThan1Minute(installation *rhmiv1alpha1.RHMI) bool {
 }
 
 func getInstallation() (*rhmiv1alpha1.RHMI, error) {
-	namespace, err := resources.GetWatchNamespace()
+	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
 	}
@@ -1681,4 +1685,11 @@ func formatAlerts(alerts []v1.Alert) resources.AlertMetrics {
 	}
 
 	return alertMetrics
+}
+
+func removeOldStages(installation *rhmiv1alpha1.RHMI) {
+	delete(installation.Status.Stages, rhmiv1alpha1.CloudResourcesStage)
+	delete(installation.Status.Stages, rhmiv1alpha1.ObservabilityStage)
+	delete(installation.Status.Stages, rhmiv1alpha1.AuthenticationStage)
+	delete(installation.Status.Stages, rhmiv1alpha1.ProductsStage)
 }
