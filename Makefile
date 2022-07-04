@@ -538,6 +538,10 @@ olm/bundle:
 coverage:
 	hack/codecov.sh
 
+.PHONY: commits/check
+commits/check:
+	@./scripts/commits-check.sh
+
 .PHONY: gosec/exclude
 gosec/exclude:
 	gosec -exclude=G104,G107,G404,G601 ./...
