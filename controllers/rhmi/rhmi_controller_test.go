@@ -175,3 +175,38 @@ func TestFormatAlerts(t *testing.T) {
 	}
 
 }
+
+func TestGetCrName(t *testing.T) {
+	tests := []struct {
+		name        string
+		installType string
+		want        string
+	}{
+		{
+			name:        "get RHOAM cr name",
+			installType: string(rhmiv1alpha1.InstallationTypeManagedApi),
+			want:        ManagedApiInstallationName,
+		},
+		{
+			name:        "get multitenant RHOAM cr name",
+			installType: string(rhmiv1alpha1.InstallationTypeMultitenantManagedApi),
+			want:        ManagedApiInstallationName,
+		},
+		{
+			name:        "get RHMI cr name",
+			installType: string(rhmiv1alpha1.InstallationTypeManaged),
+			want:        DefaultInstallationName,
+		},
+		{
+			name:        "get default cr name",
+			installType: "Not a real install type",
+			want:        DefaultInstallationName,
+		},
+	}
+	for _, tt := range tests {
+		got := getCrName(tt.installType)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("getCrName() got = %v, want %v", got, tt.want)
+		}
+	}
+}

@@ -1513,7 +1513,8 @@ func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 		if clusterType == "" {
 			metrics.SetRHOAMCluster("Unknown", string(externalClusterId), openshiftVersion, 1)
 		}
-		return fmt.Errorf("error getting cluster type: %w", err)
+		log.Warning(fmt.Sprintf("Warning - This openshift version does not contain red-hat-cluster-type resource tag %v", err))
+		return nil
 	}
 
 	metrics.SetRHOAMCluster(clusterType, string(externalClusterId), openshiftVersion, 1)
@@ -1554,6 +1555,8 @@ func getRebalancePods() bool {
 
 func getCrName(installType string) string {
 	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
+		return ManagedApiInstallationName
+	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
 		return ManagedApiInstallationName
 	} else {
 		return DefaultInstallationName
