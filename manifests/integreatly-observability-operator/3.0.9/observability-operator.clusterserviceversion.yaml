@@ -295,7 +295,7 @@ spec:
                 - --enable-leader-election
                 command:
                 - /manager
-                image: quay.io/pb82/observability-operator:v3.0.9
+                image: quay.io/rhoas/observability-operator:v3.0.9
                 imagePullPolicy: Always
                 name: manager
                 ports:
