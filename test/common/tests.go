@@ -107,21 +107,12 @@ var (
 	IDP_BASED_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
-				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
-				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
-				{"B09 - Verify dedicated admin users are synced with User SSO", TestDedicatedAdminUsersSyncedSSO},
-				{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
-				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
 				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
 				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
 				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
-				// Keep H11 as last 3scale IDP Test as test causes 3scale deployments to be rescaled at the end of test
-				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
-				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
@@ -137,6 +128,20 @@ var (
 				{"B01B - Verify users can login to products", TestProductLogins},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+		{
+			[]TestCase{
+				{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
+				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
+				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
+				{"B09 - Verify dedicated admin users are synced with User SSO", TestDedicatedAdminUsersSyncedSSO},
+				{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
+				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
+				// Keep H11 as last 3scale IDP Test as test causes 3scale deployments to be rescaled at the end of test
+				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
+				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},
 	}
 
