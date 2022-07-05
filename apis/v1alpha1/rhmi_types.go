@@ -103,7 +103,7 @@ var (
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
 	VersionMarin3r             ProductVersion = "0.10.0"
 	VersionGrafana             ProductVersion = "4.2.0"
-	VersionObservability       ProductVersion = "3.0.10"
+	VersionObservability       ProductVersion = "3.0.11"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -134,7 +134,7 @@ var (
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 	OperatorVersionMarin3r             OperatorVersion = "0.10.0"
 	OperatorVersionGrafana             OperatorVersion = "4.2.0"
-	OperatorVersionObservability       OperatorVersion = "3.0.10"
+	OperatorVersionObservability       OperatorVersion = "3.0.11"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
