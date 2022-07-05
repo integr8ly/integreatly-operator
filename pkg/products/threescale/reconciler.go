@@ -1042,12 +1042,20 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		},
 		Data: map[string][]byte{},
 	}
+
+	messageBusKeys := []string{"MESSAGE_BUS_URL", "MESSAGE_BUS_NAMESPACE", "MESSAGE_BUS_SENTINEL_HOSTS", "MESSAGE_BUS_SENTINEL_ROLE"}
+
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, redisSecret, func() error {
 		uri := systemCredSec.Data["uri"]
 		port := systemCredSec.Data["port"]
 		conn := fmt.Sprintf("redis://%s:%s/1", uri, port)
 		redisSecret.Data["URL"] = []byte(conn)
-		redisSecret.Data["MESSAGE_BUS_URL"] = []byte(conn)
+		for _, key := range messageBusKeys {
+			if redisSecret.Data[key] != nil {
+				delete(redisSecret.Data, key)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
