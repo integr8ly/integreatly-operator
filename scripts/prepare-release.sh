@@ -316,6 +316,11 @@ if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
  set_related_images
 fi
 
+if [[ "${PREPARE_FOR_NEXT_RELEASE}" = true ]]; then
+  yq e -i ".spec.install.spec.deployments.[0].spec.template.spec.containers[0].image=\"quay.io/$ORG/$OLM_TYPE:master\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+  yq e -i ".metadata.annotations.containerImage=\"quay.io/$ORG/$OLM_TYPE:master\"" bundles/$OLM_TYPE/${VERSION}/manifests/$OLM_TYPE.clusterserviceversion.yaml
+fi
+
 # Move bundle.Dockerfile to the bundle folder
 mv bundle.Dockerfile bundles/$OLM_TYPE/$VERSION
 
