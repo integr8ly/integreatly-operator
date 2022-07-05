@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	githubToken         = os.Getenv("GITHUB_TOKEN")
-	failedSOPurls       = make(chan string)
-	wg                  sync.WaitGroup
-	failedSOPUrlPresent = false
+	githubToken   = os.Getenv("GITHUB_TOKEN")
+	failedSOPurls = make(chan string)
+	wg            sync.WaitGroup
 )
 
 func TestSOPUrls(t TestingTB, ctx *TestingContext) {
@@ -48,7 +47,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 
 	var rulesResult prometheusv1.RulesResult
 
-	err = json.Unmarshal([]byte(ApiOutput.Data), &rulesResult)
+	err = json.Unmarshal(ApiOutput.Data, &rulesResult)
 	if err != nil {
 		t.Fatal("failed to unmarshal json", err)
 	}
@@ -59,7 +58,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 			case prometheusv1.RecordingRule:
 			case prometheusv1.AlertingRule:
 				for annotation, sopUrl := range v.Annotations {
-					if annotation == "sop_url" {
+					if annotation == "sop_url" && sopUrl != "" {
 						sopUrls = append(sopUrls, string(sopUrl))
 					}
 				}
@@ -140,12 +139,11 @@ func validateSOPurls(t TestingTB, sopUrls []string) {
 		close(failedSOPurls)
 	}()
 
-	for failedSOPUrl := range failedSOPurls {
-		t.Log("failed to connect to url: ", failedSOPUrl)
+	if len(failedSOPurls) != 0 {
+		for failedSOPUrl := range failedSOPurls {
+			t.Log("failed to connect to url: ", failedSOPUrl)
 
-	}
-
-	if failedSOPUrlPresent {
+		}
 		t.Fatal("test failed due to the invalid url")
 	}
 
@@ -176,7 +174,6 @@ func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 	}(resp.Body)
 	if resp.StatusCode != 200 {
 		failedSOPUrls <- url
-		failedSOPUrlPresent = true
 	}
 
 }
