@@ -3,9 +3,12 @@
 # This script retrieves the list of commits difference from master
 # and ensures that each commit starts with a MGDAPI- numbered ticket
 # See https://issues.redhat.com/browse/MGDAPI-3097
+# PULL_BASE_SHA and PULL_PULL_SHA are set by prow
 
-merge_base=$(git merge-base master HEAD)
-commits=$(git rev-list --no-merges $merge_base..HEAD)
+PULL_BASE_SHA="${PULL_BASE_SHA:-$(git merge-base master HEAD)}"
+PULL_PULL_SHA="${PULL_PULL_SHA:-HEAD}"
+
+commits=$(git rev-list --no-merges $PULL_BASE_SHA..$PULL_PULL_SHA)
 invalidCommits=()
 
 if [ -z "$commits" ]; then
