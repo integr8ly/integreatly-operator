@@ -31,7 +31,10 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *rhmiconf
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
 
-	client.Status().Update(ctx, config)
+	err := client.Status().Update(ctx, config)
+	if err != nil {
+		return err
+	}
 
 	// Calculate the upgrade schedule based on the spec:
 	// We can assume there's no error parsing the value as it was validated

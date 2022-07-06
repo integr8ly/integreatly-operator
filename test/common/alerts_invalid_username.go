@@ -244,24 +244,36 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 
 	// Ensure Oauth is restored to pre-test state
 	clusterOauth := &configv1.OAuth{ObjectMeta: metav1.ObjectMeta{Name: clusterOauthName}}
-	controllerutil.CreateOrUpdate(goCtx, ctx.Client, clusterOauth, func() error {
+	_, err := controllerutil.CreateOrUpdate(goCtx, ctx.Client, clusterOauth, func() error {
 		clusterOauth.Spec = clusterOauthPreTest.Spec
 		return nil
 	})
+	if err != nil {
+		t.Fatalf("failed to update clusterOauth.spec: %s, err: %v", clusterOauth.Spec, err)
+	}
 	// Ensure openshift users are deleted
-	ctx.Client.Delete(goCtx, userLongName)
-	ctx.Client.Delete(goCtx, &userv1.User{
+	err = ctx.Client.Delete(goCtx, userLongName)
+	if err != nil {
+		t.Fatalf("failed to delete openshift user: %s, err: %v", userLongName, err)
+	}
+	err = ctx.Client.Delete(goCtx, &userv1.User{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: userLong2,
 		},
 	})
+	if err != nil {
+		t.Fatalf("failed to delete openshift user: %s, err: %v", userLong2, err)
+	}
 	// Ensure Keycloak CR created are deleted
-	ctx.Client.Delete(goCtx, &keycloak.KeycloakUser{
+	err = ctx.Client.Delete(goCtx, &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2),
 			Namespace: RHSSOProductNamespace,
 		},
 	})
+	if err != nil {
+		t.Fatalf("failed to delete Keycloak CR: %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2), err)
+	}
 
 	t.Logf("Finished cleaning up test resources")
 }

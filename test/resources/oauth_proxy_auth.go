@@ -107,7 +107,10 @@ func Auth3Scale(client *http.Client, redirectUrl, keycloakHost, clientId, secret
 		AccessToken string `json:"access_token"`
 	}{}
 
-	json.Unmarshal(postBody, &tokenResponse)
+	err = json.Unmarshal(postBody, &tokenResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal json: %v", err)
+	}
 	return tokenResponse.AccessToken, nil
 }
 

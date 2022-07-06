@@ -125,7 +125,10 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 		AccessToken string `json:"access_token"`
 	}{}
 
-	json.Unmarshal(postBody, &tokenResponse)
+	err = json.Unmarshal(postBody, &tokenResponse)
+	if err != nil {
+		return "", err
+	}
 
 	if tokenResponse.AccessToken == "" {
 		return "", fmt.Errorf("failed to get access token: %v", string(postBody))

@@ -428,11 +428,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list the keycloak users: %w", err)
 	}
 
-	r.reconcileGroups(ctx, serverClient, kc)
+	_, err = r.reconcileGroups(ctx, serverClient, kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	r.reconcileAdminUsers(ctx, serverClient, kcClient, keycloakUsers)
+	_, err = r.reconcileAdminUsers(ctx, serverClient, kcClient, keycloakUsers)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
