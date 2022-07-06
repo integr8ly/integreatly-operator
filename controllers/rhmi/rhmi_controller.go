@@ -797,7 +797,10 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		if pendingUninstalls {
 			if len(merr.Errors) > 0 {
 				installation.Status.LastError = merr.Error()
-				r.Client.Status().Update(context.TODO(), installation)
+				err = r.Client.Status().Update(context.TODO(), installation)
+				if err != nil {
+					merr.Add(err)
+				}
 			}
 			err = r.Client.Update(context.TODO(), installation)
 			if err != nil {
@@ -1449,7 +1452,7 @@ func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1al
 		return fmt.Errorf("error getting external cluster ID: %w", err)
 	}
 
-	for namespace, _ := range alertingNamespaces {
+	for namespace := range alertingNamespaces {
 		if namespace == observability.GetNamespace() {
 			alerts, err = r.composeAlertMetric("prometheus", namespace)
 			if err != nil {

@@ -499,7 +499,7 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 	}
 
 	for _, tenant := range allTenants {
-		r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
+		_ = r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
 	}
 
 	// Remove redundant tenant secrets

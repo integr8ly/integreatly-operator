@@ -238,7 +238,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	}
 
-	controllerutil.CreateOrUpdate(ctx, client, postgresSecret, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, postgresSecret, func() error {
 		postgresSecret.StringData = map[string]string{
 			"POSTGRES_DATABASE":  string(connSec.Data["database"]),
 			"POSTGRES_HOST":      string(connSec.Data["host"]),
@@ -250,6 +250,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		return nil
 	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to createOrUpdate postgresSecret: %w", err)
+	}
 
 	// Reconcile ups custom resource
 	r.log.Info("Reconciling unified push server cr")

@@ -74,8 +74,8 @@ func setIntegreatlyLabel(u *unstructured.Unstructured) {
 
 func init() {
 	codecsScheme := runtime.NewScheme()
-	scheme.AddToScheme(codecsScheme)
-	v1alpha1.AddToSchemes.AddToScheme(codecsScheme)
+	_ = scheme.AddToScheme(codecsScheme)
+	_ = v1alpha1.AddToSchemes.AddToScheme(codecsScheme)
 
 	codecs = serializer.NewCodecFactory(codecsScheme)
 }
