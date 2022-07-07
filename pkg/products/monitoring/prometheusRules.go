@@ -149,7 +149,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					{
 						Alert: "KubePersistentVolumeFillingUp4h",
 						Annotations: map[string]string{
-							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours",
+							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours",
 							"message": "Based on recent sampling, the PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is expected to fill up within four days. Currently {{ $value | humanizePercentage }} is available.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(predict_linear(kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'} [6h], 4 * 24 * 3600) <= 0 and kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'}  / kubelet_volume_stats_capacity_bytes{job='kubelet'} < 0.15)", r.Config.GetNamespacePrefix(), r.Config.GetNamespacePrefix())),
@@ -159,7 +159,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					{
 						Alert: "KubePersistentVolumeFillingUp",
 						Annotations: map[string]string{
-							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#kubepersistentvolumefillingup",
+							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#kubepersistentvolumefillingup",
 							"message": "The PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is only {{ $value | humanizePercentage }} free.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'} / kubelet_volume_stats_capacity_bytes{job='kubelet', namespace=~'%s.*'} < 0.03)", r.Config.GetNamespacePrefix(), r.Config.GetNamespacePrefix())),
@@ -170,7 +170,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					{
 						Alert: "PersistentVolumeErrors",
 						Annotations: map[string]string{
-							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#persistentvolumeerrors",
+							"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#persistentvolumeerrors",
 							"message": "The PVC {{  $labels.persistentvolumeclaim  }} is in status {{  $labels.phase  }} in namespace {{  $labels.namespace }} ",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost', namespace=~'%s.*'})) > 0", r.Config.GetNamespacePrefix())),
