@@ -35,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -203,6 +204,26 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) CheckGrafanaDashboardCRD(ctx context.Context, oauthClient oauthClient.OauthV1Interface) (integreatlyv1alpha1.StatusPhase, error) {
+	dc := discovery.NewDiscoveryClient(oauthClient.RESTClient())
+	_, apiLists, err := dc.ServerGroupsAndResources()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for _, apiList := range apiLists {
+		if apiList.GroupVersion == monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String() {
+			for _, res := range apiList.APIResources {
+				if res.Kind == monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind {
+					r.Log.Info("Found GrafanaDashboard CRD")
+					return integreatlyv1alpha1.PhaseCompleted, nil
+				}
+			}
+		}
+	}
+	r.Log.Info("Awaiting GrafanaDashboard CRD")
+	return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 }
 
 // workaround: the keycloak operator creates a route with TLS passthrough config
