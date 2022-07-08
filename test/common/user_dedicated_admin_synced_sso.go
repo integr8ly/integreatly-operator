@@ -428,7 +428,7 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 	err := c.Delete(ctx, testUser)
 	if err != nil {
 		t.Fatalf("Failed to delete OpenShift user %s, err: %v", testUser.Name, err)
-	} 
+	}
 
 	// Ensure KeycloakUser CR is deleted
 	err = c.Delete(ctx, &keycloak.KeycloakUser{
