@@ -61,7 +61,52 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=json
 
 5. Update the quota for a cluster in OCM to e.g. `5 million` and wait for an operator to finish quota configuration
 
-> To change the Quota go to the OCM UI -> Cluster -> select desired cluster -> Add-ons tab -> Click on RHOAM Addon tile -> Edit -> change the Quota
+5.1 Login to OCM with provided token
+
+```bash
+ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
+```
+
+5.2 Set cluster name variable
+
+```bash
+CLUSTER_NAME="<CLUSTER_NAME>"
+```
+
+5.3 Get cluster id and assign it to a variable
+
+```bash
+CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+```
+
+5.4 Set quota value
+
+```bash
+QUOTA_VALUE=<QUOTA_VALUE>
+```
+
+5.5 Update quota
+
+```bash
+ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+{
+   "parameters":{
+      "items":[
+         {
+            "id":"addon-managed-api-service",
+            "value":"$QUOTA_VALUE"
+         }
+      ]
+   }
+}
+EOF
+```
+
+5.6 Check addon parameters updated successfully
+
+```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
+```
 
 6. After Quota change is done, open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace again
 

@@ -25,9 +25,9 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
 
 1. Login via `oc` as a user with **cluster-admin** role (kubeadmin):
 
-   ```
-   oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
-   ```
+```bash
+oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
+```
 
 2. Make sure **nobody is using the cluster** for performing the test cases, because the RHOAM components will have a downtime during the upgrade
 
@@ -56,13 +56,25 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
      - `oc patch clusterversion/version -p '{"spec":{"channel":"stable-4.y"}}' --type=merge`
      - see the [Knowledgebase article](https://access.redhat.com/solutions/4606811) for details
 
-5. Ask QE team to login to the ocm staging environment and get the ID of the cluster that is going to be upgraded:
+5. Get the ID of the cluster that is going to be upgraded:
 
-   ```bash
-   # Get the token at https://qaprodauth.cloud.redhat.com/openshift/token
-   ocm login --url=https://api.stage.openshift.com --token=YOUR_TOKEN
-   CLUSTER_ID=$(ocm cluster list | grep <CLUSTER-NAME> | awk '{print $1}')
-   ```
+5.1 Log in to OCM with token provided
+
+```bash
+ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
+```
+
+5.2 Set cluster name variable
+
+```bash
+CLUSTER_NAME="<CLUSTER_NAME>"
+```
+
+5.3 Get id of cluster and assign it to a variable
+
+```bash
+CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+```
 
 6. Run this command to wait for the OpenShift upgrade to complete:
 

@@ -106,4 +106,51 @@ echo rate limit replicas: $ratelimit_replicas
 echo rate limit resources: $ratelimit_resources
 ```
 
-8. Go to OCM UI, select the testing cluster and change the quota parameter to a different value using the mapping from step 3 and repeat the steps from step 5. Repeat this for all available quota values.
+8. Login to OCM with provided token
+
+```bash
+ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
+```
+
+9. Set cluster name variable
+
+```bash
+CLUSTER_NAME="<CLUSTER_NAME>"
+```
+
+10. Get cluster id and assign it to a variable
+
+```bash
+CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+```
+
+11. Set quota value
+
+```bash
+QUOTA_VALUE=<QUOTA_VALUE>
+```
+
+12. Update quota
+
+```bash
+ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+{
+   "parameters":{
+      "items":[
+         {
+            "id":"addon-managed-api-service",
+            "value":"$QUOTA_VALUE"
+         }
+      ]
+   }
+}
+EOF
+```
+
+13. Check addon parameters updated successfully
+
+```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
+```
+
+14. Repeat this for all available quota values.

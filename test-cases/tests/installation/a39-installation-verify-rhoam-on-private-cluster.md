@@ -20,7 +20,7 @@ tags:
 2. Follow [this guide](https://docs.google.com/document/d/1BwjzezNFtE7gd2y6FY6v2W6KRXCn0jMZk58ilJ8zSa8/edit) to make it private
 3. Install RHOAM on the cluster
 
-- manually via OCM UI, see [A30](./a30-validate-installation-of-rhoam-addon-and-integration-with-ld.md)
+- manually via OCM CLI, see [A30](./a30-validate-installation-of-rhoam-addon-and-integration-with-ld.md)
 
 4. Run the RHOAM functional test suite locally
 
