@@ -3,12 +3,17 @@ package rhssocommon
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -45,6 +50,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -1543,4 +1549,155 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_CheckGrafanaDashboardCRD(t *testing.T) {
+	type fields struct {
+		ConfigManager         config.ConfigReadWriter
+		mpm                   marketplace.MarketplaceInterface
+		Installation          *integreatlyv1alpha1.RHMI
+		Log                   l.Logger
+		APIURL                string
+		Reconciler            *resources.Reconciler
+		Recorder              record.EventRecorder
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+	}
+	type args struct {
+		apiList *metav1.APIResourceList
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   integreatlyv1alpha1.StatusPhase
+	}{
+		{
+			name: "grafanadashboard crd exists",
+			args: args{
+				apiList: validGrafanaDashboardResourceList(),
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			name: "grafanadashboard crd not present",
+			args: args{
+				apiList: emptyResourceList(),
+			},
+			want: integreatlyv1alpha1.PhaseAwaitingComponents,
+		},
+		{
+			name: "error retrieving grafanadashboard crd",
+			args: args{
+				apiList: invalidResourceList(),
+			},
+			want: integreatlyv1alpha1.PhaseFailed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := configureTestServer(t, tt.args.apiList)
+			defer server.Close()
+
+			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
+			if err != nil {
+				t.Errorf("Failed to configure oauthclient")
+			}
+			r := &Reconciler{
+				ConfigManager:         tt.fields.ConfigManager,
+				mpm:                   tt.fields.mpm,
+				Installation:          tt.fields.Installation,
+				Log:                   getLogger(),
+				Oauthv1Client:         oauthv1Client,
+				APIURL:                tt.fields.APIURL,
+				Reconciler:            tt.fields.Reconciler,
+				Recorder:              tt.fields.Recorder,
+				KeycloakClientFactory: tt.fields.KeycloakClientFactory,
+			}
+
+			if got, _ := r.CheckGrafanaDashboardCRD(context.TODO(), r.Oauthv1Client); got != tt.want {
+				t.Errorf("CheckGrafanaDashboardCRD() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func validGrafanaDashboardResourceList() *metav1.APIResourceList {
+	return &metav1.APIResourceList{
+		// "integreatly.org/v1alpha1"
+		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		APIResources: []metav1.APIResource{
+			{
+				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
+				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+			},
+		},
+	}
+}
+
+func emptyResourceList() *metav1.APIResourceList {
+	return &metav1.APIResourceList{
+		// "integreatly.org/v1alpha1"
+		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		APIResources: []metav1.APIResource{},
+	}
+}
+
+func invalidResourceList() *metav1.APIResourceList {
+	return &metav1.APIResourceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "invalid",
+			APIVersion: "invalid",
+		},
+		// "integreatly.org/v1alpha1"
+		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		APIResources: []metav1.APIResource{},
+	}
+}
+
+func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var list interface{}
+		switch req.URL.Path {
+		case fmt.Sprintf("/apis/%s", apiList.GroupVersion):
+			list = apiList
+		case "/apis":
+			list = &metav1.APIGroupList{
+				Groups: []metav1.APIGroup{
+					{
+						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Versions: []metav1.GroupVersionForDiscovery{
+							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+						},
+					},
+				},
+			}
+		case "/api/v1":
+			list = &metav1.APIResourceList{
+				GroupVersion: "v1",
+				APIResources: []metav1.APIResource{},
+			}
+		case "/api":
+			list = &metav1.APIVersions{
+				Versions: []string{
+					"v1",
+				},
+			}
+		default:
+			t.Logf("unexpected request: %s", req.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		output, err := json.Marshal(list)
+		if err != nil {
+			t.Errorf("unexpected encoding error: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(output)
+	}))
+	return server
 }

@@ -3,8 +3,13 @@ package rhssouser
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -12,11 +17,11 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -47,6 +52,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -629,7 +635,6 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		ExpectedError         string
 		FakeConfig            *config.ConfigReadWriterMock
 		FakeClient            k8sclient.Client
-		FakeOauthClient       oauthClient.OauthV1Interface
 		FakeMPM               *marketplace.MarketplaceInterfaceMock
 		Installation          *integreatlyv1alpha1.RHMI
 		Product               *integreatlyv1alpha1.RHMIProductStatus
@@ -640,11 +645,10 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		Uninstall             bool
 	}{
 		{
-			Name:            "test successful reconcile",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
+			Name:           "test successful reconcile",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv),
+			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 
@@ -683,10 +687,17 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			server := configureTestServer(t, validGrafanaDashboardResourceList())
+			defer server.Close()
+
+			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
+			if err != nil {
+				t.Errorf("Failed to configure oauthclient")
+			}
 			testReconciler, err := NewReconciler(
 				tc.FakeConfig,
 				tc.Installation,
-				tc.FakeOauthClient,
+				oauthv1Client,
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
@@ -901,7 +912,6 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		ExpectedError         string
 		FakeConfig            *config.ConfigReadWriterMock
 		FakeClient            k8sclient.Client
-		FakeOauthClient       oauthClient.OauthV1Interface
 		FakeMPM               *marketplace.MarketplaceInterfaceMock
 		Installation          *integreatlyv1alpha1.RHMI
 		Product               *integreatlyv1alpha1.RHMIProductStatus
@@ -912,11 +922,10 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		Uninstall             bool
 	}{
 		{
-			Name:            "RHOAM - test successful reconcile",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
+			Name:           "RHOAM - test successful reconcile",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv),
+			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 
@@ -955,10 +964,17 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			server := configureTestServer(t, validGrafanaDashboardResourceList())
+			defer server.Close()
+
+			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
+			if err != nil {
+				t.Errorf("Failed to configure oauthclient")
+			}
 			testReconciler, err := NewReconciler(
 				tc.FakeConfig,
 				tc.Installation,
-				tc.FakeOauthClient,
+				oauthv1Client,
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
@@ -1460,4 +1476,63 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 
 func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
+}
+
+func validGrafanaDashboardResourceList() *metav1.APIResourceList {
+	return &metav1.APIResourceList{
+		// "integreatly.org/v1alpha1"
+		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		APIResources: []metav1.APIResource{
+			{
+				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
+				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+			},
+		},
+	}
+}
+
+func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		var list interface{}
+		switch req.URL.Path {
+		case fmt.Sprintf("/apis/%s", apiList.GroupVersion):
+			list = apiList
+		case "/apis":
+			list = &metav1.APIGroupList{
+				Groups: []metav1.APIGroup{
+					{
+						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Versions: []metav1.GroupVersionForDiscovery{
+							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+						},
+					},
+				},
+			}
+		case "/api/v1":
+			list = &metav1.APIResourceList{
+				GroupVersion: "v1",
+				APIResources: []metav1.APIResource{},
+			}
+		case "/api":
+			list = &metav1.APIVersions{
+				Versions: []string{
+					"v1",
+				},
+			}
+		default:
+			t.Logf("unexpected request: %s", req.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		output, err := json.Marshal(list)
+		if err != nil {
+			t.Errorf("unexpected encoding error: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(output)
+	}))
+	return server
 }
