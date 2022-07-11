@@ -73,8 +73,6 @@ set_version() {
           yq e -i ".channels[0].currentCSV=\"$OLM_TYPE.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
           ;;
         "multitenant-managed-api-service")
-          "${SED_INLINE[@]}" -E "s/MULTITENANT_RHOAM_TAG\s+\?=\s+$PREVIOUS_VERSION/MULTITENANT_RHOAM_TAG \?= $VERSION/g" Makefile
-          "${SED_INLINE[@]}" -E "s/multitenantManagedAPIVersion\s+=\s+\"$PREVIOUS_VERSION\"/multitenantManagedAPIVersion = \"$VERSION\"/g" version/version.go
           yq e -i ".channels[0].currentCSV=\"managed-api-service.v$VERSION\"" bundles/$OLM_TYPE/*.package.yaml
           ;;
         *)
