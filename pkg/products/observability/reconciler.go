@@ -406,17 +406,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					},
 				},
 			},
-			AlertManagerStorageSpec: &prometheus.StorageSpec{
-				VolumeClaimTemplate: prometheus.EmbeddedPersistentVolumeClaim{
-					Spec: v1.PersistentVolumeClaimSpec{
-						Resources: v1.ResourceRequirements{
-							Requests: v1.ResourceList{
-								"storage": resource.MustParse(r.Config.GetAlertManagerStorageRequest()),
-							},
-						},
-					},
-				},
-			},
 		}
 
 		oo.Spec.Retention = r.Config.GetPrometheusRetention()

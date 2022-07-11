@@ -55,8 +55,7 @@ const (
 )
 
 type Storage struct {
-	PrometheusStorageSpec   *prometheusv1.StorageSpec `json:"prometheus,omitempty"`
-	AlertManagerStorageSpec *prometheusv1.StorageSpec `json:"alertmanager,omitempty"`
+	PrometheusStorageSpec *prometheusv1.StorageSpec `json:"prometheus,omitempty"`
 }
 
 type SelfContained struct {
