@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +32,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 
 	"github.com/go-openapi/strfmt"
 	routev1 "github.com/openshift/api/route/v1"
@@ -1504,7 +1505,7 @@ func (r *RHMIReconciler) composeAlertMetric(route string, namespace string) (res
 	var alertResp struct {
 		Status string `json:"status"`
 		Data   struct {
-			Alerts []v1.Alert `json:"alerts"`
+			Alerts []prometheusv1.Alert `json:"alerts"`
 		} `json:"data"`
 	}
 
@@ -1715,7 +1716,7 @@ func validateAddOnStsRoleArnParameterPattern(client k8sclient.Client, namespace 
 	return true, nil
 }
 
-func formatAlerts(alerts []v1.Alert) resources.AlertMetrics {
+func formatAlerts(alerts []prometheusv1.Alert) resources.AlertMetrics {
 	alertMetrics := make(resources.AlertMetrics)
 
 	for _, alert := range alerts {
