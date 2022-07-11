@@ -42,13 +42,17 @@ type PostgresMetricsProvider struct {
 	ConfigManager     ConfigManager
 }
 
-func NewAWSPostgresMetricsProvider(client client.Client, logger *logrus.Entry) *PostgresMetricsProvider {
+func NewAWSPostgresMetricsProvider(client client.Client, logger *logrus.Entry) (*PostgresMetricsProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &PostgresMetricsProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"providers": postgresMetricProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-	}
+	}, nil
 }
 
 func (p *PostgresMetricsProvider) SupportsStrategy(strategy string) bool {

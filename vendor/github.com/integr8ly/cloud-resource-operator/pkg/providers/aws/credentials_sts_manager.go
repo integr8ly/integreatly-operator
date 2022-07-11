@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/integr8ly/cloud-resource-operator/internal/k8sutil"
 	errorUtil "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -26,8 +25,7 @@ type STSCredentialManager struct {
 	Client            client.Client
 }
 
-func NewSTSCredentialManager(client client.Client) *STSCredentialManager {
-	ns, _ := k8sutil.GetOperatorNamespace()
+func NewSTSCredentialManager(client client.Client, ns string) *STSCredentialManager {
 	return &STSCredentialManager{
 		OperatorNamespace: ns,
 		Client:            client,

@@ -81,13 +81,17 @@ type BlobStorageProvider struct {
 	ConfigManager     ConfigManager
 }
 
-func NewAWSBlobStorageProvider(client client.Client, logger *logrus.Entry) *BlobStorageProvider {
+func NewAWSBlobStorageProvider(client client.Client, logger *logrus.Entry) (*BlobStorageProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &BlobStorageProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"provider": blobstorageProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-	}
+	}, nil
 }
 
 func (p *BlobStorageProvider) GetName() string {

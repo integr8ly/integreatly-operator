@@ -31,13 +31,17 @@ type RedisMetricsProvider struct {
 	ConfigManager     ConfigManager
 }
 
-func NewAWSRedisMetricsProvider(client client.Client, logger *logrus.Entry) *RedisMetricsProvider {
+func NewAWSRedisMetricsProvider(client client.Client, logger *logrus.Entry) (*RedisMetricsProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &RedisMetricsProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"providers": redisMetricProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-	}
+	}, nil
 }
 
 func (r *RedisMetricsProvider) SupportsStrategy(strategy string) bool {
