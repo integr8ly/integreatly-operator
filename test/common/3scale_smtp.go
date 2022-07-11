@@ -99,7 +99,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 			t.Log(err)
 		}
 		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(inst.Spec.Type)) {
-			_, err = rest3ScaleSecret(ctx, t)
+			_, err = reset3ScaleSecret(ctx, t)
 			if err != nil {
 				t.Log(err)
 			}
@@ -493,7 +493,7 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	}
 }
 
-func rest3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
+func reset3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	t.Log("Resetting 3Scale secret")
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

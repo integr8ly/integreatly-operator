@@ -37,7 +37,7 @@ const (
 	lowerQuotaParam           = "1"
 	higherQuotaName           = "20 Million"
 	higherQuotaParamMT        = "10"
-	higherQuotaMTName         = "10 Million"
+	higherQuotaMTName         = "1 Million"
 	lowerQuotaName            = "100K"
 	timeoutWaitingQuotachange = 10
 	new3scaleLimits           = "501Mi"
