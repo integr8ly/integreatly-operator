@@ -82,7 +82,6 @@ type AlertmanagerIndex struct {
 	SmtpSecretNamespace           string   `json:"smtpSecretNamespace"`
 	SmtpToEmailAddress            []string `json:"smtpToEmailAddress"`
 	SmtpFromEmailAddress          string   `json:"smtpFromEmailAddress"`
-	OverrideAlertmanagerPvcSize   string   `json:"overrideAlertmanagerPvcSize,omitempty"`
 }
 
 type PrometheusIndex struct {
