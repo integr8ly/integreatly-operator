@@ -10,13 +10,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	k8sTypes "k8s.io/apimachinery/pkg/types"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	openshiftv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -1372,6 +1371,131 @@ func TestReconciler_getUserDiff(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("getUserDiff() got2 = %v, want %v", got2, tt.want2)
+			}
+		})
+	}
+}
+
+func TestReconcileRatelimitPortAnnotation(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "No Annotation",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				installation: getTestInstallation(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&threescalev1.APIManager{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      apiManagerName,
+							Namespace: "test",
+						},
+					}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "True Annotation",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				installation: getTestInstallation(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&threescalev1.APIManager{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        apiManagerName,
+							Namespace:   "test",
+							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "true"},
+						},
+					}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "False Annotation",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				installation: getTestInstallation(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&threescalev1.APIManager{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        apiManagerName,
+							Namespace:   "test",
+							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "false"},
+						},
+					}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.reconcileRatelimitPortAnnotation(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileComponents() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
