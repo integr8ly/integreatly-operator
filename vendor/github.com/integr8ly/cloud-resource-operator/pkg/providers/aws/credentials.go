@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -141,13 +142,24 @@ type CredentialManager interface {
 	ReconcileBucketOwnerCredentials(ctx context.Context, name, ns, bucket string) (*Credentials, error)
 }
 
-func NewCredentialManager(client client.Client) CredentialManager {
-	ns, _ := k8sutil.GetOperatorNamespace()
-	_, err := getSTSCredentialsSecret(context.TODO(), client, ns)
-	if errors.IsNotFound(err) {
-		return NewCredentialMinterCredentialManager(client)
+func NewCredentialManager(client client.Client) (CredentialManager, error) {
+	ns, err := k8sutil.GetOperatorNamespace()
+	if err != nil {
+		return nil, err
 	}
-	return NewSTSCredentialManager(client)
+	secret, err := getSTSCredentialsSecret(context.TODO(), client, ns)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return NewCredentialMinterCredentialManager(client), nil
+		}
+		resources.SetSTSCredentialsSecretMetric(ns, err)
+		return nil, err
+	}
+	resources.ResetSTSCredentialsSecretMetric()
+	if secret != nil && secret.Data != nil {
+		return NewSTSCredentialManager(client, ns), nil
+	}
+	return nil, errorUtil.New("could not instantiate credential manager")
 }
 
 var _ CredentialManager = (*CredentialMinterCredentialManager)(nil)

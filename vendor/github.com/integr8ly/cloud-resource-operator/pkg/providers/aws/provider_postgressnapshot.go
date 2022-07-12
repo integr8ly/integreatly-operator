@@ -35,13 +35,17 @@ type PostgresSnapshotProvider struct {
 	ConfigManager     ConfigManager
 }
 
-func NewAWSPostgresSnapshotProvider(client client.Client, logger *logrus.Entry) *PostgresSnapshotProvider {
+func NewAWSPostgresSnapshotProvider(client client.Client, logger *logrus.Entry) (*PostgresSnapshotProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &PostgresSnapshotProvider{
 		client:            client,
 		logger:            logger.WithFields(logrus.Fields{"provider": postgresSnapshotProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-	}
+	}, nil
 }
 
 func (p *PostgresSnapshotProvider) GetName() string {

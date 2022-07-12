@@ -40,7 +40,7 @@ const (
 	defaultAtRestEncryption = true
 	defaultCacheNodeType    = "cache.t3.micro"
 	defaultDescription      = "A Redis replication group"
-	defaultEngineVersion    = "5.0.6"
+	defaultEngineVersion    = "6.2"
 	// 3scale does not support in transit encryption (redis with tls)
 	defaultInTransitEncryption = false
 	defaultNumCacheClusters    = 2
@@ -72,14 +72,18 @@ type RedisProvider struct {
 	TCPPinger         ConnectionTester
 }
 
-func NewAWSRedisProvider(client client.Client, logger *logrus.Entry) *RedisProvider {
+func NewAWSRedisProvider(client client.Client, logger *logrus.Entry) (*RedisProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &RedisProvider{
 		Client:            client,
 		Logger:            logger.WithFields(logrus.Fields{"provider": redisProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
 		TCPPinger:         NewConnectionTestManager(),
-	}
+	}, nil
 }
 
 func (p *RedisProvider) GetName() string {
@@ -774,11 +778,13 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 	for _, foundCacheCluster := range replicationGroupClusters {
 		// check if the redis compatibility version requires an update.
 		if elasticacheConfig.EngineVersion != nil {
+
 			engineUpgradeNeeded, err := resources.VerifyVersionUpgradeNeeded(*foundCacheCluster.EngineVersion, *elasticacheConfig.EngineVersion)
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "invalid redis version")
 			}
 			if engineUpgradeNeeded {
+				modifyInput.SetApplyImmediately(true)
 				modifyInput.EngineVersion = elasticacheConfig.EngineVersion
 				updateFound = true
 			}

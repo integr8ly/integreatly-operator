@@ -35,13 +35,17 @@ type RedisSnapshotProvider struct {
 	ConfigManager     ConfigManager
 }
 
-func NewAWSRedisSnapshotProvider(client client.Client, logger *logrus.Entry) *RedisSnapshotProvider {
+func NewAWSRedisSnapshotProvider(client client.Client, logger *logrus.Entry) (*RedisSnapshotProvider, error) {
+	cm, err := NewCredentialManager(client)
+	if err != nil {
+		return nil, err
+	}
 	return &RedisSnapshotProvider{
 		client:            client,
 		logger:            logger.WithFields(logrus.Fields{"provider": redisProviderName}),
-		CredentialManager: NewCredentialManager(client),
+		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-	}
+	}, nil
 }
 
 func (p *RedisSnapshotProvider) GetName() string {

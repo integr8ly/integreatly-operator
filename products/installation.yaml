@@ -57,10 +57,10 @@
 #
 products:
   3scale:
-    channel: "threescale-2.11"
-    installFrom: "index"
-    package: "3scale-operator"
-    index: "quay.io/integreatly/3scale-index:v0.8.4"
+    channel: threescale-2.12
+    installFrom: index
+    package: 3scale-operator
+    index: quay.io/integreatly/3scale-index:v0.9.0
   amqonline:
     channel: "rhmi"
     installFrom: "local"
@@ -81,7 +81,7 @@ products:
     channel: "rhmi"
     installFrom: "index"
     package: "rhmi-cloud-resources"
-    index: "quay.io/integreatly/cloud-resource-operator:index-v0.39.0"
+    index: "quay.io/integreatly/cloud-resource-operator:index-v0.40.0"
   codeready-workspaces:
     channel: "rhmi"
     installFrom: "local"

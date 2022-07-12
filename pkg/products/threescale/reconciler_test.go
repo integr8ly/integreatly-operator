@@ -1500,3 +1500,194 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 		})
 	}
 }
+func TestReconciler_reconcileExternalDatasources(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-postgres-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+	}
+	backendRedis := &crov1.Redis{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-backend-redis-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+	}
+	systemRedis := &crov1.Redis{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-redis-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+	}
+	credSec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+	}
+	redisSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-redis",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"MESSAGE_BUS_URL":            []byte("Hello"),
+			"MESSAGE_BUS_NAMESPACE":      []byte("Hello"),
+			"MESSAGE_BUS_SENTINEL_HOSTS": []byte("Hello"),
+			"MESSAGE_BUS_SENTINEL_ROLE":  []byte("Hello"),
+		},
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name                 string
+		fields               fields
+		args                 args
+		want                 integreatlyv1alpha1.StatusPhase
+		wantErr              bool
+		verificationFunction func(k8sclient.Client) bool
+	}{
+		{
+			name: "test initial install no MESSAGE_BUS keys",
+			fields: fields{
+				ConfigManager: nil,
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				mpm:           nil,
+				installation:  getTestInstallation(),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, postgres, backendRedis, systemRedis, credSec),
+			},
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			verificationFunction: verifyMessageBusDoesNotExist,
+		},
+		{
+			name: "test existing install no MESSAGE_BUS keys",
+			fields: fields{
+				ConfigManager: nil,
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				mpm:           nil,
+				installation:  getTestInstallation(),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, postgres, backendRedis, systemRedis, credSec, redisSecret),
+			},
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			verificationFunction: verifyMessageBusDoesNotExist,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				log:           getLogger(),
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+			}
+			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileExternalDatasources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileExternalDatasources() got = %v, want %v", got, tt.want)
+			}
+			if !verifyMessageBusDoesNotExist(tt.args.serverClient) {
+				t.Fatal("found message bus values in secret")
+			}
+		})
+	}
+}
+
+func verifyMessageBusDoesNotExist(serverClient k8sclient.Client) bool {
+	redisSecret := &corev1.Secret{}
+	err := serverClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "system-redis", Namespace: "test"}, redisSecret)
+	if err != nil {
+		return false
+	}
+	messageBusKeys := []string{"MESSAGE_BUS_URL", "MESSAGE_BUS_NAMESPACE", "MESSAGE_BUS_SENTINEL_HOSTS", "MESSAGE_BUS_SENTINEL_ROLE"}
+	for _, key := range messageBusKeys {
+		if redisSecret.Data[key] != nil {
+			return false
+		}
+	}
+	return true
+}

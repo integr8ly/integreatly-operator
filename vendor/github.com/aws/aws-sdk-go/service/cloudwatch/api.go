@@ -179,6 +179,9 @@ func (c *CloudWatch) DeleteAnomalyDetectorRequest(input *DeleteAnomalyDetectorIn
 //   * ErrCodeMissingRequiredParameterException "MissingParameter"
 //   An input parameter that is required is missing.
 //
+//   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombination"
+//   Parameters were used together that cannot be used together.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/monitoring-2010-08-01/DeleteAnomalyDetector
 func (c *CloudWatch) DeleteAnomalyDetector(input *DeleteAnomalyDetectorInput) (*DeleteAnomalyDetectorOutput, error) {
 	req, out := c.DeleteAnomalyDetectorRequest(input)
@@ -515,6 +518,11 @@ func (c *CloudWatch) DescribeAlarmHistoryRequest(input *DescribeAlarmHistoryInpu
 //
 // CloudWatch retains the history of an alarm even if you delete the alarm.
 //
+// To use this operation and return information about a composite alarm, you
+// must be signed on with the cloudwatch:DescribeAlarmHistory permission that
+// is scoped to *. You can't return information about composite alarms if your
+// cloudwatch:DescribeAlarmHistory permission has a narrower scope.
+//
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
 // the error.
@@ -652,6 +660,11 @@ func (c *CloudWatch) DescribeAlarmsRequest(input *DescribeAlarmsInput) (req *req
 //
 // Retrieves the specified alarms. You can filter the results by specifying
 // a prefix for the alarm name, the alarm state, or a prefix for any action.
+//
+// To use this operation and return information about composite alarms, you
+// must be signed on with the cloudwatch:DescribeAlarms permission that is scoped
+// to *. You can't return information about composite alarms if your cloudwatch:DescribeAlarms
+// permission has a narrower scope.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -862,8 +875,11 @@ func (c *CloudWatch) DescribeAnomalyDetectorsRequest(input *DescribeAnomalyDetec
 // DescribeAnomalyDetectors API operation for Amazon CloudWatch.
 //
 // Lists the anomaly detection models that you have created in your account.
-// You can list all models in your account or filter the results to only the
-// models that are related to a certain namespace, metric name, or metric dimension.
+// For single metric anomaly detectors, you can list all of the models in your
+// account or filter the results to only the models that are related to a certain
+// namespace, metric name, or metric dimension. For metric math anomaly detectors,
+// you can list them by adding METRIC_MATH to the AnomalyDetectorTypes array.
+// This will return all metric math anomaly detectors in your account.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -881,6 +897,9 @@ func (c *CloudWatch) DescribeAnomalyDetectorsRequest(input *DescribeAnomalyDetec
 //
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValue"
 //   The value of an input parameter is bad or out-of-range.
+//
+//   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombination"
+//   Parameters were used together that cannot be used together.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/monitoring-2010-08-01/DescribeAnomalyDetectors
 func (c *CloudWatch) DescribeAnomalyDetectors(input *DescribeAnomalyDetectorsInput) (*DescribeAnomalyDetectorsOutput, error) {
@@ -1618,14 +1637,25 @@ func (c *CloudWatch) GetMetricDataRequest(input *GetMetricDataInput) (req *reque
 
 // GetMetricData API operation for Amazon CloudWatch.
 //
-// You can use the GetMetricData API to retrieve as many as 500 different metrics
-// in a single request, with a total of as many as 100,800 data points. You
-// can also optionally perform math expressions on the values of the returned
-// statistics, to create new time series that represent new insights into your
-// data. For example, using Lambda metrics, you could divide the Errors metric
-// by the Invocations metric to get an error rate time series. For more information
-// about metric math expressions, see Metric Math Syntax and Functions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/using-metric-math.html#metric-math-syntax)
+// You can use the GetMetricData API to retrieve CloudWatch metric values. The
+// operation can also include a CloudWatch Metrics Insights query, and one or
+// more metric math functions.
+//
+// A GetMetricData operation that does not include a query can retrieve as many
+// as 500 different metrics in a single request, with a total of as many as
+// 100,800 data points. You can also optionally perform metric math expressions
+// on the values of the returned statistics, to create new time series that
+// represent new insights into your data. For example, using Lambda metrics,
+// you could divide the Errors metric by the Invocations metric to get an error
+// rate time series. For more information about metric math expressions, see
+// Metric Math Syntax and Functions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/using-metric-math.html#metric-math-syntax)
 // in the Amazon CloudWatch User Guide.
+//
+// If you include a Metrics Insights query, each GetMetricData operation can
+// include only one query. But the same GetMetricData operation can also retrieve
+// other metrics. Metrics Insights queries can query only the most recent three
+// hours of metric data. For more information about Metrics Insights, see Query
+// your metrics with CloudWatch Metrics Insights (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/query_with_cloudwatch-metrics-insights.html).
 //
 // Calls to the GetMetricData API have a different pricing structure than calls
 // to GetMetricStatistics. For more information about pricing, see Amazon CloudWatch
@@ -1660,6 +1690,17 @@ func (c *CloudWatch) GetMetricDataRequest(input *GetMetricDataInput) (req *reque
 // returns only data that was collected with that unit specified. If you specify
 // a unit that does not match the data collected, the results of the operation
 // are null. CloudWatch does not perform unit conversions.
+//
+// Using Metrics Insights queries with metric math
+//
+// You can't mix a Metric Insights query and metric math syntax in the same
+// expression, but you can reference results from a Metrics Insights query within
+// other Metric math expressions. A Metrics Insights query without a GROUP BY
+// clause returns a single time-series (TS), and can be used as input for a
+// metric math expression that expects a single time series. A Metrics Insights
+// query with a GROUP BY clause returns an array of time-series (TS[]), and
+// can be used as input for a metric math expression that expects an array of
+// time series.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1841,8 +1882,8 @@ func (c *CloudWatch) GetMetricStatisticsRequest(input *GetMetricStatisticsInput)
 // CloudWatch started retaining 5-minute and 1-hour metric data as of July 9,
 // 2016.
 //
-// For information about metrics and dimensions supported by AWS services, see
-// the Amazon CloudWatch Metrics and Dimensions Reference (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CW_Support_For_AWS.html)
+// For information about metrics and dimensions supported by Amazon Web Services
+// services, see the Amazon CloudWatch Metrics and Dimensions Reference (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CW_Support_For_AWS.html)
 // in the Amazon CloudWatch User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -2669,6 +2710,9 @@ func (c *CloudWatch) PutAnomalyDetectorRequest(input *PutAnomalyDetectorInput) (
 //   * ErrCodeMissingRequiredParameterException "MissingParameter"
 //   An input parameter that is required is missing.
 //
+//   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombination"
+//   Parameters were used together that cannot be used together.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/monitoring-2010-08-01/PutAnomalyDetector
 func (c *CloudWatch) PutAnomalyDetector(input *PutAnomalyDetectorInput) (*PutAnomalyDetectorOutput, error) {
 	req, out := c.PutAnomalyDetectorRequest(input)
@@ -2742,7 +2786,9 @@ func (c *CloudWatch) PutCompositeAlarmRequest(input *PutCompositeAlarmInput) (re
 // ALARM state only if all conditions of the rule are met.
 //
 // The alarms specified in a composite alarm's rule expression can include metric
-// alarms and other composite alarms.
+// alarms and other composite alarms. The rule expression of a composite alarm
+// can include as many as 100 underlying alarms. Any single alarm can be included
+// in the rule expressions of as many as 150 composite alarms.
 //
 // Using composite alarms can reduce alarm noise. You can create multiple metric
 // alarms, and also create a composite alarm and set up alerts only for the
@@ -2775,6 +2821,10 @@ func (c *CloudWatch) PutCompositeAlarmRequest(input *PutCompositeAlarmInput) (re
 //
 // When you update an existing alarm, its state is left unchanged, but the update
 // completely overwrites the previous configuration of the alarm.
+//
+// To use this operation, you must be signed on with the cloudwatch:PutCompositeAlarm
+// permission that is scoped to *. You can't create a composite alarms if your
+// cloudwatch:PutCompositeAlarm permission has a narrower scope.
 //
 // If you are an IAM user, you must have iam:CreateServiceLinkedRole to create
 // a composite alarm that has Systems Manager OpsItem actions.
@@ -3068,11 +3118,32 @@ func (c *CloudWatch) PutMetricAlarmRequest(input *PutMetricAlarmInput) (req *req
 //    * The iam:CreateServiceLinkedRole to create an alarm with Systems Manager
 //    OpsItem actions.
 //
-// The first time you create an alarm in the AWS Management Console, the CLI,
-// or by using the PutMetricAlarm API, CloudWatch creates the necessary service-linked
-// role for you. The service-linked roles are called AWSServiceRoleForCloudWatchEvents
-// and AWSServiceRoleForCloudWatchAlarms_ActionSSM. For more information, see
-// AWS service-linked role (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html#iam-term-service-linked-role).
+// The first time you create an alarm in the Amazon Web Services Management
+// Console, the CLI, or by using the PutMetricAlarm API, CloudWatch creates
+// the necessary service-linked role for you. The service-linked roles are called
+// AWSServiceRoleForCloudWatchEvents and AWSServiceRoleForCloudWatchAlarms_ActionSSM.
+// For more information, see Amazon Web Services service-linked role (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html#iam-term-service-linked-role).
+//
+// Cross-account alarms
+//
+// You can set an alarm on metrics in the current account, or in another account.
+// To create a cross-account alarm that watches a metric in a different account,
+// you must have completed the following pre-requisites:
+//
+//    * The account where the metrics are located (the sharing account) must
+//    already have a sharing role named CloudWatch-CrossAccountSharingRole.
+//    If it does not already have this role, you must create it using the instructions
+//    in Set up a sharing account in Cross-account cross-Region CloudWatch console
+//    (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html#enable-cross-account-cross-Region).
+//    The policy for that role must grant access to the ID of the account where
+//    you are creating the alarm.
+//
+//    * The account where you are creating the alarm (the monitoring account)
+//    must already have a service-linked role named AWSServiceRoleForCloudWatchCrossAccount
+//    to allow CloudWatch to assume the sharing role in the sharing account.
+//    If it does not, you must create it following the directions in Set up
+//    a monitoring account in Cross-account cross-Region CloudWatch console
+//    (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html#enable-cross-account-cross-Region).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -3287,10 +3358,10 @@ func (c *CloudWatch) PutMetricStreamRequest(input *PutMetricStreamInput) (req *r
 // PutMetricStream API operation for Amazon CloudWatch.
 //
 // Creates or updates a metric stream. Metric streams can automatically stream
-// CloudWatch metrics to AWS destinations including Amazon S3 and to many third-party
-// solutions.
+// CloudWatch metrics to Amazon Web Services destinations including Amazon S3
+// and to many third-party solutions.
 //
-// For more information, see Using Metric Streams (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Metric-Streams.html).
+// For more information, see Using Metric Streams (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html).
 //
 // To create a metric stream, you must be logged on to an account that has the
 // iam:PassRole permission and either the CloudWatchFullAccess policy or the
@@ -3304,6 +3375,12 @@ func (c *CloudWatch) PutMetricStreamRequest(input *PutMetricStreamInput) (req *r
 //    the namespaces that you list in ExcludeFilters.
 //
 //    * Stream metrics from only the metric namespaces that you list in IncludeFilters.
+//
+// By default, a metric stream always sends the MAX, MIN, SUM, and SAMPLECOUNT
+// statistics for each metric that is streamed. You can use the StatisticsConfigurations
+// parameter to have the metric stream also send additional statistics in the
+// stream. Streaming additional statistics incurs additional costs. For more
+// information, see Amazon CloudWatch Pricing (https://aws.amazon.com/cloudwatch/pricing/).
 //
 // When you use PutMetricStream to create a new metric stream, the stream is
 // created in the running state. If you use it to update an existing stream,
@@ -3680,8 +3757,8 @@ func (c *CloudWatch) TagResourceRequest(input *TagResourceInput) (req *request.R
 // them to scope user permissions by granting a user permission to access or
 // change only resources with certain tag values.
 //
-// Tags don't have any semantic meaning to AWS and are interpreted strictly
-// as strings of characters.
+// Tags don't have any semantic meaning to Amazon Web Services and are interpreted
+// strictly as strings of characters.
 //
 // You can use the TagResource action with an alarm that already has tags. If
 // you specify a new tag key for the alarm, this tag is appended to the list
@@ -3845,12 +3922,20 @@ type AlarmHistoryItem struct {
 	Timestamp *time.Time `type:"timestamp"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AlarmHistoryItem) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AlarmHistoryItem) GoString() string {
 	return s.String()
 }
@@ -3891,9 +3976,9 @@ func (s *AlarmHistoryItem) SetTimestamp(v time.Time) *AlarmHistoryItem {
 	return s
 }
 
-// An anomaly detection model associated with a particular CloudWatch metric
-// and statistic. You can use the model to display a band of expected normal
-// values when the metric is graphed.
+// An anomaly detection model associated with a particular CloudWatch metric,
+// statistic, or metric math expression. You can use the model to display a
+// band of expected, normal values when the metric is graphed.
 type AnomalyDetector struct {
 	_ struct{} `type:"structure"`
 
@@ -3903,28 +3988,50 @@ type AnomalyDetector struct {
 	Configuration *AnomalyDetectorConfiguration `type:"structure"`
 
 	// The metric dimensions associated with the anomaly detection model.
-	Dimensions []*Dimension `type:"list"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.Dimensions property.
+	Dimensions []*Dimension `deprecated:"true" type:"list"`
+
+	// The CloudWatch metric math expression for this anomaly detector.
+	MetricMathAnomalyDetector *MetricMathAnomalyDetector `type:"structure"`
 
 	// The name of the metric associated with the anomaly detection model.
-	MetricName *string `min:"1" type:"string"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.MetricName property.
+	MetricName *string `min:"1" deprecated:"true" type:"string"`
 
 	// The namespace of the metric associated with the anomaly detection model.
-	Namespace *string `min:"1" type:"string"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.Namespace property.
+	Namespace *string `min:"1" deprecated:"true" type:"string"`
+
+	// The CloudWatch metric and statistic for this anomaly detector.
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector `type:"structure"`
 
 	// The statistic associated with the anomaly detection model.
-	Stat *string `type:"string"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.Stat property.
+	Stat *string `deprecated:"true" type:"string"`
 
 	// The current status of the anomaly detector's training. The possible values
 	// are TRAINED | PENDING_TRAINING | TRAINED_INSUFFICIENT_DATA
 	StateValue *string `type:"string" enum:"AnomalyDetectorStateValue"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AnomalyDetector) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AnomalyDetector) GoString() string {
 	return s.String()
 }
@@ -3941,6 +4048,12 @@ func (s *AnomalyDetector) SetDimensions(v []*Dimension) *AnomalyDetector {
 	return s
 }
 
+// SetMetricMathAnomalyDetector sets the MetricMathAnomalyDetector field's value.
+func (s *AnomalyDetector) SetMetricMathAnomalyDetector(v *MetricMathAnomalyDetector) *AnomalyDetector {
+	s.MetricMathAnomalyDetector = v
+	return s
+}
+
 // SetMetricName sets the MetricName field's value.
 func (s *AnomalyDetector) SetMetricName(v string) *AnomalyDetector {
 	s.MetricName = &v
@@ -3950,6 +4063,12 @@ func (s *AnomalyDetector) SetMetricName(v string) *AnomalyDetector {
 // SetNamespace sets the Namespace field's value.
 func (s *AnomalyDetector) SetNamespace(v string) *AnomalyDetector {
 	s.Namespace = &v
+	return s
+}
+
+// SetSingleMetricAnomalyDetector sets the SingleMetricAnomalyDetector field's value.
+func (s *AnomalyDetector) SetSingleMetricAnomalyDetector(v *SingleMetricAnomalyDetector) *AnomalyDetector {
+	s.SingleMetricAnomalyDetector = v
 	return s
 }
 
@@ -3986,12 +4105,20 @@ type AnomalyDetectorConfiguration struct {
 	MetricTimezone *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AnomalyDetectorConfiguration) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s AnomalyDetectorConfiguration) GoString() string {
 	return s.String()
 }
@@ -4077,12 +4204,20 @@ type CompositeAlarm struct {
 	StateValue *string `type:"string" enum:"StateValue"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s CompositeAlarm) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s CompositeAlarm) GoString() string {
 	return s.String()
 }
@@ -4184,12 +4319,20 @@ type DashboardEntry struct {
 	Size *int64 `type:"long"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DashboardEntry) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DashboardEntry) GoString() string {
 	return s.String()
 }
@@ -4229,12 +4372,20 @@ type DashboardValidationMessage struct {
 	Message *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DashboardValidationMessage) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DashboardValidationMessage) GoString() string {
 	return s.String()
 }
@@ -4281,12 +4432,20 @@ type Datapoint struct {
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Datapoint) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Datapoint) GoString() string {
 	return s.String()
 }
@@ -4348,12 +4507,20 @@ type DeleteAlarmsInput struct {
 	AlarmNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAlarmsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAlarmsInput) GoString() string {
 	return s.String()
 }
@@ -4381,12 +4548,20 @@ type DeleteAlarmsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAlarmsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAlarmsOutput) GoString() string {
 	return s.String()
 }
@@ -4395,30 +4570,78 @@ type DeleteAnomalyDetectorInput struct {
 	_ struct{} `type:"structure"`
 
 	// The metric dimensions associated with the anomaly detection model to delete.
-	Dimensions []*Dimension `type:"list"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Dimensions []*Dimension `deprecated:"true" type:"list"`
+
+	// The metric math anomaly detector to be deleted.
+	//
+	// When using MetricMathAnomalyDetector, you cannot include following parameters
+	// in the same operation:
+	//
+	//    * Dimensions,
+	//
+	//    * MetricName
+	//
+	//    * Namespace
+	//
+	//    * Stat
+	//
+	//    * the SingleMetricAnomalyDetector parameters of DeleteAnomalyDetectorInput
+	//
+	// Instead, specify the metric math anomaly detector attributes as part of the
+	// MetricMathAnomalyDetector property.
+	MetricMathAnomalyDetector *MetricMathAnomalyDetector `type:"structure"`
 
 	// The metric name associated with the anomaly detection model to delete.
 	//
-	// MetricName is a required field
-	MetricName *string `min:"1" type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	MetricName *string `min:"1" deprecated:"true" type:"string"`
 
 	// The namespace associated with the anomaly detection model to delete.
 	//
-	// Namespace is a required field
-	Namespace *string `min:"1" type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Namespace *string `min:"1" deprecated:"true" type:"string"`
+
+	// A single metric anomaly detector to be deleted.
+	//
+	// When using SingleMetricAnomalyDetector, you cannot include the following
+	// parameters in the same operation:
+	//
+	//    * Dimensions,
+	//
+	//    * MetricName
+	//
+	//    * Namespace
+	//
+	//    * Stat
+	//
+	//    * the MetricMathAnomalyDetector parameters of DeleteAnomalyDetectorInput
+	//
+	// Instead, specify the single metric anomaly detector attributes as part of
+	// the SingleMetricAnomalyDetector property.
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector `type:"structure"`
 
 	// The statistic associated with the anomaly detection model to delete.
 	//
-	// Stat is a required field
-	Stat *string `type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Stat *string `deprecated:"true" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAnomalyDetectorInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAnomalyDetectorInput) GoString() string {
 	return s.String()
 }
@@ -4426,20 +4649,11 @@ func (s DeleteAnomalyDetectorInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeleteAnomalyDetectorInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteAnomalyDetectorInput"}
-	if s.MetricName == nil {
-		invalidParams.Add(request.NewErrParamRequired("MetricName"))
-	}
 	if s.MetricName != nil && len(*s.MetricName) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("MetricName", 1))
 	}
-	if s.Namespace == nil {
-		invalidParams.Add(request.NewErrParamRequired("Namespace"))
-	}
 	if s.Namespace != nil && len(*s.Namespace) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Namespace", 1))
-	}
-	if s.Stat == nil {
-		invalidParams.Add(request.NewErrParamRequired("Stat"))
 	}
 	if s.Dimensions != nil {
 		for i, v := range s.Dimensions {
@@ -4449,6 +4663,16 @@ func (s *DeleteAnomalyDetectorInput) Validate() error {
 			if err := v.Validate(); err != nil {
 				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Dimensions", i), err.(request.ErrInvalidParams))
 			}
+		}
+	}
+	if s.MetricMathAnomalyDetector != nil {
+		if err := s.MetricMathAnomalyDetector.Validate(); err != nil {
+			invalidParams.AddNested("MetricMathAnomalyDetector", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.SingleMetricAnomalyDetector != nil {
+		if err := s.SingleMetricAnomalyDetector.Validate(); err != nil {
+			invalidParams.AddNested("SingleMetricAnomalyDetector", err.(request.ErrInvalidParams))
 		}
 	}
 
@@ -4464,6 +4688,12 @@ func (s *DeleteAnomalyDetectorInput) SetDimensions(v []*Dimension) *DeleteAnomal
 	return s
 }
 
+// SetMetricMathAnomalyDetector sets the MetricMathAnomalyDetector field's value.
+func (s *DeleteAnomalyDetectorInput) SetMetricMathAnomalyDetector(v *MetricMathAnomalyDetector) *DeleteAnomalyDetectorInput {
+	s.MetricMathAnomalyDetector = v
+	return s
+}
+
 // SetMetricName sets the MetricName field's value.
 func (s *DeleteAnomalyDetectorInput) SetMetricName(v string) *DeleteAnomalyDetectorInput {
 	s.MetricName = &v
@@ -4473,6 +4703,12 @@ func (s *DeleteAnomalyDetectorInput) SetMetricName(v string) *DeleteAnomalyDetec
 // SetNamespace sets the Namespace field's value.
 func (s *DeleteAnomalyDetectorInput) SetNamespace(v string) *DeleteAnomalyDetectorInput {
 	s.Namespace = &v
+	return s
+}
+
+// SetSingleMetricAnomalyDetector sets the SingleMetricAnomalyDetector field's value.
+func (s *DeleteAnomalyDetectorInput) SetSingleMetricAnomalyDetector(v *SingleMetricAnomalyDetector) *DeleteAnomalyDetectorInput {
+	s.SingleMetricAnomalyDetector = v
 	return s
 }
 
@@ -4486,12 +4722,20 @@ type DeleteAnomalyDetectorOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAnomalyDetectorOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteAnomalyDetectorOutput) GoString() string {
 	return s.String()
 }
@@ -4505,12 +4749,20 @@ type DeleteDashboardsInput struct {
 	DashboardNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteDashboardsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteDashboardsInput) GoString() string {
 	return s.String()
 }
@@ -4538,12 +4790,20 @@ type DeleteDashboardsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteDashboardsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteDashboardsOutput) GoString() string {
 	return s.String()
 }
@@ -4558,12 +4818,20 @@ type DeleteInsightRulesInput struct {
 	RuleNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteInsightRulesInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteInsightRulesInput) GoString() string {
 	return s.String()
 }
@@ -4595,12 +4863,20 @@ type DeleteInsightRulesOutput struct {
 	Failures []*PartialFailure `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteInsightRulesOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteInsightRulesOutput) GoString() string {
 	return s.String()
 }
@@ -4620,12 +4896,20 @@ type DeleteMetricStreamInput struct {
 	Name *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteMetricStreamInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteMetricStreamInput) GoString() string {
 	return s.String()
 }
@@ -4656,12 +4940,20 @@ type DeleteMetricStreamOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteMetricStreamOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DeleteMetricStreamOutput) GoString() string {
 	return s.String()
 }
@@ -4675,7 +4967,7 @@ type DescribeAlarmHistoryInput struct {
 	// Use this parameter to specify whether you want the operation to return metric
 	// alarms or composite alarms. If you omit this parameter, only metric alarms
 	// are returned.
-	AlarmTypes []*string `type:"list"`
+	AlarmTypes []*string `type:"list" enum:"AlarmType"`
 
 	// The ending date to retrieve alarm history.
 	EndDate *time.Time `type:"timestamp"`
@@ -4699,12 +4991,20 @@ type DescribeAlarmHistoryInput struct {
 	StartDate *time.Time `type:"timestamp"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmHistoryInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmHistoryInput) GoString() string {
 	return s.String()
 }
@@ -4783,12 +5083,20 @@ type DescribeAlarmHistoryOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmHistoryOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmHistoryOutput) GoString() string {
 	return s.String()
 }
@@ -4837,12 +5145,20 @@ type DescribeAlarmsForMetricInput struct {
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsForMetricInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsForMetricInput) GoString() string {
 	return s.String()
 }
@@ -4931,12 +5247,20 @@ type DescribeAlarmsForMetricOutput struct {
 	MetricAlarms []*MetricAlarm `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsForMetricOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsForMetricOutput) GoString() string {
 	return s.String()
 }
@@ -4967,7 +5291,7 @@ type DescribeAlarmsInput struct {
 	// Use this parameter to specify whether you want the operation to return metric
 	// alarms or composite alarms. If you omit this parameter, only metric alarms
 	// are returned.
-	AlarmTypes []*string `type:"list"`
+	AlarmTypes []*string `type:"list" enum:"AlarmType"`
 
 	// If you use this parameter and specify the name of a composite alarm, the
 	// operation returns information about the "children" alarms of the alarm you
@@ -5014,12 +5338,20 @@ type DescribeAlarmsInput struct {
 	StateValue *string `type:"string" enum:"StateValue"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsInput) GoString() string {
 	return s.String()
 }
@@ -5116,12 +5448,20 @@ type DescribeAlarmsOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAlarmsOutput) GoString() string {
 	return s.String()
 }
@@ -5146,6 +5486,10 @@ func (s *DescribeAlarmsOutput) SetNextToken(v string) *DescribeAlarmsOutput {
 
 type DescribeAnomalyDetectorsInput struct {
 	_ struct{} `type:"structure"`
+
+	// The anomaly detector types to request when using DescribeAnomalyDetectorsInput.
+	// If empty, defaults to SINGLE_METRIC.
+	AnomalyDetectorTypes []*string `type:"list" enum:"AnomalyDetectorType"`
 
 	// Limits the results to only the anomaly detection models that are associated
 	// with the specified metric dimensions. If there are multiple metrics that
@@ -5174,12 +5518,20 @@ type DescribeAnomalyDetectorsInput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAnomalyDetectorsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAnomalyDetectorsInput) GoString() string {
 	return s.String()
 }
@@ -5211,6 +5563,12 @@ func (s *DescribeAnomalyDetectorsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAnomalyDetectorTypes sets the AnomalyDetectorTypes field's value.
+func (s *DescribeAnomalyDetectorsInput) SetAnomalyDetectorTypes(v []*string) *DescribeAnomalyDetectorsInput {
+	s.AnomalyDetectorTypes = v
+	return s
 }
 
 // SetDimensions sets the Dimensions field's value.
@@ -5254,12 +5612,20 @@ type DescribeAnomalyDetectorsOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAnomalyDetectorsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeAnomalyDetectorsOutput) GoString() string {
 	return s.String()
 }
@@ -5288,12 +5654,20 @@ type DescribeInsightRulesInput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeInsightRulesInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeInsightRulesInput) GoString() string {
 	return s.String()
 }
@@ -5334,12 +5708,20 @@ type DescribeInsightRulesOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeInsightRulesOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DescribeInsightRulesOutput) GoString() string {
 	return s.String()
 }
@@ -5357,31 +5739,44 @@ func (s *DescribeInsightRulesOutput) SetNextToken(v string) *DescribeInsightRule
 }
 
 // A dimension is a name/value pair that is part of the identity of a metric.
-// You can assign up to 10 dimensions to a metric. Because dimensions are part
-// of the unique identifier for a metric, whenever you add a unique name/value
-// pair to one of your metrics, you are creating a new variation of that metric.
+// Because dimensions are part of the unique identifier for a metric, whenever
+// you add a unique name/value pair to one of your metrics, you are creating
+// a new variation of that metric. For example, many Amazon EC2 metrics publish
+// InstanceId as a dimension name, and the actual instance ID as the value for
+// that dimension.
+//
+// You can assign up to 10 dimensions to a metric.
 type Dimension struct {
 	_ struct{} `type:"structure"`
 
-	// The name of the dimension. Dimension names cannot contain blank spaces or
-	// non-ASCII characters.
+	// The name of the dimension. Dimension names must contain only ASCII characters,
+	// must include at least one non-whitespace character, and cannot start with
+	// a colon (:).
 	//
 	// Name is a required field
 	Name *string `min:"1" type:"string" required:"true"`
 
-	// The value of the dimension. Dimension values cannot contain blank spaces
-	// or non-ASCII characters.
+	// The value of the dimension. Dimension values must contain only ASCII characters
+	// and must include at least one non-whitespace character.
 	//
 	// Value is a required field
 	Value *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Dimension) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Dimension) GoString() string {
 	return s.String()
 }
@@ -5433,12 +5828,20 @@ type DimensionFilter struct {
 	Value *string `min:"1" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DimensionFilter) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DimensionFilter) GoString() string {
 	return s.String()
 }
@@ -5483,12 +5886,20 @@ type DisableAlarmActionsInput struct {
 	AlarmNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableAlarmActionsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableAlarmActionsInput) GoString() string {
 	return s.String()
 }
@@ -5516,12 +5927,20 @@ type DisableAlarmActionsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableAlarmActionsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableAlarmActionsOutput) GoString() string {
 	return s.String()
 }
@@ -5536,12 +5955,20 @@ type DisableInsightRulesInput struct {
 	RuleNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableInsightRulesInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableInsightRulesInput) GoString() string {
 	return s.String()
 }
@@ -5573,12 +6000,20 @@ type DisableInsightRulesOutput struct {
 	Failures []*PartialFailure `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableInsightRulesOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s DisableInsightRulesOutput) GoString() string {
 	return s.String()
 }
@@ -5598,12 +6033,20 @@ type EnableAlarmActionsInput struct {
 	AlarmNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableAlarmActionsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableAlarmActionsInput) GoString() string {
 	return s.String()
 }
@@ -5631,12 +6074,20 @@ type EnableAlarmActionsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableAlarmActionsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableAlarmActionsOutput) GoString() string {
 	return s.String()
 }
@@ -5651,12 +6102,20 @@ type EnableInsightRulesInput struct {
 	RuleNames []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableInsightRulesInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableInsightRulesInput) GoString() string {
 	return s.String()
 }
@@ -5688,12 +6147,20 @@ type EnableInsightRulesOutput struct {
 	Failures []*PartialFailure `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableInsightRulesOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s EnableInsightRulesOutput) GoString() string {
 	return s.String()
 }
@@ -5713,12 +6180,20 @@ type GetDashboardInput struct {
 	DashboardName *string `type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetDashboardInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetDashboardInput) GoString() string {
 	return s.String()
 }
@@ -5757,12 +6232,20 @@ type GetDashboardOutput struct {
 	DashboardName *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetDashboardOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetDashboardOutput) GoString() string {
 	return s.String()
 }
@@ -5849,12 +6332,20 @@ type GetInsightRuleReportInput struct {
 	StartTime *time.Time `type:"timestamp" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetInsightRuleReportInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetInsightRuleReportInput) GoString() string {
 	return s.String()
 }
@@ -5961,12 +6452,20 @@ type GetInsightRuleReportOutput struct {
 	MetricDatapoints []*InsightRuleMetricDatapoint `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetInsightRuleReportOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetInsightRuleReportOutput) GoString() string {
 	return s.String()
 }
@@ -6035,8 +6534,8 @@ type GetMetricDataInput struct {
 
 	// The metric queries to be returned. A single GetMetricData call can include
 	// as many as 500 MetricDataQuery structures. Each of these structures can specify
-	// either a metric to retrieve, or a math expression to perform on retrieved
-	// data.
+	// either a metric to retrieve, a Metrics Insights query, or a math expression
+	// to perform on retrieved data.
 	//
 	// MetricDataQueries is a required field
 	MetricDataQueries []*MetricDataQuery `type:"list" required:"true"`
@@ -6085,12 +6584,20 @@ type GetMetricDataInput struct {
 	StartTime *time.Time `type:"timestamp" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricDataInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricDataInput) GoString() string {
 	return s.String()
 }
@@ -6187,12 +6694,20 @@ type GetMetricDataOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricDataOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricDataOutput) GoString() string {
 	return s.String()
 }
@@ -6309,7 +6824,7 @@ type GetMetricStatisticsInput struct {
 	// The metric statistics, other than percentile. For percentile statistics,
 	// use ExtendedStatistics. When calling GetMetricStatistics, you must specify
 	// either Statistics or ExtendedStatistics, but not both.
-	Statistics []*string `min:"1" type:"list"`
+	Statistics []*string `min:"1" type:"list" enum:"Statistic"`
 
 	// The unit for a given metric. If you omit Unit, all data that was collected
 	// with any unit is returned, along with the corresponding units that were specified
@@ -6320,12 +6835,20 @@ type GetMetricStatisticsInput struct {
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStatisticsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStatisticsInput) GoString() string {
 	return s.String()
 }
@@ -6444,12 +6967,20 @@ type GetMetricStatisticsOutput struct {
 	Label *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStatisticsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStatisticsOutput) GoString() string {
 	return s.String()
 }
@@ -6475,12 +7006,20 @@ type GetMetricStreamInput struct {
 	Name *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStreamInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStreamInput) GoString() string {
 	return s.String()
 }
@@ -6536,6 +7075,9 @@ type GetMetricStreamOutput struct {
 	// The name of the metric stream.
 	Name *string `min:"1" type:"string"`
 
+	// The output format for the stream. Valid values are json and opentelemetry0.7.
+	// For more information about metric stream output formats, see Metric streams
+	// output formats (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats.html).
 	OutputFormat *string `min:"1" type:"string" enum:"MetricStreamOutputFormat"`
 
 	// The ARN of the IAM role that is used by this metric stream.
@@ -6543,14 +7085,27 @@ type GetMetricStreamOutput struct {
 
 	// The state of the metric stream. The possible values are running and stopped.
 	State *string `type:"string"`
+
+	// Each entry in this array displays information about one or more metrics that
+	// include additional statistics in the metric stream. For more information
+	// about the additional statistics, see CloudWatch statistics definitions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html.html).
+	StatisticsConfigurations []*MetricStreamStatisticsConfiguration `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStreamOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricStreamOutput) GoString() string {
 	return s.String()
 }
@@ -6615,6 +7170,12 @@ func (s *GetMetricStreamOutput) SetState(v string) *GetMetricStreamOutput {
 	return s
 }
 
+// SetStatisticsConfigurations sets the StatisticsConfigurations field's value.
+func (s *GetMetricStreamOutput) SetStatisticsConfigurations(v []*MetricStreamStatisticsConfiguration) *GetMetricStreamOutput {
+	s.StatisticsConfigurations = v
+	return s
+}
+
 type GetMetricWidgetImageInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6659,18 +7220,26 @@ type GetMetricWidgetImageInput struct {
 	// </GetMetricWidgetImageResponse>
 	//
 	// The image/png setting is intended only for custom HTTP requests. For most
-	// use cases, and all actions using an AWS SDK, you should use png. If you specify
-	// image/png, the HTTP response has a content-type set to image/png, and the
-	// body of the response is a PNG image.
+	// use cases, and all actions using an Amazon Web Services SDK, you should use
+	// png. If you specify image/png, the HTTP response has a content-type set to
+	// image/png, and the body of the response is a PNG image.
 	OutputFormat *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricWidgetImageInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricWidgetImageInput) GoString() string {
 	return s.String()
 }
@@ -6704,17 +7273,24 @@ type GetMetricWidgetImageOutput struct {
 	_ struct{} `type:"structure"`
 
 	// The image of the graph, in the output format specified. The output is base64-encoded.
-	//
 	// MetricWidgetImage is automatically base64 encoded/decoded by the SDK.
 	MetricWidgetImage []byte `type:"blob"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricWidgetImageOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s GetMetricWidgetImageOutput) GoString() string {
 	return s.String()
 }
@@ -6725,7 +7301,10 @@ func (s *GetMetricWidgetImageOutput) SetMetricWidgetImage(v []byte) *GetMetricWi
 	return s
 }
 
-// This structure contains the definition for a Contributor Insights rule.
+// This structure contains the definition for a Contributor Insights rule. For
+// more information about this rule, see Using Constributor Insights to analyze
+// high-cardinality data (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContributorInsights.html)
+// in the Amazon CloudWatch User Guide.
 type InsightRule struct {
 	_ struct{} `type:"structure"`
 
@@ -6743,7 +7322,7 @@ type InsightRule struct {
 	Name *string `min:"1" type:"string" required:"true"`
 
 	// For rules that you create, this is always {"Name": "CloudWatchLogRule", "Version":
-	// 1}. For built-in rules, this is {"Name": "ServiceLogRule", "Version": 1}
+	// 1}. For managed rules, this is {"Name": "ServiceLogRule", "Version": 1}
 	//
 	// Schema is a required field
 	Schema *string `type:"string" required:"true"`
@@ -6754,12 +7333,20 @@ type InsightRule struct {
 	State *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRule) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRule) GoString() string {
 	return s.String()
 }
@@ -6817,12 +7404,20 @@ type InsightRuleContributor struct {
 	Keys []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleContributor) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleContributor) GoString() string {
 	return s.String()
 }
@@ -6863,12 +7458,20 @@ type InsightRuleContributorDatapoint struct {
 	Timestamp *time.Time `type:"timestamp" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleContributorDatapoint) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleContributorDatapoint) GoString() string {
 	return s.String()
 }
@@ -6946,12 +7549,20 @@ type InsightRuleMetricDatapoint struct {
 	UniqueContributors *float64 `type:"double"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleMetricDatapoint) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s InsightRuleMetricDatapoint) GoString() string {
 	return s.String()
 }
@@ -7022,12 +7633,20 @@ type LabelOptions struct {
 	Timezone *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s LabelOptions) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s LabelOptions) GoString() string {
 	return s.String()
 }
@@ -7051,12 +7670,20 @@ type ListDashboardsInput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListDashboardsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListDashboardsInput) GoString() string {
 	return s.String()
 }
@@ -7083,12 +7710,20 @@ type ListDashboardsOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListDashboardsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListDashboardsOutput) GoString() string {
 	return s.String()
 }
@@ -7116,12 +7751,20 @@ type ListMetricStreamsInput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricStreamsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricStreamsInput) GoString() string {
 	return s.String()
 }
@@ -7162,12 +7805,20 @@ type ListMetricStreamsOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricStreamsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricStreamsOutput) GoString() string {
 	return s.String()
 }
@@ -7213,12 +7864,20 @@ type ListMetricsInput struct {
 	RecentlyActive *string `type:"string" enum:"RecentlyActive"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricsInput) GoString() string {
 	return s.String()
 }
@@ -7289,12 +7948,20 @@ type ListMetricsOutput struct {
 	NextToken *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListMetricsOutput) GoString() string {
 	return s.String()
 }
@@ -7328,12 +7995,20 @@ type ListTagsForResourceInput struct {
 	ResourceARN *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListTagsForResourceInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListTagsForResourceInput) GoString() string {
 	return s.String()
 }
@@ -7367,12 +8042,20 @@ type ListTagsForResourceOutput struct {
 	Tags []*Tag `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListTagsForResourceOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s ListTagsForResourceOutput) GoString() string {
 	return s.String()
 }
@@ -7384,6 +8067,11 @@ func (s *ListTagsForResourceOutput) SetTags(v []*Tag) *ListTagsForResourceOutput
 }
 
 // A message returned by the GetMetricDataAPI, including a code and a description.
+//
+// If a cross-Region GetMetricData operation fails with a code of Forbidden
+// and a value of Authentication too complex to retrieve cross region data,
+// you can correct the problem by running the GetMetricData operation in the
+// same Region where the metric data is.
 type MessageData struct {
 	_ struct{} `type:"structure"`
 
@@ -7394,12 +8082,20 @@ type MessageData struct {
 	Value *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MessageData) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MessageData) GoString() string {
 	return s.String()
 }
@@ -7430,12 +8126,20 @@ type Metric struct {
 	Namespace *string `min:"1" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Metric) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Metric) GoString() string {
 	return s.String()
 }
@@ -7580,20 +8284,31 @@ type MetricAlarm struct {
 	// function used as the threshold for the alarm.
 	ThresholdMetricId *string `min:"1" type:"string"`
 
-	// Sets how this alarm is to handle missing data points. If this parameter is
-	// omitted, the default behavior of missing is used.
+	// Sets how this alarm is to handle missing data points. The valid values are
+	// breaching, notBreaching, ignore, and missing. For more information, see Configuring
+	// how CloudWatch alarms treat missing data (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarms-and-missing-data).
+	//
+	// If this parameter is omitted, the default behavior of missing is used.
 	TreatMissingData *string `min:"1" type:"string"`
 
 	// The unit of the metric associated with the alarm.
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricAlarm) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricAlarm) GoString() string {
 	return s.String()
 }
@@ -7765,8 +8480,8 @@ func (s *MetricAlarm) SetUnit(v string) *MetricAlarm {
 //
 // When used in GetMetricData, it indicates the metric data to return, and whether
 // this call is just retrieving a batch set of data for one metric, or is performing
-// a math expression on metric data. A single GetMetricData call can include
-// up to 500 MetricDataQuery structures.
+// a Metrics Insights query or a math expression. A single GetMetricData call
+// can include up to 500 MetricDataQuery structures.
 //
 // When used in PutMetricAlarm, it enables you to create an alarm based on a
 // metric math expression. Each MetricDataQuery in the array specifies either
@@ -7788,11 +8503,23 @@ func (s *MetricAlarm) SetUnit(v string) *MetricAlarm {
 type MetricDataQuery struct {
 	_ struct{} `type:"structure"`
 
-	// The math expression to be performed on the returned data, if this object
-	// is performing a math expression. This expression can use the Id of the other
-	// metrics to refer to those metrics, and can also use the Id of other expressions
-	// to use the result of those expressions. For more information about metric
-	// math expressions, see Metric Math Syntax and Functions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/using-metric-math.html#metric-math-syntax)
+	// The ID of the account where the metrics are located, if this is a cross-account
+	// alarm.
+	//
+	// Use this field only for PutMetricAlarm operations. It is not used in GetMetricData
+	// operations.
+	AccountId *string `min:"1" type:"string"`
+
+	// This field can contain either a Metrics Insights query, or a metric math
+	// expression to be performed on the returned data. For more information about
+	// Metrics Insights queries, see Metrics Insights query components and syntax
+	// (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch-metrics-insights-querylanguage)
+	// in the Amazon CloudWatch User Guide.
+	//
+	// A math expression can use the Id of the other metrics or queries to refer
+	// to those metrics, and can also use the Id of other expressions to use the
+	// result of those expressions. For more information about metric math expressions,
+	// see Metric Math Syntax and Functions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/using-metric-math.html#metric-math-syntax)
 	// in the Amazon CloudWatch User Guide.
 	//
 	// Within each MetricDataQuery object, you must specify either Expression or
@@ -7845,12 +8572,20 @@ type MetricDataQuery struct {
 	ReturnData *bool `type:"boolean"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDataQuery) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDataQuery) GoString() string {
 	return s.String()
 }
@@ -7858,6 +8593,9 @@ func (s MetricDataQuery) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *MetricDataQuery) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "MetricDataQuery"}
+	if s.AccountId != nil && len(*s.AccountId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AccountId", 1))
+	}
 	if s.Expression != nil && len(*s.Expression) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Expression", 1))
 	}
@@ -7880,6 +8618,12 @@ func (s *MetricDataQuery) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAccountId sets the AccountId field's value.
+func (s *MetricDataQuery) SetAccountId(v string) *MetricDataQuery {
+	s.AccountId = &v
+	return s
 }
 
 // SetExpression sets the Expression field's value.
@@ -7952,12 +8696,20 @@ type MetricDataResult struct {
 	Values []*float64 `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDataResult) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDataResult) GoString() string {
 	return s.String()
 }
@@ -8065,12 +8817,20 @@ type MetricDatum struct {
 	Values []*float64 `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDatum) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricDatum) GoString() string {
 	return s.String()
 }
@@ -8163,6 +8923,66 @@ func (s *MetricDatum) SetValues(v []*float64) *MetricDatum {
 	return s
 }
 
+// Indicates the CloudWatch math expression that provides the time series the
+// anomaly detector uses as input. The designated math expression must return
+// a single time series.
+type MetricMathAnomalyDetector struct {
+	_ struct{} `type:"structure"`
+
+	// An array of metric data query structures that enables you to create an anomaly
+	// detector based on the result of a metric math expression. Each item in MetricDataQueries
+	// gets a metric or performs a math expression. One item in MetricDataQueries
+	// is the expression that provides the time series that the anomaly detector
+	// uses as input. Designate the expression by setting ReturnData to True for
+	// this object in the array. For all other expressions and metrics, set ReturnData
+	// to False. The designated expression must return a single time series.
+	MetricDataQueries []*MetricDataQuery `type:"list"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricMathAnomalyDetector) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricMathAnomalyDetector) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *MetricMathAnomalyDetector) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "MetricMathAnomalyDetector"}
+	if s.MetricDataQueries != nil {
+		for i, v := range s.MetricDataQueries {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "MetricDataQueries", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetMetricDataQueries sets the MetricDataQueries field's value.
+func (s *MetricMathAnomalyDetector) SetMetricDataQueries(v []*MetricDataQuery) *MetricMathAnomalyDetector {
+	s.MetricDataQueries = v
+	return s
+}
+
 // This structure defines the metric to be returned, along with the statistics,
 // period, and units.
 type MetricStat struct {
@@ -8214,12 +9034,20 @@ type MetricStat struct {
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStat) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStat) GoString() string {
 	return s.String()
 }
@@ -8302,12 +9130,20 @@ type MetricStreamEntry struct {
 	State *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStreamEntry) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStreamEntry) GoString() string {
 	return s.String()
 }
@@ -8363,12 +9199,20 @@ type MetricStreamFilter struct {
 	Namespace *string `min:"1" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStreamFilter) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s MetricStreamFilter) GoString() string {
 	return s.String()
 }
@@ -8392,6 +9236,164 @@ func (s *MetricStreamFilter) SetNamespace(v string) *MetricStreamFilter {
 	return s
 }
 
+// By default, a metric stream always sends the MAX, MIN, SUM, and SAMPLECOUNT
+// statistics for each metric that is streamed. This structure contains information
+// for one metric that includes additional statistics in the stream. For more
+// information about statistics, see CloudWatch, listed in CloudWatch statistics
+// definitions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html.html).
+type MetricStreamStatisticsConfiguration struct {
+	_ struct{} `type:"structure"`
+
+	// The list of additional statistics that are to be streamed for the metrics
+	// listed in the IncludeMetrics array in this structure. This list can include
+	// as many as 20 statistics.
+	//
+	// If the OutputFormat for the stream is opentelemetry0.7, the only valid values
+	// are p?? percentile statistics such as p90, p99 and so on.
+	//
+	// If the OutputFormat for the stream is json, the valid values include the
+	// abbreviations for all of the statistics listed in CloudWatch statistics definitions
+	// (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html.html).
+	// For example, this includes tm98, wm90, PR(:300), and so on.
+	//
+	// AdditionalStatistics is a required field
+	AdditionalStatistics []*string `type:"list" required:"true"`
+
+	// An array of metric name and namespace pairs that stream the additional statistics
+	// listed in the value of the AdditionalStatistics parameter. There can be as
+	// many as 100 pairs in the array.
+	//
+	// All metrics that match the combination of metric name and namespace will
+	// be streamed with the additional statistics, no matter their dimensions.
+	//
+	// IncludeMetrics is a required field
+	IncludeMetrics []*MetricStreamStatisticsMetric `type:"list" required:"true"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricStreamStatisticsConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricStreamStatisticsConfiguration) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *MetricStreamStatisticsConfiguration) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "MetricStreamStatisticsConfiguration"}
+	if s.AdditionalStatistics == nil {
+		invalidParams.Add(request.NewErrParamRequired("AdditionalStatistics"))
+	}
+	if s.IncludeMetrics == nil {
+		invalidParams.Add(request.NewErrParamRequired("IncludeMetrics"))
+	}
+	if s.IncludeMetrics != nil {
+		for i, v := range s.IncludeMetrics {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "IncludeMetrics", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAdditionalStatistics sets the AdditionalStatistics field's value.
+func (s *MetricStreamStatisticsConfiguration) SetAdditionalStatistics(v []*string) *MetricStreamStatisticsConfiguration {
+	s.AdditionalStatistics = v
+	return s
+}
+
+// SetIncludeMetrics sets the IncludeMetrics field's value.
+func (s *MetricStreamStatisticsConfiguration) SetIncludeMetrics(v []*MetricStreamStatisticsMetric) *MetricStreamStatisticsConfiguration {
+	s.IncludeMetrics = v
+	return s
+}
+
+// This object contains the information for one metric that is to be streamed
+// with additional statistics.
+type MetricStreamStatisticsMetric struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the metric.
+	//
+	// MetricName is a required field
+	MetricName *string `min:"1" type:"string" required:"true"`
+
+	// The namespace of the metric.
+	//
+	// Namespace is a required field
+	Namespace *string `min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricStreamStatisticsMetric) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s MetricStreamStatisticsMetric) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *MetricStreamStatisticsMetric) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "MetricStreamStatisticsMetric"}
+	if s.MetricName == nil {
+		invalidParams.Add(request.NewErrParamRequired("MetricName"))
+	}
+	if s.MetricName != nil && len(*s.MetricName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("MetricName", 1))
+	}
+	if s.Namespace == nil {
+		invalidParams.Add(request.NewErrParamRequired("Namespace"))
+	}
+	if s.Namespace != nil && len(*s.Namespace) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Namespace", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetMetricName sets the MetricName field's value.
+func (s *MetricStreamStatisticsMetric) SetMetricName(v string) *MetricStreamStatisticsMetric {
+	s.MetricName = &v
+	return s
+}
+
+// SetNamespace sets the Namespace field's value.
+func (s *MetricStreamStatisticsMetric) SetNamespace(v string) *MetricStreamStatisticsMetric {
+	s.Namespace = &v
+	return s
+}
+
 // This array is empty if the API operation was successful for all the rules
 // specified in the request. If the operation could not process one of the rules,
 // the following data is returned for each of those rules.
@@ -8411,12 +9413,20 @@ type PartialFailure struct {
 	FailureResource *string `type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PartialFailure) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PartialFailure) GoString() string {
 	return s.String()
 }
@@ -8456,30 +9466,78 @@ type PutAnomalyDetectorInput struct {
 	Configuration *AnomalyDetectorConfiguration `type:"structure"`
 
 	// The metric dimensions to create the anomaly detection model for.
-	Dimensions []*Dimension `type:"list"`
+	//
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Dimensions []*Dimension `deprecated:"true" type:"list"`
+
+	// The metric math anomaly detector to be created.
+	//
+	// When using MetricMathAnomalyDetector, you cannot include the following parameters
+	// in the same operation:
+	//
+	//    * Dimensions
+	//
+	//    * MetricName
+	//
+	//    * Namespace
+	//
+	//    * Stat
+	//
+	//    * the SingleMetricAnomalyDetector parameters of PutAnomalyDetectorInput
+	//
+	// Instead, specify the metric math anomaly detector attributes as part of the
+	// property MetricMathAnomalyDetector.
+	MetricMathAnomalyDetector *MetricMathAnomalyDetector `type:"structure"`
 
 	// The name of the metric to create the anomaly detection model for.
 	//
-	// MetricName is a required field
-	MetricName *string `min:"1" type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	MetricName *string `min:"1" deprecated:"true" type:"string"`
 
 	// The namespace of the metric to create the anomaly detection model for.
 	//
-	// Namespace is a required field
-	Namespace *string `min:"1" type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Namespace *string `min:"1" deprecated:"true" type:"string"`
+
+	// A single metric anomaly detector to be created.
+	//
+	// When using SingleMetricAnomalyDetector, you cannot include the following
+	// parameters in the same operation:
+	//
+	//    * Dimensions
+	//
+	//    * MetricName
+	//
+	//    * Namespace
+	//
+	//    * Stat
+	//
+	//    * the MetricMatchAnomalyDetector parameters of PutAnomalyDetectorInput
+	//
+	// Instead, specify the single metric anomaly detector attributes as part of
+	// the property SingleMetricAnomalyDetector.
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector `type:"structure"`
 
 	// The statistic to use for the metric and the anomaly detection model.
 	//
-	// Stat is a required field
-	Stat *string `type:"string" required:"true"`
+	// Deprecated: Use SingleMetricAnomalyDetector.
+	Stat *string `deprecated:"true" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutAnomalyDetectorInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutAnomalyDetectorInput) GoString() string {
 	return s.String()
 }
@@ -8487,20 +9545,11 @@ func (s PutAnomalyDetectorInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *PutAnomalyDetectorInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutAnomalyDetectorInput"}
-	if s.MetricName == nil {
-		invalidParams.Add(request.NewErrParamRequired("MetricName"))
-	}
 	if s.MetricName != nil && len(*s.MetricName) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("MetricName", 1))
 	}
-	if s.Namespace == nil {
-		invalidParams.Add(request.NewErrParamRequired("Namespace"))
-	}
 	if s.Namespace != nil && len(*s.Namespace) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Namespace", 1))
-	}
-	if s.Stat == nil {
-		invalidParams.Add(request.NewErrParamRequired("Stat"))
 	}
 	if s.Configuration != nil {
 		if err := s.Configuration.Validate(); err != nil {
@@ -8515,6 +9564,16 @@ func (s *PutAnomalyDetectorInput) Validate() error {
 			if err := v.Validate(); err != nil {
 				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Dimensions", i), err.(request.ErrInvalidParams))
 			}
+		}
+	}
+	if s.MetricMathAnomalyDetector != nil {
+		if err := s.MetricMathAnomalyDetector.Validate(); err != nil {
+			invalidParams.AddNested("MetricMathAnomalyDetector", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.SingleMetricAnomalyDetector != nil {
+		if err := s.SingleMetricAnomalyDetector.Validate(); err != nil {
+			invalidParams.AddNested("SingleMetricAnomalyDetector", err.(request.ErrInvalidParams))
 		}
 	}
 
@@ -8536,6 +9595,12 @@ func (s *PutAnomalyDetectorInput) SetDimensions(v []*Dimension) *PutAnomalyDetec
 	return s
 }
 
+// SetMetricMathAnomalyDetector sets the MetricMathAnomalyDetector field's value.
+func (s *PutAnomalyDetectorInput) SetMetricMathAnomalyDetector(v *MetricMathAnomalyDetector) *PutAnomalyDetectorInput {
+	s.MetricMathAnomalyDetector = v
+	return s
+}
+
 // SetMetricName sets the MetricName field's value.
 func (s *PutAnomalyDetectorInput) SetMetricName(v string) *PutAnomalyDetectorInput {
 	s.MetricName = &v
@@ -8545,6 +9610,12 @@ func (s *PutAnomalyDetectorInput) SetMetricName(v string) *PutAnomalyDetectorInp
 // SetNamespace sets the Namespace field's value.
 func (s *PutAnomalyDetectorInput) SetNamespace(v string) *PutAnomalyDetectorInput {
 	s.Namespace = &v
+	return s
+}
+
+// SetSingleMetricAnomalyDetector sets the SingleMetricAnomalyDetector field's value.
+func (s *PutAnomalyDetectorInput) SetSingleMetricAnomalyDetector(v *SingleMetricAnomalyDetector) *PutAnomalyDetectorInput {
+	s.SingleMetricAnomalyDetector = v
 	return s
 }
 
@@ -8558,12 +9629,20 @@ type PutAnomalyDetectorOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutAnomalyDetectorOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutAnomalyDetectorOutput) GoString() string {
 	return s.String()
 }
@@ -8666,12 +9745,20 @@ type PutCompositeAlarmInput struct {
 	Tags []*Tag `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutCompositeAlarmInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutCompositeAlarmInput) GoString() string {
 	return s.String()
 }
@@ -8760,12 +9847,20 @@ type PutCompositeAlarmOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutCompositeAlarmOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutCompositeAlarmOutput) GoString() string {
 	return s.String()
 }
@@ -8792,12 +9887,20 @@ type PutDashboardInput struct {
 	DashboardName *string `type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutDashboardInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutDashboardInput) GoString() string {
 	return s.String()
 }
@@ -8845,12 +9948,20 @@ type PutDashboardOutput struct {
 	DashboardValidationMessages []*DashboardValidationMessage `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutDashboardOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutDashboardOutput) GoString() string {
 	return s.String()
 }
@@ -8894,12 +10005,20 @@ type PutInsightRuleInput struct {
 	Tags []*Tag `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutInsightRuleInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutInsightRuleInput) GoString() string {
 	return s.String()
 }
@@ -8967,12 +10086,20 @@ type PutInsightRuleOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutInsightRuleOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutInsightRuleOutput) GoString() string {
 	return s.String()
 }
@@ -8990,11 +10117,12 @@ type PutMetricAlarmInput struct {
 	// Valid Values: arn:aws:automate:region:ec2:stop | arn:aws:automate:region:ec2:terminate
 	// | arn:aws:automate:region:ec2:recover | arn:aws:automate:region:ec2:reboot
 	// | arn:aws:sns:region:account-id:sns-topic-name | arn:aws:autoscaling:region:account-id:scalingPolicy:policy-id:autoScalingGroupName/group-friendly-name:policyName/policy-friendly-name
-	// | arn:aws:ssm:region:account-id:opsitem:severity
+	// | arn:aws:ssm:region:account-id:opsitem:severity | arn:aws:ssm-incidents::account-id:response-plan:response-plan-name
 	//
 	// Valid Values (for use with IAM roles): arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Stop/1.0
 	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Terminate/1.0
 	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Reboot/1.0
+	// | arn:aws:swf:region:account-id:action/actions/AWS_EC2.InstanceId.Recover/1.0
 	AlarmActions []*string `type:"list"`
 
 	// The description for the alarm.
@@ -9166,6 +10294,11 @@ type PutMetricAlarmInput struct {
 	// see Configuring How CloudWatch Alarms Treats Missing Data (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarms-and-missing-data).
 	//
 	// Valid Values: breaching | notBreaching | ignore | missing
+	//
+	// Alarms that evaluate metrics in the AWS/DynamoDB namespace always ignore
+	// missing data even if you choose a different option for TreatMissingData.
+	// When an AWS/DynamoDB metric has missing data, alarms that evaluate that metric
+	// remain in their current state.
 	TreatMissingData *string `min:"1" type:"string"`
 
 	// The unit of measure for the statistic. For example, the units for the Amazon
@@ -9189,12 +10322,20 @@ type PutMetricAlarmInput struct {
 	Unit *string `type:"string" enum:"StandardUnit"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricAlarmInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricAlarmInput) GoString() string {
 	return s.String()
 }
@@ -9411,12 +10552,20 @@ type PutMetricAlarmOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricAlarmOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricAlarmOutput) GoString() string {
 	return s.String()
 }
@@ -9432,19 +10581,27 @@ type PutMetricDataInput struct {
 
 	// The namespace for the metric data.
 	//
-	// To avoid conflicts with AWS service namespaces, you should not specify a
-	// namespace that begins with AWS/
+	// To avoid conflicts with Amazon Web Services service namespaces, you should
+	// not specify a namespace that begins with AWS/
 	//
 	// Namespace is a required field
 	Namespace *string `min:"1" type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricDataInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricDataInput) GoString() string {
 	return s.String()
 }
@@ -9494,12 +10651,20 @@ type PutMetricDataOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricDataOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricDataOutput) GoString() string {
 	return s.String()
 }
@@ -9556,21 +10721,49 @@ type PutMetricStreamInput struct {
 	// RoleArn is a required field
 	RoleArn *string `min:"1" type:"string" required:"true"`
 
+	// By default, a metric stream always sends the MAX, MIN, SUM, and SAMPLECOUNT
+	// statistics for each metric that is streamed. You can use this parameter to
+	// have the metric stream also send additional statistics in the stream. This
+	// array can have up to 100 members.
+	//
+	// For each entry in this array, you specify one or more metrics and the list
+	// of additional statistics to stream for those metrics. The additional statistics
+	// that you can stream depend on the stream's OutputFormat. If the OutputFormat
+	// is json, you can stream any additional statistic that is supported by CloudWatch,
+	// listed in CloudWatch statistics definitions (https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Statistics-definitions.html.html).
+	// If the OutputFormat is opentelemetry0.7, you can stream percentile statistics
+	// such as p95, p99.9 and so on.
+	StatisticsConfigurations []*MetricStreamStatisticsConfiguration `type:"list"`
+
 	// A list of key-value pairs to associate with the metric stream. You can associate
 	// as many as 50 tags with a metric stream.
 	//
 	// Tags can help you organize and categorize your resources. You can also use
 	// them to scope user permissions by granting a user permission to access or
 	// change only resources with certain tag values.
+	//
+	// You can use this parameter only when you are creating a new metric stream.
+	// If you are using this operation to update an existing metric stream, any
+	// tags you specify in this parameter are ignored. To change the tags of an
+	// existing metric stream, use TagResource (https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_TagResource.html)
+	// or UntagResource (https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_UntagResource.html).
 	Tags []*Tag `type:"list"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricStreamInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricStreamInput) GoString() string {
 	return s.String()
 }
@@ -9619,6 +10812,16 @@ func (s *PutMetricStreamInput) Validate() error {
 			}
 			if err := v.Validate(); err != nil {
 				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "IncludeFilters", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+	if s.StatisticsConfigurations != nil {
+		for i, v := range s.StatisticsConfigurations {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "StatisticsConfigurations", i), err.(request.ErrInvalidParams))
 			}
 		}
 	}
@@ -9675,6 +10878,12 @@ func (s *PutMetricStreamInput) SetRoleArn(v string) *PutMetricStreamInput {
 	return s
 }
 
+// SetStatisticsConfigurations sets the StatisticsConfigurations field's value.
+func (s *PutMetricStreamInput) SetStatisticsConfigurations(v []*MetricStreamStatisticsConfiguration) *PutMetricStreamInput {
+	s.StatisticsConfigurations = v
+	return s
+}
+
 // SetTags sets the Tags field's value.
 func (s *PutMetricStreamInput) SetTags(v []*Tag) *PutMetricStreamInput {
 	s.Tags = v
@@ -9688,12 +10897,20 @@ type PutMetricStreamOutput struct {
 	Arn *string `min:"1" type:"string"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricStreamOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s PutMetricStreamOutput) GoString() string {
 	return s.String()
 }
@@ -9722,12 +10939,20 @@ type Range struct {
 	StartTime *time.Time `type:"timestamp" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Range) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Range) GoString() string {
 	return s.String()
 }
@@ -9786,12 +11011,20 @@ type SetAlarmStateInput struct {
 	StateValue *string `type:"string" required:"true" enum:"StateValue"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s SetAlarmStateInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s SetAlarmStateInput) GoString() string {
 	return s.String()
 }
@@ -9846,14 +11079,108 @@ type SetAlarmStateOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s SetAlarmStateOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s SetAlarmStateOutput) GoString() string {
 	return s.String()
+}
+
+// Designates the CloudWatch metric and statistic that provides the time series
+// the anomaly detector uses as input.
+type SingleMetricAnomalyDetector struct {
+	_ struct{} `type:"structure"`
+
+	// The metric dimensions to create the anomaly detection model for.
+	Dimensions []*Dimension `type:"list"`
+
+	// The name of the metric to create the anomaly detection model for.
+	MetricName *string `min:"1" type:"string"`
+
+	// The namespace of the metric to create the anomaly detection model for.
+	Namespace *string `min:"1" type:"string"`
+
+	// The statistic to use for the metric and anomaly detection model.
+	Stat *string `type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SingleMetricAnomalyDetector) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SingleMetricAnomalyDetector) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *SingleMetricAnomalyDetector) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "SingleMetricAnomalyDetector"}
+	if s.MetricName != nil && len(*s.MetricName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("MetricName", 1))
+	}
+	if s.Namespace != nil && len(*s.Namespace) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Namespace", 1))
+	}
+	if s.Dimensions != nil {
+		for i, v := range s.Dimensions {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Dimensions", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDimensions sets the Dimensions field's value.
+func (s *SingleMetricAnomalyDetector) SetDimensions(v []*Dimension) *SingleMetricAnomalyDetector {
+	s.Dimensions = v
+	return s
+}
+
+// SetMetricName sets the MetricName field's value.
+func (s *SingleMetricAnomalyDetector) SetMetricName(v string) *SingleMetricAnomalyDetector {
+	s.MetricName = &v
+	return s
+}
+
+// SetNamespace sets the Namespace field's value.
+func (s *SingleMetricAnomalyDetector) SetNamespace(v string) *SingleMetricAnomalyDetector {
+	s.Namespace = &v
+	return s
+}
+
+// SetStat sets the Stat field's value.
+func (s *SingleMetricAnomalyDetector) SetStat(v string) *SingleMetricAnomalyDetector {
+	s.Stat = &v
+	return s
 }
 
 type StartMetricStreamsInput struct {
@@ -9869,12 +11196,20 @@ type StartMetricStreamsInput struct {
 	Names []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StartMetricStreamsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StartMetricStreamsInput) GoString() string {
 	return s.String()
 }
@@ -9902,12 +11237,20 @@ type StartMetricStreamsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StartMetricStreamsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StartMetricStreamsOutput) GoString() string {
 	return s.String()
 }
@@ -9937,12 +11280,20 @@ type StatisticSet struct {
 	Sum *float64 `type:"double" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StatisticSet) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StatisticSet) GoString() string {
 	return s.String()
 }
@@ -10006,12 +11357,20 @@ type StopMetricStreamsInput struct {
 	Names []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StopMetricStreamsInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StopMetricStreamsInput) GoString() string {
 	return s.String()
 }
@@ -10039,12 +11398,20 @@ type StopMetricStreamsOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StopMetricStreamsOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s StopMetricStreamsOutput) GoString() string {
 	return s.String()
 }
@@ -10065,12 +11432,20 @@ type Tag struct {
 	Value *string `type:"string" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Tag) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s Tag) GoString() string {
 	return s.String()
 }
@@ -10128,12 +11503,20 @@ type TagResourceInput struct {
 	Tags []*Tag `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s TagResourceInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s TagResourceInput) GoString() string {
 	return s.String()
 }
@@ -10183,12 +11566,20 @@ type TagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s TagResourceOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s TagResourceOutput) GoString() string {
 	return s.String()
 }
@@ -10215,12 +11606,20 @@ type UntagResourceInput struct {
 	TagKeys []*string `type:"list" required:"true"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s UntagResourceInput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s UntagResourceInput) GoString() string {
 	return s.String()
 }
@@ -10260,12 +11659,20 @@ type UntagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
 
-// String returns the string representation
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s UntagResourceOutput) String() string {
 	return awsutil.Prettify(s)
 }
 
-// GoString returns the string representation
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
 func (s UntagResourceOutput) GoString() string {
 	return s.String()
 }
@@ -10303,6 +11710,22 @@ func AnomalyDetectorStateValue_Values() []string {
 		AnomalyDetectorStateValuePendingTraining,
 		AnomalyDetectorStateValueTrainedInsufficientData,
 		AnomalyDetectorStateValueTrained,
+	}
+}
+
+const (
+	// AnomalyDetectorTypeSingleMetric is a AnomalyDetectorType enum value
+	AnomalyDetectorTypeSingleMetric = "SINGLE_METRIC"
+
+	// AnomalyDetectorTypeMetricMath is a AnomalyDetectorType enum value
+	AnomalyDetectorTypeMetricMath = "METRIC_MATH"
+)
+
+// AnomalyDetectorType_Values returns all elements of the AnomalyDetectorType enum
+func AnomalyDetectorType_Values() []string {
+	return []string{
+		AnomalyDetectorTypeSingleMetric,
+		AnomalyDetectorTypeMetricMath,
 	}
 }
 

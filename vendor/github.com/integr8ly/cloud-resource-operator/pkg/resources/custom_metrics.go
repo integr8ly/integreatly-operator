@@ -1,46 +1,36 @@
 package resources
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 const (
-	sleepytime                                = 3600
-	DefaultPostgresMaintenanceMetricName      = "cro_postgres_service_maintenance"
-	DefaultPostgresInfoMetricName             = "cro_postgres_info"
+	BytesInGibiBytes                          = 1073741824
+	DefaultBlobStorageStatusMetricName        = "cro_blobstorage_status_phase"
+	DefaultPostgresAllocatedStorageMetricName = "cro_postgres_current_allocated_storage"
 	DefaultPostgresAvailMetricName            = "cro_postgres_available"
 	DefaultPostgresConnectionMetricName       = "cro_postgres_connection"
-	DefaultPostgresStatusMetricName           = "cro_postgres_status_phase"
 	DefaultPostgresDeletionMetricName         = "cro_postgres_deletion_timestamp"
-	DefaultPostgresSnapshotStatusMetricName   = "cro_postgres_snapshot_status_phase"
-	DefaultPostgresAllocatedStorageMetricName = "cro_postgres_current_allocated_storage"
+	DefaultPostgresInfoMetricName             = "cro_postgres_info"
+	DefaultPostgresMaintenanceMetricName      = "cro_postgres_service_maintenance"
 	DefaultPostgresMaxMemoryMetricName        = "cro_postgres_max_memory"
-	DefaultRedisMaintenanceMetricName         = "cro_redis_service_maintenance"
-	DefaultRedisInfoMetricName                = "cro_redis_info"
+	DefaultPostgresSnapshotStatusMetricName   = "cro_postgres_snapshot_status_phase"
+	DefaultPostgresStatusMetricName           = "cro_postgres_status_phase"
 	DefaultRedisAvailMetricName               = "cro_redis_available"
 	DefaultRedisConnectionMetricName          = "cro_redis_connection"
-	DefaultRedisStatusMetricName              = "cro_redis_status_phase"
 	DefaultRedisDeletionMetricName            = "cro_redis_deletion_timestamp"
-	DefaultRedisSnapshotStatusMetricName      = "cro_redis_snapshot_status_phase"
+	DefaultRedisInfoMetricName                = "cro_redis_info"
+	DefaultRedisMaintenanceMetricName         = "cro_redis_service_maintenance"
 	DefaultRedisSnapshotNotAvailable          = "cro_redis_snapshot_not_found"
-	DefaultPostgresSnapshotNotAvailable       = "cro_postgres_snapshot_not_found"
-	DefaultBlobStorageStatusMetricName        = "cro_blobstorage_status_phase"
+	DefaultRedisSnapshotStatusMetricName      = "cro_redis_snapshot_status_phase"
+	DefaultRedisStatusMetricName              = "cro_redis_status_phase"
+	DefaultSTSCredentialsSecretMetricName     = "cro_sts_credentials_secret"
 	DefaultVpcActionMetricName                = "cro_vpc_action"
-
-	BytesInGibiBytes = 1073741824
 )
 
 var (
@@ -64,7 +54,7 @@ func StartGaugeVector() {
 			for _, val := range MetricVecs {
 				val.Reset()
 			}
-			time.Sleep(time.Duration(sleepytime) * time.Second)
+			time.Sleep(time.Duration(3600) * time.Second)
 		}
 	}()
 }
@@ -126,62 +116,18 @@ func ResetVpcAction() {
 	}
 }
 
-// CreatePrometheusRule will create a PrometheusRule object
-func ReconcilePrometheusRule(ctx context.Context, client client.Client, ruleName, ns, alertName, desc string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
-	alertGroupName := alertName + "Group"
-	groups := []prometheusv1.RuleGroup{
-		{
-			Name: alertGroupName,
-			Rules: []prometheusv1.Rule{
-				{
-					Alert:  alertName,
-					Expr:   alertExp,
-					Labels: labels,
-					Annotations: map[string]string{
-						"description": desc,
-					},
-				},
-			},
-		},
+// SetSTSCredentialsSecretMetric sets cro_sts_credentials_secret metric
+func SetSTSCredentialsSecretMetric(ns string, err error) {
+	labels := map[string]string{
+		"namespace": ns,
+		"error":     err.Error(),
 	}
-
-	rule := &prometheusv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ruleName,
-			Namespace: ns,
-			Labels: map[string]string{
-				"monitoring-key": "middleware",
-			},
-		},
-		Spec: prometheusv1.PrometheusRuleSpec{
-			Groups: groups,
-		},
-	}
-
-	// create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to reconcile prometheus rule request for %s", ruleName)
-	}
-
-	return rule, nil
+	SetMetric(DefaultSTSCredentialsSecretMetricName, labels, 1)
 }
 
-// DeletePrometheusRule will delete a prometheus rule object
-func DeletePrometheusRule(ctx context.Context, client client.Client, ruleName, ns string) error {
-	rule := &prometheusv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      ruleName,
-		},
+// ResetSTSCredentialsSecretMetric resets cro_sts_credentials_secret metric
+func ResetSTSCredentialsSecretMetric() {
+	if val, ok := MetricVecs[DefaultSTSCredentialsSecretMetricName]; ok {
+		val.Reset()
 	}
-
-	// call delete on that object
-	if err := client.Delete(ctx, rule); err != nil {
-		return err
-	}
-
-	return nil
 }
