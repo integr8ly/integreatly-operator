@@ -71,7 +71,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.NumReconciledTenants)
 	customMetrics.Registry.MustRegister(integreatlymetrics.NumFailedTenants)
 	customMetrics.Registry.MustRegister(integreatlymetrics.NoActivated3ScaleTenantAccount)
-	customMetrics.Registry.MustRegister(integreatlymetrics.InstallationControllerReconcileDurationSeconds)
+	customMetrics.Registry.MustRegister(integreatlymetrics.InstallationControllerReconcileDelayed)
 
 	integreatlymetrics.OperatorVersion.Add(1)
 	utilruntime.Must(v1.Install(clientgoscheme.Scheme))

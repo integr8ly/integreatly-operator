@@ -173,10 +173,10 @@ var (
 		},
 	)
 
-	InstallationControllerReconcileDurationSeconds = prometheus.NewGauge(
+	InstallationControllerReconcileDelayed = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "installation_controller_reconcile_duration_seconds",
-			Help: "Duration in seconds for the last call to the rhmi_controller's Reconcile(). It equals to 0 if the function is in progress",
+			Name: "installation_controller_reconcile_delayed",
+			Help: "Measures if the last reconcile of the installation controller is delayed",
 		},
 	)
 )
