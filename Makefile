@@ -117,7 +117,7 @@ setup/moq:
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
-	@oc login --token=$(shell sh -c "oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}") --server=$(shell sh -c "oc whoami --show-server") --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
+	@oc login --token=$(shell sh -c "oc create token rhmi-operator -n ${NAMESPACE} --duration=24h") --server=$(shell sh -c "oc whoami --show-server") --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 
 .PHONY: setup/service_account
 setup/service_account: kustomize
