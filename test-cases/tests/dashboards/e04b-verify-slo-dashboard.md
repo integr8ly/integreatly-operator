@@ -84,8 +84,12 @@ while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-rhsso-op
 ### Code #3
 
 ```bash
-while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 3; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
+while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
 ```
+
+**_NOTE_** _(for Code #3). The number of user sso statefulset replicas depends on quota and might need to be manually adjusted.
+Pods increase from 2 to 3 when the quota is 5 million or higher (see https://github.com/integr8ly/integreatly-operator/blob/master/pkg/addon/quota.go).
+For example, 50M quota results in 3 user sso pods while 100k quota results in 2 user sso pods._
 
 ### Code #4
 
