@@ -330,13 +330,13 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 				{
-					Alert: fmt.Sprintf("%sInstallationControllerReconcileLoopDelayed", strings.ToUpper(installationName)),
+					Alert: fmt.Sprintf("%sInstallationControllerReconcileDelayed", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-						"message": fmt.Sprintf("The reconcile loop for the installation controller in a completed installation of %s operator is taking more than 12 minutes to complete", strings.ToUpper(installationName)),
+						"message": fmt.Sprintf("The reconcile function of the installation controller in a completed state of %s operator is taking more than 12 minutes to complete", strings.ToUpper(installationName)),
 					},
-					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) installation_controller_reconcile_duration_seconds == 0`),
-					For:    "12m",
+					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) (installation_controller_reconcile_delayed == 1)`),
+					For:    "1m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
 			},

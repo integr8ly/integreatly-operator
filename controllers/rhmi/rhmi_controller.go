@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/client_golang/prometheus"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -239,12 +238,11 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	durationSecondsMetric := metrics.InstallationControllerReconcileDurationSeconds
-	// restart the metric on every reconcile to ensure the alert InstallationControllerReconcileLoopDelayed
-	// fires if the metric hasn't been updated in the specified period of time
-	durationSecondsMetric.Set(0)
-	timer := prometheus.NewTimer(prometheus.ObserverFunc(durationSecondsMetric.Set))
-	defer timer.ObserveDuration()
+	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
+	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
+	time.AfterFunc(time.Minute*12, func() {
+		reconcileDelayedMetric.Set(1)
+	})
 	installInProgress := false
 	installation := &rhmiv1alpha1.RHMI{}
 	err := r.Get(context.TODO(), request.NamespacedName, installation)
