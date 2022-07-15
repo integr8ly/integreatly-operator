@@ -6,8 +6,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
+	"net"
 	"net/url"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -80,13 +81,33 @@ func HasValidCustomDomainCR(ctx context.Context, serverClient client.Client, dom
 	return false, fmt.Errorf("no custom domain CR found for: \"%s\"", domain)
 }
 
-func UpdateErrorAndMetric(installation *v1alpha1.RHMI, log logger.Logger, err error, message string) {
-	if err == nil {
-		installation.Status.CustomDomain.Error = ""
-		metrics.SetCustomDomain("active", 0)
-	} else {
-		log.Error(message, err)
+func UpdateErrorAndCustomDomainMetric(installation *v1alpha1.RHMI, active bool, err error) {
+	if err != nil {
 		installation.Status.CustomDomain.Error = err.Error()
-		metrics.SetCustomDomain("active", 1)
+		metrics.SetCustomDomain(active, nil, 1)
+		return
 	}
+	installation.Status.CustomDomain.Error = ""
+	metrics.SetCustomDomain(active, nil, 0)
+}
+
+func GetIngressRouterService(ctx context.Context, serverClient client.Client) (*v1.Service, error) {
+	ingressRouterService := &v1.Service{}
+	key := client.ObjectKey{
+		Name:      "router-default",
+		Namespace: "openshift-ingress",
+	}
+	err := serverClient.Get(ctx, key, ingressRouterService)
+	if err != nil {
+		return nil, err
+	}
+	return ingressRouterService, nil
+}
+
+func GetIngressRouterIPs(hostname string) ([]net.IP, error) {
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		return nil, fmt.Errorf("unable to perform ip lookup for hostname %s: %v", hostname, err)
+	}
+	return ips, nil
 }

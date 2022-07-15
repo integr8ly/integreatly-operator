@@ -265,21 +265,21 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Alert: "ThreeScaleAdminUIBBT",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlThreeScaleAdminUIBBT,
-							"message": "3Scale Admin UI Blackbox Target: If this console is unavailable,the client is unable to configure or administer their API setup.",
+							"message": "3Scale Admin UI Blackbox Target: If this console is unavailable, the client is unable to configure or administer their API setup.",
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-admin-ui'} != 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleDeveloperUIBBT",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlThreeScaleDeveloperUIBBT,
-							"message": "3Scale Developer UI Blackbox Target: If this console isunavailable, the clients developers are unable signup or perform API management.",
+							"message": "3Scale Developer UI Blackbox Target: If this console is unavailable, the clients developers are unable signup or perform API management.",
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox',service='3scale-developer-console-ui'} != 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleSystemAdminUIBBT",
@@ -289,7 +289,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-system-admin-ui'} == 0 and up{job='blackbox', service='3scale-system-admin-ui'} ==1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical", "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleZyncPodAvailability",

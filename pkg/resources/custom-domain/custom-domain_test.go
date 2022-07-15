@@ -2,6 +2,7 @@ package custom_domain
 
 import (
 	"context"
+	"errors"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -324,6 +325,49 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("HasValidCustomDomainCR() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestUpdateErrorAndMetric(t *testing.T) {
+	rhoamInstallation := &v1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "managed-api",
+			Namespace: "redhat-rhoam-operator",
+		},
+		Status: v1alpha1.RHMIStatus{
+			CustomDomain: &v1alpha1.CustomDomainStatus{},
+		},
+	}
+	type args struct {
+		installation *v1alpha1.RHMI
+		active       bool
+		err          error
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "update metric and clear custom domain error",
+			args: args{
+				installation: rhoamInstallation,
+				active:       true,
+				err:          nil,
+			},
+		},
+		{
+			name: "update metric and set custom domain error",
+			args: args{
+				installation: rhoamInstallation,
+				active:       false,
+				err:          errors.New("generic error"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			UpdateErrorAndCustomDomainMetric(tt.args.installation, tt.args.active, tt.args.err)
 		})
 	}
 }

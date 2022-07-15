@@ -44,9 +44,39 @@ func customDomainCRErrorState(installationName string, namespace string, err str
 					"sop_url": resources.SopUrlRHOAMServiceDefinition,
 					"message": fmt.Sprintf(fmt.Sprintf("Error configuring custom domain, please refer to the documetaion to resolve the error. Found error: %s", err)),
 				},
-				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{customDomain='active'} > 0", installationName)),
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='false'} > 0", installationName)),
 				For:    "5m",
-				Labels: map[string]string{"severity": "warning", "product": string(v1alpha1.InstallationTypeManagedApi)},
+				Labels: map[string]string{"severity": "warning", "product": installationName},
+			},
+			{
+				Alert: "CustomDomainThreeScaleAdminUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlCustomDomainThreeScaleAdminUI,
+					"message": "Custom Domain 3Scale Admin UI: If this console is unavailable, the client is unable to configure or administer their API setup.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='true', system_master='false'} > 0", installationName)),
+				For:    "5m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
+			},
+			{
+				Alert: "CustomDomainThreeScaleDeveloperUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlCustomDomainThreeScaleDeveloperUI,
+					"message": "Custom Domain 3Scale Developer UI: If this console is unavailable, the client developers are unable signup or perform API management.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='true', system_developer='false'} > 0", installationName)),
+				For:    "5m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
+			},
+			{
+				Alert: "CustomDomainThreeScaleSystemAdminUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlCustomDomainThreeScaleSystemAdminUI,
+					"message": "Custom Domain 3Scale System Admin UI: If this console is unavailable, the client is unable to perform Account Management, Analytics or Billing.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='true', system_provider='false'} > 0", installationName)),
+				For:    "5m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
 			},
 		},
 	}
