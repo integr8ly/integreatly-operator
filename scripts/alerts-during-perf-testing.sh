@@ -13,7 +13,7 @@ RHSSO="rhsso"
 USER_SSO="user-sso"
 THREESCALE="3scale"
 TOKEN=$(oc whoami --show-token)
-MONITORING_ROUTE=$(echo "https://$(oc get route prometheus-route -n ${NAMESPACE_PREFIX}observability -o=jsonpath='{.spec.host}')")/api/v1/alerts
+MONITORING_ROUTE=$(echo "https://$(oc get route prometheus -n ${NAMESPACE_PREFIX}observability -o=jsonpath='{.spec.host}')")/api/v1/alerts
 
 # remove tmp files on ctrl-c
 trap "rm tmp-alert-firing-during-perf-testing-report.csv tmp-alert-pending-during-perf-testing-report.csv" EXIT
@@ -23,6 +23,7 @@ function CHECK_NO_ALERTS(){
     if [[ $(curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE | jq -r '.data.alerts[]| select(.state=="firing") | [.labels.alertname, .state, .activeAt ] | @csv' | wc -l  | xargs ) == 1 ]] ; then
       echo Only alert firing is DeadMansSwitch
       date
+      sleep 5
     else
       echo "============================================================================"
       echo Following alerts are Firing at :
