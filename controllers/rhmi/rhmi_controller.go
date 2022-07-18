@@ -240,9 +240,10 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
-	time.AfterFunc(time.Minute*12, func() {
+	timer := time.AfterFunc(time.Minute*12, func() {
 		reconcileDelayedMetric.Set(1)
 	})
+	defer timer.Stop()
 	installInProgress := false
 	installation := &rhmiv1alpha1.RHMI{}
 	err := r.Get(context.TODO(), request.NamespacedName, installation)
