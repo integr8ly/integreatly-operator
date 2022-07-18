@@ -108,14 +108,14 @@ type ThreeScaleTestScenario struct {
 	MockHTTP             bool
 }
 
-func getTestInstallation() *integreatlyv1alpha1.RHMI {
+func getTestInstallation(installType string) *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi",
 			Namespace: "test",
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
-			Type: "managed",
+			Type: installType,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",
@@ -384,7 +384,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 					"NAMESPACE": "test",
 				}),
 				mpm:           nil,
-				installation:  getTestInstallation(),
+				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
 				appsv1Client:  nil,
 				oauthv1Client: nil,
@@ -462,7 +462,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					"NAMESPACE": "test",
 				}),
 				mpm:           nil,
-				installation:  getTestInstallation(),
+				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
 				appsv1Client:  nil,
 				oauthv1Client: nil,
@@ -2077,7 +2077,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				installation: getTestInstallation(),
+				installation: getTestInstallation("managed"),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -2098,7 +2098,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				installation: getTestInstallation(),
+				installation: getTestInstallation("managed"),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -2120,7 +2120,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				installation: getTestInstallation(),
+				installation: getTestInstallation("managed"),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -2275,7 +2275,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 					"NAMESPACE": "test",
 				}),
 				mpm:           nil,
-				installation:  getTestInstallation(),
+				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
 				appsv1Client:  nil,
 				oauthv1Client: nil,
@@ -2297,7 +2297,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 					"NAMESPACE": "test",
 				}),
 				mpm:           nil,
-				installation:  getTestInstallation(),
+				installation:  getTestInstallation("managed"),
 				tsClient:      nil,
 				appsv1Client:  nil,
 				oauthv1Client: nil,
@@ -2335,6 +2335,250 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			}
 			if !verifyMessageBusDoesNotExist(tt.args.serverClient) {
 				t.Fatal("found message bus values in secret")
+			}
+		})
+	}
+}
+
+func TestReconciler_getTenantAccountPassword(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	account := AccountDetail{
+		Id:      1,
+		Name:    "test-name",
+		OrgName: "test-org-name",
+	}
+
+	type args struct {
+		ctx            context.Context
+		serverClient   k8sclient.Client
+		shouldCheckPwd bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "tenant-account-passwords Secret doesn't exist",
+			args: args{
+				ctx:            context.TODO(),
+				serverClient:   fake.NewFakeClientWithScheme(scheme),
+				shouldCheckPwd: false,
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "tenant-account-passwords Secret exists but is empty",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenant-account-passwords",
+							Namespace: "test-namespace",
+						},
+					}),
+				shouldCheckPwd: false,
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "tenant-account-passwords Secret exists but account doesn't have password yet",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenant-account-passwords",
+							Namespace: "test-namespace",
+						},
+						Data: map[string][]byte{
+							"wrong-test-name": []byte("wrong-test-password"),
+						},
+					}),
+				shouldCheckPwd: false,
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "test tenant-account-passwords Secret exists and account has password",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenant-account-passwords",
+							Namespace: "test-namespace",
+						},
+						Data: map[string][]byte{
+							"test-name": []byte("test-password"),
+						},
+					}),
+				shouldCheckPwd: true,
+			},
+			want:    "test-password",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: nil,
+				Config:        config.NewThreeScale(config.ProductConfig{"NAMESPACE": "test-namespace"}),
+				log:           getLogger(),
+				mpm:           nil,
+				installation:  getTestInstallation("multitenant-managed-api"),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			}
+			got, err := r.getTenantAccountPassword(tt.args.ctx, tt.args.serverClient, account)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getTenantAccountPassword() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.args.shouldCheckPwd {
+				if got != tt.want {
+					t.Errorf("getTenantAccountPassword() got = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestReconciler_removeTenantAccountPassword(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	account := AccountDetail{
+		Id:      1,
+		Name:    "test-name",
+		OrgName: "test-org-name",
+	}
+
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "tenant-account-passwords Secret doesn't exist",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme),
+			},
+			wantErr: false,
+		},
+		{
+			name: "tenant-account-passwords Secret exists but account doesn't have password",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenant-account-passwords",
+							Namespace: "test-namespace",
+						},
+					}),
+			},
+			wantErr: false,
+		},
+		{
+			name: "tenant-account-passwords Secret exists and account has password",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenant-account-passwords",
+							Namespace: "test-namespace",
+						},
+						Data: map[string][]byte{
+							"test-name": []byte("test-password"),
+						},
+					}),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: nil,
+				Config:        config.NewThreeScale(config.ProductConfig{"NAMESPACE": "test-namespace"}),
+				log:           getLogger(),
+				mpm:           nil,
+				installation:  getTestInstallation("multitenant-managed-api"),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			}
+			err := r.removeTenantAccountPassword(tt.args.ctx, tt.args.serverClient, account)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("removeTenantAccountPassword() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestReconciler_getAccountsCreatedCM(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "tenants-created ConfigMap doesn't exist",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme),
+			},
+			wantErr: false,
+		},
+		{
+			name: "tenants-created ConfigMap exists",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme,
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "tenants-created",
+							Namespace: "test-namespace",
+						},
+					}),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := getAccountsCreatedCM(tt.args.ctx, tt.args.serverClient, "test-namespace")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAccountsCreatedCM() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
