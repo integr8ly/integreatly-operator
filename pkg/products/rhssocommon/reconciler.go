@@ -328,7 +328,7 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://" + strings.Replace(r.Installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
+				"baseUrl":         "https://" + strings.Replace(r.Installation.Spec.MasterURL, "console-openshift-console.apps", "api", 1) + ":6443",
 				"clientId":        clientId,
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
