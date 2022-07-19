@@ -51,12 +51,6 @@ make code/compile
 go install github.com/matryer/moq
 ```
 
-## Using `ocm` for installation of RHMI
-
-If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using `ocm`.
-See [here](https://github.com/integr8ly/delorean/tree/master/docs/ocm) for an up to date guide on how to do this.
-
-
 ## Local Development
 Ensure that the cluster satisfies minimal requirements: 
 - RHMI (managed): 26 vCPU 
@@ -147,135 +141,7 @@ Once the installation completed the command wil result in following output:
 "complete"
 ```
 
-## Deploying to a Cluster with OLM and the Bundle Format
-
-In order to create a bundle and/or deploy RHMI or RHOAM with OLM follow refer to [this](https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/) document.
-
-For more details refer to [this](https://github.com/RHCloudServices/integreatly-help/blob/master/guides/olm/installing-rhmi-bundle-format.md#installing-rhmi-through-olm-with-bundle-format) readme file.
-
-## 	Identity Provider setup
-### Set up testing IDP for OSD cluster
-You can use the `scripts/setup-sso-idp.sh` script to setup a "testing-idp" realm in a cluster SSO instance and add it as IDP of your OSD cluster.
-With this script you will get few regular users - test-user[01-10] and few users that will be added to dedicated-admins group - customer-admin[01-03].
-
-Prerequisites:
-- `oc` command available on your machine (the latest version can be downloaded [here](https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/))
-- `ocm` command available ( the newest CLI can be downloaded [here](https://github.com/openshift-online/ocm-cli/releases) and you install it with `mv (your downloaded file) /usr/local/bin/ocm`) (necessary only if using OSD cluster)
-- OC session with cluster admin permissions in a target cluster
-- OCM session (necessary only if using OSD cluster)
-- `openssl` command available on your machine 
-
-| Variable                  | Format  | Type     | Default        | Details                                                                     |
-|---------------------------|---------|:--------:|----------------|-----------------------------------------------------------------------------|
-| PASSWORD                  | string  | Optional | _None_         | If empty, a random password is generated for the testing users.             |
-| DEDICATED_ADMIN_PASSWORD  | string  | Optional | _None_         | If empty, a random password is generated for the testing dedicated admins.  |
-| REALM                     | string  | Optional | testing-idp    | Set the name of the realm in side cluster sso                               |
-| REALM_DISPLAY_NAME        | string  | Optional | Testing IDP    | Realm display name in side cluster sso                                      |
-| INSTALLATION_PREFIX       | string  | Optional | _None_         | If empty, the value is gotten for the the cluster using `oc get RHMIs --all-namespaces -o (pipe) jq -r .items[0].spec.namespacePrefix` |
-| ADMIN_USERNAME            | string  | Optional | customer-admin | Username prefix for dedicated admins                                        |
-| NUM_ADMIN                 | int     | Optional | 3              | Number of dedicated admins to be set up                                     |
-| REGULAR_USERNAME          | string  | Optional | test-user      | Username prefix for regular test users                                      |
-| NUM_REGULAR_USER          | int     | Optional | 10             | Number of regular user to be used.                                          |
-
-### Configuring Github OAuth
-
-*Note:* Following steps are only valid for OCP4 environments and will not work on OSD due to the Oauth resource being periodically reset by Hive.
-
-Follow [docs](https://docs.openshift.com/container-platform/4.1/authentication/identity_providers/configuring-github-identity-provider.html#identity-provider-registering-github_configuring-github-identity-provider) on how to register a new Github Oauth application and add the necessary authorization callback URL for your cluster as outlined below:
-
-```
-https://oauth-openshift.apps.<cluster-name>.<cluster-domain>/oauth2callback/github
-```
-
-Once the Oauth application has been registered, navigate to the Openshift console and complete the following steps:
-
-*Note:* These steps need to be performed by a cluster admin
-
-- Select the `Search` option in the left-hand nav of the console and select `Oauth` from the "Resources" dropdown
-- A single Oauth resource should exist named `cluster`, click into this resource
-- Scroll to the bottom of the console and select the `Github` option from the `add` dropdown
-- Next, add the `Client ID` and `Client Secret` of the registered Github Oauth application
-- Ensure that the Github organization from where the Oauth application was created is specified in the Organization field
-- Once happy that all necessary configurations have been added, click the `Add` button
-- For the validation purposes, log into the Openshift console from another browser and check that the Github IDP is listed on the login screen
-
-## Set up dedicated admins
-
-To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
-
-## Tests
-
-### Unit tests
-
-Running unit tests:
-```sh
-make test/unit
-```
-
-### E2E tests
-
-If you have RHOAM operator installed using cluster storage (`useClusterStorage: true`), all [AWS tests](https://github.com/integr8ly/integreatly-operator/blob/27c4a8c4fdf3461247fad2bb20fe958d4b709a99/test/functional/tests.go#L6-L12) are being skipped (because all AWS tests would fail).
-To override this, you can provide an env var `BYPASS_STORAGE_TYPE_CHECK=true`.
-
-To run E2E tests against a clean OpenShift cluster using operator-sdk, build and push an image 
-to your own quay repo, then run the command below changing the installation type based on which type you are testing:
-```
-make test/e2e INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> OPERATOR_IMAGE=<your/repo/image:tag>
-```
-
-To run E2E tests against an existing RHMI cluster:
-```
-make test/functional
-```
-
-To run a single E2E test against a running cluster run the command below where E03 is the start of the test description:
-```
-INSTALLATION_TYPE=<managed/managed-api/multitenant-managed-api> TEST=E03 make test/e2e/single
-```
-### Product tests
-
-To run products tests against an existing RHMI cluster:
-```
-make test/products/local
-```
-
-### Scorecard tests
-
-For testing all scorecard tests within this repo, it is recommended to have RHOAM installed (or RHOAM install triggered) on an OSD/OCP cluster:
-
-1. To deploy RHOAM operator on a cluster (using master branch image) and install RHOAM:
-```bash
-export INSTALLATION_TYPE=managed-api
-make cluster/deploy
-```
-2. Prepare scorecard tests
-
-```bash
-make scorecard/bundle/prepare
-make scorecard/service_account/prepare
-```
-3. Run scorecard test
-```bash
-# To run a specific test, set SCORECARD_TEST_NAME env var with a name
-# of the test taken from '.labels.test' field in bundle/tests/scorecard/config.yaml
-# Example:
-make scorecard/test/run SCORECARD_TEST_NAME=basic-check-spec-test
-```
-
-**Note**
-
-If you are doing some changes to the code of the scorecard test image (`Dockerfile.scorecard`, files in `test/scorecard` folder), you can test them by creating a new image in your quay.io account
-
-```bash
-export IMAGE=quay.io/<YOUR-ACCOUNT-ID>/scorecard-test-kuttl:<your-tag>
-make scorecard/build/push IMAGE=$IMAGE
-```
-
-And update the `image` field in the test you want to run in `bundle/tests/scorecard/config.yaml` file to point to your image in quay.io
-
 ## Uninstalling RHOAM
-This section covers uninstallation of RHOAM if it was installed via locally, OLM or on ROSA
-
 ### Local and OLM installation type
 If you installed RHOAM locally or through a catalog source then you can uninstall one of two ways:
 
@@ -300,24 +166,3 @@ oc delete namespace redhat-rhoam-operator
 export INSTALLATION_TYPE=managed-api
 make cluster/cleanup && make cluster/cleanup/crds
 ```
-
-### Addon
-  If you installed RHOAM as an addon then you can uninstall it through the ui as shown in the picture below , or alternatively  you can run the following command. 
-```sh
-ocm delete /api/clusters_mgmt/v1/clusters/${clusterId}/addons/managed-api-service
-```
-![Uninstall RHOAM addon](https://user-images.githubusercontent.com/74991829/153239383-52edb7d5-f03a-4b1e-83ca-e5961b2ba577.png)
-
-
-### ROSA Addon
-  If you installed RHOAM as an addon on [ROSA](https://cloud.redhat.com/products/amazon-openshift) then you can uninstall it by running the following command.
-```sh 
-rosa uninstall addon \
---cluster=${clusterName} managed-api-service -y
-```
-
-## Release
-
-See the [release doc](./RELEASE.md).
-
-

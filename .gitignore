@@ -112,3 +112,6 @@ test-cases/package-lock.json
 ### Writing/debugging scorecard tests
 /bundle/*
 /bundle.Dockerfile
+
+### readthedocs/mkdocs
+/site
