@@ -363,19 +363,10 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 		alerts = append(alerts, multitenantAlert)
 	}
 
-	removedAlerts := []resources.AlertConfiguration{
-		// This can be removed after 1.24.0 release
-		{
-			AlertName: fmt.Sprintf("%s-installation-controller-alerts", installationName),
-			Namespace: namespace,
-		},
-	}
-
 	return &resources.AlertReconcilerImpl{
-		ProductName:   "monitoring",
-		Installation:  r.installation,
-		Log:           logger,
-		Alerts:        alerts,
-		RemovedAlerts: removedAlerts,
+		ProductName:  "monitoring",
+		Installation: r.installation,
+		Log:          logger,
+		Alerts:       alerts,
 	}
 }
