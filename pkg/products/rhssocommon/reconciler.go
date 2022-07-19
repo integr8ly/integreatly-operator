@@ -743,6 +743,14 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
+		for _, alertGroup := range ssoAlert.Spec.Groups {
+			for idx, alertRule := range alertGroup.Rules {
+				if alertRule.Alert == "KeycloakInstanceNotAvailable" {
+					ssoAlert.Spec.Groups[0].Rules = removeRule(ssoAlert.Spec.Groups[0].Rules, idx)
+				}
+			}
+		}
+
 		observabilityConfig, err := r.ConfigManager.ReadObservability()
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -754,9 +762,19 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 				Namespace: observabilityConfig.GetNamespace(),
 			},
 		}
+
 		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
 			observabilityAlert.Labels = ssoAlert.Labels
+			for _, alertGroup := range observabilityAlert.Spec.Groups {
+				for _, alertRule := range alertGroup.Rules {
+					if alertRule.Alert == "KeycloakInstanceNotAvailable" {
+						ssoAlert.Spec.Groups[0].Rules = append(ssoAlert.Spec.Groups[0].Rules, alertRule)
+					}
+				}
+			}
+
 			observabilityAlert.Spec = ssoAlert.Spec
+
 			return nil
 		})
 		if err != nil {
@@ -797,4 +815,8 @@ func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion,
 		break // no need to iterate any further
 	}
 	return csv, updated, nil
+}
+
+func removeRule(slice []monitoringv1.Rule, s int) []monitoringv1.Rule {
+	return append(slice[:s], slice[s+1:]...)
 }

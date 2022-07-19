@@ -14,6 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -53,6 +54,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 // Were not tested before:
@@ -1700,4 +1702,264 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 		w.Write(output)
 	}))
 	return server
+}
+
+func TestReconciler_reconcileExportAlerts(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: controllerruntime.ObjectMeta{
+			Name:      "rhoam",
+			Namespace: "redhat-rhoam-operator",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type: "managed-api",
+		},
+	}
+
+	prometheusRulesSSO := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "redhat-rhoam-rhsso",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name: "testGroup",
+					Rules: []monitoringv1.Rule{
+						{
+							Alert: "testAlert1",
+						},
+						{
+							Alert: "KeycloakInstanceNotAvailable",
+						},
+						{
+							Alert: "testAlert2",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	prometheusRulesOO := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhsso",
+			Namespace: "redhat-rhoam-observability",
+		},
+	}
+
+	prometheusRulesOOwithKcExisting := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhsso",
+			Namespace: "redhat-rhoam-observability",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name: "testGroup",
+					Rules: []monitoringv1.Rule{
+						{
+							Alert: "KeycloakInstanceNotAvailable",
+							Expr:  intstr.FromString(fmt.Sprint("testExpression")),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name                 string
+		expectedRules        []monitoringv1.Rule
+		installation         *integreatlyv1alpha1.RHMI
+		configManager        config.ConfigReadWriter
+		fakeClient           k8sclient.Client
+		want                 integreatlyv1alpha1.StatusPhase
+		wantErr              bool
+		verificationFunction func(*monitoringv1.PrometheusRule) bool
+	}{
+		{
+			name:          "alerting rules correctly mirrored without kc alert",
+			expectedRules: []monitoringv1.Rule{},
+			installation:  installation,
+			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
+				return config.NewObservability(config.ProductConfig{
+					"NAMESPACE": "redhat-rhoam-observability",
+				}), nil
+			}},
+			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOO),
+			wantErr:              false,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			verificationFunction: kcAlertHasNotBeenMirrored,
+		},
+		{
+			name:          "alerting rule mirrored without replacing existing kc alert",
+			expectedRules: []monitoringv1.Rule{},
+			installation:  installation,
+			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
+				return config.NewObservability(config.ProductConfig{
+					"NAMESPACE": "redhat-rhoam-observability",
+				}), nil
+			}},
+			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
+			wantErr:              false,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			verificationFunction: kcAlertHasNotBeenRemovedorUpdated,
+		},
+		{
+			name:          "alerting rule mirrored without replacing existing kc alert and updating it's expression",
+			expectedRules: []monitoringv1.Rule{},
+			installation:  installation,
+			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
+				return config.NewObservability(config.ProductConfig{
+					"NAMESPACE": "redhat-rhoam-observability",
+				}), nil
+			}},
+			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
+			wantErr:              false,
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			verificationFunction: kcAlertHasNotBeenRemovedorUpdated,
+		},
+		{
+			name:          "failing phase on getting keycloak prom rules",
+			expectedRules: []monitoringv1.Rule{},
+			installation:  installation,
+			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
+				return config.NewObservability(config.ProductConfig{
+					"NAMESPACE": "redhat-rhoam-observability",
+				}), nil
+			}},
+			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesOOwithKcExisting),
+			wantErr:    true,
+			want:       integreatlyv1alpha1.PhaseFailed,
+			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {
+				return true
+			},
+		},
+		{
+			name:          "failing phase on getting oo config",
+			expectedRules: []monitoringv1.Rule{},
+			installation:  installation,
+			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
+				return nil, fmt.Errorf("mock error from config writer")
+			}},
+			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesOOwithKcExisting, prometheusRulesSSO),
+			wantErr:    true,
+			want:       integreatlyv1alpha1.PhaseFailed,
+			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {
+				return true
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Log:           getLogger(),
+				Installation:  tt.installation,
+				ConfigManager: tt.configManager,
+			}
+			got, err := r.ExportAlerts(context.TODO(), tt.fakeClient, "rhsso", "redhat-rhoam-rhsso")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("exportAlerts error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("exportAlerts error got = %v, want %v", got, tt.want)
+			}
+
+			// retrieve update OO rules
+			observabilityAlert := &monitoringv1.PrometheusRule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhsso",
+					Namespace: "redhat-rhoam-observability",
+				},
+			}
+			err = tt.fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhsso", Namespace: "redhat-rhoam-observability"}, observabilityAlert)
+			if err != nil {
+				t.Errorf("exportAlerts error- failed to retrieve rhsso rules; got = %v, want %v", got, tt.want)
+			}
+
+			if !tt.verificationFunction(observabilityAlert) {
+				t.Errorf("verification function for %v failed", tt.name)
+			}
+		})
+	}
+}
+
+func kcAlertHasNotBeenMirrored(existingRules *monitoringv1.PrometheusRule) bool {
+	var alert1exists = false
+	var alert2exists = false
+	var alertKCexists = true
+
+	for _, alertRuleGroups := range existingRules.Spec.Groups {
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "testAlert1" {
+				alert1exists = true
+			}
+		}
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "testAlert2" {
+				alert2exists = true
+			}
+		}
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "KeycloakInstanceNotAvailable" {
+				alertKCexists = false
+			}
+		}
+	}
+
+	if !alert1exists || !alert2exists || !alertKCexists {
+		return false
+	}
+
+	return true
+}
+
+func kcAlertHasNotBeenRemovedorUpdated(existingRules *monitoringv1.PrometheusRule) bool {
+	var alert1exists = false
+	var alert2exists = false
+	var alertKCexists = false
+	var expressionUpdated = false
+
+	for _, alertRuleGroups := range existingRules.Spec.Groups {
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "testAlert1" {
+				alert1exists = true
+			}
+		}
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "testAlert2" {
+				alert2exists = true
+			}
+		}
+		for _, alert := range alertRuleGroups.Rules {
+			if alert.Alert == "KeycloakInstanceNotAvailable" {
+				if alert.Expr.StrVal != "testExpression" {
+					expressionUpdated = true
+				}
+				alertKCexists = true
+			}
+		}
+	}
+
+	if !alert1exists || !alert2exists || !alertKCexists || expressionUpdated {
+		return false
+	}
+
+	return true
+}
+
+func assertPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	f()
 }
