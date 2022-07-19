@@ -22,6 +22,8 @@ const (
 	CredsSecretTokenPathKeyName = "web_identity_token_file"
 	CredsRoleEnvKey             = "ROLE_ARN"
 	CredsTokenPathEnvKey        = "TOKEN_PATH"
+	CredsS3BucketUsr			= "s3BucketCredentialUsr"
+	CredsS3BucketPsw			= "s3BucketCredentialPsw"
 )
 
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
@@ -86,4 +88,41 @@ func GetSTSCredentialsFromEnvVar() (string, string, error) {
 	}
 
 	return roleARN, tokenPath, nil
+}
+
+// GetS3BucketCredentials retrieves Credential addon parameters to be used by 3scale
+// Using S3 Bucket Credentiol addon parameters is temporary solution,
+// workaround for the lack of STS support in 3Scale,
+// as noted in https://issues.redhat.com/browse/MGDAPI-1905,
+// until our feature request https://issues.redhat.com/browse/THREESCALE-7132 gets implemented
+func GetS3BucketCredentials(ctx context.Context, client k8sclient.Client, namespace string) (string, string, error) {
+	s3BucketUsr, stsFound, err := addon.GetStringParameterByInstallType(
+		ctx,
+		client,
+		integreatlyv1alpha1.InstallationTypeManagedApi,
+		namespace,
+		CredsS3BucketUsr,
+	)
+	if err != nil {
+		return "", "", fmt.Errorf("failed while retrieving addon parameter %w", err)
+	}
+	if !stsFound || CredsS3BucketUsr == "" {
+		return "", "", fmt.Errorf("no S3 Bucket Credential addon parameter found")
+	}
+
+	s3BucketPsw, stsFound, err := addon.GetStringParameterByInstallType(
+		ctx,
+		client,
+		integreatlyv1alpha1.InstallationTypeManagedApi,
+		namespace,
+		CredsS3BucketPsw,
+	)
+	if err != nil {
+		return "", "", fmt.Errorf("failed while retrieving addon parameter %w", err)
+	}
+	if !stsFound || CredsS3BucketUsr == "" {
+		return "", "", fmt.Errorf("no S3 Bucket Credential addon parameter found")
+	}
+
+	return s3BucketUsr, s3BucketPsw, nil
 }

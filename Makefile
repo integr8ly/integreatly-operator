@@ -23,6 +23,8 @@ IN_PROW ?= "false"
 # if 1 then 100k
 DEV_QUOTA ?= "1"
 ROLE_ARN ?= "arn:aws:iam::485026278258:role/12345"
+S3_BUCKET_CREDENTIAL_USR ?= "restricteduser"
+S3_BUCKET_CREDENTIAL_PSW ?= "password"
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -375,6 +377,7 @@ cluster/prepare/dms:
 .PHONY: cluster/prepare/addon-params
 cluster/prepare/addon-params:
 	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) StsRoleARN=$(ROLE_ARN) -f config/secrets/addon-params-secret.yaml | oc apply -f -
+#	@-oc process -n $(NAMESPACE) S3_BUCKET_CREDENTIAL_USR=$(S3_BUCKET_CREDENTIAL_USR) S3_BUCKET_CREDENTIAL_PSW=$(S3_BUCKET_CREDENTIAL_PSW) -f config/secrets/addon-params-s3-bucket-secret.yaml | oc apply -f -
 
 
 .PHONY: cluster/prepare/quota/trial
