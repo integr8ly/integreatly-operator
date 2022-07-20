@@ -405,9 +405,9 @@ spec:
                 - name: RELATED_IMAGE_BACKEND
                   value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_9f42a1b829701f6479184bde798b03e08f47b39252e0b11bf2f1e08f53ec3e48
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_fa408e234b1b4e0fe857292101e64035a7d1299d1f9039176fa4ef718321b042
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_29d8591f0b2f8a4784ea5cf33033a3e3dc390f225137bec9a803d494c9323744
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_afc40ae035b75e0f7ac6942bd35e9d7c8906ec6d2c45d53c71308cecbd3012ad
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_0d392902fa433dcc934776225f578a017a308c2b76074806501f41b8768bb0b7
                 - name: RELATED_IMAGE_ZYNC
                   value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_375aed3a91ea6a81af2a9b5a0dd1f42fa0ee158074eb69613e06ead35306d3d5
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
@@ -974,9 +974,9 @@ spec:
     name: manager
   - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:9f42a1b829701f6479184bde798b03e08f47b39252e0b11bf2f1e08f53ec3e48
     name: backend
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:fa408e234b1b4e0fe857292101e64035a7d1299d1f9039176fa4ef718321b042
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:29d8591f0b2f8a4784ea5cf33033a3e3dc390f225137bec9a803d494c9323744
     name: apicast
-  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:afc40ae035b75e0f7ac6942bd35e9d7c8906ec6d2c45d53c71308cecbd3012ad
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:0d392902fa433dcc934776225f578a017a308c2b76074806501f41b8768bb0b7
     name: system
   - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:375aed3a91ea6a81af2a9b5a0dd1f42fa0ee158074eb69613e06ead35306d3d5
     name: zync
