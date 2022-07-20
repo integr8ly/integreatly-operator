@@ -188,7 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName, resources.NewPodExecutor(r.log)).
+	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName, resources.NewPodExecutor(r.log), r.ConfigManager).
 		ReconcileRateLimitService(ctx, client, productConfig)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rate limit service", err)

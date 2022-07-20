@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -43,15 +44,17 @@ type RateLimitServiceReconciler struct {
 	Installation    *integreatlyv1alpha1.RHMI
 	RateLimitConfig marin3rconfig.RateLimitConfig
 	PodExecutor     resources.PodExecutorInterface
+	ConfigManager   config.ConfigReadWriter
 }
 
-func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string, podExecutor resources.PodExecutorInterface) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string, podExecutor resources.PodExecutorInterface, configManager config.ConfigReadWriter) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
 		Installation:    installation,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
 		PodExecutor:     podExecutor,
+		ConfigManager:   configManager,
 	}
 }
 
@@ -566,8 +569,14 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 	// Get limits from configuration
 	limitadorSetting, err := r.getLimitadorSetting(ctx, client)
 
-	// If there are difference, delete a pod to reload the limits from the config map
+	// If there are difference, delete the limits and delete a pod to reload the limits from the config map
 	if r.differentLimitSettings(limitadorLimitsInRedis, limitadorSetting) {
+		phase, err := r.deleteRedisLimitsUsingObservabilityOperator(ctx, client, limitadorClient)
+
+		if phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
 		if err := client.Delete(ctx, &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      rateLimitPods.Items[0].Name,
@@ -578,6 +587,37 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 		}
 
 		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *RateLimitServiceReconciler) deleteRedisLimitsUsingObservabilityOperator(ctx context.Context, client k8sclient.Client, limitadorClient *LimitadorClient) (integreatlyv1alpha1.StatusPhase, error) {
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	observabilityOperatorPods := &corev1.PodList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(observabilityConfig.GetOperatorNamespace()),
+		k8sclient.MatchingLabels(map[string]string{"control-plane": "controller-manager"}),
+	}
+	if err := client.List(ctx, observabilityOperatorPods, opts...); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if len(observabilityOperatorPods.Items) == 0 {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	rateLimitService := &corev1.Service{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: quota.RateLimitName, Namespace: r.Namespace}, rateLimitService); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := limitadorClient.CurlDeleteLimitsByNameUsingPod(ratelimit.RateLimitDomain, observabilityConfig.GetOperatorNamespace(), observabilityOperatorPods.Items[0].Name, rateLimitService.Spec.ClusterIP); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

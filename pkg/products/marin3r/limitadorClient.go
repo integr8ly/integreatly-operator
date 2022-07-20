@@ -8,6 +8,7 @@ import (
 
 type LimitadorClientInterface interface {
 	GetLimitsByName(string) ([]limitadorLimit, error)
+	CurlDeleteLimitsByNameUsingPod(string, string, string, string) error
 }
 
 type LimitadorClient struct {
@@ -40,4 +41,14 @@ func (l LimitadorClient) GetLimitsByName(limitName string) ([]limitadorLimit, er
 	}
 
 	return limitadorLimitsInRedis, nil
+}
+
+func (l LimitadorClient) CurlDeleteLimitsByNameUsingPod(limitName, namespace, podName, rateLimitPodIP string) error {
+	_, _, err := l.PodExecutor.ExecuteRemoteCommand(namespace, podName, []string{"/bin/sh",
+		"-c", fmt.Sprintf("curl -X DELETE %s:8080/limits/%s", rateLimitPodIP, limitName)})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
