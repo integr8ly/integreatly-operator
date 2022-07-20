@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	clusterCloudCredentialName  = "cluster"
+	ClusterCloudCredentialName  = "cluster"
 	RoleArnParameterName        = "sts-role-arn"
 	RoleSessionName             = "Red-Hat-cloud-resources-operator"
 	CredsSecretName             = "sts-credentials"
@@ -21,11 +21,13 @@ const (
 	CredsSecretTokenPathKeyName = "web_identity_token_file"
 	CredsRoleEnvKey             = "ROLE_ARN"
 	CredsTokenPathEnvKey        = "TOKEN_PATH"
+	CredsS3AccessKeyId          = "s3-access-key-id"
+	CredsS3SecretAccessKey      = "s3-secret-access-key"
 )
 
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
 	cloudCredential := &cloudcredentialv1.CloudCredential{}
-	if err := client.Get(ctx, k8sclient.ObjectKey{Name: clusterCloudCredentialName}, cloudCredential); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: ClusterCloudCredentialName}, cloudCredential); err != nil {
 		log.Error("failed to get cloudCredential whle checking if STS mode", err)
 		return false, err
 	}
