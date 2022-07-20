@@ -616,10 +616,10 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
 
-	// TODO need to think abit more about what happens with a bad domain
 	ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
 	if err != nil && !ok {
 		log.Warning(err.Error())
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 	}
 
 	if ok {
