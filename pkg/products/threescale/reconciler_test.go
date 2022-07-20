@@ -1494,6 +1494,9 @@ func TestReconciler_useCustomDomain(t *testing.T) {
 		{
 			name: "Use custom domain true",
 			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"CUSTOM_DOMAIN_ENABLED": "true",
+				}),
 				installation: &integreatlyv1alpha1.RHMI{
 					Status: integreatlyv1alpha1.RHMIStatus{
 						CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
@@ -1503,7 +1506,7 @@ func TestReconciler_useCustomDomain(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Don't use custom domain, normal follow",
+			name: "Don't use custom domain, normal flow",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{Status: integreatlyv1alpha1.RHMIStatus{}},
 			},

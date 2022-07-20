@@ -314,6 +314,34 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if r.useCustomDomain() {
+		ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
+		if err != nil || len(ingressRouterService.Status.LoadBalancer.Ingress) == 0 {
+			errorMessage := "failed to retrieve ingress router service"
+			r.log.Error(errorMessage, err)
+			phase = integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, installation, phase, errorMessage, err)
+			return phase, fmt.Errorf("%s: %v", errorMessage, err)
+		}
+
+		ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
+		if err != nil {
+			errorMessage := "failed to retrieve ingress router ips"
+			r.log.Error(errorMessage, err)
+			phase = integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, installation, phase, errorMessage, err)
+			return phase, fmt.Errorf("%s: %v", errorMessage, err)
+		}
+
+		phase, err = r.ping3scalePortals(ctx, serverClient, ips)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
+			r.log.Error(errorMessage, err)
+			events.HandleError(r.recorder, installation, phase, errorMessage, err)
+			return phase, err
+		}
+	}
+
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		phase, err = r.reconcile3scaleMultiTenancy(ctx, serverClient)
 		if err != nil {
@@ -472,34 +500,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs are ready", err)
 		return phase, err
-	}
-
-	if r.useCustomDomain() {
-		ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
-		if err != nil {
-			errorMessage := "failed to retrieve ingress router service"
-			r.log.Error(errorMessage, err)
-			phase = integreatlyv1alpha1.PhaseFailed
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, fmt.Errorf("%s: %v", errorMessage, err)
-		}
-
-		ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
-		if err != nil {
-			errorMessage := "failed to retrieve ingress router ips"
-			r.log.Error(errorMessage, err)
-			phase = integreatlyv1alpha1.PhaseFailed
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, fmt.Errorf("%s: %v", errorMessage, err)
-		}
-
-		phase, err = r.ping3scalePortals(ctx, serverClient, ips)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
-			r.log.Error(errorMessage, err)
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, err
-		}
 	}
 
 	productStatus.Host = r.Config.GetHost()
@@ -3261,6 +3261,7 @@ func (r *Reconciler) useCustomDomain() bool {
 	if domainStatus == nil {
 		return false
 	}
+	r.Config.SetCustomDomainEnabled(domainStatus.Enabled)
 	return domainStatus.Enabled
 }
 

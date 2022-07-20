@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	"strconv"
 
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -158,4 +159,12 @@ func setDefaultNumberOfReplicas(defaultNumberOfReplicas int64, threeScaleCompone
 	for i := range threeScaleComponents {
 		threeScaleComponents[i] = int64(defaultNumberOfReplicas)
 	}
+}
+
+func (t *ThreeScale) SetCustomDomainEnabled(enabled bool) {
+	t.config["CUSTOM_DOMAIN_ENABLED"] = strconv.FormatBool(enabled)
+}
+
+func (t *ThreeScale) GetCustomDomainEnabled() string {
+	return t.config["CUSTOM_DOMAIN_ENABLED"]
 }
