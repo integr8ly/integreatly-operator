@@ -18,11 +18,12 @@ package v1
 
 import (
 	"errors"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"strings"
 )
 
 // log is for logging in this package.
@@ -58,54 +59,57 @@ func (in *Observability) ValidateUpdate(old runtime.Object) error {
 	//	// change it if it's set already
 	// cannot remove the self contained block if it contained the value
 
+	oldObsSpec := &old.(*Observability).Spec
+	newObsSpec := &in.Spec
+
 	//AlertManagerDefaultName
-	if &old.(*Observability).Spec.AlertManagerDefaultName != nil &&
-		&in.Spec.AlertManagerDefaultName == nil {
+	if oldObsSpec.AlertManagerDefaultName != "" &&
+		newObsSpec.AlertManagerDefaultName == "" {
 		return errors.New("cannot unset AlertManagerDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.AlertManagerDefaultName == nil &&
-		&in.Spec.AlertManagerDefaultName != nil {
+	if oldObsSpec.AlertManagerDefaultName == "" &&
+		newObsSpec.AlertManagerDefaultName != "" {
 		return errors.New("cannot set AlertManagerDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.AlertManagerDefaultName != nil &&
-		&in.Spec.AlertManagerDefaultName != nil &&
-		strings.Compare(old.(*Observability).Spec.AlertManagerDefaultName, in.Spec.AlertManagerDefaultName) != 0 {
+	if oldObsSpec.AlertManagerDefaultName != "" &&
+		newObsSpec.AlertManagerDefaultName != "" &&
+		strings.Compare(oldObsSpec.AlertManagerDefaultName, newObsSpec.AlertManagerDefaultName) != 0 {
 		return errors.New("cannot update AlertManagerDefaultName after cr creation")
 	}
 
 	//GrafanaDefaultName
-	if &old.(*Observability).Spec.GrafanaDefaultName != nil &&
-		&in.Spec.GrafanaDefaultName == nil {
+	if oldObsSpec.GrafanaDefaultName != "" &&
+		newObsSpec.GrafanaDefaultName == "" {
 		return errors.New("cannot unset GrafanaDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.GrafanaDefaultName == nil &&
-		&in.Spec.GrafanaDefaultName != nil {
+	if oldObsSpec.GrafanaDefaultName == "" &&
+		newObsSpec.GrafanaDefaultName != "" {
 		return errors.New("cannot set GrafanaDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.GrafanaDefaultName != nil &&
-		&in.Spec.GrafanaDefaultName != nil &&
-		strings.Compare(old.(*Observability).Spec.GrafanaDefaultName, in.Spec.GrafanaDefaultName) != 0 {
+	if oldObsSpec.GrafanaDefaultName != "" &&
+		newObsSpec.GrafanaDefaultName != "" &&
+		strings.Compare(oldObsSpec.GrafanaDefaultName, newObsSpec.GrafanaDefaultName) != 0 {
 		return errors.New("cannot update GrafanaDefaultName after cr creation")
 	}
 
 	//PrometheusDefaultName
-	if &old.(*Observability).Spec.PrometheusDefaultName != nil &&
-		&in.Spec.PrometheusDefaultName == nil {
+	if oldObsSpec.PrometheusDefaultName != "" &&
+		newObsSpec.PrometheusDefaultName == "" {
 		return errors.New("cannot unset PrometheusDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.PrometheusDefaultName == nil &&
-		&in.Spec.PrometheusDefaultName != nil {
+	if oldObsSpec.PrometheusDefaultName == "" &&
+		newObsSpec.PrometheusDefaultName != "" {
 		return errors.New("cannot set PrometheusDefaultName after cr creation")
 	}
 
-	if &old.(*Observability).Spec.PrometheusDefaultName != nil &&
-		&in.Spec.PrometheusDefaultName != nil &&
-		strings.Compare(old.(*Observability).Spec.PrometheusDefaultName, in.Spec.PrometheusDefaultName) != 0 {
+	if oldObsSpec.PrometheusDefaultName != "" &&
+		newObsSpec.PrometheusDefaultName != "" &&
+		strings.Compare(oldObsSpec.PrometheusDefaultName, newObsSpec.PrometheusDefaultName) != 0 {
 		return errors.New("cannot update PrometheusDefaultName after cr creation")
 	}
 	return nil
