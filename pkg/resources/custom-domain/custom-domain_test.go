@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"net"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
@@ -368,6 +372,99 @@ func TestUpdateErrorAndMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			UpdateErrorAndCustomDomainMetric(tt.args.installation, tt.args.active, tt.args.err)
+		})
+	}
+}
+
+func TestGetIngressRouterService(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	type args struct {
+		ctx          context.Context
+		serverClient func() client.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *corev1.Service
+		wantErr bool
+	}{
+		{
+			name: "successfully retrieve ingress router service",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() client.Client {
+					return moqclient.NewSigsClientMoqWithScheme(scheme,
+						&corev1.Service{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "router-default",
+								Namespace: "openshift-ingress",
+							},
+						})
+				},
+			},
+			want:    &corev1.Service{},
+			wantErr: false,
+		},
+		{
+			name: "failed to retrieve ingress router service",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() client.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return errors.New("generic error")
+					}
+					return mockClient
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetIngressRouterService(tt.args.ctx, tt.args.serverClient())
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetIngressRouterService() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (got != nil) != (tt.want != nil) {
+				t.Errorf("GetIngressRouterService() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetIngressRouterIPs(t *testing.T) {
+	type args struct {
+		hostname string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []net.IP
+		wantErr bool
+	}{
+		{
+			name: "failed to perform ip lookup for hostname",
+			args: args{
+				hostname: "hostname",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetIngressRouterIPs(tt.args.hostname)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetIngressRouterIPs() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetIngressRouterIPs() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

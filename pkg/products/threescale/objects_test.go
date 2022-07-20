@@ -7,6 +7,7 @@ import (
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
@@ -730,6 +731,37 @@ var rhssoPostgres = &crov1.Postgres{
 		Namespace: nsPrefix + defaultInstallationNamespace,
 	},
 	Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseComplete},
+}
+
+var customDomainCR = &customdomainv1alpha1.CustomDomain{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "customDomain",
+		Namespace: "ns",
+	},
+	Spec: customdomainv1alpha1.CustomDomainSpec{
+		Domain: "apps.example.com",
+	},
+	Status: customdomainv1alpha1.CustomDomainStatus{
+		State: customdomainv1alpha1.CustomDomainStateReady,
+	},
+}
+
+var ingressRouterService = &corev1.Service{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "router-default",
+		Namespace: "openshift-ingress",
+	},
+	Spec: corev1.ServiceSpec{},
+	Status: corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					Hostname: "invalid",
+				},
+			},
+		},
+	},
 }
 
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {

@@ -2,13 +2,14 @@ package threescale
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
+	"net"
 	"net/http"
 	"reflect"
 	"testing"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -75,6 +76,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = consolev1.AddToScheme(scheme)
 	err = openshiftv1.AddToScheme(scheme)
 	err = configv1.AddToScheme(scheme)
+	err = customdomainv1alpha1.AddToScheme(scheme)
 
 	return scheme, err
 }
@@ -96,6 +98,7 @@ type ThreeScaleTestScenario struct {
 	Product              *integreatlyv1alpha1.RHMIProductStatus
 	Recorder             record.EventRecorder
 	Uninstall            bool
+	WantErr              bool
 }
 
 func getTestInstallation() *integreatlyv1alpha1.RHMI {
@@ -144,7 +147,7 @@ func TestThreeScale(t *testing.T) {
 
 	scenarios := []ThreeScaleTestScenario{
 		{
-			Name:                 "Test successful installation without errors",
+			Name:                 "successful installation without errors",
 			FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
 			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
@@ -172,18 +175,97 @@ func TestThreeScale(t *testing.T) {
 			Recorder:       setupRecorder(),
 			Uninstall:      false,
 		},
+		{
+			Name: "failed to retrieve ingress router ips",
+			FakeSigsClient: func() k8sclient.Client {
+				preReqs := getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
+				preReqs = append(preReqs, customDomainCR, ingressRouterService)
+				return getSigClient(preReqs, scheme)
+			}(),
+			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
+			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeThreeScaleClient: getThreeScaleClient(),
+			Assert:               assertInstallationSuccessfull,
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "test-installation",
+					Namespace:  "integreatly-operator-ns",
+					Finalizers: []string{"finalizer.3scale.integreatly.org"},
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+				},
+				Spec: integreatlyv1alpha1.RHMISpec{
+					MasterURL:        "https://console.apps.example.com",
+					RoutingSubdomain: "apps.example.com",
+					SMTPSecret:       "test-smtp",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
+						Enabled: true,
+					},
+				},
+			},
+			MPM:            marketplace.NewManager(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:       setupRecorder(),
+			Uninstall:      false,
+			WantErr:        true,
+		},
+		{
+			Name: "failed to retrieve ingress router service",
+			FakeSigsClient: func() k8sclient.Client {
+				preReqs := getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
+				preReqs = append(preReqs, customDomainCR)
+				return getSigClient(preReqs, scheme)
+			}(),
+			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
+			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeThreeScaleClient: getThreeScaleClient(),
+			Assert:               assertInstallationSuccessfull,
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "test-installation",
+					Namespace:  "integreatly-operator-ns",
+					Finalizers: []string{"finalizer.3scale.integreatly.org"},
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+				},
+				Spec: integreatlyv1alpha1.RHMISpec{
+					MasterURL:        "https://console.apps.example.com",
+					RoutingSubdomain: "apps.example.com",
+					SMTPSecret:       "test-smtp",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
+						Enabled: true,
+					},
+				},
+			},
+			MPM:            marketplace.NewManager(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:       setupRecorder(),
+			Uninstall:      false,
+			WantErr:        true,
+		},
 	}
-	for _, scenario := range scenarios {
+	for i, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			ctx := context.TODO()
 			configManager, err := config.NewManager(ctx, scenario.FakeSigsClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name, scenario.Installation)
 			if err != nil {
 				t.Fatalf("Error creating config manager")
 			}
-
-			err = configManager.Client.Create(ctx, smtpSec)
-			if err != nil {
-				t.Fatalf("Error creating config manager")
+			if i == 0 {
+				err = configManager.Client.Create(ctx, smtpSec)
+				if err != nil {
+					t.Fatalf("error creating smtp secret")
+				}
 			}
 
 			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder, getLogger(), localProductDeclaration)
@@ -192,6 +274,9 @@ func TestThreeScale(t *testing.T) {
 			}
 			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient, &quota.ProductConfigMock{}, scenario.Uninstall)
 			if err != nil {
+				if scenario.WantErr {
+					return
+				}
 				t.Fatalf("Error reconciling %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
 
@@ -1849,6 +1934,151 @@ func verifyMessageBusDoesNotExist(serverClient k8sclient.Client) bool {
 		}
 	}
 	return true
+}
+
+func TestReconciler_ping3scalePortals(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = routev1.Install(scheme)
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient func() k8sclient.Client
+		ips          []net.IP
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "failed to ping 3scale portal",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme,
+						&routev1.Route{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      labelRouteToSystemMaster,
+								Namespace: "test",
+								Labels: map[string]string{
+									"zync.3scale.net/route-to": labelRouteToSystemMaster,
+								},
+							},
+							Status: routev1.RouteStatus{
+								Ingress: []routev1.RouteIngress{
+									{
+										Host: "host",
+									},
+								},
+							},
+						},
+						&routev1.Route{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      labelRouteToSystemDeveloper,
+								Namespace: "test",
+								Labels: map[string]string{
+									"zync.3scale.net/route-to": labelRouteToSystemDeveloper,
+								},
+							},
+							Status: routev1.RouteStatus{
+								Ingress: []routev1.RouteIngress{
+									{
+										Host: "host",
+									},
+								},
+							},
+						},
+						&routev1.Route{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      labelRouteToSystemProvider,
+								Namespace: "test",
+								Labels: map[string]string{
+									"zync.3scale.net/route-to": labelRouteToSystemProvider,
+								},
+							},
+							Status: routev1.RouteStatus{
+								Ingress: []routev1.RouteIngress{
+									{
+										Host: "host",
+									},
+								},
+							},
+						},
+					)
+					return mockClient
+				},
+				ips: []net.IP{
+					{127, 0, 0, 1},
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "failed to retrieve 3scale route",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+					mockClient.ListFunc = func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+						return errors.New("generic error")
+					}
+					return mockClient
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.ping3scalePortals(tt.args.ctx, tt.args.serverClient(), tt.args.ips)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ping3scalePortals() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ping3scalePortals() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestReconciler_reconcileCustomDomainAlerts(t *testing.T) {
