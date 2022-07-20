@@ -19,6 +19,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	alertName := "ksm-endpoint-alerts"
 	operatorAlertName := "ksm-endpoint-alerts"
+	userSsoAlerts := "rhssouser"
 
 	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		observabilityConfig, err := r.ConfigManager.ReadObservability()
@@ -32,6 +33,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 
 		alertName = "user-sso-ksm-endpoint-alerts"
 		operatorAlertName = "user-sso-operator-ksm-endpoint-alerts"
+		userSsoAlerts = "rhssouser"
 	}
 
 	return &resources.AlertReconcilerImpl{
@@ -63,6 +65,23 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak-discovery', namespace='%s'} < 1", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
+					},
+				},
+			},
+			{
+				AlertName: userSsoAlerts,
+				GroupName: "rhoam-general-user-rhsso.rules",
+				Namespace: namespace,
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "KeycloakInstanceNotAvailable",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlKeycloakInstanceNotAvailable,
+							"message": fmt.Sprintf(`Keycloak instance in namespace %s has not been available for the last 5 minutes.`, r.Config.GetNamespace()),
+						},
+						Expr:   intstr.FromString(fmt.Sprintf(`sum(kube_pod_status_ready{condition="true",namespace="%[1]s",pod=~"keycloak.*"} * on(pod, namespace) group_left() kube_pod_status_phase{phase="Running",namespace="%[1]s"}) < 1 OR absent(kube_pod_status_ready{condition="true",namespace="%[1]s",pod=~"keycloak.*"})`, r.Config.GetNamespace())),
+						For:    "5m",
+						Labels: map[string]string{"severity": "critical", "route": "keycloak", "service": "keycloak", "product": installationName},
 					},
 				},
 			},

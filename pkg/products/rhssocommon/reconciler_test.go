@@ -1728,7 +1728,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		Spec: monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name: "testGroup",
+					Name: "general.rules",
 					Rules: []monitoringv1.Rule{
 						{
 							Alert: "testAlert1",
@@ -1760,10 +1760,19 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		Spec: monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name: "testGroup",
+					Name: "general.rules",
 					Rules: []monitoringv1.Rule{
 						{
 							Alert: "KeycloakInstanceNotAvailable",
+							Expr:  intstr.FromString(fmt.Sprint("testExpression")),
+						},
+					},
+				},
+				{
+					Name: "rhoam-general-user-rhsso.rules",
+					Rules: []monitoringv1.Rule{
+						{
+							Alert: "test-alert",
 							Expr:  intstr.FromString(fmt.Sprint("testExpression")),
 						},
 					},
@@ -1783,7 +1792,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		verificationFunction func(*monitoringv1.PrometheusRule) bool
 	}{
 		{
-			name:          "alerting rules correctly mirrored without kc alert",
+			name:          "alerting rules correctly mirrored without kc alert when OO groups are nil",
 			expectedRules: []monitoringv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
@@ -1797,7 +1806,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			verificationFunction: kcAlertHasNotBeenMirrored,
 		},
 		{
-			name:          "alerting rule mirrored without replacing existing kc alert",
+			name:          "alerting rules correctly mirrored without kc alert when OO groups are not nil",
 			expectedRules: []monitoringv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
@@ -1808,21 +1817,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
-			verificationFunction: kcAlertHasNotBeenRemovedorUpdated,
-		},
-		{
-			name:          "alerting rule mirrored without replacing existing kc alert and updating it's expression",
-			expectedRules: []monitoringv1.Rule{},
-			installation:  installation,
-			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-observability",
-				}), nil
-			}},
-			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
-			wantErr:              false,
-			want:                 integreatlyv1alpha1.PhaseCompleted,
-			verificationFunction: kcAlertHasNotBeenRemovedorUpdated,
+			verificationFunction: kcAlertHasNotBeenMirrored,
 		},
 		{
 			name:          "failing phase on getting keycloak prom rules",
@@ -1897,19 +1892,32 @@ func kcAlertHasNotBeenMirrored(existingRules *monitoringv1.PrometheusRule) bool 
 	var alertKCexists = true
 
 	for _, alertRuleGroups := range existingRules.Spec.Groups {
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "testAlert1" {
-				alert1exists = true
+		if alertRuleGroups.Name == "general.rules" {
+			for _, alert := range alertRuleGroups.Rules {
+				if alert.Alert == "testAlert1" {
+					alert1exists = true
+				}
+			}
+			for _, alert := range alertRuleGroups.Rules {
+				if alert.Alert == "testAlert2" {
+					alert2exists = true
+				}
+			}
+			for _, alert := range alertRuleGroups.Rules {
+				if alert.Alert == "KeycloakInstanceNotAvailable" {
+					alertKCexists = false
+				}
 			}
 		}
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "testAlert2" {
-				alert2exists = true
+
+		if alertRuleGroups.Name == "rhoam-general-user-rhsso.rules" {
+			if len(alertRuleGroups.Rules) != 1 {
+				return false
 			}
-		}
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "KeycloakInstanceNotAvailable" {
-				alertKCexists = false
+			for _, alert := range alertRuleGroups.Rules {
+				if alert.Alert != "test-alert" {
+					return false
+				}
 			}
 		}
 	}
@@ -1953,13 +1961,4 @@ func kcAlertHasNotBeenRemovedorUpdated(existingRules *monitoringv1.PrometheusRul
 	}
 
 	return true
-}
-
-func assertPanic(t *testing.T, f func()) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-	f()
 }

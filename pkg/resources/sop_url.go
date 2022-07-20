@@ -47,4 +47,5 @@ const (
 	SopUrlDnsBypassThreeScaleAdminUI                           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleAdminUI.asciidoc"
 	SopUrlDnsBypassThreeScaleDeveloperUI                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleDeveloperUI.asciidoc"
 	SopUrlDnsBypassThreeScaleSystemAdminUI                     = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleSystemAdminUI.asciidoc"
+	SopUrlKeycloakInstanceNotAvailable                         = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/KeycloakInstanceNotAvailable.asciidoc"
 )

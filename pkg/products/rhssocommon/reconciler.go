@@ -743,10 +743,12 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		for _, alertGroup := range ssoAlert.Spec.Groups {
-			for idx, alertRule := range alertGroup.Rules {
-				if alertRule.Alert == "KeycloakInstanceNotAvailable" {
-					ssoAlert.Spec.Groups[0].Rules = removeRule(ssoAlert.Spec.Groups[0].Rules, idx)
+		for groupIdx, alertGroup := range ssoAlert.Spec.Groups {
+			if alertGroup.Name == "general.rules" {
+				for idx, alertRule := range alertGroup.Rules {
+					if alertRule.Alert == "KeycloakInstanceNotAvailable" {
+						ssoAlert.Spec.Groups[groupIdx].Rules = removeRule(ssoAlert.Spec.Groups[0].Rules, idx)
+					}
 				}
 			}
 		}
@@ -765,15 +767,18 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 
 		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
 			observabilityAlert.Labels = ssoAlert.Labels
-			for _, alertGroup := range observabilityAlert.Spec.Groups {
-				for _, alertRule := range alertGroup.Rules {
-					if alertRule.Alert == "KeycloakInstanceNotAvailable" {
-						ssoAlert.Spec.Groups[0].Rules = append(ssoAlert.Spec.Groups[0].Rules, alertRule)
+
+			if observabilityAlert.Spec.Groups == nil {
+				observabilityAlert.Spec.Groups = append(observabilityAlert.Spec.Groups, ssoAlert.Spec.Groups[0])
+			} else {
+				for idx, alertGroup := range observabilityAlert.Spec.Groups {
+					if alertGroup.Name == "general.rules" {
+						observabilityAlert.Spec.Groups[idx] = ssoAlert.Spec.Groups[0]
+					} else {
+						observabilityAlert.Spec.Groups = append(observabilityAlert.Spec.Groups, ssoAlert.Spec.Groups[0])
 					}
 				}
 			}
-
-			observabilityAlert.Spec = ssoAlert.Spec
 
 			return nil
 		})
