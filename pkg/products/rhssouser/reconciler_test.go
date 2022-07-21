@@ -1042,7 +1042,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 		{
 			Name:           "RHOAM - test in progress if no rhhso prom rules are present",
-			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlertNoGroups, csv),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

@@ -295,9 +295,14 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 				"KeycloakJavaGCTimePerMinuteMarkSweep",
 				"KeycloakJavaDeadlockedThreads",
 				"KeycloakLoginFailedThresholdExceeded",
-				"KeycloakInstanceNotAvailable",
 				"KeycloakAPIRequestDuration90PercThresholdExceeded",
 				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "rhssouser-general.yaml",
+			Rules: []string{
+				"KeycloakInstanceNotAvailable",
 			},
 		},
 		{
@@ -527,9 +532,14 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"KeycloakJavaGCTimePerMinuteMarkSweep",
 				"KeycloakJavaDeadlockedThreads",
 				"KeycloakLoginFailedThresholdExceeded",
-				"KeycloakInstanceNotAvailable",
 				"KeycloakAPIRequestDuration90PercThresholdExceeded",
 				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "rhsso-general.yaml",
+			Rules: []string{
+				"KeycloakInstanceNotAvailable",
 			},
 		},
 		{
