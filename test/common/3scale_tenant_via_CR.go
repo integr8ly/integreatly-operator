@@ -225,7 +225,7 @@ func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScale
 	insecureClient := &http.Client{
 		Timeout: time.Second * 10,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // gosec G402 override exclued
 		},
 	}
 

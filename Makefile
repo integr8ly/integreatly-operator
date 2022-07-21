@@ -542,7 +542,7 @@ commits/check:
 
 .PHONY: gosec/exclude
 gosec/exclude:
-	gosec -exclude=G104,G107,G404,G601 ./...
+	gosec -exclude=G104,G107,G404,G601,G402 ./...
 
 ##@ Build Dependencies
 
