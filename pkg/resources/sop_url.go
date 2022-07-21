@@ -44,7 +44,7 @@ const (
 	SopUrlSloUserSsoAvailabilityAlert                          = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/SloUserSsoAvailabilityAlert.asciidoc"
 	SopUrlTestFireAlerts                                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/cssre_info/info_test_fire_alerts.md#resolve-test-alerts"
 	SopUrlRHOAMServiceDefinition                               = "https://access.redhat.com/articles/5534341"
-	SopUrlCustomDomainThreeScaleAdminUI                        = "" // TODO: update with actual link
-	SopUrlCustomDomainThreeScaleDeveloperUI                    = "" // TODO: update with actual link
-	SopUrlCustomDomainThreeScaleSystemAdminUI                  = "" // TODO: update with actual link
+	SopUrlCustomDomainThreeScaleAdminUI                        = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/CustomDomainThreeScaleAdminUI.asciidoc"
+	SopUrlCustomDomainThreeScaleDeveloperUI                    = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/CustomDomainThreeScaleDeveloperUI.asciidoc"
+	SopUrlCustomDomainThreeScaleSystemAdminUI                  = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/CustomDomainThreeScaleSystemAdminUI.asciidoc"
 )

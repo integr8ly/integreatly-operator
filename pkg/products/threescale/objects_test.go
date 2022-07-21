@@ -7,9 +7,9 @@ import (
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
