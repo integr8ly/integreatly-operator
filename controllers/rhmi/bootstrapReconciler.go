@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
+	v1 "github.com/openshift/api/config/v1"
 	"math/rand"
 	"os"
 	"strings"
@@ -153,6 +154,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
 		return phase, errors.Wrap(err, "failed to retrieve console url and subdomain")
+	}
+
+	phase, err = r.retrieveAPIServerURL(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to retrieve API server URL", err)
+		return phase, errors.Wrap(err, "failed to retrieve API server URL")
 	}
 
 	phase, err = r.checkCloudResourcesConfig(ctx, serverClient)
@@ -856,6 +863,34 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
+	// discover and set master url and routing subdomain
+	apiServerCR := &v1.APIServer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+	}
+	key := k8sclient.ObjectKey{
+		Name: apiServerCR.GetName(),
+	}
+
+	err := serverClient.Get(ctx, key, apiServerCR)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, cert := range apiServerCR.Spec.ServingCerts.NamedCertificates {
+		for _, name := range cert.Names {
+			if strings.HasPrefix(name, "api") {
+				r.installation.Spec.APIServer = name
+				return integreatlyv1alpha1.PhaseCompleted, nil
+			}
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("no ServingCerts.NamedCertificates found starting with api")
 }
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {

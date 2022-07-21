@@ -238,6 +238,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list
 
+// +kubebuilder:rbac:groups="config.openshift.io",resources=apiservers,verbs=get
+
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed

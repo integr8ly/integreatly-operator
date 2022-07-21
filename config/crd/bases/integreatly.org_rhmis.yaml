@@ -35,6 +35,8 @@ spec:
           spec:
             description: RHMISpec defines the desired state of RHMI
             properties:
+              APIServer:
+                type: string
               alertFromAddress:
                 type: string
               alertingEmailAddress:
