@@ -743,6 +743,10 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
+		if ssoAlert.Spec.Groups == nil {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
 		for groupIdx, alertGroup := range ssoAlert.Spec.Groups {
 			if alertGroup.Name == "general.rules" {
 				for idx, alertRule := range alertGroup.Rules {
@@ -767,18 +771,7 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 
 		opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
 			observabilityAlert.Labels = ssoAlert.Labels
-
-			if observabilityAlert.Spec.Groups == nil {
-				observabilityAlert.Spec.Groups = append(observabilityAlert.Spec.Groups, ssoAlert.Spec.Groups[0])
-			} else {
-				for idx, alertGroup := range observabilityAlert.Spec.Groups {
-					if alertGroup.Name == "general.rules" {
-						observabilityAlert.Spec.Groups[idx] = ssoAlert.Spec.Groups[0]
-					} else {
-						observabilityAlert.Spec.Groups = append(observabilityAlert.Spec.Groups, ssoAlert.Spec.Groups[0])
-					}
-				}
-			}
+			observabilityAlert.Spec = ssoAlert.Spec
 
 			return nil
 		})

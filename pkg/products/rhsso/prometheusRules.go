@@ -18,7 +18,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	alertName := "ksm-endpoint-alerts"
 	operatorAlertName := "ksm-endpoint-alerts"
-	rhssoAlerts := "rhsso"
+	rhssoAlerts := "rhsso-general"
 
 	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		observabilityConfig, err := r.ConfigManager.ReadObservability()
@@ -32,7 +32,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 
 		alertName = "rhsso-ksm-endpoint-alerts"
 		operatorAlertName = "rhsso-operator-ksm-endpoint-alerts"
-		rhssoAlerts = "rhsso"
+		rhssoAlerts = "rhsso-general"
 	}
 
 	return &resources.AlertReconcilerImpl{
