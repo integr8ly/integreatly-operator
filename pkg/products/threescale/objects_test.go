@@ -7,6 +7,8 @@ import (
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -722,6 +724,14 @@ var clusterVersion = &v12.ClusterVersion{
 	},
 }
 
+var rhssoPostgres = &crov1.Postgres{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, "test-installation"),
+		Namespace: nsPrefix + defaultInstallationNamespace,
+	},
+	Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseComplete},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -747,6 +757,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	zyncDatabase.Namespace = threeScaleInstallationNamespace
 	zyncQue.Namespace = threeScaleInstallationNamespace
 	threescale.Namespace = threeScaleInstallationNamespace
+	rhssoPostgres.Namespace = integreatlyOperatorNamespace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -793,5 +804,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		zyncQue,
 		threescale,
 		clusterVersion,
+		rhssoPostgres,
 	}
 }

@@ -261,6 +261,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		// Wait for RHSSO postgres to be completed
+		phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+			return phase, err
+		}
+
 		phase, err = r.reconcileExternalDatasources(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
