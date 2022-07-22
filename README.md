@@ -166,3 +166,6 @@ oc delete namespace redhat-rhoam-operator
 export INSTALLATION_TYPE=managed-api
 make cluster/cleanup && make cluster/cleanup/crds
 ```
+
+## More Info
+More info can be found in the docs folder and at the [Integreatly Read the Docs site](https://integreatly-operator.readthedocs.io/en/latest/).
