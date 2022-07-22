@@ -52,6 +52,7 @@ metadata:
     categories: Integration & Delivery
     certified: "false"
     containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.24.1
+    olm.skipRange: '>=0.0.1 <1.24.1'
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.11"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
