@@ -87,68 +87,6 @@ func TestReconciler_scaleDeployment(t *testing.T) {
 	}
 }
 
-func TestReconciler_restartGrafanaOperatorControllerManagerDeployment(t *testing.T) {
-	basicScheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "grafana-operator-controller-manager",
-			Namespace: defaultDeploymentNamespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Env: []corev1.EnvVar{},
-						},
-					},
-				},
-			},
-		},
-	}
-	csv := &operatorsv1alpha1.ClusterServiceVersion{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "grafana-operator.v3.10.4",
-			Namespace: defaultDeploymentNamespace,
-		}}
-
-	client := fakeclient.NewFakeClientWithScheme(basicScheme, deployment, csv)
-	reconciler := getBasicReconciler()
-
-	tests := []struct {
-		testName            string
-		deploymentNamespace string
-		want                integreatlyv1alpha1.StatusPhase
-		wantErr             string
-	}{
-		{
-			testName:            "sucessfully restart deployment",
-			deploymentNamespace: defaultDeploymentNamespace,
-			want:                integreatlyv1alpha1.PhaseCompleted,
-			wantErr:             "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
-			phase, err := reconciler.restartGrafanaOperatorControllerManagerDeployment(context.TODO(), client, tt.deploymentNamespace)
-			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("scaleDeployment() error = %v, wantErr %v", err.Error(), tt.wantErr)
-				return
-			}
-			if phase != tt.want {
-				t.Errorf("scaleDeployment() returned %v for the phase but wanted %v", phase, tt.want)
-				return
-			}
-		})
-	}
-
-}
-
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	if err := appsv1.SchemeBuilder.AddToScheme(scheme); err != nil {
