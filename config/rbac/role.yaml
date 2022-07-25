@@ -113,12 +113,6 @@ rules:
 - apiGroups:
   - config.openshift.io
   resources:
-  - apiservers
-  verbs:
-  - get
-- apiGroups:
-  - config.openshift.io
-  resources:
   - clusterversions
   - infrastructures
   - oauths

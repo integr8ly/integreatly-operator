@@ -866,31 +866,28 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
-	// discover and set master url and routing subdomain
-	apiServerCR := &v1.APIServer{
+
+	cr := &v1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
 	}
+
 	key := k8sclient.ObjectKey{
-		Name: apiServerCR.GetName(),
+		Name: cr.GetName(),
 	}
 
-	err := serverClient.Get(ctx, key, apiServerCR)
+	err := serverClient.Get(ctx, key, cr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	for _, cert := range apiServerCR.Spec.ServingCerts.NamedCertificates {
-		for _, name := range cert.Names {
-			if strings.HasPrefix(name, "api") {
-				r.installation.Spec.APIServer = name
-				return integreatlyv1alpha1.PhaseCompleted, nil
-			}
-		}
+	r.installation.Spec.APIServer = cr.Status.APIServerURL
+	if r.installation.Spec.APIServer != "" {
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("no ServingCerts.NamedCertificates found starting with api")
+	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("no Status.apiServerURL found in infrastricture CR")
 }
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {

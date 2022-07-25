@@ -1062,7 +1062,7 @@ func TestReconciler_retrieveAPIServerURL(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "No API server CR found",
+			name:    "No Infrastructure CR found",
 			args:    args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme)},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -1070,36 +1070,24 @@ func TestReconciler_retrieveAPIServerURL(t *testing.T) {
 		{
 			name: "No URL found starting with APi",
 			args: args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme,
-				&configv1.APIServer{
+				&configv1.Infrastructure{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "cluster",
 					},
-					Spec: configv1.APIServerSpec{
-						ServingCerts: configv1.APIServerServingCerts{
-							NamedCertificates: []configv1.APIServerNamedServingCert{
-								{Names: []string{"bad url"}},
-							},
-						},
-					},
+					Status: configv1.InfrastructureStatus{APIServerURL: ""},
 				})},
+			fields:  fields{installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{}}},
 			wantErr: true,
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
 			name: "Found API URL from list of names",
 			args: args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme,
-				&configv1.APIServer{
+				&configv1.Infrastructure{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "cluster",
 					},
-					Spec: configv1.APIServerSpec{
-						ServingCerts: configv1.APIServerServingCerts{
-							NamedCertificates: []configv1.APIServerNamedServingCert{
-								{Names: []string{"bad url", "second bad url"}},
-								{Names: []string{"third bad url", "api-url"}},
-							},
-						},
-					},
+					Status: configv1.InfrastructureStatus{APIServerURL: "https://api.example.com"},
 				})},
 			fields:  fields{installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{}}},
 			want:    integreatlyv1alpha1.PhaseCompleted,
