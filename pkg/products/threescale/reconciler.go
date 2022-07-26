@@ -12,6 +12,7 @@ import (
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/version"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"net"
 	"net/http"
@@ -35,7 +36,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-	"github.com/integr8ly/integreatly-operator/version"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -188,6 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Info("Start Reconciling")
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
+	customDomainActive := r.useCustomDomain()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
@@ -228,17 +229,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	if r.useCustomDomain() {
-		r.log.Info("custom domain configuration detected.")
-		phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
-			r.log.Error(errorMessage, err)
+	phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
+		r.log.Error(errorMessage, err)
+		if customDomainActive {
 			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, err
+		} else {
+			metrics.SetCustomDomain(customDomainActive, nil, 0)
 		}
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, err
+	}
 
+	if customDomainActive {
 		phase, err = r.findCustomDomainCr(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			errorMessage := "finding CustomDomain CR failed"
@@ -314,32 +318,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if r.useCustomDomain() {
-		ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
-		if err != nil || len(ingressRouterService.Status.LoadBalancer.Ingress) == 0 {
-			errorMessage := "failed to retrieve ingress router service"
-			r.log.Error(errorMessage, err)
-			phase = integreatlyv1alpha1.PhaseFailed
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, fmt.Errorf("%s: %v", errorMessage, err)
-		}
+	ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
+	if err != nil || len(ingressRouterService.Status.LoadBalancer.Ingress) == 0 {
+		errorMessage := "failed to retrieve ingress router service"
+		r.log.Error(errorMessage, err)
+		phase = integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, fmt.Errorf("%s: %v", errorMessage, err)
+	}
 
-		ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
-		if err != nil {
-			errorMessage := "failed to retrieve ingress router ips"
-			r.log.Error(errorMessage, err)
-			phase = integreatlyv1alpha1.PhaseFailed
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, fmt.Errorf("%s: %v", errorMessage, err)
-		}
+	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
+	if err != nil {
+		errorMessage := "failed to retrieve ingress router ips"
+		r.log.Error(errorMessage, err)
+		phase = integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, fmt.Errorf("%s: %v", errorMessage, err)
+	}
 
-		phase, err = r.ping3scalePortals(ctx, serverClient, ips)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
-			r.log.Error(errorMessage, err)
-			events.HandleError(r.recorder, installation, phase, errorMessage, err)
-			return phase, err
-		}
+	phase, err = r.ping3scalePortals(ctx, serverClient, ips)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
+		r.log.Error(errorMessage, err)
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, err
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
@@ -3232,6 +3234,7 @@ func (r *Reconciler) useCustomDomain() bool {
 }
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
+	customDomainActive := r.useCustomDomain()
 	format := "failed to retrieve %s 3scale route"
 	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
 	if err != nil {
@@ -3295,6 +3298,6 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 			"status": portal.Status,
 		})
 	}
-	metrics.SetCustomDomain(true, portals, hasUnavailablePortal)
+	metrics.SetCustomDomain(customDomainActive, portals, hasUnavailablePortal)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -18,12 +18,9 @@ var (
 
 func Alerts(installation *v1alpha1.RHMI, log logger.Logger, namespace string) resources.AlertReconciler {
 	installationName := installationNames[installation.Spec.Type]
-	lastError := installation.Status.CustomDomain.Error
-
 	alerts := []resources.AlertConfiguration{
-		customDomainCRErrorState(installationName, namespace, lastError),
+		customDomainCRErrorState(installationName, namespace),
 	}
-
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,
@@ -32,7 +29,7 @@ func Alerts(installation *v1alpha1.RHMI, log logger.Logger, namespace string) re
 	}
 }
 
-func customDomainCRErrorState(installationName string, namespace string, err string) resources.AlertConfiguration {
+func customDomainCRErrorState(installationName string, namespace string) resources.AlertConfiguration {
 	rule := resources.AlertConfiguration{
 		AlertName: fmt.Sprintf("%s-custom-domain-alert", installationName),
 		Namespace: namespace,
@@ -42,7 +39,7 @@ func customDomainCRErrorState(installationName string, namespace string, err str
 				Alert: "CustomDomainCRErrorState",
 				Annotations: map[string]string{
 					"sop_url": resources.SopUrlRHOAMServiceDefinition,
-					"message": fmt.Sprintf(fmt.Sprintf("Error configuring custom domain, please refer to the documetaion to resolve the error. Found error: %s", err)),
+					"message": "Error configuring custom domain, please refer to the documentation to resolve the error.",
 				},
 				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='false'} > 0", installationName)),
 				For:    "5m",

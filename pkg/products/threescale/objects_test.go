@@ -757,7 +757,7 @@ var ingressRouterService = &corev1.Service{
 		LoadBalancer: corev1.LoadBalancerStatus{
 			Ingress: []corev1.LoadBalancerIngress{
 				{
-					Hostname: "invalid",
+					Hostname: "xxx.eu-west-1.elb.amazonaws.com",
 				},
 			},
 		},
@@ -837,5 +837,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		threescale,
 		clusterVersion,
 		rhssoPostgres,
+		ingressRouterService,
 	}
 }
