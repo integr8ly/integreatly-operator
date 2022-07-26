@@ -489,7 +489,14 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 		},
 	}
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
-		oauthClientSecrets.Data = map[string][]byte{}
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+		if !k8serr.IsNotFound(err) && err != nil {
+			return err
+		} else if k8serr.IsNotFound(err) {
+			oauthClientSecrets.Data = map[string][]byte{}
+		} else if oauthClientSecrets.Data == nil {
+			oauthClientSecrets.Data = map[string][]byte{}
+		}
 		for _, tenant := range allTenants {
 			err = r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
 			if err != nil {
@@ -558,7 +565,12 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 		},
 	}
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
-		oauthClientSecrets.Data = map[string][]byte{}
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+		if !k8serr.IsNotFound(err) && err != nil {
+			return err
+		} else if k8serr.IsNotFound(err) {
+			oauthClientSecrets.Data = map[string][]byte{}
+		}
 		for _, product := range productsList {
 			if _, ok := oauthClientSecrets.Data[string(product)]; !ok {
 				oauthClient := &oauthv1.OAuthClient{
