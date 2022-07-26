@@ -32,17 +32,17 @@ func TestProductLogins(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Login to Grafana
-	grafanaHost := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.ProductGrafana].Host
+	grafanaHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductGrafana].Host
 	testLoginToCustomerGrafanaForUser(t, grafanaHost, developerUser, assertGrafanaLoginUnAuthorized(t, developerUser))
 	testLoginToCustomerGrafanaForUser(t, grafanaHost, dedicatedAdminUser, assertGrafanaLoginAuthorized(t, dedicatedAdminUser))
 
 	// Login to User SSO
-	userSSOConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host, keyCloakAuthConsolePath)
+	userSSOConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host, keyCloakAuthConsolePath)
 	testLoginToUserSSOForUser(t, userSSOConsoleUrl, developerUser)
 	testLoginToUserSSOForUser(t, userSSOConsoleUrl, dedicatedAdminUser)
 
 	// Login to RHSSO
-	rhssoConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host, keyCloakAuthConsolePath)
+	rhssoConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host, keyCloakAuthConsolePath)
 	testLoginToRHSSOForUser(t, rhssoConsoleUrl, developerUser)
 	testLoginToRHSSOForUser(t, rhssoConsoleUrl, dedicatedAdminUser)
 }

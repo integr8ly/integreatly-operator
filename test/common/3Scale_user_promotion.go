@@ -27,12 +27,12 @@ func Test3ScaleUserPromotion(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Get the 3Scale host url from the rhmi status
-	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
 
-	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
+	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host
 
 	if keycloakHost == "" {
 		t.Fatalf("Failed to retrieve keycloak host from RHMI CR: %v", rhmi)
