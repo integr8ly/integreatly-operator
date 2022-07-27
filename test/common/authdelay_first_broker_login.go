@@ -19,7 +19,7 @@ import (
 	"github.com/headzoo/surf/browser"
 	brow "github.com/headzoo/surf/browser"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
