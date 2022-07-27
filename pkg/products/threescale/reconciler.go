@@ -3229,7 +3229,6 @@ func (r *Reconciler) useCustomDomain() bool {
 	if domainStatus == nil {
 		return false
 	}
-	r.Config.SetCustomDomainEnabled(domainStatus.Enabled)
 	return domainStatus.Enabled
 }
 

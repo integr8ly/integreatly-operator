@@ -214,20 +214,6 @@ var installation = &integreatlyv1alpha1.RHMI{
 	},
 }
 
-var smtpSec = &corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "test-smtp",
-		Namespace: "integreatly-operator-ns",
-	},
-	Data: map[string][]byte{
-		"host":     []byte("test"),
-		"password": []byte("test"),
-		"port":     []byte("test"),
-		"tls":      []byte("test"),
-		"username": []byte("test"),
-	},
-}
-
 var blobStorage = &crov1.BlobStorage{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-blobstorage-test-installation",
@@ -272,6 +258,13 @@ var threescaleRoute1 = &v1.Route{
 	Spec: v1.RouteSpec{
 		Host: "system-master",
 	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-master",
+			},
+		},
+	},
 }
 
 // Have two system-developer routes, the reconcile should pick up on 3scale.
@@ -285,6 +278,13 @@ var threescaleRoute2 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-developer",
+	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-developer",
+			},
+		},
 	},
 }
 
@@ -312,6 +312,13 @@ var threescaleRoute4 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-provider",
+	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-provider",
+			},
+		},
 	},
 }
 

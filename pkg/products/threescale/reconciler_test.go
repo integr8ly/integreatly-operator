@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/foxcpp/go-mockdns"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -99,6 +101,8 @@ type ThreeScaleTestScenario struct {
 	Recorder             record.EventRecorder
 	Uninstall            bool
 	WantErr              bool
+	MockDNS              bool
+	MockHTTP             bool
 }
 
 func getTestInstallation() *integreatlyv1alpha1.RHMI {
@@ -146,43 +150,9 @@ func TestThreeScale(t *testing.T) {
 	}
 
 	scenarios := []ThreeScaleTestScenario{
-		// TODO: commented out until a way to mock net.LookupIP is found. Suggested way: https://github.com/foxcpp/go-mockdns
-		//{
-		//	Name:                 "successful installation without errors",
-		//	FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
-		//	FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
-		//	FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-		//	FakeThreeScaleClient: getThreeScaleClient(),
-		//	Assert:               assertInstallationSuccessfull,
-		//	Installation: &integreatlyv1alpha1.RHMI{
-		//		ObjectMeta: metav1.ObjectMeta{
-		//			Name:       "test-installation",
-		//			Namespace:  "integreatly-operator-ns",
-		//			Finalizers: []string{"finalizer.3scale.integreatly.org"},
-		//		},
-		//		TypeMeta: metav1.TypeMeta{
-		//			Kind:       "RHMI",
-		//			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-		//		},
-		//		Spec: integreatlyv1alpha1.RHMISpec{
-		//			MasterURL:        "https://console.apps.example.com",
-		//			RoutingSubdomain: "apps.example.com",
-		//			SMTPSecret:       "test-smtp",
-		//		},
-		//	},
-		//	MPM:            marketplace.NewManager(),
-		//	ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-		//	Product:        &integreatlyv1alpha1.RHMIProductStatus{},
-		//	Recorder:       setupRecorder(),
-		//	Uninstall:      false,
-		//},
 		{
-			Name: "failed to retrieve ingress router ips",
-			FakeSigsClient: func() k8sclient.Client {
-				preReqs := getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
-				preReqs = append(preReqs, customDomainCR)
-				return getSigClient(preReqs, scheme)
-			}(),
+			Name:                 "successful installation without errors",
+			FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
 			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeThreeScaleClient: getThreeScaleClient(),
@@ -201,11 +171,6 @@ func TestThreeScale(t *testing.T) {
 					MasterURL:        "https://console.apps.example.com",
 					RoutingSubdomain: "apps.example.com",
 					SMTPSecret:       "test-smtp",
-				},
-				Status: integreatlyv1alpha1.RHMIStatus{
-					CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
-						Enabled: true,
-					},
 				},
 			},
 			MPM:            marketplace.NewManager(),
@@ -213,19 +178,15 @@ func TestThreeScale(t *testing.T) {
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
 			Uninstall:      false,
-			WantErr:        true,
+			MockDNS:        true,
+			MockHTTP:       true,
 		},
 		{
-			Name: "failed to retrieve ingress router service",
-			FakeSigsClient: func() k8sclient.Client {
-				preReqs := getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
-				preReqs = append(preReqs, customDomainCR)
-				return getSigClient(preReqs, scheme)
-			}(),
+			Name:                 "failed to retrieve ingress router ips",
+			FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
 			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeThreeScaleClient: getThreeScaleClient(),
-			Assert:               assertInstallationSuccessfull,
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "test-installation",
@@ -241,32 +202,81 @@ func TestThreeScale(t *testing.T) {
 					RoutingSubdomain: "apps.example.com",
 					SMTPSecret:       "test-smtp",
 				},
-				Status: integreatlyv1alpha1.RHMIStatus{
-					CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
-						Enabled: true,
-					},
+			},
+			MPM:            marketplace.NewManager(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:       setupRecorder(),
+			Uninstall:      false,
+			WantErr:        true,
+		},
+		{
+			Name:                 "failed to retrieve ingress router service",
+			FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
+			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
+			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeThreeScaleClient: getThreeScaleClient(),
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "test-installation",
+					Namespace:  "integreatly-operator-ns",
+					Finalizers: []string{"finalizer.3scale.integreatly.org"},
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "RHMI",
+					APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+				},
+				Spec: integreatlyv1alpha1.RHMISpec{
+					MasterURL:        "https://console.apps.example.com",
+					RoutingSubdomain: "apps.example.com",
+					SMTPSecret:       "test-smtp",
 				},
 			},
 			MPM:            marketplace.NewManager(),
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
 			Uninstall:      false,
 			WantErr:        true,
 		},
 	}
-	for i, scenario := range scenarios {
+	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			ctx := context.TODO()
+			if scenario.MockDNS {
+				dnsSrv, err := mockDNS("xxx.eu-west-1.elb.amazonaws.com", "127.0.0.1")
+				defer dnsSrv.Close()
+				defer mockdns.UnpatchNet(net.DefaultResolver)
+				if err != nil {
+					t.Fatalf("error mocking dns server: %v", err)
+				}
+			}
+			if scenario.MockHTTP {
+				httpSrv, err := mockHTTP("127.0.0.1")
+				if err != nil {
+					t.Fatalf("error mocking http server: %v", err)
+				}
+				defer httpSrv.Close()
+			}
 			configManager, err := config.NewManager(ctx, scenario.FakeSigsClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name, scenario.Installation)
 			if err != nil {
-				t.Fatalf("Error creating config manager")
+				t.Fatalf("error creating config manager")
 			}
-			if i == 0 {
-				err = configManager.Client.Create(ctx, smtpSec)
-				if err != nil {
-					t.Fatalf("error creating smtp secret")
-				}
+			err = configManager.Client.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-smtp",
+					Namespace: "integreatly-operator-ns",
+				},
+				Data: map[string][]byte{
+					"host":     []byte("test"),
+					"password": []byte("test"),
+					"port":     []byte("test"),
+					"tls":      []byte("test"),
+					"username": []byte("test"),
+				},
+			})
+			if err != nil {
+				t.Fatalf("error creating smtp secret: %v", err)
 			}
 
 			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder, getLogger(), localProductDeclaration)
@@ -274,23 +284,66 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
 			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient, &quota.ProductConfigMock{}, scenario.Uninstall)
-			if err != nil {
-				if scenario.WantErr {
-					return
-				}
+			if (err != nil) != scenario.WantErr {
 				t.Fatalf("Error reconciling %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
-
 			if status != scenario.ExpectedStatus {
 				t.Fatalf("unexpected status: %v, expected: %v", status, scenario.ExpectedStatus)
 			}
-
-			err = scenario.Assert(scenario, configManager)
-			if err != nil {
-				t.Fatal(err.Error())
+			if scenario.Assert != nil {
+				err = scenario.Assert(scenario, configManager)
+				if err != nil {
+					t.Fatal(err.Error())
+				}
 			}
 		})
 	}
+}
+
+func mockDNS(host, ip string) (*mockdns.Server, error) {
+	srv, err := mockdns.NewServer(map[string]mockdns.Zone{
+		fmt.Sprintf("%s.", host): {
+			A: []string{ip},
+		},
+		fmt.Sprintf("%s:443.", host): {
+			A: []string{ip},
+		},
+	}, false)
+	if err != nil {
+		return nil, err
+	}
+	srv.PatchNet(net.DefaultResolver)
+	return srv, nil
+}
+
+func mockHTTP(ip string) (*httptest.Server, error) {
+	// create a listener with the desired port
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:10620", ip))
+	if err != nil {
+		return nil, err
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case fmt.Sprintf("/%s", labelRouteToSystemProvider):
+			w.WriteHeader(http.StatusOK)
+			return
+		case fmt.Sprintf("/%s", labelRouteToSystemDeveloper):
+			w.WriteHeader(http.StatusOK)
+			return
+		case fmt.Sprintf("/%s", labelRouteToSystemMaster):
+			w.WriteHeader(http.StatusOK)
+			return
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	})
+	srv := httptest.NewUnstartedServer(handler)
+	// NewUnstartedServer creates a listener. Close that listener and replace with the one we created
+	srv.Listener.Close()
+	srv.Listener = listener
+	srv.StartTLS()
+	return srv, nil
 }
 
 func TestReconciler_reconcileBlobStorage(t *testing.T) {

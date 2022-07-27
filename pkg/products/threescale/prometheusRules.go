@@ -5,8 +5,6 @@ import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	"strconv"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 
@@ -41,13 +39,6 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 		operatorNamespace = observabilityConfig.GetNamespace()
 		alertNamePrefix = "3scale-"
 		operatorAlertNamePrefix = "3scale-operator-"
-	}
-
-	// conditional alert level for 3scale UI portals
-	threescaleAlertLevel := "critical"
-	customDomainEnabled, _ := strconv.ParseBool(r.Config.GetCustomDomainEnabled()) // value is false in case of error
-	if customDomainEnabled {
-		threescaleAlertLevel = "warning"
 	}
 
 	return &resources.AlertReconcilerImpl{
@@ -277,7 +268,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-admin-ui'} != 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": threescaleAlertLevel, "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleDeveloperUIBBT",
@@ -287,7 +278,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox',service='3scale-developer-console-ui'} != 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": threescaleAlertLevel, "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleSystemAdminUIBBT",
@@ -297,7 +288,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						},
 						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-system-admin-ui'} == 0 and up{job='blackbox', service='3scale-system-admin-ui'} ==1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": threescaleAlertLevel, "product": installationName},
+						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
 						Alert: "ThreeScaleZyncPodAvailability",
