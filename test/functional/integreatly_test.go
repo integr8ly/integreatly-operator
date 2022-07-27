@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 var _ = Describe("integreatly", func() {

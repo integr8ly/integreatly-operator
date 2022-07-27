@@ -3,7 +3,7 @@ package e2e
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,8 +33,6 @@ func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	// start test env
-	By("bootstrapping test environment")
-
 	useCluster := true
 	testEnv = &envtest.Environment{
 		UseExistingCluster:       &useCluster,
@@ -46,18 +44,22 @@ func TestAPIs(t *testing.T) {
 		t.Fatalf("could not get start test environment %s", err)
 	}
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Functional Test Suite",
-		[]Reporter{})
+	RunSpecs(t, "Functional Test Suite")
+
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
+var _ = BeforeSuite(func() {
+	done := make(chan interface{})
+	go func() {
+		logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
+		By("bootstrapping test environment")
 
-	// +kubebuilder:scaffold:scheme
+		// +kubebuilder:scaffold:scheme
 
-	close(done)
-}, 120)
+		close(done)
+	}()
+	Eventually(done, 120).Should(BeClosed())
+})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

@@ -8,16 +8,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"io"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 	"time"
 
-	"github.com/onsi/ginkgo"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gopkg.in/yaml.v2"
