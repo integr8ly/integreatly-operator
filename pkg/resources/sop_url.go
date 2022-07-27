@@ -1,6 +1,6 @@
 package resources
 
-// Add alert strings here
+// #nosec G101 -- false positive from urls containing `DnsBypass`
 const (
 	sopUrlAddonManagedApiServiceParametersExists               = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/AddonManagedApiServiceParameters.asciidoc"
 	sopUrlRhoamBase                                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/"
