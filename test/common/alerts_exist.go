@@ -683,6 +683,15 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"TestFireWarningAlert",
 			},
 		},
+		{
+			File: ObservabilityNamespacePrefix + "rhoam-custom-domain-alert.yaml",
+			Rules: []string{
+				"CustomDomainCRErrorState",
+				"DnsBypassThreeScaleAdminUI",
+				"DnsBypassThreeScaleDeveloperUI",
+				"DnsBypassThreeScaleSystemAdminUI",
+			},
+		},
 	}
 }
 
