@@ -183,7 +183,7 @@ metadata:
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_809e3d125fa32f407df7c2eefb9765f7e3fe557ab76016fa132f402374f4db93
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_18c8908af423141adf56586b197b5e020323ea227d4b6d79a24437cd0a7cf9cf
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -424,7 +424,7 @@ spec:
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b68f131a59318c61f88cdbd44dbac94a3ec54cf291cd4b5b87cc104830634006
                 - name: RELATED_IMAGE_OC_CLI
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_f3d08cef3d466464cb475703c5a63ad519fe99f7be7463e6c72469c70cfbe35e
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_809e3d125fa32f407df7c2eefb9765f7e3fe557ab76016fa132f402374f4db93
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_18c8908af423141adf56586b197b5e020323ea227d4b6d79a24437cd0a7cf9cf
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -695,6 +695,18 @@ spec:
         - apiGroups:
           - capabilities.3scale.net
           resources:
+          - developeraccounts/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
           - developeraccounts/status
           verbs:
           - get
@@ -704,6 +716,18 @@ spec:
           - capabilities.3scale.net
           resources:
           - developerusers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - developerusers/finalizers
           verbs:
           - create
           - delete
@@ -968,9 +992,9 @@ spec:
   provider:
     name: Red Hat alpha
   relatedImages:
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:809e3d125fa32f407df7c2eefb9765f7e3fe557ab76016fa132f402374f4db93
-    name: 3scale-rhel7-operator-809e3d125fa32f407df7c2eefb9765f7e3fe557ab76016fa132f402374f4db93-annotation
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:809e3d125fa32f407df7c2eefb9765f7e3fe557ab76016fa132f402374f4db93
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:18c8908af423141adf56586b197b5e020323ea227d4b6d79a24437cd0a7cf9cf
+    name: 3scale-rhel7-operator-18c8908af423141adf56586b197b5e020323ea227d4b6d79a24437cd0a7cf9cf-annotation
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:18c8908af423141adf56586b197b5e020323ea227d4b6d79a24437cd0a7cf9cf
     name: manager
   - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:9f42a1b829701f6479184bde798b03e08f47b39252e0b11bf2f1e08f53ec3e48
     name: backend
