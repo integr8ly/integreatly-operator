@@ -2,10 +2,11 @@ package common
 
 import (
 	goctx "context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
@@ -72,9 +73,11 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 
 	// Create a product
 	By("Create a product")
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	productId, err := tsClient.CreateProduct(fmt.Sprintf("dummy-product-%v", r1.Intn(100000)))
+	r1, err := rand.Int(rand.Reader, big.NewInt(100000))
+	if err != nil {
+		t.Fatal("Error generating rand int")
+	}
+	productId, err := tsClient.CreateProduct(fmt.Sprintf("dummy-product-%v", r1.Int64()))
 	if err != nil {
 		t.Log("Error during create the product")
 		t.Fatal(err)

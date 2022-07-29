@@ -3,8 +3,9 @@ package common
 import (
 	"context"
 	goctx "context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -73,9 +74,12 @@ func TestAuthDelayFirstBrokerLogin(t TestingTB, ctx *TestingContext) {
 
 func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestUser, error) {
 	// create random keycloak user
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	userNamePostfix := r1.Intn(100000)
+	r1, err := rand.Int(rand.Reader, big.NewInt(100000))
+	if err != nil {
+		return nil, fmt.Errorf("error generating random username postfix")
+	}
+	userNamePostfix := r1.Int64()
+
 	testUsers := []TestUser{
 		{
 			FirstName: TestAuthThreeScaleUsername,
@@ -83,7 +87,7 @@ func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestU
 			UserName:  fmt.Sprintf("%s-%d", TestAuthThreeScaleUsername, userNamePostfix),
 		},
 	}
-	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installationName)
+	err = createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installationName)
 	if err != nil {
 		return nil, fmt.Errorf("error creating test user: %v", err)
 	}
