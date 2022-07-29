@@ -2,16 +2,15 @@ package controllers
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	v1 "github.com/openshift/api/config/v1"
-	"math/rand"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"math/big"
 	"os"
 	"strings"
-	"time"
-
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -767,11 +766,11 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 }
 
 func generateSecret(length int) string {
-	rand.Seed(time.Now().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+	rnd, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 	buf := make([]rune, length)
 	for i := range buf {
-		buf[i] = chars[rand.Intn(len(chars))]
+		buf[i] = chars[rnd.Int64()]
 	}
 	return string(buf)
 }

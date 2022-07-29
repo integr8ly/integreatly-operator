@@ -9,6 +9,7 @@ package common
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -32,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"net/url"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -63,9 +64,12 @@ var (
 )
 
 func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	serviceSystemName = fmt.Sprintf("h24_test_product_%v", r1.Intn(100000))
+	r1, err := rand.Int(rand.Reader, big.NewInt(100000))
+	if err != nil {
+		t.Fatal("Error generating rand int")
+	}
+
+	serviceSystemName = fmt.Sprintf("h24_test_product_%v", r1.Int64())
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(operatorsv1alpha1.AddToScheme(scheme))
