@@ -38,12 +38,12 @@ func Test3ScaleCrudlPermissions(t TestingTB, ctx *TestingContext) {
 
 	// Get the fuse host url from the rhmi status
 	By("Get 3Scale URL and 3Scale clint")
-	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		t.Log("No host route found. Creating route from `Spec.RoutingSubdomain`")
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
-	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
+	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host
 	if keycloakHost == "" {
 		t.Log("Keycloak host route not found")
 	}
