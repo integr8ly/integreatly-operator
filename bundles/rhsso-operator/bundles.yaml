@@ -1,0 +1,7 @@
+bundles:
+    - name: keycloak-operator.v18.0.0
+      image: quay.io/vmogilev_rhmi/sso7-rhel8-operator-bundle:18.0.0
+    - name: rhsso-operator.7.5.2-9
+      image: quay.io/vmogilev_rhmi/sso7-rhel8-operator-bundle:7.5.2-9
+    - name: rhsso-operator.7.6.0-4
+      image: quay.io/vmogilev_rhmi/sso7-rhel8-operator-bundle:7.6.0-4

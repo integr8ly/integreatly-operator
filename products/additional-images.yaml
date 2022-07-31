@@ -12,6 +12,6 @@ additionalImages:
     url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:9a5ee95f8e99a63a4ad0e8b01683ac03c75337bbbe3d504d199a97f9921eb0c1"
   - name: observability-prometheus-operator
     url: "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"
-  - name: rhsso-sso-openshift
-    url: "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-27"
+#  - name: rhsso-sso-openshift
+#    url: "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8:7.5-27"
 

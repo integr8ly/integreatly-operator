@@ -108,13 +108,15 @@ products:
     installFrom: "index"
     index: "quay.io/rhoas/observability-operator-index:v3.0.13"
   rhsso:
-    installFrom: "local"
-    manifestsDir: "integreatly-rhsso"
-    channel: "rhmi"
+    channel: stable
+    package: "rhsso-operator"
+    installFrom: "index"
+    index: "quay.io/vmogilev_rhmi/sso7-rhel8-operator-index:7.6.0-4"
   rhssouser:
-    installFrom: "local"
-    manifestsDir: "integreatly-rhsso"
-    channel: "rhmi"
+    channel: stable
+    package: "rhsso-operator"
+    installFrom: "index"
+    index: "quay.io/vmogilev_rhmi/sso7-rhel8-operator-index:7.6.0-4"
   solution-explorer:
     channel: rhmi
     installFrom: "local"

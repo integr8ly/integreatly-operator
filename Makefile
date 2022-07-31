@@ -36,7 +36,7 @@ SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.25.0
+RHOAM_TAG ?= 1.25.1
 
 export SKIP_FLAKES := true
 
@@ -323,6 +323,10 @@ create/olm/bundle:
 .PHONY: create/3scale/index
 create/3scale/index:
 	./scripts/create-3scale-index.sh
+
+.PHONY: create/rhsso-operator/index
+create/rhsso-operator/index:
+	./scripts/create-rhsso-operator-index.sh
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
