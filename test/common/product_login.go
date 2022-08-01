@@ -3,21 +3,40 @@ package common
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strings"
-	"time"
 )
 
 // TestProductLogins Test logins to RHOAM products as dedicated admin and developer user
 // Test login for 3scale is covered by Test3ScaleUserPromotion
 func TestProductLogins(t TestingTB, ctx *TestingContext) {
+	// To run this testcase for multiple test-users, set USER_NUMBERS to a string
+	// in a "1,2,3" format
+	userNumbers := os.Getenv("USER_NUMBERS")
+	testUserNumbers := strings.Split(userNumbers, ",")
+
+	if userNumbers == "" {
+		t.Logf("env var USER_NUMBERS was not set, defaulting to 1")
+		testUserNumbers = []string{"1"}
+	}
 	var (
-		developerUser      = fmt.Sprintf("%v%02d", DefaultTestUserName, 1)
+		developerUsers     []string
 		dedicatedAdminUser = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 	)
+	for _, numberString := range testUserNumbers {
+		number, err := strconv.Atoi(numberString)
+		if err != nil {
+			t.Fatalf("`USER_NUMBERS` env variable doesn't have the proper format (e.g. '1,2,3') %v", err)
+		}
+		developerUsers = append(developerUsers, fmt.Sprintf("%v%02d", DefaultTestUserName, number))
+	}
 
 	const keyCloakAuthConsolePath = "/auth/admin"
 
@@ -31,19 +50,23 @@ func TestProductLogins(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	// Login to Grafana
 	grafanaHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductGrafana].Host
-	testLoginToCustomerGrafanaForUser(t, grafanaHost, developerUser, assertGrafanaLoginUnAuthorized(t, developerUser))
-	testLoginToCustomerGrafanaForUser(t, grafanaHost, dedicatedAdminUser, assertGrafanaLoginAuthorized(t, dedicatedAdminUser))
-
-	// Login to User SSO
 	userSSOConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host, keyCloakAuthConsolePath)
-	testLoginToUserSSOForUser(t, userSSOConsoleUrl, developerUser)
-	testLoginToUserSSOForUser(t, userSSOConsoleUrl, dedicatedAdminUser)
-
-	// Login to RHSSO
 	rhssoConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host, keyCloakAuthConsolePath)
-	testLoginToRHSSOForUser(t, rhssoConsoleUrl, developerUser)
+	for _, developerUser := range developerUsers {
+		// Login to Grafana
+		testLoginToCustomerGrafanaForUser(t, grafanaHost, developerUser, assertGrafanaLoginUnAuthorized(t, developerUser))
+
+		// Login to User SSO
+		testLoginToUserSSOForUser(t, userSSOConsoleUrl, developerUser)
+
+		// Login to RHSSO
+		testLoginToRHSSOForUser(t, rhssoConsoleUrl, developerUser)
+	}
+
+	//Login to the services as customer-admin
+	testLoginToCustomerGrafanaForUser(t, grafanaHost, dedicatedAdminUser, assertGrafanaLoginAuthorized(t, dedicatedAdminUser))
+	testLoginToUserSSOForUser(t, userSSOConsoleUrl, dedicatedAdminUser)
 	testLoginToRHSSOForUser(t, rhssoConsoleUrl, dedicatedAdminUser)
 }
 
