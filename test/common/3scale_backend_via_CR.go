@@ -6,7 +6,7 @@ import (
 
 	"time"
 
-	threescaleBv1 "github.com/3scale/3scale-operator/pkg/apis/capabilities/v1beta1"
+	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

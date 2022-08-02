@@ -45,7 +45,7 @@ import (
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -652,6 +652,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	ExternalComponentsTrue := true
+
 	// create the 3scale api manager
 	resourceRequirements := r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeWorkshop)
 	apim := &threescalev1.APIManager{
@@ -660,7 +662,15 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: threescalev1.APIManagerSpec{
-			HighAvailability:    &threescalev1.HighAvailabilitySpec{},
+			ExternalComponents: &threescalev1.ExternalComponentsSpec{
+				System: &threescalev1.ExternalSystemComponents{
+					Redis:    &ExternalComponentsTrue,
+					Database: &ExternalComponentsTrue,
+				},
+				Backend: &threescalev1.ExternalBackendComponents{
+					Redis: &ExternalComponentsTrue,
+				},
+			},
 			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{},
 			Monitoring:          &threescalev1.MonitoringSpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{

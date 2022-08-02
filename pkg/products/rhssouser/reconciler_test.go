@@ -28,7 +28,7 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 
