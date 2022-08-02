@@ -2,7 +2,7 @@ package config
 
 import (
 	"errors"
-	threescaleapps "github.com/3scale/3scale-operator/apis/appins"
+	threescaleapps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
