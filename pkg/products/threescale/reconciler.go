@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
-	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"os"
-
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
+	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -222,6 +222,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if uninstall {
 		return phase, nil
+	}
+
+	if r.useCustomDomain() {
+
+		r.log.Info("custom domain configuration detected.")
+
+		phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "failed reconciling custom domain alerts")
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain), err)
+			return phase, err
+		}
+
+		phase, err = r.findCustomDomainCr(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "finding CustomDomain CR failed")
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to validate custom domain: %s", r.installation.Spec.RoutingSubdomain), err)
+			return phase, err
+		}
+
+		customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "")
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -3120,6 +3141,40 @@ func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8s
 	}
 
 	return nil
+}
+
+func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	ok, err := customDomain.HasValidCustomDomainCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
+	if ok {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
+}
+
+func (r *Reconciler) reconcileCustomDomainAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		r.log.Warning(fmt.Sprintf("failed to get observability configuration: %v", err))
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	observabilityNamespace := observabilityConfig.GetNamespace()
+
+	alerts := customDomain.Alerts(r.installation, r.log, observabilityNamespace)
+	_, err = alerts.ReconcileAlerts(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) useCustomDomain() bool {
+	domainStatus := r.installation.Status.CustomDomain
+	if domainStatus == nil {
+		return false
+	}
+	return domainStatus.Enabled
 }
 
 func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

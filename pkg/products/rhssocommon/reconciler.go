@@ -3,8 +3,6 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/Masterminds/semver"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -328,7 +326,7 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://" + strings.Replace(r.Installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
+				"baseUrl":         r.Installation.Spec.APIServer,
 				"clientId":        clientId,
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,

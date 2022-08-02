@@ -142,6 +142,16 @@ var (
 		},
 	)
 
+	CustomDomain = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_custom_domain",
+			Help: "Returns 1 when custom domain is in use and has errors",
+		},
+		[]string{
+			"customDomain",
+		},
+	)
+
 	TotalNumTenants = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "total_num_tenants",
@@ -282,4 +292,9 @@ func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l
 	} else {
 		return "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate", nil
 	}
+}
+
+func SetCustomDomain(customDomain string, value int8) {
+	CustomDomain.Reset()
+	CustomDomain.WithLabelValues(customDomain).Set(float64(value))
 }

@@ -552,16 +552,16 @@ github.com/envoyproxy/protoc-gen-validate/validate
 # github.com/evanphx/json-patch v5.6.0+incompatible
 ## explicit
 github.com/evanphx/json-patch
-# github.com/fsnotify/fsnotify v1.4.9
+# github.com/fsnotify/fsnotify v1.5.1
 ## explicit; go 1.13
 github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 ## explicit
 github.com/ghodss/yaml
-# github.com/go-logr/logr v0.4.0 => github.com/go-logr/logr v0.2.1
+# github.com/go-logr/logr v1.2.0 => github.com/go-logr/logr v0.2.1
 ## explicit; go 1.14
 github.com/go-logr/logr
-# github.com/go-logr/zapr v0.2.0
+# github.com/go-logr/zapr v1.2.0 => github.com/go-logr/zapr v0.2.0
 ## explicit; go 1.12
 github.com/go-logr/zapr
 # github.com/go-openapi/analysis v0.20.0
@@ -846,6 +846,9 @@ github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 ## explicit; go 1.12
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
+# github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
+## explicit; go 1.17
+github.com/openshift/custom-domains-operator/api/v1alpha1
 # github.com/operator-framework/api v0.10.7 => github.com/operator-framework/api v0.8.1
 ## explicit; go 1.15
 github.com/operator-framework/api/pkg/apis/scorecard/v1alpha3
@@ -968,7 +971,7 @@ go.uber.org/atomic
 # go.uber.org/multierr v1.6.0
 ## explicit; go 1.12
 go.uber.org/multierr
-# go.uber.org/zap v1.19.0
+# go.uber.org/zap v1.19.1
 ## explicit; go 1.13
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -1380,19 +1383,19 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/component-base v0.22.2 => k8s.io/component-base v0.20.6
+# k8s.io/component-base v0.23.0 => k8s.io/component-base v0.20.6
 ## explicit; go 1.15
 k8s.io/component-base/metrics
 k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
-# k8s.io/klog/v2 v2.9.0 => k8s.io/klog/v2 v2.1.0
+# k8s.io/klog/v2 v2.30.0 => k8s.io/klog/v2 v2.1.0
 ## explicit; go 1.13
 k8s.io/klog/v2
 # k8s.io/kube-aggregator v0.19.0 => k8s.io/kube-aggregator v0.20.6
 ## explicit; go 1.15
 k8s.io/kube-aggregator/pkg/apis/apiregistration
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
-# k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
+# k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 => k8s.io/kube-openapi v0.0.0-20210113000636-45edf8a2a574
 ## explicit; go 1.12
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/util/proto
@@ -1401,7 +1404,7 @@ k8s.io/kube-openapi/pkg/validation/spec
 k8s.io/kube-openapi/pkg/validation/strfmt
 k8s.io/kube-openapi/pkg/validation/strfmt/bson
 k8s.io/kube-openapi/pkg/validation/validate
-# k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
+# k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 ## explicit; go 1.12
 k8s.io/utils/buffer
 k8s.io/utils/integer
@@ -1459,7 +1462,7 @@ sigs.k8s.io/controller-runtime/pkg/webhook/admission
 sigs.k8s.io/controller-runtime/pkg/webhook/conversion
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
-# sigs.k8s.io/structured-merge-diff/v4 v4.1.2
+# sigs.k8s.io/structured-merge-diff/v4 v4.2.0
 ## explicit; go 1.13
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
@@ -1467,6 +1470,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200203170920-46ec8731fbce
 # github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
+# github.com/go-logr/zapr => github.com/go-logr/zapr v0.2.0
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 # github.com/operator-framework/api => github.com/operator-framework/api v0.8.1

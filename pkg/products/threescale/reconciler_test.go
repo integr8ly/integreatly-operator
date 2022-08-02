@@ -3,6 +3,7 @@ package threescale
 import (
 	"context"
 	"fmt"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	"net/http"
 	"reflect"
 	"testing"
@@ -1376,6 +1377,161 @@ func TestReconciler_getUserDiff(t *testing.T) {
 	}
 }
 
+func TestReconciler_findCustomDomainCr(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	_ = customdomainv1alpha1.AddToScheme(scheme)
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Found custom domain CR",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{RoutingSubdomain: "apps.example.com"}},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, &customdomainv1alpha1.CustomDomainList{
+					Items: []customdomainv1alpha1.CustomDomain{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "goodDomain",
+							},
+							Spec: customdomainv1alpha1.CustomDomainSpec{
+								Domain: "apps.example.com",
+							},
+							Status: customdomainv1alpha1.CustomDomainStatus{
+								State: "Ready",
+							},
+						},
+					},
+				}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Error finding custom domain CR",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{RoutingSubdomain: "apps.example.com"}},
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.findCustomDomainCr(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("findCustomDomainCr() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("findCustomDomainCr() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_useCustomDomain(t *testing.T) {
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{
+			name: "Use custom domain true",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{
+						CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
+							Enabled: true,
+						}}},
+			},
+			want: true,
+		},
+		{
+			name: "Don't use custom domain, normal follow",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{Status: integreatlyv1alpha1.RHMIStatus{}},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			if got := r.useCustomDomain(); got != tt.want {
+				t.Errorf("useCustomDomain() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -1690,4 +1846,87 @@ func verifyMessageBusDoesNotExist(serverClient k8sclient.Client) bool {
 		}
 	}
 	return true
+}
+
+func TestReconciler_reconcileCustomDomainAlerts(t *testing.T) {
+
+	scheme := runtime.NewScheme()
+	_ = monitoringv1.SchemeBuilder.AddToScheme(scheme)
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx    context.Context
+		client k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Alerts are created",
+			args: args{
+				ctx:    context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			fields: fields{
+				ConfigManager: &config.ConfigReadWriterMock{
+					ReadObservabilityFunc: func() (*config.Observability, error) {
+						return &config.Observability{
+							Config: config.ProductConfig{
+								"NAMESPACE": "namespace",
+							},
+						}, nil
+					}},
+				installation: &integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{Type: "managed-api"},
+					Status: integreatlyv1alpha1.RHMIStatus{
+						CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{Error: "Some error"},
+					},
+				},
+				log: getLogger(),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.reconcileCustomDomainAlerts(tt.args.ctx, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileCustomDomainAlerts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileCustomDomainAlerts() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

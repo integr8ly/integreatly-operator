@@ -236,6 +236,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=clusterserviceversions,verbs=get;delete;list;update
 
+// +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list
+
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
