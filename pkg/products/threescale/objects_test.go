@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -213,20 +214,6 @@ var installation = &integreatlyv1alpha1.RHMI{
 	},
 }
 
-var smtpSec = &corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "test-smtp",
-		Namespace: "integreatly-operator-ns",
-	},
-	Data: map[string][]byte{
-		"host":     []byte("test"),
-		"password": []byte("test"),
-		"port":     []byte("test"),
-		"tls":      []byte("test"),
-		"username": []byte("test"),
-	},
-}
-
 var blobStorage = &crov1.BlobStorage{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-blobstorage-test-installation",
@@ -271,6 +258,13 @@ var threescaleRoute1 = &v1.Route{
 	Spec: v1.RouteSpec{
 		Host: "system-master",
 	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-master",
+			},
+		},
+	},
 }
 
 // Have two system-developer routes, the reconcile should pick up on 3scale.
@@ -284,6 +278,13 @@ var threescaleRoute2 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-developer",
+	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-developer",
+			},
+		},
 	},
 }
 
@@ -311,6 +312,13 @@ var threescaleRoute4 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-provider",
+	},
+	Status: v1.RouteStatus{
+		Ingress: []v1.RouteIngress{
+			{
+				Host: "127.0.0.1:10620/system-provider",
+			},
+		},
 	},
 }
 
@@ -732,6 +740,37 @@ var rhssoPostgres = &crov1.Postgres{
 	Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseComplete},
 }
 
+var customDomainCR = &customdomainv1alpha1.CustomDomain{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "customDomain",
+		Namespace: "ns",
+	},
+	Spec: customdomainv1alpha1.CustomDomainSpec{
+		Domain: "apps.example.com",
+	},
+	Status: customdomainv1alpha1.CustomDomainStatus{
+		State: customdomainv1alpha1.CustomDomainStateReady,
+	},
+}
+
+var ingressRouterService = &corev1.Service{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "router-default",
+		Namespace: "openshift-ingress",
+	},
+	Spec: corev1.ServiceSpec{},
+	Status: corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					Hostname: "xxx.eu-west-1.elb.amazonaws.com",
+				},
+			},
+		},
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -805,5 +844,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		threescale,
 		clusterVersion,
 		rhssoPostgres,
+		ingressRouterService,
 	}
 }

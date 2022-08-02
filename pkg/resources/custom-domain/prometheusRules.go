@@ -18,12 +18,9 @@ var (
 
 func Alerts(installation *v1alpha1.RHMI, log logger.Logger, namespace string) resources.AlertReconciler {
 	installationName := installationNames[installation.Spec.Type]
-	lastError := installation.Status.CustomDomain.Error
-
 	alerts := []resources.AlertConfiguration{
-		customDomainCRErrorState(installationName, namespace, lastError),
+		customDomainCRErrorState(installationName, namespace),
 	}
-
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,
@@ -32,7 +29,7 @@ func Alerts(installation *v1alpha1.RHMI, log logger.Logger, namespace string) re
 	}
 }
 
-func customDomainCRErrorState(installationName string, namespace string, err string) resources.AlertConfiguration {
+func customDomainCRErrorState(installationName string, namespace string) resources.AlertConfiguration {
 	rule := resources.AlertConfiguration{
 		AlertName: fmt.Sprintf("%s-custom-domain-alert", installationName),
 		Namespace: namespace,
@@ -42,11 +39,41 @@ func customDomainCRErrorState(installationName string, namespace string, err str
 				Alert: "CustomDomainCRErrorState",
 				Annotations: map[string]string{
 					"sop_url": resources.SopUrlRHOAMServiceDefinition,
-					"message": fmt.Sprintf(fmt.Sprintf("Error configuring custom domain, please refer to the documetaion to resolve the error. Found error: %s", err)),
+					"message": "Error configuring custom domain, please refer to the documentation to resolve the error.",
 				},
-				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{customDomain='active'} > 0", installationName)),
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='false'} > 0", installationName)),
 				For:    "5m",
-				Labels: map[string]string{"severity": "warning", "product": string(v1alpha1.InstallationTypeManagedApi)},
+				Labels: map[string]string{"severity": "warning", "product": installationName},
+			},
+			{
+				Alert: "DnsBypassThreeScaleAdminUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlDnsBypassThreeScaleAdminUI,
+					"message": "3Scale Admin UI, bypassing DNS: If this console is unavailable, the client is unable to configure or administer their API setup.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{system_master='false'} > 0", installationName)),
+				For:    "15m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
+			},
+			{
+				Alert: "DnsBypassThreeScaleDeveloperUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlDnsBypassThreeScaleDeveloperUI,
+					"message": "3Scale Developer UI, bypassing DNS: If this console is unavailable, the client developers are unable signup or perform API management.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{system_developer='false'} > 0", installationName)),
+				For:    "15m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
+			},
+			{
+				Alert: "DnsBypassThreeScaleSystemAdminUI",
+				Annotations: map[string]string{
+					"sop_url": resources.SopUrlDnsBypassThreeScaleSystemAdminUI,
+					"message": "3Scale System Admin UI, bypassing DNS: If this console is unavailable, the client is unable to perform Account Management, Analytics or Billing.",
+				},
+				Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{system_provider='false'} > 0", installationName)),
+				For:    "15m",
+				Labels: map[string]string{"severity": "critical", "product": installationName},
 			},
 		},
 	}

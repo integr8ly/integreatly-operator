@@ -2,6 +2,7 @@ package threescale
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -11,11 +12,14 @@ import (
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/version"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 
@@ -32,7 +36,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-	"github.com/integr8ly/integreatly-operator/version"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -70,27 +73,28 @@ import (
 
 const (
 	defaultInstallationNamespace = "3scale"
-	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
 
-	s3CredentialsSecretName          = "s3-credentials"
-	externalRedisSecretName          = "system-redis"
-	externalBackendRedisSecretName   = "backend-redis"
-	externalPostgresSecretName       = "system-database"
-	apicastStagingDCName             = "apicast-staging"
-	apicastProductionDCName          = "apicast-production"
-	backendListenerDCName            = "backend-listener"
-	systemSeedSecretName             = "system-seed"
-	systemMasterApiCastSecretName    = "system-master-apicast"
-	systemAppDCName                  = "system-app"
-	multitenantID                    = "rhoam-mt"
-	apicastRatelimiting              = "apicast-ratelimit"
-	backendListenerEnvoyConfigNodeID = "backend-listener-envoyconfig"
-	registrySecretName               = "threescale-registry-auth"
-	threeScaleIcon                   = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzNyAzNyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzcgMzc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRUUwMDAwO30KCS5zdDF7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBkPSJNMjcuNSwwLjVoLTE4Yy00Ljk3LDAtOSw0LjAzLTksOXYxOGMwLDQuOTcsNC4wMyw5LDksOWgxOGM0Ljk3LDAsOS00LjAzLDktOXYtMThDMzYuNSw0LjUzLDMyLjQ3LDAuNSwyNy41LDAuNUwyNy41LDAuNXoiCgkJLz4KCTxnPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNSwyMi4zN2MtMC45NSwwLTEuNzUsMC42My0yLjAyLDEuNWgtMS44NVYyMS41YzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYycy0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDIuNDhjMC4yNywwLjg3LDEuMDcsMS41LDIuMDIsMS41YzEuMTcsMCwyLjEyLTAuOTUsMi4xMi0yLjEyUzI2LjE3LDIyLjM3LDI1LDIyLjM3eiBNMjUsMjUuMzcKCQkJYy0wLjQ4LDAtMC44OC0wLjM5LTAuODgtMC44OHMwLjM5LTAuODgsMC44OC0wLjg4czAuODgsMC4zOSwwLjg4LDAuODhTMjUuNDgsMjUuMzcsMjUsMjUuMzd6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIwLjUsMTYuMTJjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTIuMzhoMS45MWMwLjMyLDAuNzcsMS4wOCwxLjMxLDEuOTYsMS4zMQoJCQljMS4xNywwLDIuMTItMC45NSwyLjEyLTIuMTJzLTAuOTUtMi4xMi0yLjEyLTIuMTJjLTEuMDIsMC0xLjg4LDAuNzMtMi4wOCwxLjY5SDIwLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJQzE5Ljg3LDE1Ljg1LDIwLjE2LDE2LjEyLDIwLjUsMTYuMTJ6IE0yNSwxMS40M2MwLjQ4LDAsMC44OCwwLjM5LDAuODgsMC44OHMtMC4zOSwwLjg4LTAuODgsMC44OHMtMC44OC0wLjM5LTAuODgtMC44OAoJCQlTMjQuNTIsMTEuNDMsMjUsMTEuNDN6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjEyLDE5Ljk2di0wLjg0aDIuMzhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJzLTAuMjgtMC42Mi0wLjYyLTAuNjJoLTIuMzh2LTAuOTEKCQkJYzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYyaC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYzYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDNDMTEuODQsMjAuNTksMTIuMTIsMjAuMzEsMTIuMTIsMTkuOTYKCQkJeiBNMTAuODcsMTkuMzRIOS4xMnYtMS43NWgxLjc1VjE5LjM0eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yOC41LDE2LjM0aC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYwLjkxSDIyLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYyczAuMjgsMC42MiwwLjYyLDAuNjJoMi4zOAoJCQl2MC44NGMwLDAuMzUsMC4yOCwwLjYyLDAuNjIsMC42MmgzYzAuMzQsMCwwLjYyLTAuMjgsMC42Mi0wLjYydi0zQzI5LjEyLDE2LjYyLDI4Ljg0LDE2LjM0LDI4LjUsMTYuMzR6IE0yNy44NywxOS4zNGgtMS43NXYtMS43NQoJCQloMS43NVYxOS4zNHoiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwyMC44N2MtMC4zNCwwLTAuNjMsMC4yOC0wLjYzLDAuNjJ2Mi4zOGgtMS44NWMtMC4yNy0wLjg3LTEuMDctMS41LTIuMDItMS41CgkJCWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMmMwLjk1LDAsMS43NS0wLjYzLDIuMDItMS41aDIuNDhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTMKCQkJQzE3LjEyLDIxLjE1LDE2Ljg0LDIwLjg3LDE2LjUsMjAuODd6IE0xMiwyNS4zN2MtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4CgkJCVMxMi40OCwyNS4zNywxMiwyNS4zN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwxMS44N2gtMi40MmMtMC4yLTAuOTctMS4wNi0xLjY5LTIuMDgtMS42OWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMgoJCQljMC44OCwwLDEuNjQtMC41NCwxLjk2LTEuMzFoMS45MXYyLjM4YzAsMC4zNSwwLjI4LDAuNjIsMC42MywwLjYyczAuNjItMC4yOCwwLjYyLTAuNjJ2LTNDMTcuMTIsMTIuMTUsMTYuODQsMTEuODcsMTYuNSwxMS44N3oKCQkJIE0xMiwxMy4xOGMtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4UzEyLjQ4LDEzLjE4LDEyLDEzLjE4eiIvPgoJPC9nPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTE4LjUsMjIuNjJjLTIuMjcsMC00LjEzLTEuODUtNC4xMy00LjEyczEuODUtNC4xMiw0LjEzLTQuMTJzNC4xMiwxLjg1LDQuMTIsNC4xMlMyMC43NywyMi42MiwxOC41LDIyLjYyegoJCSBNMTguNSwxNS42MmMtMS41OCwwLTIuODgsMS4yOS0yLjg4LDIuODhzMS4yOSwyLjg4LDIuODgsMi44OHMyLjg4LTEuMjksMi44OC0yLjg4UzIwLjA4LDE1LjYyLDE4LjUsMTUuNjJ6Ii8+CjwvZz4KPC9zdmc+Cg=="
-	user3ScaleID                     = "3scale_user_id"
+	s3CredentialsSecretName        = "s3-credentials"
+	externalRedisSecretName        = "system-redis"
+	externalBackendRedisSecretName = "backend-redis"
+	externalPostgresSecretName     = "system-database"
+	apicastStagingDCName           = "apicast-staging"
+	apicastProductionDCName        = "apicast-production"
+	backendListenerDCName          = "backend-listener"
+	systemSeedSecretName           = "system-seed"
+	systemMasterApiCastSecretName  = "system-master-apicast"
+	systemAppDCName                = "system-app"
+	multitenantID                  = "rhoam-mt"
+	registrySecretName             = "threescale-registry-auth"
+	threeScaleIcon                 = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzNyAzNyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzcgMzc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRUUwMDAwO30KCS5zdDF7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBkPSJNMjcuNSwwLjVoLTE4Yy00Ljk3LDAtOSw0LjAzLTksOXYxOGMwLDQuOTcsNC4wMyw5LDksOWgxOGM0Ljk3LDAsOS00LjAzLDktOXYtMThDMzYuNSw0LjUzLDMyLjQ3LDAuNSwyNy41LDAuNUwyNy41LDAuNXoiCgkJLz4KCTxnPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNSwyMi4zN2MtMC45NSwwLTEuNzUsMC42My0yLjAyLDEuNWgtMS44NVYyMS41YzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYycy0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDIuNDhjMC4yNywwLjg3LDEuMDcsMS41LDIuMDIsMS41YzEuMTcsMCwyLjEyLTAuOTUsMi4xMi0yLjEyUzI2LjE3LDIyLjM3LDI1LDIyLjM3eiBNMjUsMjUuMzcKCQkJYy0wLjQ4LDAtMC44OC0wLjM5LTAuODgtMC44OHMwLjM5LTAuODgsMC44OC0wLjg4czAuODgsMC4zOSwwLjg4LDAuODhTMjUuNDgsMjUuMzcsMjUsMjUuMzd6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIwLjUsMTYuMTJjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTIuMzhoMS45MWMwLjMyLDAuNzcsMS4wOCwxLjMxLDEuOTYsMS4zMQoJCQljMS4xNywwLDIuMTItMC45NSwyLjEyLTIuMTJzLTAuOTUtMi4xMi0yLjEyLTIuMTJjLTEuMDIsMC0xLjg4LDAuNzMtMi4wOCwxLjY5SDIwLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJQzE5Ljg3LDE1Ljg1LDIwLjE2LDE2LjEyLDIwLjUsMTYuMTJ6IE0yNSwxMS40M2MwLjQ4LDAsMC44OCwwLjM5LDAuODgsMC44OHMtMC4zOSwwLjg4LTAuODgsMC44OHMtMC44OC0wLjM5LTAuODgtMC44OAoJCQlTMjQuNTIsMTEuNDMsMjUsMTEuNDN6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjEyLDE5Ljk2di0wLjg0aDIuMzhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJzLTAuMjgtMC42Mi0wLjYyLTAuNjJoLTIuMzh2LTAuOTEKCQkJYzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYyaC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYzYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDNDMTEuODQsMjAuNTksMTIuMTIsMjAuMzEsMTIuMTIsMTkuOTYKCQkJeiBNMTAuODcsMTkuMzRIOS4xMnYtMS43NWgxLjc1VjE5LjM0eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yOC41LDE2LjM0aC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYwLjkxSDIyLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYyczAuMjgsMC42MiwwLjYyLDAuNjJoMi4zOAoJCQl2MC44NGMwLDAuMzUsMC4yOCwwLjYyLDAuNjIsMC42MmgzYzAuMzQsMCwwLjYyLTAuMjgsMC42Mi0wLjYydi0zQzI5LjEyLDE2LjYyLDI4Ljg0LDE2LjM0LDI4LjUsMTYuMzR6IE0yNy44NywxOS4zNGgtMS43NXYtMS43NQoJCQloMS43NVYxOS4zNHoiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwyMC44N2MtMC4zNCwwLTAuNjMsMC4yOC0wLjYzLDAuNjJ2Mi4zOGgtMS44NWMtMC4yNy0wLjg3LTEuMDctMS41LTIuMDItMS41CgkJCWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMmMwLjk1LDAsMS43NS0wLjYzLDIuMDItMS41aDIuNDhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTMKCQkJQzE3LjEyLDIxLjE1LDE2Ljg0LDIwLjg3LDE2LjUsMjAuODd6IE0xMiwyNS4zN2MtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4CgkJCVMxMi40OCwyNS4zNywxMiwyNS4zN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwxMS44N2gtMi40MmMtMC4yLTAuOTctMS4wNi0xLjY5LTIuMDgtMS42OWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMgoJCQljMC44OCwwLDEuNjQtMC41NCwxLjk2LTEuMzFoMS45MXYyLjM4YzAsMC4zNSwwLjI4LDAuNjIsMC42MywwLjYyczAuNjItMC4yOCwwLjYyLTAuNjJ2LTNDMTcuMTIsMTIuMTUsMTYuODQsMTEuODcsMTYuNSwxMS44N3oKCQkJIE0xMiwxMy4xOGMtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4UzEyLjQ4LDEzLjE4LDEyLDEzLjE4eiIvPgoJPC9nPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTE4LjUsMjIuNjJjLTIuMjcsMC00LjEzLTEuODUtNC4xMy00LjEyczEuODUtNC4xMiw0LjEzLTQuMTJzNC4xMiwxLjg1LDQuMTIsNC4xMlMyMC43NywyMi42MiwxOC41LDIyLjYyegoJCSBNMTguNSwxNS42MmMtMS41OCwwLTIuODgsMS4yOS0yLjg4LDIuODhzMS4yOSwyLjg4LDIuODgsMi44OHMyLjg4LTEuMjksMi44OC0yLjg4UzIwLjA4LDE1LjYyLDE4LjUsMTUuNjJ6Ii8+CjwvZz4KPC9zdmc+Cg=="
+	user3ScaleID                   = "3scale_user_id"
+
+	labelRouteToSystemMaster    = "system-master"
+	labelRouteToSystemDeveloper = "system-developer"
+	labelRouteToSystemProvider  = "system-provider"
 )
 
 var (
@@ -184,6 +188,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Info("Start Reconciling")
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
+	customDomainActive := r.useCustomDomain()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
@@ -224,25 +229,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	if r.useCustomDomain() {
-
-		r.log.Info("custom domain configuration detected.")
-
-		phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "failed reconciling custom domain alerts")
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain), err)
-			return phase, err
+	phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
+		r.log.Error(errorMessage, err)
+		if customDomainActive {
+			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
+		} else {
+			metrics.SetCustomDomain(customDomainActive, nil, 0)
 		}
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, err
+	}
 
+	if customDomainActive {
 		phase, err = r.findCustomDomainCr(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "finding CustomDomain CR failed")
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to validate custom domain: %s", r.installation.Spec.RoutingSubdomain), err)
+			errorMessage := "finding CustomDomain CR failed"
+			r.log.Error(errorMessage, err)
+			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
+			events.HandleError(r.recorder, installation, phase, errorMessage, err)
 			return phase, err
 		}
-
-		customDomain.UpdateErrorAndMetric(r.installation, r.log, err, "")
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, true, err)
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -306,6 +315,32 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
+	if err != nil || len(ingressRouterService.Status.LoadBalancer.Ingress) == 0 {
+		errorMessage := "failed to retrieve ingress router service"
+		r.log.Error(errorMessage, err)
+		phase = integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, fmt.Errorf("%s: %v", errorMessage, err)
+	}
+
+	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
+	if err != nil {
+		errorMessage := "failed to retrieve ingress router ips"
+		r.log.Error(errorMessage, err)
+		phase = integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		return phase, fmt.Errorf("%s: %v", errorMessage, err)
+	}
+
+	phase, err = r.ping3scalePortals(ctx, serverClient, ips)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
+		r.log.Error(errorMessage, err)
+		events.HandleError(r.recorder, installation, phase, errorMessage, err)
 		return phase, err
 	}
 
@@ -3143,8 +3178,28 @@ func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8s
 	return nil
 }
 
-func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	apim := &threescalev1.APIManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apiManagerName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
 
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, apim, func() error {
+		annotations := apim.ObjectMeta.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations["apps.3scale.net/disable-apicast-service-reconciler"] = "true"
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ok, err := customDomain.HasValidCustomDomainCR(ctx, serverClient, r.installation.Spec.RoutingSubdomain)
 	if ok {
 		return integreatlyv1alpha1.PhaseCompleted, nil
@@ -3177,23 +3232,71 @@ func (r *Reconciler) useCustomDomain() bool {
 	return domainStatus.Enabled
 }
 
-func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	apim := &threescalev1.APIManager{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiManagerName,
-			Namespace: r.Config.GetNamespace(),
+func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
+	customDomainActive := r.useCustomDomain()
+	format := "failed to retrieve %s 3scale route"
+	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemMaster)
+	}
+	systemDeveloperRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemDeveloper, nil)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemDeveloper)
+	}
+	systemProviderRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemProvider, nil)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemProvider)
+	}
+	portals := map[string]metrics.PortalInfo{
+		metrics.LabelSystemMaster: {
+			Host:       systemMasterRoute.Status.Ingress[0].Host,
+			PortalName: labelRouteToSystemMaster,
+		},
+		metrics.LabelSystemDeveloper: {
+			Host:       systemDeveloperRoute.Status.Ingress[0].Host,
+			PortalName: labelRouteToSystemDeveloper,
+		},
+		metrics.LabelSystemProvider: {
+			Host:       systemProviderRoute.Status.Ingress[0].Host,
+			PortalName: labelRouteToSystemProvider,
 		},
 	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, apim, func() error {
-		annotations := apim.ObjectMeta.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
+	var hasUnavailablePortal float64
+	for key, portal := range portals {
+		// #nosec G402 -- intentionally allowed
+		customHTTPClient := &http.Client{
+			Transport: &http.Transport{
+				DisableKeepAlives: true,
+				IdleConnTimeout:   10 * time.Second,
+				TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					addressFormat := "%s:443"
+					if addr == fmt.Sprintf(addressFormat, portal.Host) {
+						addr = fmt.Sprintf(addressFormat, ips[0].String())
+					}
+					dialer := &net.Dialer{Timeout: 10 * time.Second}
+					return dialer.DialContext(ctx, network, addr)
+				},
+			},
+			Timeout: 10 * time.Second,
 		}
-		annotations["apps.3scale.net/disable-apicast-service-reconciler"] = "true"
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		url := fmt.Sprintf("https://%s", portal.Host)
+		res, err := customHTTPClient.Get(url)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to ping %v 3scale portal (%v): %v", portal.PortalName, portal.Host, err)
+		}
+		status := res.StatusCode
+		portal.Status = status
+		portals[key] = portal
+		if status != http.StatusOK {
+			hasUnavailablePortal = 1
+		}
+		r.log.Infof("pinged 3scale portal", map[string]interface{}{
+			"name":   portal.PortalName,
+			"host":   portal.Host,
+			"status": portal.Status,
+		})
 	}
+	metrics.SetCustomDomain(customDomainActive, portals, hasUnavailablePortal)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

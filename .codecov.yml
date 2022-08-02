@@ -9,6 +9,7 @@ coverage:
   ignore:
     - "**/*_types.go"
     - "**/*_moq.go"
+    - "**/prometheusRules.go"
     - "pkg/config"
     - "pkg/metrics"
 

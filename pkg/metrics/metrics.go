@@ -8,7 +8,9 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/prometheus/client_golang/prometheus"
+	"net/http"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 // Custom metrics
@@ -145,10 +147,15 @@ var (
 	CustomDomain = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_custom_domain",
-			Help: "Returns 1 when custom domain is in use and has errors",
+			Help: "Custom Domain Status. " +
+				"active - indicating whether RHOAM was installed with custom domain enabled " +
+				"Labels indicating portal availability: 1) system-master 2) system-developer 3) system-provider",
 		},
 		[]string{
-			"customDomain",
+			LabelActive,
+			LabelSystemMaster,
+			LabelSystemDeveloper,
+			LabelSystemProvider,
 		},
 	)
 
@@ -190,6 +197,19 @@ var (
 		},
 	)
 )
+
+const (
+	LabelActive          = "active"
+	LabelSystemMaster    = "system_master"
+	LabelSystemDeveloper = "system_developer"
+	LabelSystemProvider  = "system_provider"
+)
+
+type PortalInfo struct {
+	Host       string
+	PortalName string
+	Status     int
+}
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
 func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
@@ -294,7 +314,18 @@ func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l
 	}
 }
 
-func SetCustomDomain(customDomain string, value int8) {
+func SetCustomDomain(active bool, portals map[string]PortalInfo, value float64) {
+	labels := prometheus.Labels{
+		LabelActive:          strconv.FormatBool(active),
+		LabelSystemMaster:    "false",
+		LabelSystemDeveloper: "false",
+		LabelSystemProvider:  "false",
+	}
+	if portals != nil {
+		for key, portal := range portals {
+			labels[key] = strconv.FormatBool(portal.Status == http.StatusOK)
+		}
+	}
 	CustomDomain.Reset()
-	CustomDomain.WithLabelValues(customDomain).Set(float64(value))
+	CustomDomain.With(labels).Set(value)
 }

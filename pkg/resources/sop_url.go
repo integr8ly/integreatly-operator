@@ -1,6 +1,6 @@
 package resources
 
-// Add alert strings here
+// #nosec G101 -- false positive from urls containing `DnsBypass`
 const (
 	sopUrlAddonManagedApiServiceParametersExists               = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/AddonManagedApiServiceParameters.asciidoc"
 	sopUrlRhoamBase                                            = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/"
@@ -44,4 +44,7 @@ const (
 	SopUrlSloUserSsoAvailabilityAlert                          = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/SloUserSsoAvailabilityAlert.asciidoc"
 	SopUrlTestFireAlerts                                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/cssre_info/info_test_fire_alerts.md#resolve-test-alerts"
 	SopUrlRHOAMServiceDefinition                               = "https://access.redhat.com/articles/5534341"
+	SopUrlDnsBypassThreeScaleAdminUI                           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleAdminUI.asciidoc"
+	SopUrlDnsBypassThreeScaleDeveloperUI                       = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleDeveloperUI.asciidoc"
+	SopUrlDnsBypassThreeScaleSystemAdminUI                     = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/DnsBypassThreeScaleSystemAdminUI.asciidoc"
 )
