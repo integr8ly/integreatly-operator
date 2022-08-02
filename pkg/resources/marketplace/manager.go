@@ -3,12 +3,9 @@ package marketplace
 import (
 	"context"
 	"fmt"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,7 +68,15 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		}
 		return nil
 	}
-
+	// TODO this 'Get' is a one off and should be removed post upgrade to 3scale cluster scoped
+	// Get CSV as only want 3scale operatorGroup to update when upgrade is finished
+	csv := &coreosv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      "3scale-operator.v0.9.0",
+		},
+	}
+	serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: csv.Namespace, Name: csv.Name}, csv)
 	//catalog source is ready create the other stuff
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,7 +88,17 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
-	err = serverClient.Create(ctx, og)
+	//TODO can maybe return this to a create only function after all clusters are updated in production
+	//err = serverClient.Create(ctx, og)
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, og, func() error {
+		og.Namespace = t.Namespace
+		og.Name = OperatorGroupName
+		og.Labels = map[string]string{"integreatly": t.SubscriptionName}
+		if csv.Status.Phase == "Succeeded" && csv.Status.Reason == "InstallSucceeded" {
+			og.Spec.TargetNamespaces = operatorGroupNamespaces
+		}
+		return nil
+	})
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		log.Error("error creating operator group", err)
 		return err
