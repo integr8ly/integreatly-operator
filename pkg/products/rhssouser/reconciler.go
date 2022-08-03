@@ -299,7 +299,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productStatus.Version = r.Config.GetProductVersion()
 	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
-	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
+	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.InstallStage, r.Config.GetProductName())
 	r.Log.Infof("Reconcile successful", l.Fields{"productStatus": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
