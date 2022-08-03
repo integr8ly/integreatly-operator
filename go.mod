@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/3scale-ops/marin3r v0.10.0
-	github.com/3scale/3scale-operator v0.7.0
+	github.com/3scale/3scale-operator v0.9.0
 	github.com/3scale/3scale-porta-go-client v0.6.0
 	github.com/3scale/apicast-operator v0.4.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
@@ -30,6 +30,7 @@ require (
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.40.0
+	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/integr8ly/keycloak-client v0.1.8
 	github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
 	github.com/onsi/ginkgo v1.16.5
@@ -104,6 +105,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/getkin/kin-openapi v0.94.0 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/analysis v0.20.0 // indirect
@@ -114,6 +116,9 @@ require (
 	github.com/go-openapi/runtime v0.19.28 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-openapi/validate v0.20.2 // indirect
+	github.com/go-playground/locales v0.14.0 // indirect
+	github.com/go-playground/universal-translator v0.18.0 // indirect
+	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
@@ -132,10 +137,10 @@ require (
 	github.com/hashicorp/go-version v1.5.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -190,6 +195,7 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200203170920-46ec8731fbce
 	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr => github.com/go-logr/zapr v0.2.0
+	github.com/integr8ly/grafana-operator/v3 => github.com/integr8ly/grafana-operator/v3 v3.6.0
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1

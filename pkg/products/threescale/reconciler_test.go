@@ -25,7 +25,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
