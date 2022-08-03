@@ -449,11 +449,11 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	}
 
 	// Get the fuse host url from the rhmi status
-	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.Product3Scale].Host
 	if host == "" {
 		host = fmt.Sprintf("https://3scale-admin.%v", rhmi.Spec.RoutingSubdomain)
 	}
-	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.AuthenticationStage].Products[rhmiv1alpha1.ProductRHSSO].Host
+	keycloakHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host
 	redirectURL := fmt.Sprintf("%v/p/admin/dashboard", host)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectURL, ctx.HttpClient, ctx.Client, t)

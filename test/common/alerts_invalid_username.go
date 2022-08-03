@@ -95,7 +95,7 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 	pollOpenshiftUserLogin(t, ctx, masterURL, customerAdminUsername)
 
 	// List user in 3scale and ensure dedicated admin is listed
-	host := rhmi.Status.Stages[rhmiv1alpha1.ProductsStage].Products[rhmiv1alpha1.Product3Scale].Host
+	host := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.Product3Scale].Host
 	validateUserIsListedIn3scale(t, ctx, host, customerAdminUsername)
 
 	// Delete IDP
