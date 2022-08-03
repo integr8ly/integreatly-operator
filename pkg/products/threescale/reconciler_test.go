@@ -48,6 +48,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 )
 
 var (
@@ -74,6 +76,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = consolev1.AddToScheme(scheme)
 	err = openshiftv1.AddToScheme(scheme)
 	err = configv1.AddToScheme(scheme)
+	err = marin3rv1alpha1.AddToScheme(scheme)
 
 	return scheme, err
 }
@@ -1690,4 +1693,137 @@ func verifyMessageBusDoesNotExist(serverClient k8sclient.Client) bool {
 		}
 	}
 	return true
+}
+
+func TestReconciler_Reconcile3scaleMultiTenancy(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mtInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "test-installation",
+			Namespace:  "integreatly-operator-ns",
+			Finalizers: []string{"finalizer.3scale.integreatly.org"},
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			MasterURL:        "https://console.apps.example.com",
+			RoutingSubdomain: "apps.example.com",
+			SMTPSecret:       "test-smtp",
+			Type:             string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+		},
+	}
+
+	type fields struct {
+		sigsClient       k8sclient.Client
+		mpm              marketplace.MarketplaceInterface
+		appsv1Client     appsv1Client.AppsV1Interface
+		oauthv1Client    oauthClient.OauthV1Interface
+		recorder         record.EventRecorder
+		threeScaleClient *ThreeScaleInterfaceMock
+	}
+	type args struct {
+		installation  *integreatlyv1alpha1.RHMI
+		productStatus *integreatlyv1alpha1.RHMIProductStatus
+		productConfig quota.ProductConfig
+		uninstall     bool
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Test successful reconciliation of MT RHOAM",
+			fields: fields{
+				sigsClient:       getSigClient(getSuccessfullMTTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
+				mpm:              marketplace.NewManager(),
+				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
+				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+				recorder:         setupRecorder(),
+				threeScaleClient: getThreeScaleClient(),
+			},
+			args: args{
+				installation:  mtInstallation,
+				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+				productConfig: &quota.ProductConfigMock{
+					ConfigureFunc: func(obj metav1.Object) error {
+						return nil
+					},
+				},
+				uninstall: false,
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
+			configManager, err := config.NewManager(ctx, tt.fields.sigsClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name, mtInstallation)
+			if err != nil {
+				t.Fatalf("Error creating config manager: %s", err)
+			}
+			r, err := NewReconciler(configManager, mtInstallation, tt.fields.appsv1Client, tt.fields.oauthv1Client, tt.fields.threeScaleClient, tt.fields.mpm, tt.fields.recorder, getLogger(), localProductDeclaration)
+			if err != nil {
+				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
+			}
+			got, err := r.Reconcile(ctx, tt.args.installation, tt.args.productStatus, tt.fields.sigsClient, tt.args.productConfig, tt.args.uninstall)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Reconcile() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func getSuccessfullMTTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
+	return append(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace),
+		&routev1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "backend",
+				Namespace: "3scale",
+				Labels: map[string]string{
+					"threescale_component": "backend",
+				},
+			},
+			Spec: routev1.RouteSpec{
+				Host: "backend-3scale.apps",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apicast-staging",
+				Namespace: "3scale",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apicast-production",
+				Namespace: "3scale",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ratelimit",
+				UID:  "1",
+			},
+		},
+		&usersv1.User{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"tenant": "true",
+				},
+				Name: "test_user",
+			},
+		})
 }

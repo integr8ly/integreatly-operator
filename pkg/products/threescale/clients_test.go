@@ -131,6 +131,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			Id:      1,
 			Name:    "new_tenant",
 			OrgName: "new_tenant_account",
+			State:   "approved",
 		},
 	}
 	return &ThreeScaleInterfaceMock{
@@ -216,6 +217,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 					Id:      1,
 					Name:    "new_tenant",
 					OrgName: "new_tenant_account",
+					State:   "approved",
 				},
 			}, nil
 		},

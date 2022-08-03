@@ -28,10 +28,12 @@ import (
 )
 
 var (
-	testRhssoNamespace = "test-rhsso"
-	testRhssoRealm     = "test-realm"
-	testRhssoURL       = "https://test.rhsso.url"
-	nsPrefix           = "testing-namespaces-"
+	testRhssoNamespace         = "test-rhsso"
+	testRhssoRealm             = "test-realm"
+	testRhssoURL               = "https://test.rhsso.url"
+	nsPrefix                   = "testing-namespaces-"
+	testOONamespace            = "test-observability-operator"
+	testObservabilityNamespace = "test-observability"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{
@@ -39,7 +41,8 @@ var configManagerConfigMap = &corev1.ConfigMap{
 		Name: "integreatly-installation-config",
 	},
 	Data: map[string]string{
-		"rhsso": fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
+		"rhsso":         fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
+		"observability": fmt.Sprintf("NAMESPACE: %s\nNAMESPACE_PREFIX: %s\nOPERATOR_NAMESPACE: %s", testObservabilityNamespace, nsPrefix, testOONamespace),
 	},
 }
 
