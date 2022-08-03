@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/config"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -19,29 +19,28 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type AssertFunc func(ThreeScaleTestScenario, *config.Manager) error
-
-func assertNoop(ThreeScaleTestScenario, *config.Manager) error {
+func (t ThreeScaleTestScenario) assertNoop() error {
 	return nil
 }
 
-func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManager *config.Manager) error {
+func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	ctx := context.TODO()
 	accessToken := "test123"
-	fakeSigsClient := scenario.FakeSigsClient
-	installation := scenario.Installation
-	fakeThreeScaleClient := scenario.FakeThreeScaleClient
-	fakeAppsV1Client := scenario.FakeAppsV1Client
+	fakeSigsClient := t.fields.sigsClient
+	installationCR := t.args.installation
+	fakeThreeScaleClient := t.fields.threeScaleClient
+	fakeAppsV1Client := t.fields.appsv1Client
+	configManager := t.fields.fakeConfig
 
 	tsConfig, err := configManager.ReadThreeScale()
 	if err != nil {
 		return err
 	}
 
-	oauthID := installation.Spec.NamespacePrefix + string(tsConfig.GetProductName())
-	oauthClientSecrets := &corev1.Secret{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
-	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthID, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
+	oauthID := installationCR.Spec.NamespacePrefix + string(tsConfig.GetProductName())
+	oauthClientSecret := &corev1.Secret{}
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecret)
+	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthID, oauthClientSecret.Data[string(tsConfig.GetProductName())])
 
 	// A ns should have been created.
 	ns := &corev1.Namespace{}
@@ -52,7 +51,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: constants.ThreeScaleSubscriptionName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: constants.ThreeScaleSubscriptionName, Namespace: defaultInstallationNamespace + "-operator"}, sub)
 	if k8serr.IsNotFound(err) {
 		return fmt.Errorf("%s operator subscription was not created", constants.ThreeScaleSubscriptionName)
 	}
@@ -70,8 +69,8 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if k8serr.IsNotFound(err) {
 		return fmt.Errorf("APIManager '%s' was not created", apiManagerName)
 	}
-	if apim.Spec.WildcardDomain != installation.Spec.RoutingSubdomain {
-		return fmt.Errorf("APIManager wildCardDomain is misconfigured. '%s' should be '%s'", apim.Spec.WildcardDomain, installation.Spec.RoutingSubdomain)
+	if apim.Spec.WildcardDomain != installationCR.Spec.RoutingSubdomain {
+		return fmt.Errorf("APIManager wildCardDomain is misconfigured. '%s' should be '%s'", apim.Spec.WildcardDomain, installationCR.Spec.RoutingSubdomain)
 	}
 
 	// RHSSO integration should be configured.
@@ -103,14 +102,16 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return fmt.Errorf("Service discovery config is misconfigured")
 	}
 
-	// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
-	test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
-	if test1User.UserDetails.Role != adminRole {
-		return fmt.Errorf("%s should be an admin user in 3scale", test1User.UserDetails.Username)
-	}
-	test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
-	if test2User.UserDetails.Role != memberRole {
-		return fmt.Errorf("%s should be a member user in 3scale", test2User.UserDetails.Username)
+	if v1alpha1.IsRHOAMSingletenant(v1alpha1.InstallationType(t.args.installation.Spec.Type)) {
+		// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
+		test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
+		if test1User.UserDetails.Role != adminRole {
+			return fmt.Errorf("%s should be an admin user in 3scale", test1User.UserDetails.Username)
+		}
+		test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
+		if test2User.UserDetails.Role != memberRole {
+			return fmt.Errorf("%s should be a member user in 3scale", test2User.UserDetails.Username)
+		}
 	}
 
 	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.

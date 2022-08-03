@@ -46,6 +46,8 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 				return err
 			}
 			installPlanFor3ScaleSubscription.Namespace = obj.Namespace
+			// reset install plan
+			installPlanFor3ScaleSubscription.ResourceVersion = ""
 			return sigsFakeClient.GetSigsClient().Create(ctx, installPlanFor3ScaleSubscription)
 		}
 
@@ -131,6 +133,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			Id:      1,
 			Name:    "new_tenant",
 			OrgName: "new_tenant_account",
+			State:   "approved",
 		},
 	}
 	return &ThreeScaleInterfaceMock{
@@ -216,6 +219,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 					Id:      1,
 					Name:    "new_tenant",
 					OrgName: "new_tenant_account",
+					State:   "approved",
 				},
 			}, nil
 		},
