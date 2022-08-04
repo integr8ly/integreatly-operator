@@ -3,11 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
-
 	"strings"
 	"time"
 
-	"crypto/tls"
 	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -15,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"net/http"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -222,14 +219,7 @@ func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScale
 		return nil, fmt.Errorf("could not create admin portal %v", err)
 	}
 
-	insecureClient := &http.Client{
-		Timeout: time.Second * 10,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // gosec G402 override exclued
-		},
-	}
-
-	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, insecureClient)
+	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, nil)
 
 	return threescaleClient, nil
 }
