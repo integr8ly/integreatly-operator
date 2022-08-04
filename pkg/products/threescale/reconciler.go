@@ -2721,7 +2721,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,
-		[]string{},
+		[]string{productNamespace},
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
