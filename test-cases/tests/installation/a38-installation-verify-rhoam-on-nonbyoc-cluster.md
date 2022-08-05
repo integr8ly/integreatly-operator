@@ -50,7 +50,7 @@ Notification email: "cloud-services-qe-reporting@redhat.com"
 # Copy your cluster's name from OCM UI ("test-ldap-idp" by default) and assign it to the env var CLUSTER_NAME
 CLUSTER_NAME=<your-cluster-name>
 # Get cluster's CID
-CID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
+CID=$(ocm get clusters --parameter search="name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
 # Get your cluster API URL and kubeadmin password
 API_URL=$(ocm get cluster $CID | jq -r .api.url)
 KUBEADMIN_PASSWORD=$(ocm get cluster $CID/credentials | jq -r .admin.password)
