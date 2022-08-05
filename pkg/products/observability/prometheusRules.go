@@ -341,6 +341,23 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				},
 			},
 		},
+		{
+			AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
+			Namespace: namespace,
+			GroupName: fmt.Sprintf("%s-general.rules", installationName),
+			Rules: []monitoringv1.Rule{
+				{
+					Alert: fmt.Sprintf("%sCriticalMetricsMissing", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlCriticalMetricsMissing,
+						"message": fmt.Sprintf("%s metrics have been missing for more than 8 minutes", strings.ToUpper(installationName)),
+					},
+					Expr:   intstr.FromString(`(rhoam_version{version=~".*", to_version=~""} > 0) * on(pod) group_left(rhoam_custom_domain)(absent(rhoam_custom_domain)) or absent(rhoam_version)`),
+					For:    "8m",
+					Labels: map[string]string{"severity": "critical"},
+				},
+			},
+		},
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
