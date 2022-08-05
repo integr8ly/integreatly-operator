@@ -35,7 +35,14 @@ oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status'
 ocm login --url=https://api.stage.openshift.com/ --token=<YOUR_TOKEN>
 ```
 
-7.  Upgrade your trial cluster "using quota"
+7.  Retrieve CLUSTER_ID
+
+```bash
+CLUSTER_NAME=<your-cluster-name>
+CLUSTER_ID=$(ocm get clusters --parameter search="name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
+```
+
+8. Upgrade your trial cluster "using quota"
 
 ```bash
 ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID --body=<<EOF
@@ -48,19 +55,19 @@ ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID --body=<<EOF
 EOF
 ```
 
-8. Your OSD cluster should now have the `red-hat-clustertype:OSD`.
+9. Your OSD cluster should now have the `red-hat-clustertype:OSD`.
 
 ```bash
 ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID | jq '.aws.tags'
 ```
 
-9. Set Quota value
+10. Set Quota value
 
 ```bash
 QUOTA_VALUE=<QUOTA_VALUE>
 ```
 
-10. Change Quota value
+11. Change Quota value
 
 ```bash
 ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
@@ -83,19 +90,19 @@ EOF
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.toQuota'
 ```
 
-11. Once the new quota has been applied to the RHOAM cluster, `.quota` field should be updated
+12. Once the new quota has been applied to the RHOAM cluster, `.quota` field should be updated
 
 ```bash
 oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
 ```
 
-12. Trigger uninstall of the addon via the Cluster
+13. Trigger uninstall of the addon via the Cluster
 
 ```bash
 ocm delete /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
 ```
 
-13. Verify uninstall completes successfully. Once the RHOAM CR is deleted the addon installation with id=managed-api-service shouldn't be listed.
+14. Verify uninstall completes successfully. Once the RHOAM CR is deleted the addon installation with id=managed-api-service shouldn't be listed.
 
 ```bash
 ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons
