@@ -85,7 +85,7 @@ func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) 
 			return ctrl.Result{}, err1
 		}
 
-		log.Warning(fmt.Sprintf("tenant %s will not be reconciled because %s", tenant.Name, rejectionReason))
+		log.Warning(fmt.Sprintf("tenant %s in namespace %s will not be reconciled because %s", tenant.Name, tenant.Namespace, rejectionReason))
 		return ctrl.Result{}, nil
 	}
 
