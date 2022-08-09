@@ -419,9 +419,9 @@ spec:
                 - name: RELATED_IMAGE_SYSTEM_MYSQL
                   value: quay.io/integreatly/delorean:rhel8-mysql-80_097e66e04e0ccb60b0555a153ffcb791b0f4fa7241f79653b368a9138cfcfed2
                 - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
-                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b68f131a59318c61f88cdbd44dbac94a3ec54cf291cd4b5b87cc104830634006
+                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
                 - name: RELATED_IMAGE_ZYNC_POSTGRESQL
-                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b68f131a59318c61f88cdbd44dbac94a3ec54cf291cd4b5b87cc104830634006
+                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
                 - name: RELATED_IMAGE_OC_CLI
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_f3d08cef3d466464cb475703c5a63ad519fe99f7be7463e6c72469c70cfbe35e
                 image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_1df4151383deca1eb97b157f7538d9ba07404deb84a47c7b50d5ad5a141b635c
@@ -1012,9 +1012,9 @@ spec:
     name: system_redis
   - image: registry.redhat.io/rhel8/mysql-80@sha256:097e66e04e0ccb60b0555a153ffcb791b0f4fa7241f79653b368a9138cfcfed2
     name: system_mysql
-  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:b68f131a59318c61f88cdbd44dbac94a3ec54cf291cd4b5b87cc104830634006
+  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
     name: system_postgresql
-  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:b68f131a59318c61f88cdbd44dbac94a3ec54cf291cd4b5b87cc104830634006
+  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
     name: zync_postgresql
   - image: registry.redhat.io/openshift4/ose-cli@sha256:f3d08cef3d466464cb475703c5a63ad519fe99f7be7463e6c72469c70cfbe35e
     name: oc_cli
