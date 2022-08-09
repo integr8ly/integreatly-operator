@@ -33,7 +33,6 @@ require (
 	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/integr8ly/keycloak-client v0.1.8
 	github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
-	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
@@ -65,6 +64,7 @@ require (
 
 require (
 	github.com/foxcpp/go-mockdns v1.0.0
+	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/prometheus/common v0.32.1
 )
@@ -149,9 +149,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/onsi/ginkgo/v2 v2.1.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
@@ -181,7 +179,6 @@ require (
 	google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4 // indirect
 	google.golang.org/grpc v1.40.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gotest.tools/v3 v3.0.3 // indirect
 	k8s.io/apiserver v0.22.2 // indirect
