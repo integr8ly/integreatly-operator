@@ -27,7 +27,7 @@ type alertManagerConfig struct {
 }
 
 const (
-	keycloakOperatorDeploymentName        = "keycloak-operator"
+	keycloakOperatorDeploymentName        = "rhsso-operator"
 	monitoringTimeout                     = time.Minute * 20
 	monitoringRetryInterval               = time.Minute * 1
 	verifyOperatorDeploymentTimeout       = time.Minute * 5

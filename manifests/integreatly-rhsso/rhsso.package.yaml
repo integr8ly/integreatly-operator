@@ -1,5 +1,5 @@
 channels:
-- currentCSV: keycloak-operator.v18.0.0
-  name: rhmi
-defaultChannel: rhmi
-packageName: rhmi-rhsso
+- currentCSV: rhsso-operator.v7.6.0-6
+  name: stable
+defaultChannel: stable
+packageName: rhsso-operator

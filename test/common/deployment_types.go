@@ -113,7 +113,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"rhssoOperatorDeployment": {
 			Name: RHSSOOperatorNamespace,
 			Products: []Product{
-				{Name: "keycloak-operator", ExpectedReplicas: 1},
+				{Name: "rhsso-operator", ExpectedReplicas: 1},
 			},
 		},
 		"solutionExplorerOperatorDeployment": {
@@ -137,7 +137,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		"rhssoUserOperatorDeployment": {
 			Name: RHSSOUserOperatorNamespace,
 			Products: []Product{
-				{Name: "keycloak-operator", ExpectedReplicas: 1},
+				{Name: "rhsso-operator", ExpectedReplicas: 1},
 			},
 		},
 		"marin3rOperatorDeployment": {

@@ -127,7 +127,7 @@ var _ = BeforeSuite(func() {
 		}
 
 		// wait for keycloak-operator to deploy
-		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "rhsso-operator")
 		Expect(err).NotTo(HaveOccurred())
 
 		if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
@@ -142,7 +142,7 @@ var _ = BeforeSuite(func() {
 			"amq-online":           "enmasse-operator",
 			"codeready-workspaces": "codeready-operator",
 			"fuse":                 "syndesis-operator",
-			"user-sso":             "keycloak-operator",
+			"user-sso":             "rhsso-operator",
 			"ups":                  "unifiedpush-operator",
 			"apicurito":            "apicurito-operator",
 		}
@@ -150,7 +150,7 @@ var _ = BeforeSuite(func() {
 		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
 			products = map[string]string{
 				"3scale":   "threescale-operator-controller-manager-v2",
-				"user-sso": "keycloak-operator",
+				"user-sso": "rhsso-operator",
 			}
 		}
 		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {

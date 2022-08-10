@@ -769,7 +769,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	csv := &operatorsv1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keycloak-operator.v15.0.2",
+			Name:      "rhsso-operator.7.6.0-opr-003",
 			Namespace: defaultOperandNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
@@ -777,7 +777,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
 					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
 						{
-							Name: "keycloak-operator",
+							Name: "rhsso-operator",
 							Spec: appsv1.DeploymentSpec{
 								Template: corev1.PodTemplateSpec{
 									Spec: corev1.PodSpec{
