@@ -358,4 +358,3 @@ spec:
   provider:
     name: Red Hat
   version: 18.0.0
-  replaces: keycloak-operator.v17.0.0

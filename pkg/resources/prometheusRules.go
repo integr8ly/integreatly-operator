@@ -50,7 +50,13 @@ type AlertConfiguration struct {
 func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// If the installation was marked for deletion, delete the alerts
 	if r.Installation.DeletionTimestamp != nil {
-		allAlerts := append(r.Alerts, r.RemovedAlerts...)
+		//removing RHOAMUpgradeExpectedDuration30minExceeded alert as it was renamed (30min -> 60min)
+		alertToDelete := AlertConfiguration{
+			AlertName: "RHOAMUpgradeExpectedDuration30minExceeded",
+			Namespace: "openshift-monitoring",
+		}
+		RemovedAlerts := append(r.RemovedAlerts, alertToDelete)
+		allAlerts := append(r.Alerts, RemovedAlerts...)
 		if err := r.deleteAlerts(ctx, client, allAlerts); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}

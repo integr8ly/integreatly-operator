@@ -22,12 +22,12 @@ func mangedApiTargets() map[string][]string {
 			"/redhat-rhoam-marin3r-ratelimit/0",
 			"/redhat-rhoam-rhsso-keycloak-service-monitor/0",
 			"/redhat-rhoam-rhsso-keycloak-service-monitor/1",
-			"/redhat-rhoam-rhsso-operator-keycloak-operator-metrics/0",
-			"/redhat-rhoam-rhsso-operator-keycloak-operator-metrics/1",
+			"/redhat-rhoam-rhsso-operator-rhsso-operator-metrics/0",
+			"/redhat-rhoam-rhsso-operator-rhsso-operator-metrics/1",
 			"/redhat-rhoam-user-sso-keycloak-service-monitor/0",
 			"/redhat-rhoam-user-sso-keycloak-service-monitor/1",
-			"/redhat-rhoam-user-sso-operator-keycloak-operator-metrics/0",
-			"/redhat-rhoam-user-sso-operator-keycloak-operator-metrics/1",
+			"/redhat-rhoam-user-sso-operator-rhsso-operator-metrics/0",
+			"/redhat-rhoam-user-sso-operator-rhsso-operator-metrics/1",
 		},
 	}
 }
@@ -44,8 +44,8 @@ func mtMangedApiTargets() map[string][]string {
 			"/sandbox-rhoam-marin3r-ratelimit/0",
 			"/sandbox-rhoam-rhsso-keycloak-service-monitor/0",
 			"/sandbox-rhoam-rhsso-keycloak-service-monitor/1",
-			"/sandbox-rhoam-rhsso-operator-keycloak-operator-metrics/0",
-			"/sandbox-rhoam-rhsso-operator-keycloak-operator-metrics/1",
+			"/sandbox-rhoam-rhsso-operator-rhsso-operator-metrics/0",
+			"/sandbox-rhoam-rhsso-operator-rhsso-operator-metrics/1",
 		},
 	}
 }
