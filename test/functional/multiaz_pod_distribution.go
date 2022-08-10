@@ -34,7 +34,7 @@ func TestMultiAZPodDistribution(t common.TestingTB, ctx *common.TestingContext) 
 
 	err := ctx.Client.List(goctx.TODO(), nodes)
 	if err != nil {
-		t.Fatalf("Error listing nodes: %s", err)
+		t.Fatalf("error listing nodes: %s", err)
 	}
 
 	availableZones = GetClustersAvailableZones(nodes)
