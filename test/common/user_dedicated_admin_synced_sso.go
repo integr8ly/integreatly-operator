@@ -4,25 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -427,7 +428,7 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 	// Ensure OpenShift user is deleted
 	err := c.Delete(ctx, testUser)
 	if err != nil {
-		t.Fatalf("Failed to delete OpenShift user %s, err: %v", testUser.Name, err)
+		t.Fatalf("failed to delete OpenShift user %s, err: %v", testUser.Name, err)
 	}
 
 	// Ensure KeycloakUser CR is deleted
