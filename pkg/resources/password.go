@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"log"
 	"math/big"
-	rand2 "math/rand"
+	mathrand "math/rand"
 	"strings"
 )
 
@@ -67,7 +67,7 @@ func GenerateRandomPassword(passwordLength, minSpecialChar, minNum, minUpperCase
 
 	// use math/rand shuffle backed by crypto/rand. Suppressing gosec warning for this line
 	// #nosec G404
-	rnd := rand2.New(newCryptoRandSource())
+	rnd := mathrand.New(newCryptoRandSource())
 	rnd.Shuffle(len(inRune), func(i, j int) {
 		inRune[i], inRune[j] = inRune[j], inRune[i]
 	})
