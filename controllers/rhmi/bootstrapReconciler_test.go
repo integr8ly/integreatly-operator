@@ -945,7 +945,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "silence any errors other than not found when retrieving 3scale operator namespace",
+			name: "unexpected error when retrieving 3scale operator namespace",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -976,8 +976,8 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 					return mockClient
 				},
 			},
-			want:    integreatlyv1alpha1.PhaseCompleted,
-			wantErr: false,
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
 		},
 		{
 			name: "default flow if 3scale operator is installed",

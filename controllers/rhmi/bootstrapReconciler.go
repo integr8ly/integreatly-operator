@@ -620,19 +620,17 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve CR route: %w", err)
 	}
-
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
-
 	threeScaleOperatorNs := &corev1.Namespace{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: common.ThreeScaleOperatorNamespace}, threeScaleOperatorNs)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
-			if err != nil && !ok {
+			found, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
+			if err != nil && !found {
 				log.Warning(err.Error())
 				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 			}
-			if ok {
+			if found {
 				r.installation.Spec.RoutingSubdomain = domain
 				if r.installation.Status.CustomDomain == nil {
 					r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
@@ -642,12 +640,13 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 					r.installation.Status.CustomDomain.Error = err.Error()
 					r.installation.Status.LastError = err.Error()
 				}
-			} else {
+			}
+			if !found {
 				r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
 			}
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		log.Warning(err.Error())
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("unexpected error when retrieving 3scale operator namespace: %w", err)
 	}
 	// skip custom domain checks if 3scale is installed
 	r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
