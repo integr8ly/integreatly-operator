@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -572,8 +573,15 @@ func promoteSelfManagedAPIcast(ctx context.Context, client k8sclient.Client, int
 }
 
 func validateDeploymentRequest(userKey, routeHost string) (int, error) {
-	httpRequest := "https://" + routeHost + "/?user_key=" + userKey
-	resp, err := http.Get(httpRequest)
+	query := make(url.Values)
+	query.Add("user_key", userKey)
+	httpRequest := &url.URL{
+		Scheme:     "https",
+		Host:       routeHost,
+		ForceQuery: false,
+		RawQuery:   query.Encode(),
+	}
+	resp, err := http.Get(httpRequest.String())
 	if err != nil {
 		log.Error("HTTP Get error", err)
 		return 0, err
