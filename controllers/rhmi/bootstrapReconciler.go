@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
-	"github.com/integr8ly/integreatly-operator/test/common"
 	v1 "github.com/openshift/api/config/v1"
 	"math/rand"
 	"os"
@@ -613,6 +612,10 @@ func (r *Reconciler) reconcileAddonManagedApiServiceParameters(ctx context.Conte
 }
 
 func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.RoutingSubdomain != "" {
+		log.Info("routing subdomain already set, exiting retrieveConsoleURLAndSubdomain() early")
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
@@ -621,35 +624,24 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve CR route: %w", err)
 	}
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
-	threeScaleOperatorNs := &corev1.Namespace{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: common.ThreeScaleOperatorNamespace}, threeScaleOperatorNs)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			found, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
-			if err != nil && !found {
-				log.Warning(err.Error())
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
-			}
-			if found {
-				r.installation.Spec.RoutingSubdomain = domain
-				if r.installation.Status.CustomDomain == nil {
-					r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
-				}
-				r.installation.Status.CustomDomain.Enabled = true
-				if err != nil {
-					r.installation.Status.CustomDomain.Error = err.Error()
-					r.installation.Status.LastError = err.Error()
-				}
-			}
-			if !found {
-				r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
-			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("unexpected error when retrieving 3scale operator namespace: %w", err)
+	ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
+	if err != nil && !ok {
+		log.Warning(err.Error())
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 	}
-	// skip custom domain checks if 3scale is installed
-	r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+	if ok {
+		r.installation.Spec.RoutingSubdomain = domain
+		if r.installation.Status.CustomDomain == nil {
+			r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
+		}
+		r.installation.Status.CustomDomain.Enabled = true
+		if err != nil {
+			r.installation.Status.CustomDomain.Error = err.Error()
+			r.installation.Status.LastError = err.Error()
+		}
+	} else {
+		r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
