@@ -830,7 +830,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "successfully retrieve console url and custom subdomain on fresh install",
+			name: "successfully retrieve console url and subdomain",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -874,7 +874,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "invalid custom domain",
+			name: "invalid domain",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -914,8 +914,8 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 						})
 				},
 			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
 		},
 		{
 			name: "failed to retrieve console route cr",
@@ -944,7 +944,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "failed to find console route cr",
+			name: "cannot find console route cr",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -970,7 +970,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "failed to retrieve custom domain",
+			name: "fallback to RouterCanonicalHostname as routing subdomain",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -999,118 +999,21 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 								},
 							},
 						},
+						&corev1.Secret{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "addon-managed-api-service-parameters",
+								Namespace: "test",
+							},
+						},
 					)
-					mockClient.ListFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.ListOption) error {
-						switch obj.(type) {
-						case *olmv1alpha1.SubscriptionList:
-							return errors.New("generic error")
-						default:
-							return nil
-						}
-					}
 					return mockClient
-				},
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "successfully update custom domain errors when routing subdomain is not empty",
-			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "test",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type:             "managed-api",
-						RoutingSubdomain: "apps.example.com",
-					},
-					Status: integreatlyv1alpha1.RHMIStatus{
-						CustomDomain: &integreatlyv1alpha1.CustomDomainStatus{
-							Enabled: true,
-						},
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: func() k8sclient.Client {
-					return moqclient.NewSigsClientMoqWithScheme(scheme,
-						&routev1.Route{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "console",
-								Namespace: "openshift-console",
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-						&corev1.Secret{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "addon-managed-api-service-parameters",
-								Namespace: "test",
-							},
-							Data: map[string][]byte{
-								"custom-domain_domain": []byte("bad domain"),
-							},
-						})
-				},
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "successfully update routing subdomain when custom domain is not enabled",
-			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "managed-api",
-						Namespace: "test",
-					},
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type:             "managed-api",
-						RoutingSubdomain: "apps.example.com",
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: func() k8sclient.Client {
-					return moqclient.NewSigsClientMoqWithScheme(scheme,
-						&routev1.Route{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "console",
-								Namespace: "openshift-console",
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-						&corev1.Secret{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "addon-managed-api-service-parameters",
-								Namespace: "test",
-							},
-							Data: map[string][]byte{
-								"custom-domain_domain": []byte("updated.example.com"),
-							},
-						})
 				},
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
 		},
 		{
-			name: "fallback to the default routing subdomain when the custom domain parameter is not specified",
+			name: "routing subdomain already set, exit early",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -1118,35 +1021,14 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 						Namespace: "test",
 					},
 					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: "managed-api",
+						Type:             "managed-api",
+						RoutingSubdomain: "apps.example.com",
 					},
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
-				serverClient: func() k8sclient.Client {
-					return moqclient.NewSigsClientMoqWithScheme(scheme,
-						&routev1.Route{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "console",
-								Namespace: "openshift-console",
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-						&corev1.Secret{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "addon-managed-api-service-parameters",
-								Namespace: "test",
-							},
-							Data: map[string][]byte{},
-						})
-				},
+				ctx:          context.TODO(),
+				serverClient: func() k8sclient.Client { return nil },
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
