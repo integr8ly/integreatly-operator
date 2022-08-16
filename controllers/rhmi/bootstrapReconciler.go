@@ -612,6 +612,10 @@ func (r *Reconciler) reconcileAddonManagedApiServiceParameters(ctx context.Conte
 }
 
 func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.RoutingSubdomain != "" {
+		log.Info("routing subdomain already set, exiting retrieveConsoleURLAndSubdomain() early")
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
@@ -625,33 +629,20 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 		log.Warning(err.Error())
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 	}
-	if r.installation.Spec.RoutingSubdomain != "" {
-		if r.installation.Status.CustomDomain != nil {
-			return updateCustomDomainError(r.installation.Status.CustomDomain, err)
+	if ok {
+		r.installation.Spec.RoutingSubdomain = domain
+		if r.installation.Status.CustomDomain == nil {
+			r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
 		}
-		r.installation.Spec.RoutingSubdomain = getDefaultRoutingSubdomain(consoleRouteCR)
-		return integreatlyv1alpha1.PhaseCompleted, nil
+		r.installation.Status.CustomDomain.Enabled = true
+		if err != nil {
+			r.installation.Status.CustomDomain.Error = err.Error()
+			r.installation.Status.LastError = err.Error()
+		}
+	} else {
+		r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
 	}
-	if !ok {
-		r.installation.Spec.RoutingSubdomain = getDefaultRoutingSubdomain(consoleRouteCR)
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-	r.installation.Spec.RoutingSubdomain = domain
-	r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{Enabled: true, Error: ""}
-	return updateCustomDomainError(r.installation.Status.CustomDomain, err)
-}
-
-func updateCustomDomainError(customDomainStatus *rhmiv1alpha1.CustomDomainStatus, err error) (rhmiv1alpha1.StatusPhase, error) {
-	if err != nil {
-		customDomainStatus.Error = err.Error()
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	customDomainStatus.Error = ""
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func getDefaultRoutingSubdomain(consoleRouteCR *routev1.Route) string {
-	return strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
 }
 
 func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*routev1.Route, error) {
