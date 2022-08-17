@@ -3,6 +3,7 @@ package functional
 import (
 	goctx "context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -46,7 +47,7 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 		t.Fatalf("There should be exactly 1 blob resources for %s install type: actual: %d", rhmi.Spec.Type, len(s3ResourceIDs))
 	}
 
-	sess, err := CreateAWSSession(goContext, ctx.Client)
+	sess, isSTS, err := CreateAWSSession(goContext, ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to create aws session: %v", err)
 	}
@@ -68,20 +69,20 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 			testErrors = append(testErrors, err.Error())
 		}
 
-		err = verifyResourceNames(s3api, resourceIdentifier, backupsFound, threeScaleFound, rhmi.Name)
+		err = verifyResourceNames(s3api, resourceIdentifier, backupsFound, threeScaleFound, rhmi.Name, isSTS)
 		if err != nil {
 			testErrors = append(testErrors, err.Error())
 		}
 	}
 
 	// Expect both backup and three scale bucket for managed install
-	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && (*backupsFound == false || *threeScaleFound == false) {
-		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets for managed install"))
+	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && (!*backupsFound || !*threeScaleFound) {
+		testErrors = append(testErrors, "Failed to find appropriate resource names for buckets for managed install")
 	}
 
 	// Expect just three scale bucket for managed api install
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && *threeScaleFound == false {
-		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets for managed api install"))
+	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) && !*threeScaleFound {
+		testErrors = append(testErrors, "Failed to find appropriate resource names for buckets for managed api install")
 	}
 
 	if len(testErrors) != 0 {
@@ -94,10 +95,10 @@ func verifyEncryption(s3api *s3.S3, identifier string) error {
 
 	enc, err := s3api.GetBucketEncryption(&s3.GetBucketEncryptionInput{Bucket: aws.String(identifier)})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket encryption, bucket :%s, %w", identifier, err)
+		return fmt.Errorf("error getting bucket encryption, bucket :%s, %w", identifier, err)
 	}
 	if enc.ServerSideEncryptionConfiguration == nil {
-		return fmt.Errorf("Server Side Encryption does not exist for bucket :%s", identifier)
+		return fmt.Errorf("server side encryption does not exist for bucket :%s", identifier)
 	}
 	rules := enc.ServerSideEncryptionConfiguration.Rules
 	for _, rule := range rules {
@@ -106,33 +107,39 @@ func verifyEncryption(s3api *s3.S3, identifier string) error {
 		}
 	}
 
-	return fmt.Errorf("Server Side Encryption does not exist for bucket :%s, %w", identifier, err)
+	return fmt.Errorf("server side encryption does not exist for bucket :%s, %w", identifier, err)
 }
 
 func verifyPublicAccessBlock(s3api *s3.S3, identifier string) error {
 
 	pab, err := s3api.GetPublicAccessBlock(&s3.GetPublicAccessBlockInput{Bucket: aws.String(identifier)})
 	if err != nil {
-		return fmt.Errorf("Error getting bucket public access block, bucket :%s, %w", identifier, err)
+		return fmt.Errorf("error getting bucket public access block, bucket :%s, %w", identifier, err)
 	}
 	if pab.PublicAccessBlockConfiguration == nil {
-		return fmt.Errorf("Public Access is not defined for bucket :%s", identifier)
+		return fmt.Errorf("public Access is not defined for bucket :%s", identifier)
 	}
-	if *pab.PublicAccessBlockConfiguration.BlockPublicPolicy == true {
+	if *pab.PublicAccessBlockConfiguration.BlockPublicPolicy {
 		return nil
 	} else {
-		return fmt.Errorf("Public Access is not blocked for Bucket :%s", identifier)
+		return fmt.Errorf("public Access is not blocked for Bucket :%s", identifier)
 	}
 }
 
-func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, threeScaleFound *bool, installationName string) error {
+func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, threeScaleFound *bool, installationName string, isSTS bool) error {
 
 	tags, err := s3api.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: aws.String(identifier)})
 	if err != nil {
 		return fmt.Errorf("Error getting bucket tags, bucket :%s, %w", identifier, err)
 	}
 	if tags.TagSet == nil {
-		return fmt.Errorf("Tags are not defined for bucket :%s", identifier)
+		return fmt.Errorf("tags are not defined for bucket :%s", identifier)
+	}
+	if !s3TagsContains(tags.TagSet, awsManagedTagKey, awsManagedTagValue) {
+		return fmt.Errorf("expected tag for bucket missing :%s, %s", identifier, awsManagedTagKey)
+	}
+	if isSTS && !s3TagsContains(tags.TagSet, awsClusterTypeKey, awsClusterTypeRosaValue) {
+		return fmt.Errorf("expected tag for bucket missing :%s, %s", identifier, awsClusterTypeKey)
 	}
 	for i := range tags.TagSet {
 		tag := tags.TagSet[i]
@@ -145,8 +152,8 @@ func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, th
 				*threeScaleFound = true
 				return nil
 			}
-			return fmt.Errorf("Unexpected resource name for bucket :%s, %s", identifier, *tag.Value)
+			return fmt.Errorf("unexpected resource name for bucket :%s, %s", identifier, *tag.Value)
 		}
 	}
-	return fmt.Errorf("No resource name tag for bucket :%s", identifier)
+	return fmt.Errorf("no resource name tag for bucket :%s", identifier)
 }

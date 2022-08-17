@@ -25,7 +25,7 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 	}
 
 	// create AWS session
-	sess, err := CreateAWSSession(goContext, ctx.Client)
+	sess, isSTS, err := CreateAWSSession(goContext, ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to create aws session: %v", err)
 	}
@@ -59,6 +59,19 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 		}
 		if replicationGroup.SnapshotWindow == nil {
 			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have automatic snapshotting enabled", resourceID))
+		}
+
+		resp, err := elasticacheapi.ListTagsForResource(&elasticache.ListTagsForResourceInput{
+			ResourceName: replicationGroup.ARN,
+		})
+		if err != nil {
+			t.Fatalf("failed to get elasticache resource tags: %v", err)
+		}
+		if !elasticacheTagsContains(resp.TagList, awsManagedTagKey, awsManagedTagValue) {
+			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsManagedTagKey))
+		}
+		if isSTS && !elasticacheTagsContains(resp.TagList, awsClusterTypeKey, awsClusterTypeRosaValue) {
+			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsClusterTypeKey))
 		}
 	}
 
