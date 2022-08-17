@@ -1,31 +1,23 @@
 package monitoringcommon
 
-import (
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
-)
-
 func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName string) string {
-	quota := ``
-	if installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeManagedApi)] || installationName == resources.InstallationNames[string(v1alpha1.InstallationTypeMultitenantManagedApi)] {
-		quota = `, 
-			{
-				"datasource": "Prometheus",
-				"enable": true,
-				"expr": "count by (quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
-				"hide": false,
-				"iconColor": "#FADE2A",
-				"limit": 100,
-				"name": "Quota",
-				"showIn": 0,
-				"step": "",
-				"tagKeys": "stage,quota,toQuota",
-				"tags": "",
-				"titleFormat": "Quota Change (million per day)",
-				"type": "tags",
-				"useValueForTime": false
-			}`
-	}
+	quota := `, 
+		{
+			"datasource": "Prometheus",
+			"enable": true,
+			"expr": "count by (quota,toQuota)(rhoam_quota{toQuota!=\"\"})",
+			"hide": false,
+			"iconColor": "#FADE2A",
+			"limit": 100,
+			"name": "Quota",
+			"showIn": 0,
+			"step": "",
+			"tagKeys": "stage,quota,toQuota",
+			"tags": "",
+			"titleFormat": "Quota Change (million per day)",
+			"type": "tags",
+			"useValueForTime": false
+		}`
 	return `{
 		"annotations": {
 		  "list": [
@@ -131,7 +123,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "sum(ALERTS {alertname=~\"RH.*Rhsso.*ErrorBudgetBurn\", severity='warning', alertstate='firing', product=~'rhoam|rhmi', service=\"keycloak\"})",
+				"expr": "sum(ALERTS {alertname=~\"RH.*Rhsso.*ErrorBudgetBurn\", severity='warning', alertstate='firing', product=~'rhoam', service=\"keycloak\"})",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -225,7 +217,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", alertstate=\"firing\", product=~\"rhoam|rhmi\", service=\"keycloak\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", alertstate=\"firing\", product=~\"rhoam\", service=\"keycloak\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -319,7 +311,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam|rhmi\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -414,7 +406,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam|rhmi\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
