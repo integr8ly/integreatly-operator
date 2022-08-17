@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
@@ -30,8 +34,12 @@ import (
 )
 
 const (
-	awsCredsNamespace  = "kube-system"
-	awsCredsSecretName = "aws-creds"
+	awsCredsNamespace       = "kube-system"
+	awsCredsSecretName      = "aws-creds"
+	awsManagedTagKey        = "red-hat-managed"
+	awsManagedTagValue      = "true"
+	awsClusterTypeKey       = "red-hat-clustertype"
+	awsClusterTypeRosaValue = "rosa"
 )
 
 func getExpectedPostgres(installType string, installationName string) []string {
@@ -98,9 +106,9 @@ func getExpectedBlobStorage(installType string, installationName string) []strin
 }
 
 /*
-	Each resource provisioned contains an annotation with the resource ID
-	This function iterates over a list of expected resource CR's
-	Returns a list of resource ID's, these ID's can be used when testing AWS resources
+Each resource provisioned contains an annotation with the resource ID
+This function iterates over a list of expected resource CR's
+Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
 func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
@@ -130,9 +138,9 @@ func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *
 }
 
 /*
-	Each resource provisioned contains an annotation with the resource ID
-	This function iterates over a list of expected resource CR's
-	Returns a list of resource ID's, these ID's can be used when testing AWS resources
+Each resource provisioned contains an annotation with the resource ID
+This function iterates over a list of expected resource CR's
+Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
 func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
@@ -190,22 +198,22 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 }
 
 // CreateAWSSession creates a session to be used in getting an api instance for aws
-func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, error) {
+func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, bool, error) {
 	region, err := getAWSRegion(ctx, client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS cluster region : %w", err)
+		return nil, false, fmt.Errorf("failed to get AWS cluster region : %w", err)
 	}
 	awsConfig := aws.Config{
 		Region: aws.String(region),
 	}
 	isSTS, err := sts.IsClusterSTS(ctx, client, logger.NewLogger())
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if isSTS {
 		roleARN, tokenPath, err := sts.GetSTSCredentialsFromEnvVar()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get STS credentials: %w", err)
+			return nil, isSTS, fmt.Errorf("failed to get STS credentials: %w", err)
 		}
 		if k8s.IsRunLocally() {
 			sess := session.Must(session.NewSession(&awsConfig))
@@ -218,15 +226,15 @@ func CreateAWSSession(ctx context.Context, client client.Client) (*session.Sessi
 	} else {
 		awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get AWS credentials: %w", err)
+			return nil, isSTS, fmt.Errorf("failed to get AWS credentials: %w", err)
 		}
 		awsConfig.Credentials = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, "")
 	}
 	sess := session.Must(session.NewSession(&awsConfig))
-	return sess, nil
+	return sess, isSTS, nil
 }
 
-//getAWSRegion retrieves region from cluster infrastructure
+// getAWSRegion retrieves region from cluster infrastructure
 func getAWSRegion(ctx context.Context, client client.Client) (string, error) {
 	infra := &configv1.Infrastructure{}
 	err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, infra)
@@ -239,7 +247,7 @@ func getAWSRegion(ctx context.Context, client client.Client) (string, error) {
 	return infra.Status.PlatformStatus.AWS.Region, nil
 }
 
-//getAWSCredentials retrieves aws credentials from secret namespace
+// getAWSCredentials retrieves aws credentials from secret namespace
 func getAWSCredentials(ctx context.Context, client client.Client) (string, string, error) {
 	secret := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{Name: awsCredsSecretName, Namespace: awsCredsNamespace}, secret); err != nil {
@@ -319,4 +327,40 @@ func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (
 	}
 
 	return aws.StringValue(vpcs[0].CidrBlock), nil
+}
+
+func elasticacheTagsContains(tags []*elasticache.Tag, key, value string) bool {
+	for _, tag := range tags {
+		if *tag.Key == key && *tag.Value == value {
+			return true
+		}
+	}
+	return false
+}
+
+func rdsTagsContains(tags []*rds.Tag, key, value string) bool {
+	for _, tag := range tags {
+		if *tag.Key == key && *tag.Value == value {
+			return true
+		}
+	}
+	return false
+}
+
+func s3TagsContains(tags []*s3.Tag, key, value string) bool {
+	for _, tag := range tags {
+		if *tag.Key == key && *tag.Value == value {
+			return true
+		}
+	}
+	return false
+}
+
+func ec2TagsContains(tags []*ec2.Tag, key, value string) bool {
+	for _, tag := range tags {
+		if *tag.Key == key && *tag.Value == value {
+			return true
+		}
+	}
+	return false
 }
