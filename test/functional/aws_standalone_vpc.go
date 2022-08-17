@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	"net"
 	"strings"
+
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
@@ -133,7 +134,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	testErrors := &networkConfigTestError{}
 
 	// create a new session
-	session, err := CreateAWSSession(ctx, testingCtx.Client)
+	session, isSTS, err := CreateAWSSession(ctx, testingCtx.Client)
 	if err != nil {
 		t.Fatal("could not create aws session", err)
 	}
@@ -210,7 +211,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	availableZones := GetClustersAvailableZones(clusterNodes)
 
 	// verify vpc
-	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr)
+	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr, isSTS)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 
 	// fail immediately if the vpc is nil, since all of the
@@ -266,7 +267,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 }
 
 // verify that the standalone vpc is created
-func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, error) {
+func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string, isSTS bool) (*ec2.Vpc, error) {
 	newErr := &networkConfigTestError{
 		vpcError: []error{},
 	}
@@ -298,6 +299,13 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 	if foundCidr != expectedCidr {
 		errMsg := fmt.Errorf("expected vpc cidr block to match _network cidr block in aws strategy configmap. Expected %s, but got %s", expectedCidr, foundCidr)
 		newErr.vpcError = append(newErr.vpcError, errMsg)
+	}
+
+	if !ec2TagsContains(vpc.Tags, awsManagedTagKey, awsManagedTagValue) {
+		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("vpc does not have expected %s tag", awsManagedTagKey))
+	}
+	if isSTS && !ec2TagsContains(vpc.Tags, awsClusterTypeKey, awsClusterTypeRosaValue) {
+		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("vpc does not have expected %s tag", awsClusterTypeKey))
 	}
 
 	return vpc, newErr
