@@ -316,7 +316,7 @@ func SetQuota(quota string, toQuota string) {
 	Quota.WithLabelValues(quota, toQuota).Set(float64(1))
 }
 
-// node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate was renamed in 4.9
+// GetContainerCPUMetric node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate was renamed in 4.9
 func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l l.Logger) (string, error) {
 	before49, err := resources.ClusterVersionBefore49(ctx, serverClient, l)
 	if err != nil {
