@@ -26,17 +26,10 @@ var (
 		},
 	)
 
-	RHMIStatusAvailable = prometheus.NewGauge(
+	RHOAMInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "rhmi_status_available",
-			Help: "RHMI status available",
-		},
-	)
-
-	RHMIInfo = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhmi_spec",
-			Help: "RHMI info variables",
+			Name: "rhoam_spec",
+			Help: "RHOAM info variables",
 		},
 		[]string{
 			"use_cluster_storage",
@@ -48,28 +41,6 @@ var (
 			"operators_in_product_namespace",
 			"routing_subdomain",
 			"self_signed_certs",
-		},
-	)
-
-	RHMIVersion = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhmi_version",
-			Help: "RHMI versions",
-		},
-		[]string{
-			"stage",
-			"version",
-			"to_version",
-		},
-	)
-
-	RHMIStatus = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhmi_status",
-			Help: "RHMI status of an installation",
-		},
-		[]string{
-			"stage",
 		},
 	)
 
@@ -238,9 +209,9 @@ type RhoamState struct {
 	Version   string
 }
 
-// SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
-func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
-	RHMIInfo.WithLabelValues(installation.Spec.UseClusterStorage,
+// SetInfo exposes operator info metrics with labels from the installation CR
+func SetInfo(installation *integreatlyv1alpha1.RHMI) {
+	RHOAMInfo.WithLabelValues(installation.Spec.UseClusterStorage,
 		installation.Spec.MasterURL,
 		installation.Spec.Type,
 		installation.GetName(),
@@ -252,23 +223,15 @@ func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
 	)
 }
 
-// SetRHMIStatus exposes rhmi_status metric for each stage
-func SetRHMIStatus(installation *integreatlyv1alpha1.RHMI) {
-	RHMIStatus.Reset()
-	if string(installation.Status.Stage) != "" {
-		RHMIStatus.With(prometheus.Labels{"stage": string(installation.Status.Stage)}).Set(float64(1))
-	}
-
+// SetStatus exposes RHOAM_status metric for each stage
+func SetStatus(installation *integreatlyv1alpha1.RHMI) {
 	RHOAMStatus.Reset()
 	if string(installation.Status.Stage) != "" {
 		RHOAMStatus.With(prometheus.Labels{"stage": string(installation.Status.Stage)}).Set(float64(1))
 	}
 }
 
-func SetRhmiVersions(stage string, version string, toVersion string, externalID string, firstInstallTimestamp int64) {
-	RHMIVersion.Reset()
-	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
-
+func SetVersions(stage string, version string, toVersion string, externalID string, firstInstallTimestamp int64) {
 	RHOAMVersion.Reset()
 	status := resources.InstallationState(version, toVersion)
 	RHOAMVersion.WithLabelValues(stage, status, version, toVersion, externalID).Set(float64(firstInstallTimestamp))

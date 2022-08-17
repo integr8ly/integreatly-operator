@@ -322,7 +322,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			Products: stage.Products,
 		})
 	}
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
 	configManager, err := config.NewManager(context.TODO(), r.Client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
@@ -377,13 +377,13 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err := r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetThreeScalePortals(nil, 0) // expose metric and set default value
 	}
 
 	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
 
@@ -463,7 +463,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		installation.Status.Quota = installationQuota.GetName()
 		installation.Status.ToQuota = ""
 
@@ -473,7 +473,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	// Entered on every reconcile where all stages reported complete
 	if !installInProgress {
 		installation.Status.Stage = rhmiv1alpha1.StageName("complete")
-		metrics.RHMIStatusAvailable.Set(1)
 		retryRequeue.RequeueAfter = 5 * time.Minute
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
@@ -485,7 +484,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 		}
 	}
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
 	if _, ok := installation.Status.Stages[rhmiv1alpha1.MonitoringStage]; ok {
 		log.Info("delete Monitoring stage from installation.Status")
@@ -760,14 +759,11 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		log.Error("Error creating silence", err)
 	}
 
-	// Set metrics status to unavailable
-	metrics.RHMIStatusAvailable.Set(0)
-
 	installation.Status.Stage = rhmiv1alpha1.StageName("deletion")
 	installation.Status.LastError = ""
 
 	// updates rhmi status metric to deletion
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
 	// Clean up the products which have finalizers associated to them
 	merr := &resources.MultiErr{}

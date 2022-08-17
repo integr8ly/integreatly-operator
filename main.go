@@ -57,10 +57,7 @@ var (
 func init() {
 	// Register custom metrics with the global prometheus registry
 	customMetrics.Registry.MustRegister(integreatlymetrics.OperatorVersion)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatusAvailable)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIInfo)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIVersion)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatus)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMInfo)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMCluster)

@@ -209,7 +209,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
-	metrics.SetRHMIInfo(installation)
+	metrics.SetInfo(installation)
 	r.log.Info("Metric rhmi_info exposed")
 
 	r.log.Info("Bootstrap stage reconciled successfully")
