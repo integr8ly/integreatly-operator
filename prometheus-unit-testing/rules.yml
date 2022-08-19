@@ -1,0 +1,11 @@
+groups:
+ - name: general.rules
+   rules:
+    - alert: CriticalMetricsMissing
+      annotations: 
+        description: >-
+            Missing Critical Metrics at {{.Value | printf "%.1f"}}
+      expr: (rhoam_version{version=".*", to_version=""} > 0) * on(pod) group_left(rhoam_custom_domain)(absent(rhoam_custom_domain)) or (absent(rhoam_version))
+      for: 5m
+      labels:
+        severity: critical

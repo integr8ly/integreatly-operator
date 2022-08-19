@@ -1,0 +1,47 @@
+rule_files:
+  - rules.yml
+
+evaluation_interval: 1m
+
+tests:
+  # - interval: 1m
+  #   input_series:
+  #     - series: rhoam_version{version="x",to_version=""}
+  #       values: "1+0x20"
+  #   alert_rule_test:
+  #       #Rhoam_version is equal to 1 therefore present for 20 min / alert not expected to fire
+  #     - eval_time: 20m
+  #       alertname: CriticalMetricsMissing
+  #       exp_alerts: [] 
+  #       #Rhoam_version is equal to 0 therefore absent for 20 min / alert should fire
+  #     - eval_time: 40m
+  #       alertname: CriticalMetricsMissing
+  #       exp_alerts: 
+  #         - exp_labels: 
+  #             alertname: CriticalMetricsMissing
+  #             severity: critical
+  #           exp_annotations: 
+  #             description: >-
+  #               Missing Critical Metrics at 1.0
+
+  - interval: 1m
+    input_series:
+      - series: rhoam_version{version="x",to_version="",pod="y"}
+        values: "1+0x40"
+      - series: rhoam_custom_domain{version="x",to_version="",pod="y"}
+        values: "0+0x20 stale"
+    alert_rule_test:
+        #Rhoam_version is equal to 1 [ present ] / rhoam_custom_domain is equal to 0 [ not absent ] / successful scenario
+      - eval_time: 20m
+        alertname: CriticalMetricsMissing
+        exp_alerts: []
+        #Rhoam_version is equal to 1 [ present ] / rhoam_custom_domain is stale [ non existant / absent ] / unsuccessful scenario
+      - eval_time: 40m
+        alertname: CriticalMetricsMissing
+        exp_alerts: 
+          - exp_labels: 
+              alertname: CriticalMetricsMissing
+              severity: critical
+            exp_annotations: 
+              description: >-
+                Missing Critical Metrics at 1.0
