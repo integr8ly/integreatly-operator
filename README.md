@@ -56,6 +56,7 @@ Ensure that the cluster satisfies minimal requirements:
 - RHMI (managed): 26 vCPU 
 - RHOAM (managed-api and multitenant-managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
   under the "Resource Requirements" section
+*Note:* The LOCAL flag is set to true by default, this means the namespace used to install RHOAM will be set to `local-rhoam-operator` and other RHOAM related namespaces will be prefixed with `local-rhoam`. If you wish to use non-local namespaces then  set LOCAL to false by running the following command `export LOCAL=false`.
 
 ### 1. Clone the integreatly-operator
 Only if you haven't already cloned. Otherwise, navigate to an existing copy. 
@@ -87,7 +88,7 @@ If you are working against a fresh cluster it will need to be prepared using the
 Ensure you are logged into a cluster by `oc whoami`.
 Include the `INSTALLATION_TYPE`. See [here](#3-configuration-optional) about this and other optional configuration variables.
 ```shell
-make cluster/prepare/local
+INSTALLATION_TYPE=<managed-api/multitenant-managed-api> make cluster/prepare/local
 ```
 
 
@@ -114,7 +115,7 @@ INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
 The operator can now be run locally:
 ```shell
-make code/run
+INSTALLATION_TYPE=<managed-api/multitenant-managed-api> make code/run
 ```
 If you want to run the operator from a specific image, you can specify the image and run `make cluster/deploy`
 ```shell
@@ -144,54 +145,39 @@ Once the installation completed the command wil result in following output:
 
 ## Uninstalling RHOAM
 ### Local and OLM installation type
-If you installed RHOAM locally then you can uninstall one of two ways:
+If you installed RHOAM locally or via OLM then you can uninstall one of two ways:
+
+- for local installation use the `local-rhaom-operator Namespace`
+- for OLM installation use the `redhat-rhoam-operator Namespace`
 
 
 A) Create a configmap and add a deletion label (Prefered way of uninstallation).
 ```sh 
-oc create configmap managed-api-service -n local-rhoam-operator
-oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n local-rhoam-operator
+oc create configmap managed-api-service -n <NAMESPACE>
+oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n <NAMESPACE>
 ```
 
 B) Delete the RHOAM cr.
 ```sh 
-oc delete rhmi rhoam -n local-rhoam-operator
+oc delete rhmi rhoam -n <NAMESPACE>
 ```
 
 In both scenarios wait until the RHOAM cr is removed and then run the following command to delete the namespace.
 ```sh 
-oc delete namespace local-rhoam-operator
+oc delete namespace <NAMESPACE>
 ```
 
 #### Note: After uninstalling RHOAM you should clean up the cluster by running the following command.
+##### Local installation
 ```sh
 make cluster/cleanup && make cluster/cleanup/crds
 ```
 
-### OLM installation type
-If you installed RHOAM through a catalog source then you can uninstall one of two ways:
-
-
-A) Create a configmap and add a deletion label (Prefered way of uninstallation).
-```sh 
-oc create configmap managed-api-service -n redhat-rhoam-operator
-oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n redhat-rhoam-operator
-```
-
-B) Delete the RHOAM cr.
-```sh 
-oc delete rhmi rhoam -n redhat-rhoam-operator
-```
-
-In both scenarios wait until the RHOAM cr is removed and then run the following command to delete the namespace.
-```sh 
-oc delete namespace redhat-rhoam-operator
-```
-
-#### Note: After uninstalling RHOAM you should clean up the cluster by running the following command.
+##### OLM installation
 ```sh
 LOCAL=false make cluster/cleanup && make cluster/cleanup/crds
 ```
+
 
 ## More Info
 More info can be found in the docs folder and at the [Integreatly Read the Docs site](https://integreatly-operator.readthedocs.io/en/latest/).

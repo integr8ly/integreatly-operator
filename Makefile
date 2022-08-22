@@ -80,16 +80,6 @@ ifeq ($(shell test -e envs/$(INSTALLATION_TYPE).env && echo -n yes),yes)
 	include envs/$(INSTALLATION_TYPE).env
 endif
 
-ifeq ($(INSTALLATION_TYPE),multitenant-managed-api)
-	export CLUSTER_CONFIG:=redhat-sandbox
-endif
-
-ifeq ($(LOCAL), true)
-	export INSTALLATION_SHORTHAND:=local-rhoam
-	export NAMESPACE_PREFIX:=local-rhoam-
-	export NAMESPACE:=$(NAMESPACE_PREFIX)operator
-endif
-
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
@@ -363,7 +353,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize  cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
