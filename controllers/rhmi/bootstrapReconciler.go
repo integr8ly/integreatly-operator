@@ -488,36 +488,32 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 			Namespace: r.ConfigManager.GetOperatorNamespace(),
 		},
 	}
-
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
-	if !k8serr.IsNotFound(err) && err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else if k8serr.IsNotFound(err) {
-		oauthClientSecrets.Data = map[string][]byte{}
-	} else if oauthClientSecrets.Data == nil {
-		oauthClientSecrets.Data = map[string][]byte{}
-	}
-
-	for _, tenant := range allTenants {
-		err = r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling OAuth secret data for tenant %v: %w", tenant.TenantName, err)
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+		if !k8serr.IsNotFound(err) && err != nil {
+			return err
+		} else if k8serr.IsNotFound(err) {
+			oauthClientSecrets.Data = map[string][]byte{}
+		} else if oauthClientSecrets.Data == nil {
+			oauthClientSecrets.Data = map[string][]byte{}
 		}
-	}
-
-	// Remove redundant tenant secrets
-	for key, _ := range oauthClientSecrets.Data {
-		if !tenantExists(key, allTenants) {
-			delete(oauthClientSecrets.Data, key)
+		for _, tenant := range allTenants {
+			err = r.reconcileOauthSecretData(ctx, serverClient, oauthClientSecrets, tenant.TenantName)
+			if err != nil {
+				return fmt.Errorf("error reconciling OAuth secret data for tenant %v: %w", tenant.TenantName, err)
+			}
 		}
+		// Remove redundant tenant secrets
+		for key, _ := range oauthClientSecrets.Data {
+			if !tenantExists(key, allTenants) {
+				delete(oauthClientSecrets.Data, key)
+			}
+		}
+		oauthClientSecrets.ObjectMeta.ResourceVersion = ""
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling oauth clients secrets: %w", err)
 	}
-
-	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
-	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling OAuth clients secrets: %w", err)
-	}
-
 	r.log.Info("Tenant OAuth client secrets successfully reconciled")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -568,38 +564,36 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 			Namespace: r.ConfigManager.GetOperatorNamespace(),
 		},
 	}
-
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
-	if !k8serr.IsNotFound(err) && err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else if k8serr.IsNotFound(err) {
-		oauthClientSecrets.Data = map[string][]byte{}
-	}
-
-	for _, product := range productsList {
-		if _, ok := oauthClientSecrets.Data[string(product)]; !ok {
-			oauthClient := &oauthv1.OAuthClient{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: r.installation.Spec.NamespacePrefix + string(product),
-				},
-			}
-			err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
-			if !k8serr.IsNotFound(err) && err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			} else if k8serr.IsNotFound(err) {
-				oauthClientSecrets.Data[string(product)] = []byte(generateSecret(32))
-			} else {
-				// recover secret from existing OAuthClient object in case Secret object was deleted
-				oauthClientSecrets.Data[string(product)] = []byte(oauthClient.Secret)
-				r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"product": string(product)})
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+		if !k8serr.IsNotFound(err) && err != nil {
+			return err
+		} else if k8serr.IsNotFound(err) {
+			oauthClientSecrets.Data = map[string][]byte{}
+		}
+		for _, product := range productsList {
+			if _, ok := oauthClientSecrets.Data[string(product)]; !ok {
+				oauthClient := &oauthv1.OAuthClient{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: r.installation.Spec.NamespacePrefix + string(product),
+					},
+				}
+				err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
+				if !k8serr.IsNotFound(err) && err != nil {
+					return err
+				} else if k8serr.IsNotFound(err) {
+					oauthClientSecrets.Data[string(product)] = []byte(generateSecret(32))
+				} else {
+					// recover secret from existing OAuthClient object in case Secret object was deleted
+					oauthClientSecrets.Data[string(product)] = []byte(oauthClient.Secret)
+					r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"product": string(product)})
+				}
 			}
 		}
-	}
-
-	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
-	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling OAuth clients secrets: %w", err)
+		oauthClientSecrets.ObjectMeta.ResourceVersion = ""
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling oauth clients secrets: %w", err)
 	}
 	r.log.Info("Bootstrap OAuth client secrets successfully reconciled")
 

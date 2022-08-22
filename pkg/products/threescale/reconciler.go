@@ -11,7 +11,6 @@ import (
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"net"
@@ -1485,7 +1484,7 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 }
 
 func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	mtUserIdentities, err := user.GetMultiTenantUsers(ctx, serverClient, r.installation)
+	mtUserIdentities, err := userHelper.GetMultiTenantUsers(ctx, serverClient, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -1679,13 +1678,13 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				continue
 			}
 
-			tenantsCreated.Data[string(account.OrgName)] = "true"
-			tenantsCreated.ObjectMeta.ResourceVersion = ""
-			err = resources.CreateOrUpdate(ctx, serverClient, tenantsCreated)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating/updating tenant created CM: %w", err)
+			if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantsCreated, func() error {
+				tenantsCreated.Data[account.OrgName] = "true"
+				tenantsCreated.ObjectMeta.ResourceVersion = ""
+				return nil
+			}); err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating tenant created CM: %w", err)
 			}
-
 		} else if account.State != "scheduled_for_deletion" {
 			r.log.Infof("Deleting broke account for recreation",
 				l.Fields{
@@ -1757,13 +1756,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			},
 		)
 
-		r.log.Info("Creating signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
-		signUpAccountsSecret.Data[string(account.OrgName)] = []byte(newSignupAccount.AccountAccessToken.Value)
-		signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
-		err = resources.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret)
-		if err != nil {
+		if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, signUpAccountsSecret, func() error {
+			r.log.Info("Creating/updating signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
+			signUpAccountsSecret.Data[account.OrgName] = []byte(newSignupAccount.AccountAccessToken.Value)
+			signUpAccountsSecret.ObjectMeta.ResourceVersion = ""
+			return nil
+		}); err != nil {
 			r.log.Error("Error creating access token secret ", err)
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating access token secret: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating access token secret: %w", err)
 		}
 		r.log.Info("After signUpAccountsSecret " + signUpAccountsSecret.Name + " " + signUpAccountsSecret.Namespace)
 	}
@@ -2000,10 +2000,11 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 		return fmt.Errorf("Could not find %s key in %s Secret: %w", tenantID, oauthClientSecrets.Name, err)
 	}
 
-	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
-	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
-	if err != nil {
-		return fmt.Errorf("Error creating or updating RHSSO secret clients : %w", err)
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
+		oauthClientSecrets.ObjectMeta.ResourceVersion = ""
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error creating or updating RHSSO secret clients : %w", err)
 	}
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
