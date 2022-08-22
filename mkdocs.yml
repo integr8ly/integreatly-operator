@@ -1,0 +1,7 @@
+site_name: Integreatly Operator
+site_url: https://integreatly-repo.readthedocs.io/
+repo_url: https://github.com/integr8ly/integreatly-operator 
+theme: 
+  name: readthedocs
+plugins:
+  - search
