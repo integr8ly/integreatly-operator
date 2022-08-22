@@ -73,10 +73,13 @@ func (r *ImplicitCatalogSourceReconciler) Reconcile(ctx context.Context, subName
 			},
 		}
 
-		controllerutil.CreateOrUpdate(ctx, r.Client, cs, func() error {
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, cs, func() error {
 			cs.Spec = catalogSource.DeepCopy().Spec
 			return nil
 		})
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "could not createOrUpdate catalogSource in ImplicitCatalogSourceReconciler")
+		}
 
 		r.Log.Infof("Created 3Scale catalog source ", l.Fields{"image": cs.Spec.Image})
 		r.selfCatalogSource = cs

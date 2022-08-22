@@ -2,23 +2,31 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	routev1 "github.com/openshift/api/route/v1"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"testing"
+)
+
+const (
+	FakeName      = "fake-name"
+	FakeNamespace = "fake-namespace"
+	FakeHost      = "fake-route.org"
 )
 
 func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
@@ -110,7 +118,7 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 }
 
 func TestFormatAlerts(t *testing.T) {
-	input := []v1.Alert{
+	input := []prometheusv1.Alert{
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
 			State:  "Firing",
@@ -208,5 +216,215 @@ func TestGetCrName(t *testing.T) {
 		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("getCrName() got = %v, want %v", got, tt.want)
 		}
+	}
+}
+
+func TestHandleCROConfigDeletion(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name         string
+		installation rhmiv1alpha1.RHMI
+		wantErr      bool
+	}{
+		{
+			name: "handle CRO config map deletion when config map exists",
+			installation: rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		r := &RHMIReconciler{
+			Client: fakeclient.NewFakeClientWithScheme(scheme, getCROConfigMap()),
+		}
+		err := r.handleCROConfigDeletion(tt.installation)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("handleCROConfigDeletion() error = %v, wantErr %v", err, tt.wantErr)
+			return
+		}
+	}
+}
+
+func TestFirstInstallFirstReconcile(t *testing.T) {
+	tests := []struct {
+		name         string
+		installation *rhmiv1alpha1.RHMI
+		want         bool
+	}{
+		{
+			name: "test CR for first install, first reconcile",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "",
+					ToVersion: "",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test CR for first install, installation complete",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "x.y.z",
+					ToVersion: "",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test CR for first install, installation in progress",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "",
+					ToVersion: "x.y.z",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test CR for installation complete, upgrade in progress",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "x.y.z",
+					ToVersion: "x.y.z",
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		got := firstInstallFirstReconcile(tt.installation)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("firstInstallFirstReconcile() got = %v, want %v", got, tt.want)
+		}
+	}
+}
+
+func TestUpgradeFirstReconcile(t *testing.T) {
+	tests := []struct {
+		name         string
+		installation *rhmiv1alpha1.RHMI
+		want         bool
+	}{
+		{
+			name: "test CR for first install, first reconcile",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: string(rhmiv1alpha1.InstallationTypeManagedApi),
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "",
+					ToVersion: "",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test CR for first install, installation complete",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: string(rhmiv1alpha1.InstallationTypeManagedApi),
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "x.y.z",
+					ToVersion: "",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test CR for first install, installation in progress",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: string(rhmiv1alpha1.InstallationTypeManagedApi),
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "",
+					ToVersion: "x.y.z",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test CR for installation complete, upgrade in progress",
+			installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      FakeName,
+					Namespace: FakeNamespace,
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: string(rhmiv1alpha1.InstallationTypeManagedApi),
+				},
+				Status: rhmiv1alpha1.RHMIStatus{
+					Version:   "x.y.z",
+					ToVersion: "x.y.z",
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		got := upgradeFirstReconcile(tt.installation)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("upgradeFirstReconcile() got = %v, want %v", got, tt.want)
+		}
+	}
+}
+
+func getBuildScheme() (*runtime.Scheme, error) {
+	scheme := runtime.NewScheme()
+	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := routev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	return scheme, nil
+}
+
+func getCROConfigMap() *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      DefaultCloudResourceConfigName,
+			Namespace: FakeNamespace,
+			Finalizers: []string{
+				deletionFinalizer,
+			},
+		},
 	}
 }

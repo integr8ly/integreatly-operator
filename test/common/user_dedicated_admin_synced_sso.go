@@ -4,25 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -48,7 +49,7 @@ var (
 
 func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 	ctx := context.Background()
-	defer cleanUpTestDedicatedAdminUsersSyncedSSO(ctx, tc.Client)
+	defer cleanUpTestDedicatedAdminUsersSyncedSSO(ctx, t, tc.Client)
 
 	// Create Testing IDP
 	if err := createTestingIDP(t, ctx, tc.Client, tc.KubeConfig, tc.SelfSignedCerts); err != nil {
@@ -423,22 +424,31 @@ func getKeycloakUserGroups(httpClient *http.Client, host, token string, options 
 	return keycloakUserGroups, nil
 }
 
-func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, c client.Client) {
+func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c client.Client) {
 	// Ensure OpenShift user is deleted
-	c.Delete(ctx, testUser)
+	err := c.Delete(ctx, testUser)
+	if err != nil {
+		t.Fatalf("failed to delete OpenShift user %s, err: %v", testUser.Name, err)
+	}
 
 	// Ensure KeycloakUser CR is deleted
-	c.Delete(ctx, &keycloak.KeycloakUser{
+	err = c.Delete(ctx, &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
 			Namespace: RHSSOProductNamespace,
 		},
 	})
+	if err != nil {
+		t.Fatalf("failed to delete KeycloakUser %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName), err)
+	}
 
 	// Ensure the test user is removed from dedicated-admins group
 	dedicatedAdminGroup := &userv1.Group{}
-	c.Get(ctx, types.NamespacedName{Name: groupNameDedicatedAdmins}, dedicatedAdminGroup)
-	controllerutil.CreateOrUpdate(ctx, c, dedicatedAdminGroup, func() error {
+	err = c.Get(ctx, types.NamespacedName{Name: groupNameDedicatedAdmins}, dedicatedAdminGroup)
+	if err != nil {
+		t.Fatalf("failed to get dedicated admins group %s, err: %v", groupNameDedicatedAdmins, err)
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, c, dedicatedAdminGroup, func() error {
 		for i, user := range dedicatedAdminGroup.Users {
 			if user == testUserName {
 				dedicatedAdminGroup.Users = removeIndex(dedicatedAdminGroup.Users, i)
@@ -446,6 +456,9 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, c client.Clien
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatalf("failed to remove user %s from dedicated admin group, err: %v", testUserName, err)
+	}
 }
 
 func removeIndex(slice []string, s int) []string {

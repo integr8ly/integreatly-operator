@@ -131,7 +131,10 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 							found := CheckFoldersForMatch(dir, vs, currentFolder, crdConfig, libRegEx)
 							if !found {
 								// if match isn't found, add file contents to stringlist
-								ProcessYamlFile(currentFolder+string(os.PathSeparator)+f.Name(), &stringList)
+								err = ProcessYamlFile(currentFolder+string(os.PathSeparator)+f.Name(), &stringList)
+								if err != nil {
+									log.Error("contents not added to stringlist", err)
+								}
 							}
 
 						}
