@@ -68,13 +68,13 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 					Labels: map[string]string{"severity": "warning", "product": installationName, "addon": getAddonName(installation), "namespace": "openshift-monitoring"},
 				},
 				{
-					Alert: fmt.Sprintf("%sUpgradeExpectedDuration30minExceeded", strings.ToUpper(installationName)),
+					Alert: fmt.Sprintf("%sUpgradeExpectedDuration60minExceeded", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlUpgradeExpectedDurationExceeded,
-						"message": fmt.Sprintf("%s operator upgrade is taking more than 30 minutes", strings.ToUpper(installationName)),
+						"message": fmt.Sprintf("%s operator upgrade is taking more than 60 minutes", strings.ToUpper(installationName)),
 					},
 					Expr:   intstr.FromString(fmt.Sprintf(`%s_version{to_version=~".+",version=~".+"} and (absent((%s_version{job=~"%s.+"} * on(version) csv_succeeded{exported_namespace=~"%s"})) or %s_version)`, installationName, installationName, installationName, installation.Namespace, installationName)),
-					For:    "30m",
+					For:    "60m",
 					Labels: map[string]string{"severity": "critical", "product": installationName, "addon": getAddonName(installation), "namespace": "openshift-monitoring"},
 				},
 			},
