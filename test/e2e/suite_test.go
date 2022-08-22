@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +20,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -54,8 +53,6 @@ func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	// start test env
-	By("bootstrapping test environment")
-
 	useCluster := true
 	testEnv = &envtest.Environment{
 		UseExistingCluster:       &useCluster,
@@ -79,114 +76,116 @@ func TestAPIs(t *testing.T) {
 		t.Fatalf("could not get install type %s", err)
 	}
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"E2E Test Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "E2E Test Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
-	err = rhmiv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = threescalev1.SchemeBuilder.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = threescaleBv1.SchemeBuilder.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = operatorsv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	ctx, err := common.NewTestingContext(cfg)
-
-	// wait for operator deployment to deploy
-	err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	// wait for cloud resource to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
-		// wait for cloud resource phase to complete (10 minutes timeout)
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
-		Expect(err).NotTo(HaveOccurred())
-	}
-
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
-		//Observability Operator
-		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		// AMO, wait for middleware-monitoring to deploy
-		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
+var _ = BeforeSuite(func() {
+	done := make(chan interface{})
+	go func() {
+		logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
+		By("bootstrapping test environment")
+		err = rhmiv1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
-		// wait for middleware-monitoring to deploy
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
+		err = threescalev1.SchemeBuilder.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
-	}
 
-	// wait for keycloak-operator to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
-	Expect(err).NotTo(HaveOccurred())
-
-	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
-		// wait for authentication phase to complete (10 minutes timeout)
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
+		err = threescaleBv1.SchemeBuilder.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
-	}
 
-	//Product Stage - verify operators deploy
-	products := map[string]string{
-		"3scale":               "3scale-operator",
-		"amq-online":           "enmasse-operator",
-		"codeready-workspaces": "codeready-operator",
-		"fuse":                 "syndesis-operator",
-		"user-sso":             "keycloak-operator",
-		"ups":                  "unifiedpush-operator",
-		"apicurito":            "apicurito-operator",
-	}
+		err = operatorsv1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
 
-	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
-		products = map[string]string{
-			"3scale":   "threescale-operator-controller-manager-v2",
-			"user-sso": "keycloak-operator",
+		ctx, err := common.NewTestingContext(cfg)
+
+		// wait for operator deployment to deploy
+		err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
+		Expect(err).NotTo(HaveOccurred())
+
+		// wait for cloud resource to deploy
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
+		Expect(err).NotTo(HaveOccurred())
+
+		if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+			// wait for cloud resource phase to complete (10 minutes timeout)
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, cloudResourcesStageTimeout, string(rhmiv1alpha1.CloudResourcesStage))
+			Expect(err).NotTo(HaveOccurred())
 		}
-	}
-	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-		products = map[string]string{
-			"3scale": "threescale-operator-controller-manager-v2",
+
+		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
+			//Observability Operator
+			err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
+			Expect(err).NotTo(HaveOccurred())
+		} else {
+			// AMO, wait for middleware-monitoring to deploy
+			err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductMonitoring), "application-monitoring-operator")
+			Expect(err).NotTo(HaveOccurred())
+
+			// wait for middleware-monitoring to deploy
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, monitoringStageTimeout, string(rhmiv1alpha1.MonitoringStage))
+			Expect(err).NotTo(HaveOccurred())
 		}
-	}
 
-	for product, deploymentName := range products {
-		err = waitForProductDeployment(ctx.KubeClient, product, deploymentName)
-		Expect(err).NotTo(HaveOccurred())
-	}
-
-	if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
-		// wait for products phase to complete (30 minutes timeout)
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, productsStageTimout, string(rhmiv1alpha1.ProductsStage))
+		// wait for keycloak-operator to deploy
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "keycloak-operator")
 		Expect(err).NotTo(HaveOccurred())
 
-		// wait for solution-explorer operator to deploy
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, solutionExplorerStageTimeout, string(rhmiv1alpha1.SolutionExplorerStage))
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		// wait for installation phase to complete (40 minutes timeout)
-		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
-		Expect(err).NotTo(HaveOccurred())
-	}
-	// +kubebuilder:scaffold:scheme
+		if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+			// wait for authentication phase to complete (10 minutes timeout)
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, authenticationStageTimeout, string(rhmiv1alpha1.AuthenticationStage))
+			Expect(err).NotTo(HaveOccurred())
+		}
 
-	close(done)
-}, 5400)
+		//Product Stage - verify operators deploy
+		products := map[string]string{
+			"3scale":               "3scale-operator",
+			"amq-online":           "enmasse-operator",
+			"codeready-workspaces": "codeready-operator",
+			"fuse":                 "syndesis-operator",
+			"user-sso":             "keycloak-operator",
+			"ups":                  "unifiedpush-operator",
+			"apicurito":            "apicurito-operator",
+		}
+
+		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
+			products = map[string]string{
+				"3scale":   "threescale-operator-controller-manager-v2",
+				"user-sso": "keycloak-operator",
+			}
+		}
+		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+			products = map[string]string{
+				"3scale": "threescale-operator-controller-manager-v2",
+			}
+		}
+
+		for product, deploymentName := range products {
+			err = waitForProductDeployment(ctx.KubeClient, product, deploymentName)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		if rhmiv1alpha1.IsRHMI(rhmiv1alpha1.InstallationType(installType)) {
+			// wait for products phase to complete (30 minutes timeout)
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, productsStageTimout, string(rhmiv1alpha1.ProductsStage))
+			Expect(err).NotTo(HaveOccurred())
+
+			// wait for solution-explorer operator to deploy
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, solutionExplorerStageTimeout, string(rhmiv1alpha1.SolutionExplorerStage))
+			Expect(err).NotTo(HaveOccurred())
+		} else {
+			// wait for installation phase to complete (40 minutes timeout)
+			err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
+			Expect(err).NotTo(HaveOccurred())
+		}
+		// +kubebuilder:scaffold:scheme
+
+		close(done)
+	}()
+	Eventually(done, 5400).Should(BeClosed())
+})
 
 var _ = AfterEach(func() {
-	failed = failed || CurrentGinkgoTestDescription().Failed
+	failed = failed || CurrentSpecReport().Failed()
 })
 
 var _ = AfterSuite(func() {
