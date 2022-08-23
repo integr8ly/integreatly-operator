@@ -11,11 +11,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	WINDOW        = 6
-	WINDOW_MARGIN = 1
-)
-
 func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
 	if subscription == nil {
 		return false

@@ -87,11 +87,7 @@ set_descriptions() {
   yq e -i '.spec.validation.openAPIV3Schema.description="RHOAM is the Schema for the RHOAM API"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
   yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMSpec defines the desired state of Installation"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
   yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMStatus defines the observed state of Installation"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmis.yaml
-  yq e -i '.spec.validation.openAPIV3Schema.description="RHOAMConfig is the Schema for the rhoamconfigs API"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
-  yq e -i '.spec.validation.openAPIV3Schema.properties.spec.description="RHOAMConfigSpec defines the desired state of RHOAMConfig"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
-  yq e -i '.spec.validation.openAPIV3Schema.properties.status.description="RHOAMConfigStatus defines the observed state of RHOAMConfig"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
-  yq e -i '.spec.validation.openAPIV3Schema.properties.status.properties.upgradeAvailable.properties.targetVersion.description="target-version: string, version of incoming RHOAM Operator"' bundles/$OLM_TYPE/${VERSION}/manifests/integreatly.org_rhmiconfigs.yaml
-}
+ }
 
 # Set the image and containerImage fields in the CSV
 # Note that multitenant-managed-api-service still uses the single tenant operator image as they are identical

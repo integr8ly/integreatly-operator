@@ -13,7 +13,6 @@ import (
 func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
-
 	observabilityConfig, err := r.ConfigManager.ReadObservability()
 	if err != nil {
 		logger.Warning("failed to get observability config")

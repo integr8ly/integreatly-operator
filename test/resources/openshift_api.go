@@ -16,25 +16,13 @@ import (
 
 /* #nosec G101 -- This is a false positive */
 const (
-	OpenshiftPathListProjects     = "/api/kubernetes/apis/project.openshift.io/v1/projects"
-	OpenshiftPathGetProject       = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"
-	OpenshiftPathListPods         = "/api/kubernetes/api/v1/namespaces/%v/pods"
-	OpenshiftPathGetSecret        = "/api/kubernetes/api/v1/namespaces/%s/secrets"
-	PathListRHMIConfig            = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs"
-	PathGetRHMIConfig             = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs/%s"
-	PathListRHMI                  = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis"
-	PathGetRHMI                   = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis/%s"
-	PathGetRoute                  = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
-	PathListStandardInfraConfig   = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs"
-	PathGetStandardInfraConfig    = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs/%s"
-	PathListBrokeredInfraConfig   = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/brokeredinfraconfigs"
-	PathGetBrokeredInfraConfig    = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/brokeredinfraconfigs/%s"
-	PathListAddressSpacePlan      = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressspaceplans"
-	PathGetAddressSpacePlan       = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressspaceplans/%s"
-	PathListAddressPlan           = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressplans"
-	PathGetAddressPlan            = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressplans/%s"
-	PathListAuthenticationService = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/authenticationservices"
-	PathGetAuthenticationService  = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/authenticationservices/%s"
+	OpenshiftPathListProjects = "/api/kubernetes/apis/project.openshift.io/v1/projects"
+	OpenshiftPathGetProject   = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"
+	OpenshiftPathListPods     = "/api/kubernetes/api/v1/namespaces/%v/pods"
+	OpenshiftPathGetSecret    = "/api/kubernetes/api/v1/namespaces/%s/secrets"
+	PathListRHMI              = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis"
+	PathGetRHMI               = "/apis/integreatly.org/v1alpha1/namespaces/%s/rhmis/%s"
+	PathGetRoute              = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
 )
 
 type OpenshiftClient struct {
