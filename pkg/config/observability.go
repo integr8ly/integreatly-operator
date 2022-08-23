@@ -127,6 +127,10 @@ func (m *Observability) GetAlertManagerServiceName() string {
 	return AlertManagerOverride
 }
 
+func (m *Observability) GetAlertManagerStorageRequest() string {
+	return "1Gi"
+}
+
 func (m *Observability) GetPrometheusVersion() string {
 	return "v2.29.2"
 }
