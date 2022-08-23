@@ -49,6 +49,10 @@ var (
 	originalPassword              = ""
 	originalPort                  = ""
 	originalUsername              = ""
+	original3scalePassword        = ""
+	original3scalePort            = ""
+	original3scaleHost            = ""
+	original3scaleUsername        = ""
 )
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
@@ -81,12 +85,24 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Log(err)
 	}
+	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(inst.Spec.Type)) {
+		_, err = patch3ScaleSecret(ctx, t)
+		if err != nil {
+			t.Log(err)
+		}
+	}
 
 	defer func(t TestingTB, ctx *TestingContext, isCreated bool) {
 		t.Log("Reset SMTP details")
 		_, err = resetSecret(ctx, t, isCreated)
 		if err != nil {
 			t.Log(err)
+		}
+		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(inst.Spec.Type)) {
+			err = reset3ScaleSecret(ctx, t)
+			if err != nil {
+				t.Log(err)
+			}
 		}
 	}(t, ctx, isCreated)
 
@@ -477,6 +493,27 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	}
 }
 
+func reset3ScaleSecret(ctx *TestingContext, t TestingTB) error {
+	t.Log("Resetting 3Scale secret")
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-smtp",
+			Namespace: NamespacePrefix + "3scale",
+		},
+		Data: map[string][]byte{},
+	}
+	secret.Data["address"] = []byte(original3scaleHost)
+	secret.Data["password"] = []byte(original3scalePassword)
+	secret.Data["port"] = []byte(original3scalePort)
+	secret.Data["username"] = []byte(original3scaleUsername)
+
+	if err := ctx.Client.Update(goctx.TODO(), secret.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func resetSecret(ctx *TestingContext, t TestingTB, isCreated bool) (string, error) {
 	//Reset the smtp details back to the pre test version
 	if isCreated {
@@ -513,6 +550,39 @@ func resetSecret(ctx *TestingContext, t TestingTB, isCreated bool) (string, erro
 	return "", nil
 }
 
+func patch3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
+	t.Log("Patching 3Scale secret")
+	// Update secret with our test smtp details
+	serviceIP, _ := getServiceIP(ctx)
+	secret, err := get3scaleSecret(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	original3scaleHost = string(secret.Data["host"])
+	original3scalePassword = string(secret.Data["password"])
+	original3scalePort = string(secret.Data["port"])
+	original3scaleUsername = string(secret.Data["username"])
+
+	secret = v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-smtp",
+			Namespace: NamespacePrefix + "3scale",
+		},
+		Data: map[string][]byte{},
+	}
+
+	secret.Data["address"] = []byte(serviceIP)
+	secret.Data["password"] = []byte(emailPassword)
+	secret.Data["port"] = []byte(emailPort)
+	secret.Data["username"] = []byte(emailUsername)
+
+	if err = ctx.Client.Update(goctx.TODO(), secret.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
+		return secret.APIVersion, err
+	}
+
+	return "", nil
+}
 func patchSecret(ctx *TestingContext, t TestingTB) (string, bool, error) {
 	// Update secret with our test smtp details
 	serviceIP, err := getServiceIP(ctx)
@@ -840,10 +910,7 @@ func customSmtpParameters(inst *rhmiv1alpha1.RHMI, require string, client k8scli
 }
 
 func addonSecret(inst *rhmiv1alpha1.RHMI, client k8sclient.Client, secret *v1.Secret) error {
-	err := client.Get(context.TODO(), k8sclient.ObjectKey{
-		Name:      fmt.Sprintf("addon-%s-service-parameters", inst.Spec.Type),
-		Namespace: inst.Namespace,
-	}, secret)
+	secret, err := addon.GetAddonParametersSecret(context.TODO(), client, inst.Namespace)
 	if err != nil {
 		return err
 	}
