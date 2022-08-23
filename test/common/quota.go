@@ -27,20 +27,23 @@ import (
 )
 
 const (
-	prometheusRule1           = "marin3r-api-usage-alert-level1"
+	prometheusRule1           = "api-usage-alert-level1"
 	prometheusRule1Desc       = "per minute over 4 hours"
-	prometheusRule2           = "marin3r-api-usage-alert-level2"
+	prometheusRule2           = "api-usage-alert-level2"
 	prometheusRule2Desc       = "per minute over 2 hours"
-	prometheusRule3           = "marin3r-api-usage-alert-level3"
+	prometheusRule3           = "api-usage-alert-level3"
 	prometheusRule3Desc       = "per minute over 30 minutes"
 	higherQuotaParam          = "200"
 	lowerQuotaParam           = "1"
 	higherQuotaName           = "20 Million"
+	higherQuotaParamMT        = "10"
+	higherQuotaMTName         = "1 Million"
 	lowerQuotaName            = "100K"
 	timeoutWaitingQuotachange = 10
 	new3scaleLimits           = "501Mi"
 	newKeycloakLimits         = "1501Mi"
 	newRatelimitLimits        = "101Mi"
+	new3scaleLimitsMT         = "1400Mi"
 )
 
 func TestQuotaValues(t TestingTB, ctx *TestingContext) {
@@ -81,7 +84,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Expected quota name '%s' to match the expected value from the quota config map, but got: '%s'",
 			installation.Status.Quota, quotaConfig.GetName())
 	}
-	verifyConfiguration(t, ctx.Client, quotaConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig, installation)
 
 	initialQuotaName := installation.Status.Quota
 	initialQuotaValue, found, err := addon.GetStringParameter(context.TODO(), ctx.Client, RHOAMOperatorNamespace, addon.QuotaParamName)
@@ -92,9 +95,17 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 
 	// update the quota to a higher configuration if the initial quota is lower,
 	// otherwise switch to lower quota configuration
-	if initialQuotaValue < higherQuotaParam {
-		t.Logf("Changing Quota to %v", higherQuotaName)
-		err = changeQuota(t, ctx.Client, higherQuotaParam, higherQuotaName)
+	quotaParam := higherQuotaParam
+	quotaName := higherQuotaName
+
+	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		quotaParam = higherQuotaParamMT
+		quotaName = higherQuotaMTName
+	}
+
+	if initialQuotaValue < quotaParam {
+		t.Logf("Changing Quota to %v", quotaName)
+		err = changeQuota(t, ctx.Client, quotaParam, quotaName)
 	} else {
 		t.Logf("Changing Quota to %v", lowerQuotaName)
 		err = changeQuota(t, ctx.Client, lowerQuotaParam, lowerQuotaName)
@@ -111,7 +122,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
-	verifyConfiguration(t, ctx.Client, quotaConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig, installation)
 
 	// verify that the user can update their configuration manually but it does not get set back
 	// get all crs
@@ -126,29 +137,36 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Error getting APIManager CR key: %v", err)
 	}
 	new3scaleLimit := resource.MustParse(new3scaleLimits)
+	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		new3scaleLimit = resource.MustParse(new3scaleLimitsMT)
+	}
 
 	err = ctx.Client.Get(context.TODO(), key, threescaleCR)
 	if err != nil && !k8serr.IsNotFound(err) {
 		t.Fatalf("Error getting APIManager CR: %v", err)
 	}
 
-	// Keycloak
-	keycloakCR := &v1alpha1.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      quota.KeycloakName,
-			Namespace: RHSSOUserProductNamespace,
-		},
-	}
-	newKeycloakLimit := resource.MustParse(newKeycloakLimits)
+	var newKeycloakLimit resource.Quantity
+	var keycloakCR *v1alpha1.Keycloak
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		// Keycloak
+		keycloakCR = &v1alpha1.Keycloak{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      quota.KeycloakName,
+				Namespace: RHSSOUserProductNamespace,
+			},
+		}
+		newKeycloakLimit = resource.MustParse(newKeycloakLimits)
 
-	key, err = k8sclient.ObjectKeyFromObject(keycloakCR)
-	if err != nil {
-		t.Fatalf("Error getting Keycloak CR key: %v", err)
-	}
+		key, err = k8sclient.ObjectKeyFromObject(keycloakCR)
+		if err != nil {
+			t.Fatalf("Error getting Keycloak CR key: %v", err)
+		}
 
-	err = ctx.Client.Get(context.TODO(), key, keycloakCR)
-	if err != nil {
-		t.Fatalf("Error getting Keycloak CR: %v", err)
+		err = ctx.Client.Get(context.TODO(), key, keycloakCR)
+		if err != nil {
+			t.Fatalf("Error getting Keycloak CR: %v", err)
+		}
 	}
 
 	// Ratelimit
@@ -182,14 +200,15 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Error updating APIManager CR: %v with results of: %v", err, result)
 	}
 
-	result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCR, func() error {
-		keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("Error updating Keycloak CR: %v with results of: %v", err, result)
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCR, func() error {
+			keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("Error updating Keycloak CR: %v with results of: %v", err, result)
+		}
 	}
-
 	result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, ratelimitCR, func() error {
 		ratelimitCR.Spec.Template.Spec.Containers[0].Resources.Limits[v1.ResourceMemory] = resource.MustParse(newRatelimitLimits)
 		return nil
@@ -235,11 +254,12 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 			t.Fatalf("failed to get backend listener pods for 3scale: %v", err)
 		}
 
-		err = ctx.Client.List(context.TODO(), keycloakPods, keycloakListOpts...)
-		if err != nil {
-			t.Fatalf("failed to get pods for Keycloak: %v", err)
+		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+			err = ctx.Client.List(context.TODO(), keycloakPods, keycloakListOpts...)
+			if err != nil {
+				t.Fatalf("failed to get pods for Keycloak: %v", err)
+			}
 		}
-
 		err = ctx.Client.List(context.TODO(), ratelimitPods, ratelimitListOpts...)
 		if err != nil {
 			t.Fatalf("failed to get pods for Ratelimit: %v", err)
@@ -247,7 +267,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 
 		// break before the timeout if we are happy
 		if podMatchesConfig(threescalePods, new3scaleLimit) &&
-			podMatchesConfig(keycloakPods, newKeycloakLimit) &&
+			(podMatchesConfig(keycloakPods, newKeycloakLimit) || rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type))) &&
 			podMatchesConfig(ratelimitPods, newRatelimitLimit) {
 			break
 		}
@@ -259,7 +279,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	if !podMatchesConfig(threescalePods, new3scaleLimit) {
 		t.Fatalf("3scale backend listener does not have expected memory limits. Expected: %v Got: %v", new3scaleLimit.String(), threescalePods.Items[0].Spec.Containers[0].Resources.Limits.Memory())
 	}
-	if !podMatchesConfig(keycloakPods, newKeycloakLimit) {
+	if !podMatchesConfig(keycloakPods, newKeycloakLimit) && rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		t.Fatalf("Keycloak pod does not have expected memory limits. Expected: %v Got: %v", newKeycloakLimit.String(), keycloakPods.Items[0].Spec.Containers[0].Resources.Limits.Memory())
 	}
 	if !podMatchesConfig(ratelimitPods, newRatelimitLimit) {
@@ -277,7 +297,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("Error retrieving Quota config: %v", err)
 	}
-	verifyConfiguration(t, ctx.Client, quotaConfig)
+	verifyConfiguration(t, ctx.Client, quotaConfig, installation)
 }
 
 func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.ConfigMap, error) {
@@ -289,7 +309,7 @@ func getConfigMap(_ TestingTB, c k8sclient.Client, name, namespace string) (*v1.
 	return configMap, nil
 }
 
-func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quota) {
+func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quota, installation *rhmiv1alpha1.RHMI) {
 	// get it from the marin3r namespace
 	config, err := getConfigMap(t, c, marin3r.RateLimitingConfigMapName, Marin3rProductNamespace)
 	if err != nil {
@@ -373,20 +393,22 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 		t.Fatal("Error obtaining userrhsso resource config")
 	}
 
-	// Validate CPU value requested by SSO
-	keycloak := &v1alpha1.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: string(rhmiv1alpha1.ProductRHSSOUser),
-		},
-	}
-	err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
-	if err != nil {
-		t.Fatalf("Couldn't get Keycloak CR: %v", err)
-	}
+	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+		// Validate CPU value requested by SSO
+		keycloak := &v1alpha1.Keycloak{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: string(rhmiv1alpha1.ProductRHSSOUser),
+			},
+		}
+		err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
+		if err != nil {
+			t.Fatalf("Couldn't get Keycloak CR: %v", err)
+		}
 
-	crReplicas = int32(keycloak.Spec.Instances)
-	crResources = keycloak.Spec.KeycloakDeploymentSpec.Resources
-	checkResources(t, keycloak.Name, configReplicas, crReplicas, resourceConfig, crResources)
+		crReplicas = int32(keycloak.Spec.Instances)
+		crResources = keycloak.Spec.KeycloakDeploymentSpec.Resources
+		checkResources(t, keycloak.Name, configReplicas, crReplicas, resourceConfig, crResources)
+	}
 }
 
 func prometheusRateLimitError(rateLimitCheck, rule, ruseDesc string, requestsPerUnit uint32) string {
@@ -488,5 +510,8 @@ func changeQuota(t TestingTB, c k8sclient.Client,
 }
 
 func podMatchesConfig(podList *v1.PodList, limit resource.Quantity) bool {
+	if len(podList.Items) == 0 {
+		return false
+	}
 	return podList.Items[0].Spec.Containers[0].Resources.Limits.Memory().Cmp(limit) == 0
 }

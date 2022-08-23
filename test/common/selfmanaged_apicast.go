@@ -48,7 +48,6 @@ const (
 	apicastNamespace             = "selfmanaged-apicast"
 	apiExampleApicast            = "apicast-example-apicast"
 	adminPortalCredentialsSecret = "adminportal-credentials"
-	namespacePrefix              = "redhat-rhoam-"
 	accountOrgName               = "Developer"
 	planName                     = "Basic"
 	applicationName              = "H24_test_app"
@@ -64,8 +63,6 @@ var (
 )
 
 func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
-	threeScaleNamespace = fmt.Sprintf("%s3scale", namespacePrefix)
-
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	serviceSystemName = fmt.Sprintf("h24_test_product_%v", r1.Intn(100000))
@@ -93,6 +90,8 @@ func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
 	}
 	if installation == nil {
 		t.Fatalf("Got invalid rhmi CR: %v", installation)
+	} else {
+		threeScaleNamespace = fmt.Sprintf("%s3scale", installation.Spec.NamespacePrefix)
 	}
 
 	err = cleanUpBeforeTest(ctx, client, installation)
