@@ -193,6 +193,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileCloudResourceStrategies(client)
+	if err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
+		return phase, err
+	}
+
 	phase, err = r.addServiceUpdates(ctx, client, croProviders.RedisResourceType, redisServiceUpdatesToInstall)
 	if err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
@@ -599,6 +606,27 @@ func (r *Reconciler) checkStsCredentialsPresent(client k8sclient.Client, operato
 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s secret in %s namespace", sts.CredsSecretName, operatorNamespace)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// reconcileCloudResourceStrategies
+// reconcile cro strategy config map, RHMI operator does not care what infrastructure the cluster is running in
+// as we support different cloud providers this CRO Reconcile Function will ensure the correct infrastructure strategies are provisioned
+//
+// this function was part of the rhmiconfig controller, which has sense been removed.
+func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.log.Info("reconciling cloud resource maintenance strategies")
+
+	timeConfig := &croUtil.StrategyTimeConfig{
+		BackupStartTime:      "03:01",
+		MaintenanceStartTime: "Thu 02:00",
+	}
+
+	err := croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("faliure to reconcile aws strategy map: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
