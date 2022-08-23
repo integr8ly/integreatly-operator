@@ -20,6 +20,7 @@ import (
 	"flag"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"strings"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -89,7 +90,9 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var probeAddr string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8383", "The address the metric endpoint binds to.")
+	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -111,11 +114,12 @@ func main() {
 	var mgr ctrl.Manager
 	if strings.Contains(watchNamespace, "sandbox") || watchNamespace == "" {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-			Scheme:             scheme,
-			MetricsBindAddress: metricsAddr,
-			Port:               9443,
-			LeaderElection:     enableLeaderElection,
-			LeaderElectionID:   "28185cee.integreatly.org",
+			Scheme:                 scheme,
+			MetricsBindAddress:     metricsAddr,
+			Port:                   9443,
+			HealthProbeBindAddress: probeAddr,
+			LeaderElection:         enableLeaderElection,
+			LeaderElectionID:       "28185cee.integreatly.org",
 		})
 		if err != nil {
 			setupLog.Error(err, "unable to start multitenant manager")
@@ -123,12 +127,13 @@ func main() {
 		}
 	} else {
 		mgr, err = ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-			Scheme:             scheme,
-			MetricsBindAddress: metricsAddr,
-			Port:               9443,
-			LeaderElection:     enableLeaderElection,
-			LeaderElectionID:   "28185cee.integreatly.org",
-			Namespace:          watchNamespace,
+			Scheme:                 scheme,
+			MetricsBindAddress:     metricsAddr,
+			Port:                   9443,
+			HealthProbeBindAddress: probeAddr,
+			LeaderElection:         enableLeaderElection,
+			LeaderElectionID:       "28185cee.integreatly.org",
+			Namespace:              watchNamespace,
 		})
 		if err != nil {
 			setupLog.Error(err, "unable to start singletenant manager")
@@ -183,6 +188,15 @@ func main() {
 
 	if err := setupWebhooks(mgr); err != nil {
 		setupLog.Error(err, "Error setting up webhook server")
+	}
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
 	}
 
 	setupLog.Info("starting manager")
