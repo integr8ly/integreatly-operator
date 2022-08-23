@@ -352,7 +352,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						"sop_url": resources.SopUrlCriticalMetricsMissing,
 						"message": fmt.Sprintf("%s metrics have been missing for more than 5 minutes", strings.ToUpper(installationName)),
 					},
-					Expr:   intstr.FromString(`(` + installationName + `_version{version=~".*", to_version=~""} > 0) * on(pod) group_left(` + installationName + `_custom_domain)(absent(` + installationName + `_custom_domain)) or absent(` + installationName + `_version)`),
+					Expr:   intstr.FromString(fmt.Sprintf(`(%[1]s_version{version=~".*", to_version=~""} > 0) * on(pod) group_left(%[1]s_custom_domain)(absent(%[1]s_custom_domain)) or absent(%[1]s_version)`, installationName)),
 					For:    "5m",
 					Labels: map[string]string{"severity": "critical"},
 				},
