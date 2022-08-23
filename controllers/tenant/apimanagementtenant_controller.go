@@ -233,7 +233,8 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 
 		var foundRoute *routev1.Route
 		user, err := r.getUserByTenantNamespace(tenant.Namespace)
-		for _, rt := range routes.Items {
+		for i := range routes.Items {
+			rt := routes.Items[i]
 			if strings.Contains(rt.Spec.Host, user.Name) {
 				foundRoute = &rt
 				break
