@@ -37,7 +37,7 @@ generate_from() {
         echo "generate_from() called without a parameter"
         exit 1
     fi
-    bundle=$(yq e ".bundles[-1] | .name |= sub(\"3scale-operator.\",\"\") \
+    bundle=$(yq e ".bundles[] | .name |= sub(\"3scale-operator.\",\"\") \
         | select(.name == \"v$VERSION\") | .image" \
         bundles/3scale-operator/bundles.yaml)
     
