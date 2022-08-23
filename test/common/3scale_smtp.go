@@ -49,10 +49,10 @@ var (
 	originalPassword              = ""
 	originalPort                  = ""
 	originalUsername              = ""
-	original3ScalePassword        = ""
-	original3ScalePort            = ""
-	original3ScaleHost            = ""
-	original3ScaleUsername        = ""
+	original3scalePassword        = ""
+	original3scalePort            = ""
+	original3scaleHost            = ""
+	original3scaleUsername        = ""
 )
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
@@ -99,7 +99,7 @@ func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 			t.Log(err)
 		}
 		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(inst.Spec.Type)) {
-			_, err = reset3ScaleSecret(ctx, t)
+			err = reset3ScaleSecret(ctx, t)
 			if err != nil {
 				t.Log(err)
 			}
@@ -493,7 +493,7 @@ func sendTestEmail(ctx *TestingContext, t TestingTB) {
 	}
 }
 
-func reset3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
+func reset3ScaleSecret(ctx *TestingContext, t TestingTB) error {
 	t.Log("Resetting 3Scale secret")
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -502,16 +502,16 @@ func reset3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
 		},
 		Data: map[string][]byte{},
 	}
-	secret.Data["address"] = []byte(original3ScaleHost)
-	secret.Data["password"] = []byte(original3ScalePassword)
-	secret.Data["port"] = []byte(original3ScalePort)
-	secret.Data["username"] = []byte(original3ScaleUsername)
+	secret.Data["address"] = []byte(original3scaleHost)
+	secret.Data["password"] = []byte(original3scalePassword)
+	secret.Data["port"] = []byte(original3scalePort)
+	secret.Data["username"] = []byte(original3scaleUsername)
 
 	if err := ctx.Client.Update(goctx.TODO(), secret.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
-		return secret.APIVersion, err
+		return err
 	}
 
-	return "", nil
+	return nil
 }
 
 func resetSecret(ctx *TestingContext, t TestingTB, isCreated bool) (string, error) {
@@ -559,10 +559,10 @@ func patch3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
 		return "", err
 	}
 
-	original3ScaleHost = string(secret.Data["host"])
-	original3ScalePassword = string(secret.Data["password"])
-	original3ScalePort = string(secret.Data["port"])
-	original3ScaleUsername = string(secret.Data["username"])
+	original3scaleHost = string(secret.Data["host"])
+	original3scalePassword = string(secret.Data["password"])
+	original3scalePort = string(secret.Data["port"])
+	original3scaleUsername = string(secret.Data["username"])
 
 	secret = v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
