@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -14,19 +15,21 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
-
-	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 var (
@@ -685,6 +688,298 @@ func TestCreatePrometheusProbe(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("CreatePrometheusProbe() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_deleteObservabilityCR(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		Reconciler    *resources.Reconciler
+		ConfigManager config.ConfigReadWriter
+		Config        *config.Observability
+		installation  *v1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           l.Logger
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx             context.Context
+		serverClient    k8sclient.Client
+		inst            *v1alpha1.RHMI
+		targetNamespace string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    v1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "deletion timestamp is nil, do not proceed",
+			args: args{
+				inst: &v1alpha1.RHMI{},
+			},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name:   "failed to determine if operator is hive managed",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("generic error")
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name:   "unexpected error retrieving dms secret",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							obj.(*corev1.Namespace).Labels = map[string]string{
+								"hive.openshift.io/managed": "true",
+							}
+							return nil
+						case *corev1.Secret:
+							return fmt.Errorf("generic error")
+						default:
+							return nil
+						}
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name:   "dms secret is still present, requeue",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							obj.(*corev1.Namespace).Labels = map[string]string{"hive.openshift.io/managed": "true"}
+							return nil
+						case *corev1.Secret:
+							obj.(*corev1.Secret).Data = map[string][]byte{"SNITCH_URL": []byte("www.example.com")}
+							return nil
+						default:
+							return nil
+						}
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+					Spec: v1alpha1.RHMISpec{
+						DeadMansSnitchSecret: "dms-secret",
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name:   "unexpected error retrieving observability cr",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							return nil
+						case *corev1.Secret:
+							return nil
+						case *observability.Observability:
+							return fmt.Errorf("generic error")
+						default:
+							return nil
+						}
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name:   "successfully deleted observability cr",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							return nil
+						case *corev1.Secret:
+							return nil
+						case *observability.Observability:
+							return k8serr.NewNotFound(schema.GroupResource{}, "generic")
+						default:
+							return nil
+						}
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name:   "failed to mark the observability cr for deletion",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							return nil
+						case *corev1.Secret:
+							return nil
+						case *observability.Observability:
+							return nil
+						default:
+							return nil
+						}
+					}
+					fakeClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+						return fmt.Errorf("generic error")
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name:   "successfully marked the observability cr for deletion",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						switch obj.(type) {
+						case *corev1.Namespace:
+							return nil
+						case *corev1.Secret:
+							return nil
+						case *observability.Observability:
+							return nil
+						default:
+							return nil
+						}
+					}
+					fakeClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+						return nil
+					}
+					return fakeClient
+				}(),
+				inst: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-ns",
+						DeletionTimestamp: &metav1.Time{
+							Time: time.Now(),
+						},
+					},
+				},
+			},
+			want:    v1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Reconciler:    tt.fields.Reconciler,
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.deleteObservabilityCR(tt.args.ctx, tt.args.serverClient, tt.args.inst, tt.args.targetNamespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("deleteObservabilityCR() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("deleteObservabilityCR() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -98,7 +98,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	//Get dms credentials
-	dmsSecret, err := getDMSSecret(ctx, serverClient, *installation)
+	dmsSecret, err := GetDMSSecret(ctx, serverClient, *installation)
 	if err != nil {
 		log.Warningf("Could not get DMS secret", l.Fields{"error": err.Error()})
 	}
@@ -253,7 +253,7 @@ func getPagerDutySecret(ctx context.Context, serverClient k8sclient.Client, inst
 	return secret, nil
 }
 
-func getDMSSecret(ctx context.Context, serverClient k8sclient.Client, installation integreatlyv1alpha1.RHMI) (string, error) {
+func GetDMSSecret(ctx context.Context, serverClient k8sclient.Client, installation integreatlyv1alpha1.RHMI) (string, error) {
 
 	var secret string
 

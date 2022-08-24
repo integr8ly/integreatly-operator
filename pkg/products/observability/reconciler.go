@@ -6,6 +6,7 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
@@ -569,6 +570,21 @@ func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8s
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
+	isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, serverClient, inst)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if isHiveManaged {
+		// proceed after the dms secret is deleted by the deadmanssnitch-operator to prevent alert false positive
+		dmsSecret, err := monitoringcommon.GetDMSSecret(ctx, serverClient, *inst)
+		if err != nil && !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("unexpected error retrieving dead man's snitch secret: %w", err)
+		}
+		if dmsSecret != "" {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("dead man's snitch secret is still present, requeing")
+		}
+	}
+
 	oo := &observability.Observability{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      observabilityName,
@@ -577,7 +593,7 @@ func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8s
 	}
 
 	// Get the observability CR; return if not found
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oo.Name, Namespace: oo.Namespace}, oo)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: oo.Name, Namespace: oo.Namespace}, oo)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseCompleted, nil
@@ -588,7 +604,7 @@ func (r *Reconciler) deleteObservabilityCR(ctx context.Context, serverClient k8s
 	// Mark the observability CR for deletion
 	err = serverClient.Delete(ctx, oo)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseInProgress, nil

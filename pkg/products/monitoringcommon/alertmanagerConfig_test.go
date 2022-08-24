@@ -610,13 +610,13 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 
 			serverClient := tt.serverClient()
 
-			got, err := getDMSSecret(context.TODO(), serverClient, *installation)
+			got, err := GetDMSSecret(context.TODO(), serverClient, *installation)
 			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("getDMSSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
+				t.Errorf("GetDMSSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getDMSSecret() got = %v, want %v", got, tt.want)
+				t.Errorf("GetDMSSecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -803,29 +803,6 @@ func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8scli
 	return secret, nil
 }
 
-func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
-
-	var secret string
-
-	dmsSecret := &corev1.Secret{}
-	err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret,
-		Namespace: r.installation.Namespace}, dmsSecret)
-
-	if err != nil {
-		return "", fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
-	}
-
-	if len(dmsSecret.Data["SNITCH_URL"]) != 0 {
-		secret = string(dmsSecret.Data["SNITCH_URL"])
-	} else if len(dmsSecret.Data["url"]) != 0 {
-		secret = string(dmsSecret.Data["url"])
-	} else {
-		return "", fmt.Errorf("url is undefined in dead mans snitch secret")
-	}
-
-	return secret, nil
-}
-
 // prepareEmailAddresses converts a space separated string into a comma separated
 // string. Example:
 //
