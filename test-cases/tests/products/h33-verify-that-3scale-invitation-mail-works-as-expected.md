@@ -20,7 +20,7 @@ Verify that 3scale invitation mail is sent out
 
 2. Navigate to API management in the quick access menu at the top of the console page.
 
-3. From the drop-down menu at the top navigate to Dashboard > Accounts > Developer (John Doe) > Invitations
+3. From the Dashboard navigate to ACCOUNTS > Developer (John Doe) > Invitations
 
 4. Click the invite user icon and input your email.
 
