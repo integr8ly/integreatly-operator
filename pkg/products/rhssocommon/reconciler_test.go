@@ -1298,7 +1298,7 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
 							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
 								{
-									Name: "keycloak-operator",
+									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
@@ -1347,7 +1347,7 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
 							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
 								{
-									Name: "keycloak-operator",
+									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
@@ -1411,7 +1411,7 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
 							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
 								{
-									Name: "keycloak-operator",
+									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{
@@ -1479,7 +1479,7 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
 							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
 								{
-									Name: "keycloak-operator",
+									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
 										Template: corev1.PodTemplateSpec{
 											Spec: corev1.PodSpec{

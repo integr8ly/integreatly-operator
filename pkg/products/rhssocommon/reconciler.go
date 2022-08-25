@@ -793,7 +793,7 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion, envVars map[string]string) (*olmv1alpha1.ClusterServiceVersion, bool, error) {
 	updated := false
 	for deploymentIndex, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
-		if deployment.Name != "keycloak-operator" {
+		if deployment.Name != "rhsso-operator" {
 			continue
 		}
 		deploymentEnvVars := deployment.Spec.Template.Spec.Containers[0].Env

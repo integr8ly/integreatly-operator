@@ -324,6 +324,10 @@ create/olm/bundle:
 create/3scale/index:
 	./scripts/create-3scale-index.sh
 
+.PHONY: create/rhsso-operator/index
+create/rhsso-operator/index:
+	./scripts/create-rhsso-operator-index.sh
+
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@ - oc new-project $(NAMESPACE)
