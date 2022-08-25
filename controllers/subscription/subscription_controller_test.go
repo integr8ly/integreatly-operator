@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
@@ -28,6 +30,10 @@ const (
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = crov1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return scheme, err
 	}
@@ -331,4 +337,182 @@ func getCatalogSourceClient(replaces string) catalogsourceClient.CatalogSourceCl
 			}, nil
 		},
 	}
+}
+
+func TestAllowDatabaseUpdates(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatalf("failed to build scheme: %s", err.Error())
+	}
+
+	type fields struct {
+		Client k8sclient.Client
+	}
+
+	scenarios := []struct {
+		Name                   string
+		RHMI                   integreatlyv1alpha1.RHMI
+		Fields                 fields
+		IsServiceAffecting     bool
+		ExpectedUpdatesAllowed bool
+	}{
+		{
+			Name: "updates allowed when toVersion is not empty and upgrade is service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					ToVersion: "9.9.9",
+				},
+			},
+			Fields: fields{
+				Client: fakeclient.NewFakeClientWithScheme(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     true,
+			ExpectedUpdatesAllowed: true,
+		},
+		{
+			Name: "updates not allowed when toVersion is empty and upgrade is service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+			},
+			Fields: fields{
+				Client: fakeclient.NewFakeClientWithScheme(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     true,
+			ExpectedUpdatesAllowed: false,
+		},
+		{
+			Name: "updates not allowed when toVersion is not empty and upgrade is not service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					ToVersion: "9.9.9",
+				},
+			},
+			Fields: fields{
+				Client: fakeclient.NewFakeClientWithScheme(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     false,
+			ExpectedUpdatesAllowed: false,
+		},
+		{
+			Name: "updates not allowed when toVersion is empty and upgrade is not service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+			},
+			Fields: fields{
+				Client: fakeclient.NewFakeClientWithScheme(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     false,
+			ExpectedUpdatesAllowed: false,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			reconciler := &SubscriptionReconciler{
+				Client:            scenario.Fields.Client,
+				operatorNamespace: "testns",
+			}
+			err := reconciler.allowDatabaseUpdates(context.TODO(), &scenario.RHMI, scenario.IsServiceAffecting)
+			if err != nil {
+				t.Errorf("Unexpected error. Got %v", err)
+			}
+
+			isCorrect, err := allowUpdatesValueIsCorrect(scenario.Fields.Client, "testpg", "testredis", "testns", scenario.ExpectedUpdatesAllowed)
+			if err != nil {
+				t.Errorf("Unexpected error checking values in Postgres & Redis CRs, error: %v", err)
+			}
+			if !isCorrect {
+				t.Errorf("Incorrect updatesAllowed value in Postgres or Redis CR")
+			}
+		})
+	}
+}
+
+func allowUpdatesValueIsCorrect(client k8sclient.Client, postgresName, redisName, namespace string, want bool) (bool, error) {
+	pg := crov1alpha1.Postgres{}
+	if err := client.Get(context.TODO(), k8sclient.ObjectKey{
+		Namespace: namespace,
+		Name:      postgresName,
+	}, &pg); err != nil {
+		return false, err
+	}
+
+	redis := crov1alpha1.Redis{}
+	if err := client.Get(context.TODO(), k8sclient.ObjectKey{
+		Namespace: namespace,
+		Name:      redisName,
+	}, &redis); err != nil {
+		return false, err
+	}
+
+	if pg.Spec.AllowUpdates != want || redis.Spec.AllowUpdates != want {
+		return false, nil
+	}
+	return true, nil
 }
