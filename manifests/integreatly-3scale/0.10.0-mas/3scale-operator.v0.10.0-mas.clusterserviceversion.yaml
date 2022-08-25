@@ -167,12 +167,23 @@ metadata:
           "spec": {
             "name": "OperatedProduct 1"
           }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "ProxyConfigPromote",
+          "metadata": {
+            "name": "proxyconfigpromote-sample"
+          },
+          "spec": {
+            "ProductCRName": "product1-sample",
+            "Production": true
+          }
         }
       ]
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_b03254596368cb069b351812092c8762333d17e14eea222c48774e178a08fa57
+    containerImage: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_06c81544f81f8d7e4e4c5d44c9ab9f4109f1eadcc24b021ce031a853f0f9e2d3
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -270,6 +281,11 @@ spec:
       kind: Product
       name: products.capabilities.3scale.net
       version: v1beta1
+    - description: ProxyConfigPromote is the Schema for the proxyconfigpromotes API
+      displayName: Proxy Config Promote
+      kind: ProxyConfigPromote
+      name: proxyconfigpromotes.capabilities.3scale.net
+      version: v1beta1
     - description: Tenant is the Schema for the tenants API
       displayName: Tenant
       kind: Tenant
@@ -314,6 +330,34 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - proxyconfigpromotes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - proxyconfigpromotes/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - console.openshift.io
           resources:
           - consolelinks
@@ -339,9 +383,9 @@ spec:
                 com.company: Red_Hat
                 control-plane: controller-manager
                 rht.comp: 3scale
-                rht.comp_ver: "2.12"
+                rht.comp_ver: master
                 rht.prod_name: Red_Hat_Integration
-                rht.prod_ver: 2021.Q4
+                rht.prod_ver: master
                 rht.subcomp: 3scale_operator
                 rht.subcomp_t: infrastructure
             spec:
@@ -359,9 +403,9 @@ spec:
                 - name: RELATED_IMAGE_BACKEND
                   value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_c1422dd1c268cdd70e9a43ad5fe3df724617aa47e584911f23635498c6a69e3e
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_284399a94f0d3a025ef55e244468989186af7fc2b86b466d08cb125fa7eee084
+                  value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_b72f9dd1890eee457a6d42a659b983aee3ca049c3e93ec5cc6f1415ae9aba3fb
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_cd09db319f46e513ab68be174b1830eb57fb957cd5585e630b0b5da7ec17c746
+                  value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_246f0e4706b94cc99782a653748986a1b1880abf45d520adebcf9f8f4acbbeb7
                 - name: RELATED_IMAGE_ZYNC
                   value: quay.io/integreatly/delorean:3scale-mas-zync-rhel8_b19dccb2b772734e11c80dd612186dd7387a4fba212b4dbc4d597727f20bc9ab
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
@@ -377,8 +421,8 @@ spec:
                 - name: RELATED_IMAGE_ZYNC_POSTGRESQL
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
                 - name: RELATED_IMAGE_OC_CLI
-                  value: quay.io/integreatly/delorean:openshift4-ose-cli_f3d08cef3d466464cb475703c5a63ad519fe99f7be7463e6c72469c70cfbe35e
-                image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_b03254596368cb069b351812092c8762333d17e14eea222c48774e178a08fa57
+                  value: quay.io/integreatly/delorean:openshift4-ose-cli_04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
+                image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_06c81544f81f8d7e4e4c5d44c9ab9f4109f1eadcc24b021ce031a853f0f9e2d3
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -649,6 +693,18 @@ spec:
         - apiGroups:
           - capabilities.3scale.net
           resources:
+          - developeraccounts/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
           - developeraccounts/status
           verbs:
           - get
@@ -658,6 +714,18 @@ spec:
           - capabilities.3scale.net
           resources:
           - developerusers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - developerusers/finalizers
           verbs:
           - create
           - delete
@@ -922,15 +990,15 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-  - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:b03254596368cb069b351812092c8762333d17e14eea222c48774e178a08fa57
-    name: 3scale-rhel7-operator-b03254596368cb069b351812092c8762333d17e14eea222c48774e178a08fa57-annotation
-  - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:b03254596368cb069b351812092c8762333d17e14eea222c48774e178a08fa57
+  - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:06c81544f81f8d7e4e4c5d44c9ab9f4109f1eadcc24b021ce031a853f0f9e2d3
+    name: 3scale-rhel7-operator-06c81544f81f8d7e4e4c5d44c9ab9f4109f1eadcc24b021ce031a853f0f9e2d3-annotation
+  - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:06c81544f81f8d7e4e4c5d44c9ab9f4109f1eadcc24b021ce031a853f0f9e2d3
     name: manager
   - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:c1422dd1c268cdd70e9a43ad5fe3df724617aa47e584911f23635498c6a69e3e
     name: backend
-  - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:284399a94f0d3a025ef55e244468989186af7fc2b86b466d08cb125fa7eee084
+  - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:b72f9dd1890eee457a6d42a659b983aee3ca049c3e93ec5cc6f1415ae9aba3fb
     name: apicast
-  - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:cd09db319f46e513ab68be174b1830eb57fb957cd5585e630b0b5da7ec17c746
+  - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:246f0e4706b94cc99782a653748986a1b1880abf45d520adebcf9f8f4acbbeb7
     name: system
   - image: registry.redhat.io/3scale-mas/zync-rhel8@sha256:b19dccb2b772734e11c80dd612186dd7387a4fba212b4dbc4d597727f20bc9ab
     name: zync
@@ -946,7 +1014,7 @@ spec:
     name: system_postgresql
   - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
     name: zync_postgresql
-  - image: registry.redhat.io/openshift4/ose-cli@sha256:f3d08cef3d466464cb475703c5a63ad519fe99f7be7463e6c72469c70cfbe35e
+  - image: registry.redhat.io/openshift4/ose-cli@sha256:04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
     name: oc_cli
   replaces: 3scale-operator.v0.9.0-mas
   version: 0.10.0-mas
