@@ -256,7 +256,7 @@ test/e2e/single:
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/functional -timeout=80m
+	go clean -testcache && go test -v ./test/functional -timeout=120m
 
 .PHONY: test/osde2e
 test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)

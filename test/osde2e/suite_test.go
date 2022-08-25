@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -66,6 +67,8 @@ func TestAPIs(t *testing.T) {
 
 	// Fetch the current config
 	suiteConfig, reporterConfig := GinkgoConfiguration()
+	suiteConfig.Timeout = time.Minute * 90
+
 	// Update the JUnitReport
 	reporterConfig.JUnitReport = jUnitReportLocation
 	// Pass the updated config to RunSpecs()
