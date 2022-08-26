@@ -405,7 +405,7 @@ spec:
                 - name: RELATED_IMAGE_APICAST
                   value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_b72f9dd1890eee457a6d42a659b983aee3ca049c3e93ec5cc6f1415ae9aba3fb
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_b1fb271ed80bab2795f21bac10d6578641c7b3e6602352543ee6b68889f85dbd
+                  value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_778d6b14f88aab1fb46bc7635ff7aec6b2579712c76c9373e0d8b947d2e00995
                 - name: RELATED_IMAGE_ZYNC
                   value: quay.io/integreatly/delorean:3scale-mas-zync-rhel8_b19dccb2b772734e11c80dd612186dd7387a4fba212b4dbc4d597727f20bc9ab
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
@@ -998,7 +998,7 @@ spec:
     name: backend
   - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:b72f9dd1890eee457a6d42a659b983aee3ca049c3e93ec5cc6f1415ae9aba3fb
     name: apicast
-  - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:b1fb271ed80bab2795f21bac10d6578641c7b3e6602352543ee6b68889f85dbd
+  - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:778d6b14f88aab1fb46bc7635ff7aec6b2579712c76c9373e0d8b947d2e00995
     name: system
   - image: registry.redhat.io/3scale-mas/zync-rhel8@sha256:b19dccb2b772734e11c80dd612186dd7387a4fba212b4dbc4d597727f20bc9ab
     name: zync
