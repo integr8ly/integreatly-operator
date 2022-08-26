@@ -3331,20 +3331,45 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to ping %v 3scale portal (%v): %v", portal.PortalName, portal.Host, err)
 		}
-		status := res.StatusCode
-		portal.Status = status
-		portals[key] = portal
-		if status != http.StatusOK {
-			hasUnavailablePortal = 1
+
+		ok := true
+		statusCode := http.StatusOK
+		if res.StatusCode != http.StatusOK {
+			ok, statusCode = checkRedirects(portal.Host, "/p/login", res, http.StatusFound)
+			if !ok {
+				hasUnavailablePortal = 1
+			}
 		}
+		portal.IsAvailable = ok
+		portals[key] = portal
 		r.log.Infof("pinged 3scale portal", map[string]interface{}{
-			"name":   portal.PortalName,
-			"host":   portal.Host,
-			"status": portal.Status,
+			"Portal":           portal.PortalName,
+			"Host":             portal.Host,
+			"Status Code":      statusCode,
+			"Portal available": portal.IsAvailable,
 		})
 	}
 	metrics.SetCustomDomain(customDomainActive, portals, hasUnavailablePortal)
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func checkRedirects(host string, path string, res *http.Response, statusCode int) (bool, int) {
+
+	if res == nil {
+		return false, 000
+	}
+
+	if res.StatusCode == statusCode {
+		if res.Request.URL.Host == host && res.Request.URL.Path == path {
+			return true, res.StatusCode
+		}
+	}
+
+	if res.Request.Response != nil {
+		return checkRedirects(host, path, res.Request.Response, statusCode)
+	}
+
+	return false, 000
 }
 
 func (r *Reconciler) getKeycloakUserFromAccount(client k8sclient.Client, accountName string) (*keycloak.KeycloakUser, error) {

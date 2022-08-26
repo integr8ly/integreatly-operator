@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -2424,6 +2425,212 @@ func TestReconciler_reconcileCustomDomainAlerts(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("reconcileCustomDomainAlerts() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_checkRedirects(t *testing.T) {
+	type args struct {
+		host       string
+		path       string
+		res        *http.Response
+		statusCode int
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       bool
+		statusCode int
+	}{
+		{
+			name:       "Found nested expected response",
+			want:       true,
+			statusCode: 302,
+			args: args{
+				host:       "example.com",
+				path:       "/p/login",
+				statusCode: 302,
+				res: &http.Response{
+					StatusCode: 400,
+					Request: &http.Request{
+						URL: &url.URL{
+							Host: "example.com",
+							Path: "/bad/path",
+						},
+						Response: &http.Response{
+							StatusCode: 302,
+							Request: &http.Request{
+								URL: &url.URL{
+									Host: "example.com",
+									Path: "/bad/path/again",
+								},
+								Response: &http.Response{
+									StatusCode: 302,
+									Request: &http.Request{
+										URL: &url.URL{
+											Host: "example.com",
+											Path: "/p/login",
+										},
+										Response: &http.Response{
+											StatusCode: 301,
+											Request: &http.Request{
+												URL: &url.URL{
+													Host: "example.com",
+													Path: "",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "Nil point for request paced",
+			want:       false,
+			statusCode: 000,
+			args: args{
+				host:       "example.com",
+				path:       "/p/login",
+				statusCode: 302,
+				res:        nil,
+			},
+		},
+		{
+			name:       "Did not find expected response: Missing status code",
+			want:       false,
+			statusCode: 000,
+			args: args{
+				host:       "example.com",
+				path:       "/p/login",
+				statusCode: 302,
+				res: &http.Response{
+					StatusCode: 400,
+					Request: &http.Request{
+						URL: &url.URL{
+							Host: "example.com",
+							Path: "/p/login",
+						},
+						Response: &http.Response{
+							StatusCode: 200,
+							Request: &http.Request{
+								URL: &url.URL{
+									Host: "example.com",
+									Path: "/p/login",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:       "Did not find expected response: Missing host",
+			want:       false,
+			statusCode: 000,
+			args: args{
+				host:       "example.com",
+				path:       "/p/login",
+				statusCode: 302,
+				res: &http.Response{
+					StatusCode: 400,
+					Request: &http.Request{
+						URL: &url.URL{
+							Host: "example.com",
+							Path: "/bad/path",
+						},
+						Response: &http.Response{
+							StatusCode: 302,
+							Request: &http.Request{
+								URL: &url.URL{
+									Host: "example.com",
+									Path: "/bad/path/again",
+								},
+								Response: &http.Response{
+									StatusCode: 302,
+									Request: &http.Request{
+										URL: &url.URL{
+											Host: "wrong.example.com",
+											Path: "/p/login",
+										},
+										Response: &http.Response{
+											StatusCode: 301,
+											Request: &http.Request{
+												URL: &url.URL{
+													Host: "example.com",
+													Path: "",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+
+		{
+			name:       "Did not find expected response: Missing path",
+			want:       false,
+			statusCode: 000,
+			args: args{
+				host:       "example.com",
+				path:       "/p/login",
+				statusCode: 302,
+				res: &http.Response{
+					StatusCode: 400,
+					Request: &http.Request{
+						URL: &url.URL{
+							Host: "example.com",
+							Path: "/bad/path",
+						},
+						Response: &http.Response{
+							StatusCode: 302,
+							Request: &http.Request{
+								URL: &url.URL{
+									Host: "example.com",
+									Path: "/bad/path/again",
+								},
+								Response: &http.Response{
+									StatusCode: 302,
+									Request: &http.Request{
+										URL: &url.URL{
+											Host: "example.com",
+											Path: "/p/login/path/m",
+										},
+										Response: &http.Response{
+											StatusCode: 301,
+											Request: &http.Request{
+												URL: &url.URL{
+													Host: "example.com",
+													Path: "",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, statusCode := checkRedirects(tt.args.host, tt.args.path, tt.args.res, tt.args.statusCode)
+			if got != tt.want {
+				t.Errorf("checkRedirects() got = %v, want %v", got, tt.want)
+			}
+			if statusCode != tt.statusCode {
+				t.Errorf("checkRedirects() statusCode = %v, want %v", statusCode, tt.statusCode)
 			}
 		})
 	}

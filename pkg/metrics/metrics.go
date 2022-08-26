@@ -8,7 +8,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/prometheus/client_golang/prometheus"
-	"net/http"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 )
