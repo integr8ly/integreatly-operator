@@ -73,6 +73,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.NoActivated3ScaleTenantAccount)
 	customMetrics.Registry.MustRegister(integreatlymetrics.InstallationControllerReconcileDelayed)
 	customMetrics.Registry.MustRegister(integreatlymetrics.CustomDomain)
+	customMetrics.Registry.MustRegister(integreatlymetrics.ThreeScalePortals)
 
 	integreatlymetrics.OperatorVersion.Add(1)
 	utilruntime.Must(v1.Install(clientgoscheme.Scheme))
