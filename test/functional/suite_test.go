@@ -3,6 +3,7 @@ package functional
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
@@ -64,6 +65,7 @@ func TestAPIs(t *testing.T) {
 
 	// Fetch the current config
 	suiteConfig, reporterConfig := GinkgoConfiguration()
+	suiteConfig.Timeout = time.Minute * 90
 	// Update the JUnitReport
 	reporterConfig.JUnitReport = jUnitReportLocation
 	// Pass the updated config to RunSpecs()

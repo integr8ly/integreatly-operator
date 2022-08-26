@@ -76,7 +76,11 @@ func TestAPIs(t *testing.T) {
 		t.Fatalf("could not get install type %s", err)
 	}
 
-	RunSpecs(t, "E2E Test Suite")
+	// Fetch the current config
+	suiteConfig, _ := GinkgoConfiguration()
+	suiteConfig.Timeout = time.Minute * 90
+
+	RunSpecs(t, "E2E Test Suite", suiteConfig)
 }
 
 var _ = BeforeSuite(func() {

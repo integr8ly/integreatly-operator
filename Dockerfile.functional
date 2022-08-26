@@ -27,4 +27,4 @@ RUN dnf -y install google-chrome-stable && dnf clean all
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
-ENTRYPOINT [ "/integreatly-operator-test-harness.test", "-test.v", "-ginkgo.v", "-ginkgo.progress", "-ginkgo.noColor" ]
+ENTRYPOINT [ "/integreatly-operator-test-harness.test", "-test.v", "-ginkgo.v", "-ginkgo.progress", "-ginkgo.no-color" ]
