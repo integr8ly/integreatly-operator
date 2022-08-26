@@ -552,9 +552,9 @@ coverage:
 commits/check:
 	@./scripts/commits-check.sh
 
-.PHONY: gosec/exclude
-gosec/exclude:
-	gosec -exclude=G404 ./...
+.PHONY: gosec
+gosec:
+	gosec ./...
 
 ##@ Build Dependencies
 

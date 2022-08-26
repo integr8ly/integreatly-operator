@@ -2,13 +2,14 @@ package common
 
 import (
 	goctx "context"
+	"crypto/rand"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"golang.org/x/net/context"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
-	"math/rand"
+	"math/big"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 	"time"
@@ -36,11 +37,10 @@ const (
 )
 
 var (
-	s1                            = rand.NewSource(time.Now().UnixNano())
-	r1                            = rand.New(s1)
+	r1, _                         = rand.Int(rand.Reader, big.NewInt(200))
 	smtpReplicas            int32 = 1
 	threescaleLoginUserSMTP       = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
-	emailAddress                  = fmt.Sprintf("test%v@test.com", r1.Intn(200))
+	emailAddress                  = fmt.Sprintf("test%v@test.com", r1.Int64())
 	serviceIP                     = ""
 	emailUsername                 = "dummy"
 	emailPassword                 = "dummy"

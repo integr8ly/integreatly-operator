@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	goctx "context"
+	"crypto/rand"
 	"crypto/tls"
 	"fmt"
 	portaclient "github.com/3scale/3scale-porta-go-client/client"
@@ -21,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -937,11 +938,14 @@ func validateTestUser(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI, usern
 	}
 
 	usernameToCheck := username
-	rand.Seed(time.Now().UnixNano())
+	rnd, err := rand.Int(rand.Reader, big.NewInt(testUserPoolSize))
+	if err != nil {
+		return "", "", fmt.Errorf("error generating random username")
+	}
 	err = wait.Poll(time.Second*1, userReadyTimeout, func() (done bool, err error) {
 		for _, account := range accounts.Items {
 			if *account.Element.OrgName == usernameToCheck {
-				usernameToCheck = fmt.Sprintf("%v%02v", DefaultTestUserName, rand.Intn(testUserPoolSize))
+				usernameToCheck = fmt.Sprintf("%v%02v", DefaultTestUserName, rnd.Int64())
 				return false, nil
 			}
 		}

@@ -8,6 +8,7 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
@@ -29,10 +30,12 @@ import (
 )
 
 var (
-	testRhssoNamespace = "test-rhsso"
-	testRhssoRealm     = "test-realm"
-	testRhssoURL       = "https://test.rhsso.url"
-	nsPrefix           = "testing-namespaces-"
+	testRhssoNamespace         = "test-rhsso"
+	testRhssoRealm             = "test-realm"
+	testRhssoURL               = "https://test.rhsso.url"
+	nsPrefix                   = "testing-namespaces-"
+	testOONamespace            = "test-observability-operator"
+	testObservabilityNamespace = "test-observability"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{
@@ -40,7 +43,8 @@ var configManagerConfigMap = &corev1.ConfigMap{
 		Name: "integreatly-installation-config",
 	},
 	Data: map[string]string{
-		"rhsso": fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
+		"rhsso":         fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
+		"observability": fmt.Sprintf("NAMESPACE: %s\nNAMESPACE_PREFIX: %s\nOPERATOR_NAMESPACE: %s", testObservabilityNamespace, nsPrefix, testOONamespace),
 	},
 }
 
@@ -211,6 +215,20 @@ var installation = &integreatlyv1alpha1.RHMI{
 	Spec: integreatlyv1alpha1.RHMISpec{
 		MasterURL:        "https://console.apps.example.com",
 		RoutingSubdomain: "apps.example.com",
+	},
+}
+
+var smtpSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-smtp",
+		Namespace: "integreatly-operator-ns",
+	},
+	Data: map[string][]byte{
+		"host":     []byte("test"),
+		"password": []byte("test"),
+		"port":     []byte("test"),
+		"tls":      []byte("test"),
+		"username": []byte("test"),
 	},
 }
 
@@ -845,5 +863,150 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		clusterVersion,
 		rhssoPostgres,
 		ingressRouterService,
+		smtpSec,
+	}
+}
+func getValidInstallation(installationType integreatlyv1alpha1.InstallationType) *integreatlyv1alpha1.RHMI {
+	return &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "test-installation",
+			Namespace:  integreatlyOperatorNamespace,
+			Finalizers: []string{"finalizer.3scale.integreatly.org"},
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			MasterURL:        "https://console.apps.example.com",
+			RoutingSubdomain: "apps.example.com",
+			SMTPSecret:       "test-smtp",
+			Type:             string(installationType),
+		},
+	}
+}
+
+func getTestInstallation(installType string) *integreatlyv1alpha1.RHMI {
+	return &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "test",
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type: installType,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+		},
+	}
+}
+
+func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
+	return append(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace),
+		&v1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "backend",
+				Namespace: "3scale",
+				Labels: map[string]string{
+					"threescale_component": "backend",
+				},
+			},
+			Spec: v1.RouteSpec{
+				Host: "backend-3scale.apps",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apicast-staging",
+				Namespace: "3scale",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "apicast-production",
+				Namespace: "3scale",
+			},
+		},
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ratelimit",
+				Namespace: "marin3r",
+				UID:       "1",
+			},
+		},
+		&usersv1.User{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"tenant": "true",
+				},
+				Name: "test_user",
+			},
+		},
+	)
+}
+
+func getBasicConfigMoc() *config.ConfigReadWriterMock {
+	return &config.ConfigReadWriterMock{
+		ReadThreeScaleFunc: func() (*config.ThreeScale, error) {
+			return config.NewThreeScale(config.ProductConfig{
+				"NAMESPACE": "3scale",
+				"HOST":      "threescale.openshift-cluster.com",
+			}), nil
+		},
+		GetOperatorNamespaceFunc: func() string {
+			return integreatlyOperatorNamespace
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE": "observability",
+			}), nil
+		},
+		ReadRHSSOFunc: func() (*config.RHSSO, error) {
+			return config.NewRHSSO(config.ProductConfig{
+				"NAMESPACE": testRhssoNamespace,
+				"REALM":     "openshift",
+			}), nil
+		},
+		GetOauthClientsSecretNameFunc: func() string {
+			return "oauth-client-secrets"
+		},
+		ReadMarin3rFunc: func() (*config.Marin3r, error) {
+			return &config.Marin3r{
+				Config: config.ProductConfig{
+					"NAMESPACE": "marin3r",
+				},
+			}, nil
+		},
+		ReadMonitoringFunc: func() (*config.Monitoring, error) {
+			return config.NewMonitoring(config.ProductConfig{
+				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
+	}
+}
+
+func getTestBlobStorage() *crov1.BlobStorage {
+	return &crov1.BlobStorage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "threescale-blobstorage-rhmi",
+			Namespace: "test",
+		},
+		Status: types.ResourceTypeStatus{
+			Phase: types.PhaseComplete,
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+		Spec: types.ResourceTypeSpec{
+			SecretRef: &types.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
 	}
 }
