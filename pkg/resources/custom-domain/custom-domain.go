@@ -84,11 +84,11 @@ func HasValidCustomDomainCR(ctx context.Context, serverClient client.Client, dom
 func UpdateErrorAndCustomDomainMetric(installation *v1alpha1.RHMI, active bool, err error) {
 	if err != nil {
 		installation.Status.CustomDomain.Error = err.Error()
-		metrics.SetCustomDomain(active, nil, 1)
+		metrics.SetCustomDomain(active, 1)
 		return
 	}
 	installation.Status.CustomDomain.Error = ""
-	metrics.SetCustomDomain(active, nil, 0)
+	metrics.SetCustomDomain(active, 0)
 }
 
 func GetIngressRouterService(ctx context.Context, serverClient client.Client) (*v1.Service, error) {

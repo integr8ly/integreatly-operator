@@ -147,11 +147,18 @@ var (
 		prometheus.GaugeOpts{
 			Name: "rhoam_custom_domain",
 			Help: "Custom Domain Status. " +
-				"active - indicating whether RHOAM was installed with custom domain enabled " +
+				"active - indicating whether RHOAM was installed with custom domain enabled",
+		},
+		[]string{LabelActive},
+	)
+
+	ThreeScalePortals = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "threescale_portals",
+			Help: "ThreeScale portals availability. " +
 				"Labels indicating portal availability: 1) system-master 2) system-developer 3) system-provider",
 		},
 		[]string{
-			LabelActive,
 			LabelSystemMaster,
 			LabelSystemDeveloper,
 			LabelSystemProvider,
@@ -205,9 +212,9 @@ const (
 )
 
 type PortalInfo struct {
-	Host       string
-	PortalName string
-	Status     int
+	Host        string
+	PortalName  string
+	IsAvailable bool
 }
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -313,18 +320,23 @@ func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l
 	}
 }
 
-func SetCustomDomain(active bool, portals map[string]PortalInfo, value float64) {
+func SetCustomDomain(active bool, value float64) {
+	labels := prometheus.Labels{LabelActive: strconv.FormatBool(active)}
+	CustomDomain.Reset()
+	CustomDomain.With(labels).Set(value)
+}
+
+func SetThreeScalePortals(portals map[string]PortalInfo, value float64) {
 	labels := prometheus.Labels{
-		LabelActive:          strconv.FormatBool(active),
 		LabelSystemMaster:    "false",
 		LabelSystemDeveloper: "false",
 		LabelSystemProvider:  "false",
 	}
 	if portals != nil {
 		for key, portal := range portals {
-			labels[key] = strconv.FormatBool(portal.Status == http.StatusOK)
+			labels[key] = strconv.FormatBool(portal.IsAvailable)
 		}
 	}
-	CustomDomain.Reset()
-	CustomDomain.With(labels).Set(value)
+	ThreeScalePortals.Reset()
+	ThreeScalePortals.With(labels).Set(value)
 }

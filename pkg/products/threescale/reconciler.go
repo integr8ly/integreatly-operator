@@ -235,11 +235,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
 		r.log.Error(errorMessage, err)
-		if customDomainActive {
-			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
-		} else {
-			metrics.SetCustomDomain(customDomainActive, nil, 0)
-		}
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 		events.HandleError(r.recorder, installation, phase, errorMessage, err)
 		return phase, err
 	}
@@ -249,11 +245,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			errorMessage := "finding CustomDomain CR failed"
 			r.log.Error(errorMessage, err)
-			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
 			events.HandleError(r.recorder, installation, phase, errorMessage, err)
+			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 			return phase, err
 		}
-		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, true, err)
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -3312,7 +3308,6 @@ func (r *Reconciler) useCustomDomain() bool {
 }
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
-	customDomainActive := r.useCustomDomain()
 	format := "failed to retrieve %s 3scale route"
 	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
 	if err != nil {
@@ -3382,7 +3377,7 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 			"Portal available": portal.IsAvailable,
 		})
 	}
-	metrics.SetCustomDomain(customDomainActive, portals, hasUnavailablePortal)
+	metrics.SetThreeScalePortals(portals, hasUnavailablePortal)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
