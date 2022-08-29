@@ -232,11 +232,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
 		r.log.Error(errorMessage, err)
-		if customDomainActive {
-			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
-		} else {
-			metrics.SetCustomDomain(customDomainActive, nil, 0)
-		}
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 		events.HandleError(r.recorder, installation, phase, errorMessage, err)
 		return phase, err
 	}
@@ -246,11 +242,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			errorMessage := "finding CustomDomain CR failed"
 			r.log.Error(errorMessage, err)
-			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, false, err)
 			events.HandleError(r.recorder, installation, phase, errorMessage, err)
+			customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 			return phase, err
 		}
-		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, true, err)
+		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
@@ -3279,7 +3275,6 @@ func (r *Reconciler) useCustomDomain() bool {
 }
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
-	customDomainActive := r.useCustomDomain()
 	format := "failed to retrieve %s 3scale route"
 	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
 	if err != nil {
@@ -3331,20 +3326,45 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to ping %v 3scale portal (%v): %v", portal.PortalName, portal.Host, err)
 		}
-		status := res.StatusCode
-		portal.Status = status
-		portals[key] = portal
-		if status != http.StatusOK {
-			hasUnavailablePortal = 1
+
+		ok := true
+		statusCode := http.StatusOK
+		if res.StatusCode != http.StatusOK {
+			ok, statusCode = checkRedirects(portal.Host, "/p/login", res, http.StatusFound)
+			if !ok {
+				hasUnavailablePortal = 1
+			}
 		}
+		portal.IsAvailable = ok
+		portals[key] = portal
 		r.log.Infof("pinged 3scale portal", map[string]interface{}{
-			"name":   portal.PortalName,
-			"host":   portal.Host,
-			"status": portal.Status,
+			"Portal":           portal.PortalName,
+			"Host":             portal.Host,
+			"Status Code":      statusCode,
+			"Portal available": portal.IsAvailable,
 		})
 	}
-	metrics.SetCustomDomain(customDomainActive, portals, hasUnavailablePortal)
+	metrics.SetThreeScalePortals(portals, hasUnavailablePortal)
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func checkRedirects(host string, path string, res *http.Response, statusCode int) (bool, int) {
+
+	if res == nil {
+		return false, 000
+	}
+
+	if res.StatusCode == statusCode {
+		if res.Request.URL.Host == host && res.Request.URL.Path == path {
+			return true, res.StatusCode
+		}
+	}
+
+	if res.Request.Response != nil {
+		return checkRedirects(host, path, res.Request.Response, statusCode)
+	}
+
+	return false, 000
 }
 
 func (r *Reconciler) getKeycloakUserFromAccount(client k8sclient.Client, accountName string) (*keycloak.KeycloakUser, error) {
