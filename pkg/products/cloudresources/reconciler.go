@@ -170,7 +170,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if isSTS {
-		phase, err = sts.CreateSTSARNSecret(ctx, client, r.installation.Namespace, operatorNamespace)
+		phase, err = r.copySTSSecret(ctx, client, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to create STS secret", err)
 			return phase, err
@@ -615,4 +615,14 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	cfgMap.Data["_network"] = string(networkJSON)
 
 	return client.Patch(ctx, cfgMap, k8sclient.Merge)
+}
+
+// createSTSARNSecret create the STS arn secret - should be already validated in preflight checks
+func (r *Reconciler) copySTSSecret(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	err := resources.CopySecret(ctx, client, sts.CredsSecretName, operatorNamespace, sts.CredsSecretName, r.Config.GetOperatorNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to copy secret to rhoam-operator namespace: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -1095,7 +1095,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	}
 	if isSTS {
 		log.Info("validation of STS role ARN parameter ")
-		validArn, err := sts.ValidateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
+		validArn, err := checkStsCredentialsPresent(r.Client, installation.Spec.NamespacePrefix+"-cloud-resources-operator")
 		if err != nil || !validArn {
 			log.Error("STS role ARN parameter pattern validation failed", err)
 			return result, err
@@ -1682,6 +1682,18 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
+}
+
+// function is checking if STS secret exists
+func checkStsCredentialsPresent(client k8sclient.Client, namespace string) (bool, error) {
+	stsCredentials := &corev1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: sts.CredsSecretName}, stsCredentials)
+
+	if err != nil {
+		return false, fmt.Errorf("failed to get %s secret", sts.CredsSecretName)
+	}
+
+	return true, nil
 }
 
 func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics, warning resources.AlertMetrics) {

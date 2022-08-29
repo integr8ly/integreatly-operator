@@ -117,6 +117,16 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 	}
 }
 
+func buildAddonSecret(namespace string, secretData map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "addon-managed-api-service-parameters",
+			Namespace: namespace,
+		},
+		Data: secretData,
+	}
+}
+
 func TestFormatAlerts(t *testing.T) {
 	input := []prometheusv1.Alert{
 		{
@@ -424,5 +434,52 @@ func getCROConfigMap() *corev1.ConfigMap {
 				deletionFinalizer,
 			},
 		},
+	}
+}
+
+func Test_checkStsCredentialsPresent(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+
+	type args struct {
+		client    client.Client
+		namespace string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "Test sts-credentials exist",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "sts-credentials", Namespace: "test"}}),
+				namespace: "test",
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "Test sts-credentials do not exist",
+			args: args{
+				client:    fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "sts-credentials", Namespace: "other"}}),
+				namespace: "test",
+			},
+			want:    false,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := checkStsCredentialsPresent(tt.args.client, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("checkStsCredentialsPresent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("checkStsCredentialsPresent() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
