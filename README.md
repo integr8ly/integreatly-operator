@@ -41,7 +41,8 @@ The operator installs the following products:
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/latest/cli_reference/openshift_cli/getting-started-cli.html) version v4.6+
 - [yq](https://github.com/mikefarah/yq) version v4+
-- [jq](https://github.com/stedolan/jq)   
+- [jq](https://github.com/stedolan/jq)
+- [promtool](https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules)
 - Access to an Openshift v4.6.0+ cluster
 - A user with administrative privileges in the OpenShift cluster
 

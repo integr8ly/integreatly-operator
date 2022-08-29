@@ -591,3 +591,11 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: mkdocs/serve
 mkdocs/serve:
 	mkdocs serve
+
+.PHONY: test/unit/prometheus
+test/unit/prometheus:
+	@find prometheus-unit-testing/tests -type f | xargs promtool test rules
+
+.PHONY: test/unit/prometheus/single
+test/unit/prometheus/single:
+	@promtool test rules $(PROM_TEST_RULE_FILE)

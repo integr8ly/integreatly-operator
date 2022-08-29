@@ -1,0 +1,201 @@
+rule_files:
+  - ../rules/rhoam_general.yml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: kube_endpoint_address_available
+        values: "stale _x10 0 stale _x10 0+0x84"
+      - series: kube_pod_container_status_ready
+        values: "stale _x10 0+0x12 stale _x10 0+0x72"
+      - series: kube_pod_labels
+        values: "stale _x10 0+0x24 stale _x10 0+0x60"
+      - series: kube_pod_status_phase
+        values: "stale _x10 0+0x36 stale _x10 0+0x48"
+      - series: kube_pod_status_ready
+        values: "stale _x10 0+0x48 stale _x10 0+0x36"
+      - series: kube_secret_info
+        values: "stale _x10 0+0x60 stale _x10 0+0x24"
+      - series: rhoam_version
+        values: "stale _x10 0+0x72 stale _x10 0+0x12"
+      - series: threescale_portals
+        values: "stale _x10 0+0x84 stale _x10 0"
+    alert_rule_test:
+      # [-] kube_endpoint_address_available
+      # [-] kube_pod_container_status_ready
+      # [-] kube_pod_labels
+      # [-] kube_pod_status_phase
+      # [-] kube_pod_status_ready
+      # [-] kube_secret_info
+      # [-] rhoam_version
+      # [-] threescale_portals
+      # alert expected to fire
+      - eval_time: 10m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 11m
+        alertname: CriticalMetricsMissing
+        exp_alerts: [ ]
+
+      # [-] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert expected to fire
+      - eval_time: 22m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [-] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 34m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [-] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 46m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [-] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 58m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [-] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 70m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [-] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 82m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [-] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 94m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [-] threescale_portals
+      # alert not expected to fire
+      - eval_time: 106m
+        alertname: CriticalMetricsMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              message: one or more critical metrics have been missing for 10+ minutes
+
+      # [+] kube_endpoint_address_available
+      # [+] kube_pod_container_status_ready
+      # [+] kube_pod_labels
+      # [+] kube_pod_status_phase
+      # [+] kube_pod_status_ready
+      # [+] kube_secret_info
+      # [+] rhoam_version
+      # [+] threescale_portals
+      # alert not expected to fire
+      - eval_time: 107m
+        alertname: CriticalMetricsMissing
+        exp_alerts: [ ]
