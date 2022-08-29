@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -1696,21 +1695,27 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 // 3.	parameter exists and value is empty
 // 4.	parameter does not exists
 func validateAddOnStsRoleArnParameterPattern(client k8sclient.Client, namespace string) (bool, error) {
-	stsRoleArn, err := sts.GetSTSRoleARN(context.TODO(), client, namespace)
-	if err != nil {
-		return false, fmt.Errorf("failed while retrieving addon parameter: %v", err)
-	}
+	stsCredentials := &corev1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "cloud-resources-aws-credentials"}, stsCredentials)
 
-	awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
-	r, err := regexp.Compile(awsArnPattern)
 	if err != nil {
-		return false, fmt.Errorf("regexp Compile error: %v", err)
+		return false, fmt.Errorf("failed to get cloud-resources-aws-credentials secret")
 	}
+	//stsRoleArn, err := sts.GetSTSRoleARN(context.TODO(), client, namespace)
+	//if err != nil {
+	//	return false, fmt.Errorf("failed while retrieving addon parameter: %v", err)
+	//}
 
-	// Not a regex match
-	if !r.MatchString(stsRoleArn) {
-		return false, fmt.Errorf("AWS STS role ARN parameter validation failed - parameter pattern is not matching to AWS ARN standard")
-	}
+	//awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
+	//r, err := regexp.Compile(awsArnPattern)
+	//if err != nil {
+	//	return false, fmt.Errorf("regexp Compile error: %v", err)
+	//}
+	//
+	//// Not a regex match
+	//if !r.MatchString(stsRoleArn) {
+	//	return false, fmt.Errorf("AWS STS role ARN parameter validation failed - parameter pattern is not matching to AWS ARN standard")
+	//}
 
 	return true, nil
 }
