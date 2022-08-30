@@ -167,12 +167,23 @@ metadata:
           "spec": {
             "name": "OperatedProduct 1"
           }
+        },
+        {
+          "apiVersion": "capabilities.3scale.net/v1beta1",
+          "kind": "ProxyConfigPromote",
+          "metadata": {
+            "name": "proxyconfigpromote-sample"
+          },
+          "spec": {
+            "ProductCRName": "product1-sample",
+            "Production": true
+          }
         }
       ]
     capabilities: Deep Insights
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_c96454a4035c3f861ce4c8bbf61ea1f6cf683d81d7f6cd79c0288514bf5e11a2
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_cda53d3334df0d9996e41e9ed5b27f1e6b80319407739a1f9d86715f7ca36caf
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
@@ -272,6 +283,11 @@ spec:
       kind: Product
       name: products.capabilities.3scale.net
       version: v1beta1
+    - description: ProxyConfigPromote is the Schema for the proxyconfigpromotes API
+      displayName: Proxy Config Promote
+      kind: ProxyConfigPromote
+      name: proxyconfigpromotes.capabilities.3scale.net
+      version: v1beta1
     - description: Tenant is the Schema for the tenants API
       displayName: Tenant
       kind: Tenant
@@ -307,7 +323,7 @@ spec:
 
     ### License
     3scale Operator is licensed under the [Apache 2.0 license](https://github.com/3scale/3scale-operator/blob/master/LICENSE)
-  displayName: Red Hat Integration - 3scale
+  displayName: Red Hat Integration - 3scale alpha
   icon:
   - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+
     mediatype: image/svg+xml
@@ -315,6 +331,34 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - proxyconfigpromotes
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - proxyconfigpromotes/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups:
           - console.openshift.io
           resources:
@@ -341,9 +385,9 @@ spec:
                 com.company: Red_Hat
                 control-plane: controller-manager
                 rht.comp: 3scale
-                rht.comp_ver: "2.12"
+                rht.comp_ver: "2.13"
                 rht.prod_name: Red_Hat_Integration
-                rht.prod_ver: 2021.Q4
+                rht.prod_ver: master
                 rht.subcomp: 3scale_operator
                 rht.subcomp_t: infrastructure
             spec:
@@ -359,15 +403,15 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_BACKEND
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_ce4b851a9fed989d6a25c5422c711913ac35d7ecf9863aeddadd8ec383d17c4d
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_9f42a1b829701f6479184bde798b03e08f47b39252e0b11bf2f1e08f53ec3e48
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_ca430ba66562d3844cf2380882146a65f362acdaf3923b94ae4a6bb6abdbfe6d
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_885868f9f380927419208e6b31e7b35be2b9624cc549fb869c78146e423e13ee
                 - name: RELATED_IMAGE_SYSTEM
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_74a3401f2a98ceb432ad850897c74abfc0077bd8e43adbd6e4e7dff5826f5a3c
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_da8aeadec0cdd7c8ef72831ef661b59a35ef66477576570b713092fafe212557
                 - name: RELATED_IMAGE_ZYNC
-                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_729398c9e821a2a14a942d4699fc1ec76473c0953cb6f0cf1ddf1a0abdf9e5cb
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel8_01005d06d1490e18655355595919037129b173c7e8238850af9e26184531a57c
                 - name: RELATED_IMAGE_SYSTEM_MEMCACHED
-                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_8bd2d8245d279cb57376b36b2df806cbd856632ec3a52285e06c736e72d3c2a3
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_2bf8fe1450f945172d53bf63697a090c700e13adf74e5fb12ed7d194629a41cf
                 - name: RELATED_IMAGE_BACKEND_REDIS
                   value: quay.io/integreatly/delorean:rhscl-redis-5-rhel7_91781cf512d695339f5a92da8bfae40b42a5585d3b5627d30e6fea08afc932a4
                 - name: RELATED_IMAGE_SYSTEM_REDIS
@@ -380,7 +424,7 @@ spec:
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_b602c0d632050a4b355c4e21794d9bdb9d47f03d155234cadd8d7d2437ca3d05
                 - name: RELATED_IMAGE_OC_CLI
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_c96454a4035c3f861ce4c8bbf61ea1f6cf683d81d7f6cd79c0288514bf5e11a2
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_cda53d3334df0d9996e41e9ed5b27f1e6b80319407739a1f9d86715f7ca36caf
                 name: manager
                 ports:
                 - containerPort: 8080
@@ -651,6 +695,18 @@ spec:
         - apiGroups:
           - capabilities.3scale.net
           resources:
+          - developeraccounts/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
           - developeraccounts/status
           verbs:
           - get
@@ -660,6 +716,18 @@ spec:
           - capabilities.3scale.net
           resources:
           - developerusers
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - capabilities.3scale.net
+          resources:
+          - developerusers/finalizers
           verbs:
           - create
           - delete
@@ -920,23 +988,23 @@ spec:
     name: Miguel Soriano
   - email: eastizle+3scaleoperator@redhat.com
     name: Eguzki Astiz
-  maturity: stable
+  maturity: alpha
   provider:
-    name: Red Hat
+    name: Red Hat alpha
   relatedImages:
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:c96454a4035c3f861ce4c8bbf61ea1f6cf683d81d7f6cd79c0288514bf5e11a2
-    name: 3scale-rhel7-operator-c96454a4035c3f861ce4c8bbf61ea1f6cf683d81d7f6cd79c0288514bf5e11a2-annotation
-  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:c96454a4035c3f861ce4c8bbf61ea1f6cf683d81d7f6cd79c0288514bf5e11a2
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:cda53d3334df0d9996e41e9ed5b27f1e6b80319407739a1f9d86715f7ca36caf
+    name: 3scale-rhel7-operator-cda53d3334df0d9996e41e9ed5b27f1e6b80319407739a1f9d86715f7ca36caf-annotation
+  - image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:cda53d3334df0d9996e41e9ed5b27f1e6b80319407739a1f9d86715f7ca36caf
     name: manager
-  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:ce4b851a9fed989d6a25c5422c711913ac35d7ecf9863aeddadd8ec383d17c4d
+  - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:9f42a1b829701f6479184bde798b03e08f47b39252e0b11bf2f1e08f53ec3e48
     name: backend
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:ca430ba66562d3844cf2380882146a65f362acdaf3923b94ae4a6bb6abdbfe6d
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:885868f9f380927419208e6b31e7b35be2b9624cc549fb869c78146e423e13ee
     name: apicast
-  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:74a3401f2a98ceb432ad850897c74abfc0077bd8e43adbd6e4e7dff5826f5a3c
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:da8aeadec0cdd7c8ef72831ef661b59a35ef66477576570b713092fafe212557
     name: system
-  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:729398c9e821a2a14a942d4699fc1ec76473c0953cb6f0cf1ddf1a0abdf9e5cb
+  - image: registry.redhat.io/3scale-amp2/zync-rhel8@sha256:01005d06d1490e18655355595919037129b173c7e8238850af9e26184531a57c
     name: zync
-  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:8bd2d8245d279cb57376b36b2df806cbd856632ec3a52285e06c736e72d3c2a3
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2bf8fe1450f945172d53bf63697a090c700e13adf74e5fb12ed7d194629a41cf
     name: system_memcached
   - image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:91781cf512d695339f5a92da8bfae40b42a5585d3b5627d30e6fea08afc932a4
     name: backend_redis
@@ -950,5 +1018,5 @@ spec:
     name: zync_postgresql
   - image: registry.redhat.io/openshift4/ose-cli@sha256:04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
     name: oc_cli
-  replaces: 3scale-operator.v0.8.4
+  replaces: 3scale-operator.v0.8.3
   version: 0.9.0
