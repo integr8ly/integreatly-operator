@@ -59,7 +59,7 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=json
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 
-5. Update the quota for a cluster in OCM to e.g. `5 million` and wait for an operator to finish quota configuration
+5. Update the quota for a cluster in OCM to e.g. `5 million` (1 = 100k, so in this case we assign 50 to the variable) and wait for an operator to finish quota configuration
 
 5.1 Login to OCM with provided token
 
@@ -76,7 +76,7 @@ CLUSTER_NAME="<CLUSTER_NAME>"
 5.3 Get cluster id and assign it to a variable
 
 ```bash
-CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+CLUSTER_ID=$(ocm get clusters --parameter search="name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
 ```
 
 5.4 Set quota value
@@ -160,4 +160,6 @@ echo rate limit replicas: $ratelimit_replicas
 echo rate limit resources: $ratelimit_resources
 
 echo requests per limit value: $ratelimit_value
+
+
 ```
