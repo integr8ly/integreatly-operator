@@ -25,10 +25,6 @@ require (
 	github.com/grafana-operator/grafana-operator/v4 v4.2.0
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/cloud-resource-operator v0.33.0
-	github.com/integr8ly/keycloak-client v0.1.7
-	github.com/keycloak/keycloak-operator v0.0.0-20220328072508-48e3df8ad956
-	github.com/integr8ly/application-monitoring-operator v1.6.0
 	github.com/integr8ly/cloud-resource-operator v0.41.0
 	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/integr8ly/keycloak-client v0.1.8
@@ -49,14 +45,14 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/term v0.0.0-20210503060354-a79de5458b56
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.2
-	k8s.io/apiextensions-apiserver v0.22.2
-	k8s.io/apimachinery v0.22.2
+	k8s.io/api v0.23.0
+	k8s.io/apiextensions-apiserver v0.23.0
+	k8s.io/apimachinery v0.23.0
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
+	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/yaml v1.3.0
@@ -124,7 +120,7 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
@@ -148,7 +144,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
