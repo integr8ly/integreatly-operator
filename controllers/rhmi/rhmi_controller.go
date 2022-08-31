@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 
 	"github.com/go-openapi/strfmt"
@@ -1083,20 +1082,20 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		}
 	}
 
-	log.Info("preflightChecks: checking if STS mode")
-	isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
-	if err != nil {
-		log.Error("Error checking STS mode", err)
-		return result, err
-	}
-	if isSTS {
-		log.Info("validation of STS role ARN parameter ")
-		validArn, err := validateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
-		if err != nil || !validArn {
-			log.Error("STS role ARN parameter pattern validation failed", err)
-			return result, err
-		}
-	}
+	//log.Info("preflightChecks: checking if STS mode")
+	//isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
+	//if err != nil {
+	//	log.Error("Error checking STS mode", err)
+	//	return result, err
+	//}
+	//if isSTS {
+	//	log.Info("validation of STS role ARN parameter ")
+	//	validArn, err := validateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
+	//	if err != nil || !validArn {
+	//		log.Error("STS role ARN parameter pattern validation failed", err)
+	//		return result, err
+	//	}
+	//}
 
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"

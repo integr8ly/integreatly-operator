@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -641,10 +642,32 @@ func (r *Reconciler) createSTSARNSecret(ctx context.Context, client k8sclient.Cl
 	//	return nil
 	//})
 
-	err := resources.CopySecret(ctx, client, "cloud-resources-aws-credentials", "redhat-rhoam-operator", sts.CredsSecretName, operatorNamespace)
+	//err := resources.CopySecret(ctx, client, "cloud-resources-aws-credentials", "redhat-rhoam-operator", sts.CredsSecretName, operatorNamespace)
+	//if err != nil {
+	//	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update CRO credentials Secret. failed to copy secret from rhoam-operator namespace: %w", err)
+	//}
+
+	stsCredentials := &corev1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Config.GetOperatorNamespace(), Name: "cloud-resources-aws-credentials"}, stsCredentials)
+
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update CRO credentials Secret. failed to copy secret from rhoam-operator namespace: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
+	// create CRO credentials secret
+	credSec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      sts.CredsSecretName,
+			Namespace: operatorNamespace,
+		},
+		Data: map[string][]byte{},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, credSec, func() error {
+		credSec.Data[sts.CredsSecretRoleARNKeyName] = stsCredentials.Data["role_arn"]
+		credSec.Data[sts.CredsSecretTokenPathKeyName] = []byte("/var/run/secrets/openshift/serviceaccount/token")
+		return nil
+	})
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
