@@ -9,7 +9,6 @@ COPY go.sum go.sum
 COPY vendor ./vendor
 COPY make ./make
 COPY apis/ apis/
-COPY apis-products/ apis-products/
 COPY controllers/ controllers/
 COPY pkg ./pkg
 COPY test ./test

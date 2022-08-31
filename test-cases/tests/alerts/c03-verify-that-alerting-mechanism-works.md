@@ -37,12 +37,13 @@ watch "oc scale deployment --replicas=0 keycloak-operator -n redhat-rhoam-user-s
 https://qaprodauth.cloud.redhat.com/beta/openshift/details/<cluster_id>
 
 2. Check email, pagerduty and DMS configuration in alertmanager is as expected
+
    1. Open Alertmanager console
    2. Open `Status` page
       1. Email config should match values in `redhat-rhmi-smtp` secret in `redhat-rhmi-operator` namespace. Use this cmd to get all secret values `for i in $(oc -n redhat-rhoam-operator get secret redhat-rhmi-smtp -o json | jq '.data[]' -r);do echo $i | base64 --decode && printf "\n"; done`
       2. Pagerduty config should match values in `redhat-rhoam-pagerduty` secret in `redhat-rhoam-operator` namespace. Use this cmd to get all secret values `for i in $(oc -n redhat-rhoam-operator get secret redhat-rhmi-pagerduty -o json | jq '.data[]' -r);do echo $i | base64 --decode && printf "\n"; done`
       3. deadmansswitch config should match values in `redhat-rhoam-deadmanssnitch` secret in `redhat-rhoam-operator` namespace. use this cmd to get all secret values `for i in $(oc -n redhat-rhoam-operator get secret redhat-rhoam-deadmanssnitch -o json | jq '.data[]' -r);do echo $i | base64 --decode && printf "\n"; done;`
-      4. 2 values are shown as `<secret>` in the Alertmanager UI, these, and all of above, can can be verified in the alertmanager config secret instead using this cmd. `oc -n redhat-rhmi-middleware-monitoring-operator get secret alertmanager-application-monitoring -o json | jq '.data["alertmanager.yaml"]' -r | base64 --decode | grep 'service_key\|smtp\|url'`  # (FIXME This next step is looking in the wrong names. Should be using OO)
+      4. 2 values are shown as `<secret>` in the Alertmanager UI, these, and all of above, can can be verified in the alertmanager config secret instead using this cmd. `oc -n redhat-rhmi-middleware-monitoring-operator get secret alertmanager-application-monitoring -o json | jq '.data["alertmanager.yaml"]' -r | base64 --decode | grep 'service_key\|smtp\|url'` # (FIXME This next step is looking in the wrong names. Should be using OO)
 
 3. Run the following command to scale the keycloak operator back up:
 

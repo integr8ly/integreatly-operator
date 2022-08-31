@@ -1,7 +1,6 @@
 package threescale
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -189,18 +188,16 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		{
 			name: "Test successful installation without errors",
 			fields: fields{
-				sigsClient:       getSigClient(obj, scheme),
-			FakeConfig:           basicConfigMock(),
+				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
 				mpm:              marketplace.NewManager(),
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
 				threeScaleClient: getThreeScaleClient(),
-			FakeProductConfig:    productConfigMock(),
 				fakeConfig:       getBasicConfigMoc(),
 			},
 			args: args{
-				installation:  getValidInstallation(integreatlyv1alpha1.InstallationTypeManaged),
+				installation:  getValidInstallation(integreatlyv1alpha1.InstallationTypeManagedApi),
 				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
@@ -3051,4 +3048,16 @@ func mockHTTP(ip string) (*httptest.Server, error) {
 	srv.Listener = listener
 	srv.StartTLS()
 	return srv, nil
+}
+
+func productConfigMock() *quota.ProductConfigMock {
+	return &quota.ProductConfigMock{
+		ConfigureFunc: func(obj metav1.Object) error {
+			return nil
+		},
+		GetActiveQuotaFunc:     nil,
+		GetRateLimitConfigFunc: nil,
+		GetReplicasFunc:        nil,
+		GetResourceConfigFunc:  nil,
+	}
 }

@@ -110,17 +110,17 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		//Observability Operator
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
-	Expect(err).NotTo(HaveOccurred())
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
+		Expect(err).NotTo(HaveOccurred())
 
-	// wait for keycloak-operator to deploy
-	err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "rhsso-operator")
-	Expect(err).NotTo(HaveOccurred())
+		// wait for keycloak-operator to deploy
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "rhsso-operator")
+		Expect(err).NotTo(HaveOccurred())
 
 		//Product Stage - verify operators deploy
-	products := map[string]string{
-		"3scale":   "threescale-operator-controller-manager-v2",
-		"user-sso": "rhsso-operator",
+		products := map[string]string{
+			"3scale":   "threescale-operator-controller-manager-v2",
+			"user-sso": "rhsso-operator",
 		}
 		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
 			products = map[string]string{
@@ -133,11 +133,9 @@ var _ = BeforeSuite(func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-
-
-	// wait for installation phase to complete (40 minutes timeout)
-	err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
-	Expect(err).NotTo(HaveOccurred())
+		// wait for installation phase to complete (40 minutes timeout)
+		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
+		Expect(err).NotTo(HaveOccurred())
 		// +kubebuilder:scaffold:scheme
 
 		close(done)

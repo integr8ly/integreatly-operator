@@ -124,7 +124,7 @@ var (
 				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
 	}
 
