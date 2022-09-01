@@ -449,6 +449,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	alertsReconciler, err = r.newAlertReconciler(r.log, r.installation.Spec.Type, ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
+		return phase, err
+	}
+
 	if !integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		phase, err = r.reconcileConsoleLink(ctx, serverClient)
 		r.log.Infof("reconcileConsoleLink", l.Fields{"phase": phase})
