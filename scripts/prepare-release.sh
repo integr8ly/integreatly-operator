@@ -122,7 +122,6 @@ set_related_images() {
   exclusionList=(
     "oc_cli"
     "zync_postgresql"
-    "system_postgresql"
     "system_mysql"
     "backend_redis"
     "system_redis"

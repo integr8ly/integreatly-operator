@@ -2,7 +2,7 @@
 # name - the name of the components
 # url - url to quay / redhat registry repo of the component
 additionalImages:
-  - name: 3scale-openshift-servce-mesh
+  - name: 3scale-openshift-service-mesh
     url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.1.2-2"
   - name: marin3r-limitador
     url: "quay.io/3scale/limitador:v0.5.1"
@@ -14,4 +14,15 @@ additionalImages:
     url: "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"
   - name: rhsso-operator
     url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f69187d16e22f42173b99a1c4f0ce6cd212260da263b4a7a1eb08e5822cf4f66"
-
+  - name: observability-prometheus-alertmanager
+    url: quay.io/prometheus/alertmanager:v0.22.2
+  - name: observability-openshift-oauth-proxy
+    url: quay.io/openshift/origin-oauth-proxy:4.8
+  - name: observability-grafana-operator
+    url: quay.io/rhoas/grafana-operator:v3.10.5
+  - name: observability-prometheus-index
+    url: quay.io/integreatly/custom-prometheus-index:1.0.0
+  - name: observability-prometheus
+    url: quay.io/prometheus/prometheus:v2.29.2
+  - name: observability-prometheus-blackbox
+    url: quay.io/prometheus/blackbox-exporter:v0.19.0
