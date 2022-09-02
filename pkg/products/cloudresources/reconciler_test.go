@@ -3,6 +3,7 @@ package cloudresources
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -247,12 +248,11 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func TestReconciler_createSTSArnSecret(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatalf("Error obtaining scheme")
-	}
-
+func TestReconciler_copySTSSecret(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	fakeconfig := make(map[string]string)
+	fakeconfig["OPERATOR_NAMESPACE"] = "rhoam-operator-test"
 	type fields struct {
 		Config        *config.CloudResources
 		ConfigManager config.ConfigReadWriter
@@ -275,39 +275,52 @@ func TestReconciler_createSTSArnSecret(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test: phase failed on error getting role arn",
+			name: "copy sts-credentials secret completed",
 			fields: fields{
-				log: getLogger(),
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: metav1.ObjectMeta{Namespace: defaultInstallationNamespace},
+				Config: &config.CloudResources{
+					Config: fakeconfig,
 				},
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
 			},
 			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+				ctx: context.TODO(),
+				client: fakeclient.NewFakeClientWithScheme(
+					scheme,
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "cro-operator-test"}},
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "rhoam-operator-test"}},
+				),
+				operatorNamespace: "cro-operator-test",
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "copy sts-credentials secret did not complete",
+			fields: fields{
+				Config:        &config.CloudResources{},
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: fakeclient.NewFakeClientWithScheme(
+					scheme,
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "cro-operator-test"}},
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}},
+				),
+				operatorNamespace: "cro-operator-test",
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
-		},
-		{
-			name: "test: phase complete on creating secret",
-			fields: fields{
-				log: getLogger(),
-				installation: &integreatlyv1alpha1.RHMI{
-					ObjectMeta: metav1.ObjectMeta{Namespace: defaultInstallationNamespace},
-				},
-			},
-			args: args{
-				client: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addon-managed-api-service-parameters",
-						Namespace: defaultInstallationNamespace,
-					},
-					Data: map[string][]byte{
-						sts.RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345"),
-					},
-				}),
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
 	for _, tt := range tests {
@@ -321,13 +334,13 @@ func TestReconciler_createSTSArnSecret(t *testing.T) {
 				Reconciler:    tt.fields.Reconciler,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.createSTSARNSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
+			got, err := r.copySTSSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("createSTSARNSecret() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("copySTSSecret() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("createSTSARNSecret() got = %v, want %v", got, tt.want)
+				t.Errorf("copySTSSecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
