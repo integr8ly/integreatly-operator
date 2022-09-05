@@ -454,9 +454,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-			// remove the code for next release
-			removeOldStages(installation)
-			// end of removal
 			installation.Status.Quota = installationQuota.GetName()
 			installation.Status.ToQuota = ""
 		}
@@ -1696,11 +1693,4 @@ func formatAlerts(alerts []prometheusv1.Alert) resources.AlertMetrics {
 	}
 
 	return alertMetrics
-}
-
-func removeOldStages(installation *rhmiv1alpha1.RHMI) {
-	delete(installation.Status.Stages, rhmiv1alpha1.CloudResourcesStage)
-	delete(installation.Status.Stages, rhmiv1alpha1.ObservabilityStage)
-	delete(installation.Status.Stages, rhmiv1alpha1.AuthenticationStage)
-	delete(installation.Status.Stages, rhmiv1alpha1.ProductsStage)
 }
