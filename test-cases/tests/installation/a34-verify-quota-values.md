@@ -121,7 +121,7 @@ CLUSTER_NAME="<CLUSTER_NAME>"
 10. Get cluster id and assign it to a variable
 
 ```bash
-CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
+CLUSTER_ID=$(ocm get clusters --parameter search="name like '%$CLUSTER_NAME%'" | jq -r '.items[].id')
 ```
 
 11. Set quota value
