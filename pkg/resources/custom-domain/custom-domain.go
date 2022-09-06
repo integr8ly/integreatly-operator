@@ -22,14 +22,13 @@ func GetDomain(ctx context.Context, serverClient client.Client, installation *v1
 		return false, "", fmt.Errorf("nil pointer passed in for installation parameter")
 	}
 
-	parameter, ok, err := addon.GetParameter(ctx, serverClient, installation.Namespace, CustomDomainDomain)
+	parameter, ok, err := addon.GetStringParameter(ctx, serverClient, installation.Namespace, CustomDomainDomain)
 
 	if err != nil {
 		return false, "", err
 	}
 
 	if ok {
-		parameter := string(parameter)
 		parameter = strings.TrimSpace(parameter)
 		valid := IsValidDomain(parameter)
 
@@ -37,6 +36,7 @@ func GetDomain(ctx context.Context, serverClient client.Client, installation *v1
 			return true, parameter, nil
 		}
 
+		// Not returning false here to allow monitoring stack to install - will fail on 3scale installation stage
 		return true, parameter, fmt.Errorf("not valid domain \"%v\"", parameter)
 	}
 

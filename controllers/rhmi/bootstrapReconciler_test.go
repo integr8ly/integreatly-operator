@@ -970,7 +970,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "fallback to RouterCanonicalHostname as routing subdomain",
+			name: "fallback to RouterCanonicalHostname as routing subdomain when custom domain addon param not present",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -1003,6 +1003,52 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 							ObjectMeta: v1.ObjectMeta{
 								Name:      "addon-managed-api-service-parameters",
 								Namespace: "test",
+							},
+						},
+					)
+					return mockClient
+				},
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "fallback to RouterCanonicalHostname as routing subdomain when empty custom domain addon param",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme,
+						&routev1.Route{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "console",
+								Namespace: "openshift-console",
+							},
+							Status: routev1.RouteStatus{
+								Ingress: []routev1.RouteIngress{
+									{
+										Host: "host",
+									},
+								},
+							},
+						},
+						&corev1.Secret{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "addon-managed-api-service-parameters",
+								Namespace: "test",
+							},
+							Data: map[string][]byte{
+								"custom-domain_domain": []byte(""),
 							},
 						},
 					)
