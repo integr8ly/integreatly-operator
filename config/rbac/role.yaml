@@ -281,6 +281,12 @@ rules:
   verbs:
   - update
 - apiGroups:
+  - operators.coreos.com
+  resources:
+  - subscriptions
+  verbs:
+  - update
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
