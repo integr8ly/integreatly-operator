@@ -86,6 +86,41 @@ var (
 		},
 	)
 
+	// RhoamStateMetric metric exported to telemeter. DO NOT increase cardinality
+	RhoamStateMetric = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_state",
+			Help: "Capture currently installed/upgrading RHOAM version. This will facilitate a snapshot dashboard to SRE of versions and upgrade status across the fleet.",
+		},
+		[]string{
+			"status",    // "in progress/complete
+			"upgrading", // "true/false"
+			"version",   // "x.y.z"
+		},
+	)
+
+	// RhoamCriticalAlerts metric exported to telemeter. DO NOT increase cardinality
+	RhoamCriticalAlerts = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_critical_alerts",
+			Help: "Count of RHOAM specific critical alerts pending/firing on cluster",
+		},
+		[]string{
+			"state", // "pending/firing
+		},
+	)
+
+	// RhoamWarningAlerts metric exported to telemeter. DO NOT increase cardinality
+	RhoamWarningAlerts = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_warning_alerts",
+			Help: "Count of RHOAM specific warning alerts pending/firing on cluster",
+		},
+		[]string{
+			"state", // "pending/firing
+		},
+	)
+
 	RHOAMStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_status",
@@ -93,19 +128,6 @@ var (
 		},
 		[]string{
 			"stage",
-		},
-	)
-
-	RHOAMAlertsSummary = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhoam_alerts_summary",
-			Help: "RHOAM alerts summary, excludes DeadManSwitch",
-		},
-		[]string{
-			"alert",
-			"severity",
-			"state",
-			"externalID",
 		},
 	)
 
@@ -217,6 +239,12 @@ type PortalInfo struct {
 	IsAvailable bool
 }
 
+type RhoamState struct {
+	Status    integreatlyv1alpha1.StatusPhase
+	Upgrading bool
+	Version   string
+}
+
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
 func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
 	RHMIInfo.WithLabelValues(installation.Spec.UseClusterStorage,
@@ -251,18 +279,6 @@ func SetRhmiVersions(stage string, version string, toVersion string, externalID 
 	RHOAMVersion.Reset()
 	status := resources.InstallationState(version, toVersion)
 	RHOAMVersion.WithLabelValues(stage, status, version, toVersion, externalID).Set(float64(firstInstallTimestamp))
-}
-
-func SetRHOAMAlertsSummary(alerts resources.AlertMetrics, externalID string) {
-	RHOAMAlertsSummary.Reset()
-	for key, value := range alerts {
-		RHOAMAlertsSummary.With(prometheus.Labels{
-			"alert":      string(key.Name),
-			"severity":   string(key.Severity),
-			"state":      string(key.State),
-			"externalID": externalID,
-		}).Set(float64(value))
-	}
 }
 
 func SetRHOAMCluster(cluster string, externalID string, version string, value int64) {
@@ -339,4 +355,53 @@ func SetThreeScalePortals(portals map[string]PortalInfo, value float64) {
 	}
 	ThreeScalePortals.Reset()
 	ThreeScalePortals.With(labels).Set(value)
+}
+
+func SetRhoamState(status RhoamState) {
+	labels := prometheus.Labels{
+		"status":    string(status.Status),
+		"upgrading": strconv.FormatBool(status.Upgrading),
+		"version":   status.Version,
+	}
+	RhoamStateMetric.Reset()
+	RhoamStateMetric.With(labels).Set(1)
+}
+
+func SetRhoamCriticalAlerts(alerts resources.AlertMetrics) {
+	RhoamCriticalAlerts.Reset()
+	RhoamCriticalAlerts.WithLabelValues("firing").Set(float64(alerts.Firing))
+	RhoamCriticalAlerts.WithLabelValues("pending").Set(float64(alerts.Pending))
+}
+
+func SetRhoamWarningAlerts(alerts resources.AlertMetrics) {
+	RhoamWarningAlerts.Reset()
+	RhoamWarningAlerts.WithLabelValues("firing").Set(float64(alerts.Firing))
+	RhoamWarningAlerts.WithLabelValues("pending").Set(float64(alerts.Pending))
+}
+
+func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
+	status := RhoamState{}
+
+	if cr == nil {
+		return status, fmt.Errorf("funtion parameter \"cr\" is nil")
+	}
+
+	if cr.Status.Stage == integreatlyv1alpha1.CompleteStage {
+		status.Status = integreatlyv1alpha1.PhaseCompleted
+	} else {
+		status.Status = integreatlyv1alpha1.PhaseInProgress
+	}
+
+	if cr.Status.Version != "" && cr.Status.ToVersion != "" {
+		status.Upgrading = true
+	} else {
+		status.Upgrading = false
+	}
+
+	if cr.Status.Version == "" {
+		status.Version = cr.Status.ToVersion
+	} else {
+		status.Version = cr.Status.Version
+	}
+	return status, nil
 }

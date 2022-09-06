@@ -120,66 +120,64 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 func TestFormatAlerts(t *testing.T) {
 	input := []prometheusv1.Alert{
 		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
-			State:  "Firing",
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
+			State:  "firing",
 		},
 		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
-			State:  "Firing",
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
+			State:  "firing",
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
-			State:  "Firing",
+			State:  "firing",
 		},
 		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
-			State:  "Pending",
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
+			State:  "pending",
 		},
 		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "High"},
-			State:  "Pending",
+			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
+			State:  "pending",
 		},
 
 		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
-			State:  "Firing",
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "critical"},
+			State:  "firing",
 		},
 		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "High"},
-			State:  "Firing",
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
+			State:  "firing",
 		},
 		{
-			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "High"},
-			State:  "Firing",
+			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
+			State:  "pending",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "critical"},
+			State:  "firing",
+		},
+		{
+			Labels: model.LabelSet{"alertname": "info alert", "severity": "info"},
+			State:  "firing",
 		},
 	}
-	expected := resources.AlertMetrics{
-		{
-			Name:     "dummy",
-			Severity: "High",
-			State:    "Firing",
-		}: 2,
-		{
-			Name:     "dummy",
-			Severity: "Low",
-			State:    "Firing",
-		}: 1,
-		{
-			Name:     "dummy",
-			Severity: "High",
-			State:    "Pending",
-		}: 2,
-		{
-			Name:     "dummy two",
-			Severity: "High",
-			State:    "Firing",
-		}: 2,
+	expectedCritical := resources.AlertMetrics{
+		Firing:  3,
+		Pending: 2,
+	}
+	expectedWarning := resources.AlertMetrics{
+		Firing:  1,
+		Pending: 1,
 	}
 
-	actual := formatAlerts(input)
+	critical, warning := formatAlerts(input)
 
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("alert metrics not equal; Actual: %v, Expected: %v", actual, expected)
+	if !reflect.DeepEqual(critical, expectedCritical) {
+		t.Fatalf("critical alert metrics not equal; Actual: %v, Expected: %v", critical, expectedCritical)
+	}
+
+	if !reflect.DeepEqual(warning, expectedWarning) {
+		t.Fatalf("warning alert metrics not equal; Actual: %v, Expected: %v", warning, expectedWarning)
 	}
 
 }

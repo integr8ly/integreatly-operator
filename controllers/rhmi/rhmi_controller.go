@@ -412,6 +412,13 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		log.Error("error setting RHOAM cluster metric:", err)
 	}
 
+	log.Info("set rhoam status metric")
+	state, err := metrics.GetRhoamState(installation)
+	if err != nil {
+		log.Error("error compiling RHOAM state metric:", err)
+	}
+	metrics.SetRhoamState(state)
+
 	installationQuota := &quota.Quota{}
 	installStages := installType.GetInstallStages()
 	for i := range installStages {
@@ -527,7 +534,6 @@ func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, c
 		if err != nil {
 			return alertingNamespaces, err
 		}
-
 		alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
 	} else {
 		monitoringConfig, err := configManager.ReadMonitoring()
@@ -1411,7 +1417,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 }
 
 func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
-	var alerts resources.AlertMetrics
+	var alerts []prometheusv1.Alert
 
 	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
 	if err != nil {
@@ -1423,23 +1429,16 @@ func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1al
 		return fmt.Errorf("getting observability configuration failed: %w", err)
 	}
 
-	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
-	if err != nil {
-		return fmt.Errorf("error getting cluster version information: %w", err)
-	}
-
-	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
-	if err != nil {
-		return fmt.Errorf("error getting external cluster ID: %w", err)
-	}
-
 	for namespace, _ := range alertingNamespaces {
 		if namespace == observability.GetNamespace() {
-			alerts, err = r.composeAlertMetric("prometheus", namespace)
+			alerts, err = r.getCurrentAlerts("prometheus", namespace)
 			if err != nil {
 				return fmt.Errorf("composing alert metric failed: %w", err)
 			}
-			metrics.SetRHOAMAlertsSummary(alerts, string(externalClusterId))
+			critical, warning := formatAlerts(alerts)
+			metrics.SetRhoamCriticalAlerts(critical)
+			metrics.SetRhoamWarningAlerts(warning)
+
 			return nil
 		}
 	}
@@ -1447,7 +1446,7 @@ func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1al
 	return nil
 }
 
-func (r *RHMIReconciler) composeAlertMetric(route string, namespace string) (resources.AlertMetrics, error) {
+func (r *RHMIReconciler) getCurrentAlerts(route string, namespace string) ([]prometheusv1.Alert, error) {
 	endpoint := "/api/v1/alerts"
 
 	url, err := r.getURLFromRoute(route, namespace, r.restConfig)
@@ -1494,9 +1493,7 @@ func (r *RHMIReconciler) composeAlertMetric(route string, namespace string) (res
 		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	alerts := formatAlerts(alertResp.Data.Alerts)
-
-	return alerts, nil
+	return alertResp.Data.Alerts, nil
 }
 
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
@@ -1669,8 +1666,16 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 	}, nil
 }
 
-func formatAlerts(alerts []prometheusv1.Alert) resources.AlertMetrics {
-	alertMetrics := make(resources.AlertMetrics)
+func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics, warning resources.AlertMetrics) {
+	critical = resources.AlertMetrics{
+		Firing:  0,
+		Pending: 0,
+	}
+
+	warning = resources.AlertMetrics{
+		Firing:  0,
+		Pending: 0,
+	}
 
 	for _, alert := range alerts {
 		if alert.Labels["alertname"] == "DeadMansSwitch" {
@@ -1679,19 +1684,17 @@ func formatAlerts(alerts []prometheusv1.Alert) resources.AlertMetrics {
 			continue
 		}
 
-		alertMetricKey := resources.AlertMetric{
-			Name:     alert.Labels["alertname"],
-			Severity: alert.Labels["severity"],
-			State:    alert.State,
-		}
-
-		_, exists := alertMetrics[alertMetricKey]
-		if exists {
-			alertMetrics[alertMetricKey]++
-		} else {
-			alertMetrics[alertMetricKey] = 1
+		switch {
+		case alert.State == "firing" && alert.Labels["severity"] == "critical":
+			critical.Firing++
+		case alert.State == "pending" && alert.Labels["severity"] == "critical":
+			critical.Pending++
+		case alert.State == "firing" && alert.Labels["severity"] == "warning":
+			warning.Firing++
+		case alert.State == "pending" && alert.Labels["severity"] == "warning":
+			warning.Pending++
 		}
 	}
 
-	return alertMetrics
+	return critical, warning
 }
