@@ -18,6 +18,7 @@ import (
 	userv1 "github.com/openshift/api/user/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -431,15 +432,22 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 		t.Fatalf("failed to delete OpenShift user %s, err: %v", testUser.Name, err)
 	}
 
-	// Ensure KeycloakUser CR is deleted
-	err = c.Delete(ctx, &keycloak.KeycloakUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
-			Namespace: RHSSOProductNamespace,
-		},
+	// Ensure KeycloakUser CR has been deleted within 2 minutes
+	err = wait.Poll(time.Second*15, time.Minute*2, func() (done bool, err error) {
+		err = c.Get(ctx, types.NamespacedName{Name: fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
+			Namespace: RHSSOProductNamespace}, &keycloak.KeycloakUser{})
+		if err != nil {
+			if k8serr.IsNotFound(err) {
+				return true, nil
+			} else {
+				return false, nil
+			}
+		} else {
+			return false, nil
+		}
 	})
 	if err != nil {
-		t.Fatalf("failed to delete KeycloakUser %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName), err)
+		t.Fatalf("keycloakUser CR is not deleted as expected %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName), err)
 	}
 
 	// Ensure the test user is removed from dedicated-admins group

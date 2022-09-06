@@ -256,14 +256,7 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to delete openshift user: %s, err: %v", userLongName, err)
 	}
-	err = ctx.Client.Delete(goCtx, &userv1.User{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: userLong2,
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to delete openshift user: %s, err: %v", userLong2, err)
-	}
+
 	// Ensure Keycloak CR created are deleted
 	err = ctx.Client.Delete(goCtx, &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
