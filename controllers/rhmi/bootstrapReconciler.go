@@ -296,21 +296,7 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 			}
 		}
 	}
-	
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		rhoamService := &corev1.Service{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey {
-			Name: 	"rhmi-operator-metrics",
-			Namespace: r.installation.Namespace,
-		}, rhoamService)
-		if err == nil {
-			if err := serverClient.Delete(ctx, rhoamService); err != nil {
-				r.log.Info("Service \"rhmi-operator-metrics\" has been deleted")
-			}
-		}
-	}
 }
-
 
 func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclient.Client) error {
 	total, err := userHelper.GetTotalAPIManagementTenantsCount(ctx, serverClient)
