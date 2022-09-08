@@ -13,7 +13,7 @@ Required Items
 * CNAME edit access for a domain name
 
 
-## Domain Certificate
+### Domain Certificate
 
 Creating a self-signed certificate.
 ```shell
@@ -67,7 +67,7 @@ The endpoint URL will need to be added to a CNAME record for the domain in quest
 Team leads should be able to help get access to the required resources.
 This guide does not cover the steps required to configure the CNAME record in the DNS configuration.
 
-<h5><b>Configuring the operator installation</b></h5>
+## Configuring the operator installation
 Currently, the operator only allows the configuring of the custom domain during installation. 
 Once the routes have being created within 3scale they can not be changed again.
 

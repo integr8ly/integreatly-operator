@@ -10,7 +10,7 @@ To switch between the three you can use export the `INSTALLATION_TYPE` env or us
 
 The operator installs the following products:
 
-## managed
+### managed
 
 - AMQ Online
 - AMQ Streams
@@ -21,13 +21,13 @@ The operator installs the following products:
 - 3scale
 - Integreatly solution explorer
 
-## managed-api
+### managed-api
 
 - 3scale
 - RHSSO (both a cluster instance, and a user instance)
 - Marin3r
 
-## multitenant-managed-api
+### multitenant-managed-api
 
 - 3scale
 - RHSSO (cluster instance)
