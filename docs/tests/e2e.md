@@ -1,4 +1,4 @@
-# E2E tests
+# End to end (e2e)
 
 If you have RHOAM operator installed using cluster storage (`useClusterStorage: true`), all [AWS tests](https://github.com/integr8ly/integreatly-operator/blob/27c4a8c4fdf3461247fad2bb20fe958d4b709a99/test/functional/tests.go#L6-L12) are being skipped (because all AWS tests would fail).
 To override this, you can provide an env var `BYPASS_STORAGE_TYPE_CHECK=true`.

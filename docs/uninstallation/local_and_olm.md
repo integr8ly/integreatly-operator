@@ -1,4 +1,4 @@
-# Local and OLM installation type
+# Local and OLM
 If you installed RHOAM locally or through a catalog source then you can uninstall one of two ways:
 
 A) Create a configmap and add a deletion label (Prefered way of uninstallation).

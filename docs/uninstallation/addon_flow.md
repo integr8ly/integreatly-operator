@@ -1,4 +1,4 @@
-# Addon
+# Addon flow
   If you installed RHOAM as an addon then you can uninstall it through the ui as shown in the picture below , or alternatively  you can run the following command. 
 ```sh
 ocm delete /api/clusters_mgmt/v1/clusters/${clusterId}/addons/managed-api-service

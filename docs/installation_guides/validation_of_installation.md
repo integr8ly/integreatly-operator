@@ -1,4 +1,4 @@
-# Validate installation 
+# Validation of installation
 
 Use following commands to validate that installation succeeded:
 

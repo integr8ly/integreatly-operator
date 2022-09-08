@@ -1,4 +1,4 @@
-# Configuration (optional)
+# Additional configuration
 
 If you are running RHOAM against a cluster which is smaller than the requirements listed above, you 
 should use the IN_PROW variable, otherwise the installation will not complete. 

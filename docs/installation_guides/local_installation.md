@@ -1,4 +1,4 @@
-# Local Development
+# Local installation
 Ensure that the cluster satisfies minimal requirements: 
 - RHMI (managed): 26 vCPU 
 - RHOAM (managed-api and multitenant-managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 

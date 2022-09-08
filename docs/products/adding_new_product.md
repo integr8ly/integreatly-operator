@@ -1,4 +1,4 @@
-# Adding a new product's Operator
+# Adding new product
 The goal of this guide is to show how to add a new product's operator and CR to the range of operator's managed by the
 integreatly-operator. This will touch on a few different areas of the code-base, and explain the purpose of each area.
 

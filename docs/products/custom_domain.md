@@ -1,4 +1,4 @@
-# Custom Domains
+# Configuring custom domain
 This will explain how to configure the operator to use a custom domain when the operator is not being installed via the addon.
 
 In this guide the `rhmi.me` domain will be used as the example custom domain.

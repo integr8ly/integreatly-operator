@@ -21,7 +21,7 @@ nav:
       - Configuring Custom Domain: products/custom_domain.md
       - 3scale guides: products/3scale_guides.md
     - Tests:
-      - Unit testing: tests/unit_tests.md
+      - Unit tests: tests/unit_tests.md
       - End to End (e2e): tests/e2e.md
       - Product tests: tests/product_tests.md
       - Scorecard tests: tests/scorecard_tests.md

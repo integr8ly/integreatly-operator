@@ -1,4 +1,4 @@
-# Installing RHMI/RHOAM Through OLM with Bundle Format
+# OLM installation
 
 As OperatorSource is being deprecated and the bundle format will become the
 standard packaging for operator, this document describes how to install the RHMI

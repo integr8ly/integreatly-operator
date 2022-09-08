@@ -1,4 +1,4 @@
-# Set up testing IDP for OSD cluster
+# Identity Provider Setup
 You can use the `scripts/setup-sso-idp.sh` script to setup a "testing-idp" realm in a cluster SSO instance and add it as IDP of your OSD cluster.
 With this script you will get few regular users - test-user[01-10] and few users that will be added to dedicated-admins group - customer-admin[01-03].
 
