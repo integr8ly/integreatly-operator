@@ -2,7 +2,7 @@ bases:
   - ../rbac
 
 namespace: local-rhoam-operator
-namePrefix: rhmi-
+namePrefix: rhoam-
 
 patchesStrategicMerge:
   - patches/leader_election_role_binding.yaml
