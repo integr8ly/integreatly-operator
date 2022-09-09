@@ -702,6 +702,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"DnsBypassThreeScaleSystemAdminUI",
 			},
 		},
+		{
+			File: ObservabilityNamespacePrefix + "rhoam-missing-metrics.yaml",
+			Rules: []string{
+				"RHOAMCriticalMetricsMissing",
+			},
+		},
 	}
 }
 

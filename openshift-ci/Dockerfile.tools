@@ -3,7 +3,8 @@ FROM registry.ci.openshift.org/openshift/release:golang-1.18
 # OPERATOR_SDK should match the version of operator-sdk version in go.mod
 ENV OPERATOR_SDK_VERSION=v1.21.0 \
     DELOREAN_VERSION=master \
-    GOFLAGS=""
+    GOFLAGS="" \
+    PROMETHEUS_VERSION=2.37.0
 
 RUN set -o pipefail && \
     INSTALL_PKGS="skopeo rsync" && \
@@ -50,3 +51,10 @@ RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.
 
 # install gosec
 RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $GOPATH/bin v2.11.0
+
+# install promtool
+RUN wget https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz \
+    && tar xvf prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz \
+    && cp prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool /usr/local/bin \
+    && chmod +x /usr/local/bin/promtool \
+    && rm -rf prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz prometheus-$PROMETHEUS_VERSION.linux-amd64
