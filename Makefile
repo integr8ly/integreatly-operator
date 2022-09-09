@@ -22,6 +22,7 @@ IN_PROW ?= "false"
 # if 500 then 50M
 # if 1 then 100k
 DEV_QUOTA ?= "1"
+CUSTOM_DOMAIN ?= ''
 SMTP_USER  ?= ''
 SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
@@ -391,7 +392,7 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/quota
 cluster/prepare/quota:
-	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/custom-addon-secret.yaml | oc apply -f -
+	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/custom-addon-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:

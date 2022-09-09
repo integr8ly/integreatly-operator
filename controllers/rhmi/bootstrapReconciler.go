@@ -621,11 +621,12 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 	}
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
 	ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
+	// Only fail when unable to get custom domain parameter from the addon secret to allow for installation of monitoring stack
 	if err != nil && !ok {
 		log.Warning(err.Error())
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 	}
-	if ok {
+	if ok && domain != "" {
 		r.installation.Spec.RoutingSubdomain = domain
 		if r.installation.Status.CustomDomain == nil {
 			r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
