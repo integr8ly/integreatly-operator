@@ -199,7 +199,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
+	// temp code to be removed once all versions of RHOAM are bumped to 1.27
 	r.deleteObsoleteService(ctx, serverClient)
 
 	if integreatlyv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
@@ -282,17 +282,17 @@ func getRHOAMNamespaces(ctx context.Context, serverClient k8sclient.Client, nsPr
 	return namespaces, nil
 }
 
-// temp code for rhmi 2.8 to 2.9.0 upgrades, remove this when all clusters upgraded to 2.9.0
+// temp code to be removed once all versions of RHOAM are bumped to 1.27
 func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8sclient.Client) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		service := &corev1.Service{}
 		err := serverClient.Get(ctx, k8sclient.ObjectKey{
 			Name:      "rhmi-operator-metrics",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: r.installation.Namespace,
 		}, service)
 		if err == nil {
 			if err := serverClient.Delete(ctx, service); err != nil {
-				r.log.Info("Service \"rhmi-operator-metrics\" was deleted from redhat-rhmi-operator")
+				r.log.Info("Service \"rhmi-operator-metrics\" has been deleted")
 			}
 		}
 	}
