@@ -5,3 +5,29 @@ theme:
   name: readthedocs
 plugins:
   - search
+nav:
+    - Home:
+      - Integreatly Operator: index.md
+      - Getting Started: getting_started.md
+      - Terminology: terminology.md
+    - Installation: 
+      - Local installation: installation_guides/local_installation.md
+      - OLM Installation: installation_guides/olm_installation.md
+      - Identity Provider Setup: installation_guides/identity_provider_setup.md
+      - Additional configuration: installation_guides/additional_configuration.md
+      - Validation of installation: installation_guides/validation_of_installation.md
+    - Products:
+      - Adding new product: products/adding_new_product.md
+      - Configuring Custom Domain: products/custom_domain.md
+      - 3scale guides: products/3scale_guides.md
+    - Tests:
+      - Unit tests: tests/unit_tests.md
+      - End to End (e2e): tests/e2e.md
+      - Product tests: tests/product_tests.md
+      - Scorecard tests: tests/scorecard_tests.md
+    - Uninstallation:
+      - Local and OLM: uninstallation/local_and_olm.md
+      - Addon flow: uninstallation/addon_flow.md
+      - ROSA: uninstallation/rosa.md
+
+

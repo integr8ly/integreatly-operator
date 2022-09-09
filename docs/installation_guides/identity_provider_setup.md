@@ -1,9 +1,8 @@
-# 	Identity Provider setup
-### Set up testing IDP for OSD cluster
+# Identity Provider Setup
 You can use the `scripts/setup-sso-idp.sh` script to setup a "testing-idp" realm in a cluster SSO instance and add it as IDP of your OSD cluster.
 With this script you will get few regular users - test-user[01-10] and few users that will be added to dedicated-admins group - customer-admin[01-03].
 
-Prerequisites:
+## Prerequisites
 - `oc` command available on your machine (the latest version can be downloaded [here](https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/))
 - `ocm` command available ( the newest CLI can be downloaded [here](https://github.com/openshift-online/ocm-cli/releases) and you install it with `mv (your downloaded file) /usr/local/bin/ocm`) (necessary only if using OSD cluster)
 - OC session with cluster admin permissions in a target cluster
@@ -22,7 +21,7 @@ Prerequisites:
 | REGULAR_USERNAME          | string  | Optional | test-user      | Username prefix for regular test users                                      |
 | NUM_REGULAR_USER          | int     | Optional | 10             | Number of regular user to be used.                                          |
 
-### Configuring Github OAuth
+## Configuring Github OAuth
 
 *Note:* Following steps are only valid for OCP4 environments and will not work on OSD due to the Oauth resource being periodically reset by Hive.
 
@@ -43,3 +42,7 @@ Once the Oauth application has been registered, navigate to the Openshift consol
 - Ensure that the Github organization from where the Oauth application was created is specified in the Organization field
 - Once happy that all necessary configurations have been added, click the `Add` button
 - For the validation purposes, log into the Openshift console from another browser and check that the Github IDP is listed on the login screen
+
+## Set up dedicated admins
+
+To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
