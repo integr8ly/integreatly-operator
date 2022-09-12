@@ -107,7 +107,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "ClusterSchedulableMemoryLow",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
+						"sop_url": resources.SopUrlClusterSchedulableResourcesLow,
 						"message": "The cluster has {{  $value }} percent of memory requested and unavailable for scheduling for longer than 15 minutes.",
 					},
 					Expr:   intstr.FromString("((sum(sum by(node) (sum by(pod, node) (kube_pod_container_resource_requests{resource='memory'} * on(node) group_left() (sum by(node) (kube_node_role{role='worker'}  == 1))) * on(pod) group_left() (sum by(pod) (kube_pod_status_phase{phase='Running'}) == 1)))) / ((sum((kube_node_role{role='worker'}  == 1) * on(node) group_left() (sum by(node) (kube_node_status_allocatable{resource='memory'})))))) * 100 > 85"),
@@ -117,7 +117,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "ClusterSchedulableCPULow",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
+						"sop_url": resources.SopUrlClusterSchedulableResourcesLow,
 						"message": "The cluster has {{ $value }} percent of CPU cores requested and unavailable for scheduling for longer than 15 minutes.",
 					},
 					Expr:   intstr.FromString("((sum(sum by(node) (sum by(pod, node) (kube_pod_container_resource_requests{resource='cpu'} * on(node) group_left() (sum by(node) (kube_node_role{role='worker'} == 1))) * on(pod) group_left() (sum by(pod) (kube_pod_status_phase{phase='Running'}) == 1)))) / ((sum((kube_node_role{role='worker'} == 1) * on(node) group_left() (sum by(node) (kube_node_status_allocatable{resource='cpu'})))))) * 100 > 85"),
@@ -127,7 +127,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "PVCStorageAvailable",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
+						"sop_url": resources.SopUrlClusterSchedulableResourcesLow,
 						"message": "The {{  $labels.persistentvolumeclaim  }} PVC has has been {{ $value }} percent full for longer than 15 minutes.",
 					},
 					Expr:   intstr.FromString(fmt.Sprintf("((sum by(persistentvolumeclaim, namespace) (kubelet_volume_stats_used_bytes{namespace=~'%s.*'})) / (sum by(persistentvolumeclaim, namespace) (kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace=~'%s.*'}))) * 100 > 85", r.Config.GetNamespacePrefix(), r.Config.GetNamespacePrefix())),
@@ -137,7 +137,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "PVCStorageMetricsAvailable",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
+						"sop_url": resources.SopUrlClusterSchedulableResourcesLow,
 						"message": "PVC storage metrics are not available",
 					},
 					Expr:   intstr.FromString("absent(kubelet_volume_stats_available_bytes) == 1 or absent(kubelet_volume_stats_capacity_bytes) == 1 or absent(kubelet_volume_stats_used_bytes) == 1 or absent(kube_persistentvolumeclaim_resource_requests_storage_bytes) == 1"),
@@ -147,7 +147,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "KubePersistentVolumeFillingUp4h",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours",
+						"sop_url": resources.SopUrlKubePersistentVolumeFillingUp4h,
 						"message": "Based on recent sampling, the PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is expected to fill up within four days. Currently {{ $value | humanizePercentage }} is available.",
 					},
 					Expr:   intstr.FromString(fmt.Sprintf("(predict_linear(kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'} [6h], 4 * 24 * 3600) <= 0 and kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'}  / kubelet_volume_stats_capacity_bytes{job='kubelet'} < 0.15)", r.Config.GetNamespacePrefix(), r.Config.GetNamespacePrefix())),
@@ -157,7 +157,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "KubePersistentVolumeFillingUp",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#kubepersistentvolumefillingup",
+						"sop_url": resources.SopUrlKubePersistentVolumeFillingUp,
 						"message": "The PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is only {{ $value | humanizePercentage }} free.",
 					},
 					Expr:   intstr.FromString(fmt.Sprintf("(kubelet_volume_stats_available_bytes{job='kubelet', namespace=~'%s.*'} / kubelet_volume_stats_capacity_bytes{job='kubelet', namespace=~'%s.*'} < 0.03)", r.Config.GetNamespacePrefix(), r.Config.GetNamespacePrefix())),
@@ -168,7 +168,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "PersistentVolumeErrors",
 					Annotations: map[string]string{
-						"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#persistentvolumeerrors",
+						"sop_url": resources.SopUrlPersistentVolumeErrors,
 						"message": "The PVC {{  $labels.persistentvolumeclaim  }} is in status {{  $labels.phase  }} in namespace {{  $labels.namespace }} ",
 					},
 					Expr:   intstr.FromString(fmt.Sprintf("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost', namespace=~'%s.*'})) > 0", r.Config.GetNamespacePrefix())),
