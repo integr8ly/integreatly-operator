@@ -210,14 +210,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 
-		// temp code for RHOAM, remove once all clusters are upgraded to 1.14
-		// Remove all prometheus rules under redhat/sandbox-rhoam/rhoami-operator
-		phase, err = r.removePrometheusRules(ctx, serverClient, installation.Spec.NamespacePrefix)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, "Failed to remove existing prometheus rules from rhoam-operator namespace", err)
-			return phase, errors.Wrap(err, "Failed to remove existing prometheus rules from rhoam-operator namespace")
-		}
-
 	}
 
 	phase, err = r.reconcileCustomSMTP(ctx, serverClient)
