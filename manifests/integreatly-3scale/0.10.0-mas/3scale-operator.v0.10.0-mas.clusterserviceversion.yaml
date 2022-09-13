@@ -401,7 +401,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: RELATED_IMAGE_BACKEND
-                  value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_88232dae66a2b8e753927b94578d49ba3b5729b48b48852f34863e4c80871b10
+                  value: quay.io/integreatly/delorean:3scale-mas-backend-rhel8_f1112cda1ac57d06e544071cbb8b7d02fe3aa8e3dca55ab79d938f48d7e7bcdb
                 - name: RELATED_IMAGE_APICAST
                   value: quay.io/integreatly/delorean:3scale-mas-apicast-gateway-rhel8_075cdea167122cdd5a0df1040b5c596f71fb63383504d61bcb0afc2795a08027
                 - name: RELATED_IMAGE_SYSTEM
@@ -421,7 +421,7 @@ spec:
                 - name: RELATED_IMAGE_ZYNC_POSTGRESQL
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_04ba9f0791f2ec873d6972d075fe877c8da8407aebb76354b868162205b89776
                 - name: RELATED_IMAGE_OC_CLI
-                  value: quay.io/integreatly/delorean:openshift4-ose-cli_04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
+                  value: quay.io/integreatly/delorean:openshift4-ose-cli_4cf84063f78f81cb95ab27c73fc44160ff5d2267136408b4dbdd183b272be0b5
                 image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_f428e2fe49332785b9984825b68b42203429ce504909e7c50fae38d82a883e9a
                 name: manager
                 ports:
@@ -994,7 +994,7 @@ spec:
     name: 3scale-rhel7-operator-f428e2fe49332785b9984825b68b42203429ce504909e7c50fae38d82a883e9a-annotation
   - image: registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f428e2fe49332785b9984825b68b42203429ce504909e7c50fae38d82a883e9a
     name: manager
-  - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:88232dae66a2b8e753927b94578d49ba3b5729b48b48852f34863e4c80871b10
+  - image: registry.redhat.io/3scale-mas/backend-rhel8@sha256:f1112cda1ac57d06e544071cbb8b7d02fe3aa8e3dca55ab79d938f48d7e7bcdb
     name: backend
   - image: registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:075cdea167122cdd5a0df1040b5c596f71fb63383504d61bcb0afc2795a08027
     name: apicast
@@ -1014,7 +1014,7 @@ spec:
     name: system_postgresql
   - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:04ba9f0791f2ec873d6972d075fe877c8da8407aebb76354b868162205b89776
     name: zync_postgresql
-  - image: registry.redhat.io/openshift4/ose-cli@sha256:04326eecadcd229326b8fdc45c5d21c81251856fb36cb2943517f16be298f89c
+  - image: registry.redhat.io/openshift4/ose-cli@sha256:4cf84063f78f81cb95ab27c73fc44160ff5d2267136408b4dbdd183b272be0b5
     name: oc_cli
   replaces: 3scale-operator.v0.9.0
   version: 0.10.0-mas
