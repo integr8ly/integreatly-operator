@@ -484,11 +484,6 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 	metrics.SetStatus(installation)
 
-	if _, ok := installation.Status.Stages[rhmiv1alpha1.MonitoringStage]; ok {
-		log.Info("delete Monitoring stage from installation.Status")
-		delete(installation.Status.Stages, rhmiv1alpha1.MonitoringStage)
-	}
-
 	err = r.updateStatusAndObject(originalInstallation, installation)
 	return retryRequeue, err
 }
