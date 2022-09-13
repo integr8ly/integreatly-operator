@@ -361,7 +361,7 @@ spec:
                 - name: RELATED_IMAGE_BACKEND
                   value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel8_e117db49114e4317d6bbeba546efa5d8a6c61dc47abf215261171d5acbd9d4bc
                 - name: RELATED_IMAGE_APICAST
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_102ef2133b4e0a74a6e85f1f13c76cc4f2294a1ae8866599ff848515dd5baae4
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_33c614270adc42b75b60e2addf1d7176add51d1e7a3a02b8cbe94dfde196c155
                 - name: RELATED_IMAGE_SYSTEM
                   value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_e771e14042b55677677b656a2931225b6e6394edebf2050a8c7b84a9eece4657
                 - name: RELATED_IMAGE_ZYNC
@@ -930,7 +930,7 @@ spec:
     name: manager
   - image: registry.redhat.io/3scale-amp2/backend-rhel8@sha256:e117db49114e4317d6bbeba546efa5d8a6c61dc47abf215261171d5acbd9d4bc
     name: backend
-  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:102ef2133b4e0a74a6e85f1f13c76cc4f2294a1ae8866599ff848515dd5baae4
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:33c614270adc42b75b60e2addf1d7176add51d1e7a3a02b8cbe94dfde196c155
     name: apicast
   - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:e771e14042b55677677b656a2931225b6e6394edebf2050a8c7b84a9eece4657
     name: system
