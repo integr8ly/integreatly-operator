@@ -84,35 +84,3 @@ func TestRHOAMMultitenant(t *testing.T) {
 		})
 	}
 }
-
-func TestManagedInstallType(t *testing.T) {
-	tests := []struct {
-		name            string
-		installType     InstallationType
-		expectedOutcome bool
-	}{
-		{
-			name:            "test that installation is managed for managed-api",
-			installType:     InstallationTypeManagedApi,
-			expectedOutcome: true,
-		},
-		{
-			name:            "test that installation is managed for multitenant managed-api",
-			installType:     InstallationTypeMultitenantManagedApi,
-			expectedOutcome: true,
-		},
-		{
-			name:            "test that installation is not managed",
-			installType:     "Dummy Type",
-			expectedOutcome: false,
-		},
-	}
-	for _, c := range tests {
-		t.Run(c.name, func(t *testing.T) {
-			v := IsManaged(c.installType)
-			if v != c.expectedOutcome {
-				t.Errorf("Outcome does not match expected value - got %v; expecting %v", v, c.expectedOutcome)
-			}
-		})
-	}
-}

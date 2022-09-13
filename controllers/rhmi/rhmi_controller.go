@@ -83,8 +83,6 @@ import (
 const (
 	deletionFinalizer                = "configmaps/finalizer"
 	previousDeletionFinalizer        = "finalizer/configmaps"
-	DefaultInstallationName          = "rhoam"
-	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
@@ -959,33 +957,31 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, nil
 	}
 
-	if rhmiv1alpha1.IsManaged(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		requiredSecrets := []string{installation.Spec.PagerDutySecret}
+	requiredSecrets := []string{installation.Spec.PagerDutySecret}
 
-		for _, secretName := range requiredSecrets {
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      secretName,
-					Namespace: installation.Namespace,
-				},
-			}
-			if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
-				return ctrl.Result{}, err
-			} else if !exists {
-				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
-				log.Info(preflightMessage)
-				eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
-
-				installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
-				installation.Status.PreflightMessage = preflightMessage
-				_ = r.Status().Update(context.TODO(), installation)
-
-				return ctrl.Result{}, err
-			}
-			log.Infof("found required secret", l.Fields{"secret": secretName})
-			eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
-				"found required secret: %s", secretName)
+	for _, secretName := range requiredSecrets {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: installation.Namespace,
+			},
 		}
+		if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
+			return ctrl.Result{}, err
+		} else if !exists {
+			preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
+			log.Info(preflightMessage)
+			eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
+
+			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+			installation.Status.PreflightMessage = preflightMessage
+			_ = r.Status().Update(context.TODO(), installation)
+
+			return ctrl.Result{}, err
+		}
+		log.Infof("found required secret", l.Fields{"secret": secretName})
+		eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
+			"found required secret: %s", secretName)
 	}
 
 	// Check if the quota parameter is found from the add-on
@@ -1323,6 +1319,9 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
+
+	const managedApiInstallationName = "rhoam"
+
 	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
@@ -1375,7 +1374,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 		installation = &rhmiv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      getCrName(installType),
+				Name:      managedApiInstallationName,
 				Namespace: namespace,
 			},
 			Spec: rhmiv1alpha1.RHMISpec{
@@ -1555,16 +1554,6 @@ func getRebalancePods() bool {
 		return true
 	}
 	return false
-}
-
-func getCrName(installType string) string {
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
-		return ManagedApiInstallationName
-	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-		return ManagedApiInstallationName
-	}
-
-	return DefaultInstallationName
 }
 
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {

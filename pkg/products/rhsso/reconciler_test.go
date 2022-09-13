@@ -829,7 +829,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ExpectedError         string
 		FakeConfig            *config.ConfigReadWriterMock
 		FakeClient            k8sclient.Client
-		FakeOauthClient       oauthClient.OauthV1Interface
 		FakeMPM               *marketplace.MarketplaceInterfaceMock
 		Installation          *integreatlyv1alpha1.RHMI
 		Product               *integreatlyv1alpha1.RHMIProductStatus

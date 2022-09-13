@@ -15,7 +15,3 @@ func IsRHOAMSingletenant(installType InstallationType) bool {
 func isMultitenant(installType InstallationType) bool {
 	return installType == InstallationTypeMultitenantManagedApi
 }
-
-func IsManaged(installType InstallationType) bool {
-	return installType == InstallationTypeManagedApi || isMultitenant(installType)
-}
