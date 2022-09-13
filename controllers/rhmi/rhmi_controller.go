@@ -1685,13 +1685,13 @@ func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics,
 		}
 
 		switch {
-		case alert.State == "firing" && alert.Labels["severity"] == "critical":
+		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "critical":
 			critical.Firing++
-		case alert.State == "pending" && alert.Labels["severity"] == "critical":
+		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "critical":
 			critical.Pending++
-		case alert.State == "firing" && alert.Labels["severity"] == "warning":
+		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "warning":
 			warning.Firing++
-		case alert.State == "pending" && alert.Labels["severity"] == "warning":
+		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "warning":
 			warning.Pending++
 		}
 	}

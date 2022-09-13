@@ -13,7 +13,7 @@ oc create secret generic cj3cssrec -n local-rhoam-observability
 It should take < 3 minutes for the alert to appear.
 The alert that will be firing is called **TestFireCriticalAlert**
 
-Deleting the alert will stop the alert from firing.
+Deleting the secret will stop the alert from firing.
 It will take a few minutes for the alert to resolve itself.  
 ```shell
 oc delete secret cj3cssrec -n local-rhoam-observability
@@ -27,7 +27,7 @@ oc create secret generic wj3cssrew -n local-rhoam-observability
 It should take < 3 minutes for the alert to appear.
 The alert that will be firing is called **TestFireWarningAlert**
 
-Deleting the alert will stop the alert from firing.
+Deleting the secret will stop the alert from firing.
 It will take a few minutes for the alert to resolve itself.
 ```shell
 oc delete secret wj3cssrew -n local-rhoam-observability

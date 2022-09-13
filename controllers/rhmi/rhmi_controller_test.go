@@ -121,44 +121,44 @@ func TestFormatAlerts(t *testing.T) {
 	input := []prometheusv1.Alert{
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  "pending",
+			State:  prometheusv1.AlertStatePending,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  "pending",
+			State:  prometheusv1.AlertStatePending,
 		},
 
 		{
 			Labels: model.LabelSet{"alertname": "dummy two", "severity": "critical"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  "pending",
+			State:  prometheusv1.AlertStatePending,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "critical"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 		{
 			Labels: model.LabelSet{"alertname": "info alert", "severity": "info"},
-			State:  "firing",
+			State:  prometheusv1.AlertStateFiring,
 		},
 	}
 	expectedCritical := resources.AlertMetrics{

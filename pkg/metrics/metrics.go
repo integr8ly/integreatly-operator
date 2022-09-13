@@ -7,6 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
@@ -369,14 +370,14 @@ func SetRhoamState(status RhoamState) {
 
 func SetRhoamCriticalAlerts(alerts resources.AlertMetrics) {
 	RhoamCriticalAlerts.Reset()
-	RhoamCriticalAlerts.WithLabelValues("firing").Set(float64(alerts.Firing))
-	RhoamCriticalAlerts.WithLabelValues("pending").Set(float64(alerts.Pending))
+	RhoamCriticalAlerts.WithLabelValues(string(prometheusv1.AlertStateFiring)).Set(float64(alerts.Firing))
+	RhoamCriticalAlerts.WithLabelValues(string(prometheusv1.AlertStatePending)).Set(float64(alerts.Pending))
 }
 
 func SetRhoamWarningAlerts(alerts resources.AlertMetrics) {
 	RhoamWarningAlerts.Reset()
-	RhoamWarningAlerts.WithLabelValues("firing").Set(float64(alerts.Firing))
-	RhoamWarningAlerts.WithLabelValues("pending").Set(float64(alerts.Pending))
+	RhoamWarningAlerts.WithLabelValues(string(prometheusv1.AlertStateFiring)).Set(float64(alerts.Firing))
+	RhoamWarningAlerts.WithLabelValues(string(prometheusv1.AlertStatePending)).Set(float64(alerts.Pending))
 }
 
 func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
