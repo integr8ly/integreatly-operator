@@ -511,7 +511,7 @@ func allowUpdatesValueIsCorrect(client k8sclient.Client, postgresName, redisName
 		return false, err
 	}
 
-	if pg.Spec.AllowUpdates != want || redis.Spec.AllowUpdates != want {
+	if pg.Spec.MaintenanceWindow != want || redis.Spec.MaintenanceWindow != want {
 		return false, nil
 	}
 	return true, nil

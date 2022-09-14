@@ -236,10 +236,10 @@ func (r *SubscriptionReconciler) allowDatabaseUpdates(ctx context.Context, insta
 			return fmt.Errorf("failed to list postgres instances: %w", err)
 		}
 		for _, pgInst := range postgresInstances.Items {
-			pgInst.Spec.AllowUpdates = true
-
-			if err := r.Client.Update(ctx, &pgInst); err != nil {
-				return err
+			inst := pgInst
+			inst.Spec.MaintenanceWindow = true
+			if err := r.Client.Update(ctx, &inst); err != nil {
+				return pkgerr.Wrap(err, fmt.Sprintf("failed to update maintenance window for postgres %s", inst.Name))
 			}
 		}
 
@@ -248,9 +248,10 @@ func (r *SubscriptionReconciler) allowDatabaseUpdates(ctx context.Context, insta
 			return fmt.Errorf("failed to list redis instances: %w", err)
 		}
 		for _, rdInst := range redisInstances.Items {
-			rdInst.Spec.AllowUpdates = true
-			if err := r.Client.Update(ctx, &rdInst); err != nil {
-				return err
+			inst := rdInst
+			inst.Spec.MaintenanceWindow = true
+			if err := r.Client.Update(ctx, &inst); err != nil {
+				return pkgerr.Wrap(err, fmt.Sprintf("failed to update maintenance window for postgres %s", inst.Name))
 			}
 		}
 	}
