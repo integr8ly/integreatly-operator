@@ -14,7 +14,7 @@ import (
 const (
 	defaultSTSCredentialSecretName = "sts-credentials"
 	defaultRoleARNKeyName          = "role_arn"
-	defaultTokenPathKeyName        = "web_identity_token_file"
+	defaultTokenPath               = "/var/run/secrets/openshift/serviceaccount/token"
 )
 
 var _ CredentialManager = (*STSCredentialManager)(nil)
@@ -38,15 +38,13 @@ func (m *STSCredentialManager) ReconcileProviderCredentials(ctx context.Context,
 	if err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to get aws sts credentials secret %s", defaultSTSCredentialSecretName)
 	}
+
 	credentials := &Credentials{
 		RoleArn:       string(secret.Data[defaultRoleARNKeyName]),
-		TokenFilePath: string(secret.Data[defaultTokenPathKeyName]),
+		TokenFilePath: defaultTokenPath,
 	}
 	if credentials.RoleArn == "" {
 		return nil, errorUtil.New(fmt.Sprintf("%s key is undefined in secret %s", defaultRoleARNKeyName, secret.Name))
-	}
-	if credentials.TokenFilePath == "" {
-		return nil, errorUtil.New(fmt.Sprintf("%s key is undefined in secret %s", defaultTokenPathKeyName, secret.Name))
 	}
 	return credentials, nil
 }

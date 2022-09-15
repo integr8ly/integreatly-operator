@@ -27,8 +27,9 @@ type ResourceTypeSpec struct {
 	Tier       string `json:"tier"`
 	SkipCreate bool   `json:"skipCreate,omitempty"`
 	// ApplyImmediately is only available to Postgres cr, for blobstorage and redis cr's currently does nothing
-	ApplyImmediately bool       `json:"applyImmediately,omitempty"`
-	SecretRef        *SecretRef `json:"secretRef"`
+	ApplyImmediately  bool       `json:"applyImmediately,omitempty"`
+	MaintenanceWindow bool       `json:"maintenanceWindow,omitempty"`
+	SecretRef         *SecretRef `json:"secretRef"`
 }
 
 type StatusPhase string
