@@ -1575,7 +1575,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					}
 				}
 			}
-			if (breakout) {
+			if breakout {
 				continue
 			}
 
