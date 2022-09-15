@@ -1551,6 +1551,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 
 		if account.State == "approved" {
+			breakout := false
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
 					r.log.Infof("Activating user access to new tenant account",
@@ -1570,8 +1571,12 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 							},
 							err,
 						)
+						breakout = true
 					}
 				}
+			}
+			if (breakout) {
+				continue
 			}
 
 			val, ok := signUpAccountsSecret.Data[string(account.OrgName)]
@@ -1669,6 +1674,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 						},
 						err,
 					)
+					continue
 				}
 			} else {
 				continue
