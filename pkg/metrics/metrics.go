@@ -188,24 +188,16 @@ var (
 		},
 	)
 
-	TotalNumTenants = prometheus.NewGauge(
+	TenantsSummary = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "total_num_tenants",
-			Help: "Total number of tenants (APIManagementTenant CRs) on the cluster",
+			Name: "tenants_summary",
+			Help: "Summary of APIManagementTenant CRs",
 		},
-	)
-
-	NumReconciledTenants = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "num_reconciled_tenants",
-			Help: "Number of reconciled tenants (APIManagementTenant CRs) on the cluster",
-		},
-	)
-
-	NumFailedTenants = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "num_failed_tenants",
-			Help: "Number of tenants (APIManagementTenant CRs) on the cluster that didn't reconcile",
+		[]string{
+			"tenantName",
+			"tenantNamespace",
+			"provisioningStatus",
+			"lastError",
 		},
 	)
 
@@ -299,16 +291,16 @@ func ResetThreeScaleUserAction() {
 	ThreeScaleUserAction.Reset()
 }
 
-func SetTotalNumTenants(numTenants int) {
-	TotalNumTenants.Set(float64(numTenants))
-}
-
-func SetNumReconciledTenants(numTenants int) {
-	NumReconciledTenants.Set(float64(numTenants))
-}
-
-func SetNumFailedTenants(numTenants int) {
-	NumFailedTenants.Set(float64(numTenants))
+func SetTenantsSummary(tenants *integreatlyv1alpha1.APIManagementTenantList) {
+	TenantsSummary.Reset()
+	for _, tenant := range tenants.Items {
+		TenantsSummary.With(prometheus.Labels{
+			"tenantName":         tenant.Name,
+			"tenantNamespace":    tenant.Namespace,
+			"provisioningStatus": string(tenant.Status.ProvisioningStatus),
+			"lastError":          tenant.Status.LastError,
+		}).Set(float64(tenant.CreationTimestamp.Unix()))
+	}
 }
 
 func ResetNoActivated3ScaleTenantAccount() {

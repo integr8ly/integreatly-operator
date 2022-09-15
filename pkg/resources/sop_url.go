@@ -53,4 +53,5 @@ const (
 	SopUrlKubePersistentVolumeFillingUp4h                      = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours"
 	SopUrlKubePersistentVolumeFillingUp                        = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#kubepersistentvolumefillingup"
 	SopUrlPersistentVolumeErrors                               = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/pvc_storage.asciidoc#persistentvolumeerrors"
+	SopApiManagementTenantCRFailed                             = "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/rhoam/alerts/ApiManagementTenantCRFailed.asciidoc"
 )

@@ -299,22 +299,14 @@ func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclient.Client) error {
-	total, err := userHelper.GetTotalAPIManagementTenantsCount(ctx, serverClient)
+	tenants := &integreatlyv1alpha1.APIManagementTenantList{}
+	err := serverClient.List(ctx, tenants)
 	if err != nil {
 		return err
 	}
-	reconciled, err := userHelper.GetReconciledAPIManagementTenantsCount(ctx, serverClient)
-	if err != nil {
-		return err
-	}
-	failed, err := userHelper.GetFailedAPIManagementTenantsCount(ctx, serverClient)
-	if err != nil {
-		return err
-	}
+
 	r.log.Info("Setting tenant metrics")
-	metrics.SetTotalNumTenants(total)
-	metrics.SetNumReconciledTenants(reconciled)
-	metrics.SetNumFailedTenants(failed)
+	metrics.SetTenantsSummary(tenants)
 	return nil
 }
 

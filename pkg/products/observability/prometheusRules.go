@@ -369,9 +369,10 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "ApiManagementTenantCRFailed",
 					Annotations: map[string]string{
-						"message": "One or more APIManagementTenant CRs are failing to reconcile",
+						"sop_url": resources.SopApiManagementTenantCRFailed,
+						"message": "An APIManagementTenant CR has failed to reconcile. See the labels for details.",
 					},
-					Expr:   intstr.FromString("num_reconciled_tenants / total_num_tenants < 1"),
+					Expr:   intstr.FromString(`tenants_summary{provisioningStatus!="3scale account ready"}`),
 					For:    "10m",
 					Labels: map[string]string{"severity": "critical", "product": installationName},
 				},
