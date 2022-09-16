@@ -2,10 +2,10 @@
 products:
   - name: rhoam
     environments:
-      - osd-private-post-upgrade
+      - external
+    targets:
+      - 1.27.0
 estimate: 3h
-tags:
-  - per-release
 ---
 
 # A39 - installation - verify RHOAM on private cluster
@@ -31,7 +31,7 @@ tags:
 8. Fill in the following parameters and click `Next`:
 
 ```
-Cluster name: test-ldap-idp
+Cluster name: private
 Availability: Multizone
 Region: (of your choice, the region must support multi-AZ)
 ```
@@ -52,10 +52,10 @@ Host prefix: /26
 Run following command:
 
 ```
-# Copy your cluster's name from OCM UI ("test-ldap-idp" by default) and assign it to the env var CLUSTER_NAME
+# Copy your cluster's name from OCM UI ("private" by default) and assign it to the env var CLUSTER_NAME
 CLUSTER_NAME=<your-cluster-name>
 # Get cluster's ID
-CLUSTER_ID=$(ocm get clusters --parameter search="display_name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
+CLUSTER_ID=$(ocm get clusters --parameter search="name like '$CLUSTER_NAME'" | jq -r '.items[0].id')
 ocm get subs --parameter search="cluster_id = '${CLUSTER_ID}'" | jq -r .items[0].metrics[0].health_state
 ```
 
