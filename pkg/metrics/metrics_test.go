@@ -2,11 +2,13 @@ package metrics
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
@@ -61,6 +63,144 @@ func TestGetContainerCPUMetric(t *testing.T) {
 
 			if metric != tt.ExpectedMetric {
 				t.Fatalf("incorrect metric returned, expected %v, got %v", tt.ExpectedMetric, metric)
+			}
+		})
+	}
+}
+
+func Test_GetStats(t *testing.T) {
+	type args struct {
+		cr *v1alpha1.RHMI
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    RhoamState
+		wantErr bool
+	}{
+		{
+			name:    "nil passed into function",
+			wantErr: true,
+		},
+		{
+			name: "status is \"in progress\"",
+			want: RhoamState{
+				Status: v1alpha1.PhaseInProgress,
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Stage: "bootstrap",
+				},
+			}},
+		},
+		{
+			name: "status is \"complete\"",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseCompleted,
+				Upgrading: false,
+				Version:   "",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Stage: "complete",
+				},
+			}},
+		},
+		{
+			name: "status is empty", // Should never happen
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: false,
+				Version:   "",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{},
+			}},
+		},
+		{
+			name: "upgrading is true, has 'version' & 'toVersion'",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: true,
+				Version:   "1.2.3",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Version:   "1.2.3",
+					ToVersion: "1.2.4",
+				},
+			}},
+		},
+		{
+			name: "upgrading is false, has 'version'",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: false,
+				Version:   "1.2.3",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Version: "1.2.3",
+				},
+			}},
+		},
+		{
+			name: "fresh installation",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: false,
+				Version:   "1.2.3",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					ToVersion: "1.2.3",
+				},
+			}},
+		},
+		{
+			name: "version is 1.2.3",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: false,
+				Version:   "1.2.3",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Version: "1.2.3",
+				},
+			}},
+		},
+		{
+			name: "version is empty",
+			want: RhoamState{
+				Status:    v1alpha1.PhaseInProgress,
+				Upgrading: false,
+				Version:   "",
+			},
+			wantErr: false,
+			args: args{cr: &v1alpha1.RHMI{
+				Status: v1alpha1.RHMIStatus{
+					Version: "",
+				},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetRhoamState(tt.args.cr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetRhoamState() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetRhoamState() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -21,8 +21,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -906,10 +904,7 @@ func InstallationState(version string, toVersion string) string {
 	}
 }
 
-type AlertMetric struct {
-	Name     model.LabelValue
-	Severity model.LabelValue
-	State    v1.AlertState
+type AlertMetrics struct {
+	Firing  int
+	Pending int
 }
-
-type AlertMetrics map[AlertMetric]int
