@@ -32,6 +32,9 @@ func TestRateLimitService(t *testing.T) {
 			Namespace: "redhat-test-marin3r",
 			Labels:    map[string]string{"app": quota.RateLimitName},
 		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+		},
 	}
 
 	podExecutorMock := &resources.PodExecutorInterfaceMock{
@@ -614,6 +617,9 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			Name:      "ratelimit",
 			Namespace: namespace,
 			Labels:    map[string]string{"app": quota.RateLimitName},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
 		},
 	}
 

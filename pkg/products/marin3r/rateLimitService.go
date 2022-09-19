@@ -554,7 +554,7 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 	}
 
 	for _, pod := range rateLimitPods.Items {
-		if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodFailed {
+		if pod.Status.Phase != corev1.PodRunning {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("waiting for rate limit pods to be ready")
 		}
 	}
