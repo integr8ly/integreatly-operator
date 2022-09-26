@@ -5,6 +5,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -13,12 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 
@@ -283,13 +284,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile smtp credentials", err)
-			return phase, err
-		}
-
-		// Wait for RHSSO postgres to be completed
-		phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
 			return phase, err
 		}
 

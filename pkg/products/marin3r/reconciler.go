@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -177,13 +178,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
-		return phase, err
-	}
-
-	// Wait for RHSSO postgres to be completed
-	phase, err = resources.WaitForRHSSOPostgresToBeComplete(client, installation.Name, r.ConfigManager.GetOperatorNamespace())
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
 		return phase, err
 	}
 

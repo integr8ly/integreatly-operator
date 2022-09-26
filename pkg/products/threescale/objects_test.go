@@ -3,13 +3,12 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -750,14 +749,6 @@ var clusterVersion = &v12.ClusterVersion{
 	},
 }
 
-var rhssoPostgres = &crov1.Postgres{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, "test-installation"),
-		Namespace: nsPrefix + defaultInstallationNamespace,
-	},
-	Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseComplete},
-}
-
 var customDomainCR = &customdomainv1alpha1.CustomDomain{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "customDomain",
@@ -814,7 +805,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	zyncDatabase.Namespace = threeScaleInstallationNamespace
 	zyncQue.Namespace = threeScaleInstallationNamespace
 	threescale.Namespace = threeScaleInstallationNamespace
-	rhssoPostgres.Namespace = integreatlyOperatorNamespace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -861,7 +851,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		zyncQue,
 		threescale,
 		clusterVersion,
-		rhssoPostgres,
 		ingressRouterService,
 		smtpSec,
 	}

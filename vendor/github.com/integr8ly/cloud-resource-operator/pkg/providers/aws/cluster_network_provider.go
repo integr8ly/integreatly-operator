@@ -183,13 +183,12 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 		vpcConfig := &ec2.CreateVpcInput{
 			CidrBlock: aws.String(vpcCidrBlock.String()),
 		}
-		if n.IsSTSCluster {
-			tagSpec, err := getDefaultTagSpec(ctx, n.Client, &tag{key: tagDisplayName, value: defaultVpcNameTagValue}, ec2.ResourceTypeVpc)
-			if err != nil {
-				return nil, errorUtil.Wrap(err, "failed to get default tag spec")
-			}
-			vpcConfig.SetTagSpecifications(tagSpec)
+
+		tagSpec, err := getDefaultTagSpec(ctx, n.Client, &tag{key: tagDisplayName, value: defaultVpcNameTagValue}, ec2.ResourceTypeVpc)
+		if err != nil {
+			return nil, errorUtil.Wrap(err, "failed to get default tag spec")
 		}
+		vpcConfig.SetTagSpecifications(tagSpec)
 
 		// create vpc using cidr string from _network
 		createVpcOutput, err := n.Ec2Api.CreateVpc(vpcConfig)
@@ -235,14 +234,6 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 		// vpc created, reset metric
 		resources.ResetVpcAction()
 
-		// do not reconcile tags in STS mode
-		if !n.IsSTSCluster {
-			// ensure standalone vpc has correct tags
-			if err = n.reconcileVPCTags(ctx, createVpcOutput.Vpc); err != nil {
-				return nil, errorUtil.Wrapf(err, "unexpected error while reconciling vpc tags")
-			}
-		}
-
 		return &Network{
 			Vpc:     createVpcOutput.Vpc,
 			Subnets: nil,
@@ -278,8 +269,10 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 	}
 
 	// ensure standalone vpc has correct tags
-	if err = n.reconcileVPCTags(ctx, foundVpc); err != nil {
-		return nil, errorUtil.Wrapf(err, "unexpected error while reconciling vpc tags")
+	if !n.IsSTSCluster {
+		if err = n.reconcileVPCTags(ctx, foundVpc); err != nil {
+			return nil, errorUtil.Wrapf(err, "unexpected error while reconciling vpc tags")
+		}
 	}
 
 	return &Network{
