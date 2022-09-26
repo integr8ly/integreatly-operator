@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -1096,7 +1095,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	}
 	if isSTS {
 		log.Info("validation of STS role ARN parameter ")
-		validArn, err := validateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
+		validArn, err := sts.ValidateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
 		if err != nil || !validArn {
 			log.Error("STS role ARN parameter pattern validation failed", err)
 			return result, err
@@ -1716,31 +1715,4 @@ func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics,
 	}
 
 	return critical, warning
-}
-
-// function is checking if STS addon parameter Pattern is valid
-// Parameter is Valid only in case:
-// 1.	Parameter exists and value matching AWS Role ARN pattern
-// Parameter is Not valid  in other cases:
-// 2.	parameter exists and value is NOT matching AWS Role ARN pattern
-// 3.	parameter exists and value is empty
-// 4.	parameter does not exists
-func validateAddOnStsRoleArnParameterPattern(client k8sclient.Client, namespace string) (bool, error) {
-	stsRoleArn, err := sts.GetSTSRoleARN(context.TODO(), client, namespace)
-	if err != nil {
-		return false, fmt.Errorf("failed while retrieving addon parameter: %v", err)
-	}
-
-	awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
-	r, err := regexp.Compile(awsArnPattern)
-	if err != nil {
-		return false, fmt.Errorf("regexp Compile error: %v", err)
-	}
-
-	// Not a regex match
-	if !r.MatchString(stsRoleArn) {
-		return false, fmt.Errorf("AWS STS role ARN parameter validation failed - parameter pattern is not matching to AWS ARN standard")
-	}
-
-	return true, nil
 }

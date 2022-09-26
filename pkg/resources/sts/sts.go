@@ -3,13 +3,17 @@ package sts
 import (
 	"context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"os"
+	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // #nosec G101 -- This is a false positive
@@ -29,7 +33,7 @@ const (
 func IsClusterSTS(ctx context.Context, client k8sclient.Client, log logger.Logger) (bool, error) {
 	cloudCredential := &cloudcredentialv1.CloudCredential{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{Name: ClusterCloudCredentialName}, cloudCredential); err != nil {
-		log.Error("failed to get cloudCredential whle checking if STS mode", err)
+		log.Error("failed to get cloudCredential while checking if STS mode", err)
 		return false, err
 	}
 
@@ -87,4 +91,59 @@ func GetSTSCredentialsFromEnvVar() (string, string, error) {
 	}
 
 	return roleARN, tokenPath, nil
+}
+
+// ValidateAddOnStsRoleArnParameterPattern is checking if STS addon parameter Pattern is valid
+// Parameter is Valid only in case:
+// 1.	Parameter exists and value matching AWS Role ARN pattern
+// Parameter is Not valid  in other cases:
+// 2.	parameter exists and value is NOT matching AWS Role ARN pattern
+// 3.	parameter exists and value is empty
+// 4.	parameter does not exist
+func ValidateAddOnStsRoleArnParameterPattern(client k8sclient.Client, namespace string) (bool, error) {
+	stsRoleArn, err := GetSTSRoleARN(context.TODO(), client, namespace)
+	if err != nil {
+		return false, fmt.Errorf("failed while retrieving addon parameter: %v", err)
+	}
+
+	awsArnPattern := "arn:aws(?:-us-gov)?:iam:\\S*:\\d+:role\\/\\S+"
+	r, err := regexp.Compile(awsArnPattern)
+	if err != nil {
+		return false, fmt.Errorf("regexp Compile error: %v", err)
+	}
+
+	// Not a regex match
+	if !r.MatchString(stsRoleArn) {
+		return false, fmt.Errorf("AWS STS role ARN parameter validation failed - parameter pattern is not matching to AWS ARN standard")
+	}
+
+	return true, nil
+}
+
+// CreateSTSARNSecret create the STS arn secret - should be already validated in preflight checks
+func CreateSTSARNSecret(ctx context.Context, client k8sclient.Client, installationNamespace, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	stsRoleArn, err := GetSTSRoleARN(ctx, client, installationNamespace)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("STS role ARN parameter pattern validation failed: %w", err)
+	}
+
+	// create CRO credentials secret
+	credSec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      CredsSecretName,
+			Namespace: operatorNamespace,
+		},
+		Data: map[string][]byte{},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, credSec, func() error {
+		credSec.Data[CredsSecretRoleARNKeyName] = []byte(stsRoleArn)
+		credSec.Data[CredsSecretTokenPathKeyName] = []byte("/var/run/secrets/openshift/serviceaccount/token")
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update CRO credentials Secret. Failed to pass ARN into secret: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -965,7 +965,6 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
-	r.log.Info("checking if STS mode")
 	isSTS, err := sts.IsClusterSTS(ctx, serverClient, r.log)
 	if err != nil {
 		return nil, fmt.Errorf("Error checking STS mode: %w", err)

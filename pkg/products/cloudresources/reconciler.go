@@ -164,14 +164,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	// Check if STS Cluster, get STS role ARN addon parameter and pass ARN to Secret in CRO namespace
-	r.log.Info("checking if STS mode")
 	isSTS, err := sts.IsClusterSTS(ctx, client, r.log)
 	if err != nil {
 		r.log.Error("Error checking STS mode", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if isSTS {
-		phase, err = r.createSTSARNSecret(ctx, client, operatorNamespace)
+		phase, err = sts.CreateSTSARNSecret(ctx, client, r.installation.Namespace, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to create STS secret", err)
 			return phase, err
@@ -616,33 +615,4 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	cfgMap.Data["_network"] = string(networkJSON)
 
 	return client.Patch(ctx, cfgMap, k8sclient.Merge)
-}
-
-// createSTSARNSecret create the STS arn secret - should be already validated in preflight checks
-func (r *Reconciler) createSTSARNSecret(ctx context.Context, client k8sclient.Client, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	stsRoleArn, err := sts.GetSTSRoleARN(ctx, client, r.installation.Namespace)
-	if err != nil {
-		r.log.Error("STS role ARN parameter pattern validation failed", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// create CRO credentials secret
-	credSec := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      sts.CredsSecretName,
-			Namespace: operatorNamespace,
-		},
-		Data: map[string][]byte{},
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, client, credSec, func() error {
-		credSec.Data[sts.CredsSecretRoleARNKeyName] = []byte(stsRoleArn)
-		credSec.Data[sts.CredsSecretTokenPathKeyName] = []byte("/var/run/secrets/openshift/serviceaccount/token")
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update CRO credentials Secret. Failed to pass ARN into secret: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
