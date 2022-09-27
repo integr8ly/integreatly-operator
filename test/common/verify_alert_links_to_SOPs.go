@@ -12,23 +12,23 @@ import (
 )
 
 var (
-	githubToken   = os.Getenv("GITHUB_TOKEN")
+	gitlabToken   = os.Getenv("GITLAB_TOKEN")
 	failedSOPurls = make(chan string)
 	wg            sync.WaitGroup
 )
 
 func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 
-	if githubToken == "" {
-		t.Skip("Github token not provided, use GITHUB_TOKEN environment variable to specify it")
+	if gitlabToken == "" {
+		t.Skip("Gitlab token not provided, use GITLAB_TOKEN environment variable to specify it")
 	}
 
 	var sopUrls []string
 
 	// test connection to Github API, with single url
 
-	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
-	validateGithubToken(t, testUrl)
+	testUrl := "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/rhoam/alerts/AddonManagedApiServiceParameters.asciidoc"
+	validateGitlabToken(t, testUrl)
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
 		"prometheus-prometheus-0",
@@ -74,12 +74,10 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 }
 
 // modify raw link to Github API verison
-func convertToGithubApiUrl(sopUrl string) (apiSOPUrl string) {
+func convertToGitlabApiUrl(sopUrl string) (apiSOPUrl string) {
 	r := strings.NewReplacer(
-		"github", "api.github",
-		"com/", "com/repos/",
-		"blob/master", "contents",
-		"tree/master", "contents",
+		"com/rhcloudservices/integreatly-help/-/blob/master/sops/rhoam/alerts/", "com/api/v4/projects/64861/repository/files/sops%2Frhoam%2Falerts%2F",
+		".asciidoc", "%2Easciidoc?ref=master",
 	)
 
 	apiSOPUrl = r.Replace(sopUrl)
@@ -99,8 +97,8 @@ func unique(s []string) []string {
 	return result
 }
 
-func validateGithubToken(t TestingTB, testUrl string) {
-	apiUrl := convertToGithubApiUrl(testUrl)
+func validateGitlabToken(t TestingTB, testUrl string) {
+	apiUrl := convertToGitlabApiUrl(testUrl)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -108,7 +106,7 @@ func validateGithubToken(t TestingTB, testUrl string) {
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", githubToken))
+	req.Header.Add("PRIVATE-TOKEN", fmt.Sprintf("%s", gitlabToken))
 	testResp, err := client.Do(req)
 	if err != nil {
 		t.Log(err)
@@ -122,7 +120,7 @@ func validateGithubToken(t TestingTB, testUrl string) {
 	}(testResp.Body)
 
 	if testResp.StatusCode != 200 {
-		t.Fatal("Response status: ", testUrl, testResp.Status, "Given token does not allow access to SOP URLs")
+		t.Fatal("Response status: ", apiUrl, testResp.Status, "Given token does not allow access to SOP URLs")
 	}
 }
 
@@ -152,7 +150,7 @@ func validateSOPurls(t TestingTB, sopUrls []string) {
 func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 
 	defer wg.Done()
-	apiUrl := convertToGithubApiUrl(url)
+	apiUrl := convertToGitlabApiUrl(url)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -160,7 +158,7 @@ func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", githubToken))
+	req.Header.Add("PRIVATE-TOKEN", fmt.Sprintf("%s", gitlabToken))
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Log(err)
