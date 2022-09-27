@@ -30,8 +30,6 @@ import (
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
-	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -654,6 +652,18 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseInProgress},
 	}
 
+	prometheusRules := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "user-sso",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{Name: "general.rules"},
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -673,7 +683,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres, normalRoute, prometheusRules),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -711,7 +721,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 		{
 			Name:           "test waiting for RHSSO postgres",
-			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -731,45 +741,6 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
 									Name: "codeready-install-plan",
-								},
-							},
-						}, nil
-				},
-			},
-			Installation:          installation,
-			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-			ProductConfig: &quota.ProductConfigMock{
-				ConfigureFunc: func(obj metav1.Object) error {
-					return nil
-				},
-			},
-			Uninstall: false,
-		},
-		{
-			Name:           "test waiting for RHSSO postgres",
-			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
-			FakeConfig:     basicConfigMock(),
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-
-					return nil
-				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "threeScale-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-							},
-						}, &operatorsv1alpha1.Subscription{
-							Status: operatorsv1alpha1.SubscriptionStatus{
-								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "threeScale-install-plan",
 								},
 							},
 						}, nil

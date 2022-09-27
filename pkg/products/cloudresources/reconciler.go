@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"k8s.io/apimachinery/pkg/types"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"strings"
 	"time"
 

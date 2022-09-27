@@ -15,7 +15,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"

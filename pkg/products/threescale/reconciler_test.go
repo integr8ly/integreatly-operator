@@ -490,6 +490,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
+				productConfig: productConfigMock(),
 			},
 			args: args{
 				ctx: context.TODO(),
