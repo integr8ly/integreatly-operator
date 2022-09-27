@@ -85,7 +85,7 @@ cd test/scripts/backup-restore
 ./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
 ```
 
-4. **STS** - Reach out to SRE for the `osdCcsAdmin` credentials in order to run the backup and restore script
+4. **STS** - Reach out to SRE/QE for the `ManagedOpenShift-Support-Role` credentials in order to run the backup and restore script
 
 ```sh
 cd test/scripts/backup-restore

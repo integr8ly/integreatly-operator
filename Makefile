@@ -11,6 +11,7 @@ TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=1.21.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
+CREDENTIALS_MODE=$(shell oc get cloudcredential cluster -o json | jq -r ".spec.credentialsMode")
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
 # DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
@@ -28,9 +29,9 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
-ROLE_ARN ?= "arn:aws:iam::111111111111:role/11111"
-S3_ACCESS_KEY_ID ?= "123"
-S3_SECRET_ACCESS_KEY ?= "secret"
+ROLE_ARN ?= ''
+S3_ACCESS_KEY_ID ?= ''
+S3_SECRET_ACCESS_KEY ?= ''
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -395,6 +396,17 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/addon-params
 cluster/prepare/addon-params:
+	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
+		echo "manual mode (sts)"; \
+		if [ -z $(ROLE_ARN) ] || [ -z $(S3_ACCESS_KEY_ID) ] || [ -z $(S3_SECRET_ACCESS_KEY) ]; then \
+			echo "Environment variables ROLE_ARN, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY are required for STS clusters!"; \
+			echo "Exiting..."; \
+			exit 1; \
+        fi; \
+	else \
+	  	echo "mint mode"; \
+	fi \
+
 	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) STS_ROLE_ARN=$(ROLE_ARN) \
 		S3_ACCESS_KEY_ID=$(S3_ACCESS_KEY_ID) S3_SECRET_ACCESS_KEY=$(S3_SECRET_ACCESS_KEY) \
  		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
