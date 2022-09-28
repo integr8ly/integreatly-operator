@@ -22,7 +22,7 @@ func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro postgres exists failed with the following errors : %s", testErrors)
 	}
-	sess, err := CreateAWSSession(goContext, ctx.Client)
+	sess, isSTS, err := CreateAWSSession(goContext, ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to create aws session: %v", err)
 	}
@@ -39,7 +39,7 @@ func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 			continue
 		}
 		// verify the rds instance is as expected
-		if !verifyRDSInstanceConfig(*foundRDSInstances.DBInstances[0]) {
+		if !verifyRDSInstanceConfig(*foundRDSInstances.DBInstances[0], isSTS) {
 			testErrors = append(testErrors, fmt.Sprintf("failed as rds %s resource is not as expected", resourceIdentifier))
 		}
 	}
@@ -51,6 +51,10 @@ func AWSRDSResourcesExistTest(t common.TestingTB, ctx *common.TestingContext) {
 }
 
 // return expected resource variables
-func verifyRDSInstanceConfig(instance rds.DBInstance) bool {
-	return *instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && *instance.AutoMinorVersionUpgrade == false && *instance.EngineVersion == "13.4"
+func verifyRDSInstanceConfig(instance rds.DBInstance, isSTS bool) bool {
+	// if managed tag is present, and we are either not running on STS, or we are running on STS
+	// and the rosa cluster type is present, and the rest of the config is expected
+	return rdsTagsContains(instance.TagList, awsManagedTagKey, awsManagedTagValue) &&
+		(!isSTS || rdsTagsContains(instance.TagList, awsClusterTypeKey, awsClusterTypeRosaValue)) &&
+		*instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && !*instance.AutoMinorVersionUpgrade && *instance.EngineVersion == "13.4"
 }

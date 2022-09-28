@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 
 	"github.com/go-openapi/strfmt"
@@ -239,6 +240,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=clusterserviceversions,verbs=get;delete;list;update
 
 // +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list
+
+// +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
 
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -1080,6 +1083,21 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
 			log.Info("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
 			_ = r.Status().Update(context.TODO(), installation)
+			return result, err
+		}
+	}
+
+	log.Info("preflightChecks: checking if STS mode")
+	isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
+	if err != nil {
+		log.Error("Error checking STS mode", err)
+		return result, err
+	}
+	if isSTS {
+		log.Info("validation of STS role ARN parameter ")
+		validArn, err := sts.ValidateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
+		if err != nil || !validArn {
+			log.Error("STS role ARN parameter pattern validation failed", err)
 			return result, err
 		}
 	}

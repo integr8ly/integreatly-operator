@@ -112,10 +112,10 @@ func CROStrategyOverrideAWSResourceTest(t common.TestingTB, testingContext *comm
 }
 
 /*
-	From a list of ResourceID's we iterate through them
-	For every resource we describe the resource, checking the backup and maintenance windows are as expected
-	We build a list of errors, to ensure we catch every verification
-	If there is an error we return the list as an error
+From a list of ResourceID's we iterate through them
+For every resource we describe the resource, checking the backup and maintenance windows are as expected
+We build a list of errors, to ensure we catch every verification
+If there is an error we return the list as an error
 */
 func verifyRDSMaintenanceBackupWindows(ctx context.Context, client client.Client, expectedBackupWindow, expectedMaintenanceWindow string) error {
 
@@ -134,7 +134,7 @@ func verifyRDSMaintenanceBackupWindows(ctx context.Context, client client.Client
 	}
 
 	// create aws session
-	sess, err := CreateAWSSession(ctx, client)
+	sess, _, err := CreateAWSSession(ctx, client)
 	if err != nil {
 		return fmt.Errorf("failed to create aws session: %v", err)
 	}
@@ -169,10 +169,10 @@ func verifyRDSMaintenanceBackupWindows(ctx context.Context, client client.Client
 }
 
 /*
-	From a list of ResourceID's we iterate through them
-	For every resource we describe the resource, checking the backup and maintenance windows are as expected
-	We build a list of errors, to ensure we catch every verification
-	If there is an error we return the list as an error
+From a list of ResourceID's we iterate through them
+For every resource we describe the resource, checking the backup and maintenance windows are as expected
+We build a list of errors, to ensure we catch every verification
+If there is an error we return the list as an error
 */
 func verifyElasticacheMaintenanceBackupWindows(ctx context.Context, client client.Client, expectedBackupWindow, expectedMaintenanceWindow string) error {
 	rhmi, err := common.GetRHMI(client, true)
@@ -190,7 +190,7 @@ func verifyElasticacheMaintenanceBackupWindows(ctx context.Context, client clien
 	}
 
 	// create AWS session
-	sess, err := CreateAWSSession(ctx, client)
+	sess, _, err := CreateAWSSession(ctx, client)
 	if err != nil {
 		return fmt.Errorf("failed to create aws session: %v", err)
 	}

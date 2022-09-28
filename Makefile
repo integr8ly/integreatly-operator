@@ -11,6 +11,7 @@ TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=1.21.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
+CREDENTIALS_MODE=$(shell oc get cloudcredential cluster -o json | jq -r ".spec.credentialsMode")
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 IN_PROW ?= "false"
 # DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
@@ -28,6 +29,9 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
+ROLE_ARN ?= ''
+S3_ACCESS_KEY_ID ?= ''
+S3_SECRET_ACCESS_KEY ?= ''
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -321,7 +325,7 @@ ifeq ($(INSTALLATION_TYPE), managed)
 endif
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/quota
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/addon-params
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -358,7 +362,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/quota cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -390,9 +394,22 @@ cluster/prepare/dms:
 	@-oc create secret generic $(NAMESPACE_PREFIX)deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
 
-.PHONY: cluster/prepare/quota
-cluster/prepare/quota:
-	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/custom-addon-secret.yaml | oc apply -f -
+.PHONY: cluster/prepare/addon-params
+cluster/prepare/addon-params:
+	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
+		echo "manual mode (sts)"; \
+		if [ -z $(ROLE_ARN) ] || [ -z $(S3_ACCESS_KEY_ID) ] || [ -z $(S3_SECRET_ACCESS_KEY) ]; then \
+			echo "Environment variables ROLE_ARN, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY are required for STS clusters!"; \
+			echo "Exiting..."; \
+			exit 1; \
+        fi; \
+	else \
+	  	echo "mint mode"; \
+	fi \
+
+	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) STS_ROLE_ARN=$(ROLE_ARN) \
+		S3_ACCESS_KEY_ID=$(S3_ACCESS_KEY_ID) S3_SECRET_ACCESS_KEY=$(S3_SECRET_ACCESS_KEY) \
+ 		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:
@@ -541,7 +558,7 @@ bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 # USAGE: make olm/bundle BUNDLE_TAG="quay.io/mstoklus/integreatly-index:1.15.2" VERSION=1.15.2 OLM_TYPE=managed-api-service will build a bundle from 1.15.2 bundles/managed-api-service directory.
-.PHONY: olm/bundle 
+.PHONY: olm/bundle
 olm/bundle:
 	docker build -f bundles/$(OLM_TYPE)/bundle.Dockerfile -t $(BUNDLE_TAG) --build-arg version=$(VERSION) .
 

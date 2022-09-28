@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"strings"
 	"time"
 
@@ -45,7 +46,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	serviceUpdatesKey            = "serviceUpdates"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002"}
@@ -161,6 +161,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
+	}
+
+	// Check if STS Cluster, get STS role ARN addon parameter and pass ARN to Secret in CRO namespace
+	isSTS, err := sts.IsClusterSTS(ctx, client, r.log)
+	if err != nil {
+		r.log.Error("Error checking STS mode", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if isSTS {
+		phase, err = sts.CreateSTSARNSecret(ctx, client, r.installation.Namespace, operatorNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to create STS secret", err)
+			return phase, err
+		}
 	}
 
 	if err := r.reconcileCIDRValue(ctx, client); err != nil {

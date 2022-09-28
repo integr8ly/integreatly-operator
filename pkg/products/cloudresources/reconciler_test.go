@@ -2,6 +2,8 @@ package cloudresources
 
 import (
 	"context"
+	"testing"
+
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	monitoringv1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -25,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func TestReconciler_cleanupResources(t *testing.T) {
@@ -240,5 +241,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return scheme, err
 }
