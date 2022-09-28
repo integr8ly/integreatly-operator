@@ -18,6 +18,7 @@ var (
 )
 
 func TestSOPUrls(t TestingTB, ctx *TestingContext) {
+	t.Skipf("skipping test, reported in https://issues.redhat.com/browse/MGDAPI-4663")
 
 	if githubToken == "" {
 		t.Skip("Github token not provided, use GITHUB_TOKEN environment variable to specify it")
@@ -27,7 +28,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 
 	// test connection to Github API, with single url
 
-	testUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/README.md"
+	testUrl := "https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/README.md"
 	validateGithubToken(t, testUrl)
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
