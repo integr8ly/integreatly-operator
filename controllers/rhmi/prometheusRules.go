@@ -79,6 +79,26 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 				},
 			},
 		},
+		{
+			AlertName: fmt.Sprintf("%s-telemetry", installationName),
+			Namespace: observability.OpenshiftMonitoringNamespace,
+			GroupName: fmt.Sprintf("%s-telemetry.rules", installationName),
+			Interval:  "30s",
+			Rules: []monitoringv1.Rule{
+				{
+					Expr:   intstr.FromString(fmt.Sprintf("max by(status, upgrading, version) (%s_state)", installationName)),
+					Record: fmt.Sprintf("status:upgrading:version:%s_state:max", installationName),
+				},
+				{
+					Expr:   intstr.FromString(fmt.Sprintf("max by(state) (%s_critical_alerts)", installationName)),
+					Record: fmt.Sprintf("state:%ss_critical_alerts:max", installationName),
+				},
+				{
+					Expr:   intstr.FromString(fmt.Sprintf("max by(state) (%s_warning_alerts)", installationName)),
+					Record: fmt.Sprintf("state:%ss_warning_alerts:max", installationName),
+				},
+			},
+		},
 	}
 
 	return &resources.AlertReconcilerImpl{
