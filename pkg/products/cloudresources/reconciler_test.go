@@ -25,8 +25,8 @@ import (
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -248,11 +248,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func TestReconciler_copySTSSecret(t *testing.T) {
+func TestReconciler_checkStsCredentialsPresent(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-	fakeconfig := make(map[string]string)
-	fakeconfig["OPERATOR_NAMESPACE"] = "rhoam-operator-test"
 	type fields struct {
 		Config        *config.CloudResources
 		ConfigManager config.ConfigReadWriter
@@ -263,7 +261,6 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 		recorder      record.EventRecorder
 	}
 	type args struct {
-		ctx               context.Context
 		client            client.Client
 		operatorNamespace string
 	}
@@ -275,11 +272,9 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "copy sts-credentials secret completed",
+			name: "search sts-credentials secret completed successfully",
 			fields: fields{
-				Config: &config.CloudResources{
-					Config: fakeconfig,
-				},
+				Config:        nil,
 				ConfigManager: nil,
 				installation:  nil,
 				mpm:           nil,
@@ -288,11 +283,9 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 				recorder:      nil,
 			},
 			args: args{
-				ctx: context.TODO(),
 				client: fakeclient.NewFakeClientWithScheme(
 					scheme,
 					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "cro-operator-test"}},
-					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "rhoam-operator-test"}},
 				),
 				operatorNamespace: "cro-operator-test",
 			},
@@ -300,9 +293,9 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "copy sts-credentials secret did not complete",
+			name: "search sts-credentials secret completed successfully",
 			fields: fields{
-				Config:        &config.CloudResources{},
+				Config:        nil,
 				ConfigManager: nil,
 				installation:  nil,
 				mpm:           nil,
@@ -311,11 +304,8 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 				recorder:      nil,
 			},
 			args: args{
-				ctx: context.TODO(),
 				client: fakeclient.NewFakeClientWithScheme(
 					scheme,
-					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "cro-operator-test"}},
-					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}},
 				),
 				operatorNamespace: "cro-operator-test",
 			},
@@ -334,13 +324,13 @@ func TestReconciler_copySTSSecret(t *testing.T) {
 				Reconciler:    tt.fields.Reconciler,
 				recorder:      tt.fields.recorder,
 			}
-			got, err := r.copySTSSecret(tt.args.ctx, tt.args.client, tt.args.operatorNamespace)
+			got, err := r.checkStsCredentialsPresent(tt.args.client, tt.args.operatorNamespace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("copySTSSecret() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("checkStsCredentialsPresent() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("copySTSSecret() got = %v, want %v", got, tt.want)
+				t.Errorf("checkStsCredentialsPresent() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
