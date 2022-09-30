@@ -81,7 +81,7 @@ const MonitoringGrafanaDBMultitenancyDetailedJSON = `{
       "pluginVersion": "7.3.10",
       "targets": [
         {
-          "expr": "num_reconciled_tenants",
+          "expr": "count(tenants_summary{provisioningStatus=\"3scale account ready\"})",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -140,7 +140,7 @@ const MonitoringGrafanaDBMultitenancyDetailedJSON = `{
       "pluginVersion": "7.3.10",
       "targets": [
         {
-          "expr": "total_num_tenants",
+          "expr": "count(tenants_summary)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -201,7 +201,7 @@ const MonitoringGrafanaDBMultitenancyDetailedJSON = `{
       "pluginVersion": "7.3.10",
       "targets": [
         {
-          "expr": "num_reconciled_tenants / total_num_tenants",
+          "expr": "count(tenants_summary{provisioningStatus=\"3scale account ready\"}) / count(tenants_summary)",
           "instant": true,
           "interval": "",
           "intervalFactor": 2,
