@@ -2,6 +2,8 @@ package cloudresources
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -24,6 +26,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -243,4 +246,92 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	}
 
 	return scheme, err
+}
+
+func TestReconciler_checkStsCredentialsPresent(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		client            client.Client
+		operatorNamespace string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "search sts-credentials secret completed successfully",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: fakeclient.NewFakeClientWithScheme(
+					scheme,
+					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "cro-operator-test"}},
+				),
+				operatorNamespace: "cro-operator-test",
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "search sts-credentials secret completed successfully",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: fakeclient.NewFakeClientWithScheme(
+					scheme,
+				),
+				operatorNamespace: "cro-operator-test",
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.checkStsCredentialsPresent(tt.args.client, tt.args.operatorNamespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("checkStsCredentialsPresent() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("checkStsCredentialsPresent() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

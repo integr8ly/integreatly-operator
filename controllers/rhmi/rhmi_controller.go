@@ -1094,12 +1094,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, err
 	}
 	if isSTS {
-		log.Info("validation of STS role ARN parameter ")
-		validArn, err := sts.ValidateAddOnStsRoleArnParameterPattern(r.Client, installation.Namespace)
-		if err != nil || !validArn {
-			log.Error("STS role ARN parameter pattern validation failed", err)
-			return result, err
-		}
+		log.Info("STS mode enabled for cluster")
 	}
 
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
