@@ -9,6 +9,7 @@ import (
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/sirupsen/logrus"
@@ -163,10 +164,6 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 }
 
 func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (ctrl.Result, error) {
-	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
-		log.Info("no upgrade available")
-		return ctrl.Result{}, nil
-	}
 	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
 	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
@@ -202,6 +199,20 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		return ctrl.Result{}, err
 	}
 
+	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
+		log.Info("no upgrade available")
+
+		// if we have not started update but are due to, and it was a serviceAffecting upgrade
+		// requeue so that we can enable maintenance window
+		if installation.Status.ToVersion != "" && installation.Status.Version != version.GetVersion() && isServiceAffecting {
+			return ctrl.Result{
+				Requeue:      true,
+				RequeueAfter: 10 * time.Second,
+			}, nil
+		}
+		return ctrl.Result{}, nil
+	}
+
 	if !isServiceAffecting && !latestInstallPlan.Spec.Approved {
 		eventRecorder := r.mgr.GetEventRecorderFor("Operator Upgrade")
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
@@ -231,6 +242,7 @@ func (r *SubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *SubscriptionReconciler) allowDatabaseUpdates(ctx context.Context, installation *integreatlyv1alpha1.RHMI, isServiceAffecting bool) error {
 	if installation.Status.ToVersion != "" && isServiceAffecting {
+		log.Info("Service affecting and upgrading, setting maintenanceWindow to true")
 		postgresInstances := &crov1alpha1.PostgresList{}
 		if err := r.Client.List(ctx, postgresInstances); err != nil {
 			return fmt.Errorf("failed to list postgres instances: %w", err)

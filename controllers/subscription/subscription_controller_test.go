@@ -99,6 +99,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				Spec: &v1alpha1.SubscriptionSpec{
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
+				Status: v1alpha1.SubscriptionStatus{
+					InstallPlanRef: &v1.ObjectReference{
+						Name:      installPlan.Name,
+						Namespace: installPlan.Namespace,
+					},
+				},
 			},
 			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
@@ -131,6 +137,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				Spec: &v1alpha1.SubscriptionSpec{
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
+				Status: v1alpha1.SubscriptionStatus{
+					InstallPlanRef: &v1.ObjectReference{
+						Name:      installPlan.Name,
+						Namespace: installPlan.Namespace,
+					},
+				},
 			},
 			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
@@ -162,6 +174,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				},
 				Spec: &v1alpha1.SubscriptionSpec{
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+				},
+				Status: v1alpha1.SubscriptionStatus{
+					InstallPlanRef: &v1.ObjectReference{
+						Name:      installPlan.Name,
+						Namespace: installPlan.Namespace,
+					},
 				},
 			},
 			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
