@@ -224,7 +224,7 @@ func CreateAWSSession(ctx context.Context, client client.Client) (*session.Sessi
 			awsConfig.Credentials = credentials.NewCredentials(credentialsProvider)
 		}
 	} else {
-		awsSecretAccessKey, awsAccessKeyID, err := getAWSCredentials(ctx, client)
+		awsAccessKeyID, awsSecretAccessKey, err := getAWSCredentials(ctx, client)
 		if err != nil {
 			return nil, isSTS, fmt.Errorf("failed to get AWS credentials: %w", err)
 		}
