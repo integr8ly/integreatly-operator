@@ -3315,6 +3315,7 @@ func (r *Reconciler) useCustomDomain() bool {
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
 	format := "failed to retrieve %s 3scale route"
+	portals := map[string]metrics.PortalInfo{}
 	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemMaster)
@@ -3327,20 +3328,26 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemProvider)
 	}
-	portals := map[string]metrics.PortalInfo{
-		metrics.LabelSystemMaster: {
+
+	if systemMasterRoute != nil && systemMasterRoute.Status.Ingress != nil && len(systemMasterRoute.Status.Ingress) > 0 {
+		portals[metrics.LabelSystemMaster] = metrics.PortalInfo{
 			Host:       systemMasterRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemMaster,
-		},
-		metrics.LabelSystemDeveloper: {
+		}
+	}
+	if systemDeveloperRoute != nil && systemDeveloperRoute.Status.Ingress != nil && len(systemDeveloperRoute.Status.Ingress) > 0 {
+		portals[metrics.LabelSystemDeveloper] = metrics.PortalInfo{
 			Host:       systemDeveloperRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemDeveloper,
-		},
-		metrics.LabelSystemProvider: {
+		}
+	}
+	if systemProviderRoute != nil && systemProviderRoute.Status.Ingress != nil && len(systemProviderRoute.Status.Ingress) > 0 {
+		portals[metrics.LabelSystemProvider] = metrics.PortalInfo{
 			Host:       systemProviderRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemProvider,
-		},
+		}
 	}
+
 	var hasUnavailablePortal float64
 	for key, portal := range portals {
 		// #nosec G402 -- intentionally allowed
