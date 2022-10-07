@@ -164,6 +164,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = resources.ReconcileLimitRange(ctx, client, operatorNamespace, resources.DefaultLimitRangeParams)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile LimitRange for Namespace %s", operatorNamespace), err)
+		return phase, err
+	}
+
 	// Check if STS Cluster, get STS role ARN addon parameter and pass ARN to Secret in CRO namespace
 	isSTS, err := sts.IsClusterSTS(ctx, client, r.log)
 	if err != nil {

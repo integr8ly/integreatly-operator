@@ -113,6 +113,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	// MGDAPI-4641 block end
 
+	phase, err = resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile LimitRange for Namespace %s", r.installation.Namespace), err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
