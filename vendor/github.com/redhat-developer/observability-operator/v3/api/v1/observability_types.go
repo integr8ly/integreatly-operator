@@ -82,11 +82,11 @@ type SelfContained struct {
 	AlertManagerVersion                   string                   `json:"alertManagerVersion,omitempty"`
 	BlackboxBearerTokenSecret             string                   `json:"blackboxBearerTokenSecret,omitempty"`
 	PrometheusVersion                     string                   `json:"prometheusVersion,omitempty"`
-	AlertManagerResourceRequirement       v1.ResourceRequirements  `json:"alertManagerResourceRequirement,omitempty"`
-	PrometheusResourceRequirement         v1.ResourceRequirements  `json:"prometheusResourceRequirement,omitempty"`
-	PrometheusOperatorResourceRequirement v1.ResourceRequirements  `json:"prometheusOperatorResourceRequirement,omitempty"`
+	AlertManagerResourceRequirement       *v1.ResourceRequirements `json:"alertManagerResourceRequirement,omitempty"`
+	PrometheusResourceRequirement         *v1.ResourceRequirements `json:"prometheusResourceRequirement,omitempty"`
+	PrometheusOperatorResourceRequirement *v1.ResourceRequirements `json:"prometheusOperatorResourceRequirement,omitempty"`
 	GrafanaResourceRequirement            *v1.ResourceRequirements `json:"grafanaResourceRequirement,omitempty"`
-	GrafanaOperatorResourceRequirement    v1.ResourceRequirements  `json:"grafanaOperatorResourceRequirement,omitempty"`
+	GrafanaOperatorResourceRequirement    *v1.ResourceRequirements `json:"grafanaOperatorResourceRequirement,omitempty"`
 	GrafanaVersion                        string                   `json:"grafanaVersion,omitempty"`
 }
 
@@ -100,10 +100,16 @@ type ObservabilitySpec struct {
 	Tolerations             []v1.Toleration       `json:"tolerations,omitempty"`
 	Affinity                *v1.Affinity          `json:"affinity,omitempty"`
 	SelfContained           *SelfContained        `json:"selfContained,omitempty"`
+	DescopedMode            *DescopedMode         `json:"descopedMode,omitempty"`
 	Retention               string                `json:"retention,omitempty"`
 	AlertManagerDefaultName string                `json:"alertManagerDefaultName,omitempty"`
 	PrometheusDefaultName   string                `json:"prometheusDefaultName,omitempty"`
 	GrafanaDefaultName      string                `json:"grafanaDefaultName,omitempty"`
+}
+
+type DescopedMode struct {
+	Enabled                     *bool  `json:"enabled,omitempty"`
+	PrometheusOperatorNamespace string `json:"prometheusOperatorNamespace,omitempty"`
 }
 
 // ObservabilityStatus defines the observed state of Observability
@@ -183,6 +189,22 @@ func (in *Observability) HasBlackboxBearerTokenSecret() (bool, string) {
 	}
 
 	return false, ""
+}
+
+func (in *Observability) DescopedModeEnabled() bool {
+	if in.Spec.DescopedMode != nil && in.Spec.DescopedMode.Enabled != nil {
+		return *in.Spec.DescopedMode.Enabled
+	}
+
+	return false
+}
+
+func (in *Observability) GetPrometheusOperatorNamespace() string {
+	if in.DescopedModeEnabled() && in.Spec.DescopedMode.PrometheusOperatorNamespace != "" {
+		return in.Spec.DescopedMode.PrometheusOperatorNamespace
+	}
+
+	return in.Namespace
 }
 
 func init() {

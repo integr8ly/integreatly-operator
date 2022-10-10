@@ -40,7 +40,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.45.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.12.2
-	github.com/redhat-developer/observability-operator/v3 v3.0.13
+	github.com/redhat-developer/observability-operator/v3 v3.0.16
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20201210151747-8264b9904eab
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
@@ -54,7 +54,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
-	sigs.k8s.io/controller-runtime v0.11.2
+	sigs.k8s.io/controller-runtime v0.12.1
 	sigs.k8s.io/yaml v1.3.0
 )
 

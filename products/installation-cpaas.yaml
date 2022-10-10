@@ -78,7 +78,7 @@ products:
     channel: alpha
     package: observability-operator
     installFrom: index
-    index: quay.io/rhoas/observability-operator-index:v3.0.13
+    index: quay.io/rhoas/observability-operator-index:v3.0.16
   rhsso:
     channel: rhmi
     installFrom: local

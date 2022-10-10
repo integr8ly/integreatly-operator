@@ -1,5 +1,5 @@
 channels:
-  - currentCSV: observability-operator.3.0.13
+  - currentCSV: observability-operator.3.0.16
     name: rhmi
 defaultChannel: rhmi
 packageName: rhmi-observability-operator

@@ -165,8 +165,8 @@ func (m *Observability) GetGrafanaServiceName() string {
 	return "grafana-service"
 }
 
-func (m *Observability) GetAlertManagerResourceRequirements() corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
+func (m *Observability) GetAlertManagerResourceRequirements() *corev1.ResourceRequirements {
+	return &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("200Mi")},
 	}
 }
@@ -178,14 +178,14 @@ func (m *Observability) GetGrafanaResourceRequirements() *corev1.ResourceRequire
 	}
 }
 
-func (m *Observability) GetPrometheusResourceRequirements() corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
+func (m *Observability) GetPrometheusResourceRequirements() *corev1.ResourceRequirements {
+	return &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("400Mi")},
 	}
 }
 
-func (m *Observability) GetPrometheusOperatorResourceRequirements() corev1.ResourceRequirements {
-	return corev1.ResourceRequirements{
+func (m *Observability) GetPrometheusOperatorResourceRequirements() *corev1.ResourceRequirements {
+	return &corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m"), corev1.ResourceMemory: resource.MustParse("200Mi")},
 		Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m"), corev1.ResourceMemory: resource.MustParse("400Mi")},
 	}
