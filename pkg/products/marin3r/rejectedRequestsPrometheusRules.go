@@ -2,7 +2,6 @@ package marin3r
 
 import (
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -16,19 +15,14 @@ const rejectedRequestsAlertExpr = "abs(clamp_min(increase(limited_calls[1m]) - %
 func (r *Reconciler) newRejectedRequestsAlertsReconciler(logger l.Logger, installType string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
-	namespace := r.Config.GetNamespace()
-	alertName := "rejected-requests"
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			logger.Warning("failed to get observability config")
-			return nil, err
-		}
-
-		namespace = observabilityConfig.GetNamespace()
-		alertName = "marin3r-rejected-requests"
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		logger.Warning("failed to get observability config")
+		return nil, err
 	}
+
+	namespace := observabilityConfig.GetNamespace()
+	alertName := "marin3r-rejected-requests"
 
 	limitPerMinute, err := config.ConvertRate(
 		r.RateLimitConfig.Unit,

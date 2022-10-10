@@ -11,10 +11,6 @@ func TestIntegreatlyCRDExists(t TestingTB, ctx *TestingContext) {
 	testCrdExists(t, ctx, "rhmis.integreatly.org")
 }
 
-func TestRHMIConfigCRDExists(t TestingTB, ctx *TestingContext) {
-	testCrdExists(t, ctx, "rhmiconfigs.integreatly.org")
-}
-
 func testCrdExists(t TestingTB, ctx *TestingContext, name string) {
 	_, err := ctx.ExtensionClient.ApiextensionsV1().CustomResourceDefinitions().Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {

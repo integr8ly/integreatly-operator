@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	corev1 "k8s.io/api/core/v1"
-	k8sresource "k8s.io/apimachinery/pkg/api/resource"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -49,7 +46,7 @@ var (
 	adminCredentialSecretName = "credential-" + keycloakName
 	ssoType                   = "user sso"
 	postgresResourceName      = "rhssouser-postgres-rhmi"
-	routeName                 = "keycloak-edge"
+	routeName                 = "keycloak"
 )
 
 const (
@@ -208,12 +205,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	// Setting a name for keycloak-edge to "keycloak" for managed-api install type.
-	// This is done as the KCO route has been disabled, but if needs to be enabled in future, we won't have to change the route name.
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		routeName = "keycloak"
-	}
-
 	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon, routeName)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)
@@ -259,11 +250,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
-		return phase, err
-	}
-	phase, err = r.ReconcileBlackboxTargets(ctx, serverClient, "integreatly-rhssouser", r.Config.GetHost(), "rhssouser-ui")
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
@@ -334,11 +320,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Labels = getMasterLabels()
 
 		// Disabling the KCO route for managed-api
-		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
-		} else {
-			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
-		}
+		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
+
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 
@@ -351,23 +334,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 		}
 
-		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("750m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1500m"), corev1.ResourceMemory: k8sresource.MustParse("1500Mi")},
-			}
-			//OSD has more resources than PROW, so adding an exception
-			numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
-			if kc.Spec.Instances < numberOfReplicas {
-				kc.Spec.Instances = numberOfReplicas
-			}
-		}
-
-		if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-			err = productConfig.Configure(kc)
-			if err != nil {
-				return err
-			}
+		err = productConfig.Configure(kc)
+		if err != nil {
+			return err
 		}
 		return nil
 	})
@@ -1342,11 +1311,6 @@ func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName stri
 }
 
 func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
-	// If the installation type isn't managed-api, ensure that the ConsoleLink
-	// doesn't exist
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.Installation.Spec.Type)) {
-		return r.deleteConsoleLink(ctx, serverClient, userSsoConsoleLink)
-	}
 
 	cl := &consolev1.ConsoleLink{
 		ObjectMeta: metav1.ObjectMeta{

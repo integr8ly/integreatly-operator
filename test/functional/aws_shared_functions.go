@@ -43,14 +43,7 @@ const (
 )
 
 func getExpectedPostgres(installType string, installationName string) []string {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		// expected postgres resources provisioned per product
-		return []string{
-			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		}
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		// expected postgres resources provisioned per product
 		return []string{
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
@@ -59,12 +52,9 @@ func getExpectedPostgres(installType string, installationName string) []string {
 	} else {
 		// expected postgres resources provisioned per product
 		return []string{
-			fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
 		}
 	}
 }
@@ -74,35 +64,19 @@ func getExpectedRedis(installType string, installationName string) []string {
 	commonRedis := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
 		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
-	}
-
-	managedApiRedis := []string{
 		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
 	}
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonRedis, managedApiRedis...)
-	} else {
-		return commonRedis
-	}
+	return commonRedis
 }
 
 func getExpectedBlobStorage(installType string, installationName string) []string {
-	// backups blob storage
-	backupsBlobStorage := []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
-	}
 
 	// 3scale blob storage
 	threescaleBlobStorage := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
 	}
 
-	// Managed API (RHOAM) contains only 3scale blobstorage
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return threescaleBlobStorage
-	}
-	return append(backupsBlobStorage, threescaleBlobStorage...)
+	return threescaleBlobStorage
 }
 
 /*

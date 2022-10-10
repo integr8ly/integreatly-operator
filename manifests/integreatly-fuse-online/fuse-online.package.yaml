@@ -1,4 +1,0 @@
-packageName: rhmi-syndesis
-channels:
-- name: rhmi
-  currentCSV: fuse-online-operator.v7.6.0

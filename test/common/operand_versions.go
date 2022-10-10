@@ -5,30 +5,6 @@ import (
 )
 
 var (
-	rhmi2ProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
-		integreatlyv1alpha1.AuthenticationStage: {
-			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
-		},
-		integreatlyv1alpha1.ObservabilityStage: {
-			integreatlyv1alpha1.ProductObservability: integreatlyv1alpha1.VersionObservability,
-		},
-		integreatlyv1alpha1.CloudResourcesStage: {
-			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
-		},
-		integreatlyv1alpha1.ProductsStage: {
-			integreatlyv1alpha1.Product3Scale:              integreatlyv1alpha1.Version3Scale,
-			integreatlyv1alpha1.ProductFuse:                integreatlyv1alpha1.VersionFuseOnOpenshift,
-			integreatlyv1alpha1.ProductRHSSOUser:           integreatlyv1alpha1.VersionRHSSOUser,
-			integreatlyv1alpha1.ProductCodeReadyWorkspaces: integreatlyv1alpha1.VersionCodeReadyWorkspaces,
-			integreatlyv1alpha1.ProductAMQOnline:           integreatlyv1alpha1.VersionAMQOnline,
-			integreatlyv1alpha1.ProductUps:                 integreatlyv1alpha1.VersionUps,
-			integreatlyv1alpha1.ProductApicurito:           integreatlyv1alpha1.VersionApicurito,
-		},
-		integreatlyv1alpha1.SolutionExplorerStage: {
-			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.VersionSolutionExplorer,
-		},
-	}
-
 	managedApiProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
 		integreatlyv1alpha1.InstallStage: {
 			integreatlyv1alpha1.ProductRHSSO:          integreatlyv1alpha1.VersionRHSSO,
@@ -72,11 +48,9 @@ func TestProductVersions(t TestingTB, ctx *TestingContext) {
 }
 
 func getProductVersions(installType string) map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion {
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return managedApiProductVersions
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return mtManagedApiProductVersions
 	} else {
-		return rhmi2ProductVersions
+		return managedApiProductVersions
 	}
 }

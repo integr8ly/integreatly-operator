@@ -23,7 +23,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -31,7 +30,6 @@ import (
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -137,10 +135,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -483,11 +477,11 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 		Status: integreatlyv1alpha1.RHMIStatus{
 			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
-				"codeready-stage": {
-					Name: "codeready-stage",
+				"threeScale-stage": {
+					Name: "threeScale-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+						integreatlyv1alpha1.Product3Scale: {
+							Name:  integreatlyv1alpha1.Product3Scale,
 							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
@@ -554,6 +548,16 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 	edgeRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak-edge",
+			Namespace: "user-sso",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
+	normalRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
 			Namespace: "user-sso",
 		},
 		Spec: routev1.RouteSpec{
@@ -648,6 +652,18 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		Status: crotypes.ResourceTypeStatus{Phase: crotypes.PhaseInProgress},
 	}
 
+	prometheusRules := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "user-sso",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{Name: "general.rules"},
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -667,7 +683,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres, normalRoute, prometheusRules),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -705,7 +721,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 		{
 			Name:           "test waiting for RHSSO postgres",
-			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -807,7 +823,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 				"rhsso-stage": {
 					Name: "rhsso-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+						integreatlyv1alpha1.Product3Scale: {
 							Name:  integreatlyv1alpha1.ProductRHSSO,
 							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
@@ -1601,12 +1617,12 @@ func getLogger() l.Logger {
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {
 	return &metav1.APIResourceList{
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: grafanav1alpha1.GroupVersion.String(),
 		APIResources: []metav1.APIResource{
 			{
-				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
-				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
-				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+				Group:   "integreatly.org",
+				Version: "v1alpha1",
+				Kind:    "GrafanaDashboard",
 			},
 		},
 	}
@@ -1622,9 +1638,9 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 			list = &metav1.APIGroupList{
 				Groups: []metav1.APIGroup{
 					{
-						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Name: "integreatly.org",
 						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
 						},
 					},
 				},

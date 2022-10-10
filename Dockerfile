@@ -10,7 +10,6 @@ COPY vendor/ vendor/
 # Copy the go source
 COPY main.go main.go
 COPY apis/ apis/
-COPY apis-products/ apis-products/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY version/ version/

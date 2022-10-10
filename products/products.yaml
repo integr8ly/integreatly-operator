@@ -9,25 +9,19 @@ products:
   - name: 3scale-operator
     version: 3scale-2.11.0-GA
     url: "https://github.com/3scale/3scale-operator"
-    installType: "rhmi/rhoam"
+    installType: "rhoam"
     manifestsDir: "integreatly-3scale"
     quayScan: true
-  - name: apicurito-registry-operator
-    version: 0.0.3
-    url: "https://github.com/Apicurio/apicurio-registry-operator"
-    installType: "rhmi"
-    manifestsDir: "integreatly-apicurito"
-    quayScan: false
   - name: cloud-resource-operator
     version: v0.41.0
     url: "https://github.com/integr8ly/cloud-resource-operator"
-    installType: "rhoam/rhmi"
+    installType: "rhoam"
     manifestsDir: "integreatly-cloud-resources"
     quayScan: true
   - name: grafana-operator
     version: v4.2.0
     url: "https://github.com/grafana-operator/grafana-operator"
-    installType: "rhoam/rhmi"
+    installType: "rhoam"
     manifestsDir: "integreatly-grafana"
     quayScan: true
   - name: marin3r
@@ -36,35 +30,17 @@ products:
     installType: "rhoam"
     manifestsDir: "integreatly-marin3r"
     quayScan: true
-  - name: application-monitoring-operator
-    version: v1.8.0
-    url: "https://github.com/integr8ly/application-monitoring-operator"
-    installType: "rhmi"
-    manifestsDir: "integreatly-monitoring"
-    quayScan: true
   - name: rhsso-operator
     version: 18.0.x
     url: "git@gitlab.cee.redhat.com:keycloak/keycloak-operator-prod.git"
-    installType: "rhmi/rhoam"
+    installType: "rhoam"
     manifestsDir: "integreatly-rhsso"
     quayScan: true
   - name: keycloak-client
     version: v0.1.8
     url: "https://github.com/integr8ly/keycloak-client"
-    installType: "rhmi/rhoam"
+    installType: "rhoam"
     manifestsDir: "integreatly-keycloak-client"
-    quayScan: false
-  - name: tutorial-web-app-operator
-    version: v0.0.62
-    url: "https://github.com/integr8ly/tutorial-web-app-operator"
-    installType: "rhmi"
-    manifestsDir: "integreatly-solution-explorer"
-    quayScan: false
-  - name: unifiedpush-operator
-    version: v0.5.0
-    url: "https://github.com/aerogear/unifiedpush-operator"
-    installType: "rhmi"
-    manifestsDir: "integreatly-unifiedpush"
     quayScan: false
   - name: observability-operator
     version: v3.0.13

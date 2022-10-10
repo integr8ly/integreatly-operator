@@ -48,7 +48,6 @@ import (
 
 const (
 	deletionRHOAM = "managed-api-service"
-	deletionRHMI  = "rhmi"
 )
 
 var (
@@ -108,7 +107,6 @@ func (r *NamespaceLabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				namespacePredicate(r.operatorNamespace),
 				predicate.Or(
 					namePredicate(deletionRHOAM),
-					namePredicate(deletionRHMI),
 				),
 			),
 		)).
@@ -164,9 +162,6 @@ func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result,
 			return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
 		}
 
-		if rhmiCr.Spec.Type == "managed" {
-			deletionConfigMap = deletionRHMI
-		}
 		err = r.CheckConfigMap(ns, request, deletionConfigMap)
 		if err != nil {
 			return ctrl.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil

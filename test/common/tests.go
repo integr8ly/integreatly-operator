@@ -13,20 +13,13 @@ var (
 			[]TestCase{
 				// Add all tests that can be executed prior to a completed installation here
 				{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
-				{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 
 	HAPPY_PATH_TESTS = []TestSuite{
 		//Add all happy path tests to be executed after RHMI installation is completed here
-		{
-			[]TestCase{
-				{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
-			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
-		},
 		{
 			[]TestCase{
 				{"A32 - Validate SSO config", TestSSOconfig},
@@ -57,8 +50,6 @@ var (
 				{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 				{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
-				{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
-				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY on RHMI*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
@@ -74,7 +65,7 @@ var (
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -110,18 +101,10 @@ var (
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C19 - Validate creation of invalid username triggers alert", TestInvalidUserNameAlert},
-				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
 				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
 				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
-		},
-		{
-			[]TestCase{
-				{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
-				{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
-			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
@@ -141,7 +124,7 @@ var (
 				// Can potentially cause subsequent tests be flaky due to waiting for 3scale deployments to complete
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
 	}
 
@@ -151,13 +134,13 @@ var (
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
 			[]TestCase{
 				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
 		{
 			[]TestCase{

@@ -37,7 +37,6 @@ import (
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	namespacecontroller "github.com/integr8ly/integreatly-operator/controllers/namespacelabel"
 	rhmicontroller "github.com/integr8ly/integreatly-operator/controllers/rhmi"
-	rhmiconfigcontroller "github.com/integr8ly/integreatly-operator/controllers/rhmiconfig"
 	subscriptioncontroller "github.com/integr8ly/integreatly-operator/controllers/subscription"
 	tenantcontroller "github.com/integr8ly/integreatly-operator/controllers/tenant"
 	usercontroller "github.com/integr8ly/integreatly-operator/controllers/user"
@@ -58,10 +57,7 @@ var (
 func init() {
 	// Register custom metrics with the global prometheus registry
 	customMetrics.Registry.MustRegister(integreatlymetrics.OperatorVersion)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatusAvailable)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIInfo)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIVersion)
-	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatus)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMInfo)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMCluster)
@@ -146,13 +142,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "RHMI")
 		os.Exit(1)
 	}
-	if err = (&rhmiconfigcontroller.RHMIConfigReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "RHMIConfig")
-		os.Exit(1)
-	}
 	if watchNamespace == "" || !strings.Contains(watchNamespace, "sandbox") {
 		if err = namespacecontroller.New(mgr).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "Namespace")
@@ -208,36 +197,6 @@ func main() {
 }
 
 func setupWebhooks(mgr ctrl.Manager) error {
-	rhmiConfigRegister, err := webhooks.WebhookRegisterFor(&rhmiv1alpha1.RHMIConfig{})
-	if err != nil {
-		return err
-	}
-
-	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
-		Name:     "rhmiconfig",
-		Register: rhmiConfigRegister,
-		Rule: webhooks.NewRule().
-			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
-			ForCreate().
-			ForUpdate().
-			NamespacedScope(),
-	})
-
-	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
-		Name: "rhmiconfig-mutate",
-		Rule: webhooks.NewRule().
-			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
-			ForCreate().
-			ForUpdate().
-			NamespacedScope(),
-		Register: webhooks.AdmissionWebhookRegister{
-			Type: webhooks.MutatingType,
-			Path: "/mutate-rhmiconfig",
-			Hook: &admission.Webhook{
-				Handler: rhmiv1alpha1.NewRHMIConfigMutatingHandler(),
-			},
-		},
-	})
 
 	// Delete webhook for the RHMI CR that uninstalls the operator if there
 	// are no finalizers left

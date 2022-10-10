@@ -26,16 +26,13 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	if err != nil {
 		return nil, err
 	}
-	namespace := r.Config.GetNamespace()
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get observability config: %e", err)
-		}
-
-		namespace = observabilityConfig.GetNamespace()
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get observability config: %e", err)
 	}
+
+	namespace := observabilityConfig.GetNamespace()
 
 	alerts, err := mapAlertsConfiguration(r.log, namespace, r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
 	if err != nil {
@@ -81,7 +78,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 			}
 			requestsAllowedOverTimePeriod := requestsAllowedPerSecond * float64(usageFrequencyMins*60)
 
-			minRateValue, maxRateValue, err := parsePercenteageRange(
+			minRateValue, maxRateValue, err := parsePercentageRange(
 				alertConfig.Threshold.MinRate,
 				alertConfig.Threshold.MaxRate,
 			)
@@ -214,18 +211,18 @@ func intervalToMinutes(interval string) (uint32, error) {
 	return uint32(intervalValue * multiplier), nil
 }
 
-// parsePercenteage parses and validates a percenteage string by extracting
-// the numeric value and validating that it's in a correct value for a percenteage
-func parsePercenteage(percenteage *string) (*int, error) {
-	if percenteage == nil {
+// parsePercentage parses and validates a percentage string by extracting
+// the numeric value and validating that it's in a correct value for a percentage
+func parsePercentage(percentage *string) (*int, error) {
+	if percentage == nil {
 		return nil, nil
 	}
 
 	var re = regexp.MustCompile(`(?m)([0-9]+)%$`)
-	matches := re.FindAllStringSubmatch(*percenteage, -1)
+	matches := re.FindAllStringSubmatch(*percentage, -1)
 
 	if len(matches) == 0 || len(matches[0]) != 2 {
-		return nil, fmt.Errorf("invalid value for percenteage %s", *percenteage)
+		return nil, fmt.Errorf("invalid value for percentage %s", *percentage)
 	}
 
 	result, err := strconv.Atoi(matches[0][1])
@@ -234,21 +231,21 @@ func parsePercenteage(percenteage *string) (*int, error) {
 	}
 
 	if result < 0 || result > 100 {
-		return nil, fmt.Errorf("%d is an invalid percenteage", result)
+		return nil, fmt.Errorf("%d is an invalid percentage", result)
 	}
 
 	return &result, nil
 }
 
-// parsePercenteageRange parses both min and max as percenteages, and validates
+// parsePercentageRange parses both min and max as percentages, and validates
 // that min is less than or equal to max
-func parsePercenteageRange(min string, max *string) (int, *int, error) {
-	minValue, err := parsePercenteage(&min)
+func parsePercentageRange(min string, max *string) (int, *int, error) {
+	minValue, err := parsePercentage(&min)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	maxValue, err := parsePercenteage(max)
+	maxValue, err := parsePercentage(max)
 	if err != nil {
 		return 0, nil, err
 	}

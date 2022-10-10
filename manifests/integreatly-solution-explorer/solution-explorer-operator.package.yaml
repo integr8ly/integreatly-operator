@@ -1,4 +1,0 @@
-packageName: rhmi-solution-explorer
-channels:
-- currentCSV: solution-explorer-operator.v0.0.62
-  name: rhmi

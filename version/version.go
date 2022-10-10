@@ -12,7 +12,6 @@ const (
 )
 
 var (
-	version           = "2.9.0"
 	managedAPIVersion = "1.27.0"
 	log               = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "version"})
 )
@@ -42,6 +41,6 @@ func GetVersionByType(installType string) string {
 	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
 		return managedAPIVersion
 	} else {
-		return version
+		return managedAPIVersion
 	}
 }

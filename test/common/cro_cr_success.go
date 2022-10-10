@@ -24,25 +24,14 @@ func getPostgres(installType string, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 	}
 
-	// Applicable to install types used in 2.X
-	rhmi2PostgresToCheck := []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
-		constants.AMQAuthServicePostgres,
-	}
-
 	rhoamPostgresToCheck := []string{
 		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
 	}
 
-	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonPostgresToCheck, rhoamPostgresToCheck...)
-	} else if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPostgresToCheck
 	} else {
-		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
+		return append(commonPostgresToCheck, rhoamPostgresToCheck...)
 	}
 }
 
@@ -50,17 +39,10 @@ func getRedisToCheck(installType string, installationName string) []string {
 	commonRedis := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
 		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
-	}
-
-	managedApiRedis := []string{
 		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonRedis, managedApiRedis...)
-	} else {
-		return commonRedis
-	}
+	return commonRedis
 }
 
 func getBlobStorageToCheck(installType, installationName string) []string {
@@ -68,15 +50,7 @@ func getBlobStorageToCheck(installType, installationName string) []string {
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
 	}
 
-	rhmi2 := []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
-	}
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		return common
-	}
-
-	return append(common, rhmi2...)
+	return common
 }
 
 func TestCROPostgresSuccessfulState(t TestingTB, ctx *TestingContext) {
@@ -92,9 +66,6 @@ func TestCROPostgresSuccessfulState(t TestingTB, ctx *TestingContext) {
 	for _, postgresName := range postgresToCheck {
 		// AMQAuthService postgres is always in cluster
 		strategy := originalStrategy
-		if postgresName == constants.AMQAuthServicePostgres {
-			strategy = openShiftProvider
-		}
 
 		postgres := &crov1.Postgres{}
 		err := getResourceAndUnMarshalJsonToResource(ctx, "postgres", postgresName, postgres)

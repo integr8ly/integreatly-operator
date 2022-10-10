@@ -62,6 +62,7 @@ import (
 
 var (
 	integreatlyOperatorNamespace = "integreatly-operator-ns"
+	defaultOperatorNamespace     = "integreatly-operator"
 	localProductDeclaration      = marketplace.LocalProductDeclaration("integreatly-3scale")
 )
 
@@ -185,9 +186,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 			mockNetwork: true,
 		},
 		{
-			name: "Test successful installation of RHMI",
+			name: "Test successful installation without errors",
 			fields: fields{
-				sigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
+				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
 				mpm:              marketplace.NewManager(),
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
@@ -196,7 +197,7 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 				fakeConfig:       getBasicConfigMoc(),
 			},
 			args: args{
-				installation:  getValidInstallation(integreatlyv1alpha1.InstallationTypeManaged),
+				installation:  getValidInstallation(integreatlyv1alpha1.InstallationTypeManagedApi),
 				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
@@ -406,6 +407,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
 		Reconciler    *resources.Reconciler
+		productConfig *quota.ProductConfigMock
 	}
 	type args struct {
 		ctx          context.Context
@@ -435,6 +437,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
+				productConfig: productConfigMock(),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -487,6 +490,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				appsv1Client:  nil,
 				oauthv1Client: nil,
 				Reconciler:    nil,
+				productConfig: productConfigMock(),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -833,7 +837,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, &quota.ProductConfigMock{})
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.fields.productConfig)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -907,7 +911,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 		},
 	}
 
-	err := syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, "", false, &tsClientMock, "")
+	err := syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, "", &tsClientMock, "")
 
 	if err != nil {
 		t.Fatalf("Unexpected error when reconcilling openshift admin membership: %s", err)
@@ -3045,4 +3049,16 @@ func mockHTTP(ip string) (*httptest.Server, error) {
 	srv.Listener = listener
 	srv.StartTLS()
 	return srv, nil
+}
+
+func productConfigMock() *quota.ProductConfigMock {
+	return &quota.ProductConfigMock{
+		ConfigureFunc: func(obj metav1.Object) error {
+			return nil
+		},
+		GetActiveQuotaFunc:     nil,
+		GetRateLimitConfigFunc: nil,
+		GetReplicasFunc:        nil,
+		GetResourceConfigFunc:  nil,
+	}
 }

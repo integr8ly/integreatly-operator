@@ -16,6 +16,10 @@ import (
 	"golang.org/x/net/html"
 )
 
+const (
+	testingIDP = "testing-idp"
+)
+
 func Auth3Scale(client *http.Client, redirectUrl, keycloakHost, clientId, secret string) (string, error) {
 	// Start the authentication
 	u := fmt.Sprintf("%v/auth/realms/openshift/protocol/openid-connect/auth?client_id=%v&redirect_uri=%v&response_type=code&scope=openid", keycloakHost, clientId, redirectUrl)

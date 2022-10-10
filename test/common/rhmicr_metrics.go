@@ -32,43 +32,43 @@ func TestRHMICRMetrics(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to exec to prometheus pod: %v", err)
 	}
 
-	// check if rhmi_status is present
-	rhmiStatusMetricPresent := regexp.MustCompile(`rhmi_status{.*}`)
-	if !rhmiStatusMetricPresent.MatchString(output) {
-		t.Fatalf("rhmi_status metric is not present. Metrics output:\n%v", output)
+	// check if rhoam_status is present
+	rhoamStatusMetricPresent := regexp.MustCompile(`rhoam_status{.*}`)
+	if !rhoamStatusMetricPresent.MatchString(output) {
+		t.Fatalf("rhoam_status metric is not present. Metrics output:\n%v", output)
 	}
 
 	// check if the metric labels matches rhmi CR
-	stringRHMIStatus := rhmiStatusMetricPresent.FindString(output)
-	labels := parsePrometheusMetricToMap(stringRHMIStatus, "rhmi_status")
+	stringRHOAMStatus := rhoamStatusMetricPresent.FindString(output)
+	labels := parsePrometheusMetricToMap(stringRHOAMStatus, "rhoam_status")
 	if labels["stage"] != string(rhmi.Status.Stage) {
-		t.Fatalf("rhmi_status metric stage does not match current stage: %s != %s", labels["stage"], string(rhmi.Status.Stage))
+		t.Fatalf("rhoam_status metric stage does not match current stage: %s != %s", labels["stage"], string(rhmi.Status.Stage))
 	}
 
-	// check if rhmi_info is present
-	rhmiInfoMetricPresent := regexp.MustCompile(`rhmi_spec{.*}`)
-	if !rhmiInfoMetricPresent.MatchString(output) {
-		t.Fatalf("rhmi_spec metric is not present. Metrics output:\n%v", output)
+	// check if rhoam_spec is present
+	rhoamInfoMetricPresent := regexp.MustCompile(`rhoam_spec{.*}`)
+	if !rhoamInfoMetricPresent.MatchString(output) {
+		t.Fatalf("rhoam_spec metric is not present. Metrics output:\n%v", output)
 	}
 
 	// check if rhmi_info metric labels matches with rhmi installation CR
-	stringRHMIInfo := rhmiInfoMetricPresent.FindString(output)
-	rhmiInfoLabels := parsePrometheusMetricToMap(stringRHMIInfo, "rhmi_spec")
+	stringRHMIInfo := rhoamInfoMetricPresent.FindString(output)
+	infoLabels := parsePrometheusMetricToMap(stringRHMIInfo, "rhoam_spec")
 
-	doRHMIInfoLabelsMatch := true
-	if rhmiInfoLabels["use_cluster_storage"] != rhmi.Spec.UseClusterStorage ||
-		rhmiInfoLabels["master_url"] != rhmi.Spec.MasterURL ||
-		rhmiInfoLabels["installation_type"] != rhmi.Spec.Type ||
-		rhmiInfoLabels["operator_name"] != rhmi.GetName() ||
-		rhmiInfoLabels["namespace"] != rhmi.GetNamespace() ||
-		rhmiInfoLabels["namespace_prefix"] != rhmi.Spec.NamespacePrefix ||
-		rhmiInfoLabels["operators_in_product_namespace"] != fmt.Sprintf("%t", rhmi.Spec.OperatorsInProductNamespace) ||
-		rhmiInfoLabels["routing_subdomain"] != rhmi.Spec.RoutingSubdomain ||
-		rhmiInfoLabels["self_signed_certs"] != fmt.Sprintf("%t", rhmi.Spec.SelfSignedCerts) {
-		doRHMIInfoLabelsMatch = false
+	doInfoLabelsMatch := true
+	if infoLabels["use_cluster_storage"] != rhmi.Spec.UseClusterStorage ||
+		infoLabels["master_url"] != rhmi.Spec.MasterURL ||
+		infoLabels["installation_type"] != rhmi.Spec.Type ||
+		infoLabels["operator_name"] != rhmi.GetName() ||
+		infoLabels["namespace"] != rhmi.GetNamespace() ||
+		infoLabels["namespace_prefix"] != rhmi.Spec.NamespacePrefix ||
+		infoLabels["operators_in_product_namespace"] != fmt.Sprintf("%t", rhmi.Spec.OperatorsInProductNamespace) ||
+		infoLabels["routing_subdomain"] != rhmi.Spec.RoutingSubdomain ||
+		infoLabels["self_signed_certs"] != fmt.Sprintf("%t", rhmi.Spec.SelfSignedCerts) {
+		doInfoLabelsMatch = false
 	}
-	if !doRHMIInfoLabelsMatch {
-		t.Fatalf("rhmi_info metric labels do not match with rhmi CR. Labels:\n%v", rhmiInfoLabels)
+	if !doInfoLabelsMatch {
+		t.Fatalf("rhmi_info metric labels do not match with rhmi CR. Labels:\n%v", infoLabels)
 	}
 }
 

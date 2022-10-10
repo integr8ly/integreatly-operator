@@ -83,8 +83,6 @@ import (
 const (
 	deletionFinalizer                = "configmaps/finalizer"
 	previousDeletionFinalizer        = "finalizer/configmaps"
-	DefaultInstallationName          = "rhmi"
-	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
@@ -322,7 +320,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 			Products: stage.Products,
 		})
 	}
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
 	configManager, err := config.NewManager(context.TODO(), r.Client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
@@ -377,13 +375,13 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 		if err := r.Status().Update(context.TODO(), installation); err != nil {
 			return ctrl.Result{}, err
 		}
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetThreeScalePortals(nil, 0) // expose metric and set default value
 	}
 
 	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 	}
 
@@ -463,38 +461,32 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
 		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
-		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-			installation.Status.Quota = installationQuota.GetName()
-			installation.Status.ToQuota = ""
-		}
+		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
+		installation.Status.Quota = installationQuota.GetName()
+		installation.Status.ToQuota = ""
+
 		log.Info("installation completed successfully")
 	}
 
 	// Entered on every reconcile where all stages reported complete
 	if !installInProgress {
 		installation.Status.Stage = rhmiv1alpha1.StageName("complete")
-		metrics.RHMIStatusAvailable.Set(1)
 		retryRequeue.RequeueAfter = 5 * time.Minute
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
 
-		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-			if installationQuota.IsUpdated() {
-				installation.Status.Quota = installationQuota.GetName()
-				installation.Status.ToQuota = ""
-				metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
-			}
+		if installationQuota.IsUpdated() {
+			installation.Status.Quota = installationQuota.GetName()
+			installation.Status.ToQuota = ""
+			metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 		}
 	}
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		if _, ok := installation.Status.Stages[rhmiv1alpha1.MonitoringStage]; ok {
-			log.Info("delete Monitoring stage from installation.Status")
-			delete(installation.Status.Stages, rhmiv1alpha1.MonitoringStage)
-		}
+	if _, ok := installation.Status.Stages[rhmiv1alpha1.MonitoringStage]; ok {
+		log.Info("delete Monitoring stage from installation.Status")
+		delete(installation.Status.Stages, rhmiv1alpha1.MonitoringStage)
 	}
 
 	err = r.updateStatusAndObject(originalInstallation, installation)
@@ -531,21 +523,13 @@ func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, c
 		"openshift-monitoring": "alertmanager-main",
 	}
 
-	// Read from Observability config for RHOAM, otherwise read from Monitoring config
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		observabilityConfig, err := configManager.ReadObservability()
-		if err != nil {
-			return alertingNamespaces, err
-		}
-		alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
-	} else {
-		monitoringConfig, err := configManager.ReadMonitoring()
-		if err != nil {
-			return alertingNamespaces, err
-		}
-
-		alertingNamespaces[monitoringConfig.GetOperatorNamespace()] = monitoringConfig.GetAlertManagerRouteName()
+	// Read from Observability config
+	observabilityConfig, err := configManager.ReadObservability()
+	if err != nil {
+		return alertingNamespaces, err
 	}
+
+	alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
 
 	return alertingNamespaces, nil
 }
@@ -773,14 +757,11 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		log.Error("Error creating silence", err)
 	}
 
-	// Set metrics status to unavailable
-	metrics.RHMIStatusAvailable.Set(0)
-
 	installation.Status.Stage = rhmiv1alpha1.StageName("deletion")
 	installation.Status.LastError = ""
 
 	// updates rhmi status metric to deletion
-	metrics.SetRHMIStatus(installation)
+	metrics.SetStatus(installation)
 
 	// Clean up the products which have finalizers associated to them
 	merr := &resources.MultiErr{}
@@ -920,7 +901,7 @@ func (r *RHMIReconciler) handleUninstallBootstrap(installation *rhmiv1alpha1.RHM
 
 		phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, &quota.Quota{}, request)
 		if err != nil {
-			merr.Add(fmt.Errorf("Failed to reconcile bootstrap: %w", err))
+			merr.Add(fmt.Errorf("failed to reconcile bootstrap: %w", err))
 		}
 		if phase != rhmiv1alpha1.PhaseCompleted {
 			return true
@@ -976,94 +957,90 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		return result, nil
 	}
 
-	if rhmiv1alpha1.IsManaged(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		requiredSecrets := []string{installation.Spec.PagerDutySecret}
+	requiredSecrets := []string{installation.Spec.PagerDutySecret}
 
-		for _, secretName := range requiredSecrets {
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      secretName,
-					Namespace: installation.Namespace,
-				},
-			}
-			if exists, err := resources.Exists(context.TODO(), r.Client, secret); err != nil {
-				return ctrl.Result{}, err
-			} else if !exists {
-				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
-				log.Info(preflightMessage)
-				eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
-
-				installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
-				installation.Status.PreflightMessage = preflightMessage
-				_ = r.Status().Update(context.TODO(), installation)
-
-				return ctrl.Result{}, err
-			}
-			log.Infof("found required secret", l.Fields{"secret": secretName})
-			eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
-				"found required secret: %s", secretName)
+	for _, secretName := range requiredSecrets {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: installation.Namespace,
+			},
 		}
+		if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
+			return ctrl.Result{}, err
+		} else if !exists {
+			preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
+			log.Info(preflightMessage)
+			eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
+
+			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+			installation.Status.PreflightMessage = preflightMessage
+			_ = r.Status().Update(context.TODO(), installation)
+
+			return ctrl.Result{}, err
+		}
+		log.Infof("found required secret", l.Fields{"secret": secretName})
+		eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
+			"found required secret: %s", secretName)
 	}
 
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		// Check if the quota parameter is found from the add-on
-		okParam, err := addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.QuotaParamName)
+	// Check if the quota parameter is found from the add-on
+	okParam, err := addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.QuotaParamName)
+	if err != nil {
+		preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.QuotaParamName, err)
+		log.Warning(preflightMessage)
+		return result, err
+	}
+
+	// Check if the trial-quota parameter is found from the add-on when normal quota param is not found
+	if !okParam {
+		okParam, err = addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.TrialQuotaParamName)
 		if err != nil {
-			preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.QuotaParamName, err)
+			preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.TrialQuotaParamName, err)
 			log.Warning(preflightMessage)
 			return result, err
 		}
+	}
 
-		// Check if the trial-quota parameter is found from the add-on when normal quota param is not found
-		if !okParam {
-			okParam, err = addon.ExistsParameterByInstallation(context.TODO(), r.Client, installation, addon.TrialQuotaParamName)
-			if err != nil {
-				preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.TrialQuotaParamName, err)
-				log.Warning(preflightMessage)
-				return result, err
-			}
+	// Check if the quota parameter is found from the environment variable
+	quotaEnv, envOk := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
+
+	// If the quota parameter is not found:
+	if !okParam {
+		preflightMessage := ""
+
+		// * While the installation is less than 1 minute old, fail the
+		// preflight check in case it's taking time to be reconciled from the
+		// add-on
+		if !isInstallationOlderThan1Minute(installation) {
+			preflightMessage = "quota parameter not found, waiting 1 minute before defaulting to env var"
+
+			// * If the installation is older than a minute and the env var is
+			// not set, fail the preflight check
+		} else if !envOk || quotaEnv == "" {
+			preflightMessage = "quota parameter not found from add-on or env var"
 		}
+		// Informative `else`
+		// } else {
+		// Otherwise, the parameter was not found, but the env var was set,
+		// it'll be defaulted from there so the preflight check can pass
+		// }
 
-		// Check if the quota parameter is found from the environment variable
-		quotaEnv, envOk := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
+		if preflightMessage != "" {
+			log.Warning(preflightMessage)
+			eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
 
-		// If the quota parameter is not found:
-		if !okParam {
-			preflightMessage := ""
+			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+			installation.Status.PreflightMessage = preflightMessage
+			_ = r.Status().Update(context.TODO(), installation)
 
-			// * While the installation is less than 1 minute old, fail the
-			// preflight check in case it's taking time to be reconciled from the
-			// add-on
-			if !isInstallationOlderThan1Minute(installation) {
-				preflightMessage = "quota parameter not found, waiting 1 minute before defaulting to env var"
-
-				// * If the installation is older than a minute and the env var is
-				// not set, fail the preflight check
-			} else if !envOk || quotaEnv == "" {
-				preflightMessage = "quota parameter not found from add-on or env var"
-			}
-			// Informative `else`
-			// } else {
-			// Otherwise, the parameter was not found, but the env var was set,
-			// it'll be defaulted from there so the preflight check can pass
-			// }
-
-			if preflightMessage != "" {
-				log.Warning(preflightMessage)
-				eventRecorder.Event(installation, "Warning", rhmiv1alpha1.EventProcessingError, preflightMessage)
-
-				installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
-				installation.Status.PreflightMessage = preflightMessage
-				_ = r.Status().Update(context.TODO(), installation)
-
-				return result, nil
-			}
+			return result, nil
 		}
 	}
 
 	log.Info("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
-	err := r.List(context.TODO(), namespaces)
+	err = r.List(context.TODO(), namespaces)
 	if err != nil {
 		// could not list namespaces, keep trying
 		log.Warningf("error listing namespaces", l.Fields{"error": err.Error()})
@@ -1128,7 +1105,7 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 			if search == nil {
 				continue
 			}
-			exists, err := resources.Exists(context.TODO(), serverClient, search)
+			exists, err := k8s.Exists(context.TODO(), serverClient, search)
 			if err != nil {
 				return foundProducts, err
 			} else if exists {
@@ -1342,6 +1319,9 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*rhmiv1alpha1.RHMI, error) {
+
+	const managedApiInstallationName = "rhoam"
+
 	namespace, err := k8s.GetWatchNamespace()
 	if err != nil {
 		return nil, err
@@ -1372,10 +1352,10 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 		logrus.Infof("Creating a %s rhmi CR with UCS %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
-			installType = string(rhmiv1alpha1.InstallationTypeManaged)
+			installType = string(rhmiv1alpha1.InstallationTypeManagedApi)
 		}
 
-		if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) && priorityClassName == "" {
+		if priorityClassName == "" {
 			priorityClassName = managedServicePriorityClassName
 		}
 
@@ -1394,7 +1374,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 		installation = &rhmiv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      getCrName(installType),
+				Name:      managedApiInstallationName,
 				Namespace: namespace,
 			},
 			Spec: rhmiv1alpha1.RHMISpec{
@@ -1576,38 +1556,28 @@ func getRebalancePods() bool {
 	return false
 }
 
-func getCrName(installType string) string {
-	if rhmiv1alpha1.IsRHOAM(rhmiv1alpha1.InstallationType(installType)) {
-		return ManagedApiInstallationName
-	} else if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-		return ManagedApiInstallationName
-	} else {
-		return DefaultInstallationName
-	}
-}
-
 func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
 	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
 	if err != nil {
-		return fmt.Errorf("Failed to get API Group-Resources: %v", err)
+		return fmt.Errorf("failed to get API Group-Resources: %v", err)
 	}
 	cache, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
 	if err != nil {
-		return fmt.Errorf("Failed to create informer cache in %s namespace: %v", namespace, err)
+		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}
 	informer, err := cache.GetInformerForKind(context.TODO(), crd.GetObjectKind().GroupVersionKind())
 	if err != nil {
-		return fmt.Errorf("Failed to create informer for %v: %v", crd, err)
+		return fmt.Errorf("failed to create informer for %v: %v", crd, err)
 	}
 	err = r.controller.Watch(&source.Informer{Informer: informer}, &EnqueueIntegreatlyOwner{log: log})
 	if err != nil {
-		return fmt.Errorf("Failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
+		return fmt.Errorf("failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
 	}
 	// Adding to Manager, which will start it for us with a correct stop channel
 	err = r.mgr.Add(cache)
 	if err != nil {
-		return fmt.Errorf("Failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
+		return fmt.Errorf("failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
 	}
 	r.customInformers[gvk][namespace] = &informer
 
@@ -1618,7 +1588,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 		close(timeoutChannel)
 	}()
 	if !cache.WaitForCacheSync(timeoutChannel) {
-		return fmt.Errorf("Failed to sync cache for %s watch in %s namespace", gvk, namespace)
+		return fmt.Errorf("failed to sync cache for %s watch in %s namespace", gvk, namespace)
 	}
 
 	log.Infof("Cache synced. Successfully initialized.", l.Fields{"watch": gvk, "ns": namespace})

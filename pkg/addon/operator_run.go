@@ -41,11 +41,7 @@ var runTypesBySubscription = map[string]OperatorRunType{
 	addonPrefixed(ManagedAPIService): AddonRunType,
 	// RHOAM - OLM
 	ManagedAPIService: OLMRunType,
-
-	// RHMI - Add-on
-	addonPrefixed(RHMI): AddonRunType,
-	// RHMI - OLM
-	"integreatly": OLMRunType,
+	"integreatly":     OLMRunType,
 }
 
 // InferOperatorRunType infers how the operator is being run
@@ -138,10 +134,7 @@ func OperatorIsHiveManaged(ctx context.Context, client k8sclient.Client, install
 
 // IsClusterRunType checks if the operator is run on a cluster
 func IsClusterRunType(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (bool, error) {
-	deploymentPrefix := "rhmi"
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		deploymentPrefix = "rhoam"
-	}
+	deploymentPrefix := "rhoam"
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{

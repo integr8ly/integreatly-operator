@@ -3,24 +3,13 @@
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
 
-An Integreatly Operator can be installed using three different flavours: `managed`, `managed-api` or `multitenant-managed-api`
+An Integreatly Operator can be installed using three different flavours: `managed-api` or `multitenant-managed-api`
 
 To switch between the three you can use export the `INSTALLATION_TYPE` env or use it in conjunction with any of the make commands referenced in this README
 
 ### Installed products
 
 The operator installs the following products:
-
-### managed
-
-- AMQ Online
-- AMQ Streams
-- Codeready
-- Fuse
-- Nexus
-- RHSSO (both a cluster instance, and a user instance)
-- 3scale
-- Integreatly solution explorer
 
 ### managed-api
 
@@ -53,8 +42,7 @@ go install github.com/matryer/moq
 ```
 
 ## Local Development
-Ensure that the cluster satisfies minimal requirements: 
-- RHMI (managed): 26 vCPU 
+Ensure that the cluster satisfies minimal requirements:
 - RHOAM (managed-api and multitenant-managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
   under the "Resource Requirements" section
 *Note:* The LOCAL flag is set to true by default, this means the namespace used to install RHOAM will be set to `local-rhoam-operator` and other RHOAM related namespaces will be prefixed with `local-rhoam`. If you wish to use non-local namespaces then  set LOCAL to false by running the following command `export LOCAL=false`.
@@ -87,7 +75,7 @@ Table belong are typical requested values needed for RHOAM on a cluster with clu
 
 If you are working against a fresh cluster it will need to be prepared using the following. 
 Ensure you are logged into a cluster by `oc whoami`.
-Include the `INSTALLATION_TYPE`. See [here](#3-configuration-optional) about this and other optional configuration variables.
+Include the `INSTALLATION_TYPE`. See [here](#4-configuration-optional) about this and other optional configuration variables.
 ```shell
 INSTALLATION_TYPE=<managed-api/multitenant-managed-api> make cluster/prepare/local
 ```
@@ -104,13 +92,12 @@ Please see the table below for other configuration options.
 INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make deploy/integreatly-rhmi-cr.yml
 ```
 
-| Variable            | Options | Type | Default | Details                                                                                                                         |
-|---------------------|---------|:----:|---------|---------------------------------------------------------------------------------------------------------------------------------|
-| INSTALLATION_TYPE   | `managed`, `managed-api` or `multitenant-managed-api` | **Required** |`managed`  | Manages installation type. `managed` stands for RHMI. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
-| IN_PROW             | `true` or `false`         | Optional      |`false`    | If `true`, reduces the number of pods created. Use for small clusters                                                           |
-| USE_CLUSTER_STORAGE | `true` or `false`         | Optional      |`true`     | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift.                                     |
-| LOCAL               | `true` or `false`         | Optional      |`true`     | If `true`, uses local-rhoam-operator as default namespace.                                 |
-
+| Variable            | Options                                    |     Type     | Default       | Details                                                                                              |
+|---------------------|--------------------------------------------|:------------:|---------------|------------------------------------------------------------------------------------------------------|
+| INSTALLATION_TYPE   | `managed-api` or `multitenant-managed-api` | **Required** | `managed-api` | Manages installation type. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
+| IN_PROW             | `true` or `false`                          |   Optional   | `false`       | If `true`, reduces the number of pods created. Use for small clusters                                |
+| USE_CLUSTER_STORAGE | `true` or `false`                          |   Optional   | `true`        | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift.          |
+| LOCAL               | `true` or `false`                          |   Optional   | `true`        | If `true`, uses local-rhoam-operator as default namespace.                                           |
 
 ### 5. Run integreatly-operator
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
@@ -123,21 +110,19 @@ If you want to run the operator from a specific image, you can specify the image
 IMAGE_FORMAT=<image-registry-address> INSTALLATION_TYPE=managed-api  make cluster/deploy
 ```
 
-*Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhmi/rhoam`).
+*Note:* if the operator doesn't find an RHMI cr, it will create one (Name: `rhoam`).
 
-| Variable | Options | Type | Default | Details |
-|----------|---------|:----:|---------|-------|
-| PRODUCT_DECLARATION | File path | Optional |`./products/installation.yaml` | Specifies how RHOAM install the product operators, either from a local manifest, an index, or an included bundle. Only applicable to RHOAM |
+| Variable            | Options   |   Type   | Default                        | Details                                                                                                                                    |
+|---------------------|-----------|:--------:|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| PRODUCT_DECLARATION | File path | Optional | `./products/installation.yaml` | Specifies how RHOAM install the product operators, either from a local manifest, an index, or an included bundle. Only applicable to RHOAM |
 
 ### 6. Validate installation 
 
 Use following commands to validate that installation succeeded:
 
-For `RHMI` (managed): `oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq .status.stage`
+For `RHOAM` (managed-api): `oc get rhmi rhoam -n redhat-rhoam-operator -o jsonpath='{.status.stage}{"\n"}'`
 
-For `RHOAM` (managed-api): `oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq .status.stage `
-
-For `RHOAM Multitenant` (multitenant-managed-api): `oc get rhmi rhoam -n sandbox-rhoam-operator -o json | jq .status.stage `
+For `RHOAM Multitenant` (multitenant-managed-api): `oc get rhmi rhoam -n sandbox-rhoam-operator -o jsonpath='{.status.stage}{"\n"}'`
 
 Once the installation completed the command wil result in following output:  
 ```yaml
@@ -152,7 +137,7 @@ If you installed RHOAM locally or via OLM then you can uninstall one of two ways
 - for OLM installation use the `redhat-rhoam-operator Namespace`
 
 
-A) Create a configmap and add a deletion label (Prefered way of uninstallation).
+A) Create a configmap and add a deletion label (Preferred way of uninstallation).
 ```sh 
 oc create configmap managed-api-service -n <NAMESPACE>
 oc label configmap managed-api-service api.openshift.com/addon-managed-api-service-delete=true -n <NAMESPACE>

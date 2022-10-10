@@ -14,7 +14,6 @@ import (
 
 var (
 	installationNames = map[string]string{
-		string(integreatlyv1alpha1.InstallationTypeManaged):               "rhmi",
 		string(integreatlyv1alpha1.InstallationTypeManagedApi):            "rhoam",
 		string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi): "rhoam",
 	}
@@ -24,8 +23,6 @@ func getAddonName(installation *integreatlyv1alpha1.RHMI) string {
 	switch installation.Spec.Type {
 	case "managed-api":
 		return "managed-api-service"
-	case "managed":
-		return "integreatly-operator"
 	default:
 		return ""
 	}

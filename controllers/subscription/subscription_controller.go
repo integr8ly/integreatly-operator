@@ -12,7 +12,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/webapp"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,8 +35,6 @@ var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_
 const (
 	// IntegreatlyPackage - package name is used for Subscription name
 	IntegreatlyPackage              = "integreatly"
-	RHMIAddonSubscription           = "addon-rhmi"
-	RHMIAddonSubscriptionEdge       = "addon-rhmi-internal"
 	ManagedAPIAddonSubscription     = "addon-managed-api-service"
 	ManagedAPIAddonSubscriptionEdge = "addon-managed-api-service-internal"
 	ManagedAPIolmSubscription       = "managed-api-service"
@@ -45,9 +42,7 @@ const (
 
 var subscriptionsToReconcile []string = []string{
 	IntegreatlyPackage,
-	RHMIAddonSubscription,
 	ManagedAPIAddonSubscription,
-	RHMIAddonSubscriptionEdge,
 	ManagedAPIAddonSubscriptionEdge,
 	ManagedAPIolmSubscription,
 }
@@ -76,13 +71,6 @@ func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
 		return nil, err
 	}
 
-	webappNotifierClient := webapp.NewLazyUpgradeNotifier(func() (k8sclient.Client, error) {
-		restConfig := controllerruntime.GetConfigOrDie()
-		return k8sclient.New(restConfig, k8sclient.Options{
-			Scheme: mgr.GetScheme(),
-		})
-	})
-
 	csvLocator := csvlocator.NewCachedCSVLocator(csvlocator.NewConditionalCSVLocator(
 		csvlocator.SwitchLocators(
 			csvlocator.ForReference,
@@ -96,7 +84,6 @@ func New(mgr manager.Manager) (*SubscriptionReconciler, error) {
 		Scheme:              mgr.GetScheme(),
 		operatorNamespace:   operatorNs,
 		catalogSourceClient: catalogSourceClient,
-		webbappNotifier:     webappNotifierClient,
 		csvLocator:          csvLocator,
 	}, nil
 }
@@ -108,7 +95,6 @@ type SubscriptionReconciler struct {
 	operatorNamespace   string
 	mgr                 manager.Manager
 	catalogSourceClient catalogsourceClient.CatalogSourceClientInterface
-	webbappNotifier     webapp.UpgradeNotifier
 	csvLocator          csvlocator.CSVLocator
 }
 
@@ -176,17 +162,10 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (ctrl.Result, error) {
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
 		log.Info("no upgrade available")
-
-		namespaceSegments := strings.Split(rhmiSubscription.Namespace, "-")
-		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
-		if err := r.webbappNotifier.ClearNotification(namespacePrefix); err != nil {
-			return ctrl.Result{}, err
-		}
-
 		return ctrl.Result{}, nil
 	}
-	log.Infof("Verifying the fields in the RHMI Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
-	latestRHMIInstallPlan := &olmv1alpha1.InstallPlan{}
+	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
+	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		// gets the subscription with the recreated installplan
 		err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)
@@ -195,7 +174,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 			return false, nil
 		}
 
-		latestRHMIInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
+		latestInstallPlan, err = rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.Client)
 		if err != nil {
 			log.Infof("Install Plan was not created due to an error", l.Fields{"Error": err})
 			return false, nil
@@ -208,22 +187,22 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		return ctrl.Result{}, err
 	}
 
-	latestRHMICSV, err := r.csvLocator.GetCSV(ctx, r.Client, latestRHMIInstallPlan)
+	latestCSV, err := r.csvLocator.GetCSV(ctx, r.Client, latestInstallPlan)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV)
+	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestCSV)
 
-	if !isServiceAffecting && !latestRHMIInstallPlan.Spec.Approved {
-		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestRHMIInstallPlan, eventRecorder)
-		logrus.Infof("Approving install plan %s ", latestRHMIInstallPlan.Name)
+	if !isServiceAffecting && !latestInstallPlan.Spec.Approved {
+		eventRecorder := r.mgr.GetEventRecorderFor("Operator Upgrade")
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
+		logrus.Infof("Approving install plan %s ", latestInstallPlan.Name)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 
-		// Requeue the reconciler until the RHMI subscription upgrade is complete
+		// Requeue the reconciler until the operator subscription upgrade is complete
 		return ctrl.Result{
 			Requeue:      true,
 			RequeueAfter: 10 * time.Second,

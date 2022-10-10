@@ -53,14 +53,10 @@ func TestAPIs(t *testing.T) {
 	//TODO: Trigger operator install
 
 	// get install type
-	setVars("redhat-rhmi-operator", "redhat-rhmi-", t)
+	setVars("redhat-rhoam-operator", "redhat-rhoam-", t)
 	installType, err = common.GetInstallType(cfg)
 	if err != nil {
-		setVars("redhat-rhoam-operator", "redhat-rhoam-", t)
-		installType, err = common.GetInstallType(cfg)
-		if err != nil {
-			t.Fatalf("could not get install type %s", err)
-		}
+		t.Fatalf("could not get install type %s", err)
 	}
 
 	jUnitReportLocation := fmt.Sprintf("%s/%s", testResultsDirectory, jUnitOutputFilename)
@@ -111,34 +107,17 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	}
 	common.NamespacePrefix = possibleNS
 	common.RHOAMOperatorNamespace = common.NamespacePrefix + "operator"
-	common.MonitoringOperatorNamespace = common.NamespacePrefix + "middleware-monitoring-operator"
-	common.MonitoringFederateNamespace = common.NamespacePrefix + "middleware-monitoring-federate"
 	common.ObservabilityNamespacePrefix = common.NamespacePrefix + "observability-"
 	common.ObservabilityOperatorNamespace = common.NamespacePrefix + "observability-operator"
 	common.ObservabilityProductNamespace = common.NamespacePrefix + "observability"
-	common.AMQOnlineOperatorNamespace = common.NamespacePrefix + "amq-online"
-	common.ApicurioRegistryProductNamespace = common.NamespacePrefix + "apicurio-registry"
-	common.ApicurioRegistryOperatorNamespace = common.ApicurioRegistryProductNamespace + "-operator"
-	common.ApicuritoProductNamespace = common.NamespacePrefix + "apicurito"
-	common.ApicuritoOperatorNamespace = common.ApicuritoProductNamespace + "-operator"
 	common.CloudResourceOperatorNamespace = common.NamespacePrefix + "cloud-resources-operator"
-	common.CodeReadyProductNamespace = common.NamespacePrefix + "codeready-workspaces"
-	common.CodeReadyOperatorNamespace = common.CodeReadyProductNamespace + "-operator"
-	common.FuseProductNamespace = common.NamespacePrefix + "fuse"
-	common.FuseOperatorNamespace = common.FuseProductNamespace + "-operator"
 	common.RHSSOUserProductNamespace = common.NamespacePrefix + "user-sso"
 	common.RHSSOUserOperatorNamespace = common.RHSSOUserProductNamespace + "-operator"
 	common.RHSSOProductNamespace = common.NamespacePrefix + "rhsso"
 	common.RHSSOOperatorNamespace = common.RHSSOProductNamespace + "-operator"
-	common.SolutionExplorerProductNamespace = common.NamespacePrefix + "solution-explorer"
-	common.SolutionExplorerOperatorNamespace = common.SolutionExplorerProductNamespace + "-operator"
 	common.ThreeScaleProductNamespace = common.NamespacePrefix + "3scale"
 	common.ThreeScaleOperatorNamespace = common.ThreeScaleProductNamespace + "-operator"
-	common.UPSProductNamespace = common.NamespacePrefix + "ups"
-	common.UPSOperatorNamespace = common.UPSProductNamespace + "-operator"
-	common.MonitoringSpecNamespace = common.NamespacePrefix + "monitoring"
 	common.Marin3rOperatorNamespace = common.NamespacePrefix + "marin3r-operator"
 	common.Marin3rProductNamespace = common.NamespacePrefix + "marin3r"
-	common.CustomerGrafanaNamespace = common.NamespacePrefix + "customer-monitoring-operator"
 	common.SMTPSecretName = common.NamespacePrefix + "smtp"
 }

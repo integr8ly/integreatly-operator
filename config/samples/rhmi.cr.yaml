@@ -1,13 +1,13 @@
 apiVersion: integreatly.org/v1alpha1
 kind: RHMI
 metadata:
-  name: example-rhmi
+  name: example-rhoam
 spec:
   type: managed
-  namespacePrefix: redhat-rhmi-
+  namespacePrefix: redhat-rhoam-
   selfSignedCerts: true
   useClusterStorage: 'true'
-  smtpSecret: redhat-rhmi-smtp
-  deadMansSnitchSecret: redhat-rhmi-deadmanssnitch
-  pagerDutySecret: redhat-rhmi-pagerduty
+  smtpSecret: redhat-rhoam-smtp
+  deadMansSnitchSecret: redhat-rhoam-deadmanssnitch
+  pagerDutySecret: redhat-rhoam-pagerduty
   priorityClassName: rhoam-pod-priority

@@ -3,18 +3,12 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/tools/record"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	WINDOW        = 6
-	WINDOW_MARGIN = 1
 )
 
 func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
@@ -39,29 +33,6 @@ func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscri
 	}
 
 	return latestInstallPlan, nil
-}
-
-func DeleteInstallPlan(ctx context.Context, installPlan *olmv1alpha1.InstallPlan, client k8sclient.Client) error {
-	// remove cloud resource config map
-	err := client.Delete(ctx, installPlan)
-	if err != nil {
-		return fmt.Errorf("error occurred trying to delete installplan, %w", err)
-	}
-	return nil
-}
-
-func CreateInstallPlan(ctx context.Context, rhmiSubscription *olmv1alpha1.Subscription, client k8sclient.Client) error {
-	// workaround to trigger the creation of another installplan by OLM
-	rhmiSubscription.Status.State = operatorsv1alpha1.SubscriptionStateAtLatest
-	rhmiSubscription.Status.InstallPlanRef = nil
-	rhmiSubscription.Status.Install = nil
-	rhmiSubscription.Status.CurrentCSV = rhmiSubscription.Status.InstalledCSV
-
-	err := client.Status().Update(ctx, rhmiSubscription)
-	if err != nil {
-		return fmt.Errorf("error updating the subscripion status block %w", err)
-	}
-	return nil
 }
 
 func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {

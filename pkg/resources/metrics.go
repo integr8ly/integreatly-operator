@@ -160,7 +160,7 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 	return v1alpha1.PhaseCompleted, nil
 }
 
-// CreateSmtpSecretExists creates a PrometheusRule to alert if the rhmi-smtp-secret is present
+// CreateSmtpSecretExists creates a PrometheusRule to alert if the rhoam-smtp-secret is present
 // the ocm sendgrid service creates a secret automatically this is a check for when that service fails
 func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
 	installationName := InstallationNames[cr.Spec.Type]
@@ -424,7 +424,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
 	installationName := InstallationNames[installType]
 
-	// dont create the alert if we are using in cluster storage
+	// don't create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
 		return nil
@@ -497,7 +497,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
 	installationName := InstallationNames[installType]
 
-	// dont create the alert if we are using in cluster storage
+	// don't create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
 		return nil
@@ -528,7 +528,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) error {
 	installationName := InstallationNames[installType]
 
-	// dont create the alert if we are using in cluster storage
+	// don't create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping postgres free storage alert creation, useClusterStorage is true")
 		return nil

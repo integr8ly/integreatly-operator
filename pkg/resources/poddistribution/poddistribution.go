@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/sirupsen/logrus"
@@ -79,11 +78,9 @@ func getNamespaces(nsPrefix string, installType string) []string {
 		nsPrefix + "3scale",
 		nsPrefix + "rhsso",
 		nsPrefix + "user-sso",
+		nsPrefix + "marin3r",
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		namespaces = append(namespaces, nsPrefix+"marin3r")
-	}
 	return namespaces
 }
 

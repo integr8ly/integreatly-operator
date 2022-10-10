@@ -119,7 +119,7 @@ parameters:
     required: true
   - description: The namespace to deploy into
     name: NAMESPACE
-    value: redhat-rhmi-rhsso
+    value: redhat-rhoam-rhsso
   - description: Realm name
     name: REALM
     value: testing-idp

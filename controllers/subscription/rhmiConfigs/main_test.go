@@ -3,12 +3,10 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
-	"testing"
-	"time"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/version"
 	"k8s.io/apimachinery/pkg/runtime"
+	"testing"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,17 +26,17 @@ func setupRecorder() record.EventRecorder {
 func TestIsUpgradeAvailable(t *testing.T) {
 	scenarios := []struct {
 		Name                           string
-		RhmiSubscription               *olmv1alpha1.Subscription
+		RhoamSubscription              *olmv1alpha1.Subscription
 		ExpectedUpgradeAvailableResult bool
 	}{
 		{
 			Name:                           "Test no subscription found",
-			RhmiSubscription:               nil,
+			RhoamSubscription:              nil,
 			ExpectedUpgradeAvailableResult: false,
 		},
 		{
-			Name: "Test same RHMI CSV version in subscription",
-			RhmiSubscription: &olmv1alpha1.Subscription{
+			Name: "Test same RHOAM CSV version in subscription",
+			RhoamSubscription: &olmv1alpha1.Subscription{
 				Status: olmv1alpha1.SubscriptionStatus{
 					CurrentCSV:   "1.0.0",
 					InstalledCSV: "1.0.0",
@@ -47,8 +45,8 @@ func TestIsUpgradeAvailable(t *testing.T) {
 			ExpectedUpgradeAvailableResult: false,
 		},
 		{
-			Name: "Test new RHMI CSV version in subscription",
-			RhmiSubscription: &olmv1alpha1.Subscription{
+			Name: "Test new RHOAM CSV version in subscription",
+			RhoamSubscription: &olmv1alpha1.Subscription{
 				Status: olmv1alpha1.SubscriptionStatus{
 					CurrentCSV:   "1.0.1",
 					InstalledCSV: "1.0.0",
@@ -60,7 +58,7 @@ func TestIsUpgradeAvailable(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			upgradeAvailable := IsUpgradeAvailable(scenario.RhmiSubscription)
+			upgradeAvailable := IsUpgradeAvailable(scenario.RhoamSubscription)
 			if upgradeAvailable != scenario.ExpectedUpgradeAvailableResult {
 				t.Fatalf("Expected upgradeAvailable to be %v but got %v", scenario.ExpectedUpgradeAvailableResult, upgradeAvailable)
 			}
@@ -71,17 +69,17 @@ func TestIsUpgradeAvailable(t *testing.T) {
 func TestIsUpgradeServiceAffecting(t *testing.T) {
 	scenarios := []struct {
 		Name                           string
-		RhmiCSV                        *olmv1alpha1.ClusterServiceVersion
+		RhoamCSV                       *olmv1alpha1.ClusterServiceVersion
 		ExpectedServiceAffectingResult bool
 	}{
 		{
 			Name:                           "Test no CSV",
-			RhmiCSV:                        nil,
+			RhoamCSV:                       nil,
 			ExpectedServiceAffectingResult: true,
 		},
 		{
 			Name: "Test CSV with no service_affecting annotation",
-			RhmiCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
@@ -90,7 +88,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 		},
 		{
 			Name: "Test CSV with service_affecting annotation true",
-			RhmiCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						"serviceAffecting": "true",
@@ -101,7 +99,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 		},
 		{
 			Name: "Test CSV with service_affecting annotation false",
-			RhmiCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						"serviceAffecting": "false",
@@ -114,7 +112,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			isServiceAffecting := IsUpgradeServiceAffecting(scenario.RhmiCSV)
+			isServiceAffecting := IsUpgradeServiceAffecting(scenario.RhoamCSV)
 			if isServiceAffecting != scenario.ExpectedServiceAffectingResult {
 				t.Fatalf("Expected isServiceAffecting to be %v but got %v", scenario.ExpectedServiceAffectingResult, isServiceAffecting)
 			}
@@ -124,7 +122,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 
 func TestApproveUpgrade(t *testing.T) {
 	installPlanObjectMeta := metav1.ObjectMeta{
-		Name:      "rhmi-ip",
+		Name:      "rhoam-ip",
 		Namespace: defaultNamespace,
 	}
 
@@ -133,7 +131,7 @@ func TestApproveUpgrade(t *testing.T) {
 		Spec: olmv1alpha1.InstallPlanSpec{
 			Approved: false,
 			ClusterServiceVersionNames: []string{
-				"RHMI-v1.0.0",
+				"RHOAM-v1.0.0",
 			},
 		},
 		Status: olmv1alpha1.InstallPlanStatus{
@@ -148,9 +146,9 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 	}
 
-	rhmiMock := &integreatlyv1alpha1.RHMI{
+	rhoamMock := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi",
+			Name:      "rhoam",
 			Namespace: defaultNamespace,
 		},
 	}
@@ -171,24 +169,17 @@ func TestApproveUpgrade(t *testing.T) {
 		Context         context.Context
 		EventRecorder   record.EventRecorder
 		RhmiInstallPlan *olmv1alpha1.InstallPlan
-		Config          *integreatlyv1alpha1.RHMIConfig
 		RHMI            *integreatlyv1alpha1.RHMI
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error)
+		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading, rhmiMock),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: defaultNamespace,
-				},
-			},
-			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			RHMI:            rhoamMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -201,25 +192,12 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 		{
 			Name:            "Test install plan ready to upgrade",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval, rhmiMock),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: defaultNamespace,
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For: "13 Jul 2020 00:00",
-						},
-					},
-				},
-			},
-			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			RHMI:            rhoamMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -227,10 +205,6 @@ func TestApproveUpgrade(t *testing.T) {
 
 				if updatedRhmiInstallPlan.Spec.Approved != true {
 					t.Fatalf("Expected installplan.Spec.Approved to be true")
-				}
-
-				if config.Status.Upgrade.Scheduled != nil {
-					t.Fatalf("Expected scheduled field to be empty")
 				}
 			},
 		},
@@ -243,9 +217,7 @@ func TestApproveUpgrade(t *testing.T) {
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
-			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: defaultNamespace}, updatedConfig)
-			scenario.Verify(retrievedInstallPlan, updatedConfig, rhmi, err)
+			scenario.Verify(retrievedInstallPlan, rhmi, err)
 		})
 	}
 }
@@ -257,21 +229,4 @@ func buildScheme() *runtime.Scheme {
 	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	return scheme
-}
-
-func nowOffset(hours int) time.Time {
-	now := now()
-	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
-}
-
-func now() time.Time {
-	return time.Now().UTC()
-}
-
-func intPtr(value int) *int {
-	return &value
-}
-
-func boolPtr(value bool) *bool {
-	return &value
 }

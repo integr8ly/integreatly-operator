@@ -94,7 +94,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			SMTPSecret:           mockSMTPSecretName,
 			PagerDutySecret:      mockPagerdutySecretName,
 			DeadMansSnitchSecret: mockDMSSecretName,
-			Type:                 string(integreatlyv1alpha1.InstallationTypeManaged),
+			Type:                 string(integreatlyv1alpha1.InstallationTypeManagedApi),
 		},
 	}
 }

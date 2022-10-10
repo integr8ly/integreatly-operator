@@ -63,11 +63,6 @@ case $TYPE_OF_MANIFEST in
 "master")
     VERSION="master"
     case $OLM_TYPE in
-      "integreatly-operator")
-        OLM_TYPE="rhmi"
-        FILE_NAME="${CURRENT_DIR}/prodsec-manifests/rhmi-master-manifest.txt"
-        SERVICE_NAME="services-rhmi"
-        ;;
       "managed-api-service")
         OLM_TYPE="rhoam"
         FILE_NAME="${CURRENT_DIR}/prodsec-manifests/rhoam-master-manifest.txt"
@@ -75,7 +70,7 @@ case $TYPE_OF_MANIFEST in
         ;;
       *)
         echo "Invalid OLM_TYPE set"
-        echo "Use \"integreatly-operator\" or \"managed-api-service\""
+        echo "Use \"managed-api-service\""
         exit 1
         ;;
     esac
@@ -86,12 +81,6 @@ case $TYPE_OF_MANIFEST in
     FILE_NAME="${CURRENT_DIR}/prodsec-manifests/master-from-branch-manifest.txt"
     SORTED_FROM_BRANCH="${CURRENT_DIR}/prodsec-manifests/sorted-master-from-branch-manifest.txt"
     case $OLM_TYPE in
-      "integreatly-operator")
-        OLM_TYPE="rhmi"
-        SERVICE_NAME="services-rhmi"
-        CURRENT_MASTER="${CURRENT_DIR}/prodsec-manifests/rhmi-master-manifest.txt"
-        SORTED_CURRENT_MASTER="${CURRENT_DIR}/prodsec-manifests/rhmi-sorted-master-manifest.txt"
-        ;;
       "managed-api-service")
         OLM_TYPE="rhoam"
         SERVICE_NAME="services-rhoam"
@@ -100,7 +89,7 @@ case $TYPE_OF_MANIFEST in
         ;;
       *)
         echo "Invalid OLM_TYPE set"
-        echo "Use \"integreatly-operator\" or \"managed-api-service\""
+        echo "Use \"managed-api-service\""
         exit 1
         ;;
     esac
@@ -109,12 +98,6 @@ case $TYPE_OF_MANIFEST in
     ;;
 "production")
     case $OLM_TYPE in
-      "integreatly-operator")
-        OLM_TYPE="rhmi"
-        VERSION=$(grep integreatly-operator ${CURRENT_DIR}/bundles/integreatly-operator/integreatly-operator.package.yaml | awk -F v '{print $2}')
-        FILE_NAME="${CURRENT_DIR}/prodsec-manifests/rhmi-production-release-manifest.txt"
-        SERVICE_NAME="services-rhmi"
-        ;;
       "managed-api-service")
         OLM_TYPE="rhoam"
         VERSION=$(grep managed-api-service ${CURRENT_DIR}/bundles/managed-api-service/managed-api-service.package.yaml | awk -F v '{print $3}')
@@ -123,7 +106,7 @@ case $TYPE_OF_MANIFEST in
         ;;
       *)
         echo "Invalid OLM_TYPE set"
-        echo "Use \"integreatly-operator\" or \"managed-api-service\""
+        echo "Use \"managed-api-service\""
         exit 1
         ;;
     esac

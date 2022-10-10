@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
@@ -27,7 +28,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
@@ -193,6 +193,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileCloudResourceStrategies(client)
+	if err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
+		return phase, err
+	}
+
 	phase, err = r.addServiceUpdates(ctx, client, croProviders.RedisResourceType, redisServiceUpdatesToInstall)
 	if err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
@@ -212,11 +219,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if phase == integreatlyv1alpha1.PhaseInProgress {
 		return phase, nil
-	}
-
-	phase, err = r.reconcileBackupsStorage(ctx, installation, client)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
 	}
 
 	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, r.installation.Namespace)
@@ -254,7 +256,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 			Name: "postgressnapshots.integreatly.org",
 		},
 	}
-	crdExists, err := resources.Exists(ctx, client, postgresSnapshotCRD)
+	crdExists, err := k8s.Exists(ctx, client, postgresSnapshotCRD)
 	if err != nil {
 		r.log.Error("Error checking Postgres Snapshot CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -355,7 +357,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			Name: "postgres.integreatly.org",
 		},
 	}
-	crdExists, err := resources.Exists(ctx, client, postgresInstancesCRD)
+	crdExists, err := k8s.Exists(ctx, client, postgresInstancesCRD)
 	if err != nil {
 		r.log.Error("Error checking Postgres CRD existence: ", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -427,27 +429,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// everything has been cleaned up, delete the ns
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	blobStorageName := fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installation.Name)
-	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, defaultInstallationNamespace, installation.Spec.Type, croUtil.TierProduction, blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile blob storage request: %w", err)
-	}
-
-	// wait for the blob storage cr to reconcile
-	if blobStorage.Status.Phase != crov1alpha1Types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -625,6 +606,27 @@ func (r *Reconciler) checkStsCredentialsPresent(client k8sclient.Client, operato
 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s secret in %s namespace", sts.CredsSecretName, operatorNamespace)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// reconcileCloudResourceStrategies
+// reconcile cro strategy config map, RHMI operator does not care what infrastructure the cluster is running in
+// as we support different cloud providers this CRO Reconcile Function will ensure the correct infrastructure strategies are provisioned
+//
+// this function was part of the rhmiconfig controller, which has sense been removed.
+func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.log.Info("reconciling cloud resource maintenance strategies")
+
+	timeConfig := &croUtil.StrategyTimeConfig{
+		BackupStartTime:      "03:01",
+		MaintenanceStartTime: "Thu 02:00",
+	}
+
+	err := croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("faliure to reconcile aws strategy map: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

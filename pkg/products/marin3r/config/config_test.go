@@ -51,7 +51,7 @@ func TestGetAlertConfig(t *testing.T) {
 			},
 			Assert: func(c client.Client, config map[string]*AlertConfig, err error) error {
 				if err != nil {
-					return fmt.Errorf("Unexpected error: %v", err)
+					return fmt.Errorf("unexpected error: %v", err)
 				}
 
 				alertConfig, ok := config["alert-1"]
@@ -73,7 +73,7 @@ func TestGetAlertConfig(t *testing.T) {
 				}
 
 				if !reflect.DeepEqual(alertConfig, expectedConfig) {
-					return fmt.Errorf("Obtained invalid config. Expected %v, but got %v", expectedConfig, alertConfig)
+					return fmt.Errorf("obtained invalid config. Expected %v, but got %v", expectedConfig, alertConfig)
 				}
 
 				return nil

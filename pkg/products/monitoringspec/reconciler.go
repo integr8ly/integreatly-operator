@@ -74,9 +74,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	config.SetNamespacePrefix(installation.Spec.NamespacePrefix)
 
 	defaultInstallationNamespace := "observability"
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
-		defaultInstallationNamespace = "monitoring"
-	}
+
 	// to handle upgrade cases where monitoring is uninstalled and observability is installed we also need to update the config
 	// if the defaultInstallationNamespace set above based on install type doesn't match what's currently set in the config
 	if config.GetNamespace() == "" || strings.Compare(config.GetNamespace(), installation.Spec.NamespacePrefix+defaultInstallationNamespace) != 0 {
@@ -228,24 +226,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-	copyOut:
 		for _, sm := range serviceMonitorsMap {
-
-			// don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed now
-			// delete it from the cluster
-			// consider parameterising this to rhoam
-
-			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-					if s == "redhat-rhoam-middleware-monitoring-operator" {
-						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
-						if err != nil {
-							return integreatlyv1alpha1.PhaseFailed, err
-						}
-						continue copyOut
-					}
-				}
-			}
 
 			//Create a copy of service monitors in the monitoring namespace
 			//Create the corresponding rolebindings at each of the service namespace
@@ -266,24 +247,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 
 	//Clean-up the stale service monitors and rolebindings if any
 	if len(monSermonMap) > 0 {
-	cleanUpOut:
 		for _, sm := range monSermonMap {
-			//Remove servicemonitor
-			// on upgrade don't copy the one for redhat-rhoam-middleware-monitoring-operator as that namespace is removed
-			// those service monitors were created by AMO to self monitor
-			// the can be removed in the case of RHOAM
-			if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-				for _, s := range sm.Spec.NamespaceSelector.MatchNames {
-					if s == "redhat-rhoam-middleware-monitoring-operator" {
-						err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
-						if err != nil {
-							return integreatlyv1alpha1.PhaseFailed, err
-						}
-						continue cleanUpOut
-					}
-				}
-			}
-
 			err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err

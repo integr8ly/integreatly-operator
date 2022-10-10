@@ -37,32 +37,14 @@ func TestGetSubscription(t *testing.T) {
 			ExpectSubscriptionFound: true,
 		},
 		{
-			Name:                    "RHMI Add-on",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
-			SubscriptionName:        existingSubscription("addon-rhmi"),
-			ExpectSubscriptionFound: true,
-		},
-		{
 			Name:                    "OLM Installation / RHOAM",
 			InstallType:             integreatlyv1alpha1.InstallationTypeManagedApi,
 			SubscriptionName:        existingSubscription("integreatly"),
 			ExpectSubscriptionFound: true,
 		},
 		{
-			Name:                    "OLM Installation / RHMI",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
-			SubscriptionName:        existingSubscription("integreatly"),
-			ExpectSubscriptionFound: true,
-		},
-		{
 			Name:                    "Local run / RHOAM",
 			InstallType:             integreatlyv1alpha1.InstallationTypeManagedApi,
-			SubscriptionName:        noSubscription(),
-			ExpectSubscriptionFound: false,
-		},
-		{
-			Name:                    "Local run / RHMI",
-			InstallType:             integreatlyv1alpha1.InstallationTypeManaged,
 			SubscriptionName:        noSubscription(),
 			ExpectSubscriptionFound: false,
 		},
@@ -73,7 +55,7 @@ func TestGetSubscription(t *testing.T) {
 			installation := &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "installation",
-					Namespace: "rhmi-test-operator",
+					Namespace: "rhoam-test-operator",
 				},
 			}
 
@@ -84,7 +66,7 @@ func TestGetSubscription(t *testing.T) {
 				initObjs = append(initObjs, &operatorsv1alpha1.Subscription{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      *scenario.SubscriptionName,
-						Namespace: "rhmi-test-operator",
+						Namespace: "rhoam-test-operator",
 					},
 				})
 			}

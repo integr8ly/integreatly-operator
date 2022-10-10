@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
-	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -18,18 +16,10 @@ import (
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 
-	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
-	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	enmasseAdmin "github.com/integr8ly/integreatly-operator/apis-products/enmasse/admin/v1beta1"
-	enmasse "github.com/integr8ly/integreatly-operator/apis-products/enmasse/enmasse/v1beta1"
-	enmassev1beta1 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta1"
-	enmassev1beta2 "github.com/integr8ly/integreatly-operator/apis-products/enmasse/v1beta2"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
-	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/tutorial-web-app-operator/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
@@ -65,22 +55,13 @@ func init() {
 		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		authv1.AddToScheme,
-		kafkav1alpha1.SchemeBuilder.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1beta1.SchemeBuilder.AddToScheme,
-		enmasse.SchemeBuilder.AddToScheme,
-		enmassev1beta2.SchemeBuilder.AddToScheme,
-		enmassev1beta1.SchemeBuilder.AddToScheme,
-		enmasseAdmin.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
-		solutionExplorerv1alpha1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
-		apicurioregistry.SchemeBuilder.AddToScheme,
-		apicurito.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
-		monitoring.SchemeBuilder.AddToScheme,
 		appsv1.AddToScheme,
 		imagev1.AddToScheme,
 		oauthv1.AddToScheme,
@@ -89,7 +70,6 @@ func init() {
 		usersv1.AddToScheme,
 		confv1.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
-		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
 		consolev1.AddToScheme,

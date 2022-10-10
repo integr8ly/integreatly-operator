@@ -14,7 +14,6 @@ fi
 if [ "$INSTALLATION_TYPE" = "managed-api" ]; then
   NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-redhat-rhoam-}"
 fi
-NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-redhat-rhmi-}"
 OPERATOR_NAMESPACE="${NAMESPACE_PREFIX}operator"
 
 if [ ! -z "${DELOREAN_DOCKER_CONFIG}" ]; then
@@ -50,12 +49,6 @@ setup_ns_and_local_secret() {
   oc create secret docker-registry --docker-server=quay.io --docker-username="${DELOREAN_USERNAME}" --docker-password="${DELOREAN_PASSWORD}" regsecret -n ${NAMESPACE_PREFIX}3scale --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
   oc secrets link default regsecret --for=pull -n ${NAMESPACE_PREFIX}3scale --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
 
-  if [ "$INSTALLATION_TYPE" = "managed" ]; then
-    oc new-project ${NAMESPACE_PREFIX}fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
-    oc create secret docker-registry --docker-server=quay.io --docker-username="${DELOREAN_USERNAME}" --docker-password="${DELOREAN_PASSWORD}" regsecret -n ${NAMESPACE_PREFIX}fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
-    oc secrets link default regsecret --for=pull -n ${NAMESPACE_PREFIX}fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
-  fi
-  
   oc project ${OPERATOR_NAMESPACE}
 }
 

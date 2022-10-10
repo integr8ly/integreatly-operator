@@ -5,8 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -186,11 +184,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if err := r.reconcileConsoleLink(ctx, client); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if phase, err = r.reconcileBlackboxTargets(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana blackbox targets", err)
-		return phase, err
 	}
 
 	if phase, err = r.reconcilePrometheusProbes(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -616,43 +609,21 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	return nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		cfg, err := r.ConfigManager.ReadMonitoring()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
-
-		err = monitoring.CreateBlackboxTarget(ctx, "integreatly-grafana", monitoringv1alpha1.BlackboxtargetData{
-			Url:     r.Config.GetHost(),
-			Service: "grafana-ui",
-		}, cfg, r.installation, client)
-		if err != nil {
-			r.log.Error("Error creating grafana blackbox target", err)
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating grafana blackbox target: %w", err)
-		}
+func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		cfg, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
-
-		phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-grafana", "http_2xx", prometheus.ProbeTargetStaticConfig{
-			Targets: []string{r.Config.GetHost()},
-			Labels: map[string]string{
-				"service": "grafana-ui",
-			},
-		})
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			r.log.Error("Error creating grafana prometheus probe", err)
-			return phase, fmt.Errorf("error creating grafana prometheus probe: %w", err)
-		}
+	phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-grafana", "http_2xx", prometheus.ProbeTargetStaticConfig{
+		Targets: []string{r.Config.GetHost()},
+		Labels: map[string]string{
+			"service": "grafana-ui",
+		},
+	})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		r.log.Error("Error creating grafana prometheus probe", err)
+		return phase, fmt.Errorf("error creating grafana prometheus probe: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

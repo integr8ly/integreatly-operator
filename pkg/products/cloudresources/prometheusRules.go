@@ -7,7 +7,6 @@ import (
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -18,19 +17,14 @@ import (
 func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.Client, logger l.Logger, installType string, ns string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
-	namespace := r.Config.GetOperatorNamespace()
-	alertName := "ksm-endpoint-alerts"
-
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(installType)) {
-		observabilityConfig, err := r.ConfigManager.ReadObservability()
-		if err != nil {
-			logger.Warning("failed to get observability config")
-			return nil, nil
-		}
-
-		namespace = observabilityConfig.GetNamespace()
-		alertName = "cro-ksm-endpoint-alerts"
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		logger.Warning("failed to get observability config")
+		return nil, nil
 	}
+
+	namespace := observabilityConfig.GetNamespace()
+	alertName := "cro-ksm-endpoint-alerts"
 
 	alertsReconciler := &resources.AlertReconcilerImpl{
 		ProductName:  "Cloud Resources Operator",

@@ -40,24 +40,14 @@ type ConfigReadWriter interface {
 	GetGHOauthClientsSecretName() string
 	GetBackupsSecretName() string
 	WriteConfig(config ConfigReadable) error
-	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
 	ReadRHSSOUser() (*RHSSOUser, error)
-	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
 	ReadMarin3r() (*Marin3r, error)
-	ReadFuse() (*Fuse, error)
-	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
-	ReadAMQOnline() (*AMQOnline, error)
 	GetOperatorNamespace() string
-	ReadSolutionExplorer() (*SolutionExplorer, error)
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
-	ReadUps() (*Ups, error)
-	ReadApicurioRegistry() (*ApicurioRegistry, error)
-	ReadApicurito() (*Apicurito, error)
 	ReadCloudResources() (*CloudResources, error)
-	ReadDataSync() (*DataSync, error)
 	ReadMonitoringSpec() (*MonitoringSpec, error)
 	ReadGrafana() (*Grafana, error)
 	ReadObservability() (*Observability, error)
@@ -101,34 +91,14 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 	switch product {
 	case integreatlyv1alpha1.Product3Scale:
 		return m.ReadThreeScale()
-	case integreatlyv1alpha1.ProductAMQOnline:
-		return m.ReadAMQOnline()
 	case integreatlyv1alpha1.ProductRHSSO:
 		return m.ReadRHSSO()
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		return m.ReadRHSSOUser()
-	case integreatlyv1alpha1.ProductAMQStreams:
-		return m.ReadAMQStreams()
-	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
-		return m.ReadCodeReady()
-	case integreatlyv1alpha1.ProductFuse:
-		return m.ReadFuse()
-	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		return m.ReadFuseOnOpenshift()
-	case integreatlyv1alpha1.ProductSolutionExplorer:
-		return m.ReadSolutionExplorer()
-	case integreatlyv1alpha1.ProductUps:
-		return m.ReadUps()
-	case integreatlyv1alpha1.ProductApicurioRegistry:
-		return m.ReadApicurioRegistry()
-	case integreatlyv1alpha1.ProductApicurito:
-		return m.ReadApicurito()
 	case integreatlyv1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
 	case integreatlyv1alpha1.ProductMonitoring:
 		return m.ReadMonitoring()
-	case integreatlyv1alpha1.ProductDataSync:
-		return m.ReadDataSync()
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		return m.ReadMonitoringSpec()
 	case integreatlyv1alpha1.ProductMarin3r:
@@ -140,14 +110,6 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
-}
-
-func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductSolutionExplorer)
-	if err != nil {
-		return nil, err
-	}
-	return NewSolutionExplorer(config), nil
 }
 
 func (m *Manager) GetOperatorNamespace() string {
@@ -166,44 +128,12 @@ func (m *Manager) GetGHOauthClientsSecretName() string {
 	return "github-oauth-secret"
 }
 
-func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductAMQStreams)
-	if err != nil {
-		return nil, err
-	}
-	return NewAMQStreams(config), nil
-}
-
 func (m *Manager) ReadThreeScale() (*ThreeScale, error) {
 	config, err := m.readConfigForProduct(integreatlyv1alpha1.Product3Scale)
 	if err != nil {
 		return nil, err
 	}
 	return NewThreeScale(config), nil
-}
-
-func (m *Manager) ReadCodeReady() (*CodeReady, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductCodeReadyWorkspaces)
-	if err != nil {
-		return nil, err
-	}
-	return NewCodeReady(config), nil
-}
-
-func (m *Manager) ReadFuse() (*Fuse, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductFuse)
-	if err != nil {
-		return nil, err
-	}
-	return NewFuse(config), nil
-}
-
-func (m *Manager) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductFuseOnOpenshift)
-	if err != nil {
-		return nil, err
-	}
-	return NewFuseOnOpenshift(config), nil
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
@@ -222,14 +152,6 @@ func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
 	return NewRHSSOUser(config), nil
 }
 
-func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductAMQOnline)
-	if err != nil {
-		return nil, err
-	}
-	return NewAMQOnline(config), nil
-}
-
 func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoring)
 	if err != nil {
@@ -246,23 +168,6 @@ func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
 	return NewMonitoringSpec(config), nil
 }
 
-func (m *Manager) ReadApicurioRegistry() (*ApicurioRegistry, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurioRegistry)
-	if err != nil {
-		return nil, err
-	}
-	return NewApicurioRegistry(config), nil
-}
-
-func (m *Manager) ReadApicurito() (*Apicurito, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurito)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewApicurito(config), nil
-}
-
 func (m *Manager) ReadGrafana() (*Grafana, error) {
 	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductGrafana)
 	if err != nil {
@@ -272,29 +177,12 @@ func (m *Manager) ReadGrafana() (*Grafana, error) {
 	return NewGrafana(config), nil
 }
 
-func (m *Manager) ReadUps() (*Ups, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductUps)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewUps(config), nil
-}
-
 func (m *Manager) ReadCloudResources() (*CloudResources, error) {
 	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductCloudResources)
 	if err != nil {
 		return nil, err
 	}
 	return NewCloudResources(config), nil
-}
-
-func (m *Manager) ReadDataSync() (*DataSync, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductDataSync)
-	if err != nil {
-		return nil, err
-	}
-	return NewDataSync(config), nil
 }
 
 func (m *Manager) ReadMarin3r() (*Marin3r, error) {

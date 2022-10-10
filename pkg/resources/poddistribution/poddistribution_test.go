@@ -85,9 +85,6 @@ func TestPodDistribution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	dc1 := &apiappsv1.DeploymentConfig{
 		ObjectMeta: v1.ObjectMeta{

@@ -16,8 +16,8 @@ import (
 
 func TestGetContainerCPUMetric(t *testing.T) {
 	scheme := runtime.NewScheme()
-	err := userv1.AddToScheme(scheme)
-	err = configv1.AddToScheme(scheme)
+	err := userv1.Install(scheme)
+	err = configv1.Install(scheme)
 
 	if err != nil {
 		t.Fatalf("Error creating build scheme")

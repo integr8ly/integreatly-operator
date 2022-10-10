@@ -117,37 +117,33 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 
 	if resources.RunningInProw(inst) {
 		setDefaultNumberOfReplicas(1, threeScaleComponents)
-	} else if !integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
-		setDefaultNumberOfReplicas(2, threeScaleComponents)
 	}
 
-	if integreatlyv1alpha1.IsRHOAM(integreatlyv1alpha1.InstallationType(inst.Spec.Type)) {
-		switch inst.Status.Quota {
-		case "100K":
-			threeScaleComponents["apicastProd"] = 2
-			threeScaleComponents["backendListener"] = 2
-			threeScaleComponents["backendWorker"] = 2
-		case "1 Million":
-			threeScaleComponents["apicastProd"] = 2
-			threeScaleComponents["backendListener"] = 2
-			threeScaleComponents["backendWorker"] = 2
-		case "5 Million":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
-		case "10 Million":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
-		case "20 Million":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendListener"] = 3
-			threeScaleComponents["backendWorker"] = 3
-		case "50 Million":
-			threeScaleComponents["apicastProd"] = 3
-			threeScaleComponents["backendWorker"] = 4
-			threeScaleComponents["backendListener"] = 5
-		}
+	switch inst.Status.Quota {
+	case "100K":
+		threeScaleComponents["apicastProd"] = 2
+		threeScaleComponents["backendListener"] = 2
+		threeScaleComponents["backendWorker"] = 2
+	case "1 Million":
+		threeScaleComponents["apicastProd"] = 2
+		threeScaleComponents["backendListener"] = 2
+		threeScaleComponents["backendWorker"] = 2
+	case "5 Million":
+		threeScaleComponents["apicastProd"] = 3
+		threeScaleComponents["backendListener"] = 3
+		threeScaleComponents["backendWorker"] = 3
+	case "10 Million":
+		threeScaleComponents["apicastProd"] = 3
+		threeScaleComponents["backendListener"] = 3
+		threeScaleComponents["backendWorker"] = 3
+	case "20 Million":
+		threeScaleComponents["apicastProd"] = 3
+		threeScaleComponents["backendListener"] = 3
+		threeScaleComponents["backendWorker"] = 3
+	case "50 Million":
+		threeScaleComponents["apicastProd"] = 3
+		threeScaleComponents["backendWorker"] = 4
+		threeScaleComponents["backendListener"] = 5
 	}
 
 	return threeScaleComponents

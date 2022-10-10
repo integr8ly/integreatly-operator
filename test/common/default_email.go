@@ -118,7 +118,7 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 
 	// Assert that the username is sanitised when using as email
 	if keycloakUser4.Spec.User.Email != fmt.Sprintf("%s%s", strings.Replace(usernameRequireSanitiseEmail, "$", "-", -1), defaultDomain) {
-		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", usernameUsingEmail, keycloakUser3.Spec.User.Email)
+		t.Errorf("Unexpected email for generated KeycloakUser: Expected %s, got %s", usernameUsingEmail, keycloakUser4.Spec.User.Email)
 	}
 }
 

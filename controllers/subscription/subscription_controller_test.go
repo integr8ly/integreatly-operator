@@ -10,7 +10,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
-	"github.com/integr8ly/integreatly-operator/controllers/subscription/webapp"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 	v1 "k8s.io/api/core/v1"
@@ -34,9 +33,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	}
 	return scheme, integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 }
-
-func intPtr(val int) *int    { return &val }
-func boolPtr(val bool) *bool { return &val }
 
 func TestSubscriptionReconciler(t *testing.T) {
 
@@ -63,22 +59,6 @@ func TestSubscriptionReconciler(t *testing.T) {
 						Manifest: string(csvStringfied),
 					},
 				},
-			},
-		},
-	}
-
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-config",
-			Namespace: operatorNamespace,
-		},
-		Spec: integreatlyv1alpha1.RHMIConfigSpec{
-			Upgrade: integreatlyv1alpha1.Upgrade{
-				NotBeforeDays:      intPtr(10),
-				WaitForMaintenance: boolPtr(true),
-			},
-			Maintenance: integreatlyv1alpha1.Maintenance{
-				ApplyFrom: "Thu 00:00",
 			},
 		},
 	}
@@ -259,13 +239,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			APIObject := scenario.APISubscription
-			client := fakeclient.NewFakeClientWithScheme(scheme, APIObject, installPlan, rhmiConfig, rhmiCR)
+			client := fakeclient.NewFakeClientWithScheme(scheme, APIObject, installPlan, rhmiCR)
 			reconciler := SubscriptionReconciler{
 				Client:              client,
 				Scheme:              scheme,
 				catalogSourceClient: scenario.catalogsourceClient,
 				operatorNamespace:   operatorNamespace,
-				webbappNotifier:     &webapp.NoOp{},
 				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
 			}
 			res, err := reconciler.Reconcile(scenario.Request)
@@ -309,17 +288,6 @@ func TestShouldReconcileSubscription(t *testing.T) {
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
-					Namespace: "testing-namespaces-operator",
-				},
-			},
-			ExpectedResult: true,
-		},
-		{
-			Name:      "RHMI Addon subscription",
-			Namespace: "testing-namespaces-operator",
-			Request: reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "addon-rhmi",
 					Namespace: "testing-namespaces-operator",
 				},
 			},

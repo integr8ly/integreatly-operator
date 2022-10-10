@@ -80,7 +80,7 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 
 		// The ConfigMap may contain other manifests other than the CSV. Iterate
 		// through the data and skip the ones that have a kind other than
-		// ClusterSeerviceVersion. This is for 4.8 clusters
+		// ClusterServiceVersion. This is for 4.8 clusters
 		csvStr := ""
 		for _, resourceStr := range csvConfigMap.Data {
 			csvCandidate, err := getCSVfromCM(&csvStr, resourceStr)

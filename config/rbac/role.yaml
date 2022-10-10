@@ -156,26 +156,6 @@ rules:
 - apiGroups:
   - integreatly.org
   resources:
-  - rhmiconfigs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - integreatly.org
-  resources:
-  - rhmiconfigs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - integreatly.org
-  resources:
   - rhmis
   verbs:
   - create

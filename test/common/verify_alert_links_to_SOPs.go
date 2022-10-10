@@ -102,7 +102,7 @@ func validateGitlabToken(t TestingTB, testUrl string) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
-		log.Fatal("%s", err)
+		t.Fatal("%s", err)
 	}
 
 	req.Header.Add("Accept", `application/json`)

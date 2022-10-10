@@ -1,6 +1,5 @@
 ---
 products:
-  - name: rhmi
   - name: rhoam
 automation:
   - INTLY-9992

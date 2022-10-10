@@ -6,15 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	configv1 "github.com/openshift/api/config/v1"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -29,8 +28,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -77,11 +74,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"HOST":      "edge/route",
 			}), nil
 		},
-		ReadMonitoringFunc: func() (*config.Monitoring, error) {
-			return config.NewMonitoring(config.ProductConfig{
-				"NAMESPACE": "middleware-monitoring",
-			}), nil
-		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -90,6 +82,13 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		},
 		GetGHOauthClientsSecretNameFunc: func() string {
 			return "github-oauth-secret"
+		},
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE":          "redhat-rhoam-observability",
+				"OPERATOR_NAMESPACE": "redhat-rhoam-observability-operator",
+				"NAMESPACE_PREFIX":   "redhat-rhoam-",
+			}), nil
 		},
 	}
 }
@@ -124,19 +123,11 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
 	err = usersv1.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
 	err = oauthv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = monitoringv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -649,11 +640,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 		Status: integreatlyv1alpha1.RHMIStatus{
 			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
-				"codeready-stage": {
-					Name: "codeready-stage",
+				"threeScale-stage": {
+					Name: "threeScale-stage",
 					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
-							Name:  integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+						integreatlyv1alpha1.Product3Scale: {
+							Name:  integreatlyv1alpha1.Product3Scale,
 							Phase: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
@@ -732,6 +723,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	normalRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: defaultOperandNamespace,
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
 	//completed postgres that points at the secret croPostgresSecret
 	croPostgres := &crov1.Postgres{
 		ObjectMeta: metav1.ObjectMeta{
@@ -796,6 +797,31 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	prometheusRules := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "rhsso",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name:     "general.rules",
+					Interval: "",
+					Rules: []monitoringv1.Rule{
+						{Alert: "Some Rule"},
+					},
+				},
+			},
+		},
+	}
+
+	dashboard := &grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "rhsso",
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -814,7 +840,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -824,7 +850,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "codeready-install-plan",
+								Name: "3scale-install-plan",
 							},
 							Status: operatorsv1alpha1.InstallPlanStatus{
 								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
@@ -832,7 +858,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "codeready-install-plan",
+									Name: "3scale-install-plan",
 								},
 							},
 						}, nil
@@ -1121,12 +1147,12 @@ func errorContains(out error, want string) bool {
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {
 	return &metav1.APIResourceList{
 		// "integreatly.org/v1alpha1"
-		GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(),
+		GroupVersion: grafanav1alpha1.GroupVersion.String(),
 		APIResources: []metav1.APIResource{
 			{
-				Group:   monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
-				Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version,
-				Kind:    monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Kind,
+				Group:   "integreatly.org",
+				Version: "v1alpha1",
+				Kind:    "GrafanaDashboard",
 			},
 		},
 	}
@@ -1142,9 +1168,9 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 			list = &metav1.APIGroupList{
 				Groups: []metav1.APIGroup{
 					{
-						Name: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Group,
+						Name: "integreatly.org",
 						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.GroupVersion().String(), Version: monitoringv1alpha1.SchemaGroupVersionKindGrafanaDashboard.Version},
+							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
 						},
 					},
 				},

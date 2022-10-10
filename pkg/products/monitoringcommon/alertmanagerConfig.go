@@ -5,7 +5,6 @@ import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	configv1 "github.com/openshift/api/config/v1"
@@ -13,7 +12,6 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -122,24 +120,8 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 		smtpToCustomerAddress = prepareEmailAddresses(smtpToCustomerAddressCRVal)
 	}
 
-	var existingSMTPFromAddress = ""
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, productNamespace)
-		if err != nil {
-			if !apiErrors.IsNotFound(err) {
-				log.Error("Error getting application monitoring secret", err)
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch get application monitoring secret: %w", err)
-			}
-		}
-	}
-
 	smtpAlertFromAddress := os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
-
-	// If SMTPFromAddress already set for RHMI prod customers, do not reset
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && existingSMTPFromAddress != "" {
-		log.Infof("setting smtpAlertFromAddress to existing value ", l.Fields{"FromAddress": existingSMTPFromAddress})
-		smtpAlertFromAddress = existingSMTPFromAddress
-	} else if installation.Spec.AlertFromAddress != "" {
+	if installation.Spec.AlertFromAddress != "" {
 		smtpAlertFromAddress = installation.Spec.AlertFromAddress
 	}
 

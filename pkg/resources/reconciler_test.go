@@ -31,13 +31,10 @@ import (
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
-		ReadFuseFunc: func() (ready *config.Fuse, e error) {
-			return config.NewFuse(config.ProductConfig{}), nil
-		},
 		ReadRHSSOFunc: func() (*config.RHSSO, error) {
 			return config.NewRHSSO(config.ProductConfig{
-				"NAMESPACE": "fuse",
-				"URL":       "fuse.openshift-cluster.com",
+				"NAMESPACE": "3scale",
+				"URL":       "3scale.openshift-cluster.com",
 			}), nil
 		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
