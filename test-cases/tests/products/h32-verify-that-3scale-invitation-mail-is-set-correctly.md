@@ -3,8 +3,9 @@ products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-tags:
-  - per-release
+    targets:
+      - 1.26.0
+estimate: 10m
 ---
 
 # H32 - Verify that 3scale invitation mail is set correctly

@@ -42,7 +42,7 @@ estimate: 90m
 
    _NOTE:_ Please reach out to Paul McCarthy <pamccart@redhat.com> for a valid SendGrid API Key
 
-   Details on how to create a valid smtp secret can be found in this [SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/install/create_cluster_smtp_configuration.md). The verification section of this SOP regarding DMS and PagerDuty configs can be skipped. Also make sure to specify the `redhat-rhoam-operator` namespace rather than `redhat-rhmi-operator`.
+   Details on how to create a valid smtp secret can be found in this [SOP](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/2.x/install/create_cluster_smtp_configuration.md). The verification section of this SOP regarding DMS and PagerDuty configs can be skipped. Also make sure to specify the `redhat-rhoam-operator` namespace rather than `redhat-rhmi-operator`.
 
 4. k6 installed -> https://github.com/k6io/k6#install
 

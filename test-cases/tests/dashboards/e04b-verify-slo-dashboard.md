@@ -19,6 +19,7 @@ products:
       - 1.16.0
       - 1.21.0
       - 1.24.0
+      - 1.27.0
 estimate: 30m
 tags:
   - destructive
@@ -79,13 +80,13 @@ done
 ### Code #2
 
 ```bash
-while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-rhsso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-rhsso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-rhsso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-rhsso;   fi;   sleep 5; done
+while true; do   if oc get deployment rhsso-operator -n redhat-rhoam-rhsso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment rhsso-operator --replicas=0 -n redhat-rhoam-rhsso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-rhsso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-rhsso;   fi;   sleep 5; done
 ```
 
 ### Code #3
 
 ```bash
-while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
+while true; do   if oc get deployment rhsso-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment rhsso-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
 ```
 
 **_NOTE_** _(for Code #3). The number of user sso statefulset replicas depends on quota and might need to be manually adjusted.

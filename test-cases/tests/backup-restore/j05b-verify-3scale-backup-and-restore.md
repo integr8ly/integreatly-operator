@@ -108,12 +108,12 @@ Note: make sure you have proper AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY set 
 
 #### Backend Redis
 
-1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#backend-redis)
+1. Follow [sop](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#backend-redis)
 
 #### System Redis
 
-1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-redis)
+1. Follow [sop](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-redis)
 
 ### System App
 
-1. Once all pods are up and running follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-app) and verify 3scale service is working
+1. Once all pods are up and running follow [sop](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-app) and verify 3scale service is working

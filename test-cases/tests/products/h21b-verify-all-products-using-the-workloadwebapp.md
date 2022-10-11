@@ -5,7 +5,7 @@ products:
       - osd-fresh-install
 estimate: 30m
 tags:
-  - per-build
+  - manual-selection
 ---
 
 # H21B - Verify all products using the workload-web-app
