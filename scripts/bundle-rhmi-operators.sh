@@ -15,6 +15,7 @@
 # REG - registry of where to push the bundles and indexes, defaults to quay.io
 # BUILD_TOOL - tool used for building the bundle and index, defaults to docker
 # OC_INSTALL - set to true if you want the catalogue source to be created pointing to the "oldest" version within the versions specified (version must have no replaces field)(must be oc logged in)
+# OVERWRITE - set to true to overwrite any existing bundle/index image tags from the specified ORG
 # Example:
 # make create/olm/bundle OLM_TYPE=managed-api-service UPGRADE=false BUNDLE_VERSIONS=1.16.0,1.15.2 ORG=mstoklus
 
@@ -30,8 +31,8 @@ case $OLM_TYPE in
     LATEST_VERSION=$(grep $OLM_TYPE bundles/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
     ;;
   *)
-    echo "Invalid OLM_TYPE set"
-    echo "Use either \"managed-api-service\" or \"multitenant-managed-api-service\""
+    printf "Invalid OLM_TYPE set\n"
+    printf "Use either \"managed-api-service\" or \"multitenant-managed-api-service\""
     exit 1
     ;;
 esac
@@ -45,6 +46,7 @@ CATALOG_SOURCE_INSTALL="${OC_INSTALL:-false}"
 ROOT=$(pwd)
 INDEX=""
 OLDEST_IMAGE=""
+OVERWRITE="${OVERWRITE:-false}"
 
 start() {
   clean_up
@@ -57,21 +59,20 @@ start() {
   create_catalog_source
   fi
   clean_up
-  echo "Index images are: "
-  echo $INDEX
+  printf "Index images are:\n%s\n" "$INDEX"
 }
 
 create_work_area() {
   printf "Creating Work Area \n"
-  cd ./bundles/$OLM_TYPE/
-  mkdir temp && cd temp
+  cd ./bundles/$OLM_TYPE/ || exit
+  mkdir temp && cd temp || exit
 }
 
 copy_bundles() {
   for i in $(echo $VERSIONS | sed "s/,/ /g")
   do
-      printf 'Copying bundle version: \n'$i
-      cp -R ../$i ./
+      printf "Copying bundle version: %s\n" "$i"
+      cp -R ../"$i" ./
   done
 }
 
@@ -80,12 +81,12 @@ copy_bundles() {
 check_upgrade_install() {
   if [ "$UPGRADE_RHOAM" = true ] ; then
     # We can return as the csv will have the replaces field by default
-    echo 'Not removing replaces field in CSV'
+    printf "Not removing replaces field in CSV\n"
     return
   fi
   # Get the oldest version, example: VERSIONS="2.5,2.4,2.3" oldest="2.3"
   OLDEST_VERSION=${VERSIONS##*,}
-  file=`ls ./$OLDEST_VERSION/manifests | grep .clusterserviceversion.yaml`
+  file="$(ls "./$OLDEST_VERSION/manifests" | grep .clusterserviceversion.yaml)"
 
   sed '/replaces/d' './'$OLDEST_VERSION'/manifests/'$file > newfile ; mv newfile './'$OLDEST_VERSION'/manifests/'$file
 
@@ -98,12 +99,23 @@ generate_bundles() {
 
   for VERSION in $(echo $VERSIONS | sed "s/,/ /g")
   do
+    # Checks if script should preserve existing bundle images at $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
+    # If the bundle image doesn't already exist, it will be created
+    # If the bundle image does already exist, the script continues to the next VERSION
+    if [ "$OVERWRITE" = false ] ; then
+      exists="$($BUILD_TOOL manifest inspect "$REG/$ORG/${OLM_TYPE}-bundle:$VERSION" > /dev/null ; echo $?)"
+      # Expression will 0 on success (image does exist) and 1 on failure (image does not exist)
+      if [[ "$exists" -eq "0" ]] ; then
+        printf "Not building or pushing this bundle image because it already exists and OVERWRITE is set to false: %s\n" "$REG/$ORG/${OLM_TYPE}-bundle:$VERSION"
+        continue
+      fi
+    fi
     pwd
     cd ../../..
-    $BUILD_TOOL build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t $REG/$ORG/${OLM_TYPE}-bundle:$VERSION --build-arg manifest_path=./bundles/$OLM_TYPE/temp/$VERSION/manifests --build-arg metadata_path=./bundles/$OLM_TYPE/temp/$VERSION/metadata --build-arg version=$VERSION .
-    $BUILD_TOOL push $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    operator-sdk bundle validate $REG/$ORG/${OLM_TYPE}-bundle:$VERSION
-    cd ./bundles/${OLM_TYPE}/temp
+    $BUILD_TOOL build -f ./bundles/$OLM_TYPE/bundle.Dockerfile -t "$REG/$ORG/${OLM_TYPE}-bundle:$VERSION" --build-arg manifest_path="./bundles/$OLM_TYPE/temp/$VERSION/manifests" --build-arg metadata_path="./bundles/$OLM_TYPE/temp/$VERSION/metadata" --build-arg version="$VERSION" .
+    $BUILD_TOOL push "$REG/$ORG/${OLM_TYPE}-bundle:$VERSION"
+    operator-sdk bundle validate "$REG/$ORG/${OLM_TYPE}-bundle:$VERSION"
+    cd ./bundles/${OLM_TYPE}/temp || exit
   done
 }
 
@@ -111,10 +123,10 @@ generate_bundles() {
 generate_index() {
   if [[ " ${VERSIONS[@]} " > 1 ]]; then
     INITIAL_VERSION=${VERSIONS##*,}
-    push_index $INITIAL_VERSION
-    push_index $VERSIONS
+    push_index "$INITIAL_VERSION"
+    push_index "$VERSIONS"
   else
-    push_index $VERSIONS
+    push_index "$VERSIONS"
   fi
 }
 
@@ -122,7 +134,7 @@ generate_index() {
 push_index() {
   VERSIONS_TO_PUSH=$1
   bundles=""
-  for VERSION in $(echo $VERSIONS_TO_PUSH | sed "s/,/ /g")
+  for VERSION in $(echo "$VERSIONS_TO_PUSH" | sed "s/,/ /g")
   do
       bundles=$bundles"$REG/$ORG/${OLM_TYPE}-bundle:$VERSION,"
   done
@@ -130,34 +142,44 @@ push_index() {
   bundles=${bundles%?}
 
   NEWEST_VERSION="$( cut -d ',' -f 1 <<< "$VERSIONS_TO_PUSH" )"
-  opm index add \
-      --bundles $bundles \
-      --container-tool $BUILD_TOOL \
-      --tag $REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION
-
   INDEX_IMAGE=$REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION
 
-  printf 'Pushing index image:'$INDEX_IMAGE'\n'
+  # Checks if script should preserve existing index images at $REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION
+  # If the index image doesn't already exist, it will be created
+  # If the index image does already exist, the script continues
+  if [ "$OVERWRITE" = false ] ; then
+    exists="$($BUILD_TOOL manifest inspect "$INDEX_IMAGE" > /dev/null ; echo $?)"
+    # exists will by 0 on success (image does exist) and 1 on failure (image does not exist)
+    if [ "$exists" -eq "0" ] ; then
+      printf "Not building or pushing this index image because it already exists and OVERWRITE is set to false: %s\n" "$INDEX_IMAGE"
+      INDEX="$INDEX $INDEX_IMAGE"
+      return
+    fi
+  fi
 
-  $BUILD_TOOL push $INDEX_IMAGE
+  opm index add \
+      --bundles "$bundles" \
+      --container-tool "$BUILD_TOOL" \
+      --tag "$REG/$ORG/${OLM_TYPE}-index:$NEWEST_VERSION"
 
-  INDEX="""$INDEX
-  $INDEX_IMAGE
-  """
+  printf "Pushing index image: %s\n" "$INDEX_IMAGE"
+  $BUILD_TOOL push "$INDEX_IMAGE"
+
+  INDEX="$INDEX $INDEX_IMAGE"
 }
 
 # creates catalog source on the cluster
 create_catalog_source() {
-printf 'Creating catalog source '$OLDEST_IMAGE'\n'
-  cd $ROOT
+  printf "Creating catalog source using: %s\n" "$OLDEST_IMAGE"
+  cd "$ROOT" || exit
   oc delete catalogsource rhmi-operators -n openshift-marketplace --ignore-not-found=true
-  oc process -p INDEX_IMAGE=$OLDEST_IMAGE  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
+  oc process -p INDEX_IMAGE="$OLDEST_IMAGE"  -f ./config/olm/catalog-source-template.yml | oc apply -f - -n openshift-marketplace
 }
 
 # cleans up the working space
 clean_up() {
-  printf 'Cleaning up work area \n'
-  rm -rf $ROOT/bundles/$OLM_TYPE/temp
+  printf "Cleaning up work area \n"
+  rm -rf "$ROOT/bundles/$OLM_TYPE/temp"
 }
 
 start
