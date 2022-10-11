@@ -8,7 +8,7 @@ products:
     environments:
       - external
 tags:
-  - per-release
+  - manual-selection
 ---
 
 # A31 - Verify installation on all OSD versions

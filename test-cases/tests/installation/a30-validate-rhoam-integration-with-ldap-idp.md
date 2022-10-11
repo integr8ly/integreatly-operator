@@ -7,8 +7,8 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
-tags:
-  - per-release
+    targets:
+      - 1.27.0
 ---
 
 # A30 - Validate RHOAM integration with LDAP IDP
@@ -72,7 +72,7 @@ We want to validate that customer can use LDAP server as a RHOAM IDP.
     uid: rhoam-customer-admin
    ```
 
-   If the LDAP service is not running ssh to the EC2 instance and start it. Follow our [LDAP guide](https://github.com/RHCloudServices/integreatly-help/tree/master/qe-guides/rhoam-ldap-instance.md) to do so.
+   If the LDAP service is not running ssh to the EC2 instance and start it. Follow our [LDAP guide](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/tree/master/qe-guides/rhoam-ldap-instance.md) to do so.
 
 Create the integration with RHOAM via IDP.
 

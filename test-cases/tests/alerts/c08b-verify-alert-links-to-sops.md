@@ -1,22 +1,10 @@
 ---
-automation:
-  - MGDAPI-3452
-estimate: 15m
 products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-    targets:
-      - 0.1.0
-      - 0.2.0
-      - 1.0.0
-      - 1.3.0
-      - 1.6.0
-      - 1.9.0
-      - 1.12.0
-      - 1.15.0
-      - 1.18.0
-      - 1.21.0
+tags:
+  - automated
 ---
 
 # C08B - Verify alert links to SOPs

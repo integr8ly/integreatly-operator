@@ -152,7 +152,7 @@ Prerequisites:
 - Nodejs >= 10
 - [Valid JIRA Personal Access Token](https://issues.redhat.com/secure/ViewProfile.jspa?selectedTab=com.atlassian.pats.pats-plugin:jira-user-personal-access-tokens)
 
-> Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
+> Always refer to the [2.X Release Testing Workflow](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
 
 To create the Jira tasks for the test cases you need first to create an Epic in Jira with the `fixVersion` that you want to target. Only test cases with the same target version or marked as `per-release` or `per-build` will be created in the Epic.
 
