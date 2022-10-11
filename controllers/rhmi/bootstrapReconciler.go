@@ -202,8 +202,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 
-	}
-
 	phase, err = r.reconcileCustomSMTP(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
