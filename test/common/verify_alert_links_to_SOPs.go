@@ -109,7 +109,7 @@ func validateGitlabToken(t TestingTB, testUrl string) {
 	req.Header.Add("PRIVATE-TOKEN", fmt.Sprintf("%s", gitlabToken))
 	testResp, err := client.Do(req)
 	if err != nil {
-		t.Log(err)
+		t.Skip(err)
 	}
 
 	defer func(Body io.ReadCloser) {
