@@ -464,6 +464,12 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"RHOAMCriticalMetricsMissing",
 			},
 		},
+		{
+			File: ObservabilityNamespacePrefix + "cloud-resource-operator-metrics-missing.yaml",
+			Rules: []string{
+				"RHOAMCloudResourceOperatorMetricsMissing",
+			},
+		},
 	}
 }
 
