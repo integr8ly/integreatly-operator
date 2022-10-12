@@ -26,3 +26,5 @@ additionalImages:
     url: quay.io/prometheus/prometheus:v2.29.2
   - name: observability-prometheus-blackbox
     url: quay.io/prometheus/blackbox-exporter:v0.19.0
+  - name: observability-observability-operator
+    url: quay.io/rhoas/observability-operator-index:v3.0.16
