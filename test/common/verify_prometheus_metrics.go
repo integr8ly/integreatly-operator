@@ -11,13 +11,15 @@ import (
 
 func mangedApiTargets() map[string][]string {
 	return map[string][]string{
-		ObservabilityProductNamespace: {
+		"probe/" + ObservabilityProductNamespace: {
 			"/integreatly-3scale-admin-ui",
 			"/integreatly-3scale-system-developer",
 			"/integreatly-3scale-system-master",
 			"/integreatly-grafana",
 			"/integreatly-rhsso",
 			"/integreatly-rhssouser",
+		},
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/redhat-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
 			"/redhat-rhoam-marin3r-ratelimit/0",
 			"/redhat-rhoam-rhsso-keycloak-service-monitor/0",
@@ -34,12 +36,14 @@ func mangedApiTargets() map[string][]string {
 
 func mtMangedApiTargets() map[string][]string {
 	return map[string][]string{
-		ObservabilityProductNamespace: {
+		"probe/" + ObservabilityProductNamespace: {
 			"/integreatly-3scale-admin-ui",
 			"/integreatly-3scale-system-developer",
 			"/integreatly-3scale-system-master",
 			"/integreatly-grafana",
 			"/integreatly-rhsso",
+		},
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/sandbox-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
 			"/sandbox-rhoam-marin3r-ratelimit/0",
 			"/sandbox-rhoam-rhsso-keycloak-service-monitor/0",
