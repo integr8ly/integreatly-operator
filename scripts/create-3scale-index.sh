@@ -29,6 +29,7 @@ IMAGE="${IMAGE:-3scale-index}"
 BUILD_TOOL="${BUILD_TOOL:-docker}"
 BUILD_FRESH="${BUILD_FRESH:-false}"
 VERSION="${VERSION}"
+BUNDLE_FILE="${BUNDLE_FILE:-bundles/3scale-operator/bundles.yaml}"
 
 
 
@@ -39,7 +40,7 @@ generate_from() {
     fi
     bundle=$(yq e ".bundles[] | .name |= sub(\"3scale-operator.\",\"\") \
         | select(.name == \"v$VERSION\") | .image" \
-        bundles/3scale-operator/bundles.yaml)
+        $BUNDLE_FILE)
     
     if [[ -z $bundle ]]; then
         echo "No matching bundle, exiting"
@@ -65,10 +66,12 @@ generate_full() {
         exit 1
     fi
 
-    bundles=$(yq e ".bundles[] | .name |= sub(\"3scale-operator.\",\"\") \
-        | select(.name <= \"v$VERSION\") | .image" \
-        bundles/3scale-operator/bundles.yaml)
+    bundleIndex=$(yq e ".bundles[] | select(.name==\"3scale-operator.v$VERSION\") \
+        | path | .[-1]" \
+        $BUNDLE_FILE)
 
+    bundles=$(yq e ".bundles[\"$(seq -s \",\" 0 $bundleIndex)\"] | .image" \
+        $BUNDLE_FILE)
 
     if [[ -z $bundles ]]; then
         echo "No matching bundles, exiting"
@@ -99,6 +102,12 @@ generate_index() {
         echo "Valid version string: ${VERSION}"
     else
         echo "Error: Invalid version string: ${VERSION}"
+        exit 1
+    fi
+    
+    versionExists=$(yq e ".bundles[] | select(.name==\"3scale-operator.v$VERSION\")" $BUNDLE_FILE)
+    if [ -z "$versionExists" ]; then
+        echo "Error: No version ${VERSION} in bundle file $BUNDLE_FILE"
         exit 1
     fi
 
