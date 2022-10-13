@@ -5,31 +5,33 @@
 # - yq (4.24.2+)
 #
 # Function:
-# Script creates 3scale index/indices for RHOAM 
+# Script creates product index/indices for RHOAM
 #
 # Usage:
-# REG=<REGISTRY> ORG=<QUAY ORG> IMAGE=<IMAGE NAME> BUILD_TOOL=<docker|podman>  VERSION=<VERSION TAG> make create/3scale/index
+# REG=<REGISTRY> ORG=<QUAY ORG> IMAGE=<IMAGE NAME> BUILD_TOOL=<docker|podman> VERSION=<VERSION TAG> BUILD_FRESH=<false|true> make create/<3scale|rhsso|mcg>/index
+# PRODUCT - set by Makefile for relevant caller, create/3scale/index|create/rhsso/index|create/mcg/index
 # REG - registry of where to push the bundles and indices, defaults to quay.io
 # ORG - organization of where to push the bundles and indices
 # IMAGE - image name of the image to push
 # BUILD_TOOL - tool used for building the bundle and index, defaults to docker
 # BUILD_FRESH - if set to true we build an index from scratch, otherwise we append to the existing index
 #    in products/installation.yaml
-# VERSION - index version to build: 
-#   BUILD_FRESH=false; this defines the bundle version to append to the existing index
+# VERSION - index version to build:
+#   BUILD_FRESH=false; this defines the bundle version to append to the existing index (from products/installation.yaml)
 #   BUILD_FRESH=true ; this defines the max version and includes all bundles beneath it
 #
 # Example:
-# VERSION=0.8.3+0.1645735250.p ORG=acatterm make create/3scale/index
+# VERSION=0.10.0-mas ORG=acatterm make create/3scale/index
 
 
+PRODUCT="${PRODUCT}"
+VERSION="${VERSION}"
 REG="${REG:-quay.io}"
 ORG="${ORG:-integreatly}"
-IMAGE="${IMAGE:-3scale-index}"
+IMAGE="${IMAGE:-$PRODUCT-index}"
 BUILD_TOOL="${BUILD_TOOL:-docker}"
 BUILD_FRESH="${BUILD_FRESH:-false}"
-VERSION="${VERSION}"
-BUNDLE_FILE="${BUNDLE_FILE:-bundles/3scale-operator/bundles.yaml}"
+BUNDLE_FILE="${BUNDLE_FILE:-bundles/$PRODUCT-operator/bundles.yaml}"
 
 
 
@@ -38,7 +40,7 @@ generate_from() {
         echo "generate_from() called without a parameter"
         exit 1
     fi
-    bundle=$(yq e ".bundles[] | .name |= sub(\"3scale-operator.\",\"\") \
+    bundle=$(yq e ".bundles[] | .name |= sub(\"$PRODUCT-operator.\",\"\") \
         | select(.name == \"v$VERSION\") | .image" \
         $BUNDLE_FILE)
     
@@ -47,7 +49,7 @@ generate_from() {
         exit 1
     fi
 
-    index=$(yq e ".products[\"3scale\"].index" products/installation.yaml)
+    index=$(yq e ".products[\"$PRODUCT\"].index" products/installation.yaml)
 
     printf "Building index $1\n\tFrom: $index\n\tIncluding: $bundle\n"
 
@@ -66,7 +68,7 @@ generate_full() {
         exit 1
     fi
 
-    bundleIndex=$(yq e ".bundles[] | select(.name==\"3scale-operator.v$VERSION\") \
+    bundleIndex=$(yq e ".bundles[] | select(.name==\"$PRODUCT-operator.v$VERSION\") \
         | path | .[-1]" \
         $BUNDLE_FILE)
 
@@ -98,6 +100,10 @@ generate_full() {
 
 
 generate_index() {
+    if [ ! -f "$BUNDLE_FILE" ]; then
+        echo "$BUNDLE_FILE for product $PRODUCT does not exist."
+        exit 1
+    fi
     if [[ $VERSION =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$ ]]; then
         echo "Valid version string: ${VERSION}"
     else
@@ -105,7 +111,7 @@ generate_index() {
         exit 1
     fi
     
-    versionExists=$(yq e ".bundles[] | select(.name==\"3scale-operator.v$VERSION\")" $BUNDLE_FILE)
+    versionExists=$(yq e ".bundles[] | select(.name==\"$PRODUCT-operator.v$VERSION\")" $BUNDLE_FILE)
     if [ -z "$versionExists" ]; then
         echo "Error: No version ${VERSION} in bundle file $BUNDLE_FILE"
         exit 1

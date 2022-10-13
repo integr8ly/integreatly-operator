@@ -1,15 +1,15 @@
 bundles:
     - name: keycloak-operator.v18.0.0
       image: quay.io/integreatly/rhsso-bundle:18.0.0
-    - name: rhsso-operator.7.5.2-9
+    - name: rhsso-operator.v7.5.2-9
       image: quay.io/integreatly/rhsso-bundle:7.5.2-9
-    - name: rhsso-operator.7.6.0-4
+    - name: rhsso-operator.v7.6.0-4
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.0-4
-    - name: rhsso-operator.7.6.0-6
+    - name: rhsso-operator.v7.6.0-6
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.0-6
-    - name: rhsso-operator.7.6.0-8
+    - name: rhsso-operator.v7.6.0-8
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.0-8
-    - name: rhsso-operator.7.6.0-10
+    - name: rhsso-operator.v7.6.0-10
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.0-10
-    - name: rhsso-operator.7.6.1-3
+    - name: rhsso-operator.v7.6.1-3
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.1-3
