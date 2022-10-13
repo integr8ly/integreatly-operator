@@ -3,8 +3,9 @@ products:
   - name: rhoam
     environments:
       - osd-post-upgrade
-tags:
-  - automated
+    targets:
+      - 1.28.0
+estimate: 5m
 ---
 
 # C08B - Verify alert links to SOPs
@@ -13,15 +14,18 @@ tags:
 
 This test case should verify that all SOP links in alerts point to correct SOPs.
 
+## Prerequisites
+
+- Ability to decrypt the secrets in CEE GitLab integreatly-qe/ci-cd repository (or ask any QE member)
+
 ## Steps
 
 ### Check that all SOPs for URLs in `sop_url` exist
 
-1. Open OpenShift console in your browser
-2. Login as admin
-3. Find route for Prometheus in `redhat-rhoam-observability` namespace
-4. Open its URL
-5. Change URL path to `/api/v1/rules`
-6. Download json from the `/api/v1/rules` API endpoint from previous step
-7. List all `sop_url`s in the json with `cat rules.json | jq '[.data.groups[].rules[].annotations.sop_url] | unique'`
-8. By opening the URLs check that all SOPs exist
+1. `oc login...` into the cluster to be tested
+2. Get the GitLab API token from ci-cd repo in CEE GitLab: `cat ci-cd/secrets/gitlab-api-token`
+3. Navigate to integreatly-operator repository
+4. Make sure your machine is behind VPN
+5. Run the C18B test
+
+`GITLAB_TOKEN=<gitlab-api-token> LOCAL=false INSTALLATION_TYPE=managed-api TEST=C08B make test/e2e/single`
