@@ -30,11 +30,11 @@ scorecard/test/run:
 
 .PHONY: scorecard/build/push
 scorecard/build/push: scorecard/build
-	docker push ${IMAGE}
+	$(CONTAINER_ENGINE) push ${IMAGE}
 
 .PHONY: scorecard/build
 scorecard/build:
-	docker build -t ${IMAGE} -f Dockerfile.scorecard .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -t ${IMAGE} -f Dockerfile.scorecard .
 
 .PHONY: scorecard/compile
 scorecard/compile:

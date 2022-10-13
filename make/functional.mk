@@ -4,11 +4,11 @@ INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE ?= $(REG)/$(ORG)/integreatly-operator-te
 .PHONY: image/functional/build
 image/functional/build:
 	go mod vendor
-	docker build . -f Dockerfile.functional -t $(INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE)
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) . -f Dockerfile.functional -t $(INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE)
 
 .PHONY: image/functional/push
 image/functional/push:
-	docker push $(INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE)
+	$(CONTAINER_ENGINE) push $(INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE)
 
 .PHONY: image/functional/build/push
 image/functional/build/push: image/functional/build image/functional/push

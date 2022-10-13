@@ -4,11 +4,11 @@ MANAGED_API_TEST_HARNESS_IMAGE ?= $(REG)/$(ORG)/integreatly-operator-test-harnes
 .PHONY: image/osde2e/build
 image/osde2e/build:
 	go mod vendor
-	docker build . -f Dockerfile.osde2e -t $(MANAGED_API_TEST_HARNESS_IMAGE)
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) . -f Dockerfile.osde2e -t $(MANAGED_API_TEST_HARNESS_IMAGE)
 
 .PHONY: image/osde2e/push
 image/osde2e/push:
-	docker push $(MANAGED_API_TEST_HARNESS_IMAGE)
+	$(CONTAINER_ENGINE) push $(MANAGED_API_TEST_HARNESS_IMAGE)
 
 .PHONY: image/osde2e/build/push
 image/osde2e/build/push: image/osde2e/build image/osde2e/push
