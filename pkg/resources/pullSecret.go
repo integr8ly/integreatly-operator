@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -63,7 +63,7 @@ func ReconcileSecretToProductNamespace(ctx context.Context, client k8sclient.Cli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secretName string, namespace string, kc keycloak.Keycloak, log l.Logger) error {
+func AddOwnerRefToSSOSecret(ctx context.Context, client k8sclient.Client, secretName string, namespace string, kc dr.Keycloak, log l.Logger) error {
 	srcSecret := corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, &srcSecret)
 	if err != nil {
