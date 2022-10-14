@@ -23,3 +23,5 @@ bundles:
       image: quay.io/integreatly/3scale-bundle:v0.9.0
     - name: 3scale-operator.v0.9.1
       image: quay.io/integreatly/3scale-bundle:v0.9.1
+    - name: 3scale-operator.v0.10.0-mas
+      image: quay.io/integreatly/3scale-bundle:v0.10.0-mas
