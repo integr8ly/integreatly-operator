@@ -74,7 +74,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 					{
 						Alert: fmt.Sprintf("%sCloudResourceOperatorMetricsMissing", strings.ToUpper(installationName)),
 						Expr: intstr.FromString(
-							fmt.Sprintf(`(absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s)) == 1`,
+							fmt.Sprintf(`(absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s)) == 1 and rhoam_spec{use_cluster_storage="false"}`,
 								croResources.DefaultPostgresAvailMetricName,
 								croResources.DefaultPostgresConnectionMetricName,
 								croResources.DefaultPostgresStatusMetricName,
