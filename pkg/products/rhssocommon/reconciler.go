@@ -16,6 +16,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -282,7 +283,7 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string, tenant string) error {
+func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloakTypes.KeycloakRealm, redirectUris []string, tenant string) error {
 	var (
 		clientSecret string
 		clientId     string
@@ -320,9 +321,9 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 	if !ContainsIdentityProvider(kcr.Spec.Realm.IdentityProviders, idpAlias) {
 		r.Log.Info("Adding keycloak realm client")
 		if kcr.Spec.Realm.IdentityProviders == nil {
-			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
+			kcr.Spec.Realm.IdentityProviders = []*keycloakTypes.KeycloakIdentityProvider{}
 		}
-		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
+		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloakTypes.KeycloakIdentityProvider{
 			Alias:                     idpAlias,
 			ProviderID:                "openshift-v4",
 			Enabled:                   true,
@@ -421,7 +422,7 @@ func (r *Reconciler) GetOAuthClientName(sso config.RHSSOInterface) string {
 	return r.Installation.Spec.NamespacePrefix + string(sso.GetProductName())
 }
 
-func ContainsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
+func ContainsIdentityProvider(providers []*keycloakTypes.KeycloakIdentityProvider, alias string) bool {
 	for _, p := range providers {
 		if p.Alias == alias {
 			return true
@@ -520,7 +521,7 @@ func (r *Reconciler) ReconcileStatefulSet(ctx context.Context, serverClient k8sc
 	)
 }
 
-func DeleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []keycloak.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
+func DeleteKeycloakUsers(allKcUsers []keycloakTypes.KeycloakAPIUser, deletedUsers []keycloakTypes.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloakTypes.KeycloakAPIUser, error) {
 
 	for _, delUser := range deletedUsers {
 
@@ -554,7 +555,7 @@ func DeleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []k
 	return allKcUsers, nil
 }
 
-func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
+func OsUserInKc(osUsers []usersv1.User, kcUser keycloakTypes.KeycloakAPIUser) bool {
 	for _, osu := range osUsers {
 		if osu.Name == kcUser.UserName {
 			return true
@@ -708,7 +709,7 @@ func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Co
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) IsOperatorInstallComplete(kc *keycloak.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
+func (r *Reconciler) IsOperatorInstallComplete(kc keycloakTypes.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
 	return kc.Status.Version == string(operatorVersion) && kc.Status.Ready
 }
 
