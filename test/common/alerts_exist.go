@@ -769,9 +769,11 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	// convert prometheus rule to PrometheusRule type
 	var actualRules []alertsTestRule
 	for _, group := range rulesResult.Groups {
-		ruleName := strings.Split(group.File, "/")
+		fileNameChunks := strings.Split(group.File, "/")
+		ruleName := fileNameChunks[len(fileNameChunks)-1]
+		ruleNameWithoutUUID := ruleName[:len(ruleName)-42] + ".yaml"
 		rule := alertsTestRule{
-			File: ruleName[len(ruleName)-1],
+			File: ruleNameWithoutUUID,
 		}
 		for _, promRule := range group.Rules {
 			switch v := promRule.(type) {

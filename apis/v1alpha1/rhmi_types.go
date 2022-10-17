@@ -76,7 +76,7 @@ var (
 	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.10.0"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "3.0.13"
+	VersionObservability  ProductVersion = "3.0.16"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -92,7 +92,7 @@ var (
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.10.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "3.0.13"
+	OperatorVersionObservability  OperatorVersion = "3.0.16"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
