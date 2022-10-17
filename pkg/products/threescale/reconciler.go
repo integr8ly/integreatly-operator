@@ -1228,7 +1228,6 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	// Create empty unstructured and attempt getting it from cluster
-	// kcClientUnstructured := unstructured.Unstructured{}
 	kcClientUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakClientGroup, keycloakTypes.KeycloakClientKind, keycloakTypes.KeycloakClientVersion, clientID, rhssoNamespace)
 
 	found := true
@@ -1262,7 +1261,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	kcClientTyped.Spec = kcClientTypedDesired.Spec
 
-	kcClientUnstructuredUpdatedOriginal, err := dr.ConvertKeycloakClientTypedToUnstructured(*kcClientTyped)
+	kcClientUnstructuredUpdatedOriginal, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClientTyped)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -1466,41 +1465,29 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 			// Continue installation to not block for when users could not be created in 3scale (i.e. too many characters in username)
 			continue
 		}
-
 		if user.Attributes == nil {
 			user.Attributes = map[string][]string{
 				userCreated3ScaleName: {"true"},
 			}
 		}
 
-		// Create empty unstructured and attempt getting it from cluster
-		kcUserUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakUserGroup, keycloakTypes.KeycloakUserKind, keycloakTypes.KeycloakUserVersion, userHelper.GetValidGeneratedUserName(user), rhssoConfig.GetNamespace())
-
-		err = serverClient.Get(context.TODO(), nsTypes.NamespacedName{Namespace: rhssoConfig.GetNamespace(), Name: userHelper.GetValidGeneratedUserName(user)}, kcUserUnstructured)
-		if err != nil {
-			if !k8serr.IsNotFound(err) {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
+		kcUser := &keycloakTypes.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      userHelper.GetValidGeneratedUserName(user),
+				Namespace: rhssoConfig.GetNamespace(),
+			},
 		}
 
-		kcUserTyped, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+		user.Attributes[userCreated3ScaleName] = []string{"true"}
+		user.Attributes[user3ScaleID] = []string{fmt.Sprint(tsUser.UserDetails.Id)}
+		kcUser.Spec.User = user
 
-		// Retrieve keycloak user typed object desired state
-		kcUserTypedDesired := createDesiredKeycloakUserTypedObject(user, tsUser.UserDetails.Id, userCreated3ScaleName, userCreated3ScaleName)
-
-		kcUserTyped.Spec = kcUserTypedDesired.Spec
-
-		// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-		kcUserUnstructuredOriginalUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(*kcUserTyped)
+		kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
 		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
-			kcUserUnstructured = kcUserUnstructuredOriginalUpdated
 			return nil
 		})
 		if err != nil {
@@ -2450,7 +2437,7 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 				},
 			}
 			// Convert keycloakUser to unstructured
-			userUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(*genKcUser)
+			userUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(genKcUser)
 			if err != nil {
 				r.log.Warning("Failed to covert user typed to unstructured: " + err.Error())
 				continue
@@ -2465,6 +2452,12 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 			err = serverClient.Get(ctx, objectKey, userUnstructured)
 			if err != nil {
 				r.log.Warning("Failed get generated Keycloak User: " + err.Error())
+				continue
+			}
+
+			genKcUser, err = dr.ConvertKeycloakUserUnstructuredToTyped(*userUnstructured)
+			if err != nil {
+				r.log.Warning("Failed to covert user unstructured to typed: " + err.Error())
 				continue
 			}
 
