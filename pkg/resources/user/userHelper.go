@@ -11,7 +11,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	v1 "github.com/openshift/api/config/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	"github.com/pkg/errors"
@@ -58,13 +58,13 @@ func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client
 	return email
 }
 
-func AppendUpdateProfileActionForUserWithoutEmail(keycloakUser *keycloak.KeycloakAPIUser) {
+func AppendUpdateProfileActionForUserWithoutEmail(keycloakUser *keycloakTypes.KeycloakAPIUser) {
 	if keycloakUser.Email == "" {
 		keycloakUser.RequiredActions = []string{updateProfileAction}
 	}
 }
 
-func GetValidGeneratedUserName(keycloakUser keycloak.KeycloakAPIUser) string {
+func GetValidGeneratedUserName(keycloakUser keycloakTypes.KeycloakAPIUser) string {
 	// Regex for only alphanumeric values
 	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
 
