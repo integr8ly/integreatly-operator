@@ -41,16 +41,13 @@ import (
 )
 
 const (
-	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0 once it is possible to update to that version
-	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
-	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
-	alertFor5Mins                     = "5m"
-	alertFor15Mins                    = "15m"
-	alertFor10Mins                    = "10m"
-	alertFor20Mins                    = "20m"
-	alertFor30Mins                    = "30m"
-	alertFor60Mins                    = "60m"
-	alertPercentage                   = "90"
+	alertFor5Mins   = "5m"
+	alertFor15Mins  = "15m"
+	alertFor10Mins  = "10m"
+	alertFor20Mins  = "20m"
+	alertFor30Mins  = "30m"
+	alertFor60Mins  = "60m"
+	alertPercentage = "90"
 )
 
 func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (v1alpha1.StatusPhase, error) {
@@ -264,7 +261,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 0",
 			croResources.DefaultPostgresAvailMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("Postgres instance: '%s' (strategy: %s) for product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
@@ -305,7 +302,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 0",
 			croResources.DefaultPostgresConnectionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("Unable to connect to Postgres instance. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
@@ -336,7 +333,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 	alertName := postgresCRName + "PostgresResourceStatusPhasePending"
 	ruleName := fmt.Sprintf("resource-status-phase-pending-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 0",
 			croResources.DefaultPostgresStatusMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The creation of the Postgres instance has take longer that %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor20Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
@@ -398,7 +395,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 	alertName := postgresCRName + "PostgresResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultPostgresDeletionMetricName, cr.Namespace, cr.Name, productName),
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", croResources.DefaultPostgresDeletionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Postgres instance has been failing longer than %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
@@ -563,7 +560,7 @@ func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 	alertName := redisCRName + "RedisResourceStatusPhasePending"
 	ruleName := fmt.Sprintf("resource-status-phase-pending-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 0",
 			croResources.DefaultRedisStatusMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The creation of the Redis cache has take longer that %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor20Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
@@ -684,7 +681,7 @@ func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	alertName := redisCRName + "RedisResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", croResources.DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Redis instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
@@ -721,7 +718,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 0",
 			croResources.DefaultRedisAvailMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("Redis instance: '%s' (strategy: %s) for the product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
@@ -759,7 +756,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 0",
 			croResources.DefaultRedisConnectionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("Unable to connect to Redis instance. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)

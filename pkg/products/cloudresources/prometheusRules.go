@@ -3,6 +3,7 @@ package cloudresources
 import (
 	"context"
 	"fmt"
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"strings"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -24,7 +25,6 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 	}
 
 	namespace := observabilityConfig.GetNamespace()
-	alertName := "cro-ksm-endpoint-alerts"
 
 	alertsReconciler := &resources.AlertReconcilerImpl{
 		ProductName:  "Cloud Resources Operator",
@@ -32,7 +32,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: alertName,
+				AlertName: "cro-ksm-endpoint-alerts",
 				Namespace: namespace,
 				GroupName: "cloud-resources-operator-endpoint.rules",
 				Rules: []monitoringv1.Rule{
@@ -63,6 +63,32 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 						Expr:   intstr.FromString(fmt.Sprintf("cro_vpc_action{namespace='%s', status='failed', error!=''} > 0", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
+					},
+				},
+			},
+			{
+				AlertName: "cloud-resource-operator-metrics-missing",
+				Namespace: namespace,
+				GroupName: "cloud-resource-operator.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: fmt.Sprintf("%sCloudResourceOperatorMetricsMissing", strings.ToUpper(installationName)),
+						Expr: intstr.FromString(
+							fmt.Sprintf(`(absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s) or absent(%s)) == 1 and rhoam_spec{use_cluster_storage="false"}`,
+								croResources.DefaultPostgresAvailMetricName,
+								croResources.DefaultPostgresConnectionMetricName,
+								croResources.DefaultPostgresStatusMetricName,
+								croResources.DefaultRedisAvailMetricName,
+								croResources.DefaultRedisConnectionMetricName,
+								croResources.DefaultRedisStatusMetricName,
+							),
+						),
+						For:    "5m",
+						Labels: map[string]string{"severity": "critical"},
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMCloudResourceOperatorMetricsMissing,
+							"message": "one or more cloud-resource-operator metrics have been missing for 5+ minutes",
+						},
 					},
 				},
 			},
