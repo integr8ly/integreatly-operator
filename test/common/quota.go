@@ -8,7 +8,8 @@ import (
 	"time"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	v12 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -147,10 +148,10 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	}
 
 	var newKeycloakLimit resource.Quantity
-	var keycloakCR *v1alpha1.Keycloak
+	var keycloakCR *keycloak.Keycloak
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Keycloak
-		keycloakCR = &v1alpha1.Keycloak{
+		keycloakCR = &keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
 				Namespace: RHSSOUserProductNamespace,
@@ -158,14 +159,23 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		}
 		newKeycloakLimit = resource.MustParse(newKeycloakLimits)
 
-		key, err = k8sclient.ObjectKeyFromObject(keycloakCR)
+		keycloakCRUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err = k8sclient.ObjectKeyFromObject(keycloakCRUnstructured)
 		if err != nil {
 			t.Fatalf("Error getting Keycloak CR key: %v", err)
 		}
 
-		err = ctx.Client.Get(context.TODO(), key, keycloakCR)
+		err = ctx.Client.Get(context.TODO(), key, keycloakCRUnstructured)
 		if err != nil {
 			t.Fatalf("Error getting Keycloak CR: %v", err)
+		}
+
+		keycloakCR, err = dr.ConvertKeycloakUnstructuredToTyped(*keycloakCRUnstructured)
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
 
@@ -201,8 +211,13 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	}
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCR, func() error {
-			keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
+		keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
+		keycloakCRUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCRUnstructured, func() error {
+
 			return nil
 		})
 		if err != nil {
@@ -395,19 +410,27 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Validate CPU value requested by SSO
-		keycloak := &v1alpha1.Keycloak{
+		keycloakUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(&keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(rhmiv1alpha1.ProductRHSSOUser),
 			},
+		})
+		if err != nil {
+			t.Fatal(err)
 		}
-		err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
+		err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: string(rhmiv1alpha1.ProductRHSSOUser), Namespace: RHSSOUserProductNamespace}, keycloakUnstructured)
 		if err != nil {
 			t.Fatalf("Couldn't get Keycloak CR: %v", err)
 		}
 
-		crReplicas = int32(keycloak.Spec.Instances)
-		crResources = keycloak.Spec.KeycloakDeploymentSpec.Resources
-		checkResources(t, keycloak.Name, configReplicas, crReplicas, resourceConfig, crResources)
+		kcTyped, err := dr.ConvertKeycloakUnstructuredToTyped(*keycloakUnstructured)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		crReplicas = int32(kcTyped.Spec.Instances)
+		crResources = kcTyped.Spec.KeycloakDeploymentSpec.Resources
+		checkResources(t, kcTyped.Name, configReplicas, crReplicas, resourceConfig, crResources)
 	}
 }
 

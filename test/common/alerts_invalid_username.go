@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,12 +111,20 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 }
 
 func validateUserNotListedInKeyCloakCR(t TestingTB, ctx *TestingContext, goCtx context.Context, userName string) {
-	keycloakUsers := &keycloak.KeycloakUserList{}
-	if err := ctx.Client.List(goCtx, keycloakUsers, []k8sclient.ListOption{k8sclient.InNamespace(RHSSOProductNamespace)}...); err != nil {
+	keycloakUsersUnstructured, err := dr.ConvertKeycloakUsersTypedToUnstructured(&keycloak.KeycloakUserList{})
+	if err != nil {
+		t.Error(err)
+	}
+	if err := ctx.Client.List(goCtx, keycloakUsersUnstructured, []k8sclient.ListOption{k8sclient.InNamespace(RHSSOProductNamespace)}...); err != nil {
 		t.Fatalf("Error listing keycloak users: %s", err)
 	}
 
-	for _, keycloakUser := range keycloakUsers.Items {
+	keycloakUserTyped, err := dr.ConvertKeycloakUsersUnstructuredToTyped(*keycloakUsersUnstructured)
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, keycloakUser := range keycloakUserTyped.Items {
 		if strings.Contains(keycloakUser.Name, userName) {
 			t.Fatalf("Expected no keycloak user cr with name %s but found %s", userName, keycloakUser.Name)
 		}
@@ -257,13 +266,18 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to delete openshift user: %s, err: %v", userLongName, err)
 	}
 
-	// Ensure Keycloak CR created are deleted
-	err = ctx.Client.Delete(goCtx, &keycloak.KeycloakUser{
+	kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2),
 			Namespace: RHSSOProductNamespace,
 		},
 	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Ensure Keycloak CR created are deleted
+	err = ctx.Client.Delete(goCtx, kcUserUnstructured)
 	if err != nil {
 		t.Fatalf("failed to delete Keycloak CR: %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2), err)
 	}

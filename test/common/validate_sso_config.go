@@ -7,7 +7,8 @@ import (
 	"github.com/headzoo/surf"
 	brow "github.com/headzoo/surf/browser"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	"golang.org/x/net/context"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,12 +22,18 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	// get Keycloak CR
-	keycloak := &v1alpha1.Keycloak{
+	keycloak := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: string(integreatlyv1alpha1.ProductRHSSOUser),
 		},
 	}
-	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloak)
+
+	keycloakUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloak)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloakUnstructured)
 	if err != nil {
 		t.Fatalf("Couldn't get RHSSO config: %v", err)
 	}

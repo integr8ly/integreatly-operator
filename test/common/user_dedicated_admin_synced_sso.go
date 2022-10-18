@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	routev1 "github.com/openshift/api/route/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -132,6 +133,11 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 
 func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 	generatedKU := &keycloak.KeycloakUser{}
+	generatedKUUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(generatedKU)
+	if err != nil {
+		return err
+	}
+
 	if err := wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
 		err = c.Get(
 			ctx,
@@ -139,7 +145,7 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 				Namespace: RHSSOUserProductNamespace,
 				Name:      fmt.Sprintf("generated-%s-%s", testUser.Name, testUser.UID),
 			},
-			generatedKU,
+			generatedKUUnstructured,
 		)
 		if err != nil {
 			switch err.(type) {
@@ -434,8 +440,12 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 
 	// Ensure KeycloakUser CR has been deleted within 2 minutes
 	err = wait.Poll(time.Second*15, time.Minute*2, func() (done bool, err error) {
+		unstructuredKcUser, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{})
+		if err != nil {
+			return false, nil
+		}
 		err = c.Get(ctx, types.NamespacedName{Name: fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
-			Namespace: RHSSOProductNamespace}, &keycloak.KeycloakUser{})
+			Namespace: RHSSOProductNamespace}, unstructuredKcUser)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
 				return true, nil

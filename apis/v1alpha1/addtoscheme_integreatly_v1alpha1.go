@@ -16,7 +16,6 @@ import (
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -55,7 +54,6 @@ func init() {
 		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		authv1.AddToScheme,
-		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1beta1.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,

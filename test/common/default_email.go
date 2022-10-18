@@ -7,7 +7,8 @@ import (
 
 	goctx "context"
 
-	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	userv1 "github.com/openshift/api/user/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -169,7 +170,7 @@ func deleteUser(ctx *TestingContext, user *userv1.User, identity *userv1.Identit
 	return ctx.Client.Delete(goctx.TODO(), identity)
 }
 
-func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, userName string) (*keycloakv1.KeycloakUser, error) {
+func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, userName string) (*keycloak.KeycloakUser, error) {
 	began := time.Now()
 
 	for {
@@ -179,8 +180,10 @@ func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, 
 		}
 
 		// Get the list of users in the RHSSO namespace
-		list := &keycloakv1.KeycloakUserList{}
-		err := ctx.Client.List(goctx.TODO(), list, k8sclient.InNamespace(namespace))
+		// list := &keycloakv1.KeycloakUserList{}
+		unstructuredUserList := dr.CreateUnstructuredListWithGVK(keycloak.KeycloakUserGroup, keycloak.KeycloakUserKind, keycloak.KeycloakUserListKind, keycloak.KeycloakUserVersion, "", "")
+
+		err := ctx.Client.List(goctx.TODO(), unstructuredUserList, k8sclient.InNamespace(namespace))
 
 		// If an error occurred, return the error
 		if err != nil {
@@ -189,9 +192,13 @@ func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, 
 
 		// Look for the matching user in the user list and send it if it's
 		// found
-		for _, keycloakUser := range list.Items {
-			if keycloakUser.Spec.User.UserName == userName {
-				return &keycloakUser, nil
+		for _, keycloakUser := range unstructuredUserList.Items {
+			typedUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(keycloakUser)
+			if err != nil {
+				return nil, err
+			}
+			if typedUser.Spec.User.UserName == userName {
+				return typedUser, nil
 			}
 		}
 	}

@@ -11,7 +11,8 @@ import (
 
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,18 +81,27 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
 
 		// ensure that a generated keycloak user cr has been created for the user
-		generatedKeycloakUsers := &keycloak.KeycloakUserList{}
+		generatedKeycloakUsersListUnstructured, err := dr.ConvertKeycloakUsersTypedToUnstructured(&keycloak.KeycloakUserList{})
+		if err != nil {
+			return false, err
+		}
+
 		labelSelector, err := labels.Parse("sso=integreatly")
 		if err != nil {
 			return false, fmt.Errorf("failed to parse label selector: %v", err)
 		}
 		rhssoNamespace := fmt.Sprintf("%s%s", namespacePrefix, "rhsso")
-		if err := k8sclient.List(goctx.TODO(), generatedKeycloakUsers, &dynclient.ListOptions{LabelSelector: labelSelector, Namespace: rhssoNamespace}); err != nil {
+		if err := k8sclient.List(goctx.TODO(), generatedKeycloakUsersListUnstructured, &dynclient.ListOptions{LabelSelector: labelSelector, Namespace: rhssoNamespace}); err != nil {
 			return false, fmt.Errorf("failed to list keycloak users: %v", err)
 		}
 
-		for _, user := range generatedKeycloakUsers.Items {
-			if user.Spec.User.UserName == username {
+		for _, user := range generatedKeycloakUsersListUnstructured.Items {
+			kcUserTyped, err := dr.ConvertKeycloakUserUnstructuredToTyped(user)
+			if err != nil {
+				return false, nil
+			}
+
+			if kcUserTyped.Spec.User.UserName == username {
 				return true, nil
 			}
 		}

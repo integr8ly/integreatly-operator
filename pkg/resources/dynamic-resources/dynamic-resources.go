@@ -111,13 +111,25 @@ func ConvertKeycloakRealmTypedToUnstructured(kcRealm *kc.KeycloakRealm) (*unstru
 // Converts Keycloak Realm Unstructured object to structured and sets GVK on object
 func ConvertKeycloakRealmUnstructuredToTyped(u unstructured.Unstructured) (*kc.KeycloakRealm, error) {
 	unstructuredKeycloakRealm := unstructuredWithGVK(u, kc.KeycloakRealmGroup, kc.KeycloakRealmVersion, kc.KeycloakRealmKind, kc.KeycloakRealmApiVersion)
-	keycloakRealmTyped := &kc.KeycloakRealm{}
+	keycloakRealmTyped := kc.KeycloakRealm{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredKeycloakRealm.Object, &keycloakRealmTyped)
 	if err != nil {
-		return keycloakRealmTyped, err
+		return &keycloakRealmTyped, err
 	}
 
-	return keycloakRealmTyped, nil
+	return &keycloakRealmTyped, nil
+}
+
+// Converts Keycloak Realm list unstructured object to typed keycloak users list and sets GVK on object
+func ConvertKeycloakRealmListUnstructuredToTyped(u unstructured.UnstructuredList) (*kc.KeycloakRealmList, error) {
+	unstructuredKeycloakRealmList := unstructuredListWithGVK(u, kc.KeycloakRealmGroup, kc.KeycloakRealmVersion, kc.KeycloakRealmListKind, kc.KeycloakRealmApiVersion)
+	kcRealmTypedList := kc.KeycloakRealmList{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredKeycloakRealmList.Object, &kcRealmTypedList)
+	if err != nil {
+		return &kcRealmTypedList, err
+	}
+
+	return &kcRealmTypedList, nil
 }
 
 // Converts Keycloak Users unstructured object to typed keycloak users list and sets up GVK on the object

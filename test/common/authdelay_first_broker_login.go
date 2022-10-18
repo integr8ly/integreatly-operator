@@ -12,8 +12,9 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
@@ -106,17 +107,25 @@ func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestU
 // polls the keycloak user until it is ready
 func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client, keycloakUsername string) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		keycloakUser := &keycloak.KeycloakUser{
+		kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, keycloakUsername),
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
+		})
+		if err != nil {
+			return false, nil
 		}
 
-		if err := client.Get(ctx, types.NamespacedName{Name: keycloakUser.GetName(), Namespace: keycloakUser.GetNamespace()}, keycloakUser); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: kcUserUnstructured.GetName(), Namespace: kcUserUnstructured.GetNamespace()}, kcUserUnstructured); err != nil {
 			return true, fmt.Errorf("error occurred while getting keycloak user")
 		}
-		if keycloakUser.Status.Phase == "reconciled" {
+
+		kcUserTyped, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+		if err != nil {
+			return false, err
+		}
+		if kcUserTyped.Status.Phase == "reconciled" {
 			return true, nil
 		}
 		return false, nil
