@@ -95,18 +95,17 @@ func checkScalingOfKeycloakReplicas(t TestingTB, ctx *TestingContext, keycloakCR
 }
 
 func getKeycloakCR(dynClient k8sclient.Client, keycloakCRName string, keycloakCRNamespace string) (keycloak.Keycloak, error) {
-	keycloakCR := dr.CreateUnstructuredWithGVK(keycloak.KeycloakGroup, keycloak.KeycloakKind, keycloak.KeycloakVersion, "", "")
-
-	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: keycloakCRName, Namespace: keycloakCRNamespace}, keycloakCR); err != nil {
-		return keycloak.Keycloak{}, err
-	}
-
-	keycloakCRtyped, err := dr.ConvertKeycloakUnstructuredToTyped(*keycloakCR)
+	keycloakCR, err := dr.GetKeycloak(goctx.TODO(), dynClient, keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakCRName,
+			Namespace: keycloakCRNamespace,
+		},
+	})
 	if err != nil {
 		return keycloak.Keycloak{}, err
 	}
 
-	return *keycloakCRtyped, nil
+	return *keycloakCR, nil
 }
 
 func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName string, keycloakCRNamespace string) (keycloak.Keycloak, error) {

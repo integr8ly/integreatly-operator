@@ -23,7 +23,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -107,7 +106,7 @@ func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestU
 // polls the keycloak user until it is ready
 func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client, keycloakUsername string) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{
+		keycloakUser, err := dr.GetKeycloakUser(context.TODO(), client, keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, keycloakUsername),
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
@@ -116,16 +115,7 @@ func ensureKeycloakUserIsReconciled(ctx context.Context, client dynclient.Client
 		if err != nil {
 			return false, nil
 		}
-
-		if err := client.Get(ctx, types.NamespacedName{Name: kcUserUnstructured.GetName(), Namespace: kcUserUnstructured.GetNamespace()}, kcUserUnstructured); err != nil {
-			return true, fmt.Errorf("error occurred while getting keycloak user")
-		}
-
-		kcUserTyped, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
-		if err != nil {
-			return false, err
-		}
-		if kcUserTyped.Status.Phase == "reconciled" {
+		if keycloakUser.Status.Phase == "reconciled" {
 			return true, nil
 		}
 		return false, nil

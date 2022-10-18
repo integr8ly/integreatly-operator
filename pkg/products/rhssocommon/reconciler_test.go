@@ -1199,7 +1199,7 @@ func TestReconciler_IsOperatorInstallComplete(t *testing.T) {
 		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 	}
 	type args struct {
-		kc              keycloak.Keycloak
+		kc              *keycloak.Keycloak
 		operatorVersion integreatlyv1alpha1.OperatorVersion
 	}
 	tests := []struct {
@@ -1211,7 +1211,7 @@ func TestReconciler_IsOperatorInstallComplete(t *testing.T) {
 		{
 			name: "Test - false when status version not equal operator version",
 			args: args{
-				kc: keycloak.Keycloak{
+				kc: &keycloak.Keycloak{
 					Status: keycloak.KeycloakStatus{
 						Version: "1.0.0",
 					},
@@ -1223,7 +1223,7 @@ func TestReconciler_IsOperatorInstallComplete(t *testing.T) {
 		{
 			name: "Test - false when status not ready",
 			args: args{
-				kc: keycloak.Keycloak{
+				kc: &keycloak.Keycloak{
 					Status: keycloak.KeycloakStatus{
 						Version: "1.1.0",
 						Ready:   false,
@@ -1236,7 +1236,7 @@ func TestReconciler_IsOperatorInstallComplete(t *testing.T) {
 		{
 			name: "Test - true status version equal operator version and ready",
 			args: args{
-				kc: keycloak.Keycloak{
+				kc: &keycloak.Keycloak{
 					Status: keycloak.KeycloakStatus{
 						Version: "1.1.0",
 						Ready:   true,

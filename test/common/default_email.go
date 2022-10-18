@@ -180,10 +180,10 @@ func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, 
 		}
 
 		// Get the list of users in the RHSSO namespace
-		// list := &keycloakv1.KeycloakUserList{}
-		unstructuredUserList := dr.CreateUnstructuredListWithGVK(keycloak.KeycloakUserGroup, keycloak.KeycloakUserKind, keycloak.KeycloakUserListKind, keycloak.KeycloakUserVersion, "", "")
-
-		err := ctx.Client.List(goctx.TODO(), unstructuredUserList, k8sclient.InNamespace(namespace))
+		list, err := dr.GetKeycloakUserList(goctx.TODO(), ctx.Client, []k8sclient.ListOption{k8sclient.InNamespace(namespace)}, keycloak.KeycloakUserList{})
+		if err != nil {
+			return nil, err
+		}
 
 		// If an error occurred, return the error
 		if err != nil {
@@ -192,13 +192,9 @@ func waitForKeycloakUser(ctx *TestingContext, timeout time.Duration, namespace, 
 
 		// Look for the matching user in the user list and send it if it's
 		// found
-		for _, keycloakUser := range unstructuredUserList.Items {
-			typedUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(keycloakUser)
-			if err != nil {
-				return nil, err
-			}
-			if typedUser.Spec.User.UserName == userName {
-				return typedUser, nil
+		for _, keycloakUser := range list.Items {
+			if keycloakUser.Spec.User.UserName == userName {
+				return &keycloakUser, nil
 			}
 		}
 	}

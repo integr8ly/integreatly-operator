@@ -151,32 +151,16 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	var keycloakCR *keycloak.Keycloak
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Keycloak
-		keycloakCR = &keycloak.Keycloak{
+		keycloakCR, err = dr.GetKeycloak(context.TODO(), ctx.Client, keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
 				Namespace: RHSSOUserProductNamespace,
 			},
-		}
-		newKeycloakLimit = resource.MustParse(newKeycloakLimits)
-
-		keycloakCRUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
-		if err != nil {
-			t.Fatal(err)
-		}
-		key, err = k8sclient.ObjectKeyFromObject(keycloakCRUnstructured)
-		if err != nil {
-			t.Fatalf("Error getting Keycloak CR key: %v", err)
-		}
-
-		err = ctx.Client.Get(context.TODO(), key, keycloakCRUnstructured)
+		})
 		if err != nil {
 			t.Fatalf("Error getting Keycloak CR: %v", err)
 		}
-
-		keycloakCR, err = dr.ConvertKeycloakUnstructuredToTyped(*keycloakCRUnstructured)
-		if err != nil {
-			t.Fatal(err)
-		}
+		newKeycloakLimit = resource.MustParse(newKeycloakLimits)
 	}
 
 	// Ratelimit
@@ -212,14 +196,8 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
-		keycloakCRUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
-		if err != nil {
-			t.Fatal(err)
-		}
-		result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCRUnstructured, func() error {
 
-			return nil
-		})
+		result, _, err := dr.CreateOrUpdateKeycloak(context.TODO(), ctx.Client, *keycloakCR)
 		if err != nil {
 			t.Fatalf("Error updating Keycloak CR: %v with results of: %v", err, result)
 		}
@@ -410,27 +388,18 @@ func verifyConfiguration(t TestingTB, c k8sclient.Client, quotaConfig *quota.Quo
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		// Validate CPU value requested by SSO
-		keycloakUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(&keycloak.Keycloak{
+		keycloak, err := dr.GetKeycloak(context.TODO(), c, keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(rhmiv1alpha1.ProductRHSSOUser),
 			},
 		})
 		if err != nil {
-			t.Fatal(err)
-		}
-		err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: string(rhmiv1alpha1.ProductRHSSOUser), Namespace: RHSSOUserProductNamespace}, keycloakUnstructured)
-		if err != nil {
 			t.Fatalf("Couldn't get Keycloak CR: %v", err)
 		}
 
-		kcTyped, err := dr.ConvertKeycloakUnstructuredToTyped(*keycloakUnstructured)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		crReplicas = int32(kcTyped.Spec.Instances)
-		crResources = kcTyped.Spec.KeycloakDeploymentSpec.Resources
-		checkResources(t, kcTyped.Name, configReplicas, crReplicas, resourceConfig, crResources)
+		crReplicas = int32(keycloak.Spec.Instances)
+		crResources = keycloak.Spec.KeycloakDeploymentSpec.Resources
+		checkResources(t, keycloak.Name, configReplicas, crReplicas, resourceConfig, crResources)
 	}
 }
 

@@ -1,10 +1,13 @@
 package dynamic_resources
 
 import (
+	"context"
 	kc "github.com/integr8ly/keycloak-client/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // Sets up the GVK Meta on unstructured object
@@ -83,6 +86,18 @@ func ConvertKeycloakUnstructuredToTyped(u unstructured.Unstructured) (*kc.Keyclo
 	}
 
 	return kcTyped, nil
+}
+
+// Converts Keycloak list unstructured object to typed keycloak list and sets GVK on object
+func ConvertKeycloakListUnstructuredToTyped(u unstructured.UnstructuredList) (*kc.KeycloakList, error) {
+	unstructuredKeycloakList := unstructuredListWithGVK(u, kc.KeycloakGroup, kc.KeycloakVersion, kc.KeycloakListKind, kc.KeycloakApiVersion)
+	kcTypedList := kc.KeycloakList{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredKeycloakList.Object, &kcTypedList)
+	if err != nil {
+		return &kcTypedList, err
+	}
+
+	return &kcTypedList, nil
 }
 
 // Converts Keycloak Realm Typed object to unstructured and sets GVK on object
@@ -302,4 +317,306 @@ func unstructuredListWithGVK(unstructured unstructured.UnstructuredList, group, 
 	}
 
 	return &unstructured
+}
+
+// Retrieves keycloak client based on kc client typed object meta
+func GetKeycloakClient(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakClient) (*kc.KeycloakClient, error) {
+	kcClientUnstructured := CreateUnstructuredWithGVK(kc.KeycloakClientGroup, kc.KeycloakClientKind, kc.KeycloakClientVersion, "", "")
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: kcTyped.Namespace,
+		Name:      kcTyped.Name,
+	}, kcClientUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	kcClientUpdated, err := ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcClientUpdated, nil
+}
+
+// Creates or updates keycloak client based on kc client typed
+func CreateOrUpdateKeycloakClient(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakClient) (controllerutil.OperationResult, *kc.KeycloakClient, error) {
+	kcClientUnstructured, err := ConvertKeycloakClientTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	kcClientEmpty := CreateUnstructuredWithGVK(kc.KeycloakClientGroup, kc.KeycloakClientKind, kc.KeycloakClientVersion, kcTyped.Name, kcTyped.Namespace)
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, client, kcClientEmpty, func() error {
+		kcClientEmpty.Object = kcClientUnstructured.Object
+		return nil
+	})
+
+	kcClientUpdated, err := GetKeycloakClient(ctx, client, kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	return opRes, kcClientUpdated, nil
+}
+
+// Retrieves keycloak client based on kc client typed object meta
+func GetKeycloakClientList(ctx context.Context, client k8sclient.Client, options []k8sclient.ListOption, kcTyped kc.KeycloakClientList) (*kc.KeycloakClientList, error) {
+	kcClientUnstructured := &unstructured.UnstructuredList{}
+
+	err := client.List(ctx, kcClientUnstructured, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	kcClientUpdated, err := ConvertKeycloakClientsUnstructuredToTyped(*kcClientUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcClientUpdated, nil
+}
+
+// Retrieves keycloak client based on kc client typed object meta
+func GetKeycloakUser(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakUser) (*kc.KeycloakUser, error) {
+	kcUserUnstructured := &unstructured.Unstructured{}
+
+	if kcTyped.Namespace != "" && kcTyped.Name != "" {
+		kcUserUnstructured = CreateUnstructuredWithGVK(kc.KeycloakUserGroup, kc.KeycloakUserKind, kc.KeycloakUserVersion, kcTyped.Name, kcTyped.Namespace)
+	} else {
+		kcUserUnstructured = CreateUnstructuredWithGVK(kc.KeycloakUserGroup, kc.KeycloakUserKind, kc.KeycloakUserVersion, "", "")
+	}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: kcTyped.Namespace,
+		Name:      kcTyped.Name,
+	}, kcUserUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	kcUserUpdated, err := ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcUserUpdated, nil
+}
+
+// Creates or updates keycloak user based on kc user typed
+func CreateOrUpdateKeycloakUser(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakUser) (controllerutil.OperationResult, *kc.KeycloakUser, error) {
+	kcUserUnstructured, err := ConvertKeycloakUserTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	kcUserUnstructuredEmpty := CreateUnstructuredWithGVK(kc.KeycloakUserGroup, kc.KeycloakUserKind, kc.KeycloakUserVersion, kcTyped.Name, kcTyped.Namespace)
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, client, kcUserUnstructuredEmpty, func() error {
+		kcUserUnstructuredEmpty.Object = kcUserUnstructured.Object
+		return nil
+	})
+
+	kcUserUpdated, err := GetKeycloakUser(ctx, client, kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	return opRes, kcUserUpdated, nil
+}
+
+// Retrieves keycloak user list based on list opts and kc user list typed object
+func GetKeycloakUserList(ctx context.Context, client k8sclient.Client, options []k8sclient.ListOption, kcTyped kc.KeycloakUserList) (*kc.KeycloakUserList, error) {
+	kcUsersUnstructured := &unstructured.UnstructuredList{}
+
+	err := client.List(ctx, kcUsersUnstructured, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	kcUsersUpdated, err := ConvertKeycloakUsersUnstructuredToTyped(*kcUsersUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcUsersUpdated, nil
+}
+
+// Retrieves keycloak Realm based on kc client typed object meta
+func GetKeycloakRealm(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakRealm) (*kc.KeycloakRealm, error) {
+	kcRealmUnstructured := CreateUnstructuredWithGVK(kc.KeycloakRealmGroup, kc.KeycloakRealmKind, kc.KeycloakRealmVersion, "", "")
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: kcTyped.Namespace,
+		Name:      kcTyped.Name,
+	}, kcRealmUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	kcRealmUpdated, err := ConvertKeycloakRealmUnstructuredToTyped(*kcRealmUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcRealmUpdated, nil
+}
+
+// Creates or updates keycloak Realm based on kc Realm typed
+func CreateOrUpdateKeycloakRealm(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakRealm) (controllerutil.OperationResult, *kc.KeycloakRealm, error) {
+	kcRealmUnstructured, err := ConvertKeycloakRealmTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	kcRealmEmpty := CreateUnstructuredWithGVK(kc.KeycloakRealmGroup, kc.KeycloakRealmKind, kc.KeycloakRealmVersion, kcTyped.Name, kcTyped.Namespace)
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, client, kcRealmEmpty, func() error {
+		kcRealmEmpty.Object = kcRealmUnstructured.Object
+		return nil
+	})
+
+	kcRealmUpdated, err := GetKeycloakRealm(ctx, client, kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	return opRes, kcRealmUpdated, nil
+}
+
+// Retrieves keycloak Realm based on kc Realm typed object meta
+func GetKeycloakRealmList(ctx context.Context, client k8sclient.Client, options []k8sclient.ListOption, kcTyped kc.KeycloakRealmList) (*kc.KeycloakRealmList, error) {
+	kcRealmUnstructured := &unstructured.UnstructuredList{}
+
+	err := client.List(ctx, kcRealmUnstructured, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	kcRealmUpdated, err := ConvertKeycloakRealmListUnstructuredToTyped(*kcRealmUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcRealmUpdated, nil
+}
+
+// Retrieves keycloak based on kc typed object meta
+func GetKeycloak(ctx context.Context, client k8sclient.Client, kcTyped kc.Keycloak) (*kc.Keycloak, error) {
+	kcUnstructured := CreateUnstructuredWithGVK(kc.KeycloakGroup, kc.KeycloakKind, kc.KeycloakVersion, "", "")
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: kcTyped.Namespace,
+		Name:      kcTyped.Name,
+	}, kcUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	kcUpdated, err := ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcUpdated, nil
+}
+
+// Creates or updates keycloak client based on kc client typed
+func CreateOrUpdateKeycloak(ctx context.Context, client k8sclient.Client, kcTyped kc.Keycloak) (controllerutil.OperationResult, *kc.Keycloak, error) {
+	kcUnstructured, err := ConvertKeycloakTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	kcEmpty := CreateUnstructuredWithGVK(kc.KeycloakGroup, kc.KeycloakKind, kc.KeycloakVersion, kcTyped.Name, kcTyped.Namespace)
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, client, kcEmpty, func() error {
+		kcEmpty.Object = kcUnstructured.Object
+		return nil
+	})
+
+	kcUpdated, err := GetKeycloak(ctx, client, kcTyped)
+	if err != nil {
+		return controllerutil.OperationResultNone, nil, err
+	}
+
+	return opRes, kcUpdated, nil
+}
+
+// Retrieves keycloak based on kc typed object meta
+func GetKeycloakList(ctx context.Context, client k8sclient.Client, options []k8sclient.ListOption, kcTyped kc.KeycloakList) (*kc.KeycloakList, error) {
+	kcUnstructured := &unstructured.UnstructuredList{}
+
+	err := client.List(ctx, kcUnstructured, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	kcUpdated, err := ConvertKeycloakListUnstructuredToTyped(*kcUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
+	return kcUpdated, nil
+}
+
+// Deletes keycloak based on kc typed object meta
+func DeleteKeycloak(ctx context.Context, client k8sclient.Client, kcTyped kc.Keycloak) error {
+	kcUnstructured, err := ConvertKeycloakTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return err
+	}
+
+	err = client.Delete(ctx, kcUnstructured)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Deletes User based on kc typed object meta
+func DeleteUser(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakUser) error {
+	kcUserUnstructured, err := ConvertKeycloakUserTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return err
+	}
+
+	err = client.Delete(ctx, kcUserUnstructured)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Deletes Realm based on kc typed object meta
+func DeleteRealm(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakRealm) error {
+	kcTyped.SetFinalizers([]string{})
+	kcRealmUnstructured, err := ConvertKeycloakRealmTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return err
+	}
+
+	err = client.Delete(ctx, kcRealmUnstructured)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteClient(ctx context.Context, client k8sclient.Client, kcTyped kc.KeycloakClient) error {
+	kcClientUnstructured, err := ConvertKeycloakClientTypedToUnstructured(&kcTyped)
+	if err != nil {
+		return err
+	}
+
+	err = client.Delete(ctx, kcClientUnstructured)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

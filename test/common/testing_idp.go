@@ -376,7 +376,6 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 				Namespace: RHSSOProductNamespace,
 			},
 		}
-
 		keycloakUser.Annotations = map[string]string{
 			"integreatly-namespace": RHOAMOperatorNamespace,
 			"integreatly-name":      installationName,
@@ -413,14 +412,7 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 			},
 		}
 
-		keycloakUserUntstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(keycloakUser)
-		if err != nil {
-			return err
-		}
-
-		_, err = controllerutil.CreateOrUpdate(ctx, client, keycloakUserUntstructured, func() error {
-			return nil
-		})
+		_, _, err := dr.CreateOrUpdateKeycloakUser(context.TODO(), client, *keycloakUser)
 		if err != nil {
 			return err
 		}
@@ -431,15 +423,16 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 // polls the keycloak client until it is ready
 func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		keycloakClient := &keycloak.KeycloakClient{}
-		keycloakClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(keycloakClient)
+		keycloakClient, err := dr.GetKeycloakClient(context.TODO(), client, keycloak.KeycloakClient{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      keycloakClientName,
+				Namespace: keycloakClientNamespace,
+			},
+		})
 		if err != nil {
-			return false, err
-		}
-
-		if err := client.Get(ctx, types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClientUnstructured); err != nil {
 			return false, fmt.Errorf("error occurred while getting keycloak client")
 		}
+
 		if keycloakClient.Status.Ready {
 			return true, nil
 		}
@@ -579,30 +572,22 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 		},
 	}
 
-	keycloakClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(keycloakClient)
+	_, _, err := dr.CreateOrUpdateKeycloakClient(context.TODO(), client, *keycloakClient)
 	if err != nil {
 		return err
-	}
-
-	if err := client.Create(ctx, keycloakClientUnstructured); err != nil {
-		return fmt.Errorf("error occurred while creating keycloak client: %w", err)
 	}
 	return nil
 }
 
 func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
 	err := wait.PollImmediate(time.Second*2, time.Minute*2, func() (done bool, err error) {
-		keycloakClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(&keycloak.KeycloakClient{
+		err = dr.DeleteClient(ctx, client, keycloak.KeycloakClient{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      keycloakClientName,
 				Namespace: keycloakClientNamespace,
 			},
 		})
 		if err != nil {
-			return false, err
-		}
-
-		if err := client.Delete(ctx, keycloakClientUnstructured); err != nil {
 			if !k8errors.IsNotFound(err) {
 				return false, nil
 			}
@@ -624,7 +609,7 @@ func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
 
 // create keycloak realm
 func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName string) error {
-	keycloakRealm := &keycloak.KeycloakRealm{
+	keycloakRealm := keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestingIDPRealm,
 			Namespace: RHSSOProductNamespace,
@@ -654,14 +639,8 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 	}
 	keycloakRealm.Spec = keycloakRealmSpec
 
-	keycloakRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(keycloakRealm)
+	_, _, err := dr.CreateOrUpdateKeycloakRealm(ctx, client, keycloakRealm)
 	if err != nil {
-		return err
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakRealmUnstructured, func() error {
-		return nil
-	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating keycloak realm: %w", err)
 	}
 	return nil

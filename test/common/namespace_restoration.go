@@ -1,16 +1,18 @@
 package common
 
 import (
+	"context"
 	goctx "context"
+
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
 	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -212,38 +214,20 @@ func removeKeyCloakFinalizers(ctx *TestingContext, nameSpace string) error {
 // Poll removal of all finalizers from KeyCloakClients from a namespace
 func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		clientsUnstructured, err := dr.ConvertKeycloakClientsTypedToUnstructured(&keycloak.KeycloakClientList{})
-		if err != nil {
-			return false, nil
-		}
-
-		err = ctx.Client.List(goctx.TODO(), clientsUnstructured, &k8sclient.ListOptions{
-			Namespace: nameSpace,
-		})
-
+		clients, err := dr.GetKeycloakClientList(context.TODO(), ctx.Client, []k8sclient.ListOption{k8sclient.InNamespace(nameSpace)}, keycloak.KeycloakClientList{})
 		if err != nil {
 			return false, err
 		}
 
-		for _, clientUnstructured := range clientsUnstructured.Items {
-			client, err := dr.ConvertKeycloakClientUnstructuredToTyped(clientUnstructured)
-			if err != nil {
-				return false, err
-			}
+		for i := range clients.Items {
+			client := clients.Items[i]
 			client.Finalizers = []string{}
-			clientUnstructuredUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(client)
+
+			_, _, err = dr.CreateOrUpdateKeycloakClient(context.TODO(), ctx.Client, client)
 			if err != nil {
 				return false, err
 			}
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, clientUnstructuredUpdated, func() error {
-				return nil
-			})
 		}
-
-		if err != nil {
-			return false, err
-		}
-
 		return true, nil
 	})
 
@@ -253,36 +237,20 @@ func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error
 // Poll removal of all finalizers from KeyCloakRealms from a namespace
 func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		unstructuredRealmList := dr.CreateUnstructuredListWithGVK(keycloak.KeycloakRealmGroup, keycloak.KeycloakRealmKind, keycloak.KeycloakRealmListKind, keycloak.KeycloakRealmVersion, "", "")
-
-		err = ctx.Client.List(goctx.TODO(), unstructuredRealmList, &k8sclient.ListOptions{
-			Namespace: nameSpace,
-		})
+		realms, err := dr.GetKeycloakRealmList(context.TODO(), ctx.Client, []k8sclient.ListOption{k8sclient.InNamespace(nameSpace)}, keycloak.KeycloakRealmList{})
 		if err != nil {
 			return false, err
 		}
 
-		typedRealmList, err := dr.ConvertKeycloakRealmListUnstructuredToTyped(*unstructuredRealmList)
-		if err != nil {
-			return false, err
-		}
-
-		for i := range typedRealmList.Items {
-			realm := typedRealmList.Items[i]
+		for i := range realms.Items {
+			realm := realms.Items[i]
 			realm.Finalizers = []string{}
-			keycloakRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(&realm)
-			if err != nil {
-				return false, err
-			}
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, keycloakRealmUnstructured, func() error {
-				return nil
-			})
 
+			_, _, err = dr.CreateOrUpdateKeycloakRealm(context.TODO(), ctx.Client, realm)
 			if err != nil {
 				return false, err
 			}
 		}
-
 		return true, nil
 	})
 
@@ -292,32 +260,16 @@ func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error 
 // Poll removal of all finalizers from KeyCloakUsers from a namespace
 func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		unstructuredUserList := dr.CreateUnstructuredListWithGVK(keycloak.KeycloakUserGroup, keycloak.KeycloakUserKind, keycloak.KeycloakUserListKind, keycloak.KeycloakUserVersion, "", "")
+		users, err := dr.GetKeycloakUserList(context.TODO(), ctx.Client, []k8sclient.ListOption{k8sclient.InNamespace(nameSpace)}, keycloak.KeycloakUserList{})
 
-		err = ctx.Client.List(goctx.TODO(), unstructuredUserList, &k8sclient.ListOptions{
-			Namespace: nameSpace,
-		})
 		if err != nil {
 			return false, err
 		}
 
-		typedUsersList, err := dr.ConvertKeycloakUsersUnstructuredToTyped(*unstructuredUserList)
-		if err != nil {
-			return false, err
-		}
-
-		for i := range typedUsersList.Items {
-			user := typedUsersList.Items[i]
+		for i := range users.Items {
+			user := users.Items[i]
 			user.Finalizers = []string{}
-			keycloakUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&user)
-			if err != nil {
-				return false, err
-			}
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, keycloakUserUnstructured, func() error {
-
-				return nil
-			})
-
+			_, _, err = dr.CreateOrUpdateKeycloakUser(context.TODO(), ctx.Client, user)
 			if err != nil {
 				return false, err
 			}

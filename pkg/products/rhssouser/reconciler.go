@@ -6,10 +6,8 @@ import (
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
-	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -17,12 +15,14 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	consolev1 "github.com/openshift/api/console/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -292,54 +292,57 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
-	// Create empty unstructured and attempt getting it from cluster
-	kcUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakGroup, keycloakTypes.KeycloakKind, keycloakTypes.KeycloakVersion, keycloakName, r.Config.GetNamespace())
-
-	err := serverClient.Get(context.TODO(), types.NamespacedName{Namespace: r.Config.GetNamespace(), Name: keycloakName}, kcUnstructured)
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	// Convert keycloak from cluster to typed object
-	kcOriginal, err := dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Retrieve keycloak typed object desired state
-	kcTypedDesired, err := r.createDesiredKeycloakTypedObject(productConfig)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Update keycloak from cluster typed spec to the desired typed spec
-	kcOriginal.Spec = kcTypedDesired.Spec
-
-	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcUnstructuredOriginalUpdated, _ := dr.ConvertKeycloakTypedToUnstructured(kcOriginal)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// CreateOrUpdate Keycloak CR
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUnstructured, func() error {
-		kcUnstructured.Object = kcUnstructuredOriginalUpdated.Object
-		return nil
+	r.Log.Info("Reconciling Keycloak components")
+	kc, err := dr.GetKeycloak(ctx, serverClient, keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: r.Config.GetNamespace(),
+		},
 	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	owner.AddIntegreatlyOwnerAnnotations(kc, installation)
+	kc.Spec.Extensions = []string{
+		"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
+	}
+	kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
+	kc.Labels = getMasterLabels()
+
+	// Disabling the KCO route for managed-api
+	kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
+
+	kc.Spec.Profile = rhsso.RHSSOProfile
+	kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
+
+	// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps (SetRollingStrategyForUpgrade)
+	// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
+	// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
+	if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSOUser) {
+		//Set keycloak Update Strategy to Rolling as default
+		r.Log.Info("Setting keycloak migration strategy to rolling")
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+	}
+
+	err = productConfig.Configure(kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	or, kc, err := dr.CreateOrUpdateKeycloak(ctx, serverClient, *kc)
 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
+	r.Log.Infof("Operation result", l.Fields{"keycloak": kc.Name, "res": or})
 
 	// Patching the OwnerReference on the admin credentials secret
-	err = resources.AddOwnerRefToSSOSecret(ctx, serverClient, adminCredentialSecretName, r.Config.GetNamespace(), *kcOriginal, r.Log)
+	err = resources.AddOwnerRefToSSOSecret(ctx, serverClient, adminCredentialSecretName, r.Config.GetNamespace(), *kc, r.Log)
 	if err != nil {
 		events.HandleError(r.Recorder, installation, integreatlyv1alpha1.PhaseFailed, "Failed to add ownerReferance admin credentials secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
 	// We want to update the master realm by adding an openshift-v4 idp. We can not add the idp until we know the host
 	if r.Config.GetHost() == "" {
 		r.Log.Warning("Can not update keycloak master realm on user sso as host is not available yet")
@@ -353,8 +356,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// TODO - ADD LOGIC TO HANDLE ->INVALID CHARACTERS WHERE WE ATTEMPT TO CONNECT TO KC WHILE THE ARE MOST LIKELY NOT UP YET ^^ SUGGESTED - CHECK STATE OF KC CR IF ITS RECONCILING AND HAS INSTANCES SET
-	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kcOriginal)
+	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -377,13 +379,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 
-	phase, err := r.reconcileBrowserAuthFlow(ctx, kcOriginal, serverClient)
+	phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
 		return phase, err
 	}
 
-	_, err = r.reconcileFirstLoginAuthFlow(kcOriginal)
+	_, err = r.reconcileFirstLoginAuthFlow(kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile first broker login authentication flow: %w", err)
 	}
@@ -394,7 +396,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list the keycloak users: %w", err)
 	}
 
-	_, err = r.reconcileGroups(ctx, serverClient, kcOriginal)
+	_, err = r.reconcileGroups(ctx, serverClient, kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -406,35 +408,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) createDesiredKeycloakTypedObject(productConfig quota.ProductConfig) (keycloakTypes.Keycloak, error) {
-	kcTyped := keycloakTypes.Keycloak{}
-
-	kcTyped.APIVersion = keycloakTypes.KeycloakGroup + "/" + keycloakTypes.KeycloakVersion
-	kcTyped.Kind = keycloakTypes.KeycloakKind
-	kcTyped.ObjectMeta.Namespace = r.Config.GetNamespace()
-	kcTyped.ObjectMeta.Name = keycloakName
-	owner.AddIntegreatlyOwnerAnnotations(&kcTyped, r.Installation)
-	kcTyped.Spec.Extensions = []string{
-		"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
-	}
-	kcTyped.Spec.ExternalDatabase.Enabled = true
-	kcTyped.Labels = getMasterLabels()
-	kcTyped.Spec.ExternalAccess.Enabled = false
-	kcTyped.Spec.Profile = rhsso.RHSSOProfile
-	kcTyped.Spec.PodDisruptionBudget.Enabled = true
-	if !r.isUpgrade && r.IsOperatorInstallComplete(kcTyped, integreatlyv1alpha1.OperatorVersionRHSSOUser) {
-		r.Log.Info("Setting keycloak migration strategy to rolling")
-		kcTyped.Spec.Migration.MigrationStrategy = keycloakTypes.StrategyRolling
-	}
-	err := productConfig.Configure(&kcTyped)
-	if err != nil {
-		return kcTyped, err
-	}
-
-	return kcTyped, nil
-}
-
-func (r *Reconciler) reconcileGroups(ctx context.Context, serverClient k8sclient.Client, kc *keycloakTypes.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileGroups(ctx context.Context, serverClient k8sclient.Client, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 
 	rolesConfigured, err := r.Config.GetDevelopersGroupConfigured()
 	if err != nil {
@@ -460,7 +434,7 @@ func (r *Reconciler) reconcileGroups(ctx context.Context, serverClient k8sclient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8sclient.Client, kcClient keycloakCommon.KeycloakInterface, keycloakUsers []keycloakTypes.KeycloakAPIUser) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8sclient.Client, kcClient keycloakCommon.KeycloakInterface, keycloakUsers []keycloak.KeycloakAPIUser) (integreatlyv1alpha1.StatusPhase, error) {
 
 	// Sync keycloak with openshift users
 	users, err := syncAdminUsersInMasterRealm(keycloakUsers, ctx, serverClient, r.Config.GetNamespace())
@@ -486,9 +460,11 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 			}
 		}
 
-		err := r.createOrUpdateKeycloakAdmin(user, ctx, serverClient)
+		or, err := r.createOrUpdateKeycloakAdmin(user, ctx, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
+		} else {
+			r.Log.Infof("Operation result", l.Fields{"keycloakuser": user.UserName, "result": or})
 		}
 	}
 
@@ -499,27 +475,17 @@ func (r *Reconciler) reconcileAdminUsers(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func getUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloakTypes.KeycloakAPIUser, error) {
-	// Create empty unstructured and attempt getting it from cluster
-	kcUsersListUnstructured := dr.CreateUnstructuredListWithGVK(keycloakTypes.KeycloakUserGroup, keycloakTypes.KeycloakUserKind, keycloakTypes.KeycloakUserListKind, keycloakTypes.KeycloakUserVersion, "", ns)
-
+func getUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(getMasterLabels()),
 		k8sclient.InNamespace(ns),
 	}
-
-	err := serverClient.List(ctx, kcUsersListUnstructured, listOptions...)
+	users, err := dr.GetKeycloakUserList(ctx, serverClient, listOptions, keycloak.KeycloakUserList{})
 	if err != nil {
 		return nil, err
 	}
 
-	// map unstructured users to keycloakTypes.Users
-	users, err := dr.ConvertKeycloakUsersUnstructuredToTyped(*kcUsersListUnstructured)
-	if err != nil {
-		return nil, err
-	}
-
-	var mappedUsers []keycloakTypes.KeycloakAPIUser
+	var mappedUsers []keycloak.KeycloakAPIUser
 	for _, user := range users.Items {
 		if strings.HasPrefix(user.ObjectMeta.Name, userHelper.GeneratedNamePrefix) {
 			mappedUsers = append(mappedUsers, user.Spec.User)
@@ -541,54 +507,15 @@ func identityProviderExists(kcClient keycloakCommon.KeycloakInterface) (bool, er
 }
 
 // The master realm will be created as part of the Keycloak install. Here we update it to add the openshift idp
-func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*keycloakTypes.KeycloakRealm, error) {
-	// Create empty unstructured and attempt getting it from cluster
-	kcRealmUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakRealmGroup, keycloakTypes.KeycloakRealmKind, keycloakTypes.KeycloakRealmVersion, masterRealmName, r.Config.GetNamespace())
-
-	err := serverClient.Get(context.TODO(), types.NamespacedName{Namespace: r.Config.GetNamespace(), Name: masterRealmName}, kcRealmUnstructured)
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return nil, err
-		}
+func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*keycloak.KeycloakRealm, error) {
+	kcr := &keycloak.KeycloakRealm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      masterRealmName,
+			Namespace: r.Config.GetNamespace(),
+		},
 	}
 
-	kcRealmTyped, err := dr.ConvertKeycloakRealmUnstructuredToTyped(*kcRealmUnstructured)
-	if err != nil {
-		return nil, err
-	}
-
-	// Retrieve keycloak typed object desired state
-	kcRealmTypedDesired, err := r.createDesiredKeycloakRealmTypedObject(ctx, serverClient, installation)
-	if err != nil {
-		return nil, err
-	}
-
-	kcRealmTyped.Spec = kcRealmTypedDesired.Spec
-	kcRealmTyped.Labels = kcRealmTypedDesired.Labels
-
-	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcRealmUnstructuredOriginalUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcRealmTyped)
-	if err != nil {
-		return nil, err
-	}
-
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcRealmUnstructured, func() error {
-		kcRealmUnstructured = kcRealmUnstructuredOriginalUpdated
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create/update keycloak realm: %w", err)
-	}
-	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcRealmTyped.Name, "res": or})
-
-	return kcRealmTyped, nil
-}
-
-func (r *Reconciler) createDesiredKeycloakRealmTypedObject(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (keycloakTypes.KeycloakRealm, error) {
-	kcr := keycloakTypes.KeycloakRealm{}
-	kcr.Spec.RealmOverrides = []*keycloakTypes.RedirectorIdentityProviderOverride{
+	kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
 		{
 			IdentityProvider: idpAlias,
 			ForFlow:          "browser",
@@ -601,7 +528,7 @@ func (r *Reconciler) createDesiredKeycloakRealmTypedObject(ctx context.Context, 
 
 	kcr.Labels = getMasterLabels()
 
-	kcr.Spec.Realm = &keycloakTypes.KeycloakAPIRealm{
+	kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
 		ID:          masterRealmName,
 		Realm:       masterRealmName,
 		Enabled:     true,
@@ -612,76 +539,49 @@ func (r *Reconciler) createDesiredKeycloakRealmTypedObject(ctx context.Context, 
 	// created because the Keycloak operator does not allow updates to
 	// the realms
 	redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + masterRealmName + "/broker/openshift-v4/endpoint"}
-	err := r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, &kcr, redirectURIs, "")
+	err := r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectURIs, "")
 	if err != nil {
-		return kcr, fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
+		return nil, err
 	}
+
+	or, kcr, err := dr.CreateOrUpdateKeycloakRealm(ctx, serverClient, *kcr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+	}
+	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "res": or})
 
 	return kcr, nil
 }
 
-func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloakTypes.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) error {
-	// Create empty unstructured and attempt getting it from cluster
-	kcUserUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakUserGroup, keycloakTypes.KeycloakUserKind, keycloakTypes.KeycloakUserVersion, "", r.Config.GetNamespace())
-
-	err := serverClient.Get(context.TODO(), types.NamespacedName{Namespace: r.Config.GetNamespace(), Name: userHelper.GetValidGeneratedUserName(user)}, kcUserUnstructured)
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return err
-		}
+func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
+	kcUser := &keycloak.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      userHelper.GetValidGeneratedUserName(user),
+			Namespace: r.Config.GetNamespace(),
+		},
 	}
-
-	kcUserTyped, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
-	if err != nil {
-		return err
-	}
-
-	// Retrieve keycloak user typed object desired state
-	kcUserTypedDesired := createDesiredKeycloakUserTypedObject(user)
-	if err != nil {
-		return err
-	}
-
-	kcUserTyped.Spec = kcUserTypedDesired.Spec
-	kcUserTyped.Labels = kcUserTypedDesired.Labels
-
-	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcUserUnstructuredOriginalUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUserTyped)
-	if err != nil {
-		return err
-	}
-
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
-		kcUserUnstructured = kcUserUnstructuredOriginalUpdated
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	r.Log.Infof("Operation result", l.Fields{"keycloakuser": user.UserName, "result": or})
-
-	switch kcUserTyped.Status.Phase {
-	case keycloakTypes.UserPhaseReconciled:
-		return err
-	case keycloakTypes.UserPhaseFailing:
-		return fmt.Errorf("keycloack operator failed to reconcile user: %s", kcUserTyped.Status.Message)
-	}
-
-	return nil
-}
-
-func createDesiredKeycloakUserTypedObject(user keycloakTypes.KeycloakAPIUser) keycloakTypes.KeycloakUser {
-	kcUser := keycloakTypes.KeycloakUser{}
 	kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 		MatchLabels: getMasterLabels(),
 	}
 	kcUser.Labels = getMasterLabels()
 	kcUser.Spec.User = user
 
-	return kcUser
+	or, kcUser, err := dr.CreateOrUpdateKeycloakUser(ctx, serverClient, *kcUser)
+	if err != nil {
+		return or, err
+	}
+
+	switch kcUser.Status.Phase {
+	case keycloak.UserPhaseReconciled:
+		return or, err
+	case keycloak.UserPhaseFailing:
+		return or, fmt.Errorf("keycloack operator failed to reconcile user: %s", kcUser.Status.Message)
+	}
+
+	return or, err
 }
 
-func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloakTypes.KeycloakAPIUser, error) {
+func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	return getUsers(ctx, serverClient, ns)
 }
 
@@ -691,7 +591,7 @@ func getMasterLabels() map[string]string {
 	}
 }
 
-func syncAdminUsersInMasterRealm(keycloakUsers []keycloakTypes.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloakTypes.KeycloakAPIUser, error) {
+func syncAdminUsersInMasterRealm(keycloakUsers []keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
@@ -724,15 +624,15 @@ func syncAdminUsersInMasterRealm(keycloakUsers []keycloakTypes.KeycloakAPIUser, 
 	return keycloakUsers, nil
 }
 
-func addKeycloakUsers(keycloakUsers []keycloakTypes.KeycloakAPIUser, added []usersv1.User) []keycloakTypes.KeycloakAPIUser {
+func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.User) []keycloak.KeycloakAPIUser {
 
 	for _, osUser := range added {
 
-		keycloakUsers = append(keycloakUsers, keycloakTypes.KeycloakAPIUser{
+		keycloakUsers = append(keycloakUsers, keycloak.KeycloakAPIUser{
 			Enabled:       true,
 			UserName:      osUser.Name,
 			EmailVerified: true,
-			FederatedIdentities: []keycloakTypes.FederatedIdentity{
+			FederatedIdentities: []keycloak.FederatedIdentity{
 				{
 					IdentityProvider: idpAlias,
 					UserID:           string(osUser.UID),
@@ -757,7 +657,7 @@ func addKeycloakUsers(keycloakUsers []keycloakTypes.KeycloakAPIUser, added []use
 	return keycloakUsers
 }
 
-func promoteKeycloakUsers(allUsers []keycloakTypes.KeycloakAPIUser, promoted []keycloakTypes.KeycloakAPIUser) []keycloakTypes.KeycloakAPIUser {
+func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keycloak.KeycloakAPIUser) []keycloak.KeycloakAPIUser {
 
 	for _, promotedUser := range promoted {
 		for i, user := range allUsers {
@@ -801,7 +701,7 @@ func promoteKeycloakUsers(allUsers []keycloakTypes.KeycloakAPIUser, promoted []k
 	return allUsers
 }
 
-func demoteKeycloakUsers(allUsers []keycloakTypes.KeycloakAPIUser, demoted []keycloakTypes.KeycloakAPIUser) []keycloakTypes.KeycloakAPIUser {
+func demoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, demoted []keycloak.KeycloakAPIUser) []keycloak.KeycloakAPIUser {
 
 	for _, demotedUser := range demoted {
 		for i, user := range allUsers {
@@ -873,11 +773,11 @@ func getOsUsersInAdminsGroup(groups usersv1.GroupList) (users []string) {
 // return keylcoak user list
 // 4. Users not in OpenShift but in Keycloak Master Realm, represented by a Keycloak CR 			=> Delete
 // return keylcoak user list
-func getUserDiff(keycloakUsers []keycloakTypes.KeycloakAPIUser, openshiftUsers []usersv1.User, dedicatedAdmins []usersv1.User) ([]usersv1.User, []keycloakTypes.KeycloakAPIUser, []keycloakTypes.KeycloakAPIUser, []keycloakTypes.KeycloakAPIUser) {
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User, dedicatedAdmins []usersv1.User) ([]usersv1.User, []keycloak.KeycloakAPIUser, []keycloak.KeycloakAPIUser, []keycloak.KeycloakAPIUser) {
 	var added []usersv1.User
-	var deleted []keycloakTypes.KeycloakAPIUser
-	var promoted []keycloakTypes.KeycloakAPIUser
-	var demoted []keycloakTypes.KeycloakAPIUser
+	var deleted []keycloak.KeycloakAPIUser
+	var promoted []keycloak.KeycloakAPIUser
+	var demoted []keycloak.KeycloakAPIUser
 
 	for _, admin := range dedicatedAdmins {
 		keycloakUser := getKeyCloakUser(admin, keycloakUsers)
@@ -907,7 +807,7 @@ func getUserDiff(keycloakUsers []keycloakTypes.KeycloakAPIUser, openshiftUsers [
 	return added, deleted, promoted, demoted
 }
 
-func kcUserInDedicatedAdmins(kcUser keycloakTypes.KeycloakAPIUser, admins []usersv1.User) bool {
+func kcUserInDedicatedAdmins(kcUser keycloak.KeycloakAPIUser, admins []usersv1.User) bool {
 	for _, admin := range admins {
 		if len(kcUser.FederatedIdentities) >= 1 && kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
 			return true
@@ -916,7 +816,7 @@ func kcUserInDedicatedAdmins(kcUser keycloakTypes.KeycloakAPIUser, admins []user
 	return false
 }
 
-func getOpenShiftUser(kcUser keycloakTypes.KeycloakAPIUser, osUsers []usersv1.User) *usersv1.User {
+func getOpenShiftUser(kcUser keycloak.KeycloakAPIUser, osUsers []usersv1.User) *usersv1.User {
 	for _, osUser := range osUsers {
 		if len(kcUser.FederatedIdentities) >= 1 && kcUser.FederatedIdentities[0].UserID == string(osUser.UID) {
 			return &osUser
@@ -926,7 +826,7 @@ func getOpenShiftUser(kcUser keycloakTypes.KeycloakAPIUser, osUsers []usersv1.Us
 }
 
 // Look for 2 key privileges to determine if user has admin rights
-func hasAdminPrivileges(kcUser *keycloakTypes.KeycloakAPIUser) bool {
+func hasAdminPrivileges(kcUser *keycloak.KeycloakAPIUser) bool {
 	if len(kcUser.ClientRoles["master-realm"]) >= 1 && contains(kcUser.ClientRoles["master-realm"], "manage-users") && contains(kcUser.RealmRoles, "create-realm") {
 		return true
 	}
@@ -942,7 +842,7 @@ func contains(items []string, find string) bool {
 	return false
 }
 
-func getKeyCloakUser(admin usersv1.User, kcUsers []keycloakTypes.KeycloakAPIUser) *keycloakTypes.KeycloakAPIUser {
+func getKeyCloakUser(admin usersv1.User, kcUsers []keycloak.KeycloakAPIUser) *keycloak.KeycloakAPIUser {
 	for _, kcUser := range kcUsers {
 		if len(kcUser.FederatedIdentities) >= 1 && kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
 			return &kcUser
@@ -951,7 +851,7 @@ func getKeyCloakUser(admin usersv1.User, kcUsers []keycloakTypes.KeycloakAPIUser
 	return nil
 }
 
-func OsUserInDedicatedAdmins(dedicatedAdmins []string, kcUser keycloakTypes.KeycloakAPIUser) bool {
+func OsUserInDedicatedAdmins(dedicatedAdmins []string, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, user := range dedicatedAdmins {
 		if kcUser.UserName == user {
 			return true
@@ -963,7 +863,7 @@ func OsUserInDedicatedAdmins(dedicatedAdmins []string, kcUser keycloakTypes.Keyc
 // Add authenticator config to the master realm. Because it is the master realm we need to make direct calls
 // with the Keycloak client. This config allows for the automatic redirect to openshift-v4 as the IDP for Keycloak,
 // as apposed to presenting the user with multiple login options.
-func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloakTypes.Keycloak, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.Keycloak, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
@@ -990,7 +890,7 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloakT
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to find relevant ProviderID in Authentication Executions: %w", err)
 	}
 
-	config := keycloakTypes.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
+	config := keycloak.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
 	_, err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create Authenticator Config: %w", err)
@@ -1003,7 +903,7 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloakT
 
 // Create a default group called `rhmi-developers` with the "view-realm" client role and
 // the "create-realm" realm role
-func (r *Reconciler) reconcileDevelopersGroup(kc *keycloakTypes.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 	// Get Keycloak client
 	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
@@ -1034,7 +934,7 @@ func (r *Reconciler) reconcileDevelopersGroup(kc *keycloakTypes.Keycloak) (integ
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloakTypes.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 	// Get Keycloak client
 	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
@@ -1117,13 +1017,13 @@ func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloakTypes.Keycloak) (
 
 func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, clientID, roleName string) error {
 	return mapRoleToGroupByName(roleName,
-		func() ([]*keycloakTypes.KeycloakUserRole, error) {
+		func() ([]*keycloak.KeycloakUserRole, error) {
 			return kcClient.ListGroupClientRoles(realmName, clientID, groupID)
 		},
-		func() ([]*keycloakTypes.KeycloakUserRole, error) {
+		func() ([]*keycloak.KeycloakUserRole, error) {
 			return kcClient.ListAvailableGroupClientRoles(realmName, clientID, groupID)
 		},
-		func(role *keycloakTypes.KeycloakUserRole) error {
+		func(role *keycloak.KeycloakUserRole) error {
 			_, err := kcClient.CreateGroupClientRole(role, realmName, clientID, groupID)
 			return err
 		},
@@ -1132,13 +1032,13 @@ func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, 
 
 func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, roleName string) error {
 	return mapRoleToGroupByName(roleName,
-		func() ([]*keycloakTypes.KeycloakUserRole, error) {
+		func() ([]*keycloak.KeycloakUserRole, error) {
 			return kcClient.ListGroupRealmRoles(realmName, groupID)
 		},
-		func() ([]*keycloakTypes.KeycloakUserRole, error) {
+		func() ([]*keycloak.KeycloakUserRole, error) {
 			return kcClient.ListAvailableGroupRealmRoles(realmName, groupID)
 		},
-		func(role *keycloakTypes.KeycloakUserRole) error {
+		func(role *keycloak.KeycloakUserRole) error {
 			_, err := kcClient.CreateGroupRealmRole(role, realmName, groupID)
 			return err
 		},
@@ -1150,12 +1050,12 @@ func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, g
 // to map a role to the group
 func mapRoleToGroupByName(
 	roleName string,
-	listMappedRoles func() ([]*keycloakTypes.KeycloakUserRole, error),
-	listAvailableRoles func() ([]*keycloakTypes.KeycloakUserRole, error),
-	mapRoleToGroup func(*keycloakTypes.KeycloakUserRole) error,
+	listMappedRoles func() ([]*keycloak.KeycloakUserRole, error),
+	listAvailableRoles func() ([]*keycloak.KeycloakUserRole, error),
+	mapRoleToGroup func(*keycloak.KeycloakUserRole) error,
 ) error {
 	// Utility local function to look for the role in a list
-	findRole := func(roles []*keycloakTypes.KeycloakUserRole) *keycloakTypes.KeycloakUserRole {
+	findRole := func(roles []*keycloak.KeycloakUserRole) *keycloak.KeycloakUserRole {
 		for _, role := range roles {
 			if role.Name == roleName {
 				return role
@@ -1193,7 +1093,7 @@ func mapRoleToGroupByName(
 	return mapRoleToGroup(role)
 }
 
-func (r *Reconciler) reconcileFirstLoginAuthFlow(kc *keycloakTypes.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileFirstLoginAuthFlow(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 	// Get Keycloak client
 	kcClient, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
@@ -1202,7 +1102,7 @@ func (r *Reconciler) reconcileFirstLoginAuthFlow(kc *keycloakTypes.Keycloak) (in
 
 	// Find the "review profile" execution for the first broker login
 	// authentication flow
-	authenticationExecution, err := kcClient.FindAuthenticationExecutionForFlow(firstBrokerLoginFlowAlias, masterRealmName, func(execution *keycloakTypes.AuthenticationExecutionInfo) bool {
+	authenticationExecution, err := kcClient.FindAuthenticationExecutionForFlow(firstBrokerLoginFlowAlias, masterRealmName, func(execution *keycloak.AuthenticationExecutionInfo) bool {
 		return execution.Alias == reviewProfileExecutionAlias
 	})
 	if err != nil {
@@ -1346,7 +1246,7 @@ func reconcileGroupRealmRoles(kcClient keycloakCommon.KeycloakInterface, groupID
 	return nil
 }
 
-func (r *Reconciler) reconcileGroupMembership(users []keycloakTypes.KeycloakAPIUser, kcClient keycloakCommon.KeycloakInterface, realm string) error {
+func (r *Reconciler) reconcileGroupMembership(users []keycloak.KeycloakAPIUser, kcClient keycloakCommon.KeycloakInterface, realm string) error {
 	// Keep a reference of all the used groups to avoid unnecesary requests
 	groupPool := map[string]string{}
 
@@ -1379,13 +1279,13 @@ func (r *Reconciler) reconcileGroupMembership(users []keycloakTypes.KeycloakAPIU
 
 // Query the clients in a realm and return a map where the key is the client name
 // (`ClientID` field) and the value is the struct with the client information
-func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName string) (map[string]*keycloakTypes.KeycloakAPIClient, error) {
+func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName string) (map[string]*keycloak.KeycloakAPIClient, error) {
 	clients, err := kcClient.ListClients(realmName)
 	if err != nil {
 		return nil, err
 	}
 
-	clientsByID := map[string]*keycloakTypes.KeycloakAPIClient{}
+	clientsByID := map[string]*keycloak.KeycloakAPIClient{}
 
 	for _, client := range clients {
 		clientsByID[client.ClientID] = client

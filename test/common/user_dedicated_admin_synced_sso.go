@@ -132,21 +132,14 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 }
 
 func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
-	generatedKU := &keycloak.KeycloakUser{}
-	generatedKUUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(generatedKU)
-	if err != nil {
-		return err
-	}
-
 	if err := wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
-		err = c.Get(
-			ctx,
-			types.NamespacedName{
-				Namespace: RHSSOUserProductNamespace,
+
+		generatedKU, err := dr.GetKeycloakUser(ctx, c, keycloak.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("generated-%s-%s", testUser.Name, testUser.UID),
+				Namespace: RHSSOUserProductNamespace,
 			},
-			generatedKUUnstructured,
-		)
+		})
 		if err != nil {
 			switch err.(type) {
 			case *errors.StatusError:
@@ -440,12 +433,12 @@ func cleanUpTestDedicatedAdminUsersSyncedSSO(ctx context.Context, t TestingTB, c
 
 	// Ensure KeycloakUser CR has been deleted within 2 minutes
 	err = wait.Poll(time.Second*15, time.Minute*2, func() (done bool, err error) {
-		unstructuredKcUser, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{})
-		if err != nil {
-			return false, nil
-		}
-		err = c.Get(ctx, types.NamespacedName{Name: fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
-			Namespace: RHSSOProductNamespace}, unstructuredKcUser)
+		_, err = dr.GetKeycloakUser(ctx, c, keycloak.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, testUserName),
+				Namespace: RHSSOProductNamespace,
+			},
+		})
 		if err != nil {
 			if k8serr.IsNotFound(err) {
 				return true, nil

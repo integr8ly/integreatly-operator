@@ -17,7 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -99,10 +99,6 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	opts := &k8sclient.ListOptions{
-		Namespace: ns,
-	}
-
 	keycloakCRD := &apiextensionv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "keycloaks.keycloak.org",
@@ -118,30 +114,27 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	}
 
 	// Delete all users
-	usersUnstructured := dr.CreateUnstructuredListWithGVK(keycloakTypes.KeycloakUserGroup, keycloakTypes.KeycloakUserKind, keycloakTypes.KeycloakUserListKind, keycloakTypes.KeycloakUserVersion, "", "")
 
-	err = serverClient.List(ctx, usersUnstructured, opts)
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+	}
+	users, err := dr.GetKeycloakUserList(ctx, serverClient, opts, keycloak.KeycloakUserList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
-	for i := range usersUnstructured.Items {
-		user := usersUnstructured.Items[i]
-		err = serverClient.Delete(ctx, &user)
+	for _, user := range users.Items {
+		err = dr.DeleteUser(ctx, serverClient, user)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 
-	clientsUnstructured := dr.CreateUnstructuredListWithGVK(keycloakTypes.KeycloakClientGroup, keycloakTypes.KeycloakClientKind, keycloakTypes.KeycloakClientListKind, keycloakTypes.KeycloakClientVersion, "", "")
-
-	err = serverClient.List(ctx, clientsUnstructured, opts)
+	clients, err := dr.GetKeycloakClientList(ctx, serverClient, opts, keycloak.KeycloakClientList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	for i := range clientsUnstructured.Items {
-		client := clientsUnstructured.Items[i]
-		err = serverClient.Delete(ctx, &client)
+	for _, client := range clients.Items {
+		err = dr.DeleteClient(ctx, serverClient, client)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -149,63 +142,43 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 
 	// Check users and clients have been removed before realms are removed
 	// Refresh the user list
-	err = serverClient.List(ctx, usersUnstructured, opts)
+	users, err = dr.GetKeycloakUserList(ctx, serverClient, opts, keycloak.KeycloakUserList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if len(usersUnstructured.Items) > 0 {
+	if len(users.Items) > 0 {
 		r.Log.Info("rhsso deletion of users in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	// Refresh the clients list
-	err = serverClient.List(ctx, clientsUnstructured, opts)
+	clients, err = dr.GetKeycloakClientList(ctx, serverClient, opts, keycloak.KeycloakClientList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if len(clientsUnstructured.Items) > 0 {
+	if len(clients.Items) > 0 {
 		r.Log.Info("rhsso deletion of clients in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	// Delete all realms
-	realms := &keycloakTypes.KeycloakRealmList{}
-
-	realmsUnstructured := dr.CreateUnstructuredListWithGVK(keycloakTypes.KeycloakRealmGroup, keycloakTypes.KeycloakRealmKind, keycloakTypes.KeycloakRealmListKind, keycloakTypes.KeycloakRealmVersion, "", "")
-
-	err = serverClient.List(ctx, realmsUnstructured, opts)
+	realms, err := dr.GetKeycloakRealmList(ctx, serverClient, opts, keycloak.KeycloakRealmList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, nil
 	}
-	for i := range realmsUnstructured.Items {
-		realm := realmsUnstructured.Items[i]
-		err = serverClient.Delete(ctx, &realm)
+	for _, realm := range realms.Items {
+		err = dr.DeleteRealm(ctx, serverClient, realm)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 
 	// Refresh the realm list
-	err = serverClient.List(ctx, realmsUnstructured, opts)
+	realms, err = dr.GetKeycloakRealmList(ctx, serverClient, opts, keycloak.KeycloakRealmList{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	// Delete all realm finalizers
-	for i := range realmsUnstructured.Items {
-		realm := realmsUnstructured.Items[i]
-		realm.SetFinalizers([]string{})
-		err = serverClient.Update(ctx, &realm)
-		if err != nil && !k8serr.IsNotFound(err) {
-			r.Log.Error("Error removing finalizer from Realm", err)
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
 	}
 
-	// Refresh the realm list
-	err = serverClient.List(ctx, realmsUnstructured, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
 	if len(realms.Items) > 0 {
 		r.Log.Info("rhsso deletion of realms in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
@@ -289,7 +262,7 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloakTypes.KeycloakRealm, redirectUris []string, tenant string) error {
+func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string, tenant string) error {
 	var (
 		clientSecret string
 		clientId     string
@@ -327,9 +300,9 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 	if !ContainsIdentityProvider(kcr.Spec.Realm.IdentityProviders, idpAlias) {
 		r.Log.Info("Adding keycloak realm client")
 		if kcr.Spec.Realm.IdentityProviders == nil {
-			kcr.Spec.Realm.IdentityProviders = []*keycloakTypes.KeycloakIdentityProvider{}
+			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
 		}
-		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloakTypes.KeycloakIdentityProvider{
+		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
 			Alias:                     idpAlias,
 			ProviderID:                "openshift-v4",
 			Enabled:                   true,
@@ -428,7 +401,7 @@ func (r *Reconciler) GetOAuthClientName(sso config.RHSSOInterface) string {
 	return r.Installation.Spec.NamespacePrefix + string(sso.GetProductName())
 }
 
-func ContainsIdentityProvider(providers []*keycloakTypes.KeycloakIdentityProvider, alias string) bool {
+func ContainsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
 	for _, p := range providers {
 		if p.Alias == alias {
 			return true
@@ -527,7 +500,7 @@ func (r *Reconciler) ReconcileStatefulSet(ctx context.Context, serverClient k8sc
 	)
 }
 
-func DeleteKeycloakUsers(allKcUsers []keycloakTypes.KeycloakAPIUser, deletedUsers []keycloakTypes.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloakTypes.KeycloakAPIUser, error) {
+func DeleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []keycloak.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
 
 	for _, delUser := range deletedUsers {
 
@@ -546,9 +519,12 @@ func DeleteKeycloakUsers(allKcUsers []keycloakTypes.KeycloakAPIUser, deletedUser
 		}
 
 		// Delete the CR
-		kcUserUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakUserGroup, keycloakTypes.KeycloakUserKind, keycloakTypes.KeycloakUserVersion, userHelper.GetValidGeneratedUserName(delUser), ns)
-
-		err := serverClient.Delete(ctx, kcUserUnstructured)
+		err := dr.DeleteUser(ctx, serverClient, keycloak.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      userHelper.GetValidGeneratedUserName(delUser),
+				Namespace: ns,
+			},
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to delete keycloak user: %w", err)
 		}
@@ -557,7 +533,7 @@ func DeleteKeycloakUsers(allKcUsers []keycloakTypes.KeycloakAPIUser, deletedUser
 	return allKcUsers, nil
 }
 
-func OsUserInKc(osUsers []usersv1.User, kcUser keycloakTypes.KeycloakAPIUser) bool {
+func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, osu := range osUsers {
 		if osu.Name == kcUser.UserName {
 			return true
@@ -568,12 +544,16 @@ func OsUserInKc(osUsers []usersv1.User, kcUser keycloakTypes.KeycloakAPIUser) bo
 }
 
 func (r *Reconciler) HandleProgressPhase(ctx context.Context, serverClient k8sclient.Client, keycloakName string, keycloakRealmName string, config config.ConfigReadable, ssoCommon *config.RHSSOCommon, rhssoVersion string, operatorVersion string) (integreatlyv1alpha1.StatusPhase, error) {
-	kcUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakGroup, keycloakTypes.KeycloakKind, keycloakTypes.KeycloakVersion, "", "")
-
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: config.GetNamespace()}, kcUnstructured)
+	_, err := dr.GetKeycloak(ctx, serverClient, keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: config.GetNamespace(),
+		},
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
 	// The keycloak operator does not set the product version currently - should fetch from KeyCloak.Status.Version when fixed
 	ssoCommon.SetProductVersion(rhssoVersion)
 	// The Keycloak Operator doesn't currently set the operator version
@@ -584,19 +564,19 @@ func (r *Reconciler) HandleProgressPhase(ctx context.Context, serverClient k8scl
 	}
 
 	r.Log.Info("checking ready status for rhsso")
-	kcrUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakRealmGroup, keycloakTypes.KeycloakRealmKind, keycloakTypes.KeycloakRealmVersion, "", "")
+	kcr := &keycloak.KeycloakRealm{}
 
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakRealmName, Namespace: config.GetNamespace()}, kcrUnstructured)
+	_, err = dr.GetKeycloakRealm(ctx, serverClient, keycloak.KeycloakRealm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakRealmName,
+			Namespace: config.GetNamespace(),
+		},
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
 
-	kcr, err := dr.ConvertKeycloakRealmUnstructuredToTyped(*kcrUnstructured)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if kcr.Status.Phase == keycloakTypes.PhaseReconciling {
+	if kcr.Status.Phase == keycloak.PhaseReconciling {
 		err = r.exportConfig(ctx, serverClient, keycloakName, keycloakRealmName, config, ssoCommon)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
@@ -610,9 +590,12 @@ func (r *Reconciler) HandleProgressPhase(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Client, keycloakName string, keycloakRealmName string, config config.ConfigReadable, ssoCommon *config.RHSSOCommon) error {
-	kcUnstructured := dr.CreateUnstructuredWithGVK(keycloakTypes.KeycloakGroup, keycloakTypes.KeycloakKind, keycloakTypes.KeycloakVersion, keycloakName, config.GetNamespace())
-
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: config.GetNamespace()}, kcUnstructured)
+	_, err := dr.GetKeycloak(ctx, serverClient, keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: config.GetNamespace(),
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("Could not retrieve keycloak custom resource for keycloak config: %w", err)
 	}
@@ -693,22 +676,14 @@ func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Co
 	// If there is a minor or major version bump, use recreate strategy
 	if currentVersion.Minor() > preVersion.Minor() || currentVersion.Major() > preVersion.Major() {
 		r.Log.Info("Major / Minor sso upgrade detected, setting keycloak migration strategy to recreate")
-		kc := &keycloakTypes.Keycloak{
+		kc := &keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      keycloakName,
 				Namespace: config.GetNamespace(),
 			},
 		}
-		kc.Spec.Migration.MigrationStrategy = keycloakTypes.StrategyRecreate
-
-		kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
-		if err != nil && !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUnstructured, func() error {
-			return nil
-		})
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRecreate
+		_, _, err := dr.CreateOrUpdateKeycloak(ctx, serverClient, *kc)
 		if err != nil && !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 		}
@@ -718,7 +693,7 @@ func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Co
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) IsOperatorInstallComplete(kc keycloakTypes.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
+func (r *Reconciler) IsOperatorInstallComplete(kc *keycloak.Keycloak, operatorVersion integreatlyv1alpha1.OperatorVersion) bool {
 	return kc.Status.Version == string(operatorVersion) && kc.Status.Ready
 }
 

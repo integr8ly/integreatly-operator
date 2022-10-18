@@ -347,34 +347,17 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		rhssoUserExpectedReplicas = 1
 	}
 	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		keycloakCRTyped := &keycloak.Keycloak{
+		keycloakCR, err := dr.GetKeycloak(context.TODO(), ctx.Client, keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
 				Namespace: RHSSOUserProductNamespace,
 			},
-		}
-
-		keycloakCRUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCRTyped)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		key, err := k8sclient.ObjectKeyFromObject(keycloakCRUnstructured)
-		if err != nil {
-			t.Fatalf("Error getting Keycloak CR key: %v", err)
-		}
-
-		err = ctx.Client.Get(context.TODO(), key, keycloakCRUnstructured)
+		})
 		if err != nil {
 			t.Fatalf("Error getting Keycloak CR: %v", err)
 		}
 
-		keycloakTyped, err := dr.ConvertKeycloakUnstructuredToTyped(*keycloakCRUnstructured)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		rhssoUserExpectedReplicas = int32(keycloakTyped.Spec.Instances)
+		rhssoUserExpectedReplicas = int32(keycloakCR.Spec.Instances)
 	}
 	statefulSets := []Namespace{
 		{

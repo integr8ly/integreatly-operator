@@ -1,7 +1,6 @@
 package common
 
 import (
-	goctx "context"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/headzoo/surf"
@@ -22,18 +21,12 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	// get Keycloak CR
-	keycloak := &keycloak.Keycloak{
+	keycloak, err := dr.GetKeycloak(context.TODO(), ctx.Client, keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: string(integreatlyv1alpha1.ProductRHSSOUser),
+			Name:      string(integreatlyv1alpha1.ProductRHSSOUser),
+			Namespace: RHSSOUserProductNamespace,
 		},
-	}
-
-	keycloakUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloak)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: keycloak.Name, Namespace: RHSSOUserProductNamespace}, keycloakUnstructured)
+	})
 	if err != nil {
 		t.Fatalf("Couldn't get RHSSO config: %v", err)
 	}

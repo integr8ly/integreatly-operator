@@ -111,20 +111,12 @@ func TestInvalidUserNameAlert(t TestingTB, ctx *TestingContext) {
 }
 
 func validateUserNotListedInKeyCloakCR(t TestingTB, ctx *TestingContext, goCtx context.Context, userName string) {
-	keycloakUsersUnstructured, err := dr.ConvertKeycloakUsersTypedToUnstructured(&keycloak.KeycloakUserList{})
+	keycloakUsers, err := dr.GetKeycloakUserList(context.TODO(), ctx.Client, []k8sclient.ListOption{k8sclient.InNamespace(RHSSOProductNamespace)}, keycloak.KeycloakUserList{})
 	if err != nil {
-		t.Error(err)
-	}
-	if err := ctx.Client.List(goCtx, keycloakUsersUnstructured, []k8sclient.ListOption{k8sclient.InNamespace(RHSSOProductNamespace)}...); err != nil {
 		t.Fatalf("Error listing keycloak users: %s", err)
 	}
 
-	keycloakUserTyped, err := dr.ConvertKeycloakUsersUnstructuredToTyped(*keycloakUsersUnstructured)
-	if err != nil {
-		t.Error(err)
-	}
-
-	for _, keycloakUser := range keycloakUserTyped.Items {
+	for _, keycloakUser := range keycloakUsers.Items {
 		if strings.Contains(keycloakUser.Name, userName) {
 			t.Fatalf("Expected no keycloak user cr with name %s but found %s", userName, keycloakUser.Name)
 		}
@@ -266,18 +258,13 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to delete openshift user: %s, err: %v", userLongName, err)
 	}
 
-	kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&keycloak.KeycloakUser{
+	// Ensure Keycloak CR created are deleted
+	err = dr.DeleteUser(context.TODO(), ctx.Client, keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2),
 			Namespace: RHSSOProductNamespace,
 		},
 	})
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Ensure Keycloak CR created are deleted
-	err = ctx.Client.Delete(goCtx, kcUserUnstructured)
 	if err != nil {
 		t.Fatalf("failed to delete Keycloak CR: %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2), err)
 	}
