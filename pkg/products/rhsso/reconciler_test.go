@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	configv1 "github.com/openshift/api/config/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,8 +25,7 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -95,11 +96,27 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
+
+	kcUsersList := keycloak.KeycloakUserList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       keycloak.KeycloakUserListKind,
+			APIVersion: keycloak.KeycloakUserApiVersion,
+		},
+	}
+
+	kcUsersListUnstructed, err := dr.ConvertKeycloakUsersTypedToUnstructured(&kcUsersList)
 	if err != nil {
 		return nil, err
 	}
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   keycloak.KeycloakUserGroup,
+		Version: keycloak.KeycloakUserVersion,
+		Kind:    keycloak.KeycloakUserListKind,
+	},
+		kcUsersListUnstructed)
+
+	err = threescalev1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -270,9 +287,30 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
-	kcr := getKcr(keycloak.KeycloakRealmStatus{
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
+	}
+
+	kcr := getKcr(t, keycloak.KeycloakRealmStatus{
 		Phase: keycloak.PhaseReconciling,
 	})
+
+	kc2 := &keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: defaultOperandNamespace,
+		},
+		Status: keycloak.KeycloakStatus{
+			Ready:   true,
+			Version: string(integreatlyv1alpha1.OperatorVersionRHSSO),
+		},
+	}
+
+	kc2Unstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc2)
+	if err != nil {
+		t.FailNow()
+	}
 
 	credentialRhsso := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -357,7 +395,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:                  "Test reconcile custom resource returns completed when successful created",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -369,7 +407,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:                  "No product declaration found for RHSSO",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -380,17 +418,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ProductDeclaration:    nil,
 		},
 		{
-			Name: "Test reconcile custom resource returns completed when successful created (on upgrade, use rolling strategy)",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, &keycloak.Keycloak{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      keycloakName,
-					Namespace: defaultOperandNamespace,
-				},
-				Status: keycloak.KeycloakStatus{
-					Ready:   true,
-					Version: string(integreatlyv1alpha1.OperatorVersionRHSSO),
-				},
-			}, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			Name:            "Test reconcile custom resource returns completed when successful created (on upgrade, use rolling strategy)",
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc2Unstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: func() *config.ConfigReadWriterMock {
 				basicConfig := basicConfigMock()
@@ -435,7 +464,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:            "URL for Keycloak not yet available",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: func() *config.ConfigReadWriterMock {
 				basicConfig := basicConfigMock()
@@ -459,7 +488,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Openshift IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -472,7 +501,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Github IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -485,7 +514,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to authenticate client in keycloak api",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -505,7 +534,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to create and add keycloak authentication flow",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -529,7 +558,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to sync openshift idp client secret",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcUnstructured, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -682,6 +711,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
 		},
+	}
+
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
 	}
 
 	secret := &corev1.Secret{
@@ -840,7 +874,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(t, keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kcUnstructured, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -914,8 +948,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 }
 
-func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
-	return &keycloak.KeycloakRealm{
+func getKcr(t *testing.T, status keycloak.KeycloakRealmStatus) *unstructured.Unstructured {
+	kc := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: defaultOperandNamespace,
@@ -933,6 +967,13 @@ func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 		},
 		Status: status,
 	}
+
+	kcrUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
+	}
+
+	return kcrUnstructured
 }
 
 func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
@@ -1022,7 +1063,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return context.AuthenticationFlow[realmName], nil
 	}
 
-	updateIdentityProviderFunc := func(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+	updateIdentityProviderFunc := func(specIdentityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
 		return nil
 	}
 
@@ -1100,7 +1141,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		context.AuthenticationFlowsExecutions[flowAlias] = append(context.AuthenticationFlowsExecutions[flowAlias], &execution)
 
 		if requirement != "" {
-			execution, err := findAuthenticationExecutionForFlowFunc(flowAlias, realmName, func(execution *v1alpha1.AuthenticationExecutionInfo) bool {
+			execution, err := findAuthenticationExecutionForFlowFunc(flowAlias, realmName, func(execution *keycloak.AuthenticationExecutionInfo) bool {
 				return execution.ProviderID == providerID
 			})
 
