@@ -158,7 +158,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			],
 			"datasource": null,
 			"decimals": 2,
-			"description": "% of time where *no*  5xx haproxy ErrorBudgetBurn alerts were firing over the last 28 days",
+			"description": "% of time where *no*  5xx haproxy ErrorBudgetBurn alerts were firing over the last 7 days",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -217,7 +217,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", alertstate=\"firing\", product=~\"rhoam\", service=\"keycloak\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", alertstate=\"firing\", product=~\"rhoam\", service=\"keycloak\"}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -227,9 +227,9 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
-			"title": "Overall  SLO % over last 28 days",
+			"title": "Overall  SLO % over last 7 days",
 			"type": "singlestat",
 			"valueFontSize": "80%",
 			"valueMaps": [
@@ -252,7 +252,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			],
 			"datasource": null,
 			"decimals": 2,
-			"description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 28 days",
+			"description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 7 days",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -311,7 +311,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -321,7 +321,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": "0,0",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Remaining Errors Budget",
 			"type": "singlestat",
@@ -346,7 +346,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			],
 			"datasource": null,
 			"decimals": null,
-			"description": "Total time where at least 1 5xx Error Alert was firing over the last 28 days",
+			"description": "Total time where at least 1 5xx Error Alert was firing over the last 7 days",
 			"fieldConfig": {
 			  "defaults": {
 				"custom": {}
@@ -406,7 +406,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			"tableColumn": "",
 			"targets": [
 			  {
-				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertname=~\"RH.*sso.*ErrorBudgetBurn\", service=\"keycloak\", alertstate=\"firing\", severity=\"warning\", product=~\"rhoam\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"interval": "",
@@ -416,7 +416,7 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  }
 			],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1080,8 +1080,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			{
 			  "current": {
 				"selected": false,
-				"text": "28",
-				"value": "28"
+				"text": "7",
+				"value": "7"
 			  },
 			  "hide": 2,
 			  "label": "SLO in days",
@@ -1089,11 +1089,11 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "options": [
 				{
 				  "selected": true,
-				  "text": "28",
-				  "value": "28"
+				  "text": "7",
+				  "value": "7"
 				}
 			  ],
-			  "query": "28",
+			  "query": "7",
 			  "skipUrlSync": false,
 			  "type": "constant"
 			},
@@ -1101,8 +1101,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "allValue": null,
 			  "current": {
 				"selected": false,
-				"text": "2419200000",
-				"value": "2419200000"
+				"text": "604800000",
+				"value": "604800000"
 			  },
 			  "datasource": "Prometheus",
 			  "definition": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -1114,8 +1114,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "options": [
 				{
 				  "selected": true,
-				  "text": "2419200000",
-				  "value": "2419200000"
+				  "text": "604800000",
+				  "value": "604800000"
 				}
 			  ],
 			  "query": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -1133,8 +1133,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "allValue": null,
 			  "current": {
 				"selected": false,
-				"text": "2419200",
-				"value": "2419200"
+				"text": "604800",
+				"value": "604800"
 			  },
 			  "datasource": "Prometheus",
 			  "definition": "query_result(vector($slo_ms * 0.001))",
@@ -1146,8 +1146,8 @@ func GetMonitoringGrafanaDBRhssoAvailabilityErrorBudgetBurnJSON(installationName
 			  "options": [
 				{
 				  "selected": true,
-				  "text": "2419200",
-				  "value": "2419200"
+				  "text": "604800",
+				  "value": "604800"
 				}
 			  ],
 			  "query": "query_result(vector($slo_ms * 0.001))",
