@@ -9,6 +9,7 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
+	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -86,6 +87,12 @@ func getBasicConfig() *config.ConfigReadWriterMock {
 				},
 			}, nil
 		},
+		ReadThreeScaleFunc: func() (*config.ThreeScale, error) {
+			return config.NewThreeScale(config.ProductConfig{
+				"NAMESPACE": "3scale",
+				"HOST":      "threescale.openshift-cluster.com",
+			}), nil
+		},
 	}
 }
 
@@ -141,6 +148,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := marin3roperator.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := projectv1.AddToScheme(scheme); err != nil {
@@ -215,6 +225,96 @@ func TestAlertCreation(t *testing.T) {
 				if err := tt.wantFn(serverClient); err != nil {
 					t.Errorf("reconcileAlerts() error = %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestReconcileServiceMonitor(t *testing.T) {
+	namespaceName := "test-namespace"
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := fakeclient.NewFakeClientWithScheme(scheme)
+
+	type args struct {
+		namespace string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		FakeMPM *marketplace.MarketplaceInterfaceMock
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name:    "success on valid namespace",
+			args:    args{namespace: namespaceName},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := NewReconciler(getBasicConfig(), getBasicInstallation(), tt.FakeMPM, setupRecorder(), getLogger(), localProductDeclaration)
+			r.RateLimitConfig = RateLimitConfig
+			if err != nil {
+				t.Fatalf("Could not create new reconiler")
+			}
+
+			got, err := r.reconcileServiceMonitor(context.TODO(), client, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileServiceMonitor() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileServiceMonitor() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconcileDiscoveryService(t *testing.T) {
+	namespaceName := "test-namespace"
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := fakeclient.NewFakeClientWithScheme(scheme)
+
+	type args struct {
+		namespace string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		FakeMPM *marketplace.MarketplaceInterfaceMock
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name:    "success on valid namespace",
+			args:    args{namespace: namespaceName},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := NewReconciler(getBasicConfig(), getBasicInstallation(), tt.FakeMPM, setupRecorder(), getLogger(), localProductDeclaration)
+			r.RateLimitConfig = RateLimitConfig
+			if err != nil {
+				t.Fatalf("Could not create new reconiler")
+			}
+
+			got, err := r.reconcileDiscoveryService(context.TODO(), client, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileDiscoveryService() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileDiscoveryService() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
