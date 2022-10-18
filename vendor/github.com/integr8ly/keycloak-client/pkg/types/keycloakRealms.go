@@ -1,21 +1,26 @@
-package v1alpha1
+package types
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	KeycloakRealmGroup      = "keycloak.org"
+	KeycloakRealmVersion    = "v1alpha1"
+	KeycloakRealmKind       = "KeycloakRealm"
+	KeycloakRealmListKind   = "KeycloakRealmList"
+	KeycloakRealmApiVersion = "keycloak.org/v1alpha1"
+)
+
 // KeycloakRealmSpec defines the desired state of KeycloakRealm.
-// +k8s:openapi-gen=true
 type KeycloakRealmSpec struct {
 	// When set to true, this KeycloakRealm will be marked as unmanaged and not be managed by this operator.
 	// It can then be used for targeting purposes.
 	// +optional
 	Unmanaged bool `json:"unmanaged,omitempty"`
 	// Selector for looking up Keycloak Custom Resources.
-	// +kubebuilder:validation:Required
 	InstanceSelector *metav1.LabelSelector `json:"instanceSelector,omitempty"`
 	// Keycloak Realm REST object.
-	// +kubebuilder:validation:Required
 	Realm *KeycloakAPIRealm `json:"realm"`
 	// A list of overrides to the default Realm behavior.
 	// +listType=atomic
@@ -23,11 +28,9 @@ type KeycloakRealmSpec struct {
 }
 
 type KeycloakAPIRealm struct {
-	// +kubebuilder:validation:Required
 	// +optional
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// Realm name.
-	// +kubebuilder:validation:Required
 	Realm string `json:"realm"`
 	// Realm enabled flag.
 	// +optional
@@ -57,9 +60,6 @@ type KeycloakAPIRealm struct {
 	// TODO: change to values and use kubebuilder default annotation once supported
 	// +optional
 	EventsEnabled *bool `json:"eventsEnabled,omitempty"`
-	// Enabled event types
-	// +optional
-	EnabledEventTypes []string `json:"enabledEventTypes,omitempty"`
 	// Enable events recording
 	// TODO: change to values and use kubebuilder default annotation once supported
 	// +optional
@@ -174,10 +174,6 @@ type KeycloakAPIRealm struct {
 	// +optional
 	Roles *RolesRepresentation `json:"roles,omitempty"`
 
-	// Default role
-	// +optional
-	DefaultRole *RoleRepresentation `json:"defaultRole,omitempty"`
-
 	// Scope Mappings
 	// +optional
 	ScopeMappings []ScopeMappingRepresentation `json:"scopeMappings,omitempty"`
@@ -191,10 +187,6 @@ type KeycloakAPIRealm struct {
 	// Access Token Lifespan
 	// +optional
 	AccessTokenLifespan *int32 `json:"accessTokenLifespan,omitempty"`
-
-	// User Managed Access Allowed
-	// +optional
-	UserManagedAccessAllowed *bool `json:"userManagedAccessAllowed,omitempty"`
 }
 
 type RoleRepresentationArray []RoleRepresentation
@@ -554,14 +546,10 @@ type TokenResponse struct {
 	SessionState string `json:"session_state"`
 	// Token Response Error.
 	// +optional
-	Error string `json:"error"`
-	// Token Response Error Description.
-	// +optional
+	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
 
-// KeycloakRealmStatus defines the observed state of KeycloakRealm
-// +k8s:openapi-gen=true
 type KeycloakRealmStatus struct {
 	// Current phase of the operator.
 	Phase StatusPhase `json:"phase"`
@@ -575,11 +563,6 @@ type KeycloakRealmStatus struct {
 	LoginURL string `json:"loginURL"`
 }
 
-// KeycloakRealm is the Schema for the keycloakrealms API
-// +genclient
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakRealm struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -588,18 +571,8 @@ type KeycloakRealm struct {
 	Status KeycloakRealmStatus `json:"status,omitempty"`
 }
 
-// KeycloakRealmList contains a list of KeycloakRealm
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakRealmList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeycloakRealm `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&KeycloakRealm{}, &KeycloakRealmList{})
-}
-
-func (i *KeycloakRealm) UpdateStatusSecondaryResources(kind string, resourceName string) {
-	i.Status.SecondaryResources = UpdateStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
 }

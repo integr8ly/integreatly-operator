@@ -1170,8 +1170,6 @@ github.com/integr8ly/cloud-resource-operator v0.41.0 h1:Af11lqf/Ne4bL7YbFwhLKEr4
 github.com/integr8ly/cloud-resource-operator v0.41.0/go.mod h1:kAjpxGLPq9oQNZHjH1q8N4cm5PmqOHDZDKOiiWdNepc=
 github.com/integr8ly/grafana-operator/v3 v3.6.0 h1:0+wUyPBT37kCM/2+sItKS3iEyeK1k+BnOJQOkES6vFI=
 github.com/integr8ly/grafana-operator/v3 v3.6.0/go.mod h1:pWWg9RerCkkwmTcmaygmfhkjjGilEN30han1yq2MAsA=
-github.com/integr8ly/keycloak-client v0.1.8 h1:FlCieh7MZK3Z9k7BFs70mZPzoduZcajPV03mquuVpNI=
-github.com/integr8ly/keycloak-client v0.1.8/go.mod h1:n8BqRlS8oVazWUfaU61fIarpz9KTcu+cRmGFT5rUbN8=
 github.com/jackc/fake v0.0.0-20150926172116-812a484cc733/go.mod h1:WrMFNQdiFJ80sQsxDoMokWK1W5TQtxBFNpzWTD84ibQ=
 github.com/jackc/pgx v3.2.0+incompatible/go.mod h1:0ZGrqGqkRlliWnWB4zKnWtjbSWbGkVEFm4TeybAXq+I=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
@@ -1237,8 +1235,6 @@ github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:C
 github.com/kelseyhightower/envconfig v1.3.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
-github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72 h1:k9qCacLVN7oNWv0cgKJveADkVqB1b4rtFFQP5vGcjKo=
-github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72/go.mod h1:q/tOrPIZPK4etiQevY5sDhhtYW5PkmGybtMEhpj8qyY=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

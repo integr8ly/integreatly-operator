@@ -12,8 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/model"
+	types "github.com/integr8ly/keycloak-client/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,77 +79,77 @@ func (c *Client) create(obj T, resourcePath, resourceName string) (string, error
 	return uid, nil
 }
 
-func (c *Client) CreateRealm(realm *v1alpha1.KeycloakRealm) (string, error) {
+func (c *Client) CreateRealm(realm *types.KeycloakRealm) (string, error) {
 	return c.create(realm.Spec.Realm, "realms", "realm")
 }
 
-func (c *Client) CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
+func (c *Client) CreateClient(client *types.KeycloakAPIClient, realmName string) (string, error) {
 	return c.create(client, fmt.Sprintf("realms/%s/clients", realmName), "client")
 }
 
-func (c *Client) CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
+func (c *Client) CreateUser(user *types.KeycloakAPIUser, realmName string) (string, error) {
 	return c.create(user, fmt.Sprintf("realms/%s/users", realmName), "user")
 }
 
-func (c *Client) CreateFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error) {
+func (c *Client) CreateFederatedIdentity(fid types.FederatedIdentity, userID string, realmName string) (string, error) {
 	return c.create(fid, fmt.Sprintf("realms/%s/users/%s/federated-identity/%s", realmName, userID, fid.IdentityProvider), "federated-identity")
 }
 
-func (c *Client) RemoveFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) error {
+func (c *Client) RemoveFederatedIdentity(fid types.FederatedIdentity, userID string, realmName string) error {
 	return c.delete(fmt.Sprintf("realms/%s/users/%s/federated-identity/%s", realmName, userID, fid.IdentityProvider), "federated-identity", fid)
 }
 
-func (c *Client) GetUserFederatedIdentities(userID string, realmName string) ([]v1alpha1.FederatedIdentity, error) {
+func (c *Client) GetUserFederatedIdentities(userID string, realmName string) ([]types.FederatedIdentity, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/users/%s/federated-identity", realmName, userID), "federated-identity", func(body []byte) (T, error) {
-		var fids []v1alpha1.FederatedIdentity
+		var fids []types.FederatedIdentity
 		err := json.Unmarshal(body, &fids)
 		return fids, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.([]v1alpha1.FederatedIdentity), err
+	return result.([]types.FederatedIdentity), err
 }
 
-func (c *Client) CreateUserClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, userID string) (string, error) {
+func (c *Client) CreateUserClientRole(role *types.KeycloakUserRole, realmName, clientID, userID string) (string, error) {
 	return c.create(
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 		fmt.Sprintf("realms/%s/users/%s/role-mappings/clients/%s", realmName, userID, clientID),
 		"user-client-role",
 	)
 }
-func (c *Client) CreateUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) (string, error) {
+func (c *Client) CreateUserRealmRole(role *types.KeycloakUserRole, realmName, userID string) (string, error) {
 	return c.create(
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 		fmt.Sprintf("realms/%s/users/%s/role-mappings/realm", realmName, userID),
 		"user-realm-role",
 	)
 }
 
-func (c *Client) CreateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName, executionID string) (string, error) {
+func (c *Client) CreateAuthenticatorConfig(authenticatorConfig *types.AuthenticatorConfig, realmName, executionID string) (string, error) {
 	return c.create(authenticatorConfig, fmt.Sprintf("realms/%s/authentication/executions/%s/config", realmName, executionID), "AuthenticatorConfig")
 }
 
-func (c *Client) DeleteUserClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, userID string) error {
+func (c *Client) DeleteUserClientRole(role *types.KeycloakUserRole, realmName, clientID, userID string) error {
 	err := c.delete(
 		fmt.Sprintf("realms/%s/users/%s/role-mappings/clients/%s", realmName, userID, clientID),
 		"user-client-role",
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 	)
 	return err
 }
 
-func (c *Client) DeleteUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) error {
+func (c *Client) DeleteUserRealmRole(role *types.KeycloakUserRole, realmName, userID string) error {
 	err := c.delete(
 		fmt.Sprintf("realms/%s/users/%s/role-mappings/realm", realmName, userID),
 		"user-realm-role",
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 	)
 	return err
 }
 
-func (c *Client) UpdatePassword(user *v1alpha1.KeycloakAPIUser, realmName, newPass string) error {
-	passReset := &v1alpha1.KeycloakAPIPasswordReset{}
+func (c *Client) UpdatePassword(user *types.KeycloakAPIUser, realmName, newPass string) error {
+	passReset := &types.KeycloakAPIPasswordReset{}
 	passReset.Type = "password"
 	passReset.Temporary = false
 	passReset.Value = newPass
@@ -161,9 +160,9 @@ func (c *Client) UpdatePassword(user *v1alpha1.KeycloakAPIUser, realmName, newPa
 	return nil
 }
 
-func (c *Client) FindUserByEmail(email, realm string) (*v1alpha1.KeycloakAPIUser, error) {
+func (c *Client) FindUserByEmail(email, realm string) (*types.KeycloakAPIUser, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/users?first=0&max=1&search=%s", realm, email), "user", func(body []byte) (T, error) {
-		var users []*v1alpha1.KeycloakAPIUser
+		var users []*types.KeycloakAPIUser
 		if err := json.Unmarshal(body, &users); err != nil {
 			return nil, err
 		}
@@ -178,12 +177,12 @@ func (c *Client) FindUserByEmail(email, realm string) (*v1alpha1.KeycloakAPIUser
 	if result == nil {
 		return nil, err
 	}
-	return result.(*v1alpha1.KeycloakAPIUser), nil
+	return result.(*types.KeycloakAPIUser), nil
 }
 
-func (c *Client) FindUserByUsername(name, realm string) (*v1alpha1.KeycloakAPIUser, error) {
+func (c *Client) FindUserByUsername(name, realm string) (*types.KeycloakAPIUser, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/users?username=%s&max=-1", realm, name), "user", func(body []byte) (T, error) {
-		var users []*v1alpha1.KeycloakAPIUser
+		var users []*types.KeycloakAPIUser
 		if err := json.Unmarshal(body, &users); err != nil {
 			return nil, err
 		}
@@ -201,10 +200,10 @@ func (c *Client) FindUserByUsername(name, realm string) (*v1alpha1.KeycloakAPIUs
 	if result == nil {
 		return nil, nil
 	}
-	return result.(*v1alpha1.KeycloakAPIUser), nil
+	return result.(*types.KeycloakAPIUser), nil
 }
 
-func (c *Client) CreateIdentityProvider(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error) {
+func (c *Client) CreateIdentityProvider(identityProvider *types.KeycloakIdentityProvider, realmName string) (string, error) {
 	return c.create(identityProvider, fmt.Sprintf("realms/%s/identity-provider/instances", realmName), "identity provider")
 }
 
@@ -252,26 +251,26 @@ func (c *Client) get(resourcePath, resourceName string, unMarshalFunc func(body 
 	return obj, nil
 }
 
-func (c *Client) GetRealm(realmName string) (*v1alpha1.KeycloakRealm, error) {
+func (c *Client) GetRealm(realmName string) (*types.KeycloakRealm, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s", realmName), "realm", func(body []byte) (T, error) {
-		realm := &v1alpha1.KeycloakAPIRealm{}
+		realm := &types.KeycloakAPIRealm{}
 		err := json.Unmarshal(body, realm)
 		return realm, err
 	})
 	if result == nil {
 		return nil, nil
 	}
-	ret := &v1alpha1.KeycloakRealm{
-		Spec: v1alpha1.KeycloakRealmSpec{
-			Realm: result.(*v1alpha1.KeycloakAPIRealm),
+	ret := &types.KeycloakRealm{
+		Spec: types.KeycloakRealmSpec{
+			Realm: result.(*types.KeycloakAPIRealm),
 		},
 	}
 	return ret, err
 }
 
-func (c *Client) GetClient(clientID, realmName string) (*v1alpha1.KeycloakAPIClient, error) {
+func (c *Client) GetClient(clientID, realmName string) (*types.KeycloakAPIClient, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/clients/%s", realmName, clientID), "client", func(body []byte) (T, error) {
-		client := &v1alpha1.KeycloakAPIClient{}
+		client := &types.KeycloakAPIClient{}
 		err := json.Unmarshal(body, client)
 		return client, err
 	})
@@ -281,7 +280,7 @@ func (c *Client) GetClient(clientID, realmName string) (*v1alpha1.KeycloakAPICli
 	if result == nil {
 		return nil, nil
 	}
-	ret := result.(*v1alpha1.KeycloakAPIClient)
+	ret := result.(*types.KeycloakAPIClient)
 	return ret, err
 }
 
@@ -314,9 +313,9 @@ func (c *Client) GetClientInstall(clientID, realmName string) ([]byte, error) {
 	return response, nil
 }
 
-func (c *Client) GetUser(userID, realmName string) (*v1alpha1.KeycloakAPIUser, error) {
+func (c *Client) GetUser(userID, realmName string) (*types.KeycloakAPIUser, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/users/%s", realmName, userID), "user", func(body []byte) (T, error) {
-		user := &v1alpha1.KeycloakAPIUser{}
+		user := &types.KeycloakAPIUser{}
 		err := json.Unmarshal(body, user)
 		return user, err
 	})
@@ -326,13 +325,13 @@ func (c *Client) GetUser(userID, realmName string) (*v1alpha1.KeycloakAPIUser, e
 	if result == nil {
 		return nil, nil
 	}
-	ret := result.(*v1alpha1.KeycloakAPIUser)
+	ret := result.(*types.KeycloakAPIUser)
 	return ret, err
 }
 
-func (c *Client) GetIdentityProvider(alias string, realmName string) (*v1alpha1.KeycloakIdentityProvider, error) {
+func (c *Client) GetIdentityProvider(alias string, realmName string) (*types.KeycloakIdentityProvider, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/identity-provider/instances/%s", realmName, alias), "identity provider", func(body []byte) (T, error) {
-		provider := &v1alpha1.KeycloakIdentityProvider{}
+		provider := &types.KeycloakIdentityProvider{}
 		err := json.Unmarshal(body, provider)
 		return provider, err
 	})
@@ -342,12 +341,12 @@ func (c *Client) GetIdentityProvider(alias string, realmName string) (*v1alpha1.
 	if result == nil {
 		return nil, nil
 	}
-	return result.(*v1alpha1.KeycloakIdentityProvider), err
+	return result.(*types.KeycloakIdentityProvider), err
 }
 
-func (c *Client) GetAuthenticatorConfig(configID, realmName string) (*v1alpha1.AuthenticatorConfig, error) {
+func (c *Client) GetAuthenticatorConfig(configID, realmName string) (*types.AuthenticatorConfig, error) {
 	result, err := c.get(fmt.Sprintf("realms/%s/authentication/config/%s", realmName, configID), "AuthenticatorConfig", func(body []byte) (T, error) {
-		authenticatorConfig := &v1alpha1.AuthenticatorConfig{}
+		authenticatorConfig := &types.AuthenticatorConfig{}
 		err := json.Unmarshal(body, authenticatorConfig)
 		return authenticatorConfig, err
 	})
@@ -357,7 +356,7 @@ func (c *Client) GetAuthenticatorConfig(configID, realmName string) (*v1alpha1.A
 	if result == nil {
 		return nil, nil
 	}
-	return result.(*v1alpha1.AuthenticatorConfig), err
+	return result.(*types.AuthenticatorConfig), err
 }
 
 // Generic put function for updating Keycloak resources
@@ -393,23 +392,23 @@ func (c *Client) update(obj T, resourcePath, resourceName string) error {
 	return nil
 }
 
-func (c *Client) UpdateRealm(realm *v1alpha1.KeycloakRealm) error {
+func (c *Client) UpdateRealm(realm *types.KeycloakRealm) error {
 	return c.update(realm, fmt.Sprintf("realms/%s", realm.Spec.Realm.ID), "realm")
 }
 
-func (c *Client) UpdateClient(specClient *v1alpha1.KeycloakAPIClient, realmName string) error {
+func (c *Client) UpdateClient(specClient *types.KeycloakAPIClient, realmName string) error {
 	return c.update(specClient, fmt.Sprintf("realms/%s/clients/%s", realmName, specClient.ID), "client")
 }
 
-func (c *Client) UpdateUser(specUser *v1alpha1.KeycloakAPIUser, realmName string) error {
+func (c *Client) UpdateUser(specUser *types.KeycloakAPIUser, realmName string) error {
 	return c.update(specUser, fmt.Sprintf("realms/%s/users/%s", realmName, specUser.ID), "user")
 }
 
-func (c *Client) UpdateIdentityProvider(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+func (c *Client) UpdateIdentityProvider(specIdentityProvider *types.KeycloakIdentityProvider, realmName string) error {
 	return c.update(specIdentityProvider, fmt.Sprintf("realms/%s/identity-provider/instances/%s", realmName, specIdentityProvider.Alias), "identity provider")
 }
 
-func (c *Client) UpdateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error {
+func (c *Client) UpdateAuthenticatorConfig(authenticatorConfig *types.AuthenticatorConfig, realmName string) error {
 	return c.update(authenticatorConfig, fmt.Sprintf("realms/%s/authentication/config/%s", realmName, authenticatorConfig.ID), "AuthenticatorConfig")
 }
 
@@ -522,22 +521,22 @@ func (c *Client) list(resourcePath, resourceName string, unMarshalListFunc func(
 	return objs, nil
 }
 
-func (c *Client) ListRealms() ([]*v1alpha1.KeycloakAPIRealm, error) {
+func (c *Client) ListRealms() ([]*types.KeycloakAPIRealm, error) {
 	result, err := c.list("realms", "realm", func(body []byte) (T, error) {
-		var realms []*v1alpha1.KeycloakAPIRealm
+		var realms []*types.KeycloakAPIRealm
 		err := json.Unmarshal(body, &realms)
 		return realms, err
 	})
-	resultAsRealm, ok := result.([]*v1alpha1.KeycloakAPIRealm)
+	resultAsRealm, ok := result.([]*types.KeycloakAPIRealm)
 	if !ok {
 		return nil, err
 	}
 	return resultAsRealm, err
 }
 
-func (c *Client) ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, error) {
+func (c *Client) ListClients(realmName string) ([]*types.KeycloakAPIClient, error) {
 	result, err := c.list(fmt.Sprintf("realms/%s/clients", realmName), "clients", func(body []byte) (T, error) {
-		var clients []*v1alpha1.KeycloakAPIClient
+		var clients []*types.KeycloakAPIClient
 		err := json.Unmarshal(body, &clients)
 		return clients, err
 	})
@@ -546,7 +545,7 @@ func (c *Client) ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, e
 		return nil, err
 	}
 
-	res, ok := result.([]*v1alpha1.KeycloakAPIClient)
+	res, ok := result.([]*types.KeycloakAPIClient)
 
 	if !ok {
 		return nil, errors.New("error decoding list clients response")
@@ -555,22 +554,22 @@ func (c *Client) ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, e
 	return res, nil
 }
 
-func (c *Client) ListUsers(realmName string) ([]*v1alpha1.KeycloakAPIUser, error) {
+func (c *Client) ListUsers(realmName string) ([]*types.KeycloakAPIUser, error) {
 	result, err := c.list(fmt.Sprintf("realms/%s/users", realmName), "users", func(body []byte) (T, error) {
-		var users []*v1alpha1.KeycloakAPIUser
+		var users []*types.KeycloakAPIUser
 		err := json.Unmarshal(body, &users)
 		return users, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.([]*v1alpha1.KeycloakAPIUser), err
+	return result.([]*types.KeycloakAPIUser), err
 }
 
-func (c *Client) ListUsersInGroup(realmName, groupID string) ([]*v1alpha1.KeycloakAPIUser, error) {
+func (c *Client) ListUsersInGroup(realmName, groupID string) ([]*types.KeycloakAPIUser, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/members", realmName, groupID)
 	result, err := c.list(path, "users", func(body []byte) (T, error) {
-		var users []*v1alpha1.KeycloakAPIUser
+		var users []*types.KeycloakAPIUser
 		err := json.Unmarshal(body, &users)
 		return users, err
 	})
@@ -578,7 +577,7 @@ func (c *Client) ListUsersInGroup(realmName, groupID string) ([]*v1alpha1.Keyclo
 		return nil, err
 	}
 
-	return result.([]*v1alpha1.KeycloakAPIUser), nil
+	return result.([]*types.KeycloakAPIUser), nil
 }
 
 func (c *Client) AddUserToGroup(realmName, userID, groupID string) error {
@@ -598,21 +597,21 @@ func (c *Client) DeleteUserFromGroup(realmName, userID, groupID string) error {
 	return c.delete(path, "user-group", nil)
 }
 
-func (c *Client) ListIdentityProviders(realmName string) ([]*v1alpha1.KeycloakIdentityProvider, error) {
+func (c *Client) ListIdentityProviders(realmName string) ([]*types.KeycloakIdentityProvider, error) {
 	result, err := c.list(fmt.Sprintf("realms/%s/identity-provider/instances", realmName), "identity providers", func(body []byte) (T, error) {
-		var providers []*v1alpha1.KeycloakIdentityProvider
+		var providers []*types.KeycloakIdentityProvider
 		err := json.Unmarshal(body, &providers)
 		return providers, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.([]*v1alpha1.KeycloakIdentityProvider), err
+	return result.([]*types.KeycloakIdentityProvider), err
 }
 
-func (c *Client) ListUserClientRoles(realmName, clientID, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListUserClientRoles(realmName, clientID, userID string) ([]*types.KeycloakUserRole, error) {
 	objects, err := c.list("realms/"+realmName+"/users/"+userID+"/role-mappings/clients/"+clientID, "userClientRoles", func(body []byte) (t T, e error) {
-		var userClientRoles []*v1alpha1.KeycloakUserRole
+		var userClientRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &userClientRoles)
 		return userClientRoles, err
 	})
@@ -622,12 +621,12 @@ func (c *Client) ListUserClientRoles(realmName, clientID, userID string) ([]*v1a
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) ListAvailableUserClientRoles(realmName, clientID, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListAvailableUserClientRoles(realmName, clientID, userID string) ([]*types.KeycloakUserRole, error) {
 	objects, err := c.list("realms/"+realmName+"/users/"+userID+"/role-mappings/clients/"+clientID+"/available", "userClientRoles", func(body []byte) (t T, e error) {
-		var userClientRoles []*v1alpha1.KeycloakUserRole
+		var userClientRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &userClientRoles)
 		return userClientRoles, err
 	})
@@ -637,12 +636,12 @@ func (c *Client) ListAvailableUserClientRoles(realmName, clientID, userID string
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) ListUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListUserRealmRoles(realmName, userID string) ([]*types.KeycloakUserRole, error) {
 	objects, err := c.list("realms/"+realmName+"/users/"+userID+"/role-mappings/realm", "userRealmRoles", func(body []byte) (t T, e error) {
-		var userRealmRoles []*v1alpha1.KeycloakUserRole
+		var userRealmRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &userRealmRoles)
 		return userRealmRoles, err
 	})
@@ -652,12 +651,12 @@ func (c *Client) ListUserRealmRoles(realmName, userID string) ([]*v1alpha1.Keycl
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) ListAvailableUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListAvailableUserRealmRoles(realmName, userID string) ([]*types.KeycloakUserRole, error) {
 	objects, err := c.list("realms/"+realmName+"/users/"+userID+"/role-mappings/realm/available", "userClientRoles", func(body []byte) (t T, e error) {
-		var userRealmRoles []*v1alpha1.KeycloakUserRole
+		var userRealmRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &userRealmRoles)
 		return userRealmRoles, err
 	})
@@ -667,7 +666,7 @@ func (c *Client) ListAvailableUserRealmRoles(realmName, userID string) ([]*v1alp
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
 func (c *Client) CreateAuthenticationFlow(authFlow AuthenticationFlow, realmName string) (string, error) {
@@ -713,7 +712,7 @@ func (c *Client) AddExecutionToAuthenticatonFlow(flowAlias string, realmName str
 
 	// updates the execution requirement after its creation
 	if requirement != "" {
-		execution, err := c.FindAuthenticationExecutionForFlow(flowAlias, realmName, func(execution *v1alpha1.AuthenticationExecutionInfo) bool {
+		execution, err := c.FindAuthenticationExecutionForFlow(flowAlias, realmName, func(execution *types.AuthenticationExecutionInfo) bool {
 			return execution.ProviderID == providerID
 		})
 		if err != nil {
@@ -729,19 +728,19 @@ func (c *Client) AddExecutionToAuthenticatonFlow(flowAlias string, realmName str
 	return nil
 }
 
-func (c *Client) ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error) {
+func (c *Client) ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*types.AuthenticationExecutionInfo, error) {
 	result, err := c.list(fmt.Sprintf("realms/%s/authentication/flows/%s/executions", realmName, flowAlias), "AuthenticationExecution", func(body []byte) (T, error) {
-		var authenticationExecutions []*v1alpha1.AuthenticationExecutionInfo
+		var authenticationExecutions []*types.AuthenticationExecutionInfo
 		err := json.Unmarshal(body, &authenticationExecutions)
 		return authenticationExecutions, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.([]*v1alpha1.AuthenticationExecutionInfo), err
+	return result.([]*types.AuthenticationExecutionInfo), err
 }
 
-func (c *Client) FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error) {
+func (c *Client) FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*types.AuthenticationExecutionInfo) bool) (*types.AuthenticationExecutionInfo, error) {
 	executions, err := c.ListAuthenticationExecutionsForFlow(flowAlias, realmName)
 
 	if err != nil {
@@ -757,7 +756,7 @@ func (c *Client) FindAuthenticationExecutionForFlow(flowAlias, realmName string,
 	return nil, nil
 }
 
-func (c *Client) UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error {
+func (c *Client) UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *types.AuthenticationExecutionInfo) error {
 	path := fmt.Sprintf("realms/%s/authentication/flows/%s/executions", realmName, flowAlias)
 	return c.update(execution, path, "AuthenticationExecution")
 }
@@ -914,18 +913,18 @@ func (c *Client) SetGroupChild(groupID, realmName string, childGroup *Group) err
 	return err
 }
 
-func (c *Client) CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, groupID string) (string, error) {
+func (c *Client) CreateGroupClientRole(role *types.KeycloakUserRole, realmName, clientID, groupID string) (string, error) {
 	return c.create(
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 		fmt.Sprintf("realms/%s/groups/%s/role-mappings/clients/%s", realmName, groupID, clientID),
 		"group-client-role",
 	)
 }
 
-func (c *Client) ListAvailableGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListAvailableGroupClientRoles(realmName, clientID, groupID string) ([]*types.KeycloakUserRole, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/clients/%s/available", realmName, groupID, clientID)
 	objects, err := c.list(path, "groupRealmRoles", func(body []byte) (t T, e error) {
-		var groupClientRoles []*v1alpha1.KeycloakUserRole
+		var groupClientRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &groupClientRoles)
 		return groupClientRoles, err
 	})
@@ -935,10 +934,10 @@ func (c *Client) ListAvailableGroupClientRoles(realmName, clientID, groupID stri
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) FindAvailableGroupClientRole(realmName, clientID, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) FindAvailableGroupClientRole(realmName, clientID, groupID string, predicate func(*types.KeycloakUserRole) bool) (*types.KeycloakUserRole, error) {
 	availableRoles, err := c.ListAvailableGroupClientRoles(realmName, clientID, groupID)
 
 	if err != nil {
@@ -954,10 +953,10 @@ func (c *Client) FindAvailableGroupClientRole(realmName, clientID, groupID strin
 	return nil, nil
 }
 
-func (c *Client) ListGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListGroupClientRoles(realmName, clientID, groupID string) ([]*types.KeycloakUserRole, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/clients/%s", realmName, groupID, clientID)
 	objects, err := c.list(path, "groupClientRoles", func(body []byte) (t T, e error) {
-		var groupClientRoles []*v1alpha1.KeycloakUserRole
+		var groupClientRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &groupClientRoles)
 		return groupClientRoles, err
 	})
@@ -967,10 +966,10 @@ func (c *Client) ListGroupClientRoles(realmName, clientID, groupID string) ([]*v
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) FindGroupClientRole(realmName, clientID, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) FindGroupClientRole(realmName, clientID, groupID string, predicate func(*types.KeycloakUserRole) bool) (*types.KeycloakUserRole, error) {
 	groupRoles, err := c.ListGroupClientRoles(realmName, clientID, groupID)
 
 	if err != nil {
@@ -986,9 +985,9 @@ func (c *Client) FindGroupClientRole(realmName, clientID, groupID string, predic
 	return nil, nil
 }
 
-func (c *Client) CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName, groupID string) (string, error) {
+func (c *Client) CreateGroupRealmRole(role *types.KeycloakUserRole, realmName, groupID string) (string, error) {
 	return c.create(
-		[]*v1alpha1.KeycloakUserRole{role},
+		[]*types.KeycloakUserRole{role},
 		fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm", realmName, groupID),
 		"group-realm-role",
 	)
@@ -1029,10 +1028,10 @@ func (c *Client) ListOfActivesUsersPerRealm(realmName, dateFrom string, max int)
 	return objects.([]Users), err
 }
 
-func (c *Client) ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListGroupRealmRoles(realmName, groupID string) ([]*types.KeycloakUserRole, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm", realmName, groupID)
 	objects, err := c.list(path, "groupRealmRoles", func(body []byte) (t T, e error) {
-		var groupRealmRoles []*v1alpha1.KeycloakUserRole
+		var groupRealmRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &groupRealmRoles)
 		return groupRealmRoles, err
 	})
@@ -1042,13 +1041,13 @@ func (c *Client) ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.Key
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
-func (c *Client) ListAvailableGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+func (c *Client) ListAvailableGroupRealmRoles(realmName, groupID string) ([]*types.KeycloakUserRole, error) {
 	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm/available", realmName, groupID)
 	objects, err := c.list(path, "groupClientRoles", func(body []byte) (t T, e error) {
-		var groupRealmRoles []*v1alpha1.KeycloakUserRole
+		var groupRealmRoles []*types.KeycloakUserRole
 		err := json.Unmarshal(body, &groupRealmRoles)
 		return groupRealmRoles, err
 	})
@@ -1058,7 +1057,7 @@ func (c *Client) ListAvailableGroupRealmRoles(realmName, groupID string) ([]*v1a
 	if objects == nil {
 		return nil, nil
 	}
-	return objects.([]*v1alpha1.KeycloakUserRole), err
+	return objects.([]*types.KeycloakUserRole), err
 }
 
 func (c *Client) Ping() error {
@@ -1114,7 +1113,7 @@ func (c *Client) login(user, pass string) error {
 		return errors.Wrap(err, "error reading token response")
 	}
 
-	tokenRes := &v1alpha1.TokenResponse{}
+	tokenRes := &types.TokenResponse{}
 	err = json.Unmarshal(body, tokenRes)
 	if err != nil {
 		return errors.Wrap(err, "error parsing token response")
@@ -1144,32 +1143,32 @@ func defaultRequester() Requester {
 type KeycloakInterface interface {
 	Ping() error
 
-	CreateRealm(realm *v1alpha1.KeycloakRealm) (string, error)
-	GetRealm(realmName string) (*v1alpha1.KeycloakRealm, error)
-	UpdateRealm(specRealm *v1alpha1.KeycloakRealm) error
+	CreateRealm(realm *types.KeycloakRealm) (string, error)
+	GetRealm(realmName string) (*types.KeycloakRealm, error)
+	UpdateRealm(specRealm *types.KeycloakRealm) error
 	DeleteRealm(realmName string) error
-	ListRealms() ([]*v1alpha1.KeycloakAPIRealm, error)
+	ListRealms() ([]*types.KeycloakAPIRealm, error)
 
-	CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error)
-	GetClient(clientID, realmName string) (*v1alpha1.KeycloakAPIClient, error)
+	CreateClient(client *types.KeycloakAPIClient, realmName string) (string, error)
+	GetClient(clientID, realmName string) (*types.KeycloakAPIClient, error)
 	GetClientSecret(clientID, realmName string) (string, error)
 	GetClientInstall(clientID, realmName string) ([]byte, error)
-	UpdateClient(specClient *v1alpha1.KeycloakAPIClient, realmName string) error
+	UpdateClient(specClient *types.KeycloakAPIClient, realmName string) error
 	DeleteClient(clientID, realmName string) error
-	ListClients(realmName string) ([]*v1alpha1.KeycloakAPIClient, error)
+	ListClients(realmName string) ([]*types.KeycloakAPIClient, error)
 
-	CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error)
-	CreateFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error)
-	RemoveFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) error
-	GetUserFederatedIdentities(userName string, realmName string) ([]v1alpha1.FederatedIdentity, error)
-	UpdatePassword(user *v1alpha1.KeycloakAPIUser, realmName, newPass string) error
-	FindUserByEmail(email, realm string) (*v1alpha1.KeycloakAPIUser, error)
-	FindUserByUsername(name, realm string) (*v1alpha1.KeycloakAPIUser, error)
-	GetUser(userID, realmName string) (*v1alpha1.KeycloakAPIUser, error)
-	UpdateUser(specUser *v1alpha1.KeycloakAPIUser, realmName string) error
+	CreateUser(user *types.KeycloakAPIUser, realmName string) (string, error)
+	CreateFederatedIdentity(fid types.FederatedIdentity, userID string, realmName string) (string, error)
+	RemoveFederatedIdentity(fid types.FederatedIdentity, userID string, realmName string) error
+	GetUserFederatedIdentities(userName string, realmName string) ([]types.FederatedIdentity, error)
+	UpdatePassword(user *types.KeycloakAPIUser, realmName, newPass string) error
+	FindUserByEmail(email, realm string) (*types.KeycloakAPIUser, error)
+	FindUserByUsername(name, realm string) (*types.KeycloakAPIUser, error)
+	GetUser(userID, realmName string) (*types.KeycloakAPIUser, error)
+	UpdateUser(specUser *types.KeycloakAPIUser, realmName string) error
 	DeleteUser(userID, realmName string) error
-	ListUsers(realmName string) ([]*v1alpha1.KeycloakAPIUser, error)
-	ListUsersInGroup(realmName, groupID string) ([]*v1alpha1.KeycloakAPIUser, error)
+	ListUsers(realmName string) ([]*types.KeycloakAPIUser, error)
+	ListUsersInGroup(realmName, groupID string) ([]*types.KeycloakAPIUser, error)
 	AddUserToGroup(realmName, userID, groupID string) error
 	DeleteUserFromGroup(realmName, userID, groupID string) error
 
@@ -1180,44 +1179,44 @@ type KeycloakInterface interface {
 	ListDefaultGroups(realmName string) ([]*Group, error)
 	SetGroupChild(groupID, realmName string, childGroup *Group) error
 
-	CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, groupID string) (string, error)
-	ListGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
-	FindGroupClientRole(realmName, clientID, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error)
-	ListAvailableGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
-	FindAvailableGroupClientRole(realmName, clientID, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error)
+	CreateGroupClientRole(role *types.KeycloakUserRole, realmName, clientID, groupID string) (string, error)
+	ListGroupClientRoles(realmName, clientID, groupID string) ([]*types.KeycloakUserRole, error)
+	FindGroupClientRole(realmName, clientID, groupID string, predicate func(*types.KeycloakUserRole) bool) (*types.KeycloakUserRole, error)
+	ListAvailableGroupClientRoles(realmName, clientID, groupID string) ([]*types.KeycloakUserRole, error)
+	FindAvailableGroupClientRole(realmName, clientID, groupID string, predicate func(*types.KeycloakUserRole) bool) (*types.KeycloakUserRole, error)
 
-	CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName, groupID string) (string, error)
-	ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
-	ListAvailableGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
+	CreateGroupRealmRole(role *types.KeycloakUserRole, realmName, groupID string) (string, error)
+	ListGroupRealmRoles(realmName, groupID string) ([]*types.KeycloakUserRole, error)
+	ListAvailableGroupRealmRoles(realmName, groupID string) ([]*types.KeycloakUserRole, error)
 
-	CreateIdentityProvider(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error)
-	GetIdentityProvider(alias, realmName string) (*v1alpha1.KeycloakIdentityProvider, error)
-	UpdateIdentityProvider(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error
+	CreateIdentityProvider(identityProvider *types.KeycloakIdentityProvider, realmName string) (string, error)
+	GetIdentityProvider(alias, realmName string) (*types.KeycloakIdentityProvider, error)
+	UpdateIdentityProvider(specIdentityProvider *types.KeycloakIdentityProvider, realmName string) error
 	DeleteIdentityProvider(alias, realmName string) error
-	ListIdentityProviders(realmName string) ([]*v1alpha1.KeycloakIdentityProvider, error)
+	ListIdentityProviders(realmName string) ([]*types.KeycloakIdentityProvider, error)
 
-	CreateUserClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, userID string) (string, error)
-	ListUserClientRoles(realmName, clientID, userID string) ([]*v1alpha1.KeycloakUserRole, error)
-	ListAvailableUserClientRoles(realmName, clientID, userID string) ([]*v1alpha1.KeycloakUserRole, error)
-	DeleteUserClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, userID string) error
+	CreateUserClientRole(role *types.KeycloakUserRole, realmName, clientID, userID string) (string, error)
+	ListUserClientRoles(realmName, clientID, userID string) ([]*types.KeycloakUserRole, error)
+	ListAvailableUserClientRoles(realmName, clientID, userID string) ([]*types.KeycloakUserRole, error)
+	DeleteUserClientRole(role *types.KeycloakUserRole, realmName, clientID, userID string) error
 
-	CreateUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) (string, error)
-	ListUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error)
-	ListAvailableUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error)
-	DeleteUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) error
+	CreateUserRealmRole(role *types.KeycloakUserRole, realmName, userID string) (string, error)
+	ListUserRealmRoles(realmName, userID string) ([]*types.KeycloakUserRole, error)
+	ListAvailableUserRealmRoles(realmName, userID string) ([]*types.KeycloakUserRole, error)
+	DeleteUserRealmRole(role *types.KeycloakUserRole, realmName, userID string) error
 
 	CreateAuthenticationFlow(authFlow AuthenticationFlow, realmName string) (string, error)
 	ListAuthenticationFlows(realmName string) ([]*AuthenticationFlow, error)
 	FindAuthenticationFlowByAlias(flowAlias, realmName string) (*AuthenticationFlow, error)
 	AddExecutionToAuthenticatonFlow(flowAlias, realmName string, providerID string, requirement Requirement) error
 
-	ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error)
-	FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error)
-	UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error
+	ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*types.AuthenticationExecutionInfo, error)
+	FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*types.AuthenticationExecutionInfo) bool) (*types.AuthenticationExecutionInfo, error)
+	UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *types.AuthenticationExecutionInfo) error
 
-	CreateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName, executionID string) (string, error)
-	GetAuthenticatorConfig(configID, realmName string) (*v1alpha1.AuthenticatorConfig, error)
-	UpdateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string) error
+	CreateAuthenticatorConfig(authenticatorConfig *types.AuthenticatorConfig, realmName, executionID string) (string, error)
+	GetAuthenticatorConfig(configID, realmName string) (*types.AuthenticatorConfig, error)
+	UpdateAuthenticatorConfig(authenticatorConfig *types.AuthenticatorConfig, realmName string) error
 	DeleteAuthenticatorConfig(configID, realmName string) error
 
 	ListOfActivesUsersPerRealm(realmName, dateFrom string, max int) ([]Users, error)
@@ -1228,14 +1227,14 @@ type KeycloakInterface interface {
 
 //KeycloakClientFactory interface
 type KeycloakClientFactory interface {
-	AuthenticatedClient(kc v1alpha1.Keycloak) (KeycloakInterface, error)
+	AuthenticatedClient(kc types.Keycloak) (KeycloakInterface, error)
 }
 
 type LocalConfigKeycloakFactory struct {
 }
 
 // AuthenticatedClient returns an authenticated client for requesting endpoints from the Keycloak api
-func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (KeycloakInterface, error) {
+func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc types.Keycloak) (KeycloakInterface, error) {
 	config, err := config2.GetConfig()
 	if err != nil {
 		return nil, err
@@ -1250,8 +1249,8 @@ func (i *LocalConfigKeycloakFactory) AuthenticatedClient(kc v1alpha1.Keycloak) (
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get the admin credentials")
 	}
-	user := string(adminCreds.Data[model.AdminUsernameProperty])
-	pass := string(adminCreds.Data[model.AdminPasswordProperty])
+	user := string(adminCreds.Data[types.AdminUsernameProperty])
+	pass := string(adminCreds.Data[types.AdminPasswordProperty])
 	url := kc.Status.ExternalURL
 	client := &Client{
 		URL:       url,

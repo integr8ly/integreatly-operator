@@ -1,12 +1,19 @@
-package v1alpha1
+package types
 
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	KeycloakClientGroup      = "keycloak.org"
+	KeycloakClientVersion    = "v1alpha1"
+	KeycloakClientKind       = "KeycloakClient"
+	KeycloakClientListKind   = "KeycloakClientList"
+	KeycloakClientApiVersion = "keycloak.org/v1alpha1"
+)
+
 // KeycloakClientSpec defines the desired state of KeycloakClient.
-// +k8s:openapi-gen=true
 type KeycloakClientSpec struct {
 	// Selector for looking up KeycloakRealm Custom Resources.
 	// +kubebuilder:validation:Required
@@ -164,9 +171,6 @@ type KeycloakAPIClient struct {
 	// Authorization settings for this resource server.
 	// +optional
 	AuthorizationSettings *KeycloakResourceServer `json:"authorizationSettings,omitempty"`
-	// Authentication Flow Binding Overrides.
-	// +optional
-	AuthenticationFlowBindingOverrides map[string]string `json:"authenticationFlowBindingOverrides,omitempty"`
 }
 
 type KeycloakProtocolMapper struct {
@@ -231,7 +235,6 @@ type KeycloakResourceServer struct {
 	Scopes []KeycloakScope `json:"scopes,omitempty"`
 }
 
-// https://www.keycloak.org/docs-api/12.0/rest-api/index.html#_policyrepresentation
 type KeycloakPolicy struct {
 	// Config.
 	// +optional
@@ -279,9 +282,6 @@ type KeycloakPolicy struct {
 	// Scopes Data.
 	// +optional
 	ScopesData []apiextensionsv1.JSON `json:"scopesData,omitempty"`
-	// TODO: JSON struct is a workaround for the lack of support for recursive types
-	// in CRD validation schemas. Keycloak will do validation for this field. Read more:
-	// https://github.com/kubernetes/kubernetes/issues/62872
 }
 
 // https://www.keycloak.org/docs-api/12.0/rest-api/index.html#_resourcerepresentation
@@ -315,9 +315,6 @@ type KeycloakResource struct {
 	// The scopes associated with this resource.
 	// +optional
 	Scopes []apiextensionsv1.JSON `json:"scopes,omitempty"`
-	// TODO: JSON struct is a workaround for the lack of support for recursive types
-	// in CRD validation schemas. Keycloak will do validation for this field. Read more:
-	// https://github.com/kubernetes/kubernetes/issues/62872
 }
 
 // https://www.keycloak.org/docs-api/12.0/rest-api/index.html#_scoperepresentation
@@ -345,7 +342,6 @@ type KeycloakScope struct {
 }
 
 // KeycloakClientStatus defines the observed state of KeycloakClient
-// +k8s:openapi-gen=true
 type KeycloakClientStatus struct {
 	// Current phase of the operator.
 	Phase StatusPhase `json:"phase"`
@@ -358,10 +354,6 @@ type KeycloakClientStatus struct {
 }
 
 // KeycloakClient is the Schema for the keycloakclients API.
-// +genclient
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakClient struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -371,21 +363,8 @@ type KeycloakClient struct {
 }
 
 // KeycloakClientList contains a list of KeycloakClient.
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakClientList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeycloakClient `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&KeycloakClient{}, &KeycloakClientList{})
-}
-
-func (i *KeycloakClient) UpdateStatusSecondaryResources(kind string, resourceName string) {
-	i.Status.SecondaryResources = UpdateStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
-}
-
-func (i *KeycloakClient) DeleteFromStatusSecondaryResources(kind string, resourceName string) {
-	DeleteFromStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
 }
