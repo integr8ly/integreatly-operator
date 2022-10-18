@@ -6,8 +6,9 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -31,12 +32,16 @@ func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, s
 		log.Warningf("Cannot configure SSO integration without SSO", l.Fields{"ns": rhssoNamespace, "realm": rhssoRealm})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
-
-	kcClient := &keycloak.KeycloakClient{
+	kcClientTyped := &keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientID,
 			Namespace: rhssoNamespace,
 		},
+	}
+
+	kcClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClientTyped)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	// keycloak-operator sets the spec.client.id, we need to preserve that value
@@ -44,13 +49,22 @@ func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, s
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{
 		Namespace: rhssoNamespace,
 		Name:      clientID,
-	}, kcClient)
+	}, kcClientUnstructured)
 	if err == nil {
-		apiClientID = kcClient.Spec.Client.ID
+		kcClientTyped, err = dr.ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		apiClientID = kcClientTyped.Spec.Client.ID
+	}
+	kcClientTyped.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
+
+	kcClientUnstructuredUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClientTyped)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClientUnstructuredUpdated, func() error {
 		return nil
 	})
 	if err != nil {
