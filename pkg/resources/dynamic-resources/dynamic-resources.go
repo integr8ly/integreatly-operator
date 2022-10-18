@@ -51,7 +51,7 @@ func CreateUnstructuredListWithGVK(group, itemKind, listKind, version, resourceN
 }
 
 // Converts Keycloak Typed object to unstructured and sets GVK on the object
-func ConvertKeycloakTypedToUnstructured(keycloak kc.Keycloak) (*unstructured.Unstructured, error) {
+func ConvertKeycloakTypedToUnstructured(keycloak *kc.Keycloak) (*unstructured.Unstructured, error) {
 	kcUnstructed := &unstructured.Unstructured{}
 	keycloak.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kc.KeycloakGroup,
@@ -86,7 +86,7 @@ func ConvertKeycloakUnstructuredToTyped(u unstructured.Unstructured) (*kc.Keyclo
 }
 
 // Converts Keycloak Realm Typed object to unstructured and sets GVK on object
-func ConvertKeycloakRealmTypedToUnstructured(kcRealm kc.KeycloakRealm) (*unstructured.Unstructured, error) {
+func ConvertKeycloakRealmTypedToUnstructured(kcRealm *kc.KeycloakRealm) (*unstructured.Unstructured, error) {
 	unstructuredRealm := &unstructured.Unstructured{}
 	kcRealm.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kc.KeycloakRealmGroup,
@@ -112,7 +112,7 @@ func ConvertKeycloakRealmTypedToUnstructured(kcRealm kc.KeycloakRealm) (*unstruc
 func ConvertKeycloakRealmUnstructuredToTyped(u unstructured.Unstructured) (*kc.KeycloakRealm, error) {
 	unstructuredKeycloakRealm := unstructuredWithGVK(u, kc.KeycloakRealmGroup, kc.KeycloakRealmVersion, kc.KeycloakRealmKind, kc.KeycloakRealmApiVersion)
 	keycloakRealmTyped := &kc.KeycloakRealm{}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredKeycloakRealm.Object, *keycloakRealmTyped)
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredKeycloakRealm.Object, &keycloakRealmTyped)
 	if err != nil {
 		return keycloakRealmTyped, err
 	}
@@ -133,8 +133,8 @@ func ConvertKeycloakUsersUnstructuredToTyped(u unstructured.UnstructuredList) (*
 }
 
 // Converts Keycloak Users typed object to unstructured object and sets GVK on each item
-func ConvertKeycloakUsersTypedToUnstructured(kcUserList kc.KeycloakUserList) (*unstructured.UnstructuredList, error) {
-	unstructuredUsers := unstructured.UnstructuredList{}
+func ConvertKeycloakUsersTypedToUnstructured(kcUserList *kc.KeycloakUserList) (*unstructured.UnstructuredList, error) {
+	unstructuredUsers := &unstructured.UnstructuredList{}
 	kcUserList.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kc.KeycloakUserGroup,
 		Version: kc.KeycloakUserVersion,
@@ -148,7 +148,7 @@ func ConvertKeycloakUsersTypedToUnstructured(kcUserList kc.KeycloakUserList) (*u
 		})
 		item.APIVersion = kc.KeycloakUserApiVersion
 	}
-	unstructuredKeycloakUserList := unstructuredListWithGVK(unstructuredUsers, kc.KeycloakUserGroup, kc.KeycloakUserVersion, kc.KeycloakUserListKind, kc.KeycloakUserApiVersion)
+	unstructuredKeycloakUserList := unstructuredListWithGVK(*unstructuredUsers, kc.KeycloakUserGroup, kc.KeycloakUserVersion, kc.KeycloakUserListKind, kc.KeycloakUserApiVersion)
 	// convert typed to map
 	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&kcUserList)
 	if err != nil {
@@ -177,7 +177,7 @@ func ConvertKeycloakUserUnstructuredToTyped(u unstructured.Unstructured) (*kc.Ke
 }
 
 // Converts Keycloak User typed object to keycloak user unstructured object
-func ConvertKeycloakUserTypedToUnstructured(kcUser kc.KeycloakUser) (*unstructured.Unstructured, error) {
+func ConvertKeycloakUserTypedToUnstructured(kcUser *kc.KeycloakUser) (*unstructured.Unstructured, error) {
 	unstructuredUser := &unstructured.Unstructured{}
 	kcUser.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kc.KeycloakUserGroup,
@@ -201,7 +201,7 @@ func ConvertKeycloakUserTypedToUnstructured(kcUser kc.KeycloakUser) (*unstructur
 }
 
 // Converts Keycloak Client typed to unstructured and sets GVK on object
-func ConvertKeycloakClientTypedToUnstructured(kcClient kc.KeycloakClient) (*unstructured.Unstructured, error) {
+func ConvertKeycloakClientTypedToUnstructured(kcClient *kc.KeycloakClient) (*unstructured.Unstructured, error) {
 	unstructuredClient := &unstructured.Unstructured{}
 	kcClient.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   kc.KeycloakClientGroup,
@@ -248,9 +248,9 @@ func ConvertKeycloakClientsUnstructuredToTyped(u unstructured.UnstructuredList) 
 }
 
 // Converts Keycloak Users typed object to unstructured object
-func ConvertKeycloakClientsTypedToUnstructured(kcUser kc.KeycloakClientList) (*unstructured.UnstructuredList, error) {
-	unstructuredClients := unstructured.UnstructuredList{}
-	unstructuredKeycloakClients := unstructuredListWithGVK(unstructuredClients, kc.KeycloakClientGroup, kc.KeycloakClientVersion, kc.KeycloakClientKind, kc.KeycloakClientApiVersion)
+func ConvertKeycloakClientsTypedToUnstructured(kcUser *kc.KeycloakClientList) (*unstructured.UnstructuredList, error) {
+	unstructuredClients := &unstructured.UnstructuredList{}
+	unstructuredKeycloakClients := unstructuredListWithGVK(*unstructuredClients, kc.KeycloakClientGroup, kc.KeycloakClientVersion, kc.KeycloakClientKind, kc.KeycloakClientApiVersion)
 	// convert typed to map
 	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&kcUser)
 	if err != nil {

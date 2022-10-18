@@ -318,7 +318,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	kcOriginal.Spec = kcTypedDesired.Spec
 
 	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcUnstructuredOriginalUpdated, _ := dr.ConvertKeycloakTypedToUnstructured(*kcOriginal)
+	kcUnstructuredOriginalUpdated, _ := dr.ConvertKeycloakTypedToUnstructured(kcOriginal)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -567,7 +567,7 @@ func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclie
 	kcRealmTyped.Labels = kcRealmTypedDesired.Labels
 
 	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcRealmUnstructuredOriginalUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(*kcRealmTyped)
+	kcRealmUnstructuredOriginalUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcRealmTyped)
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +646,7 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloakTypes.KeycloakAPIU
 	kcUserTyped.Labels = kcUserTypedDesired.Labels
 
 	// Convert updated original to unstructed - this is done to createOrUpdate the original pre-update
-	kcUserUnstructuredOriginalUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(*kcUserTyped)
+	kcUserUnstructuredOriginalUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUserTyped)
 	if err != nil {
 		return err
 	}
