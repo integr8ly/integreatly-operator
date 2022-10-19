@@ -12,6 +12,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -33,9 +34,6 @@ func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, s
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	// keycloak-operator sets the spec.client.id, we need to preserve that value
-	apiClientID := ""
-
 	kcClient, err := dr.GetKeycloakClient(ctx, serverClient, keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientID,
@@ -44,18 +42,34 @@ func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, s
 	})
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, nil
 		}
 	}
 
-	if kcClient.Spec.Client != nil {
-		if kcClient.Spec.Client.ID != "" {
-			apiClientID = kcClient.Spec.Client.ID
-		}
+	// keycloak-operator sets the spec.client.id, we need to preserve that value
+	apiClientID := ""
+	if err == nil {
+		apiClientID = kcClient.Spec.Client.ID
 	}
-	kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
 
-	opRes, _, err := dr.CreateOrUpdateKeycloakClient(ctx, serverClient, *kcClient)
+	kcClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, nil
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClientUnstructured, func() error {
+		kcClient, err := dr.ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+		if err != nil {
+			return err
+		}
+		kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
+		kcClientUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+		if err != nil {
+			return err
+		}
+		kcClientUnstructured.Object = kcClientUpdated.Object
+		return nil
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w operation: %v", err, opRes)
 	}

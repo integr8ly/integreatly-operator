@@ -139,7 +139,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 
-	kcUsersListUnstructed, err := dr.ConvertKeycloakUsersTypedToUnstructured(&kcUsersList)
+	kcUsersListUnstructed, err := dr.ConvertKeycloakUserListTypedToUnstructured(&kcUsersList)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +404,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
-	//secret created by the cloud resource operator postgres reconciler
+	// secret created by the cloud resource operator postgres reconciler
 	croPostgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",

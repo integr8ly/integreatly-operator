@@ -300,43 +300,61 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 
-	owner.AddIntegreatlyOwnerAnnotations(kc, installation)
-	kc.Spec.Extensions = []string{
-		"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
-	}
-	kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
-	kc.Labels = getMasterLabels()
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
 
-	// Disabling the KCO route for managed-api
-	kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUnstructured, func() error {
+		kc, err := dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+		if err != nil {
+			return err
+		}
+		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
+		kc.Spec.Extensions = []string{
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
+		}
+		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
+		kc.Labels = getMasterLabels()
 
-	kc.Spec.Profile = rhsso.RHSSOProfile
-	kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
+		// Disabling the KCO route for managed-api
+		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
 
-	// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps (SetRollingStrategyForUpgrade)
-	// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
-	// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
-	if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSOUser) {
-		//Set keycloak Update Strategy to Rolling as default
-		r.Log.Info("Setting keycloak migration strategy to rolling")
-		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
-	}
+		kc.Spec.Profile = rhsso.RHSSOProfile
+		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 
-	err = productConfig.Configure(kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
+		// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps (SetRollingStrategyForUpgrade)
+		// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
+		// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
+		if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSOUser) {
+			//Set keycloak Update Strategy to Rolling as default
+			r.Log.Info("Setting keycloak migration strategy to rolling")
+			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
+		}
 
-	or, kc, err := dr.CreateOrUpdateKeycloak(ctx, serverClient, *kc)
+		err = productConfig.Configure(kc)
+		if err != nil {
+			return err
+		}
 
+		kcUpdated, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+		if err != nil {
+			return err
+		}
+		kcUnstructured.Object = kcUpdated.Object
+		return nil
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	r.Log.Infof("Operation result", l.Fields{"keycloak": kc.Name, "res": or})
 
+	kc, err = dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	// Patching the OwnerReference on the admin credentials secret
 	err = resources.AddOwnerRefToSSOSecret(ctx, serverClient, adminCredentialSecretName, r.Config.GetNamespace(), *kc, r.Log)
 	if err != nil {
@@ -508,65 +526,123 @@ func identityProviderExists(kcClient keycloakCommon.KeycloakInterface) (bool, er
 
 // The master realm will be created as part of the Keycloak install. Here we update it to add the openshift idp
 func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (*keycloak.KeycloakRealm, error) {
-	kcr := &keycloak.KeycloakRealm{
+	kcr, err := dr.GetKeycloakRealm(ctx, serverClient, keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      masterRealmName,
 			Namespace: r.Config.GetNamespace(),
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return nil, err
+		}
 	}
 
-	kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
-		{
-			IdentityProvider: idpAlias,
-			ForFlow:          "browser",
-		},
-	}
-
-	kcr.Spec.InstanceSelector = &metav1.LabelSelector{
-		MatchLabels: getMasterLabels(),
-	}
-
-	kcr.Labels = getMasterLabels()
-
-	kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
-		ID:          masterRealmName,
-		Realm:       masterRealmName,
-		Enabled:     true,
-		DisplayName: masterRealmName,
-	}
-
-	// The identity providers need to be set up before the realm CR gets
-	// created because the Keycloak operator does not allow updates to
-	// the realms
-	redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + masterRealmName + "/broker/openshift-v4/endpoint"}
-	err := r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectURIs, "")
+	kcrUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcr)
 	if err != nil {
 		return nil, err
 	}
 
-	or, kcr, err := dr.CreateOrUpdateKeycloakRealm(ctx, serverClient, *kcr)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcrUnstructured, func() error {
+		kcr, err = dr.ConvertKeycloakRealmUnstructuredToTyped(*kcrUnstructured)
+		if err != nil {
+			return err
+		}
+
+		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
+			{
+				IdentityProvider: idpAlias,
+				ForFlow:          "browser",
+			},
+		}
+
+		kcr.Spec.InstanceSelector = &metav1.LabelSelector{
+			MatchLabels: getMasterLabels(),
+		}
+
+		kcr.Labels = getMasterLabels()
+
+		kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
+			ID:          masterRealmName,
+			Realm:       masterRealmName,
+			Enabled:     true,
+			DisplayName: masterRealmName,
+		}
+
+		// The identity providers need to be set up before the realm CR gets
+		// created because the Keycloak operator does not allow updates to
+		// the realms
+		redirectURIs := []string{r.Config.GetHost() + "/auth/realms/" + masterRealmName + "/broker/openshift-v4/endpoint"}
+		err := r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectURIs, "")
+		if err != nil {
+			return fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
+		}
+
+		kcrUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcr)
+		if err != nil {
+			return err
+		}
+
+		kcrUnstructured.Object = kcrUpdated.Object
+
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "res": or})
 
+	kcr, err = dr.ConvertKeycloakRealmUnstructuredToTyped(*kcrUnstructured)
+	if err != nil {
+		return nil, err
+	}
+
 	return kcr, nil
 }
 
 func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
-	kcUser := &keycloak.KeycloakUser{
+	kcUser, err := dr.GetKeycloakUser(ctx, serverClient, keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      userHelper.GetValidGeneratedUserName(user),
 			Namespace: r.Config.GetNamespace(),
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return controllerutil.OperationResultNone, err
+		}
 	}
-	kcUser.Spec.RealmSelector = &metav1.LabelSelector{
-		MatchLabels: getMasterLabels(),
-	}
-	kcUser.Labels = getMasterLabels()
-	kcUser.Spec.User = user
 
-	or, kcUser, err := dr.CreateOrUpdateKeycloakUser(ctx, serverClient, *kcUser)
+	kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
+		kcUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+		if err != nil {
+			return err
+		}
+
+		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
+			MatchLabels: getMasterLabels(),
+		}
+		kcUser.Labels = getMasterLabels()
+		kcUser.Spec.User = user
+
+		kcUserUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+		if err != nil {
+			return err
+		}
+
+		kcUserUnstructured.Object = kcUserUpdated.Object
+		return nil
+	})
+	if err != nil {
+		return or, err
+	}
+
+	kcUser, err = dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
 	if err != nil {
 		return or, err
 	}

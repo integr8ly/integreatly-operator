@@ -5,6 +5,7 @@ import (
 	"time"
 
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 
 	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
@@ -370,49 +371,71 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, installat
 func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser, installationName string) error {
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
-		keycloakUser := &keycloak.KeycloakUser{
+		keycloakUser, err := dr.GetKeycloakUser(ctx, client, keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, user.UserName),
 				Namespace: RHSSOProductNamespace,
 			},
-		}
-		keycloakUser.Annotations = map[string]string{
-			"integreatly-namespace": RHOAMOperatorNamespace,
-			"integreatly-name":      installationName,
-		}
-		keycloakUser.Spec = keycloak.KeycloakUserSpec{
-			RealmSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"sso": TestingIDPRealm,
-				},
-			},
-			User: keycloak.KeycloakAPIUser{
-				ID:        keycloakUser.Spec.User.ID,
-				FirstName: user.FirstName,
-				LastName:  user.LastName,
-				UserName:  user.UserName,
-				Email:     fmt.Sprintf("%s@example.com", user.UserName),
-				ClientRoles: map[string][]string{
-					"account": {
-						"manage-account",
-						"view-profile",
-					},
-					"broker": {
-						"read-token",
-					},
-				},
-				EmailVerified: true,
-				Enabled:       true,
-				Credentials: []keycloak.KeycloakCredential{
-					{
-						Type:  "password",
-						Value: DefaultPassword,
-					},
-				},
-			},
+		})
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				return err
+			}
 		}
 
-		_, _, err := dr.CreateOrUpdateKeycloakUser(context.TODO(), client, *keycloakUser)
+		keycloakUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(keycloakUser)
+		if err != nil {
+			return err
+		}
+
+		_, err = controllerutil.CreateOrUpdate(ctx, client, keycloakUserUnstructured, func() error {
+			keycloakUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(*keycloakUserUnstructured)
+			if err != nil {
+				return err
+			}
+			keycloakUser.Annotations = map[string]string{
+				"integreatly-namespace": RHOAMOperatorNamespace,
+				"integreatly-name":      installationName,
+			}
+			keycloakUser.Spec = keycloak.KeycloakUserSpec{
+				RealmSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"sso": TestingIDPRealm,
+					},
+				},
+				User: keycloak.KeycloakAPIUser{
+					ID:        keycloakUser.Spec.User.ID,
+					FirstName: user.FirstName,
+					LastName:  user.LastName,
+					UserName:  user.UserName,
+					Email:     fmt.Sprintf("%s@example.com", user.UserName),
+					ClientRoles: map[string][]string{
+						"account": {
+							"manage-account",
+							"view-profile",
+						},
+						"broker": {
+							"read-token",
+						},
+					},
+					EmailVerified: true,
+					Enabled:       true,
+					Credentials: []keycloak.KeycloakCredential{
+						{
+							Type:  "password",
+							Value: DefaultPassword,
+						},
+					},
+				},
+			}
+			kcUserUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(keycloakUser)
+			if err != nil {
+				return err
+			}
+			keycloakUserUnstructured.Object = kcUserUpdated.Object
+
+			return nil
+		})
 		if err != nil {
 			return err
 		}
@@ -448,6 +471,10 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) e
 func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName string) error {
 	fullScopeAllowed := true
 	keycloakClient := &keycloak.KeycloakClient{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       keycloak.KeycloakClientKind,
+			APIVersion: keycloak.KeycloakClientApiVersion,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakClientName,
 			Namespace: keycloakClientNamespace,
@@ -572,9 +599,12 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 		},
 	}
 
-	_, _, err := dr.CreateOrUpdateKeycloakClient(context.TODO(), client, *keycloakClient)
+	keycloakClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(keycloakClient)
 	if err != nil {
 		return err
+	}
+	if err := client.Create(ctx, keycloakClientUnstructured); err != nil {
+		return fmt.Errorf("error occurred while creating keycloak client: %w", err)
 	}
 	return nil
 }
@@ -609,7 +639,7 @@ func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
 
 // create keycloak realm
 func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName string) error {
-	keycloakRealm := keycloak.KeycloakRealm{
+	keycloakRealm, err := dr.GetKeycloakRealm(ctx, client, keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestingIDPRealm,
 			Namespace: RHSSOProductNamespace,
@@ -617,6 +647,11 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 				"sso": TestingIDPRealm,
 			},
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return err
+		}
 	}
 
 	keycloakRealmSpec := keycloak.KeycloakRealmSpec{
@@ -633,14 +668,28 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client, installat
 		},
 	}
 
-	keycloakRealm.Annotations = map[string]string{
-		"integreatly-namespace": RHOAMOperatorNamespace,
-		"integreatly-name":      installationName,
-	}
-	keycloakRealm.Spec = keycloakRealmSpec
-
-	_, _, err := dr.CreateOrUpdateKeycloakRealm(ctx, client, keycloakRealm)
+	kcRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(keycloakRealm)
 	if err != nil {
+		return err
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, kcRealmUnstructured, func() error {
+		keycloakRealm, err := dr.ConvertKeycloakRealmUnstructuredToTyped(*kcRealmUnstructured)
+		if err != nil {
+			return err
+		}
+		keycloakRealm.Annotations = map[string]string{
+			"integreatly-namespace": RHOAMOperatorNamespace,
+			"integreatly-name":      installationName,
+		}
+		keycloakRealm.Spec = keycloakRealmSpec
+		kcrUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(keycloakRealm)
+		if err != nil {
+			return err
+		}
+		kcRealmUnstructured.Object = kcrUpdated.Object
+		return nil
+	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating keycloak realm: %w", err)
 	}
 	return nil

@@ -1234,15 +1234,15 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		},
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, nil
+		}
 	}
 
 	// keycloak-operator sets the spec.client.id, we need to preserve that value
 	apiClientID := ""
-	if kcClient.Spec.Client != nil {
-		if kcClient.Spec.Client.ID != "" {
-			apiClientID = kcClient.Spec.Client.ID
-		}
+	if err == nil {
+		apiClientID = kcClient.Spec.Client.ID
 	}
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
@@ -1250,10 +1250,26 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		r.log.Error("Error retrieving client secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
 
-	opRes, kcClient, err := dr.CreateOrUpdateKeycloakClient(ctx, serverClient, *kcClient)
+	kcClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClientUnstructured, func() error {
+		kcClient, err = dr.ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+		if err != nil {
+			return err
+		}
+		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
+		kcClientUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+		if err != nil {
+			return err
+		}
+		kcClientUnstructured.Object = kcClientUpdated.Object
+
+		return nil
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w operation: %v", err, opRes)
 	}
@@ -1451,14 +1467,31 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 		})
 		if err != nil {
 			if !k8serr.IsNotFound(err) {
-				return integreatlyv1alpha1.PhaseFailed, nil
+				return integreatlyv1alpha1.PhaseInProgress, err
 			}
 		}
-		user.Attributes[userCreated3ScaleName] = []string{"true"}
-		user.Attributes[user3ScaleID] = []string{fmt.Sprint(tsUser.UserDetails.Id)}
-		kcUser.Spec.User = user
 
-		_, _, err = dr.CreateOrUpdateKeycloakUser(ctx, serverClient, *kcUser)
+		kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
+			kcUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+			if err != nil {
+				return nil
+			}
+			user.Attributes[userCreated3ScaleName] = []string{"true"}
+			user.Attributes[user3ScaleID] = []string{fmt.Sprint(tsUser.UserDetails.Id)}
+			kcUser.Spec.User = user
+
+			kcUserUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+			if err != nil {
+				return err
+			}
+			kcUserUnstructured.Object = kcUserUpdated.Object
+			return nil
+		})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress,
 				fmt.Errorf("failed to update KeycloakUser CR with %s attribute: %w", userCreated3ScaleName, err)

@@ -90,7 +90,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 
-	kcUsersListUnstructed, err := dr.ConvertKeycloakUsersTypedToUnstructured(&kcUsersList)
+	kcUsersListUnstructed, err := dr.ConvertKeycloakUserListTypedToUnstructured(&kcUsersList)
 	if err != nil {
 		return nil, err
 	}

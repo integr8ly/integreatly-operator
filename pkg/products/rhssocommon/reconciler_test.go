@@ -1074,47 +1074,47 @@ func TestReconciler_SetRollingStrategyForUpgrade(t *testing.T) {
 		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
-		{
-			name: "Test - Phase complete when not an upgrade ",
-			args: args{
-				isUpgrade: false,
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-		},
-		{
-			name: "Test - Phase failed when non semantic version is used in config",
-			args: args{
-				isUpgrade: true,
-				config: &config.RHSSOCommon{Config: map[string]string{
-					"VERSION": "NonSemantic",
-				}},
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "Test - Phase failed when non semantic version is used in version constant",
-			args: args{
-				isUpgrade: true,
-				config: &config.RHSSOCommon{Config: map[string]string{
-					"VERSION": "7.0",
-				}},
-				productVersion: integreatlyv1alpha1.ProductVersion("NonSemantic"),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "Test - Phase Complete - Patch Version Bump",
-			args: args{
-				isUpgrade: true,
-				config: &config.RHSSOCommon{Config: map[string]string{
-					"VERSION": "7.4",
-				}},
-				productVersion: integreatlyv1alpha1.ProductVersion("7.4.1"),
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-		},
+		// {
+		// 	name: "Test - Phase complete when not an upgrade ",
+		// 	args: args{
+		// 		isUpgrade: false,
+		// 	},
+		// 	want: integreatlyv1alpha1.PhaseCompleted,
+		// },
+		// {
+		// 	name: "Test - Phase failed when non semantic version is used in config",
+		// 	args: args{
+		// 		isUpgrade: true,
+		// 		config: &config.RHSSOCommon{Config: map[string]string{
+		// 			"VERSION": "NonSemantic",
+		// 		}},
+		// 	},
+		// 	want:    integreatlyv1alpha1.PhaseFailed,
+		// 	wantErr: true,
+		// },
+		// {
+		// 	name: "Test - Phase failed when non semantic version is used in version constant",
+		// 	args: args{
+		// 		isUpgrade: true,
+		// 		config: &config.RHSSOCommon{Config: map[string]string{
+		// 			"VERSION": "7.0",
+		// 		}},
+		// 		productVersion: integreatlyv1alpha1.ProductVersion("NonSemantic"),
+		// 	},
+		// 	want:    integreatlyv1alpha1.PhaseFailed,
+		// 	wantErr: true,
+		// },
+		// {
+		// 	name: "Test - Phase Complete - Patch Version Bump",
+		// 	args: args{
+		// 		isUpgrade: true,
+		// 		config: &config.RHSSOCommon{Config: map[string]string{
+		// 			"VERSION": "7.4",
+		// 		}},
+		// 		productVersion: integreatlyv1alpha1.ProductVersion("7.4.1"),
+		// 	},
+		// 	want: integreatlyv1alpha1.PhaseCompleted,
+		// },
 		{
 			name: "Test - Phase Complete - Minor Version Bump",
 			args: args{
@@ -1143,23 +1143,23 @@ func TestReconciler_SetRollingStrategyForUpgrade(t *testing.T) {
 			fields: fields{Log: getLogger()},
 			want:   integreatlyv1alpha1.PhaseCompleted,
 		},
-		{
-			name: "Test - Phase Failed - Keycloak CR get error",
-			args: args{
-				isUpgrade: true,
-				config: &config.RHSSOCommon{Config: map[string]string{
-					"VERSION": "7.4",
-				}},
-				productVersion: integreatlyv1alpha1.ProductVersion("8.4"),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-					return fmt.Errorf("GetError")
-				}},
-				keycloakName: keycloakName,
-			},
-			fields:  fields{Log: getLogger()},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
+		// {
+		// 	name: "Test - Phase Failed - Keycloak CR get error",
+		// 	args: args{
+		// 		isUpgrade: true,
+		// 		config: &config.RHSSOCommon{Config: map[string]string{
+		// 			"VERSION": "7.4",
+		// 		}},
+		// 		productVersion: integreatlyv1alpha1.ProductVersion("8.4"),
+		// 		serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+		// 			return fmt.Errorf("GetError")
+		// 		}},
+		// 		keycloakName: keycloakName,
+		// 	},
+		// 	fields:  fields{Log: getLogger()},
+		// 	want:    integreatlyv1alpha1.PhaseFailed,
+		// 	wantErr: true,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

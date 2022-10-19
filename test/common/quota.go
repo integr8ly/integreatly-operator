@@ -195,9 +195,24 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	}
 
 	if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
-		keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
+		keycloakCrUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
+		if err != nil {
+			t.Fatalf("failed to convert kc typed to unstructured")
+		}
+		result, err = controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakCrUnstructured, func() error {
+			keycloakCR, err := dr.ConvertKeycloakUnstructuredToTyped(*keycloakCrUnstructured)
+			if err != nil {
+				return err
+			}
+			keycloakCR.Spec.KeycloakDeploymentSpec.Resources.Limits[v1.ResourceMemory] = resource.MustParse(newKeycloakLimits)
+			keycloakUpdated, err := dr.ConvertKeycloakTypedToUnstructured(keycloakCR)
+			if err != nil {
+				return err
+			}
 
-		result, _, err := dr.CreateOrUpdateKeycloak(context.TODO(), ctx.Client, *keycloakCR)
+			keycloakCrUnstructured.Object = keycloakUpdated.Object
+			return nil
+		})
 		if err != nil {
 			t.Fatalf("Error updating Keycloak CR: %v with results of: %v", err, result)
 		}

@@ -81,7 +81,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
 
 		// ensure that a generated keycloak user cr has been created for the user
-		generatedKeycloakUsersListUnstructured, err := dr.ConvertKeycloakUsersTypedToUnstructured(&keycloak.KeycloakUserList{})
+		generatedKeycloakUsersListUnstructured, err := dr.ConvertKeycloakUserListTypedToUnstructured(&keycloak.KeycloakUserList{})
 		if err != nil {
 			return false, err
 		}

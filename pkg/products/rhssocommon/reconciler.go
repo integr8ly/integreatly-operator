@@ -563,10 +563,8 @@ func (r *Reconciler) HandleProgressPhase(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	r.Log.Info("checking ready status for rhsso")
-	kcr := &keycloak.KeycloakRealm{}
-
-	_, err = dr.GetKeycloakRealm(ctx, serverClient, keycloak.KeycloakRealm{
+	// r.Log.Info("checking ready status for rhsso")
+	kcr, err := dr.GetKeycloakRealm(ctx, serverClient, keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: config.GetNamespace(),
@@ -582,10 +580,10 @@ func (r *Reconciler) HandleProgressPhase(ctx context.Context, serverClient k8scl
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
 		}
 
-		r.Log.Info("Keycloak has successfully processed the keycloakRealm")
+		// r.Log.Info("Keycloak has successfully processed the keycloakRealm")
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
-	r.Log.Infof("KeycloakRealm status %s", l.Fields{"phaseStatus": kcr.Status.Phase})
+	// r.Log.Infof("KeycloakRealm status %s", l.Fields{"phaseStatus": kcr.Status.Phase})
 	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
@@ -676,14 +674,34 @@ func (r *Reconciler) SetRollingStrategyForUpgrade(isUpgrade bool, ctx context.Co
 	// If there is a minor or major version bump, use recreate strategy
 	if currentVersion.Minor() > preVersion.Minor() || currentVersion.Major() > preVersion.Major() {
 		r.Log.Info("Major / Minor sso upgrade detected, setting keycloak migration strategy to recreate")
-		kc := &keycloak.Keycloak{
+		kc, err := dr.GetKeycloak(ctx, serverClient, keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      keycloakName,
 				Namespace: config.GetNamespace(),
 			},
+		})
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
 		}
-		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRecreate
-		_, _, err := dr.CreateOrUpdateKeycloak(ctx, serverClient, *kc)
+
+		kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+
+		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUnstructured, func() error {
+			kc, err := dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+			if err != nil {
+				return err
+			}
+			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRecreate
+
+			kcUpdated, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+			if err != nil {
+				return err
+			}
+			kcUnstructured.Object = kcUpdated.Object
+			return nil
+		})
 		if err != nil && !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 		}
