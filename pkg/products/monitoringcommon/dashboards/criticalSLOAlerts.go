@@ -3880,8 +3880,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2419200000",
-					"value": "2419200000"
+					"text": "604800000",
+					"value": "604800000"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -3892,8 +3892,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_ms",
 				"options": [{
 					"selected": true,
-					"text": "2419200000",
-					"value": "2419200000"
+					"text": "604800000",
+					"value": "604800000"
 				}],
 				"query": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
 				"refresh": 0,
@@ -3910,8 +3910,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2416780800",
-					"value": "2416780800"
+					"text": "604195200",
+					"value": "604195200"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_ms * 0.999))",
@@ -3922,8 +3922,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_999_ms",
 				"options": [{
 					"selected": true,
-					"text": "2416780800",
-					"value": "2416780800"
+					"text": "604195200",
+					"value": "604195200"
 				}],
 				"query": "query_result(vector($slo_ms * 0.999))",
 				"refresh": 0,
@@ -3940,8 +3940,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2419200",
-					"value": "2419200"
+					"text": "604800",
+					"value": "604800"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_ms * 0.001))",
@@ -3952,8 +3952,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_001_ms",
 				"options": [{
 					"selected": true,
-					"text": "2419200",
-					"value": "2419200"
+					"text": "604800",
+					"value": "604800"
 				}],
 				"query": "query_result(vector($slo_ms * 0.001))",
 				"refresh": 0,
@@ -5946,8 +5946,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2419200000",
-          "value": "2419200000"
+          "text": "604800000",
+          "value": "604800000"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -5978,8 +5978,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2416780800",
-          "value": "2416780800"
+          "text": "604195200",
+          "value": "604195200"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_ms * 0.999))",
@@ -6010,8 +6010,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2419200",
-          "value": "2419200"
+          "text": "604800",
+          "value": "604800"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_ms * 0.001))",
@@ -6174,12 +6174,12 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
             "selected": false,
             "text": "` + nsPrefix + `user-sso|Keycloak",
             "value": "` + nsPrefix + `user-sso|Keycloak"
-          },
-          {
-            "selected": false,
-            "text": "` + nsPrefix + `marin3r|Marin3r",
-            "value": "` + nsPrefix + `marin3r|Marin3r"
-          }
+		  },
+		  {
+			"selected": false,
+			"text": "` + nsPrefix + `marin3r|Marin3r",
+			"value": "` + nsPrefix + `marin3r|Marin3r"
+		  }
         ],
         "query": "` + nsPrefix + `3scale|ThreeScale, ` + nsPrefix + `rhsso|Keycloak, ` + nsPrefix + `user-sso|Keycloak, ` + nsPrefix + `marin3r|Marin3r" ,
         "skipUrlSync": false,
