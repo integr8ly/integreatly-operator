@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	types "github.com/integr8ly/keycloak-client/pkg/types"
+	types "github.com/MStokluska/keycloak-client/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"

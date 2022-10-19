@@ -1,7 +1,7 @@
 package common
 
 import (
-	types "github.com/integr8ly/keycloak-client/pkg/types"
+	types "github.com/MStokluska/keycloak-client/pkg/types"
 )
 
 type Requirement string
