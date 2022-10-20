@@ -193,7 +193,7 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
-	
+
 	// Refresh the realm list
 	realms, err = dr.GetKeycloakRealmList(ctx, serverClient, opts, keycloak.KeycloakRealmList{})
 	if err != nil {
