@@ -28,7 +28,6 @@ require (
 	github.com/integr8ly/cloud-resource-operator v0.41.0
 	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
 	github.com/integr8ly/keycloak-client v0.1.8
-	github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
 	github.com/onsi/gomega v1.19.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
@@ -56,9 +55,6 @@ require (
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 	sigs.k8s.io/controller-runtime v0.12.1
 	sigs.k8s.io/yaml v1.3.0
-)
-
-require (
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
@@ -189,6 +185,7 @@ replace (
 	github.com/go-logr/logr => github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr => github.com/go-logr/zapr v0.2.0
 	github.com/integr8ly/grafana-operator/v3 => github.com/integr8ly/grafana-operator/v3 v3.6.0
+	github.com/integr8ly/keycloak-client => ../keycloak-client
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/operator-framework/api => github.com/operator-framework/api v0.8.1

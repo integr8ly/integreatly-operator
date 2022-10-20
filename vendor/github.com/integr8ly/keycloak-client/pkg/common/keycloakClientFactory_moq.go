@@ -4,7 +4,7 @@
 package common
 
 import (
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	types "github.com/integr8ly/keycloak-client/pkg/types"
 	"sync"
 )
 
@@ -18,7 +18,7 @@ var _ KeycloakClientFactory = &KeycloakClientFactoryMock{}
 //
 // 		// make and configure a mocked KeycloakClientFactory
 // 		mockedKeycloakClientFactory := &KeycloakClientFactoryMock{
-// 			AuthenticatedClientFunc: func(kc v1alpha1.Keycloak) (KeycloakInterface, error) {
+// 			AuthenticatedClientFunc: func(kc types.Keycloak) (KeycloakInterface, error) {
 // 				panic("mock out the AuthenticatedClient method")
 // 			},
 // 		}
@@ -29,26 +29,26 @@ var _ KeycloakClientFactory = &KeycloakClientFactoryMock{}
 // 	}
 type KeycloakClientFactoryMock struct {
 	// AuthenticatedClientFunc mocks the AuthenticatedClient method.
-	AuthenticatedClientFunc func(kc v1alpha1.Keycloak) (KeycloakInterface, error)
+	AuthenticatedClientFunc func(kc types.Keycloak) (KeycloakInterface, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AuthenticatedClient holds details about calls to the AuthenticatedClient method.
 		AuthenticatedClient []struct {
 			// Kc is the kc argument value.
-			Kc v1alpha1.Keycloak
+			Kc types.Keycloak
 		}
 	}
 	lockAuthenticatedClient sync.RWMutex
 }
 
 // AuthenticatedClient calls AuthenticatedClientFunc.
-func (mock *KeycloakClientFactoryMock) AuthenticatedClient(kc v1alpha1.Keycloak) (KeycloakInterface, error) {
+func (mock *KeycloakClientFactoryMock) AuthenticatedClient(kc types.Keycloak) (KeycloakInterface, error) {
 	if mock.AuthenticatedClientFunc == nil {
 		panic("KeycloakClientFactoryMock.AuthenticatedClientFunc: method is nil but KeycloakClientFactory.AuthenticatedClient was just called")
 	}
 	callInfo := struct {
-		Kc v1alpha1.Keycloak
+		Kc types.Keycloak
 	}{
 		Kc: kc,
 	}
@@ -62,10 +62,10 @@ func (mock *KeycloakClientFactoryMock) AuthenticatedClient(kc v1alpha1.Keycloak)
 // Check the length with:
 //     len(mockedKeycloakClientFactory.AuthenticatedClientCalls())
 func (mock *KeycloakClientFactoryMock) AuthenticatedClientCalls() []struct {
-	Kc v1alpha1.Keycloak
+	Kc types.Keycloak
 } {
 	var calls []struct {
-		Kc v1alpha1.Keycloak
+		Kc types.Keycloak
 	}
 	mock.lockAuthenticatedClient.RLock()
 	calls = mock.calls.AuthenticatedClient

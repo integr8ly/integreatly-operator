@@ -1,6 +1,5 @@
-package model
+package types
 
-// Constants for a community Keycloak installation
 const (
 	ApplicationName                      = "keycloak"
 	MonitoringKey                        = "middleware"

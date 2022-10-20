@@ -1,11 +1,18 @@
-package v1alpha1
+package types
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	KeycloakBackupGroup      = "keycloak.org"
+	KeycloakBackupVersion    = "v1alpha1"
+	KeycloakBackupKind       = "KeycloakBackup"
+	KeycloakBackupsKind      = "KeycloakBackupList"
+	KeycloakBackupApiVersion = "keycloak.org/v1alpha1"
+)
+
 // KeycloakBackupSpec defines the desired state of KeycloakBackup.
-// +k8s:openapi-gen=true
 type KeycloakBackupSpec struct {
 	// Controls automatic restore behavior.
 	// Currently not implemented.
@@ -31,7 +38,6 @@ type KeycloakBackupSpec struct {
 }
 
 // KeycloakAWSSpec defines the desired state of KeycloakBackupSpec.
-// +k8s:openapi-gen=true
 type KeycloakAWSSpec struct {
 	// If provided, the database backup will be encrypted.
 	// Provides a secret name used for encrypting database data.
@@ -82,7 +88,6 @@ var (
 )
 
 // KeycloakBackupStatus defines the observed state of KeycloakBackup.
-// +k8s:openapi-gen=true
 type KeycloakBackupStatus struct {
 	// Current phase of the operator.
 	Phase BackupStatusPhase `json:"phase"`
@@ -95,10 +100,6 @@ type KeycloakBackupStatus struct {
 }
 
 // KeycloakBackup is the Schema for the keycloakbackups API.
-// +genclient
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakBackup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -108,17 +109,8 @@ type KeycloakBackup struct {
 }
 
 // KeycloakBackupList contains a list of KeycloakBackup.
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakBackupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeycloakBackup `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&KeycloakBackup{}, &KeycloakBackupList{})
-}
-
-func (i *KeycloakBackup) UpdateStatusSecondaryResources(kind string, resourceName string) {
-	i.Status.SecondaryResources = UpdateStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
 }

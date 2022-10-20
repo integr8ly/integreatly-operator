@@ -1,4 +1,4 @@
-package v1alpha1
+package types
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -6,6 +6,14 @@ import (
 )
 
 type TLSTerminationType string
+
+const (
+	KeycloakGroup      = "keycloak.org"
+	KeycloakVersion    = "v1alpha1"
+	KeycloakKind       = "Keycloak"
+	KeycloakListKind   = "KeycloakList"
+	KeycloakApiVersion = "keycloak.org/v1alpha1"
+)
 
 var (
 	DefaultTLSTermintation        TLSTerminationType
@@ -82,11 +90,6 @@ type KeycloakSpec struct {
 	// Specify PodAntiAffinity settings for Keycloak deployment in Multi AZ
 	// +optional
 	MultiAvailablityZones MultiAvailablityZonesConfig `json:"multiAvailablityZones,omitempty"`
-	// Disables the integration with Application Monitoring Operator. When set to true,
-	// the operator doesn't create default PrometheusRule, ServiceMonitor and GrafanaDashboard
-	// objects and users will have to create them manually, if needed.
-	// +optional
-	DisableMonitoringServices bool `json:"DisableDefaultServiceMonitor,omitempty"`
 }
 
 type DeploymentSpec struct {
@@ -97,13 +100,6 @@ type DeploymentSpec struct {
 
 type KeycloakDeploymentSpec struct {
 	DeploymentSpec `json:",inline"`
-	// List of annotations to set in the keycloak pods
-	// +optional
-	PodAnnotations map[string]string `json:"podannotations,omitempty"`
-	// List of labels to set in the keycloak pods
-	// +optional
-	PodLabels map[string]string `json:"podlabels,omitempty"`
-
 	// Experimental section
 	// NOTE: This section might change or get removed without any notice. It may also cause
 	// the deployment to behave in an unpredictable fashion. Please use with care.
@@ -133,9 +129,6 @@ type ExperimentalSpec struct {
 	// Affinity settings
 	//+optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
-	// ServiceAccountName settings
-	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 type VolumesSpec struct {
@@ -191,7 +184,8 @@ type KeycloakExternalAccess struct {
 }
 
 type KeycloakExternalDatabase struct {
-	// If set to true, the Operator will use an external database pointing to Keycloak. The embedded database (externalDatabase.enabled = false) is deprecated.
+	// If set to true, the Operator will use an external database.
+	// pointing to Keycloak.
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -243,7 +237,7 @@ type KeycloakStatus struct {
 	// An internal URL (service name) to be used by the admin client.
 	InternalURL string `json:"internalURL"`
 	// External URL for accessing Keycloak instance from outside the cluster. Is identical to external.URL if it's specified, otherwise is computed (e.g. from Ingress).
-	ExternalURL string `json:"externalURL,omitempty"`
+	ExternalURL string `json:"externalURL"`
 	// The secret where the admin credentials are to be found.
 	CredentialSecret string `json:"credentialSecret"`
 }
@@ -258,10 +252,6 @@ var (
 )
 
 // Keycloak is the Schema for the keycloaks API.
-// +genclient
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Keycloak struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -271,17 +261,8 @@ type Keycloak struct {
 }
 
 // KeycloakList contains a list of Keycloak.
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Keycloak `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&Keycloak{}, &KeycloakList{})
-}
-
-func (i *Keycloak) UpdateStatusSecondaryResources(kind string, resourceName string) {
-	i.Status.SecondaryResources = UpdateStatusSecondaryResources(i.Status.SecondaryResources, kind, resourceName)
 }

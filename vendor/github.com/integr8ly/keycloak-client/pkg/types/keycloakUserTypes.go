@@ -1,11 +1,16 @@
-package v1alpha1
+package types
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	UserFinalizer = "user.cleanup"
+	UserFinalizer          = "user.cleanup"
+	KeycloakUserGroup      = "keycloak.org"
+	KeycloakUserVersion    = "v1alpha1"
+	KeycloakUserKind       = "KeycloakUser"
+	KeycloakUserListKind   = "KeycloakUserList"
+	KeycloakUserApiVersion = "keycloak.org/v1alpha1"
 )
 
 var (
@@ -14,7 +19,6 @@ var (
 )
 
 // KeycloakUserSpec defines the desired state of KeycloakUser.
-// +k8s:openapi-gen=true
 type KeycloakUserSpec struct {
 	// Selector for looking up KeycloakRealm Custom Resources.
 	// +kubebuilder:validation:Required
@@ -25,7 +29,6 @@ type KeycloakUserSpec struct {
 }
 
 // KeycloakUserStatus defines the observed state of KeycloakUser.
-// +k8s:openapi-gen=true
 type KeycloakUserStatus struct {
 	// Current phase of the operator.
 	Phase StatusPhase `json:"phase"`
@@ -34,10 +37,6 @@ type KeycloakUserStatus struct {
 }
 
 // KeycloakUser is the Schema for the keycloakusers API.
-// +genclient
-// +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakUser struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -116,13 +115,8 @@ type FederatedIdentity struct {
 }
 
 // KeycloakUserList contains a list of KeycloakUser
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KeycloakUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeycloakUser `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&KeycloakUser{}, &KeycloakUserList{})
 }
