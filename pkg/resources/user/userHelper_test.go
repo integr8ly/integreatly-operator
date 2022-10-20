@@ -11,7 +11,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -285,12 +285,12 @@ func TestAppendUpdateProfileActionForUserWithoutEmail(t *testing.T) {
 
 	tests := []struct {
 		Name                string
-		KeyCloakUser        keycloak.KeycloakAPIUser
+		KeyCloakUser        keycloakTypes.KeycloakAPIUser
 		AddedRequiredAction bool
 	}{
 		{
 			Name: "Test Update Profile action is added for user with empty email",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				Email:           "",
 				RequiredActions: []string{},
 			},
@@ -298,7 +298,7 @@ func TestAppendUpdateProfileActionForUserWithoutEmail(t *testing.T) {
 		},
 		{
 			Name: "Test Update Profile action is not added for user with email",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				Email:           testEmail,
 				RequiredActions: []string{},
 			},
@@ -323,35 +323,35 @@ func TestGetValidGeneratedUserName(t *testing.T) {
 
 	tests := []struct {
 		Name                  string
-		KeyCloakUser          keycloak.KeycloakAPIUser
+		KeyCloakUser          keycloakTypes.KeycloakAPIUser
 		ExpectedGeneratedName string
 	}{
 		{
 			Name: "Test - Username is lower cased",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				UserName: "TEST",
 			},
 			ExpectedGeneratedName: fmt.Sprintf("%s%s", GeneratedNamePrefix, "test"),
 		},
 		{
 			Name: "Test - Username is lower cased and invalid characters replaced",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				UserName: "TEST_USER@Example.com",
 			},
 			ExpectedGeneratedName: fmt.Sprintf("%s%s%s%s%s%s%s%s", GeneratedNamePrefix, "test", invalidCharacterReplacement, "user", invalidCharacterReplacement, "example", invalidCharacterReplacement, "com"),
 		},
 		{
 			Name: "Test - Username replacement character is not added to the end of generated name",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				UserName: "Tester01#",
 			},
 			ExpectedGeneratedName: fmt.Sprintf("%s%s", GeneratedNamePrefix, "tester01"),
 		},
 		{
 			Name: "Test - UserId is added to generated name",
-			KeyCloakUser: keycloak.KeycloakAPIUser{
+			KeyCloakUser: keycloakTypes.KeycloakAPIUser{
 				UserName: "Tester.01#",
-				FederatedIdentities: []keycloak.FederatedIdentity{
+				FederatedIdentities: []keycloakTypes.FederatedIdentity{
 					{
 						UserID: "54d19771-aab6-49bb-913f-ce94e0ae5600",
 					},

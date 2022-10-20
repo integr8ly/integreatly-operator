@@ -48,7 +48,8 @@ import (
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
@@ -1238,19 +1239,20 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	kcClient := &keycloak.KeycloakClient{
+	kcClient, err := dr.GetKeycloakClient(ctx, serverClient, keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientID,
 			Namespace: rhssoNamespace,
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, nil
+		}
 	}
 
 	// keycloak-operator sets the spec.client.id, we need to preserve that value
 	apiClientID := ""
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: rhssoNamespace,
-		Name:      clientID,
-	}, kcClient)
 	if err == nil {
 		apiClientID = kcClient.Spec.Client.ID
 	}
@@ -1261,8 +1263,23 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+	kcClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClientUnstructured, func() error {
+		kcClient, err = dr.ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+		if err != nil {
+			return err
+		}
 		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
+		kcClientUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+		if err != nil {
+			return err
+		}
+		kcClientUnstructured.Object = kcClientUpdated.Object
+
 		return nil
 	})
 	if err != nil {
@@ -1454,17 +1471,37 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 			}
 		}
 
-		kcUser := &keycloak.KeycloakUser{
+		kcUser, err := dr.GetKeycloakUser(ctx, serverClient, keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      userHelper.GetValidGeneratedUserName(user),
 				Namespace: rhssoConfig.GetNamespace(),
 			},
+		})
+		if err != nil {
+			if !k8serr.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseInProgress, err
+			}
 		}
 
-		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+		kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
+			kcUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+			if err != nil {
+				return nil
+			}
 			user.Attributes[userCreated3ScaleName] = []string{"true"}
 			user.Attributes[user3ScaleID] = []string{fmt.Sprint(tsUser.UserDetails.Id)}
 			kcUser.Spec.User = user
+
+			kcUserUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+			if err != nil {
+				return err
+			}
+			kcUserUnstructured.Object = kcUserUpdated.Object
 			return nil
 		})
 		if err != nil {
@@ -2397,19 +2434,13 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 	for _, user := range expectedDeleted {
 		toDelete := true
 		for _, kuUser := range kcUsers {
-			genKcUser := &keycloak.KeycloakUser{
+
+			genKcUser, err := dr.GetKeycloakUser(ctx, serverClient, keycloak.KeycloakUser{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userHelper.GetValidGeneratedUserName(kuUser),
 					Namespace: rhssoConfig.GetNamespace(),
 				},
-			}
-			objectKey, err := k8sclient.ObjectKeyFromObject(genKcUser)
-			if err != nil {
-				r.log.Warning("Failed to get object key from object: " + err.Error())
-				continue
-			}
-
-			err = serverClient.Get(ctx, objectKey, genKcUser)
+			})
 			if err != nil {
 				r.log.Warning("Failed get generated Keycloak User: " + err.Error())
 				continue
@@ -2432,17 +2463,16 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 // getGeneratedKeycloakUser returns a keycloakUser CR for a matching 3scale user ID
 func getGeneratedKeycloakUser(ctx context.Context, serverClient k8sclient.Client, ns string, tsUser *User) (*keycloak.KeycloakUser, error) {
 
-	var users keycloak.KeycloakUserList
+	users := &keycloak.KeycloakUserList{}
 
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(rhsso.GetInstanceLabels()),
 		k8sclient.InNamespace(ns),
 	}
-	err := serverClient.List(ctx, &users, listOptions...)
+	users, err := dr.GetKeycloakUserList(ctx, serverClient, listOptions, *users)
 	if err != nil {
 		return nil, err
 	}
-
 	for i := range users.Items {
 		kcUser := users.Items[i]
 		if tsUserIDInKc(tsUser, &kcUser) {
@@ -3322,10 +3352,15 @@ func checkRedirects(host string, path string, res *http.Response, statusCode int
 }
 
 func (r *Reconciler) getKeycloakUserFromAccount(client k8sclient.Client, accountName string) (*keycloak.KeycloakUser, error) {
-	kcUserList := &keycloak.KeycloakUserList{}
-	if err := client.List(context.TODO(), kcUserList, k8sclient.InNamespace(fmt.Sprintf("%srhsso", r.installation.Spec.NamespacePrefix))); err != nil {
+	listOptions := []k8sclient.ListOption{
+		k8sclient.InNamespace(fmt.Sprintf("%srhsso", r.installation.Spec.NamespacePrefix)),
+	}
+
+	kcUserList, err := dr.GetKeycloakUserList(context.TODO(), client, listOptions, keycloak.KeycloakUserList{})
+	if err != nil {
 		return nil, fmt.Errorf("failed to get list of KeycloakUsers, err: %v", err)
 	}
+
 	for _, kcUser := range kcUserList.Items {
 		if kcUser.Spec.User.UserName == accountName {
 			return &kcUser, nil
@@ -3337,8 +3372,12 @@ func (r *Reconciler) getKeycloakUserFromAccount(client k8sclient.Client, account
 }
 
 func (r *Reconciler) getKeycloakClientFromAccount(client k8sclient.Client, accountName string) (*keycloak.KeycloakClient, error) {
-	kcClientList := &keycloak.KeycloakClientList{}
-	if err := client.List(context.TODO(), kcClientList, k8sclient.InNamespace(fmt.Sprintf("%srhsso", r.installation.Spec.NamespacePrefix))); err != nil {
+	listOptions := []k8sclient.ListOption{
+		k8sclient.InNamespace(fmt.Sprintf("%srhsso", r.installation.Spec.NamespacePrefix)),
+	}
+
+	kcClientList, err := dr.GetKeycloakClientList(context.TODO(), client, listOptions, keycloak.KeycloakClientList{})
+	if err != nil {
 		return nil, fmt.Errorf("failed to get list of KeycloakClients, err: %v", err)
 	}
 	for _, kcClient := range kcClientList.Items {

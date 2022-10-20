@@ -6,8 +6,10 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -32,25 +34,40 @@ func CreateRHSSOClient(clientID string, clientSecret string, clientURL string, s
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	kcClient := &keycloak.KeycloakClient{
+	kcClient, err := dr.GetKeycloakClient(ctx, serverClient, keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientID,
 			Namespace: rhssoNamespace,
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, nil
+		}
 	}
 
 	// keycloak-operator sets the spec.client.id, we need to preserve that value
 	apiClientID := ""
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{
-		Namespace: rhssoNamespace,
-		Name:      clientID,
-	}, kcClient)
 	if err == nil {
 		apiClientID = kcClient.Spec.Client.ID
 	}
 
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+	kcClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, nil
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClientUnstructured, func() error {
+		kcClient, err := dr.ConvertKeycloakClientUnstructuredToTyped(*kcClientUnstructured)
+		if err != nil {
+			return err
+		}
 		kcClient.Spec = getKeycloakClientSpec(apiClientID, clientID, clientSecret, clientURL, &installation)
+		kcClientUpdated, err := dr.ConvertKeycloakClientTypedToUnstructured(kcClient)
+		if err != nil {
+			return err
+		}
+		kcClientUnstructured.Object = kcClientUpdated.Object
 		return nil
 	})
 	if err != nil {
