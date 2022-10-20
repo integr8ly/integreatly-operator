@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -26,37 +26,17 @@ func NewRHSSOCommon(config ProductConfig) *RHSSOCommon {
 
 //GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
 func (r *RHSSOCommon) GetWatchableCRDs() []runtime.Object {
+	keycloakUnstructured := dr.CreateUnstructuredWithGVK(keycloak.KeycloakGroup, keycloak.KeycloakKind, keycloak.KeycloakVersion, "", "")
+	keycloakRealmUnstructured := dr.CreateUnstructuredWithGVK(keycloak.KeycloakRealmGroup, keycloak.KeycloakRealmKind, keycloak.KeycloakRealmVersion, "", "")
+	keycloakUserUnstructured := dr.CreateUnstructuredWithGVK(keycloak.KeycloakUserGroup, keycloak.KeycloakUserKind, keycloak.KeycloakUserVersion, "", "")
+	keycloakClientUnstructured := dr.CreateUnstructuredWithGVK(keycloak.KeycloakClientGroup, keycloak.KeycloakClientKind, keycloak.KeycloakClientVersion, "", "")
+	keycloakBackupUnstructured := dr.CreateUnstructuredWithGVK(keycloak.KeycloakBackupGroup, keycloak.KeycloakBackupKind, keycloak.KeycloakBackupVersion, "", "")
 	return []runtime.Object{
-		&keycloak.Keycloak{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Keycloak",
-				APIVersion: keycloak.SchemeGroupVersion.String(),
-			},
-		},
-		&keycloak.KeycloakRealm{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KeycloakRealm",
-				APIVersion: keycloak.SchemeGroupVersion.String(),
-			},
-		},
-		&keycloak.KeycloakUser{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KeycloakUser",
-				APIVersion: keycloak.SchemeGroupVersion.String(),
-			},
-		},
-		&keycloak.KeycloakClient{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KeycloakClient",
-				APIVersion: keycloak.SchemeGroupVersion.String(),
-			},
-		},
-		&keycloak.KeycloakBackup{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KeycloakBackup",
-				APIVersion: keycloak.SchemeGroupVersion.String(),
-			},
-		},
+		keycloakUnstructured,
+		keycloakRealmUnstructured,
+		keycloakUserUnstructured,
+		keycloakClientUnstructured,
+		keycloakBackupUnstructured,
 	}
 }
 
