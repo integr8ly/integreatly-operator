@@ -3,8 +3,9 @@ package common
 import (
 	goctx "context"
 
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	"golang.org/x/net/context"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -346,18 +347,12 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		rhssoUserExpectedReplicas = 1
 	}
 	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
-		keycloakCR := &v1alpha1.Keycloak{
+		keycloakCR, err := dr.GetKeycloak(context.TODO(), ctx.Client, keycloak.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      quota.KeycloakName,
 				Namespace: RHSSOUserProductNamespace,
 			},
-		}
-		key, err := k8sclient.ObjectKeyFromObject(keycloakCR)
-		if err != nil {
-			t.Fatalf("Error getting Keycloak CR key: %v", err)
-		}
-
-		err = ctx.Client.Get(context.TODO(), key, keycloakCR)
+		})
 		if err != nil {
 			t.Fatalf("Error getting Keycloak CR: %v", err)
 		}

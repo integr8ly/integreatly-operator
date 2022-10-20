@@ -7,7 +7,8 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
-	keycloakv1alpha1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -93,17 +94,21 @@ func checkScalingOfKeycloakReplicas(t TestingTB, ctx *TestingContext, keycloakCR
 	}
 }
 
-func getKeycloakCR(dynClient k8sclient.Client, keycloakCRName string, keycloakCRNamespace string) (keycloakv1alpha1.Keycloak, error) {
-	keycloakCR := &keycloakv1alpha1.Keycloak{}
-
-	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: keycloakCRName, Namespace: keycloakCRNamespace}, keycloakCR); err != nil {
-		return *keycloakCR, err
+func getKeycloakCR(dynClient k8sclient.Client, keycloakCRName string, keycloakCRNamespace string) (keycloak.Keycloak, error) {
+	keycloakCR, err := dr.GetKeycloak(goctx.TODO(), dynClient, keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakCRName,
+			Namespace: keycloakCRNamespace,
+		},
+	})
+	if err != nil {
+		return keycloak.Keycloak{}, err
 	}
 
 	return *keycloakCR, nil
 }
 
-func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName string, keycloakCRNamespace string) (keycloakv1alpha1.Keycloak, error) {
+func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName string, keycloakCRNamespace string) (keycloak.Keycloak, error) {
 
 	replica := fmt.Sprintf(`{
 		"apiVersion": "keycloak.org/v1alpha1",
@@ -130,7 +135,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 	return keycloakCR, nil
 }
 
-func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t TestingTB) error {
+func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloak.Keycloak, ctx *TestingContext, numberOfRequiredReplicas int, retryInterval, timeout time.Duration, t TestingTB) error {
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		keycloakCR, err = getKeycloakCR(ctx.Client, keycloakCR.Name, keycloakCR.Namespace)
 		if err != nil {
