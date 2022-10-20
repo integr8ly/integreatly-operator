@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -16,8 +17,7 @@ import (
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/common"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
@@ -261,13 +261,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Log.Info("Reconciling Keycloak components")
-	kc := &keycloak.Keycloak{
+	kc, err := dr.GetKeycloak(ctx, serverClient, keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
+
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUnstructured, func() error {
+		kc, err := dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+		if err != nil {
+			return err
+		}
 		kc.Spec.Extensions = []string{
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.2/authdelay.jar",
@@ -307,10 +319,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		if kc.Spec.Instances < numberOfReplicas {
 			kc.Spec.Instances = numberOfReplicas
 		}
+
+		kcUpdated, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+		if err != nil {
+			return err
+		}
+		kcUnstructured.Object = kcUpdated.Object
 		return nil
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
+	}
+
+	kc, err = dr.ConvertKeycloakUnstructuredToTyped(*kcUnstructured)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	// Patching the OwnerReference on the admin credentials secret
 	err = resources.AddOwnerRefToSSOSecret(ctx, serverClient, adminCredentialSecretName, r.Config.GetNamespace(), *kc, r.Log)
@@ -325,13 +348,28 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	r.Log.Infof("Operation result", l.Fields{"keycloak": kc.Name, "result": or})
-	kcr := &keycloak.KeycloakRealm{
+	kcr, err := dr.GetKeycloakRealm(ctx, serverClient, keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
-	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
+
+	kcRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcr)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcRealmUnstructured, func() error {
+		kcr, err = dr.ConvertKeycloakRealmUnstructuredToTyped(*kcRealmUnstructured)
+		if err != nil {
+			return err
+		}
 		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
 			{
 				IdentityProvider: idpAlias,
@@ -372,11 +410,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 				return fmt.Errorf("failed to setup Github IDP: %w", err)
 			}
 		}
+
+		kcrUpdated, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcr)
+		if err != nil {
+			return err
+		}
+
+		kcRealmUnstructured.Object = kcrUpdated.Object
+
 		return nil
 	})
-
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
+	}
+
+	kcr, err = dr.ConvertKeycloakRealmUnstructuredToTyped(*kcRealmUnstructured)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	r.Log.Infof("Operation result", l.Fields{"keycloakrealm": kcr.Name, "result": or})
 
@@ -466,8 +516,8 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	r.Log.Info("Syncing github identity provider to the keycloak realm")
 
 	// Get an authenticated keycloak api client for the instance
-	keycloakFactory := common.LocalConfigKeycloakFactory{}
-	authenticated, err := keycloakFactory.AuthenticatedClient(*kc, false)
+	keycloakFactory := keycloakCommon.LocalConfigKeycloakFactory{}
+	authenticated, err := keycloakFactory.AuthenticatedClient(*kc)
 	if err != nil {
 		return fmt.Errorf("Unable to authenticate to the Keycloak API: %s", err)
 	}
@@ -579,19 +629,40 @@ func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) b
 }
 
 func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
-	kcUser := &keycloak.KeycloakUser{
+	kcUser, err := dr.GetKeycloakUser(ctx, serverClient, keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      userHelper.GetValidGeneratedUserName(user),
 			Namespace: r.Config.GetNamespace(),
 		},
+	})
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return controllerutil.OperationResultNone, err
+		}
 	}
 
-	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+	kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+
+	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUserUnstructured, func() error {
+		kcUser, err := dr.ConvertKeycloakUserUnstructuredToTyped(*kcUserUnstructured)
+		if err != nil {
+			return err
+		}
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
 		kcUser.Labels = GetInstanceLabels()
 		kcUser.Spec.User = user
+
+		kcUserUpdated, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+		if err != nil {
+			return err
+		}
+
+		kcUserUnstructured.Object = kcUserUpdated.Object
 		return nil
 	})
 }
@@ -638,13 +709,11 @@ func (r *Reconciler) exportDashboard(ctx context.Context, apiClient k8sclient.Cl
 }
 
 func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
-	var users keycloak.KeycloakUserList
-
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(GetInstanceLabels()),
 		k8sclient.InNamespace(ns),
 	}
-	err := serverClient.List(ctx, &users, listOptions...)
+	users, err := dr.GetKeycloakUserList(ctx, serverClient, listOptions, keycloak.KeycloakUserList{})
 	if err != nil {
 		return nil, err
 	}
