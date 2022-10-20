@@ -238,6 +238,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=operator.marin3r.3scale.net,resources=discoveryservices,verbs=get;list;watch;create;update;delete,namespace=integreatly-operator
 
+// +kubebuilder:rbac:groups=keycloak.org,resources=keycloakusers;keycloakrealms;keycloakclients,verbs=get;update;patch;delete;list
+
+// +kubebuilder:rbac:groups=keycloak.org,resources=keycloakusers/finalizers;keycloakrealms/finalizers;keycloakclients/finalizers,verbs=get;update;patch;delete;list
+
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=clusterserviceversions,verbs=get;delete;list;update
 
 // +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list

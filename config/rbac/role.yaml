@@ -183,6 +183,30 @@ rules:
   - patch
   - update
 - apiGroups:
+  - keycloak.org
+  resources:
+  - keycloakclients
+  - keycloakrealms
+  - keycloakusers
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+- apiGroups:
+  - keycloak.org
+  resources:
+  - keycloakclients/finalizers
+  - keycloakrealms/finalizers
+  - keycloakusers/finalizers
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+- apiGroups:
   - managed.openshift.io
   resources:
   - customdomains
