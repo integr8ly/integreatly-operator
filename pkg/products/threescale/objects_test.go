@@ -11,12 +11,13 @@ import (
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -108,7 +109,11 @@ var threeScaleServiceDiscoveryConfigMap = &corev1.ConfigMap{
 	},
 }
 
-var rhssoTest1 = &keycloak.KeycloakUser{
+var rhssoTest1 = &keycloakTypes.KeycloakUser{
+	TypeMeta: metav1.TypeMeta{
+		Kind:       "KeycloakUser",
+		APIVersion: "keycloak.org/v1alpha1",
+	},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-user1",
 		Namespace: testRhssoNamespace,
@@ -116,15 +121,19 @@ var rhssoTest1 = &keycloak.KeycloakUser{
 			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
 		},
 	},
-	Spec: keycloak.KeycloakUserSpec{
-		User: keycloak.KeycloakAPIUser{
+	Spec: keycloakTypes.KeycloakUserSpec{
+		User: keycloakTypes.KeycloakAPIUser{
 			UserName: "test1",
 			Email:    "test1@example.com",
 		},
 	},
 }
 
-var rhssoTest2 = &keycloak.KeycloakUser{
+var rhssoTest2 = &keycloakTypes.KeycloakUser{
+	TypeMeta: metav1.TypeMeta{
+		Kind:       "KeycloakUser",
+		APIVersion: "keycloak.org/v1alpha1",
+	},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-user2",
 		Namespace: testRhssoNamespace,
@@ -132,15 +141,19 @@ var rhssoTest2 = &keycloak.KeycloakUser{
 			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
 		},
 	},
-	Spec: keycloak.KeycloakUserSpec{
-		User: keycloak.KeycloakAPIUser{
+	Spec: keycloakTypes.KeycloakUserSpec{
+		User: keycloakTypes.KeycloakAPIUser{
 			UserName: "test2",
 			Email:    "test2@example.com",
 		},
 	},
 }
 
-var rhssoTest3 = &keycloak.KeycloakUser{
+var rhssoTest3 = &keycloakTypes.KeycloakUser{
+	TypeMeta: metav1.TypeMeta{
+		Kind:       "KeycloakUser",
+		APIVersion: "keycloak.org/v1alpha1",
+	},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "alongusernamethatisabovefourtycharacterslong",
 		Namespace: testRhssoNamespace,
@@ -148,8 +161,8 @@ var rhssoTest3 = &keycloak.KeycloakUser{
 			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
 		},
 	},
-	Spec: keycloak.KeycloakUserSpec{
-		User: keycloak.KeycloakAPIUser{
+	Spec: keycloakTypes.KeycloakUserSpec{
+		User: keycloakTypes.KeycloakAPIUser{
 			UserName: "alongusernamethatisabovefourtycharacterslong",
 			Email:    "test2@example.com",
 		},
@@ -801,6 +814,19 @@ var cloudCredential = &cloudcredentialv1.CloudCredential{
 }
 
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamespace string) []runtime.Object {
+	rhssoTest1Unstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(rhssoTest1)
+	if err != nil {
+		return nil
+	}
+	rhssoTest2Unstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(rhssoTest2)
+	if err != nil {
+		return nil
+	}
+	rhssoTest3Unstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(rhssoTest3)
+	if err != nil {
+		return nil
+	}
+
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
@@ -853,9 +879,9 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		redisSec,
 		backendRedis,
 		backendRedisSec,
-		rhssoTest2,
-		rhssoTest1,
-		rhssoTest3,
+		rhssoTest2Unstructured,
+		rhssoTest1Unstructured,
+		rhssoTest3Unstructured,
 		ns,
 		operatorNS,
 		apicastProduction,

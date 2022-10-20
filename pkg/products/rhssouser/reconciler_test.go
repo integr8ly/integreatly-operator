@@ -14,6 +14,7 @@ import (
 
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -35,7 +36,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	kcTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	consolev1 "github.com/openshift/api/console/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -53,6 +54,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -110,14 +112,69 @@ func getRHSSOCredentialSeed() *corev1.Secret {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
+
+	kcUsers := kcTypes.KeycloakUser{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kcTypes.KeycloakUserKind,
+			APIVersion: kcTypes.KeycloakUserApiVersion,
+		},
+	}
+
+	kcUsersList := kcTypes.KeycloakUserList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kcTypes.KeycloakUserListKind,
+			APIVersion: kcTypes.KeycloakUserApiVersion,
+		},
+	}
+
+	keycloak := kcTypes.Keycloak{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kcTypes.KeycloakKind,
+			APIVersion: kcTypes.KeycloakApiVersion,
+		},
+	}
+
+	kcUserUnstructed, err := dr.ConvertKeycloakUserTypedToUnstructured(&kcUsers)
 	if err != nil {
 		return nil, err
 	}
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
+
+	kcUsersListUnstructed, err := dr.ConvertKeycloakUserListTypedToUnstructured(&kcUsersList)
 	if err != nil {
 		return nil, err
 	}
+
+	keycloakUnstructed, err := dr.ConvertKeycloakTypedToUnstructured(&keycloak)
+	if err != nil {
+		return nil, err
+	}
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   kcTypes.KeycloakUserGroup,
+		Version: kcTypes.KeycloakUserVersion,
+		Kind:    kcTypes.KeycloakUserKind,
+	},
+		kcUserUnstructed)
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   kcTypes.KeycloakUserGroup,
+		Version: kcTypes.KeycloakUserVersion,
+		Kind:    kcTypes.KeycloakUserListKind,
+	},
+		kcUsersListUnstructed)
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   kcTypes.KeycloakGroup,
+		Version: kcTypes.KeycloakVersion,
+		Kind:    kcTypes.KeycloakKind,
+	},
+		keycloakUnstructed)
+
+	err = threescalev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
@@ -282,11 +339,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kc := &keycloak.Keycloak{
+	kc := &kcTypes.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultNamespace,
 		},
+	}
+
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
 	}
 
 	group := &usersv1.Group{
@@ -296,8 +358,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		Users: nil,
 	}
 
-	kcr := getKcr(keycloak.KeycloakRealmStatus{
-		Phase: keycloak.PhaseReconciling,
+	kcr := getKcr(t, kcTypes.KeycloakRealmStatus{
+		Phase: kcTypes.PhaseReconciling,
 	}, masterRealmName, "user-sso")
 
 	githubOauthSecret := &corev1.Secret{
@@ -342,7 +404,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
-	//secret created by the cloud resource operator postgres reconciler
+	// secret created by the cloud resource operator postgres reconciler
 	croPostgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -369,7 +431,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kcUnstructured, group, croPostgres, croPostgresSecret, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -514,11 +576,16 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		},
 	}
 
-	kc := &keycloak.Keycloak{
+	kc := &kcTypes.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultNamespace,
 		},
+	}
+
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
 	}
 
 	secret := &corev1.Secret{
@@ -683,7 +750,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres, normalRoute, prometheusRules),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(t, kcTypes.KeycloakRealmStatus{Phase: kcTypes.PhaseReconciling}, masterRealmName, "user-sso"), kcUnstructured, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgres, normalRoute, prometheusRules),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -722,7 +789,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 		{
 			Name:           "test waiting for RHSSO postgres",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(t, kcTypes.KeycloakRealmStatus{Phase: kcTypes.PhaseReconciling}, masterRealmName, "user-sso"), kcUnstructured, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, csv, rhssoPostgresInProgress),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -860,11 +927,16 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
-	kc := &keycloak.Keycloak{
+	kc := &kcTypes.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultNamespace,
 		},
+	}
+
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
 	}
 
 	secret := &corev1.Secret{
@@ -1021,7 +1093,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		{
 			Name:           "RHOAM - test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv, rhssoPostgres),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(t, kcTypes.KeycloakRealmStatus{Phase: kcTypes.PhaseReconciling}, masterRealmName, "user-sso"), kcUnstructured, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlert, csv, rhssoPostgres),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -1060,7 +1132,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		{
 			Name:           "RHOAM - test in progress if no rhsso prom rules are present",
 			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}, masterRealmName, "user-sso"), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlertNoGroups, csv),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(t, kcTypes.KeycloakRealmStatus{Phase: kcTypes.PhaseReconciling}, masterRealmName, "user-sso"), kcUnstructured, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet, ssoAlertNoGroups, csv),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
@@ -1139,14 +1211,14 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 	}
 }
 
-func getKcr(status keycloak.KeycloakRealmStatus, name string, ns string) *keycloak.KeycloakRealm {
-	return &keycloak.KeycloakRealm{
+func getKcr(t *testing.T, status kcTypes.KeycloakRealmStatus, name string, ns string) *unstructured.Unstructured {
+	kcRealm := &kcTypes.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
 		},
-		Spec: keycloak.KeycloakRealmSpec{
-			Realm: &keycloak.KeycloakAPIRealm{
+		Spec: kcTypes.KeycloakRealmSpec{
+			Realm: &kcTypes.KeycloakAPIRealm{
 				ID:          name,
 				Realm:       name,
 				DisplayName: name,
@@ -1158,10 +1230,16 @@ func getKcr(status keycloak.KeycloakRealmStatus, name string, ns string) *keyclo
 		},
 		Status: status,
 	}
+
+	kcRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(kcRealm)
+	if err != nil {
+		t.FailNow()
+	}
+	return kcRealmUnstructured
 }
 
 func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
-	exInfo := []*keycloak.AuthenticationExecutionInfo{
+	exInfo := []*kcTypes.AuthenticationExecutionInfo{
 		{
 			ProviderID: "identity-provider-redirector",
 			ID:         "123-123-123",
@@ -1174,12 +1252,12 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 	// the reconcileComponents phase
 	context.AuthenticationFlowsExecutions["browser"] = exInfo
 
-	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
-		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) (string, error) {
+	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc kcTypes.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
+		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *kcTypes.KeycloakIdentityProvider, realmName string) (string, error) {
 			return "", nil
-		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
+		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *kcTypes.KeycloakIdentityProvider, err error) {
 			return nil, nil
-		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) (string, error) {
+		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *kcTypes.AuthenticatorConfig, realmName string, executionID string) (string, error) {
 			return "", nil
 		},
 			ListRealmsFunc:                           keycloakInterfaceMock.ListRealms,
@@ -1211,9 +1289,9 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 type mockClientContext struct {
 	Groups                        []*keycloakCommon.Group
 	DefaultGroups                 []*keycloakCommon.Group
-	ClientRoles                   map[string][]*keycloak.KeycloakUserRole
-	RealmRoles                    map[string][]*keycloak.KeycloakUserRole
-	AuthenticationFlowsExecutions map[string][]*keycloak.AuthenticationExecutionInfo
+	ClientRoles                   map[string][]*kcTypes.KeycloakUserRole
+	RealmRoles                    map[string][]*kcTypes.KeycloakUserRole
+	AuthenticationFlowsExecutions map[string][]*kcTypes.AuthenticationExecutionInfo
 }
 
 // Create a mock of the `KeycloakClientFactory` that creates a `KeycloakInterface` mock that
@@ -1223,16 +1301,16 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 	context := mockClientContext{
 		Groups:        []*keycloakCommon.Group{},
 		DefaultGroups: []*keycloakCommon.Group{},
-		ClientRoles:   map[string][]*keycloak.KeycloakUserRole{},
-		RealmRoles:    map[string][]*keycloak.KeycloakUserRole{},
-		AuthenticationFlowsExecutions: map[string][]*keycloak.AuthenticationExecutionInfo{
-			firstBrokerLoginFlowAlias: []*keycloak.AuthenticationExecutionInfo{
-				&keycloak.AuthenticationExecutionInfo{
+		ClientRoles:   map[string][]*kcTypes.KeycloakUserRole{},
+		RealmRoles:    map[string][]*kcTypes.KeycloakUserRole{},
+		AuthenticationFlowsExecutions: map[string][]*kcTypes.AuthenticationExecutionInfo{
+			firstBrokerLoginFlowAlias: []*kcTypes.AuthenticationExecutionInfo{
+				&kcTypes.AuthenticationExecutionInfo{
 					Requirement: "REQUIRED",
 					Alias:       reviewProfileExecutionAlias,
 				},
 				// dummy ones
-				&keycloak.AuthenticationExecutionInfo{
+				&kcTypes.AuthenticationExecutionInfo{
 					Requirement: "REQUIRED",
 					Alias:       "dummy execution",
 				},
@@ -1240,98 +1318,98 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		},
 	}
 
-	availableGroupClientRoles := []*keycloak.KeycloakUserRole{
-		&keycloak.KeycloakUserRole{
+	availableGroupClientRoles := []*kcTypes.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "create-client",
 			Name: "create-client",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-authorization",
 			Name: "manage-authorization",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-clients",
 			Name: "manage-clients",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-events",
 			Name: "manage-events",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-identity-providers",
 			Name: "manage-identity-providers",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-realm",
 			Name: "manage-realm",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "manage-users",
 			Name: "manage-users",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "query-clients",
 			Name: "query-clients",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "query-groups",
 			Name: "query-groups",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "query-realms",
 			Name: "query-realms",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "query-users",
 			Name: "query-users",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-authorization",
 			Name: "view-authorization",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-clients",
 			Name: "view-clients",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-events",
 			Name: "view-events",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-identity-providers",
 			Name: "view-identity-providers",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-realm",
 			Name: "view-realm",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "view-users",
 			Name: "view-users",
 		},
 	}
 
-	availableGroupRealmRoles := []*keycloak.KeycloakUserRole{
-		&keycloak.KeycloakUserRole{
+	availableGroupRealmRoles := []*kcTypes.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "mock-role-3",
 			Name: "mock-role-3",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "create-realm",
 			Name: "create-realm",
 		},
-		&keycloak.KeycloakUserRole{
+		&kcTypes.KeycloakUserRole{
 			ID:   "mock-role-4",
 			Name: "mock-role-4",
 		},
 	}
 
-	listRealmsFunc := func() ([]*keycloak.KeycloakAPIRealm, error) {
-		return []*keycloak.KeycloakAPIRealm{
-			&keycloak.KeycloakAPIRealm{
+	listRealmsFunc := func() ([]*kcTypes.KeycloakAPIRealm, error) {
+		return []*kcTypes.KeycloakAPIRealm{
+			&kcTypes.KeycloakAPIRealm{
 				Realm: "master",
 			},
-			&keycloak.KeycloakAPIRealm{
+			&kcTypes.KeycloakAPIRealm{
 				Realm: "test",
 			},
 		}, nil
@@ -1357,8 +1435,8 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 
 		context.Groups = append(context.Groups, newGroup)
 
-		context.ClientRoles[nextID] = []*keycloak.KeycloakUserRole{}
-		context.RealmRoles[nextID] = []*keycloak.KeycloakUserRole{}
+		context.ClientRoles[nextID] = []*kcTypes.KeycloakUserRole{}
+		context.RealmRoles[nextID] = []*kcTypes.KeycloakUserRole{}
 
 		return nextID, nil
 	}
@@ -1390,8 +1468,8 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil
 	}
 
-	listUsersInGroupFunc := func(realmName, groupID string) ([]*keycloak.KeycloakAPIUser, error) {
-		return []*keycloak.KeycloakAPIUser{}, nil
+	listUsersInGroupFunc := func(realmName, groupID string) ([]*kcTypes.KeycloakAPIUser, error) {
+		return []*kcTypes.KeycloakAPIUser{}, nil
 	}
 
 	makeGroupDefaultFunc := func(groupID string, realmName string) error {
@@ -1416,7 +1494,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return context.DefaultGroups, nil
 	}
 
-	createGroupClientRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, clientID, groupID string) (string, error) {
+	createGroupClientRoleFunc := func(role *kcTypes.KeycloakUserRole, realmName, clientID, groupID string) (string, error) {
 		groupClientRoles, ok := context.ClientRoles[groupID]
 
 		if !ok {
@@ -1427,7 +1505,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return "dummy-group-client-role-id", nil
 	}
 
-	listGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+	listGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*kcTypes.KeycloakUserRole, error) {
 		groupRoles, ok := context.ClientRoles[groupID]
 
 		if !ok {
@@ -1437,7 +1515,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return groupRoles, nil
 	}
 
-	listAvailableGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+	listAvailableGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*kcTypes.KeycloakUserRole, error) {
 		_, ok := context.ClientRoles[groupID]
 
 		if !ok {
@@ -1447,7 +1525,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return availableGroupClientRoles, nil
 	}
 
-	findGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*keycloak.KeycloakUserRole) bool) (*keycloak.KeycloakUserRole, error) {
+	findGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*kcTypes.KeycloakUserRole) bool) (*kcTypes.KeycloakUserRole, error) {
 		all, err := listGroupClientRolesFunc(realmName, clientID, groupID)
 
 		if err != nil {
@@ -1463,7 +1541,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil, nil
 	}
 
-	findAvailableGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*keycloak.KeycloakUserRole) bool) (*keycloak.KeycloakUserRole, error) {
+	findAvailableGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*kcTypes.KeycloakUserRole) bool) (*kcTypes.KeycloakUserRole, error) {
 		all, err := listAvailableGroupClientRolesFunc(realmName, clientID, groupID)
 
 		if err != nil {
@@ -1479,7 +1557,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil, nil
 	}
 
-	listGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+	listGroupRealmRolesFunc := func(realmName, groupID string) ([]*kcTypes.KeycloakUserRole, error) {
 		groupRoles, ok := context.RealmRoles[groupID]
 
 		if !ok {
@@ -1489,7 +1567,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return groupRoles, nil
 	}
 
-	listAvailableGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+	listAvailableGroupRealmRolesFunc := func(realmName, groupID string) ([]*kcTypes.KeycloakUserRole, error) {
 		_, ok := context.RealmRoles[groupID]
 
 		if !ok {
@@ -1499,7 +1577,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return availableGroupRealmRoles, nil
 	}
 
-	createGroupRealmRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, groupID string) (string, error) {
+	createGroupRealmRoleFunc := func(role *kcTypes.KeycloakUserRole, realmName, groupID string) (string, error) {
 		groupRealmRoles, ok := context.RealmRoles[groupID]
 
 		if !ok {
@@ -1510,14 +1588,14 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return "dummy-group-realm-role-id", nil
 	}
 
-	listClientsFunc := func(realmName string) ([]*keycloak.KeycloakAPIClient, error) {
-		return []*keycloak.KeycloakAPIClient{
-			&keycloak.KeycloakAPIClient{
+	listClientsFunc := func(realmName string) ([]*kcTypes.KeycloakAPIClient, error) {
+		return []*kcTypes.KeycloakAPIClient{
+			&kcTypes.KeycloakAPIClient{
 				ClientID: "test-realm",
 				ID:       "test-realm",
 				Name:     "test-realm",
 			},
-			&keycloak.KeycloakAPIClient{
+			&kcTypes.KeycloakAPIClient{
 				ClientID: "master-realm",
 				ID:       "master-realm",
 				Name:     "master-realm",
@@ -1525,7 +1603,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		}, nil
 	}
 
-	listAuthenticationExecutionsForFlowFunc := func(flowAlias, realmName string) ([]*keycloak.AuthenticationExecutionInfo, error) {
+	listAuthenticationExecutionsForFlowFunc := func(flowAlias, realmName string) ([]*kcTypes.AuthenticationExecutionInfo, error) {
 		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
 
 		if !ok {
@@ -1535,7 +1613,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return executions, nil
 	}
 
-	findAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, predicate func(*keycloak.AuthenticationExecutionInfo) bool) (*keycloak.AuthenticationExecutionInfo, error) {
+	findAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, predicate func(*kcTypes.AuthenticationExecutionInfo) bool) (*kcTypes.AuthenticationExecutionInfo, error) {
 		executions, err := listAuthenticationExecutionsForFlowFunc(flowAlias, realmName)
 
 		if err != nil {
@@ -1551,7 +1629,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil, nil
 	}
 
-	updateAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, execution *keycloak.AuthenticationExecutionInfo) error {
+	updateAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, execution *kcTypes.AuthenticationExecutionInfo) error {
 		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
 
 		if !ok {

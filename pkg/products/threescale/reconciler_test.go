@@ -17,10 +17,12 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	openshiftv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -32,7 +34,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloakTypes "github.com/integr8ly/keycloak-client/pkg/types"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -68,9 +70,48 @@ var (
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
+
+	kcUsers := keycloakTypes.KeycloakUser{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       keycloakTypes.KeycloakUserKind,
+			APIVersion: keycloakTypes.KeycloakUserApiVersion,
+		},
+	}
+
+	kcUsersList := keycloakTypes.KeycloakUserList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       keycloakTypes.KeycloakUserListKind,
+			APIVersion: keycloakTypes.KeycloakUserApiVersion,
+		},
+	}
+
+	kcUserUnstructed, err := dr.ConvertKeycloakUserTypedToUnstructured(&kcUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	kcUsersListUnstructed, err := dr.ConvertKeycloakUserListTypedToUnstructured(&kcUsersList)
+	if err != nil {
+		return nil, err
+	}
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   keycloakTypes.KeycloakUserGroup,
+		Version: keycloakTypes.KeycloakUserVersion,
+		Kind:    keycloakTypes.KeycloakUserKind,
+	},
+		kcUserUnstructed)
+
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   keycloakTypes.KeycloakUserGroup,
+		Version: keycloakTypes.KeycloakUserVersion,
+		Kind:    keycloakTypes.KeycloakUserListKind,
+	},
+		kcUsersListUnstructed)
+
+	err = threescalev1.SchemeBuilder.AddToScheme(scheme)
 	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
+	// err = keycloak.SchemeBuilder.AddToScheme(scheme)
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
@@ -1136,6 +1177,35 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kcUser := &keycloakTypes.KeycloakUser{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KeycloakUser",
+			APIVersion: "keycloak.org/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "generated-3scale",
+			Namespace: "rhsso",
+			Labels: map[string]string{
+				"sso": "integreatly",
+			},
+		},
+		Spec: keycloakTypes.KeycloakUserSpec{
+			User: keycloakTypes.KeycloakAPIUser{
+				UserName: defaultInstallationNamespace,
+				Attributes: map[string][]string{
+					user3ScaleID: {fmt.Sprint(1)},
+				},
+			},
+		},
+	}
+
+	kcUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(kcUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kcUserUnstructured.SetKind("KeycloakUser")
+
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
@@ -1310,23 +1380,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			args: args{
 				serverClient: fake.NewFakeClientWithScheme(scheme,
 					append(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace),
-						&keycloak.KeycloakUser{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "generated-3scale",
-								Namespace: "rhsso",
-								Labels: map[string]string{
-									"sso": "integreatly",
-								},
-							},
-							Spec: keycloak.KeycloakUserSpec{
-								User: keycloak.KeycloakAPIUser{
-									UserName: defaultInstallationNamespace,
-									Attributes: map[string][]string{
-										user3ScaleID: {fmt.Sprint(1)},
-									},
-								},
-							},
-						},
+						kcUserUnstructured,
 					)...),
 				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeManagedApi),
 			},
@@ -1379,7 +1433,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		serverClient k8sclient.Client
-		kcu          []keycloak.KeycloakAPIUser
+		kcu          []keycloakTypes.KeycloakAPIUser
 		accessToken  *string
 	}
 	tests := []struct {
@@ -1430,7 +1484,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 			},
 			args: args{
-				kcu: []keycloak.KeycloakAPIUser{
+				kcu: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: defaultInstallationNamespace,
 					},
@@ -1458,7 +1512,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 			},
 			args: args{
-				kcu: []keycloak.KeycloakAPIUser{
+				kcu: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: defaultInstallationNamespace,
 					},
@@ -1492,7 +1546,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 			},
 			args: args{
-				kcu: []keycloak.KeycloakAPIUser{
+				kcu: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: "test",
 					},
@@ -1543,6 +1597,57 @@ func TestReconciler_getUserDiff(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kcUserTyped1 := keycloakTypes.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "generated-3scale",
+			Namespace: "rhsso",
+		},
+	}
+
+	kcUserUnstructured1, err := dr.ConvertKeycloakUserTypedToUnstructured(&kcUserTyped1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kcUserTyped2 := keycloakTypes.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("generated-%s", defaultInstallationNamespace),
+			Namespace: "rhsso",
+		},
+		Spec: keycloakTypes.KeycloakUserSpec{
+			User: keycloakTypes.KeycloakAPIUser{
+				Attributes: map[string][]string{
+					user3ScaleID: {fmt.Sprint(1)},
+				},
+			},
+		},
+	}
+
+	kcUserUnstructured2, err := dr.ConvertKeycloakUserTypedToUnstructured(&kcUserTyped2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kcUserTyped3 := keycloakTypes.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("generated-uppercase-%s", defaultInstallationNamespace),
+			Namespace: "rhsso",
+		},
+		Spec: keycloakTypes.KeycloakUserSpec{
+			User: keycloakTypes.KeycloakAPIUser{
+				Attributes: map[string][]string{
+					user3ScaleID: {fmt.Sprint(1)},
+				},
+				UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
+			},
+		},
+	}
+
+	kcUserUnstructured3, err := dr.ConvertKeycloakUserTypedToUnstructured(&kcUserTyped3)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
@@ -1559,14 +1664,14 @@ func TestReconciler_getUserDiff(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		serverClient k8sclient.Client
-		kcUsers      []keycloak.KeycloakAPIUser
+		kcUsers      []keycloakTypes.KeycloakAPIUser
 		tsUsers      []*User
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   []keycloak.KeycloakAPIUser
+		want   []keycloakTypes.KeycloakAPIUser
 		want1  []*User
 		want2  []*User
 	}{
@@ -1574,7 +1679,9 @@ func TestReconciler_getUserDiff(t *testing.T) {
 			name: "Test - Read RHSSO Config failed - PhaseFailed",
 			fields: fields{
 				ConfigManager: &config.ConfigReadWriterMock{ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return nil, fmt.Errorf("read error")
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": "rhsso",
+					}), nil
 				}},
 				log: getLogger(),
 			},
@@ -1600,7 +1707,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				kcUsers: []keycloak.KeycloakAPIUser{
+				kcUsers: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: "NEW-3SCALE",
 					},
@@ -1609,7 +1716,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 					},
 				},
 			},
-			want: []keycloak.KeycloakAPIUser{
+			want: []keycloakTypes.KeycloakAPIUser{
 				{
 					UserName: "NEW-3SCALE",
 				},
@@ -1640,17 +1747,12 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				kcUsers: []keycloak.KeycloakAPIUser{
+				kcUsers: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: defaultInstallationNamespace,
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "generated-3scale",
-						Namespace: "rhsso",
-					},
-				}),
+				serverClient: fake.NewFakeClientWithScheme(scheme, kcUserUnstructured1),
 			},
 			want: nil,
 			want1: []*User{
@@ -1685,7 +1787,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				kcUsers: []keycloak.KeycloakAPIUser{
+				kcUsers: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: defaultInstallationNamespace,
 					},
@@ -1721,26 +1823,14 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				kcUsers: []keycloak.KeycloakAPIUser{
+				kcUsers: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: defaultInstallationNamespace,
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("generated-%s", defaultInstallationNamespace),
-						Namespace: "rhsso",
-					},
-					Spec: keycloak.KeycloakUserSpec{
-						User: keycloak.KeycloakAPIUser{
-							Attributes: map[string][]string{
-								user3ScaleID: {fmt.Sprint(1)},
-							},
-						},
-					},
-				}),
+				serverClient: fake.NewFakeClientWithScheme(scheme, kcUserUnstructured2),
 			},
-			want: []keycloak.KeycloakAPIUser{
+			want: []keycloakTypes.KeycloakAPIUser{
 				{
 					UserName: defaultInstallationNamespace,
 				},
@@ -1774,7 +1864,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				kcUsers: []keycloak.KeycloakAPIUser{
+				kcUsers: []keycloakTypes.KeycloakAPIUser{
 					{
 						UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
 						Attributes: map[string][]string{
@@ -1782,22 +1872,9 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("generated-uppercase-%s", defaultInstallationNamespace),
-						Namespace: "rhsso",
-					},
-					Spec: keycloak.KeycloakUserSpec{
-						User: keycloak.KeycloakAPIUser{
-							Attributes: map[string][]string{
-								user3ScaleID: {fmt.Sprint(1)},
-							},
-							UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
-						},
-					},
-				}),
+				serverClient: fake.NewFakeClientWithScheme(scheme, kcUserUnstructured3),
 			},
-			want: []keycloak.KeycloakAPIUser{
+			want: []keycloakTypes.KeycloakAPIUser{
 				{
 					UserName: fmt.Sprintf("UpperCase-%s", defaultInstallationNamespace),
 					Attributes: map[string][]string{

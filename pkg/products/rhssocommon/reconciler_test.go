@@ -12,6 +12,7 @@ import (
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	dr "github.com/integr8ly/integreatly-operator/pkg/resources/dynamic-resources"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -32,7 +33,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/pkg/types"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -48,6 +49,7 @@ import (
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -79,10 +81,6 @@ const (
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +240,12 @@ func TestReconciler_handleProgress(t *testing.T) {
 		},
 	}
 
-	kcr := getKcr(keycloak.KeycloakRealmStatus{
+	kcUnstructured, err := dr.ConvertKeycloakTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
+	}
+
+	kcr := getKcr(t, keycloak.KeycloakRealmStatus{
 		Phase: keycloak.PhaseReconciling,
 	})
 
@@ -289,7 +292,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:                  "test ready kcr returns phase complete",
 			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
 			Logger:                getLogger(),
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcUnstructured, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &integreatlyv1alpha1.RHMI{},
@@ -301,7 +304,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:                  "test unready kcr cr returns phase in progress",
 			ExpectedStatus:        integreatlyv1alpha1.PhaseInProgress,
 			Logger:                getLogger(),
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, kcUnstructured, secret, getKcr(t, keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &integreatlyv1alpha1.RHMI{},
@@ -326,7 +329,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			ExpectError:           true,
 			Logger:                getLogger(),
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcUnstructured, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &integreatlyv1alpha1.RHMI{},
@@ -338,7 +341,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:            "test failed config write",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcUnstructured, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadRHSSOUserFunc: func() (*config.RHSSOUser, error) {
@@ -400,8 +403,8 @@ func TestReconciler_handleProgress(t *testing.T) {
 	}
 }
 
-func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
-	return &keycloak.KeycloakRealm{
+func getKcr(t *testing.T, status keycloak.KeycloakRealmStatus) *unstructured.Unstructured {
+	kc := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      masterRealmName,
 			Namespace: defaultNamespace,
@@ -419,6 +422,13 @@ func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 		},
 		Status: status,
 	}
+
+	kcrUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(kc)
+	if err != nil {
+		t.FailNow()
+	}
+
+	return kcrUnstructured
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
