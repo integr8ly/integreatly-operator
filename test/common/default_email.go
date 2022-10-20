@@ -7,7 +7,7 @@ import (
 
 	goctx "context"
 
-	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloakv1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -11,7 +11,7 @@ import (
 
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"

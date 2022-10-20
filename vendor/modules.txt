@@ -723,8 +723,10 @@ github.com/integr8ly/cloud-resource-operator/pkg/resources
 # github.com/integr8ly/grafana-operator/v3 v3.10.3 => github.com/integr8ly/grafana-operator/v3 v3.6.0
 ## explicit; go 1.13
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/keycloak-client v0.1.8
+# github.com/integr8ly/keycloak-client v0.1.8 => ../keycloak-client
 ## explicit; go 1.17
+github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1
+github.com/integr8ly/keycloak-client/pkg
 github.com/integr8ly/keycloak-client/pkg/common
 # github.com/jmespath/go-jmespath v0.4.0
 ## explicit; go 1.14
@@ -1501,3 +1503,4 @@ sigs.k8s.io/yaml
 # k8s.io/metrics => k8s.io/metrics v0.20.6
 # k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.6
 # sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.6.3
+# github.com/integr8ly/keycloak-client => ../keycloak-client

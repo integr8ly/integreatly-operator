@@ -23,8 +23,8 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 

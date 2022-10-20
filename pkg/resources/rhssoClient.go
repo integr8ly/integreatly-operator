@@ -7,7 +7,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"

@@ -13,7 +13,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"

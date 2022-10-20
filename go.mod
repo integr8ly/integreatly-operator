@@ -218,4 +218,5 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.20.6
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.6
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.6.3
+	github.com/integr8ly/keycloak-client => ../keycloak-client
 )

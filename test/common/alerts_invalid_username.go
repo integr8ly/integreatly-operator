@@ -5,7 +5,7 @@ import (
 	"fmt"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

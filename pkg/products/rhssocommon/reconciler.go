@@ -16,7 +16,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
