@@ -161,7 +161,8 @@ func ConvertKeycloakListTypedToUnstructuredList(kcList *kc.KeycloakList) (*unstr
 		return unstructuredKeycloakList, err
 	}
 
-	for _, keycloak := range kcList.Items {
+	for i := range kcList.Items {
+		keycloak := kcList.Items[i]
 		unstructuredKeycloak := CreateUnstructuredWithGVK(kc.KeycloakRealmGroup, kc.KeycloakRealmKind, kc.KeycloakRealmVersion, "", "")
 		realmUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&keycloak)
 		if err != nil {
@@ -306,7 +307,8 @@ func ConvertKeycloakRealmListTypedToUnstructuredList(kcRealmList *kc.KeycloakRea
 		return unstructuredKeycloakRealmList, err
 	}
 
-	for _, realm := range kcRealmList.Items {
+	for i := range kcRealmList.Items {
+		realm := kcRealmList.Items[i]
 		unstructuredKeycloakRealm := CreateUnstructuredWithGVK(kc.KeycloakRealmGroup, kc.KeycloakRealmKind, kc.KeycloakRealmVersion, "", "")
 		realmUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&realm)
 		if err != nil {
@@ -452,7 +454,8 @@ func ConvertKeycloakUserListTypedToUnstructured(kcUserList *kc.KeycloakUserList)
 		return unstructuredKeycloakUserList, err
 	}
 
-	for _, user := range kcUserList.Items {
+	for i := range kcUserList.Items {
+		user := kcUserList.Items[i]
 		unstructuredKeycloakUser := CreateUnstructuredWithGVK(kc.KeycloakUserGroup, kc.KeycloakUserKind, kc.KeycloakUserVersion, "", "")
 		userUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&user)
 		if err != nil {
@@ -600,7 +603,8 @@ func ConvertKeycloakClientListTypedToUnstructured(kcClientList *kc.KeycloakClien
 		return unstructuredKeycloakClientList, err
 	}
 
-	for _, client := range kcClientList.Items {
+	for i := range kcClientList.Items {
+		client := kcClientList.Items[i]
 		unstructuredKeycloakClient := CreateUnstructuredWithGVK(kc.KeycloakClientGroup, kc.KeycloakClientKind, kc.KeycloakClientVersion, "", "")
 		clientUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&client)
 		if err != nil {

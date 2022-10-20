@@ -219,7 +219,8 @@ func removeKeyCloakClientFinalizers(ctx *TestingContext, nameSpace string) error
 			return false, err
 		}
 
-		for _, client := range clients.Items {
+		for i := range clients.Items {
+			client := clients.Items[i]
 			keycloakClientUnstructured, err := dr.ConvertKeycloakClientTypedToUnstructured(&client)
 			if err != nil {
 				return false, err
@@ -257,7 +258,8 @@ func removeKeyCloakRealmFinalizers(ctx *TestingContext, nameSpace string) error 
 			return false, err
 		}
 
-		for _, realm := range realms.Items {
+		for i := range realms.Items {
+			realm := realms.Items[i]
 			keycloakRealmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(&realm)
 			if err != nil {
 				return false, err
@@ -295,7 +297,8 @@ func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
 			return false, err
 		}
 
-		for _, user := range users.Items {
+		for i := range users.Items {
+			user := users.Items[i]
 			keycloakUserUnstructured, err := dr.ConvertKeycloakUserTypedToUnstructured(&user)
 			if err != nil {
 				return false, err

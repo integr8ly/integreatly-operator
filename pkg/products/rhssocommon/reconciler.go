@@ -180,7 +180,8 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 	}
 
 	// Delete all realm finalizers
-	for _, realm := range realms.Items {
+	for i := range realms.Items {
+		realm := realms.Items[i]
 		realm.SetFinalizers([]string{})
 		realmUnstructured, err := dr.ConvertKeycloakRealmTypedToUnstructured(&realm)
 		if err != nil {
