@@ -15,8 +15,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
-	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
