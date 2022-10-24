@@ -3062,3 +3062,168 @@ func productConfigMock() *quota.ProductConfigMock {
 		GetResourceConfigFunc:  nil,
 	}
 }
+
+func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testUser := &usersv1.User{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-user01",
+		},
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		client   k8sclient.Client
+		userName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Success on valid User CR",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				client:   fake.NewFakeClientWithScheme(scheme, testUser),
+				userName: "test-user01",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Fail on non-existent User CR",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				client:   fake.NewFakeClientWithScheme(scheme, testUser),
+				userName: "bad-username",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			if err := r.addSSOReadyAnnotationToUser(context.TODO(), tt.args.client, tt.args.userName); (err != nil) != tt.wantErr {
+				t.Errorf("addSSOReadyAnnotationToUser() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-seed",
+			Namespace: defaultInstallationNamespace,
+		},
+		Data: map[string][]byte{
+			"ADMIN_USER":  []byte(""),
+			"ADMIN_EMAIL": []byte(""),
+		},
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		serverClient k8sclient.Client
+		username     string
+		email        string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Success when secret exists",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				log: getLogger(),
+			},
+			args: args{
+				serverClient: fake.NewFakeClientWithScheme(scheme, secret),
+				username:     "username",
+				email:        "email",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			if err := r.SetAdminDetailsOnSecret(context.TODO(), tt.args.serverClient, tt.args.username, tt.args.email); (err != nil) != tt.wantErr {
+				t.Errorf("SetAdminDetailsOnSecret() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
