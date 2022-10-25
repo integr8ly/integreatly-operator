@@ -7,10 +7,14 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
+	"github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+	"time"
 )
 
 // Custom metrics
@@ -91,6 +95,15 @@ var (
 		[]string{
 			"state", // "pending/firing
 		},
+	)
+
+	// Rhoam7DPercentile metric exported to telemeter. DO NOT increase cardinality
+	Rhoam7DPercentile = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_7d_slo_percentile",
+			Help: "RHOAM 7 day slo percentile value",
+		},
+		[]string{},
 	)
 
 	RHOAMStatus = prometheus.NewGaugeVec(
@@ -335,6 +348,11 @@ func SetRhoamWarningAlerts(alerts resources.AlertMetrics) {
 	RhoamWarningAlerts.WithLabelValues(string(prometheusv1.AlertStatePending)).Set(float64(alerts.Pending))
 }
 
+func SetRhoam7DPercentile(value float32) {
+	Rhoam7DPercentile.Reset()
+	Rhoam7DPercentile.With(prometheus.Labels{}).Set(float64(value))
+}
+
 func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	status := RhoamState{}
 
@@ -360,4 +378,44 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 		status.Version = cr.Status.Version
 	}
 	return status, nil
+}
+
+func SloPercentile(route string, token config.Secret) (float32, prometheusv1.Warnings, error) {
+
+	v1api, err := GetApiClient(route, token)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	query := "clamp_max(sum_over_time((clamp_max(sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"})), 1))[7d:10m]) / (7* 24 * 6) > 0, 1)"
+
+	result, warnings, err := v1api.Query(ctx, query, time.Now())
+	if err != nil {
+		return 0, nil, err
+	}
+
+	resultValue := result.(model.Vector)
+
+	if len(resultValue) == 1 {
+		value := float32(resultValue[0].Value)
+		return value, warnings, nil
+	} else {
+		return 0, warnings, fmt.Errorf("vector models lenght of unexpected length: Expected 1; Got %v", len(resultValue))
+	}
+}
+
+func GetApiClient(route string, token config.Secret) (prometheusv1.API, error) {
+	client, err := api.NewClient(api.Config{
+		Address:      route,
+		RoundTripper: config.NewAuthorizationCredentialsRoundTripper("Bearer", token, api.DefaultRoundTripper),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	v1api := prometheusv1.NewAPI(client)
+	return v1api, nil
 }

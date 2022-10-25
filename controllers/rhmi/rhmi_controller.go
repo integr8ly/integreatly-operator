@@ -33,6 +33,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	prometheusConfig "github.com/prometheus/common/config"
 
 	"github.com/go-openapi/strfmt"
 	routev1 "github.com/openshift/api/route/v1"
@@ -401,7 +402,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	log.Info("set alerts summary metric")
-	err = r.composeAndSetAlertsSummaryMetric(installation, configManager)
+	err = r.composeAndSetSummaryMetrics(installation, configManager)
 	if err != nil {
 		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
 			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
@@ -1412,7 +1413,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	return installation, nil
 }
 
-func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
+func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
 	var alerts []prometheusv1.Alert
 
 	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
@@ -1434,6 +1435,21 @@ func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1al
 			critical, warning := formatAlerts(alerts)
 			metrics.SetRhoamCriticalAlerts(critical)
 			metrics.SetRhoamWarningAlerts(warning)
+
+			url, err := r.getURLFromRoute("prometheus", namespace, r.restConfig)
+			if err != nil {
+				return fmt.Errorf("error getting route : %w", err)
+			}
+
+			value, warnings, err := metrics.SloPercentile(url, prometheusConfig.Secret(r.restConfig.BearerToken))
+			if err != nil {
+				return err
+			}
+
+			for _, warning := range warnings {
+				log.Warning(warning)
+			}
+			metrics.SetRhoam7DPercentile(value)
 
 			return nil
 		}
