@@ -131,6 +131,39 @@ func (r *SubscriptionReconciler) Reconcile(request ctrl.Request) (ctrl.Result, e
 
 	if subscription.Spec.InstallPlanApproval != operatorsv1alpha1.ApprovalManual {
 		subscription.Spec.InstallPlanApproval = operatorsv1alpha1.ApprovalManual
+
+		// We need to get the latest InstallPlan to get the CSV in order to set the subscription's Config.Resources
+		// The Config.Resources field needs to be explicitly set because otherwise r.Update will silently set the Config to {} if it's not already set
+		latestInstallPlan := &olmv1alpha1.InstallPlan{}
+		err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
+			if subscription.Status.InstallPlanRef == nil {
+				log.Info("InstallPlanRef from Subscription is nil, trying again...")
+				return false, nil
+			}
+			err = r.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: subscription.Status.InstallPlanRef.Name, Namespace: subscription.Status.InstallPlanRef.Namespace}, latestInstallPlan)
+			if err != nil {
+				log.Infof("Failed to get InstallPlan, trying again...", l.Fields{"Error": err})
+				return false, nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			log.Infof("Failed to get the latest InstallPlan", l.Fields{"Error": err})
+			return ctrl.Result{}, err
+		}
+		csv, err := r.csvLocator.GetCSV(context.TODO(), r.Client, latestInstallPlan)
+		if err != nil {
+			log.Infof("Failed to get CSV from the latest InstallPlan", l.Fields{"Error": err})
+			return ctrl.Result{}, err
+		}
+		deploymentSpecs := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs
+		if len(deploymentSpecs) > 0 {
+			containers := deploymentSpecs[0].Spec.Template.Spec.Containers
+			if len(containers) > 0 {
+				subscription.Spec.Config.Resources = containers[0].Resources
+			}
+		}
+
 		err = r.Update(context.TODO(), subscription)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -154,8 +187,8 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 		return false
 	}
 
-	for _, reconcileable := range subscriptionsToReconcile {
-		if request.Name == reconcileable {
+	for _, reconcilable := range subscriptionsToReconcile {
+		if request.Name == reconcilable {
 			return true
 		}
 	}
@@ -164,6 +197,10 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 }
 
 func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (ctrl.Result, error) {
+	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
+		log.Info("no upgrade available")
+		return ctrl.Result{}, nil
+	}
 	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
 	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
@@ -215,8 +252,8 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 
 	if !isServiceAffecting && !latestInstallPlan.Spec.Approved {
 		eventRecorder := r.mgr.GetEventRecorderFor("Operator Upgrade")
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
 		logrus.Infof("Approving install plan %s ", latestInstallPlan.Name)
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

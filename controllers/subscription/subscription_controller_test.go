@@ -3,18 +3,19 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"testing"
-
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"reflect"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"testing"
+	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,7 +25,8 @@ import (
 )
 
 const (
-	operatorNamespace = "openshift-operators"
+	operatorNamespace      = "openshift-operators"
+	defaultInstallPlanName = "installplan"
 )
 
 func getBuildScheme() (*runtime.Scheme, error) {
@@ -54,7 +56,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 
 	installPlan := &olmv1alpha1.InstallPlan{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installplan",
+			Name:      defaultInstallPlanName,
 			Namespace: operatorNamespace,
 		},
 		Status: olmv1alpha1.InstallPlanStatus{
@@ -100,7 +102,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
 				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
+					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
 					},
@@ -138,7 +140,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
 				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
+					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
 					},
@@ -176,7 +178,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
 				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
+					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
 					},
@@ -230,7 +232,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					InstallPlanApproval: olmv1alpha1.ApprovalManual,
 				},
 				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
+					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
 					},
@@ -533,4 +535,210 @@ func allowUpdatesValueIsCorrect(client k8sclient.Client, postgresName, redisName
 		return false, nil
 	}
 	return true, nil
+}
+
+func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
+	defaultCSV := &v1alpha1.ClusterServiceVersion{
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			Replaces: "1.2.3",
+		},
+	}
+	defaultCSVStringfied, err := json.Marshal(defaultCSV)
+	if err != nil {
+		panic(err)
+	}
+
+	defaultInstallPlan := &olmv1alpha1.InstallPlan{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultInstallPlanName,
+			Namespace: operatorNamespace,
+		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+						Manifest: string(defaultCSVStringfied),
+					},
+				},
+			},
+		},
+	}
+
+	defaultInstallation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: operatorNamespace,
+		},
+	}
+
+	defaultSubscription := &v1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: operatorNamespace,
+			Name:      IntegreatlyPackage,
+		},
+		Spec: &v1alpha1.SubscriptionSpec{
+			InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+		},
+		Status: v1alpha1.SubscriptionStatus{
+			InstallPlanRef: &corev1.ObjectReference{
+				Name:      defaultInstallPlan.Name,
+				Namespace: defaultInstallPlan.Namespace,
+			},
+			CurrentCSV:   "1.2.4",
+			InstalledCSV: "1.2.3",
+		},
+	}
+
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatalf("failed to build scheme: %s", err.Error())
+	}
+
+	type fields struct {
+		csv         *v1alpha1.ClusterServiceVersion
+		installPlan *olmv1alpha1.InstallPlan
+	}
+
+	type args struct {
+		rhmiSubscription *v1alpha1.Subscription
+		installation     *integreatlyv1alpha1.RHMI
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    controllerruntime.Result
+		wantErr bool
+	}{
+		{
+			name: "HandleUpgrades shouldn't fail if Subscription is nils",
+			args: args{
+				rhmiSubscription: &v1alpha1.Subscription{},
+				installation:     defaultInstallation,
+			},
+			fields: fields{
+				csv:         defaultCSV,
+				installPlan: defaultInstallPlan,
+			},
+			want:    controllerruntime.Result{},
+			wantErr: false,
+		},
+		{
+			name: "HandleUpgrades should pass on valid input and already approved InstallPlan",
+			args: args{
+				rhmiSubscription: defaultSubscription,
+				installation:     defaultInstallation,
+			},
+			fields: fields{
+				csv: defaultCSV,
+				installPlan: &olmv1alpha1.InstallPlan{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      defaultInstallPlanName,
+						Namespace: operatorNamespace,
+					},
+					Spec: olmv1alpha1.InstallPlanSpec{
+						Approved: true,
+					},
+					Status: olmv1alpha1.InstallPlanStatus{
+						Plan: []*olmv1alpha1.Step{
+							{
+								Resource: olmv1alpha1.StepResource{
+									Kind:     olmv1alpha1.ClusterServiceVersionKind,
+									Manifest: string(defaultCSVStringfied),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: controllerruntime.Result{
+				Requeue:      true,
+				RequeueAfter: time.Minute,
+			},
+			wantErr: false,
+		},
+		{
+			name: "HandleUpgrades should pass on valid input and unapproved InstallPlan",
+			args: args{
+				rhmiSubscription: defaultSubscription,
+				installation:     defaultInstallation,
+			},
+			fields: fields{
+				csv: defaultCSV,
+				installPlan: &olmv1alpha1.InstallPlan{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      defaultInstallPlanName,
+						Namespace: operatorNamespace,
+					},
+					Spec: olmv1alpha1.InstallPlanSpec{
+						Approved: false,
+					},
+					Status: olmv1alpha1.InstallPlanStatus{
+						Plan: []*olmv1alpha1.Step{
+							{
+								Resource: olmv1alpha1.StepResource{
+									Kind:     olmv1alpha1.ClusterServiceVersionKind,
+									Manifest: string(defaultCSVStringfied),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: controllerruntime.Result{
+				Requeue:      true,
+				RequeueAfter: time.Minute,
+			},
+			wantErr: false,
+		},
+		{
+			name: "HandleUpgrades should fail on invalid CSV",
+			args: args{
+				rhmiSubscription: defaultSubscription,
+				installation:     defaultInstallation,
+			},
+
+			fields: fields{
+				csv: &olmv1alpha1.ClusterServiceVersion{},
+				installPlan: &olmv1alpha1.InstallPlan{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      defaultInstallPlanName,
+						Namespace: operatorNamespace,
+					},
+					Status: olmv1alpha1.InstallPlanStatus{
+						Plan: []*olmv1alpha1.Step{
+							{
+								Resource: olmv1alpha1.StepResource{
+									Kind: olmv1alpha1.ClusterServiceVersionKind,
+								},
+							},
+						},
+					},
+				},
+			},
+			want:    controllerruntime.Result{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fakeclient.NewFakeClientWithScheme(scheme, tt.fields.csv, tt.fields.installPlan, tt.args.rhmiSubscription, tt.args.installation)
+			r := &SubscriptionReconciler{
+				Client:              client,
+				Scheme:              scheme,
+				operatorNamespace:   operatorNamespace,
+				catalogSourceClient: getCatalogSourceClient(""),
+				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
+			}
+			got, err := r.HandleUpgrades(context.TODO(), tt.args.rhmiSubscription, tt.args.installation)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandleUpgrades() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandleUpgrades() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
