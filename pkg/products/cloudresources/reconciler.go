@@ -15,7 +15,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
@@ -184,6 +183,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
+	phase, err = r.reconcileCloudResourceStrategies(client)
+	if err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
+		return phase, err
+	}
+
 	if err := r.reconcileCIDRValue(ctx, client); err != nil {
 		phase := integreatlyv1alpha1.PhaseFailed
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile CIDR value", err)
@@ -196,13 +202,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileCloudResourceStrategies(client)
-	if err != nil {
-		phase := integreatlyv1alpha1.PhaseFailed
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
 		return phase, err
 	}
 
@@ -555,9 +554,6 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		Name:      r.Config.GetStrategiesConfigMapName(),
 		Namespace: r.installation.Namespace,
 	}, cfgMap); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
 		return err
 	}
 
