@@ -583,7 +583,7 @@ func Test_tenantExists(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Tenant name is empty string",
+			name: "Tenant sloPercentile is empty string",
 			args: args{
 				user: "",
 				tenants: []userHelper.MultiTenantUser{
