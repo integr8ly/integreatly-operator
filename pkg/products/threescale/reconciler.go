@@ -3177,12 +3177,10 @@ func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, clien
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, apim, func() error {
 		annotations := apim.ObjectMeta.GetAnnotations()
-		// TODO restore annotations when Referrer Policy is fixed
 		if annotations == nil {
 			annotations = map[string]string{}
 		}
-		delete(annotations, "apps.3scale.net/disable-apicast-service-reconciler")
-		//annotations["apps.3scale.net/disable-apicast-service-reconciler"] = "true"
+		annotations["apps.3scale.net/disable-apicast-service-reconciler"] = "true"
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
