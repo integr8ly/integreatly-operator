@@ -94,6 +94,14 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 					Expr:   intstr.FromString(fmt.Sprintf("max by(state) (%s_warning_alerts)", installationName)),
 					Record: fmt.Sprintf("state:%ss_warning_alerts:max", installationName),
 				},
+				{
+					Expr:   intstr.FromString("max by () (rhoam_7d_slo_percentile)"),
+					Record: fmt.Sprintf("%s_7d_slo_percentile:max", installationName),
+				},
+				{
+					Expr:   intstr.FromString("max by () (rhoam_7d_slo_remaining_error_budget)"),
+					Record: fmt.Sprintf("%s_7d_slo_remaining_error_budget:max", installationName),
+				},
 			},
 		},
 	}
