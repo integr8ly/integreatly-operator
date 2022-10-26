@@ -72,6 +72,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.RhoamCriticalAlerts)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RhoamWarningAlerts)
 	customMetrics.Registry.MustRegister(integreatlymetrics.Rhoam7DPercentile)
+	customMetrics.Registry.MustRegister(integreatlymetrics.Rhoam7DSloRemainingErrorBudget)
 
 	integreatlymetrics.OperatorVersion.Add(1)
 	utilruntime.Must(v1.Install(clientgoscheme.Scheme))

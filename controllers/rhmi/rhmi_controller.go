@@ -1441,7 +1441,9 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 				return fmt.Errorf("error getting route : %w", err)
 			}
 
-			value, warnings, err := metrics.SloPercentile(url, prometheusConfig.Secret(r.restConfig.BearerToken))
+			token := prometheusConfig.Secret(r.restConfig.BearerToken)
+
+			value, warnings, err := metrics.SloPercentile(url, token)
 			if err != nil {
 				return err
 			}
@@ -1450,6 +1452,16 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 				log.Warning(warning)
 			}
 			metrics.SetRhoam7DPercentile(value)
+
+			value, warnings, err = metrics.SloRemainingErrorBudget(url, token)
+			if err != nil {
+				return err
+			}
+
+			for _, warning := range warnings {
+				log.Warning(warning)
+			}
+			metrics.SetRhoam7DSloRemainingErrorBudget(value)
 
 			return nil
 		}

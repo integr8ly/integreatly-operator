@@ -106,6 +106,15 @@ var (
 		[]string{},
 	)
 
+	// Rhoam7DSloRemainingErrorBudget metric exported to telemeter. DO NOT increase cardinality
+	Rhoam7DSloRemainingErrorBudget = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_7d_slo_remaining_error_budget",
+			Help: "RHOAM 7 day slo remaining error budget in milliseconds",
+		},
+		[]string{},
+	)
+
 	RHOAMStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_status",
@@ -208,6 +217,7 @@ const (
 	LabelSystemMaster    = "system_master"
 	LabelSystemDeveloper = "system_developer"
 	LabelSystemProvider  = "system_provider"
+	SloDays              = 7
 )
 
 type PortalInfo struct {
@@ -353,6 +363,11 @@ func SetRhoam7DPercentile(value float32) {
 	Rhoam7DPercentile.With(prometheus.Labels{}).Set(float64(value))
 }
 
+func SetRhoam7DSloRemainingErrorBudget(value float32) {
+	Rhoam7DSloRemainingErrorBudget.Reset()
+	Rhoam7DSloRemainingErrorBudget.With(prometheus.Labels{}).Set(float64(value))
+}
+
 func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	status := RhoamState{}
 
@@ -380,31 +395,32 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	return status, nil
 }
 
+func SloRemainingErrorBudget(route string, token config.Secret) (float32, prometheusv1.Warnings, error) {
+
+	sloMs := SloDays * 24 * 60 * 60 * 1000
+	slo001Ms := float64(sloMs) * 0.001
+
+	query := fmt.Sprintf("%[1]v - (sum_over_time((clamp_max(sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"}), 1))[%[2]vd:10m]) * (10 * 60 * 1000))  or vector(%[1]v)", slo001Ms, SloDays)
+
+	value, warnings, err := vectorQuery(route, token, query)
+	if err != nil {
+		err = fmt.Errorf("slo remaining error budget : %s", err)
+	}
+
+	return value, warnings, err
+
+}
+
 func SloPercentile(route string, token config.Secret) (float32, prometheusv1.Warnings, error) {
 
-	v1api, err := GetApiClient(route, token)
+	query := fmt.Sprintf("clamp_max(sum_over_time((clamp_max(sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"})), 1))[%[1]vd:10m]) / (%[1]v * 24 * 6) > 0, 1)", SloDays)
+
+	value, warnings, err := vectorQuery(route, token, query)
 	if err != nil {
-		return 0, nil, err
+		err = fmt.Errorf("slo percentile : %s", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	query := "clamp_max(sum_over_time((clamp_max(sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"})), 1))[7d:10m]) / (7* 24 * 6) > 0, 1)"
-
-	result, warnings, err := v1api.Query(ctx, query, time.Now())
-	if err != nil {
-		return 0, nil, err
-	}
-
-	resultValue := result.(model.Vector)
-
-	if len(resultValue) == 1 {
-		value := float32(resultValue[0].Value)
-		return value, warnings, nil
-	} else {
-		return 0, warnings, fmt.Errorf("vector models lenght of unexpected length: Expected 1; Got %v", len(resultValue))
-	}
+	return value, warnings, err
 }
 
 func GetApiClient(route string, token config.Secret) (prometheusv1.API, error) {
@@ -418,4 +434,28 @@ func GetApiClient(route string, token config.Secret) (prometheusv1.API, error) {
 
 	v1api := prometheusv1.NewAPI(client)
 	return v1api, nil
+}
+
+func vectorQuery(route string, token config.Secret, query string) (float32, prometheusv1.Warnings, error) {
+	v1api, err := GetApiClient(route, token)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, warnings, err := v1api.Query(ctx, query, time.Now())
+	if err != nil {
+		return 0, nil, err
+	}
+
+	resultValue := result.(model.Vector)
+
+	if len(resultValue) == 1 {
+		value := float32(resultValue[0].Value)
+		return value, warnings, nil
+	} else {
+		return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
+	}
 }
