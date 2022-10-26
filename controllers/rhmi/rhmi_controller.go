@@ -1446,13 +1446,6 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 
 	for namespace := range alertingNamespaces {
 		if namespace == observability.GetNamespace() {
-			alerts, err = r.getCurrentAlerts("prometheus", namespace)
-			if err != nil {
-				return fmt.Errorf("composing alert metric failed: %w", err)
-			}
-			critical, warning := formatAlerts(alerts)
-			metrics.SetRhoamCriticalAlerts(critical)
-			metrics.SetRhoamWarningAlerts(warning)
 
 			url, err := r.getURLFromRoute("prometheus", namespace, r.restConfig)
 			if err != nil {
@@ -1460,6 +1453,15 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 			}
 
 			token := prometheusConfig.Secret(r.restConfig.BearerToken)
+
+			alerts, err = metrics.GetCurrentAlerts(url, token)
+			if err != nil {
+				return err
+			}
+
+			critical, warning := formatAlerts(alerts)
+			metrics.SetRhoamCriticalAlerts(critical)
+			metrics.SetRhoamWarningAlerts(warning)
 
 			value, warnings, err := metrics.SloPercentile(url, token)
 			if err != nil {
@@ -1486,56 +1488,6 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 	}
 
 	return nil
-}
-
-func (r *RHMIReconciler) getCurrentAlerts(route string, namespace string) ([]prometheusv1.Alert, error) {
-	endpoint := "/api/v1/alerts"
-
-	url, err := r.getURLFromRoute(route, namespace, r.restConfig)
-	if err != nil {
-		return nil, fmt.Errorf("error getting route : %w", err)
-	}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s%s", url, endpoint), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error on request : %w", err)
-	}
-	var bearer = "Bearer " + r.restConfig.BearerToken
-	req.Header.Add("Authorization", bearer)
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error on response : %w", err)
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("reader close failure", err)
-		}
-	}(resp.Body)
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read body : %w", err)
-	}
-
-	var alertResp struct {
-		Status string `json:"status"`
-		Data   struct {
-			Alerts []prometheusv1.Alert `json:"alerts"`
-		} `json:"data"`
-	}
-
-	err = json.Unmarshal(body, &alertResp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
-	}
-
-	return alertResp.Data.Alerts, nil
 }
 
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {

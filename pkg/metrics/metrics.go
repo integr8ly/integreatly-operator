@@ -459,3 +459,20 @@ func vectorQuery(route string, token config.Secret, query string) (float32, prom
 		return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
 	}
 }
+
+func GetCurrentAlerts(route string, token config.Secret) ([]prometheusv1.Alert, error) {
+	v1api, err := GetApiClient(route, token)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	alerts, err := v1api.Alerts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return alerts.Alerts, nil
+}
