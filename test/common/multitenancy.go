@@ -48,7 +48,7 @@ var (
 	testUserForQuickStart = fmt.Sprintf("%v%02v", DefaultTestUserName, 1)
 	quickStartNamespace   = fmt.Sprintf("%v%02v-dev", DefaultTestUserName, 1)
 	quarkusAppName        = "rhoam-quarkus-openapi"
-	quarkusImageName      = "quay.io/evanshortiss/rhoam-quarkus-openapi:latest"
+	quarkusImageName      = "quay.io/integreatly/rhoam-quarkus-openapi:latest"
 	singleTenantMode      = true
 )
 
@@ -540,7 +540,7 @@ func createAndVerifyQuarkusRoute(ctx *TestingContext, rhmi *integreatlyv1alpha1.
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get Service before creating route %v", err)
+		return fmt.Errorf("failed to verify that route was successfully created %v", err)
 	}
 
 	return nil
@@ -569,7 +569,7 @@ func grantViewRoleToTestUser(ctx *TestingContext) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to grant view fole to user %v, error: %v", testUserForQuickStart, err)
+		return fmt.Errorf("failed to grant view role to user %v, error: %v", testUserForQuickStart, err)
 	}
 
 	return nil
