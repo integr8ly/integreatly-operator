@@ -460,6 +460,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileServiceMonitor(ctx, serverClient, productNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale service monitor"), err)
+		return phase, err
+	}
+
 	alertsReconciler, err = r.newAlertReconciler(r.log, r.installation.Spec.Type, ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -3349,4 +3355,41 @@ func (r *Reconciler) getKeycloakClientFromAccount(client k8sclient.Client, accou
 
 	// If the KeycloakClient wasn't found return an error
 	return nil, fmt.Errorf("failed to find the KeycloakClient for %v", accountName)
+}
+
+func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	r.log.Info("Start reconcileServiceMonitor for 3scale")
+
+	serviceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "3scale-service-monitor",
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, serviceMonitor, func() error {
+		serviceMonitor.Labels = map[string]string{
+			"monitoring-key": "middleware",
+		}
+		serviceMonitor.Spec = prometheus.ServiceMonitorSpec{
+			Endpoints: []prometheus.Endpoint{
+				{
+					Path: "metrics",
+					Port: "metrics",
+				},
+			},
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "3scale-api-management",
+				},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
