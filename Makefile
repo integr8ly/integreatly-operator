@@ -34,6 +34,7 @@ S3_SECRET_ACCESS_KEY ?= ''
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
+CONTAINER_PLATFORM ?= linux/amd64
 TEST_RESULTS_DIR ?= test-results
 TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
@@ -197,12 +198,12 @@ code/fix:
 .PHONY: image/build
 image/build: code/gen
 	echo "build image $(OPERATOR_IMAGE)"
-	docker build -t ${OPERATOR_IMAGE} .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -t ${OPERATOR_IMAGE} .
 
 .PHONY: image/push
 image/push:
 	echo "push image $(OPERATOR_IMAGE)"
-	docker push $(OPERATOR_IMAGE)
+	$(CONTAINER_ENGINE) push $(OPERATOR_IMAGE)
 
 .PHONY: image/build/push
 image/build/push: image/build image/push
@@ -523,12 +524,12 @@ packagemanifests: manifests kustomize
 # Build the bundle image.
 .PHONY: bundle-build
 bundle-build:
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 # USAGE: make olm/bundle BUNDLE_TAG="quay.io/mstoklus/integreatly-index:1.15.2" VERSION=1.15.2 OLM_TYPE=managed-api-service will build a bundle from 1.15.2 bundles/managed-api-service directory.
 .PHONY: olm/bundle
 olm/bundle:
-	docker build -f bundles/$(OLM_TYPE)/bundle.Dockerfile -t $(BUNDLE_TAG) --build-arg version=$(VERSION) .
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) -f bundles/$(OLM_TYPE)/bundle.Dockerfile -t $(BUNDLE_TAG) --build-arg version=$(VERSION) .
 
 .PHONY: coverage
 coverage:

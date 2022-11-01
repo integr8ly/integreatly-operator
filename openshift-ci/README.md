@@ -6,6 +6,10 @@ Base image used on CI for all builds and test jobs.
 This docker file builds the root image every time the CI is ran. 
 Configuration for the CI-Operator can be found [here](https://docs.ci.openshift.org/docs/architecture/ci-operator/#what-is-ci-operator-and-how-does-it-work).
 
+#### Container Platform
+Images are built targeting a build platform specified by the `CONTAINER_PLATFORM` flag in the Makefile. This
+prevents a mismatch between the container platform of images built in the local system vs the architecture of the Clusters.
+
 #### Build and Test
 
 Requires you to be oc logged in to any cluster on your host machine.
