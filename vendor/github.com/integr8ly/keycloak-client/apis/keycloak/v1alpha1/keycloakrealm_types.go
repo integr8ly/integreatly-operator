@@ -73,6 +73,10 @@ type KeycloakAPIRealm struct {
 	// +optional
 	ClientScopes []KeycloakClientScope `json:"clientScopes,omitempty"`
 
+	// Default client scopes to add to all new clients
+	// +optional
+	DefaultDefaultClientScopes []string `json:"defaultDefaultClientScopes,omitempty"`
+
 	// Authentication flows
 	// +optional
 	AuthenticationFlows []KeycloakAPIAuthenticationFlow `json:"authenticationFlows,omitempty"`
@@ -195,6 +199,34 @@ type KeycloakAPIRealm struct {
 	// User Managed Access Allowed
 	// +optional
 	UserManagedAccessAllowed *bool `json:"userManagedAccessAllowed,omitempty"`
+
+	// OTP Policy Algorithm
+	// +optional
+	OtpPolicyAlgorithm string `json:"otpPolicyAlgorithm,omitempty"`
+
+	// OTP Policy Digits
+	// +optional
+	OtpPolicyDigits *int32 `json:"otpPolicyDigits,omitempty"`
+
+	// OTP Policy Initial Counter
+	// +optional
+	OtpPolicyInitialCounter *int32 `json:"otpPolicyInitialCounter,omitempty"`
+
+	// OTP Policy Look Ahead Window
+	// +optional
+	OtpPolicyLookAheadWindow *int32 `json:"otpPolicyLookAheadWindow,omitempty"`
+
+	// OTP Policy Period
+	// +optional
+	OtpPolicyPeriod *int32 `json:"otpPolicyPeriod,omitempty"`
+
+	// OTP Policy Type
+	// +optional
+	OtpPolicyType string `json:"otpPolicyType,omitempty"`
+
+	// OTP Supported Applications
+	// +optional
+	OtpSupportedApplications []string `json:"otpSupportedApplications,omitempty"`
 }
 
 type RoleRepresentationArray []RoleRepresentation
@@ -278,8 +310,10 @@ type RoleRepresentationComposites struct {
 
 // https://www.keycloak.org/docs-api/10.0/rest-api/index.html#_userfederationproviderrepresentation
 type KeycloakAPIUserFederationProvider struct {
-	// changedSyncPeriod optional integer(int32)
 	// lastSync int32
+
+	// +optional
+	ChangedSyncPeriod *int32 `json:"changedSyncPeriod,omitempty"`
 
 	// User federation provider config.
 	// +optional

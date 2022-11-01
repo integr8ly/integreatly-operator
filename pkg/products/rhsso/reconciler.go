@@ -15,9 +15,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"github.com/integr8ly/integreatly-operator/version"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
@@ -466,8 +465,8 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	r.Log.Info("Syncing github identity provider to the keycloak realm")
 
 	// Get an authenticated keycloak api client for the instance
-	keycloakFactory := common.LocalConfigKeycloakFactory{}
-	authenticated, err := keycloakFactory.AuthenticatedClient(*kc, false)
+	keycloakFactory := keycloakCommon.LocalConfigKeycloakFactory{}
+	authenticated, err := keycloakFactory.AuthenticatedClient(*kc)
 	if err != nil {
 		return fmt.Errorf("Unable to authenticate to the Keycloak API: %s", err)
 	}

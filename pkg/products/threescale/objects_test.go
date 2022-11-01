@@ -16,7 +16,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"

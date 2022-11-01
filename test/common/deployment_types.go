@@ -4,7 +4,7 @@ import (
 	goctx "context"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"golang.org/x/net/context"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

@@ -64,13 +64,13 @@ type KeycloakSpec struct {
 	// Profile used for controlling Operator behavior. Default is empty.
 	// +optional
 	Profile string `json:"profile,omitempty"`
-	// Specify PodDisruptionBudget configuration.
+	// Specify PodDisruptionBudget configuration. This field is deprecated and will be ignored on K8s >=1.25
 	// +optional
 	PodDisruptionBudget PodDisruptionBudgetConfig `json:"podDisruptionBudget,omitempty"`
-	// Resources (Requests and Limits) for KeycloakDeployment.
+	// Resources (Requests and Limits) and ImagePullPolicy for KeycloakDeployment.
 	// +optional
 	KeycloakDeploymentSpec KeycloakDeploymentSpec `json:"keycloakDeploymentSpec,omitempty"`
-	// Resources (Requests and Limits) for PostgresDeployment.
+	// Resources (Requests and Limits) and ImagePullPolicy for PostgresDeployment.
 	// +optional
 	PostgresDeploymentSpec PostgresqlDeploymentSpec `json:"postgresDeploymentSpec,omitempty"`
 	// Specify Migration configuration
@@ -87,12 +87,22 @@ type KeycloakSpec struct {
 	// objects and users will have to create them manually, if needed.
 	// +optional
 	DisableMonitoringServices bool `json:"DisableDefaultServiceMonitor,omitempty"`
+	// Specify whether disabling the syncing of instances from the Keycloak CR to the statefulset replicas
+	// should be enabled or disabled. This option could be used when enabling HPA(horizontal pod autoscaler).
+	// Defaults to false.
+	// +optional
+	DisableReplicasSyncing bool `json:"disableReplicasSyncing,omitempty"`
 }
 
 type DeploymentSpec struct {
 	// Resources (Requests and Limits) for the Pods.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	// ImagePullPolicy for the Containers.
+	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
+	// +kubebuilder:default:=Always
+	// +optional
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
 }
 
 type KeycloakDeploymentSpec struct {
@@ -168,6 +178,9 @@ type KeycloakExternal struct {
 	// The URL to use for the keycloak admin API. Needs to be set if external is true.
 	// +optional
 	URL string `json:"url,omitempty"`
+	// Context root for Keycloak. If not set, the default "/auth/" is used.
+	// Must end with "/".
+	ContextRoot string `json:"contextRoot,omitempty"`
 }
 
 type KeycloakExternalAccess struct {

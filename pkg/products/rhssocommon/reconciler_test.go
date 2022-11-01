@@ -32,7 +32,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"

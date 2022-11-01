@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 )
 
 type Requirement string

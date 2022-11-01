@@ -7,7 +7,7 @@ import (
 	"github.com/headzoo/surf"
 	brow "github.com/headzoo/surf/browser"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	"golang.org/x/net/context"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

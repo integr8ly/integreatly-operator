@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	v12 "github.com/openshift/api/authorization/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	v1 "github.com/openshift/api/route/v1"

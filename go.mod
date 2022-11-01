@@ -27,8 +27,7 @@ require (
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/cloud-resource-operator v0.41.0
 	github.com/integr8ly/grafana-operator/v3 v3.10.3 // indirect
-	github.com/integr8ly/keycloak-client v0.1.8
-	github.com/keycloak/keycloak-operator v0.0.0-20220420172159-46dccd389e72
+	github.com/integr8ly/keycloak-client v0.1.9
 	github.com/onsi/gomega v1.19.0
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible

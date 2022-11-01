@@ -357,6 +357,44 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakClientSpec(ref common.ReferenceCa
 							Ref:         ref("./pkg/apis/keycloak/v1alpha1.MappingsRepresentation"),
 						},
 					},
+					"serviceAccountRealmRoles": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Service account realm roles for this client.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"serviceAccountClientRoles": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Service account client roles for this client.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type: []string{"array"},
+										Items: &spec.SchemaOrArray{
+											Schema: &spec.Schema{
+												SchemaProps: spec.SchemaProps{
+													Default: "",
+													Type:    []string{"string"},
+													Format:  "",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"realmSelector", "client"},
 			},
@@ -666,21 +704,21 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakSpec(ref common.ReferenceCallback
 					},
 					"podDisruptionBudget": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specify PodDisruptionBudget configuration.",
+							Description: "Specify PodDisruptionBudget configuration. This field is deprecated and will be ignored on K8s >=1.25",
 							Default:     map[string]interface{}{},
 							Ref:         ref("./pkg/apis/keycloak/v1alpha1.PodDisruptionBudgetConfig"),
 						},
 					},
 					"keycloakDeploymentSpec": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Resources (Requests and Limits) for KeycloakDeployment.",
+							Description: "Resources (Requests and Limits) and ImagePullPolicy for KeycloakDeployment.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("./pkg/apis/keycloak/v1alpha1.KeycloakDeploymentSpec"),
 						},
 					},
 					"postgresDeploymentSpec": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Resources (Requests and Limits) for PostgresDeployment.",
+							Description: "Resources (Requests and Limits) and ImagePullPolicy for PostgresDeployment.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("./pkg/apis/keycloak/v1alpha1.PostgresqlDeploymentSpec"),
 						},
@@ -709,6 +747,13 @@ func schema_pkg_apis_keycloak_v1alpha1_KeycloakSpec(ref common.ReferenceCallback
 					"DisableDefaultServiceMonitor": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Disables the integration with Application Monitoring Operator. When set to true, the operator doesn't create default PrometheusRule, ServiceMonitor and GrafanaDashboard objects and users will have to create them manually, if needed.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"disableReplicasSyncing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specify whether disabling the syncing of instances from the Keycloak CR to the statefulset replicas should be enabled or disabled. This option could be used when enabling HPA(horizontal pod autoscaler). Defaults to false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
