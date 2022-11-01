@@ -13,6 +13,7 @@ products:
       - 1.19.0
       - 1.22.0
       - 1.25.0
+      - 1.28.0
 estimate: 30m
 ---
 
@@ -32,6 +33,8 @@ This test verifies that if there is an existing user with uppercase letters in t
 ## Steps
 
 **Set up Github IDP for OSD cluster**
+
+Alternative to the steps below: there is an [app](https://github.com/organizations/integr8ly/settings/applications/1773465) created already created by `trepel` GitHub user in `integr8ly` GitHub org that can be used. Reach out to him to update the app's callback URL with the desired value (or do it yourself if having strong enough permissions), e.g. `https://oauth-openshift.apps.<YOUR-DOMAIN>/oauth2callback/GitHub`. You can find the CLIENT_ID and CLIENT_SECRET of the app in [vault](https://gitlab.cee.redhat.com/integreatly-qe/vault) repo in `SECRETS.md` file.
 
 1. Register an openshift application by following this [guide](https://docs.openshift.com/container-platform/4.10/authentication/identity_providers/configuring-github-identity-provider.html#identity-provider-overview_configuring-github-identity-provider).
 
@@ -85,6 +88,8 @@ ocm post https://api.stage.openshift.com/api/clusters_mgmt/v1/clusters/$CLUSTER_
 EOF
 ```
 
+> ORG_NAME is `integr8ly` if using trepel's GH app
+
 9. Log in to your cluster via Github IDP (go to OpenShift console, select Github IDP)
 10. Verify that the user you've logged in with has an uppercase letters in its name
 
@@ -94,7 +99,7 @@ oc get users | awk '{print $1}' | grep -i <your-username>
 
 11. In OpenShift console (when logged in as your github user), select the launcher on the top right menu -> API Management -> Github IDP and log in to 3scale
     > Verify that you can successfully log in
-12. Go to Account settings (top right menu) -> Personal -> Personal Details
+12. Go to Account settings (top left menu) -> Personal -> Personal Details
     > Verify that your username contains only lowercase letters
 13. Change some letter in your username to uppercase letter (e.g. myuser -> Myuser) and confirm the change
     > Verify that after RHOAM operator reconciles (~5 minutes), your username is changed back to lowercase letters

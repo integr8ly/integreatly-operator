@@ -13,6 +13,7 @@ products:
       - 1.19.0
       - 1.22.0
       - 1.25.0
+      - 1.28.0
 estimate: 90m
 ---
 
@@ -140,7 +141,7 @@ estimate: 90m
 
 ```bash
 oc new-project httpbin && \
-oc new-app jsmadis/httpbin
+oc new-app quay.io/trepel/httpbin
 oc scale deploymentconfig/httpbin --replicas=6
 printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
 ```
@@ -172,9 +173,9 @@ printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers |
 
     ```shell script
     # For Mac
-    open "https://$(oc get route prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
+    open "https://$(oc get route prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
     # For Linux
-    xdg-open "https://$(oc get route prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
+    xdg-open "https://$(oc get route prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
     ```
 
     Verify that the RHOAMApiUsageOverLimit alert contains `695` at the end of its query. For example:
@@ -194,9 +195,9 @@ printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers |
     ```shell script
 
     # For Mac
-    open "https://$(oc get routes prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
     # For Linux
-    xdg-open "https://$(oc get routes prometheus-route -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    xdg-open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
     ```
 
     Add the following expression into the `Expression` field in the console:

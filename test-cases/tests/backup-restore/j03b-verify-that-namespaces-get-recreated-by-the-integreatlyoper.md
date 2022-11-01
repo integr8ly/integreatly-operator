@@ -14,6 +14,7 @@ products:
       - 1.19.0
       - 1.22.0
       - 1.25.0
+      - 1.28.0
 estimate: 120m
 tags:
   - destructive
@@ -29,6 +30,8 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 Test that all namespace will be automatically recreated by the integreatly-operator
 
+Note: known issue that prevent this test case to be fully executed automatically: https://issues.redhat.com/browse/MGDAPI-4456
+
 ## Steps
 
 1. Login via `oc` as **kubeadmin**
@@ -36,7 +39,7 @@ Test that all namespace will be automatically recreated by the integreatly-opera
 2. By default, this test is not run as part of the functional test suite. To run this singular functional test, run the following command from the RHOAM operator repo against a target cluster:
 
 ```
-DESTRUCTIVE=true INSTALLATION_TYPE=managed-api TEST="J03" make test/e2e/single | tee test-results.log
+LOCAL=false DESTRUCTIVE=true INSTALLATION_TYPE=managed-api TEST="J03" make test/e2e/single | tee test-results.log
 ```
 
 3. Check the namespaces in RHOAM except the `redhat-rhoam-operator` are recreated during the test run, the Active for
