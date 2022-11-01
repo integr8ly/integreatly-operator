@@ -770,7 +770,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	csv := &operatorsv1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhsso-operator.7.6.0-opr-003",
+			Name:      "rhsso-operator.7.6.0-opr-004",
 			Namespace: defaultOperandNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
