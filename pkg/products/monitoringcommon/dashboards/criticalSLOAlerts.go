@@ -30,7 +30,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"id": 2,
 			"panels": [],
-			"title": "SLO Summary (based on critical Alerts over the last 28 days & SLO of 99.9%)",
+			"title": "SLO Summary (based on critical Alerts over the last 7 days & SLO of 99.9%)",
 			"type": "row"
 		},
 		{
@@ -121,7 +121,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -170,14 +170,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -195,7 +195,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -233,7 +233,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -283,7 +283,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 28 days",
+			"description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -332,14 +332,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0,0",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true, 
 			"timeShift": null,
 			"title": "Remaining Error Budget",
@@ -362,7 +362,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -413,14 +413,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -548,7 +548,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -604,14 +604,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -629,7 +629,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -674,7 +674,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -724,7 +724,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -781,14 +781,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -921,7 +921,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -980,13 +980,13 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -1004,7 +1004,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -1052,7 +1052,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -1102,7 +1102,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -1162,14 +1162,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1302,7 +1302,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -1361,14 +1361,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -1386,7 +1386,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -1434,7 +1434,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -1484,7 +1484,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -1544,14 +1544,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1684,7 +1684,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -1743,14 +1743,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -1768,7 +1768,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -1816,7 +1816,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -1866,7 +1866,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -1926,14 +1926,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2066,7 +2066,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -2125,14 +2125,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -2150,7 +2150,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -2198,7 +2198,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -2248,7 +2248,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -2308,14 +2308,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2448,7 +2448,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -2507,13 +2507,13 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -2531,7 +2531,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -2579,7 +2579,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -2629,7 +2629,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -2689,14 +2689,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2829,7 +2829,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -2888,13 +2888,13 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -2912,7 +2912,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -2960,7 +2960,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -3010,7 +3010,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -3070,14 +3070,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -3210,7 +3210,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -3269,14 +3269,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -3294,7 +3294,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -3342,7 +3342,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -3392,7 +3392,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -3452,14 +3452,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -3592,7 +3592,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#299c46"
 			],
 			"decimals": 2,
-			"description": "% of time where *no* critical alerts were firing over the last 28 days",
+			"description": "% of time where *no* critical alerts were firing over the last 7 days",
 			"format": "percentunit",
 			"gauge": {
 				"maxValue": 100,
@@ -3651,14 +3651,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"hideTimeOverride": true,
 			"timeShift": null,
 			"title": "Overall SLO %",
@@ -3676,7 +3676,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			"bars": false,
 			"dashLength": 10,
 			"dashes": false,
-			"description": "Total number of critical alerts firing over the last 28 days. ",
+			"description": "Total number of critical alerts firing over the last 7 days. ",
 			"fill": 1,
 			"gridPos": {
 				"h": 8,
@@ -3724,7 +3724,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"refId": "A"
 			}],
 			"thresholds": [],
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeRegions": [],
 			"timeShift": null,
 			"title": "Number of alerts firing ",
@@ -3774,7 +3774,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"#d44a3a"
 			],
 			"decimals": null,
-			"description": "Total time where at least 1 critical alert was firing over the last 28 days",
+			"description": "Total time where at least 1 critical alert was firing over the last 7 days",
 			"format": "ms",
 			"gauge": {
 				"maxValue": 100,
@@ -3834,14 +3834,14 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 			},
 			"tableColumn": "",
 			"targets": [{
-				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
 				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": "28d",
+			"timeFrom": "7d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -3861,18 +3861,18 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 		"list": [{
 				"current": {
 					"selected": true,
-					"text": "28",
-					"value": "28"
+					"text": "7",
+					"value": "7"
 				},
 				"hide": 2,
 				"label": "SLO in days",
 				"name": "slo_days",
 				"options": [{
 					"selected": true,
-					"text": "28",
-					"value": "28"
+					"text": "7",
+					"value": "7"
 				}],
-				"query": "28",
+				"query": "7",
 				"skipUrlSync": false,
 				"type": "constant"
 			},
@@ -3880,8 +3880,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2419200000",
-					"value": "2419200000"
+					"text": "604800000",
+					"value": "604800000"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -3892,8 +3892,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_ms",
 				"options": [{
 					"selected": true,
-					"text": "2419200000",
-					"value": "2419200000"
+					"text": "604800000",
+					"value": "604800000"
 				}],
 				"query": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
 				"refresh": 0,
@@ -3910,8 +3910,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2416780800",
-					"value": "2416780800"
+					"text": "604195200",
+					"value": "604195200"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_ms * 0.999))",
@@ -3922,8 +3922,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_999_ms",
 				"options": [{
 					"selected": true,
-					"text": "2416780800",
-					"value": "2416780800"
+					"text": "604195200",
+					"value": "604195200"
 				}],
 				"query": "query_result(vector($slo_ms * 0.999))",
 				"refresh": 0,
@@ -3940,8 +3940,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"allValue": null,
 				"current": {
 					"selected": true,
-					"text": "2419200",
-					"value": "2419200"
+					"text": "604800",
+					"value": "604800"
 				},
 				"datasource": "Prometheus",
 				"definition": "query_result(vector($slo_ms * 0.001))",
@@ -3952,8 +3952,8 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 				"name": "slo_001_ms",
 				"options": [{
 					"selected": true,
-					"text": "2419200",
-					"value": "2419200"
+					"text": "604800",
+					"value": "604800"
 				}],
 				"query": "query_result(vector($slo_ms * 0.001))",
 				"refresh": 0,
@@ -4282,7 +4282,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       },
       "id": 2,
       "panels": [],
-      "title": "SLO Summary (based on critical Alerts over the last 28 days & SLO of 99.9%)",
+      "title": "SLO Summary (based on critical Alerts over the last 7 days & SLO of 99.9%)",
       "type": "row"
     },
     {
@@ -4380,7 +4380,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#299c46"
       ],
       "decimals": 2,
-      "description": "% of time where *no* critical alerts were firing over the last 28 days",
+      "description": "% of time where *no* critical alerts were firing over the last 7 days",
       "format": "percentunit",
       "gauge": {
         "maxValue": 100,
@@ -4434,14 +4434,14 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "targets": [
         {
           "format": "time_series",
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
           "instant": true,
           "intervalFactor": 1,
           "refId": "A"
         }
       ],
       "thresholds": "0.999,0.999",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "hideTimeOverride": true,
       "timeShift": null,
       "title": "Overall SLO %",
@@ -4461,7 +4461,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Total number of critical alerts firing over the last 28 days. ",
+      "description": "Total number of critical alerts firing over the last 7 days. ",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -4501,7 +4501,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": [],
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeRegions": [],
       "timeShift": null,
       "title": "Number of alerts firing ",
@@ -4552,7 +4552,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#299c46"
       ],
       "decimals": 2,
-      "description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 28 days",
+      "description": "Amount of time left where at least 1 critical alert can be firing before the SLO is breached for the last 7 days",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -4605,7 +4605,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
+          "expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000))",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4613,8 +4613,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "0,0",
-      "timeFrom": "28d",
-      "hideTimeOverride": true,
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Remaining Error Budget",
       "type": "singlestat",
@@ -4638,7 +4637,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#d44a3a"
       ],
       "decimals": null,
-      "description": "Total time where at least 1 critical alert was firing over the last 28 days",
+      "description": "Total time where at least 1 critical alert was firing over the last 7 days",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -4693,7 +4692,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n     sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"` + product + `\"})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4701,7 +4700,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Firing Time ",
       "type": "singlestat",
@@ -4838,7 +4837,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#299c46"
       ],
       "decimals": 2,
-      "description": "% of time where *no* critical alerts were firing over the last 28 days",
+      "description": "% of time where *no* critical alerts were firing over the last 7 days",
       "format": "percentunit",
       "gauge": {
         "maxValue": 100,
@@ -4898,7 +4897,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -4906,8 +4905,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "0.999,0.999",
-      "timeFrom": "28d",
-      "hideTimeOverride": true,
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Overall SLO %",
       "type": "singlestat",
@@ -4926,7 +4924,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Total number of critical alerts firing over the last 28 days. ",
+      "description": "Total number of critical alerts firing over the last 7 days. ",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -4973,7 +4971,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": [],
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeRegions": [],
       "timeShift": null,
       "title": "Number of alerts firing ",
@@ -5024,7 +5022,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#d44a3a"
       ],
       "decimals": null,
-      "description": "Total time where at least 1 critical alert was firing over the last 28 days",
+      "description": "Total time where at least 1 critical alert was firing over the last 7 days",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -5085,7 +5083,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5093,7 +5091,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Firing Time ",
       "type": "singlestat",
@@ -5235,7 +5233,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#299c46"
       ],
       "decimals": 2,
-      "description": "% of time where *no* critical alerts were firing over the last 28 days",
+      "description": "% of time where *no* critical alerts were firing over the last 7 days",
       "format": "percentunit",
       "gauge": {
         "maxValue": 100,
@@ -5298,7 +5296,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5306,7 +5304,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "0.999,0.999",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "hideTimeOverride": true,
       "timeShift": null,
       "title": "Overall SLO %",
@@ -5326,7 +5324,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Total number of critical alerts firing over the last 28 days. ",
+      "description": "Total number of critical alerts firing over the last 7 days. ",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -5376,7 +5374,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": [],
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeRegions": [],
       "timeShift": null,
       "title": "Number of alerts firing ",
@@ -5427,7 +5425,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#d44a3a"
       ],
       "decimals": null,
-      "description": "Total time where at least 1 critical alert was firing over the last 28 days",
+      "description": "Total time where at least 1 critical alert was firing over the last 7 days",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -5491,7 +5489,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5499,7 +5497,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Firing Time ",
       "type": "singlestat",
@@ -5641,7 +5639,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#299c46"
       ],
       "decimals": 2,
-      "description": "% of time where *no* critical alerts were firing over the last 28 days",
+      "description": "% of time where *no* critical alerts were firing over the last 7 days",
       "format": "percentunit",
       "gauge": {
         "maxValue": 100,
@@ -5704,7 +5702,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
+          "expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[7d:10m]\n    ) / (7 * 24 * 6) > 0, 1\n)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5712,8 +5710,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "0.999,0.999",
-      "timeFrom": "28d",
-      "hideTimeOverride": true,
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Overall SLO %",
       "type": "singlestat",
@@ -5732,7 +5729,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Total number of critical alerts firing over the last 28 days. ",
+      "description": "Total number of critical alerts firing over the last 7 days. ",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -5782,7 +5779,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": [],
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeRegions": [],
       "timeShift": null,
       "title": "Number of alerts firing ",
@@ -5833,7 +5830,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "#d44a3a"
       ],
       "decimals": null,
-      "description": "Total time where at least 1 critical alert was firing over the last 28 days",
+      "description": "Total time where at least 1 critical alert was firing over the last 7 days",
       "format": "ms",
       "gauge": {
         "maxValue": 100,
@@ -5897,7 +5894,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       "tableColumn": "",
       "targets": [
         {
-          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
+          "expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"${product:pipe}.*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"${product:pipe}donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[7d:10m]\n    ) * (10 * 60 * 1000)",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -5905,7 +5902,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         }
       ],
       "thresholds": "",
-      "timeFrom": "28d",
+      "timeFrom": "7d",
       "timeShift": null,
       "title": "Firing Time ",
       "type": "singlestat",
@@ -5928,8 +5925,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
       {
         "current": {
           "selected": true,
-          "text": "28",
-          "value": "28"
+          "text": "7",
+          "value": "7"
         },
         "hide": 2,
         "label": "SLO in days",
@@ -5937,11 +5934,11 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "options": [
           {
             "selected": true,
-            "text": "28",
-            "value": "28"
+            "text": "7",
+            "value": "7"
           }
         ],
-        "query": "28",
+        "query": "7",
         "skipUrlSync": false,
         "type": "constant"
       },
@@ -5949,8 +5946,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2419200000",
-          "value": "2419200000"
+          "text": "604800000",
+          "value": "604800000"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -5962,8 +5959,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "options": [
           {
             "selected": true,
-            "text": "2419200000",
-            "value": "2419200000"
+            "text": "604800000",
+            "value": "604800000"
           }
         ],
         "query": "query_result(vector($slo_days * 24 * 60 * 60 * 1000))",
@@ -5981,8 +5978,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2416780800",
-          "value": "2416780800"
+          "text": "604195200",
+          "value": "604195200"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_ms * 0.999))",
@@ -5994,8 +5991,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "options": [
           {
             "selected": true,
-            "text": "2416780800",
-            "value": "2416780800"
+            "text": "604195200",
+            "value": "604195200"
           }
         ],
         "query": "query_result(vector($slo_ms * 0.999))",
@@ -6013,8 +6010,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "2419200",
-          "value": "2419200"
+          "text": "604800",
+          "value": "604800"
         },
         "datasource": "Prometheus",
         "definition": "query_result(vector($slo_ms * 0.001))",
@@ -6026,8 +6023,8 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, prod
         "options": [
           {
             "selected": true,
-            "text": "2419200",
-            "value": "2419200"
+            "text": "604800",
+            "value": "604800"
           }
         ],
         "query": "query_result(vector($slo_ms * 0.001))",
