@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
 
@@ -14,7 +15,10 @@ import (
 )
 
 func TestGetAlertConfig(t *testing.T) {
-	scheme := testScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scenarios := []struct {
 		Name        string
@@ -83,18 +87,12 @@ func TestGetAlertConfig(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			client := fake.NewFakeClientWithScheme(scheme, scenario.InitialObjs...)
-			config, err := GetAlertConfig(context.TODO(), client, scenario.Namespace)
+			k8sClient := fake.NewFakeClientWithScheme(scheme, scenario.InitialObjs...)
+			config, err := GetAlertConfig(context.TODO(), k8sClient, scenario.Namespace)
 
-			if err := scenario.Assert(client, config, err); err != nil {
+			if err := scenario.Assert(k8sClient, config, err); err != nil {
 				t.Error(err)
 			}
 		})
 	}
-}
-
-func testScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	corev1.AddToScheme(scheme)
-	return scheme
 }

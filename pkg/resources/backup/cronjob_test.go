@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"strings"
 	"testing"
 	"time"
@@ -47,7 +48,9 @@ func TestCronJob(t *testing.T) {
 		var expectedJob *batchv1.Job
 		for {
 			existingJobs := &batchv1.JobList{}
-			client.List(context.TODO(), existingJobs, k8sclient.InNamespace(namespace))
+			if err := client.List(context.TODO(), existingJobs, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingJob := range existingJobs.Items {
 				if !strings.HasPrefix(existingJob.Name, generateJobName) {
@@ -70,7 +73,10 @@ func TestCronJob(t *testing.T) {
 		expectedJob.Status.CompletionTime = &v1.Time{
 			Time: time.Now(),
 		}
-		client.Status().Update(context.TODO(), expectedJob)
+
+		if err := client.Status().Update(context.TODO(), expectedJob); err != nil {
+			return
+		}
 	}()
 
 	// Call `PerformBackup` and assert that no error is returned
@@ -129,7 +135,10 @@ func TestCronJob_FailedJob(t *testing.T) {
 		var expectedJob *batchv1.Job
 		for {
 			existingJobs := &batchv1.JobList{}
-			client.List(context.TODO(), existingJobs, k8sclient.InNamespace(namespace))
+
+			if err := client.List(context.TODO(), existingJobs, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingJob := range existingJobs.Items {
 				if !strings.HasPrefix(existingJob.Name, generateJobName) {
@@ -157,7 +166,9 @@ func TestCronJob_FailedJob(t *testing.T) {
 			},
 		}
 
-		client.Status().Update(context.TODO(), expectedJob)
+		if err := client.Status().Update(context.TODO(), expectedJob); err != nil {
+			return
+		}
 	}()
 
 	// Call `PerformBackup` and assert that no error is returned
@@ -172,15 +183,8 @@ func TestCronJob_FailedJob(t *testing.T) {
 	}
 }
 
-func buildSchemeForCronJob() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := batchv1.AddToScheme(scheme)
-	err = batchv1beta1.AddToScheme(scheme)
-	return scheme, err
-}
-
 func createMockClientForCronJob(t *testing.T, initObjects ...runtime.Object) k8sclient.Client {
-	scheme, err := buildSchemeForCronJob()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Errorf("Error creating testing scheme: %v", err)
 	}

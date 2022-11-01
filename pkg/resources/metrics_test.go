@@ -3,12 +3,12 @@ package resources
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -76,10 +76,10 @@ func TestInstallationState(t *testing.T) {
 }
 
 func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
-	scheme := runtime.NewScheme()
-	monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	corev1.SchemeBuilder.AddToScheme(scheme)
-	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		ctx    context.Context
@@ -160,9 +160,10 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 }
 
 func TestCreateDeadMansSnitchSecretExists(t *testing.T) {
-	scheme := runtime.NewScheme()
-	monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		ctx    context.Context
@@ -215,9 +216,11 @@ func TestCreateDeadMansSnitchSecretExists(t *testing.T) {
 }
 
 func TestCreateSmtpSecretExists(t *testing.T) {
-	scheme := runtime.NewScheme()
-	monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type args struct {
 		ctx    context.Context
 		client client.Client

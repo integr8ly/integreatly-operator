@@ -3,11 +3,11 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"os"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,23 +25,20 @@ var (
 
 func TestReconcile(t *testing.T) {
 	// Set up testing scheme
-	scheme := runtime.NewScheme()
-	corev1.AddToScheme(scheme)
-	admissionv1.AddToScheme(scheme)
-	schemeBuilder.AddToScheme(scheme)
-	v1alpha1.SchemeBuilder.AddToScheme(scheme)
-	scheme.AddKnownTypes(schemeBuilder.GroupVersion, &mockValidator{})
-
-	if err := rhmiv1alpha1.AddToSchemes.AddToScheme(scheme); err != nil {
-
+	testScheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
 	}
+	testScheme.AddKnownTypes(schemeBuilder.GroupVersion, &mockValidator{})
 
-	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+	if err := os.Setenv("WATCH_NAMESPACE", defaultNamespace); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create testing webhook config
 	settings := IntegreatlyWebhookConfig{
 		Enabled:     true,
-		scheme:      scheme,
+		scheme:      testScheme,
 		Port:        8090,
 		CAConfigMap: "test-configmap",
 		Webhooks: []IntegreatlyWebhook{
@@ -78,7 +75,7 @@ func TestReconcile(t *testing.T) {
 
 	rhmi := &v1alpha1.RHMI{}
 
-	client := fake.NewFakeClientWithScheme(scheme, rhmi)
+	client := fake.NewFakeClientWithScheme(testScheme, rhmi)
 
 	// Start mock of CA controller
 	done := make(chan struct{})
@@ -266,7 +263,9 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 				"service-ca.crt": "TEST",
 			}
 
-			client.Update(ctx, &configMap)
+			if err := client.Update(ctx, &configMap); err != nil {
+				continue
+			}
 		}
 
 		// Get the list of services
@@ -293,7 +292,9 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 				},
 			}
 
-			client.Create(ctx, secret)
+			if err := client.Create(ctx, secret); err != nil {
+				continue
+			}
 		}
 	}
 }

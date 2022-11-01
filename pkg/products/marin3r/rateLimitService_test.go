@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
 
@@ -24,7 +25,10 @@ import (
 )
 
 func TestRateLimitService(t *testing.T) {
-	scheme := newScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	rateLimitPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -269,14 +273,6 @@ func TestRateLimitService(t *testing.T) {
 	}
 }
 
-func newScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	corev1.AddToScheme(scheme)
-	appsv1.AddToScheme(scheme)
-
-	return scheme
-}
-
 func assertPhase(expectedPhase integreatlyv1alpha1.StatusPhase) func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error {
 	return func(_ k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, _ error) error {
 		if phase != expectedPhase {
@@ -462,7 +458,10 @@ func TestRateLimitServiceReconciler_differentLimitSettings(t *testing.T) {
 }
 
 func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
-	scheme := newScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		Namespace       string
@@ -608,7 +607,10 @@ func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
 }
 
 func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
-	scheme := newScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	const namespace = "redhat-test-marin3r"
 
@@ -855,7 +857,10 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 }
 
 func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(t *testing.T) {
-	scheme := newScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	const namespace = "redhat-test-marin3r"
 

@@ -5,6 +5,7 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -91,7 +92,11 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
 		// t.Fatal("failed to create serviceAccount", err)
 	}
-	defer ctx.Client.Delete(goctx.TODO(), serviceAccount)
+	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
+		if err := Client.Delete(ctx, obj); err != nil {
+			t.Fatal(err)
+		}
+	}(ctx.Client, goctx.TODO(), serviceAccount)
 	binding := &v12.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: bindingName,
@@ -115,7 +120,12 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
 		// t.Fatal("failed to create clusterRoleBinding", err)
 	}
-	defer ctx.Client.Delete(goctx.TODO(), binding)
+	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
+		err := Client.Delete(ctx, obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(ctx.Client, goctx.TODO(), binding)
 
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
 	if err != nil {

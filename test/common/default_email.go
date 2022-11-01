@@ -40,7 +40,11 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Unexpected error creating User: %v", err)
 	}
 	// Clean up the user resource
-	defer deleteUser(ctx, userNoEmail, identityNoEmail)
+	defer func(ctx *TestingContext, user *userv1.User, identity *userv1.Identity) {
+		if err := deleteUser(ctx, user, identity); err != nil {
+			t.Fatal(err)
+		}
+	}(ctx, userNoEmail, identityNoEmail)
 
 	// Create user with email
 	// different that the default generated email
@@ -54,7 +58,11 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Cleanup the user resource
-	defer deleteUser(ctx, userWithEmail, identityWithEmail)
+	defer func(ctx *TestingContext, user *userv1.User, identity *userv1.Identity) {
+		if err := deleteUser(ctx, user, identity); err != nil {
+			t.Fatal(err)
+		}
+	}(ctx, userWithEmail, identityWithEmail)
 
 	// Create user that uses email as username
 	userUsingEmailAsUsername, identityWithEmailAsUserName, err := createUserTestingIDP(ctx, usernameUsingEmail, nil)
@@ -63,7 +71,11 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Cleanup the user resource
-	defer deleteUser(ctx, userUsingEmailAsUsername, identityWithEmailAsUserName)
+	defer func(ctx *TestingContext, user *userv1.User, identity *userv1.Identity) {
+		if err := deleteUser(ctx, user, identity); err != nil {
+			t.Fatal(err)
+		}
+	}(ctx, userUsingEmailAsUsername, identityWithEmailAsUserName)
 
 	// Create user with username that requires sanitization
 	userRequireSanitiseEmail, identityRequireSanitiseEmail, err := createUserTestingIDP(ctx, usernameRequireSanitiseEmail, nil)
@@ -72,7 +84,11 @@ func TestDefaultUserEmail(t TestingTB, ctx *TestingContext) {
 	}
 
 	// Cleanup the user resource
-	defer deleteUser(ctx, userRequireSanitiseEmail, identityRequireSanitiseEmail)
+	defer func(ctx *TestingContext, user *userv1.User, identity *userv1.Identity) {
+		if err := deleteUser(ctx, user, identity); err != nil {
+			t.Fatal(err)
+		}
+	}(ctx, userRequireSanitiseEmail, identityRequireSanitiseEmail)
 
 	rhssoNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
 

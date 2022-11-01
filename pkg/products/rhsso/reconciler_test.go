@@ -1198,7 +1198,10 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(output)
+		_, err = w.Write(output)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}))
 	return server
 }

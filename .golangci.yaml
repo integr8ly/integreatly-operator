@@ -4,7 +4,6 @@ output:
 
 linters:
   disable:
-    - errcheck
     - ineffassign
     - unused
 

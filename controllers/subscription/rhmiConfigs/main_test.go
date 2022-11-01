@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/integr8ly/integreatly-operator/version"
-	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -163,6 +163,11 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 	}
 
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	scenarios := []struct {
 		Name            string
 		FakeClient      k8sclient.Client
@@ -174,7 +179,7 @@ func TestApproveUpgrade(t *testing.T) {
 	}{
 		{
 			Name:            "Test install plan already upgrading",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading, rhoamMock),
+			FakeClient:      fake.NewFakeClientWithScheme(scheme, installPlanAlreadyUpgrading, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
@@ -192,7 +197,7 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 		{
 			Name:            "Test install plan ready to upgrade",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval, rhoamMock),
+			FakeClient:      fake.NewFakeClientWithScheme(scheme, installPlanReadyForApproval, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
@@ -212,21 +217,18 @@ func TestApproveUpgrade(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			err := ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			if err != nil {
+				t.Fatal(err)
+			}
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
-			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
+			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
+			if err != nil {
+				t.Fatal(err)
+			}
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
 			scenario.Verify(retrievedInstallPlan, rhmi, err)
 		})
 	}
-}
-
-func buildScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
-
-	return scheme
 }

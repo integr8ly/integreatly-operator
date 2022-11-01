@@ -34,7 +34,9 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		var postgresSnapshot *v1alpha1.PostgresSnapshot
 		for {
 			existingSnapshots := &v1alpha1.PostgresSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
+			if err := client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -54,7 +56,9 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		time.Sleep(time.Second * 1)
 
 		postgresSnapshot.Status.Phase = types.PhaseComplete
-		client.Status().Update(context.TODO(), postgresSnapshot)
+		if err := client.Status().Update(context.TODO(), postgresSnapshot); err != nil {
+			return
+		}
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
@@ -82,7 +86,9 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		var redisSnapshot *v1alpha1.RedisSnapshot
 		for {
 			existingSnapshots := &v1alpha1.RedisSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
+			if err := client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -102,7 +108,9 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		time.Sleep(time.Second * 1)
 
 		redisSnapshot.Status.Phase = types.PhaseComplete
-		client.Status().Update(context.TODO(), redisSnapshot)
+		if err := client.Status().Update(context.TODO(), redisSnapshot); err != nil {
+			return
+		}
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
@@ -130,7 +138,9 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		var postgresSnapshot *v1alpha1.PostgresSnapshot
 		for {
 			existingSnapshots := &v1alpha1.PostgresSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
+			if err := client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -152,7 +162,9 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		// Set a failed status
 		postgresSnapshot.Status.Phase = types.PhaseFailed
 		postgresSnapshot.Status.Message = "MOCK FAIL"
-		client.Status().Update(context.TODO(), postgresSnapshot)
+		if err := client.Status().Update(context.TODO(), postgresSnapshot); err != nil {
+			return
+		}
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
@@ -186,7 +198,9 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		var redisSnapshot *v1alpha1.RedisSnapshot
 		for {
 			existingSnapshots := &v1alpha1.RedisSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
+			if err := client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace)); err != nil {
+				continue
+			}
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -208,7 +222,9 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		// Set a failed status
 		redisSnapshot.Status.Phase = types.PhaseFailed
 		redisSnapshot.Status.Message = "MOCK FAIL"
-		client.Status().Update(context.TODO(), redisSnapshot)
+		if err := client.Status().Update(context.TODO(), redisSnapshot); err != nil {
+			return
+		}
 	}()
 
 	err = executor.PerformBackup(client, time.Second*10)
