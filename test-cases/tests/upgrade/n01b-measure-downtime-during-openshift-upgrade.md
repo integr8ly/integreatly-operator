@@ -50,6 +50,7 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
    oc adm upgrade --to-latest=true
    ```
 
+   > You might need to use these flags in case of non-RHOAM related issues: `--allow-upgrade-with-warnings`, `--allow-not-recommended`, `--force`. See `oc adm upgrade --help` for more details
    > You should see the message saying the upgrade of the OpenShift cluster is triggered
 
    - In case of upgrade between minor versions you might need to change the channel first

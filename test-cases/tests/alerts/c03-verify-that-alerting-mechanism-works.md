@@ -19,7 +19,7 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 ```
 
 2. Go to the OpenShift cluster Console URL and login as a user with **cluster-admin** role (kubeadmin).
-3. Open RHMI Prometheus UI and RHMI Alertmanager (in OpenShift Console, go to `Networking -> Routes` and open `alertmanager-route` URL and `prometheus-route` URL and login using the kubeadmin credentials)
+3. Open RHMI Prometheus UI and RHMI Alertmanager (in OpenShift Console, go to `Networking -> Routes` and open `alertmanager` URL and `prometheus` URL and login using the kubeadmin credentials)
 
 ## Steps
 
