@@ -7,6 +7,7 @@ import (
 	monitoringcommon "github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon/dashboards"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -15,7 +16,7 @@ import (
 
 func Test_getSpecDetailsForDashboard(t *testing.T) {
 	// Get containerCpuMetric which will be the same for all specs on the same cluster
-	basicScheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +37,7 @@ func Test_getSpecDetailsForDashboard(t *testing.T) {
 			},
 		},
 	}
-	client := fakeclient.NewFakeClientWithScheme(basicScheme, version)
+	client := fakeclient.NewFakeClientWithScheme(scheme, version)
 	containerCpuMetric, err := metrics.GetContainerCPUMetric(context.TODO(), client, l.NewLoggerWithContext(l.Fields{}))
 	if err != nil {
 		t.Fatal(err)

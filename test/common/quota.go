@@ -118,7 +118,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	// Defer changing quota to initial value in case the test would fail below
 	defer func(t TestingTB, c k8sclient.Client, quotaParam, quotaName string) {
 		if err := changeQuota(t, c, quotaParam, quotaName); err != nil {
-			t.Fatal(err)
+			t.Log(err)
 		}
 	}(t, ctx.Client, initialQuotaValue, initialQuotaName)
 

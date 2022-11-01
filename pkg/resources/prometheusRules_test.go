@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"testing"
@@ -213,7 +214,7 @@ func TestReconcileAlerts(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		scheme, err := buildSchemePrometheusRules()
+		scheme, err := utils.NewTestScheme()
 		if err != nil {
 			t.Errorf("error building scheme: %v", err)
 			continue
@@ -286,18 +287,6 @@ func assertPhaseCompleteAndAlertIsNotFound(client k8sclient.Client, phase integr
 	}
 
 	return nil
-}
-
-func buildSchemePrometheusRules() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-
-	schemeBuilder := runtime.NewSchemeBuilder(
-		monitoringv1.AddToScheme,
-		integreatlyv1alpha1.SchemeBuilder.AddToScheme,
-	)
-
-	err := schemeBuilder.AddToScheme(scheme)
-	return scheme, err
 }
 
 var (

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,10 +20,10 @@ import (
 )
 
 func TestGetDomain(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
-	_ = v1alpha1.SchemeBuilder.AddToScheme(scheme)
-	_ = olm.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	exampleNameSpace := "redhat-rhoam-operator"
 
@@ -214,9 +214,10 @@ func TestIsValidDomain(t *testing.T) {
 }
 
 func TestHasValidCustomDomainCR(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
-	_ = customdomainv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		ctx          context.Context
@@ -377,8 +378,11 @@ func TestUpdateErrorAndMetric(t *testing.T) {
 }
 
 func TestGetIngressRouterService(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type args struct {
 		ctx          context.Context
 		serverClient func() client.Client

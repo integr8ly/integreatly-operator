@@ -3,6 +3,7 @@ package addon
 import (
 	"context"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
@@ -41,6 +42,11 @@ var (
 )
 
 func TestGetParameter(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -62,7 +68,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, bytesSecret, addonSubscription),
 			},
 		},
 		{
@@ -72,7 +78,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: "boop",
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, stringSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, stringSecret, addonSubscription),
 			},
 		},
 		{
@@ -83,7 +89,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, noneSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, noneSecret, addonSubscription),
 			},
 		},
 		{
@@ -94,7 +100,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, noneSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, bytesSecret, noneSubscription),
 			},
 		},
 		{
@@ -105,7 +111,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMInamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMInamespace, bytesSecret, internalSubscriptionType),
+				client:    getDefaultClient(scheme, testRHOAMInamespace, bytesSecret, internalSubscriptionType),
 			},
 		},
 		{
@@ -116,7 +122,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, olmSubscriptionType),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, bytesSecret, olmSubscriptionType),
 			},
 		},
 		{
@@ -127,7 +133,7 @@ func TestGetParameter(t *testing.T) {
 				parameter: defaultParameterKey,
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, bytesSecret, multipleSubscriptions),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, bytesSecret, multipleSubscriptions),
 			},
 		},
 		{
@@ -164,15 +170,11 @@ func TestGetParameter(t *testing.T) {
 }
 
 func TestGetStringParameter(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := integreatlyv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -190,7 +192,7 @@ func TestGetStringParameter(t *testing.T) {
 			name: "retrieve the string value for an addon parameter",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMInamespace, stringSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMInamespace, stringSecret, addonSubscription),
 				namespace: testRHOAMInamespace,
 				parameter: defaultParameterKey,
 			},
@@ -202,7 +204,7 @@ func TestGetStringParameter(t *testing.T) {
 			name: "fail to retrieve string parameter: secret not present",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, noneSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, noneSecret, addonSubscription),
 				namespace: testRHOAMnamespace,
 				parameter: defaultParameterKey,
 			},
@@ -228,15 +230,11 @@ func TestGetStringParameter(t *testing.T) {
 }
 
 func TestGetIntParameter(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := integreatlyv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -254,7 +252,7 @@ func TestGetIntParameter(t *testing.T) {
 			name: "retrieve the integer value for an addon parameter",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, intSecret, olmSubscriptionType),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, intSecret, olmSubscriptionType),
 				namespace: testRHOAMnamespace,
 				parameter: defaultParameterKey,
 			},
@@ -266,7 +264,7 @@ func TestGetIntParameter(t *testing.T) {
 			name: "failed to parse string to integer",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, stringSecret, olmSubscriptionType),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, stringSecret, olmSubscriptionType),
 				namespace: testRHOAMnamespace,
 				parameter: defaultParameterKey,
 			},
@@ -278,7 +276,7 @@ func TestGetIntParameter(t *testing.T) {
 			name: "failed to retrieve int parameter: not in a secret",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, intSecret, olmSubscriptionType),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, intSecret, olmSubscriptionType),
 				namespace: testRHOAMnamespace,
 				parameter: "boop",
 			},
@@ -303,15 +301,11 @@ func TestGetIntParameter(t *testing.T) {
 }
 
 func TestGetBoolParameter(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := integreatlyv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -329,7 +323,7 @@ func TestGetBoolParameter(t *testing.T) {
 			name: "retrieve the boolean value for an addon parameter",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, boolSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, boolSecret, addonSubscription),
 				namespace: testRHOAMnamespace,
 				parameter: defaultParameterKey,
 			},
@@ -341,7 +335,7 @@ func TestGetBoolParameter(t *testing.T) {
 			name: "failed to parse string to boolean",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, stringSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, stringSecret, addonSubscription),
 				namespace: testRHOAMnamespace,
 				parameter: defaultParameterKey,
 			},
@@ -353,7 +347,7 @@ func TestGetBoolParameter(t *testing.T) {
 			name: "failed to retrieve bool parameter: not in a secret",
 			args: args{
 				ctx:       context.TODO(),
-				client:    getDefaultClient(testRHOAMnamespace, boolSecret, addonSubscription),
+				client:    getDefaultClient(scheme, testRHOAMnamespace, boolSecret, addonSubscription),
 				namespace: testRHOAMnamespace,
 				parameter: "boop",
 			},
@@ -378,6 +372,11 @@ func TestGetBoolParameter(t *testing.T) {
 }
 
 func TestExistsParameterByInstallation(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client
@@ -394,7 +393,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 			name: "parameter exists",
 			args: args{
 				ctx:    context.TODO(),
-				client: getDefaultClient(testRHOAMnamespace, bytesSecret, addonSubscription),
+				client: getDefaultClient(scheme, testRHOAMnamespace, bytesSecret, addonSubscription),
 				install: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
 						Namespace: testRHOAMnamespace,
@@ -420,11 +419,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 	}
 }
 
-func getDefaultClient(namespace string, secretType SecretType, subscriptionType string) client.Client {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
-	_ = v1alpha1.AddToScheme(scheme)
-
+func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) client.Client {
 	return fake.NewFakeClientWithScheme(scheme, getValidInits(namespace, secretType, subscriptionType)...)
 }
 

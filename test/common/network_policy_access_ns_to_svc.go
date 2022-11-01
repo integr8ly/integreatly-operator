@@ -100,7 +100,7 @@ func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 
 	defer func(ctx *TestingContext) {
 		if err := cleanUp(ctx); err != nil {
-			t.Fatal(err)
+			t.Log(err)
 		}
 	}(ctx)
 

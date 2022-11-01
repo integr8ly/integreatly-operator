@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
@@ -19,7 +20,6 @@ import (
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
-	projectv1 "github.com/openshift/api/project/v1"
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -43,25 +43,10 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 	}
 }
 
-func buildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := alpha1.AddToScheme(scheme)
-	err = oauthv1.AddToScheme(scheme)
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	err = projectv1.AddToScheme(scheme)
-	return scheme, err
-}
-
 func TestNewReconciler_ReconcileSubscription(t *testing.T) {
-	scheme, err := buildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("error creating scheme: %s", err.Error())
-	}
-	ownerInstall := &integreatlyv1alpha1.RHMI{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RHMI",
-			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
-		},
+		t.Fatal(err)
 	}
 
 	cases := []struct {
@@ -118,21 +103,11 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			ExpectedStatus:   integreatlyv1alpha1.PhaseAwaitingOperator,
 		},
 		{
-			Name: "test reconcile subscription returns waiting for operator when catalog source config not ready",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.CatalogSourceList{
-				Items: []alpha1.CatalogSource{
-					alpha1.CatalogSource{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test-ns",
-						},
-					},
-				},
-			}),
+			Name:             "test reconcile subscription returns phase failed when unable to create catalog source",
+			client:           fakeclient.NewFakeClientWithScheme(runtime.NewScheme()),
 			SubscriptionName: "something",
 			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:          marketplace.NewManager(),
-			Installation:     ownerInstall,
 			ExpectErr:        true,
 		},
 		{
@@ -338,9 +313,9 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 }
 
 func TestReconciler_reconcilePullSecret(t *testing.T) {
-	scheme, err := buildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("error building scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 
 	defPullSecret := &corev1.Secret{
@@ -415,9 +390,9 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 }
 
 func TestReconciler_ReconcileOauthClient(t *testing.T) {
-	scheme, err := buildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("error building scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 	existingClient := &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
@@ -492,9 +467,9 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 }
 
 func TestReconciler_ReconcileNamespace(t *testing.T) {
-	scheme, err := buildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("error creating scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 	nsName := "test-ns"
 	installation := &integreatlyv1alpha1.RHMI{

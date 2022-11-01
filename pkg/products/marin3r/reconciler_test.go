@@ -3,24 +3,20 @@ package marin3r
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/client-go/tools/record"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
-	marin3roperator "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
-	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -139,32 +135,8 @@ func getGrafanaRoute() *routev1.Route {
 	}
 }
 
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := coreosv1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := marin3roperator.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := projectv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := routev1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-
-	return scheme, nil
-}
-
 func TestAlertCreation(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +204,7 @@ func TestAlertCreation(t *testing.T) {
 
 func TestReconcileServiceMonitor(t *testing.T) {
 	namespaceName := "test-namespace"
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +249,7 @@ func TestReconcileServiceMonitor(t *testing.T) {
 
 func TestReconcileDiscoveryService(t *testing.T) {
 	namespaceName := "test-namespace"
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

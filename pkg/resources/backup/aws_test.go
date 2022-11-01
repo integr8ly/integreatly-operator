@@ -3,11 +3,11 @@ package backup
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"strings"
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -18,10 +18,9 @@ import (
 // TestAWSSnapshotPostgres tests that the AWSBackupExecutor successfully creates
 // a PostgresSnapshot and waits for it's completion
 func TestAWSSnapshotPostgres(t *testing.T) {
-	scheme, err := buildSchemeForAWSBackup()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Errorf("Error building scheme: %v", err)
-		return
+		t.Fatal(err)
 	}
 
 	namespace := "testing-namespaces-operator"
@@ -70,10 +69,9 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 // TestAWSSnapshotRedis tests that the AWSBackupExecutor succesfully creates
 // and waits for the completion of a RedisSnapshot
 func TestAWSSnapshotRedis(t *testing.T) {
-	scheme, err := buildSchemeForAWSBackup()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Errorf("Error building scheme: %v", err)
-		return
+		t.Fatal(err)
 	}
 
 	namespace := "testing-namespaces-operator"
@@ -122,10 +120,9 @@ func TestAWSSnapshotRedis(t *testing.T) {
 // TestAWSSnapshotPostgres_FailedJob tests that the AWSBackupExecutor returns
 // an error when a PostgresSnapshot backup fails
 func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
-	scheme, err := buildSchemeForAWSBackup()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error building scheme: %v", err)
-		return
+		t.Fatal(err)
 	}
 
 	namespace := "testing-namespaces-operator"
@@ -182,10 +179,9 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 // TestAWSSnapshotRedis_FailedJob tests that the AWSBackupExecutor returns
 // an error when a RedisSnapshot backup fails
 func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
-	scheme, err := buildSchemeForAWSBackup()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error building scheme: %v", err)
-		return
+		t.Fatal(err)
 	}
 
 	namespace := "testing-namespaces-operator"
@@ -237,11 +233,4 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	if !strings.Contains(errMsg, "MOCK FAIL") {
 		t.Errorf("Expected error message to contain RedisSnapshot status message, but got %s", errMsg)
 	}
-}
-
-func buildSchemeForAWSBackup() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
-
-	return scheme, err
 }

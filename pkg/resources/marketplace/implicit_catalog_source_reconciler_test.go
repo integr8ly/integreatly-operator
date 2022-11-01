@@ -5,25 +5,14 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 )
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := olmv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	return scheme, nil
-}
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
@@ -51,8 +40,7 @@ func getSubscription() *olmv1alpha1.Subscription {
 }
 
 func TestImplicitCatalogSourceReconcile(t *testing.T) {
-
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +89,9 @@ func TestImplicitCatalogSourceReconcile(t *testing.T) {
 		},
 	}
 
-	os.Setenv("WATCH_NAMESPACE", "redhat-rhoam-operator")
+	if err := os.Setenv("WATCH_NAMESPACE", "redhat-rhoam-operator"); err != nil {
+		return
+	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {

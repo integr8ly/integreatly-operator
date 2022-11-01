@@ -11,7 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	routev1 "github.com/openshift/api/route/v1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
@@ -32,8 +32,10 @@ const (
 )
 
 func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		Client                     client.Client
@@ -168,7 +170,7 @@ func TestFormatAlerts(t *testing.T) {
 }
 
 func TestHandleCROConfigDeletion(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,17 +354,6 @@ func TestUpgradeFirstReconcile(t *testing.T) {
 			t.Errorf("upgradeFirstReconcile() got = %v, want %v", got, tt.want)
 		}
 	}
-}
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := routev1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	return scheme, nil
 }
 
 func getCROConfigMap() *corev1.ConfigMap {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
 
@@ -25,12 +26,6 @@ const (
 	testDestinationSecretName = "new-name-of-secret"
 )
 
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := corev1.SchemeBuilder.AddToScheme(scheme)
-	return scheme, err
-}
-
 func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	defPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -42,9 +37,9 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 		},
 	}
 
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 
 	scenarios := []struct {
@@ -113,9 +108,9 @@ func TestCopySecret(t *testing.T) {
 		},
 	}
 
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 
 	tests := []struct {
@@ -175,7 +170,7 @@ func TestCopySecret(t *testing.T) {
 }
 
 func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +238,7 @@ func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
 }
 
 func TestReconcileSecretToProductNamespace(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

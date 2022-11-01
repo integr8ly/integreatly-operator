@@ -94,7 +94,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	}
 	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
 		if err := Client.Delete(ctx, obj); err != nil {
-			t.Fatal(err)
+			t.Log(err)
 		}
 	}(ctx.Client, goctx.TODO(), serviceAccount)
 	binding := &v12.ClusterRoleBinding{
@@ -121,9 +121,8 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		// t.Fatal("failed to create clusterRoleBinding", err)
 	}
 	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
-		err := Client.Delete(ctx, obj)
-		if err != nil {
-			t.Fatal(err)
+		if err := Client.Delete(ctx, obj); err != nil {
+			t.Log(err)
 		}
 	}(ctx.Client, goctx.TODO(), binding)
 

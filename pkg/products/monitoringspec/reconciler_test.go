@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -17,8 +18,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-	projectv1 "github.com/openshift/api/project/v1"
-
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
@@ -26,7 +25,6 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -168,23 +166,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 	}
 }
 
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := projectv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := prometheusmonitoringv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := rbac.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	return scheme, nil
-}
-
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
@@ -255,7 +236,7 @@ func TestReconciler_config(t *testing.T) {
 // Verifies that the service monitor is cloned in the monitoring namespace
 // Verifies that a rolebinding is created in the fuse namespace
 func TestReconciler_fullReconcile(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -393,7 +374,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 // Verifies that the service monitor is removed in the monitoring namespace
 // Verifies that a rolebinding is removed in the fuse namespace
 func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,9 +3,9 @@ package resources
 import (
 	"context"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -129,16 +129,10 @@ var version6 = &configv1.ClusterVersion{
 	},
 }
 
-func getClusterBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := configv1.AddToScheme(scheme)
-	return scheme, err
-}
-
 func TestVersions(t *testing.T) {
-	scheme, err := getClusterBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error creating build scheme")
+		t.Fatal(err)
 	}
 
 	scenarios := []ClusterVersionTestScenario{
@@ -290,9 +284,9 @@ func TestGetClusterVersionCR(t *testing.T) {
 		serverClient k8sclient.Client
 	}
 
-	scheme, err := getClusterBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error creating build scheme")
+		t.Fatal(err)
 	}
 
 	tests := []struct {
