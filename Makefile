@@ -9,7 +9,6 @@ PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
-OPERATOR_SDK_VERSION=1.21.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 CREDENTIALS_MODE=$(shell oc get cloudcredential cluster -o json | jq -r ".spec.credentialsMode")
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
@@ -554,10 +553,13 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.2
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
+OPERATOR_SDK_VERSION=1.21.0
+GOLANGCI_LINT_VERSION=v1.50.0
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -575,6 +577,11 @@ envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT): $(LOCALBIN)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION)
+
 .PHONY: mkdocs/serve
 mkdocs/serve:
 	mkdocs serve
@@ -586,3 +593,7 @@ test/unit/prometheus:
 .PHONY: test/unit/prometheus/single
 test/unit/prometheus/single:
 	@promtool test rules $(PROM_TEST_RULE_FILE)
+
+.PHONY: test/lint
+test/lint: golangci-lint
+	@$(GOLANGCI_LINT) run
