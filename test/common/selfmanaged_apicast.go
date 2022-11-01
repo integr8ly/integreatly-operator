@@ -36,6 +36,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
@@ -61,6 +62,7 @@ var (
 	log                 = l.NewLogger()
 	threeScaleNamespace string
 	serviceSystemName   string
+	skipCleanup         = strings.ToLower(os.Getenv("SKIP_CLEANUP"))
 )
 
 func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
@@ -126,7 +128,9 @@ func TestSelfmanagedApicast(t TestingTB, testingCtx *TestingContext) {
 	if err != nil {
 		t.Fatalf("Error creating product: %v", err)
 	}
-	defer deleteProduct(threeScaleAdminPortal, token3scale)
+	if skipCleanup != "true" {
+		defer deleteProduct(threeScaleAdminPortal, token3scale)
+	}
 
 	//Add backend usage to product
 	err = addBackendToProduct(threeScaleAdminPortal, token3scale)
