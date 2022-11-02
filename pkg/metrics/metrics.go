@@ -7,11 +7,11 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
-	"github.com/prometheus/client_golang/api"
+	prometheusApi "github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/config"
-	"github.com/prometheus/common/model"
+	prometheusConfig "github.com/prometheus/common/config"
+	prometheusModel "github.com/prometheus/common/model"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"time"
@@ -395,7 +395,7 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	return status, nil
 }
 
-func SloRemainingErrorBudget(route string, token config.Secret) (float32, prometheusv1.Warnings, error) {
+func SloRemainingErrorBudget(route string, token prometheusConfig.Secret) (float32, prometheusv1.Warnings, error) {
 
 	sloMs := SloDays * 24 * 60 * 60 * 1000
 	slo001Ms := float64(sloMs) * 0.001
@@ -411,7 +411,7 @@ func SloRemainingErrorBudget(route string, token config.Secret) (float32, promet
 
 }
 
-func SloPercentile(route string, token config.Secret) (float32, prometheusv1.Warnings, error) {
+func SloPercentile(route string, token prometheusConfig.Secret) (float32, prometheusv1.Warnings, error) {
 
 	query := fmt.Sprintf("clamp_max(sum_over_time((clamp_max(sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"})), 1))[%[1]vd:10m]) / (%[1]v * 24 * 6) > 0, 1)", SloDays)
 
@@ -423,10 +423,10 @@ func SloPercentile(route string, token config.Secret) (float32, prometheusv1.War
 	return value, warnings, err
 }
 
-func GetApiClient(route string, token config.Secret) (prometheusv1.API, error) {
-	client, err := api.NewClient(api.Config{
+func GetApiClient(route string, token prometheusConfig.Secret) (prometheusv1.API, error) {
+	client, err := prometheusApi.NewClient(prometheusApi.Config{
 		Address:      route,
-		RoundTripper: config.NewAuthorizationCredentialsRoundTripper("Bearer", token, api.DefaultRoundTripper),
+		RoundTripper: prometheusConfig.NewAuthorizationCredentialsRoundTripper("Bearer", token, prometheusApi.DefaultRoundTripper),
 	})
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func GetApiClient(route string, token config.Secret) (prometheusv1.API, error) {
 	return v1api, nil
 }
 
-func vectorQuery(route string, token config.Secret, query string) (float32, prometheusv1.Warnings, error) {
+func vectorQuery(route string, token prometheusConfig.Secret, query string) (float32, prometheusv1.Warnings, error) {
 	v1api, err := GetApiClient(route, token)
 	if err != nil {
 		return 0, nil, err
@@ -450,17 +450,17 @@ func vectorQuery(route string, token config.Secret, query string) (float32, prom
 		return 0, nil, err
 	}
 
-	resultValue := result.(model.Vector)
+	resultValue := result.(prometheusModel.Vector)
 
 	if len(resultValue) == 1 {
 		value := float32(resultValue[0].Value)
 		return value, warnings, nil
-	} else {
-		return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
 	}
+
+	return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
 }
 
-func GetCurrentAlerts(route string, token config.Secret) ([]prometheusv1.Alert, error) {
+func GetCurrentAlerts(route string, token prometheusConfig.Secret) ([]prometheusv1.Alert, error) {
 	v1api, err := GetApiClient(route, token)
 	if err != nil {
 		return nil, err
