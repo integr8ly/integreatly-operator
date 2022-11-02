@@ -4458,7 +4458,7 @@ services-rhoam:master/github.com/influxdata/usage-client-v0.0.0-20160829180054-6
 services-rhoam:master/github.com/integr8ly/cloud-resource-operator-v0.41.0
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.10.3
 services-rhoam:master/github.com/integr8ly/grafana-operator/v3-v3.6.0
-services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.8
+services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.9
 services-rhoam:master/github.com/jackc/fake-v0.0.0-20150926172116-812a484cc733
 services-rhoam:master/github.com/jackc/pgx-v3.2.0+incompatible
 services-rhoam:master/github.com/jbenet/go-context-v0.0.0-20150711004518-d14ea06fba99
@@ -4516,8 +4516,6 @@ services-rhoam:master/github.com/kballard/go-shellquote-v0.0.0-20180428030007-95
 services-rhoam:master/github.com/kelseyhightower/envconfig-v1.3.0
 services-rhoam:master/github.com/kevinburke/ssh_config-v0.0.0-20190725054713-01f96b0aa0cd
 services-rhoam:master/github.com/kevinburke/ssh_config-v0.0.0-20201106050909-4977a11b4351
-services-rhoam:master/github.com/keycloak/keycloak-operator-v0.0.0-20210506103913-57d81e278bcb
-services-rhoam:master/github.com/keycloak/keycloak-operator-v0.0.0-20220420172159-46dccd389e72
 services-rhoam:master/github.com/kisielk/errcheck-v1.1.0
 services-rhoam:master/github.com/kisielk/errcheck-v1.2.0
 services-rhoam:master/github.com/kisielk/errcheck-v1.5.0
@@ -12850,7 +12848,7 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/influxdata/usage-client-v
 services-rhoam:master/rhsso-operator:18.0.x/github.com/integr8ly/cloud-resource-operator-v0.41.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/integr8ly/grafana-operator/v3-v3.10.3
 services-rhoam:master/rhsso-operator:18.0.x/github.com/integr8ly/grafana-operator/v3-v3.6.0
-services-rhoam:master/rhsso-operator:18.0.x/github.com/integr8ly/keycloak-client-v0.1.8
+services-rhoam:master/rhsso-operator:18.0.x/github.com/integr8ly/keycloak-client-v0.1.9
 services-rhoam:master/rhsso-operator:18.0.x/github.com/jackc/fake-v0.0.0-20150926172116-812a484cc733
 services-rhoam:master/rhsso-operator:18.0.x/github.com/jackc/pgx-v3.2.0+incompatible
 services-rhoam:master/rhsso-operator:18.0.x/github.com/jbenet/go-context-v0.0.0-20150711004518-d14ea06fba99
@@ -12908,8 +12906,6 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/kballard/go-shellquote-v0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kelseyhightower/envconfig-v1.3.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kevinburke/ssh_config-v0.0.0-20190725054713-01f96b0aa0cd
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kevinburke/ssh_config-v0.0.0-20201106050909-4977a11b4351
-services-rhoam:master/rhsso-operator:18.0.x/github.com/keycloak/keycloak-operator-v0.0.0-20210506103913-57d81e278bcb
-services-rhoam:master/rhsso-operator:18.0.x/github.com/keycloak/keycloak-operator-v0.0.0-20220420172159-46dccd389e72
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kisielk/errcheck-v1.1.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kisielk/errcheck-v1.2.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/kisielk/errcheck-v1.5.0
@@ -14735,6 +14731,13 @@ services-rhoam:master/sigs.k8s.io/kustomize/kyaml-v0.10.21
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v4-v4.0.2
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v4-v4.1.2
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v4-v4.2.0
+services-rhoam:master/sigs.k8s.io/yaml-v1.1.0
+services-rhoam:master/sigs.k8s.io/yaml-v1.2.0
+services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
+services-rhoam:master/sourcegraph.com/sourcegraph/appdash-v0.0.0-20190731080439-ebfcffb1b5c0
+services-rhoam:master/vbom.ml/util-v0.0.0-20160121211510-db5cfe13f5cc
+services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
+m:master/sigs.k8s.io/structured-merge-diff/v4-v4.2.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.1.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.2.0
 services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
