@@ -2,7 +2,9 @@ package common
 
 import (
 	goctx "context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -219,7 +221,14 @@ func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScale
 		return nil, fmt.Errorf("could not create admin portal %v", err)
 	}
 
-	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, nil)
+	insecureClient := &http.Client{
+		Timeout: time.Second * 10,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // gosec G402 override exclued
+		},
+	}
+
+	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, insecureClient)
 
 	return threescaleClient, nil
 }

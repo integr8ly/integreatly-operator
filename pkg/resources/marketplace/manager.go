@@ -75,6 +75,46 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		}
 		return nil
 	}
+
+	// TODO this 'Get' is a one off and should be removed post upgrade to 3scale cluster scoped
+	// Get CSV as only want 3scale operatorGroup to update when upgrade is finished
+	csv := &coreosv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      "3scale-operator.v0.10.0-mas",
+		},
+	}
+	serverClient.Get(ctx, k8sclient.ObjectKey{Namespace: csv.Namespace, Name: csv.Name}, csv)
+
+	//catalog source is ready create the other stuff
+	og := &v1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      OperatorGroupName,
+			Labels:    map[string]string{"integreatly": t.SubscriptionName},
+		},
+		Spec: v1.OperatorGroupSpec{
+			TargetNamespaces: operatorGroupNamespaces,
+		},
+	}
+	err = serverClient.Create(ctx, og)
+	//TODO can maybe return this to a create only function after all clusters are updated in production
+	//err = serverClient.Create(ctx, og)
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, og, func() error {
+		og.Namespace = t.Namespace
+		og.Name = OperatorGroupName
+		og.Labels = map[string]string{"integreatly": t.SubscriptionName}
+		if csv.Status.Phase == "Succeeded" && csv.Status.Reason == "InstallSucceeded" {
+			og.Spec.TargetNamespaces = operatorGroupNamespaces
+		}
+		return nil
+	})
+	if err != nil && !k8serr.IsAlreadyExists(err) {
+		log.Error("error creating operator group", err)
+		return err
+	}
+
+	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		log.Error("error creating sub", err)

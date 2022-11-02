@@ -38,6 +38,10 @@ var _ = Describe("integreatly", func() {
 				TestCases: common.GetHappyPathTestCases(installType),
 			},
 			{
+				Type:      fmt.Sprintf("%s Threescale Cluster Scoped", installType),
+				TestCases: common.GetClusterScopedTestCases(installType),
+			},
+			{
 				Type:      "FAILURE TESTS",
 				TestCases: common.FAILURE_TESTS,
 			},
