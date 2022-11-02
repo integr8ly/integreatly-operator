@@ -35,7 +35,7 @@ estimate: 15m
 - To run the automated test manually that performs the manual steps below:
 
 ```
-INSTALLATION_TYPE=managed-api BYPASS_STORAGE_TYPE_CHECK=true TEST="C19" make test/e2e/single | tee c19-test.log
+LOCAL=false INSTALLATION_TYPE=managed-api BYPASS_STORAGE_TYPE_CHECK=true TEST="C19" make test/e2e/single | tee c19-test.log
 ```
 
 - Verify test completes successfully

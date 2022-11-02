@@ -45,8 +45,8 @@ import (
 )
 
 const (
-	apicastOperatorVersion       = "0.5.0"
-	apicastImageStreamTag        = "3scale2.11.0"
+	apicastOperatorVersion       = "0.7.0-mas"
+	apicastImageStreamTag        = "3scale-mas"
 	apicastNamespace             = "selfmanaged-apicast"
 	apiExampleApicast            = "apicast-example-apicast"
 	adminPortalCredentialsSecret = "adminportal-credentials"
@@ -304,8 +304,10 @@ func createAdminPortalCredentialsSecret(ctx context.Context, client k8sclient.Cl
 // Install 3scale APIcast gateway operator
 func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 	log.Info("Install 3scale APIcast gateway Operator")
-	verSplit := strings.Split(string(integreatlyv1alpha1.Version3Scale), ".")
-	channelVer := verSplit[0] + "." + verSplit[1] // example: 2.11.0 -> 2.11
+	// After moving to MAS stream the channel version is just "mas"
+	//verSplit := strings.Split(string(integreatlyv1alpha1.Version3Scale), ".")
+	//channelVer := verSplit[0] + "." + verSplit[1] // example: 2.11.0 -> 2.11
+	channelVer := "mas"
 	targetNamespaces := []string{apicastNamespace}
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -352,7 +354,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 		err = client.Get(context.TODO(), k8sclient.ObjectKey{Name: subscription.Name, Namespace: subscription.Namespace}, subscription)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
-				log.Info("Sunscription " + subscription.Name + "not created yet, waiting")
+				log.Info("Subscription " + subscription.Name + "not created yet, waiting")
 				return false, nil
 			}
 			return false, err
@@ -989,10 +991,10 @@ func importApicastImage(ctx context.Context, client k8sclient.Client) error {
 		Spec: imagev1.ImageStreamSpec{
 			Tags: []imagev1.TagReference{
 				{
-					Name: "3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag,
+					Name: "3scale-mas/apicast-gateway-rhel8:" + apicastImageStreamTag,
 					From: &corev1.ObjectReference{
 						Kind: "DockerImage",
-						Name: "registry.redhat.io/3scale-amp2/apicast-gateway-rhel8:" + apicastImageStreamTag,
+						Name: "registry.redhat.io/3scale-mas/apicast-gateway-rhel8:" + apicastImageStreamTag,
 					},
 				},
 			},

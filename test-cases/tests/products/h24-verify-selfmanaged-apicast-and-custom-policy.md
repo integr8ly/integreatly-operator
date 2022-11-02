@@ -17,7 +17,15 @@ estimate: 1h
 
 ## Description
 
-Note: This test case was automated and is executed automatically. However, the "custom policy" part is not yet automated so every third release comment out the [cleanup](https://github.com/integr8ly/integreatly-operator/blob/3b24a8d67fb0c2af8ca6502ff7bd593e69ad5bf2/test/common/selfmanaged_apicast.go#L125), run the h24 test and then do only the pieces required for setting up the custom policy.
+Note: This test case was automated and is executed automatically. However, the "custom policy" part is not yet automated so every third release run the h24 test without cleanup and then do only the pieces required for setting up the custom policy. Before running the H24 test check the [apicastOperatorVersion](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/selfmanaged_apicast.go#L48) by navigating to Operator Hub in OSD and searching for "Red Hat Integration - 3scale APIcast gateway - Managed Application Services". After clicking on the tile check the "Latest version" there. Once updated in the code execute the following to actually run the test (please create a PR and/or ping the QE coordinator):
+
+```
+LOCAL=false SKIP_CLEANUP=true TEST=H24 INSTALLATION_TYPE=managed-api make test/e2e/single
+```
+
+Note: the templates for custom policies are no longer supported so the [RHOAM guide](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00) needs to be updated. Until that happens follow the [official 3scale guide](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.12/html/installing_3scale/installing-apicast#deploying-apicast-gateway-self-managed-operator) instead.
+
+Note:
 
 This test case should prove that it is possible for customers to deploy self-managed APIcast and use custom policies on it. The 3scale QE team will perform this test case in RHOAM each time there is an upgrade of 3scale. We (RHOAM QE) should only perform this if there are modifications on our end that might break the functionality - typically changes in permissions in RHOAM and/or OSD.
 Additional context can be found in [MGDAPI-370](https://issues.redhat.com/browse/MGDAPI-370)
@@ -80,7 +88,7 @@ const (
 This is sample how to run TestSelfmanagedApicast as single test:
 
 ```
-$ TEST=H24 INSTALLATION_TYPE=managed-api make test/e2e/single
+LOCAL=false SKIP_CLEANUP=true TEST=H24 INSTALLATION_TYPE=managed-api make test/e2e/single
 ```
 
 Expected result could be similar to following:
