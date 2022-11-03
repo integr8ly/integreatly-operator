@@ -33,6 +33,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	prometheusConfig "github.com/prometheus/common/config"
 
 	"github.com/go-openapi/strfmt"
 	routev1 "github.com/openshift/api/route/v1"
@@ -401,7 +402,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	log.Info("set alerts summary metric")
-	err = r.composeAndSetAlertsSummaryMetric(installation, configManager)
+	err = r.composeAndSetSummaryMetrics(installation, configManager)
 	if err != nil {
 		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
 			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
@@ -473,7 +474,7 @@ func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 
 	// Entered on every reconcile where all stages reported complete
 	if !installInProgress {
-		installation.Status.Stage = rhmiv1alpha1.StageName("complete")
+		installation.Status.Stage = "complete"
 		retryRequeue.RequeueAfter = 5 * time.Minute
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
@@ -586,7 +587,12 @@ func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.C
 	if err != nil {
 		return fmt.Errorf("error on response : %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("silenceAlert: Body Close error : ", err)
+		}
+	}(resp.Body)
 
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -621,7 +627,12 @@ func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.
 	if err != nil {
 		return false, fmt.Errorf("error on response : %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error("silenceExisting: Body Close error : ", err)
+		}
+	}(resp.Body)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -630,7 +641,7 @@ func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.
 
 	var existingSilences models.GettableSilences
 
-	err = json.Unmarshal([]byte(body), &existingSilences)
+	err = json.Unmarshal(body, &existingSilences)
 	if err != nil {
 		return false, fmt.Errorf("failed to unmarshal json: %w", err)
 	}
@@ -752,10 +763,10 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	err = r.createSilence(installation, r.restConfig, configManager)
 
 	if err != nil {
-		log.Error("Error creating silence", err)
+		log.Error("error creating silence", err)
 	}
 
-	installation.Status.Stage = rhmiv1alpha1.StageName("deletion")
+	installation.Status.Stage = "deletion"
 	installation.Status.LastError = ""
 
 	// updates rhmi status metric to deletion
@@ -763,7 +774,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 
 	// Clean up the products which have finalizers associated to them
 	merr := &resources.MultiErr{}
-	finalizers := []string{}
+	var finalizers []string
 	finalizers = append(finalizers, installation.Finalizers...)
 	for _, stage := range installationType.UninstallStages {
 		pendingUninstalls := false
@@ -853,13 +864,13 @@ func (r *RHMIReconciler) handleUninstallProduct(installation *rhmiv1alpha1.RHMI,
 		}
 		reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)
 		if err != nil {
-			merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
+			merr.Add(fmt.Errorf("failed to build reconciler for product %s: %w", productName, err))
 		}
 		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
 			Scheme: r.mgr.GetScheme(),
 		})
 		if err != nil {
-			merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
+			merr.Add(fmt.Errorf("failed to create server client for %s: %w", productName, err))
 		}
 		uninstall := false
 		if productStatus.Uninstall || installation.DeletionTimestamp != nil {
@@ -867,7 +878,7 @@ func (r *RHMIReconciler) handleUninstallProduct(installation *rhmiv1alpha1.RHMI,
 		}
 		phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient, quota.QuotaProductConfig{}, uninstall)
 		if err != nil {
-			merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
+			merr.Add(fmt.Errorf("failed to reconcile product %s: %w", productName, err))
 		}
 		if phase != rhmiv1alpha1.PhaseCompleted {
 			return true
@@ -923,7 +934,7 @@ func upgradeFirstReconcile(installation *rhmiv1alpha1.RHMI) bool {
 
 func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (ctrl.Result, error) {
 	log.Info("Running preflight checks..")
-	installation.Status.Stage = rhmiv1alpha1.StageName("Preflight Checks")
+	installation.Status.Stage = "Preflight Checks"
 	result := ctrl.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
@@ -1046,17 +1057,17 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	}
 
 	for _, ns := range namespaces.Items {
-		products, err := r.checkNamespaceForProducts(ns, installation, installationType, configManager)
+		nsProducts, err := r.checkNamespaceForProducts(ns, installation, installationType, configManager)
 		if err != nil {
 			// error searching for existing products, keep trying
 			log.Info("error looking for existing deployments, will retry")
 			return result, err
 		}
-		if len(products) != 0 {
+		if len(nsProducts) != 0 {
 			//found one or more conflicting products
 			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
-			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
-			log.Info("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
+			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(nsProducts, ", ") + ", in namespace: " + ns.GetName()
+			log.Info("found conflicting packages: " + strings.Join(nsProducts, ", ") + ", in namespace: " + ns.GetName())
 			_ = r.Status().Update(context.TODO(), installation)
 			return result, err
 		}
@@ -1082,7 +1093,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 }
 
 func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) ([]string, error) {
-	foundProducts := []string{}
+	var foundProducts []string
 	if strings.HasPrefix(ns.Name, "openshift-") {
 		return foundProducts, nil
 	}
@@ -1132,7 +1143,7 @@ func (r *RHMIReconciler) bootstrapStage(installation *rhmiv1alpha1.RHMI, configM
 
 	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient, quota, request)
 	if err != nil || phase == rhmiv1alpha1.PhaseFailed {
-		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
+		return rhmiv1alpha1.PhaseFailed, fmt.Errorf("bootstrap stage reconcile failed: %w", err)
 	}
 
 	return phase, nil
@@ -1251,6 +1262,9 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	client, err := k8sclient.New(kubeConfig, k8sclient.Options{
 		Scheme: mgr.GetScheme(),
 	})
+	if err != nil {
+		return err
+	}
 
 	installation, err := getInstallation()
 	if err != nil {
@@ -1258,7 +1272,13 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	installedViaOLM, err := addon.OperatorInstalledViaOLM(context.Background(), client, installation)
+	if err != nil {
+		return err
+	}
 	isHiveManaged, err := addon.OperatorIsHiveManaged(context.Background(), client, installation)
+	if err != nil {
+		return err
+	}
 
 	if isHiveManaged {
 		mtrReconciled := os.Getenv("MTR_RECONCILED")
@@ -1299,7 +1319,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Instead of calling .Complete(r), we call .Build(r), which
 	// does the same but returns the controller instance, to be
 	// stored in the reconciler
-	controller, err := ctrl.NewControllerManagedBy(mgr).
+	reconcileController, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhmiv1alpha1.RHMI{}).
 		Watches(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations).
 		Watches(&source.Kind{Type: &corev1.Secret{}}, enqueueAllInstallations).
@@ -1311,7 +1331,7 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	r.controller = controller
+	r.controller = reconcileController
 
 	return nil
 }
@@ -1333,10 +1353,9 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get a list of rhmi CR: %w", err)
+		return nil, fmt.Errorf("could not get a list of rhmi CR: %w", err)
 	}
 
-	installation := &rhmiv1alpha1.RHMI{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
@@ -1370,7 +1389,7 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 		namespaceSegments := strings.Split(namespace, "-")
 		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 
-		installation = &rhmiv1alpha1.RHMI{
+		installation := &rhmiv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      managedApiInstallationName,
 				Namespace: namespace,
@@ -1396,18 +1415,18 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 		err = serverClient.Create(ctx, installation)
 		if err != nil {
-			return nil, fmt.Errorf("Could not create rhmi CR in %s namespace: %w", namespace, err)
+			return nil, fmt.Errorf("could not create rhmi CR in %s namespace: %w", namespace, err)
 		}
+		return installation, nil
 	} else if len(installationList.Items) == 1 {
-		installation = &installationList.Items[0]
+		return &installationList.Items[0], nil
 	} else {
 		return nil, fmt.Errorf("too many rhmi resources found. Expecting 1, found %d rhmi resources in %s namespace", len(installationList.Items), namespace)
 	}
 
-	return installation, nil
 }
 
-func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
+func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
 	var alerts []prometheusv1.Alert
 
 	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
@@ -1420,71 +1439,50 @@ func (r *RHMIReconciler) composeAndSetAlertsSummaryMetric(installation *rhmiv1al
 		return fmt.Errorf("getting observability configuration failed: %w", err)
 	}
 
-	for namespace, _ := range alertingNamespaces {
+	for namespace := range alertingNamespaces {
 		if namespace == observability.GetNamespace() {
-			alerts, err = r.getCurrentAlerts("prometheus", namespace)
+
+			url, err := r.getURLFromRoute("prometheus", namespace, r.restConfig)
 			if err != nil {
-				return fmt.Errorf("composing alert metric failed: %w", err)
+				return fmt.Errorf("error getting route : %w", err)
 			}
+
+			token := prometheusConfig.Secret(r.restConfig.BearerToken)
+
+			alerts, err = metrics.GetCurrentAlerts(url, token)
+			if err != nil {
+				return err
+			}
+
 			critical, warning := formatAlerts(alerts)
 			metrics.SetRhoamCriticalAlerts(critical)
 			metrics.SetRhoamWarningAlerts(warning)
+
+			value, warnings, err := metrics.SloPercentile(url, token)
+			if err != nil {
+				return err
+			}
+
+			for _, warning := range warnings {
+				log.Warning(warning)
+			}
+			metrics.SetRhoam7DPercentile(value)
+
+			value, warnings, err = metrics.SloRemainingErrorBudget(url, token)
+			if err != nil {
+				return err
+			}
+
+			for _, warning := range warnings {
+				log.Warning(warning)
+			}
+			metrics.SetRhoam7DSloRemainingErrorBudget(value)
 
 			return nil
 		}
 	}
 
 	return nil
-}
-
-func (r *RHMIReconciler) getCurrentAlerts(route string, namespace string) ([]prometheusv1.Alert, error) {
-	endpoint := "/api/v1/alerts"
-
-	url, err := r.getURLFromRoute(route, namespace, r.restConfig)
-	if err != nil {
-		return nil, fmt.Errorf("error getting route : %w", err)
-	}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s%s", url, endpoint), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error on request : %w", err)
-	}
-	var bearer = "Bearer " + r.restConfig.BearerToken
-	req.Header.Add("Authorization", bearer)
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error on response : %w", err)
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("reader close failure", err)
-		}
-	}(resp.Body)
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read body : %w", err)
-	}
-
-	var alertResp struct {
-		Status string `json:"status"`
-		Data   struct {
-			Alerts []prometheusv1.Alert `json:"alerts"`
-		} `json:"data"`
-	}
-
-	err = json.Unmarshal(body, &alertResp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
-	}
-
-	return alertResp.Data.Alerts, nil
 }
 
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
@@ -1560,11 +1558,11 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 	if err != nil {
 		return fmt.Errorf("failed to get API Group-Resources: %v", err)
 	}
-	cache, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
+	store, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
 	if err != nil {
 		return fmt.Errorf("failed to create informer cache in %s namespace: %v", namespace, err)
 	}
-	informer, err := cache.GetInformerForKind(context.TODO(), crd.GetObjectKind().GroupVersionKind())
+	informer, err := store.GetInformerForKind(context.TODO(), crd.GetObjectKind().GroupVersionKind())
 	if err != nil {
 		return fmt.Errorf("failed to create informer for %v: %v", crd, err)
 	}
@@ -1573,7 +1571,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 		return fmt.Errorf("failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
 	}
 	// Adding to Manager, which will start it for us with a correct stop channel
-	err = r.mgr.Add(cache)
+	err = r.mgr.Add(store)
 	if err != nil {
 		return fmt.Errorf("failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
 	}
@@ -1585,7 +1583,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 		time.Sleep(10 * time.Second)
 		close(timeoutChannel)
 	}()
-	if !cache.WaitForCacheSync(timeoutChannel) {
+	if !store.WaitForCacheSync(timeoutChannel) {
 		return fmt.Errorf("failed to sync cache for %s watch in %s namespace", gvk, namespace)
 	}
 

@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -372,5 +374,170 @@ func getCROConfigMap() *corev1.ConfigMap {
 				deletionFinalizer,
 			},
 		},
+	}
+}
+
+func Test_getInstallation(t *testing.T) {
+	tests := []struct {
+		name    string
+		want    *rhmiv1alpha1.RHMI
+		wantErr bool
+		envs    map[string]string
+	}{
+		{
+			name:    "WATCH_NAMESPACE must be set",
+			wantErr: true,
+			want:    nil,
+		},
+		{
+			name:    "INSTALLATION_TYPE not set",
+			wantErr: false,
+			want: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "namespace",
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: "",
+				},
+			},
+			envs: map[string]string{"WATCH_NAMESPACE": "namespace"},
+		},
+		{
+			name:    "INSTALLATION_TYPE is set",
+			wantErr: false,
+			want: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "namespace",
+				},
+				Spec: rhmiv1alpha1.RHMISpec{
+					Type: "managed-api-service",
+				},
+			},
+			envs: map[string]string{
+				"WATCH_NAMESPACE":   "namespace",
+				"INSTALLATION_TYPE": "managed-api-service",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			preEnv := make(map[string]string)
+			envs := []string{
+				"WATCH_NAMESPACE",
+				"INSTALLATION_TYPE",
+			}
+
+			for _, env := range envs {
+				_, ok := tt.envs[env]
+				if !ok {
+
+					preEnv[env] = os.Getenv(env)
+					err := os.Unsetenv(env)
+					if err != nil {
+						t.Error("error unsetting env var : ", err)
+					}
+				}
+			}
+
+			t.Cleanup(func() {
+				for key, value := range preEnv {
+					err := os.Setenv(key, value)
+					if err != nil {
+						t.Error("error setting env var : ", err)
+					}
+				}
+			})
+
+			for key, value := range tt.envs {
+				t.Setenv(key, value)
+			}
+
+			got, err := getInstallation()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getInstallation() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getInstallation() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isInstallationOlderThan1Minute(t *testing.T) {
+	type args struct {
+		installation *rhmiv1alpha1.RHMI
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Installation is older than a minute",
+			want: true,
+			args: args{installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{
+						Time: time.Now().Add(-2 * time.Minute),
+					},
+				},
+			}},
+		},
+		{
+			name: "Installation is newer than a minute",
+			want: false,
+			args: args{installation: &rhmiv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{
+						Time: time.Now().Add(-59 * time.Second),
+					},
+				},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isInstallationOlderThan1Minute(tt.args.installation); got != tt.want {
+				t.Errorf("isInstallationOlderThan1Minute() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getRebalancePods(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+		envs map[string]string
+	}{
+		{
+			name: "REBALANCE_PODS does not exist",
+			want: true,
+		},
+		{
+			name: "REBALANCE_PODS is set to false",
+			want: false,
+			envs: map[string]string{
+				"REBALANCE_PODS": "false",
+			},
+		},
+		{
+			name: "REBALANCE_PODS is set to true",
+			want: true,
+			envs: map[string]string{
+				"REBALANCE_PODS": "true",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for key, value := range tt.envs {
+				t.Setenv(key, value)
+			}
+			if got := getRebalancePods(); got != tt.want {
+				t.Errorf("getRebalancePods() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
