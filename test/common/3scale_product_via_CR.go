@@ -4,9 +4,11 @@ import (
 	goctx "context"
 	"fmt"
 	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
+	projectv1 "github.com/openshift/api/project/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
 
@@ -16,8 +18,22 @@ const (
 )
 
 func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
+
+	// poll to make sure the project is deleted from H30 and H29 before attempting to create again
+	project := &projectv1.Project{}
+	err := wait.Poll(tenantCreatedLoopTimeout, tenantCreatedTimeout, func() (done bool, err error) {
+		err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: projectNamespace, Namespace: projectNamespace}, project)
+		if err != nil {
+			return true, nil
+		}
+		return false, err
+
+	})
+	if err != nil {
+		t.Logf("failed to check project %v", err)
+	}
 	// make project
-	project, err := makeProject(ctx)
+	project, err = makeProject(ctx)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -95,7 +111,7 @@ func Test3scaleProductViaCR(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to delete secret with error: %v", err)
 	}
 
-	// //delete project
+	//delete project
 	if err := ctx.Client.Delete(goctx.TODO(), project); err != nil {
 		t.Fatalf("failed to delete testing namespace with error: %v", err)
 	}
