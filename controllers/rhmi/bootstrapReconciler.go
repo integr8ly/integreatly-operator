@@ -19,10 +19,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -30,8 +26,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 
@@ -208,14 +206,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
 
-	// temp code for RHOAM, remove once all clusters are upgraded to 1.14
-	// Remove all prometheus rules under redhat/sandbox-rhoam/rhoami-operator
-	phase, err = r.removePrometheusRules(ctx, serverClient, installation.Spec.NamespacePrefix)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to remove existing prometheus rules from rhoam-operator namespace", err)
-		return phase, errors.Wrap(err, "Failed to remove existing prometheus rules from rhoam-operator namespace")
-	}
-
 	phase, err = r.reconcileCustomSMTP(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
@@ -229,53 +219,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	r.log.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) removePrometheusRules(ctx context.Context, serverClient k8sclient.Client, nsPrefix string) (integreatlyv1alpha1.StatusPhase, error) {
-	rhoamProductNamespaces, err := getRHOAMNamespaces(ctx, serverClient, nsPrefix)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	for _, namespace := range rhoamProductNamespaces {
-		namespaceRules := &prometheusv1.PrometheusRuleList{}
-
-		err := serverClient.List(ctx, namespaceRules, k8sclient.InNamespace(namespace))
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		} else if k8serr.IsNotFound(err) || len(namespaceRules.Items) == 0 {
-			continue
-		}
-
-		// Exclude keycloak rule from the deletion as it gets recreated by keycloak operator
-		for _, rule := range namespaceRules.Items {
-			if rule.Name != "keycloak" {
-				err := serverClient.Delete(ctx, rule)
-				if err != nil {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to remove %s rule: %s", rule.ObjectMeta.Name, err)
-				}
-			}
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func getRHOAMNamespaces(ctx context.Context, serverClient k8sclient.Client, nsPrefix string) ([]string, error) {
-	var namespaces []string
-	namespaceList := &corev1.NamespaceList{}
-	err := serverClient.List(ctx, namespaceList)
-	if err != nil {
-		return nil, err
-	}
-	// Only return namespaces that have the integreatly label and nsPrefix, but also return rhoam operator ns (it does not have the integreatly label on)
-	for _, namespace := range namespaceList.Items {
-		if !strings.Contains(namespace.Name, "observability") && strings.Contains(namespace.Name, nsPrefix) || namespace.Name == fmt.Sprintf("%soperator", nsPrefix) {
-			namespaces = append(namespaces, namespace.Name)
-		}
-	}
-
-	return namespaces, nil
 }
 
 // temp code to be removed once all versions of RHOAM are bumped to 1.27
@@ -440,7 +383,7 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 
 	allTenants, err := userHelper.GetMultiTenantUsers(ctx, serverClient, r.installation)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error getting teants for OAuth clients secrets: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting teants for OAuth clients secrets: %w", err)
 	}
 
 	oauthClientSecrets := &corev1.Secret{
@@ -465,7 +408,7 @@ func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClie
 			}
 		}
 		// Remove redundant tenant secrets
-		for key, _ := range oauthClientSecrets.Data {
+		for key := range oauthClientSecrets.Data {
 			if !tenantExists(key, allTenants) {
 				delete(oauthClientSecrets.Data, key)
 			}
@@ -644,7 +587,7 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 		}
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling Github OAuth secrets: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling Github OAuth secrets: %w", err)
 	}
 
 	r.log.Info("Bootstrap Github OAuth secrets successfully reconciled")
@@ -667,7 +610,7 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 		}
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating Github OAuth secrets role: %w", err)
 	}
 
 	secretRoleBindingCR := &rbacv1.RoleBinding{
@@ -690,7 +633,7 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 		}
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role binding: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating Github OAuth secrets role binding: %w", err)
 	}
 	r.log.Info("Bootstrap Github OAuth secrets Role and Role Binding successfully reconciled")
 

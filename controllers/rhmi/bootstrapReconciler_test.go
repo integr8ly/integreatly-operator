@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -14,7 +13,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,352 +42,6 @@ var (
 	userSsoOperatorNs       = "redhat-rhoam-user-sso-operator"
 	someRandomNs            = "some-random-nspace"
 )
-
-func TestReconciler_reconcilePrometheusRules(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = prometheusv1.SchemeBuilder.AddToScheme(scheme)
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-
-	tests := []struct {
-		Name           string
-		ExpectedStatus integreatlyv1alpha1.StatusPhase
-		FakeConfig     *config.ConfigReadWriterMock
-		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.RHMI
-		Recorder       record.EventRecorder
-		FakeClient     k8sclient.Client
-		Assertion      func(k8sclient.Client) error
-	}{
-		{
-			Name: "Test that all existing prometheus rules in given ns are removed correctly",
-			FakeConfig: &config.ConfigReadWriterMock{
-				GetOperatorNamespaceFunc: func() string {
-					return rhoamOperatorNs
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: rhoamOperatorNs,
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					NamespacePrefix: "redhat-rhoam-",
-				},
-			},
-			Recorder:       record.NewFakeRecorder(50),
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
-				&prometheusv1.PrometheusRuleList{
-					Items: getPrometheusRules(),
-				},
-				getNamespaces(),
-			),
-			Assertion: assertPrometheusRulesDeletion,
-		},
-		{
-			Name: "Test that prometheus rules in other ns are NOT removed",
-			FakeConfig: &config.ConfigReadWriterMock{
-				GetOperatorNamespaceFunc: func() string {
-					return rhoamOperatorNs
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: rhoamOperatorNs,
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					NamespacePrefix: "redhat-rhoam-",
-				},
-			},
-			Recorder:       record.NewFakeRecorder(50),
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
-				&prometheusv1.PrometheusRuleList{
-					Items: getPrometheusRules(),
-				},
-				getNamespaces(),
-			),
-			Assertion: assertPrometheusRulesNoDeletion,
-		},
-		{
-			Name: "Test that all expected namespaces are returned",
-			FakeConfig: &config.ConfigReadWriterMock{
-				GetOperatorNamespaceFunc: func() string {
-					return rhoamOperatorNs
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: rhoamOperatorNs,
-				},
-				Spec: integreatlyv1alpha1.RHMISpec{
-					NamespacePrefix: "redhat-rhoam-",
-				},
-			},
-			Recorder:       record.NewFakeRecorder(50),
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
-				&prometheusv1.PrometheusRuleList{
-					Items: getPrometheusRules(),
-				},
-				getNamespaces(),
-			),
-			Assertion: assertAllExpectedNamespacesAreReturned,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			reconciler, err := NewBootstrapReconciler(tt.FakeConfig, tt.Installation, tt.FakeMPM, tt.Recorder, l.NewLogger())
-			if err != nil {
-				t.Fatalf("Error creating bootstrap reconciler: %s", err)
-			}
-
-			phase, err := reconciler.removePrometheusRules(context.TODO(), tt.FakeClient, "redhat-rhoam-")
-
-			if phase != tt.ExpectedStatus {
-				t.Fatalf("Expected %s phase but got %s", tt.ExpectedStatus, phase)
-			}
-
-			if err := tt.Assertion(tt.FakeClient); err != nil {
-				t.Fatalf("Failed assertion: %v", err)
-			}
-		})
-	}
-}
-
-func assertAllExpectedNamespacesAreReturned(client k8sclient.Client) error {
-	existingNamespaces, err := getRHOAMNamespaces(context.TODO(), client, "redhat-rhoam-")
-	if err != nil {
-		return err
-	} else if existingNamespaces == nil {
-		return fmt.Errorf("No namespaces were found")
-	}
-	rhoamFound := false
-	threescaleFound := false
-	threescaleOpFound := false
-	croFound := false
-	customerMonitoringFound := false
-	marin3rFound := false
-	marin3rOperatorFound := false
-	monitoringNsFound := false
-	observabilityNsFound := false
-	observabilityOperatorFound := false
-	rhssoFound := false
-	rhssoOperatorFound := false
-	userSSOFound := false
-	userSSOOperatorFound := false
-	randomNsFound := false
-
-	for _, namespaceFound := range existingNamespaces {
-		if namespaceFound == rhoamOperatorNs {
-			rhoamFound = true
-		}
-		if namespaceFound == threescaleNs {
-			threescaleFound = true
-		}
-		if namespaceFound == threescaleOperatorNs {
-			threescaleOpFound = true
-		}
-		if namespaceFound == croNs {
-			croFound = true
-		}
-		if namespaceFound == customerMonitoringNs {
-			customerMonitoringFound = true
-		}
-		if namespaceFound == marin3rNs {
-			marin3rFound = true
-		}
-		if namespaceFound == marin3rOperatorNs {
-			marin3rOperatorFound = true
-		}
-		if namespaceFound == monitoringNs {
-			monitoringNsFound = true
-		}
-		if namespaceFound == observabilityNs {
-			observabilityNsFound = true
-		}
-		if namespaceFound == observabilityOperatorNs {
-			observabilityOperatorFound = true
-		}
-		if namespaceFound == rhssoNs {
-			rhssoFound = true
-		}
-		if namespaceFound == rhssoOperatorNs {
-			rhssoOperatorFound = true
-		}
-		if namespaceFound == userSsoNs {
-			userSSOFound = true
-		}
-		if namespaceFound == userSsoOperatorNs {
-			userSSOOperatorFound = true
-		}
-		if namespaceFound == someRandomNs {
-			randomNsFound = true
-		}
-
-	}
-
-	if !rhoamFound || !croFound || !threescaleFound || !threescaleOpFound || !customerMonitoringFound || !marin3rFound || !marin3rOperatorFound || !monitoringNsFound ||
-		!rhssoFound || !rhssoOperatorFound || !userSSOFound || !userSSOOperatorFound {
-		return fmt.Errorf("Not all namespaces were found")
-	}
-
-	if observabilityNsFound || observabilityOperatorFound || randomNsFound {
-		return fmt.Errorf("observability namespace was found while it should have been skipped")
-	}
-
-	return nil
-}
-
-func assertPrometheusRulesDeletion(client k8sclient.Client) error {
-	var allExistingRules []prometheusv1.PrometheusRule
-	rhoamProductNamespaces, err := getRHOAMNamespaces(context.TODO(), client, "redhat-rhoam-")
-	if err != nil {
-		return err
-	}
-	for _, namespace := range rhoamProductNamespaces {
-		namespaceRules := &prometheusv1.PrometheusRuleList{}
-
-		err := client.List(context.TODO(), namespaceRules, k8sclient.InNamespace(namespace))
-		if err != nil {
-			return err
-		} else if k8serr.IsNotFound(err) || len(namespaceRules.Items) == 0 {
-			continue
-		}
-
-		for _, rule := range namespaceRules.Items {
-			if rule.Name != "keycloak" {
-				allExistingRules = append(allExistingRules, *rule)
-			}
-		}
-	}
-	if len(allExistingRules) != 0 {
-		return fmt.Errorf("Found prometheus rules that should have been deleted")
-	}
-
-	return nil
-}
-
-func assertPrometheusRulesNoDeletion(client k8sclient.Client) error {
-	existingRules := &prometheusv1.PrometheusRuleList{}
-
-	err := client.List(context.TODO(), existingRules, k8sclient.InNamespace(observabilityNs))
-	if err != nil {
-		return err
-	} else if len(existingRules.Items) == 0 {
-		return fmt.Errorf("Other ns prometheus rules were also removed while they should not")
-	}
-	err = client.List(context.TODO(), existingRules, k8sclient.InNamespace(observabilityOperatorNs))
-	if err != nil {
-		return err
-	} else if len(existingRules.Items) == 0 {
-		return fmt.Errorf("Other ns prometheus rules were also removed while they should not")
-	}
-	return nil
-}
-
-func getPrometheusRules() []*prometheusv1.PrometheusRule {
-	return []*prometheusv1.PrometheusRule{
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule1",
-				Namespace: rhoamOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule2",
-				Namespace: threescaleNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule3",
-				Namespace: threescaleOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule4",
-				Namespace: croNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule5",
-				Namespace: customerMonitoringNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule6",
-				Namespace: marin3rNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule7",
-				Namespace: marin3rOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule8",
-				Namespace: monitoringNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule9",
-				Namespace: observabilityNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule10",
-				Namespace: observabilityOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule11",
-				Namespace: rhoamOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule12",
-				Namespace: rhssoNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule13",
-				Namespace: userSsoNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "testrule14",
-				Namespace: userSsoOperatorNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "keycloak",
-				Namespace: rhssoNs,
-			},
-		},
-		{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "keycloak",
-				Namespace: userSsoNs,
-			},
-		},
-	}
-}
 
 func getNamespaces() *corev1.NamespaceList {
 	return &corev1.NamespaceList{
@@ -610,8 +262,14 @@ func Test_tenantExists(t *testing.T) {
 
 func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err := corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		FakeConfigManager config.ConfigReadWriter
@@ -995,7 +653,10 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 func TestReconciler_retrieveAPIServerURL(t *testing.T) {
 
 	scheme := runtime.NewScheme()
-	_ = configv1.Install(scheme)
+	err := configv1.Install(scheme)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
