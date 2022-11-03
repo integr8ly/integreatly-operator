@@ -609,7 +609,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 
 	csv := &operatorsv1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhsso-operator.7.6.0-opr-004",
+			Name:      "rhsso-operator.7.6.0-opr-005",
 			Namespace: defaultNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
@@ -967,7 +967,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 
 	csv := &operatorsv1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhsso-operator.7.6.0-opr-004",
+			Name:      "rhsso-operator.7.6.0-opr-005",
 			Namespace: defaultNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
