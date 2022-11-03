@@ -102,6 +102,8 @@ func (envoyProxy *envoyProxyServer) patchDeploymentConfig(dcName, namespace, env
 	dc.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
 	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = EnvoyAPIVersion
 	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
+	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
+	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"
 
 	if err := envoyProxy.client.Update(envoyProxy.ctx, dc); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to apply MARIN3R labels to %s deploymentconfig: %v", dcName, err)
