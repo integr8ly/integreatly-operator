@@ -20,8 +20,6 @@ additionalImages:
     url: quay.io/openshift/origin-oauth-proxy:4.8
   - name: observability-grafana-operator
     url: quay.io/rhoas/grafana-operator:v3.10.5
-  - name: observability-prometheus-index
-    url: quay.io/integreatly/custom-prometheus-index:1.0.0
   - name: observability-prometheus
     url: quay.io/prometheus/prometheus:v2.29.2
   - name: observability-prometheus-blackbox
