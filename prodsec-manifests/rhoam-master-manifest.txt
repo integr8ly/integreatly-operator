@@ -3959,9 +3959,11 @@ services-rhoam:master/github.com/go-kit/kit-v0.10.0
 services-rhoam:master/github.com/go-kit/kit-v0.8.0
 services-rhoam:master/github.com/go-kit/kit-v0.9.0
 services-rhoam:master/github.com/go-kit/log-v0.1.0
+services-rhoam:master/github.com/go-kit/log-v0.2.0
 services-rhoam:master/github.com/go-logfmt/logfmt-v0.3.0
 services-rhoam:master/github.com/go-logfmt/logfmt-v0.4.0
 services-rhoam:master/github.com/go-logfmt/logfmt-v0.5.0
+services-rhoam:master/github.com/go-logfmt/logfmt-v0.5.1
 services-rhoam:master/github.com/go-logr/logr-v0.1.0
 services-rhoam:master/github.com/go-logr/logr-v0.2.0
 services-rhoam:master/github.com/go-logr/logr-v0.2.1
@@ -4237,6 +4239,7 @@ services-rhoam:master/github.com/google/go-cmp-v0.5.3
 services-rhoam:master/github.com/google/go-cmp-v0.5.4
 services-rhoam:master/github.com/google/go-cmp-v0.5.5
 services-rhoam:master/github.com/google/go-cmp-v0.5.6
+services-rhoam:master/github.com/google/go-cmp-v0.5.8
 services-rhoam:master/github.com/google/go-containerregistry-v0.0.0-20200115214256-379933c9c22b
 services-rhoam:master/github.com/google/go-github-v17.0.0+incompatible
 services-rhoam:master/github.com/google/go-jsonnet-v0.16.0
@@ -4914,7 +4917,9 @@ services-rhoam:master/github.com/prometheus/client_golang-v1.0.0
 services-rhoam:master/github.com/prometheus/client_golang-v1.1.0
 services-rhoam:master/github.com/prometheus/client_golang-v1.10.0
 services-rhoam:master/github.com/prometheus/client_golang-v1.11.0
+services-rhoam:master/github.com/prometheus/client_golang-v1.12.1
 services-rhoam:master/github.com/prometheus/client_golang-v1.12.2
+services-rhoam:master/github.com/prometheus/client_golang-v1.13.0
 services-rhoam:master/github.com/prometheus/client_golang-v1.2.0
 services-rhoam:master/github.com/prometheus/client_golang-v1.2.1
 services-rhoam:master/github.com/prometheus/client_golang-v1.3.0
@@ -4948,6 +4953,7 @@ services-rhoam:master/github.com/prometheus/common-v0.26.0
 services-rhoam:master/github.com/prometheus/common-v0.28.0
 services-rhoam:master/github.com/prometheus/common-v0.31.1
 services-rhoam:master/github.com/prometheus/common-v0.32.1
+services-rhoam:master/github.com/prometheus/common-v0.37.0
 services-rhoam:master/github.com/prometheus/common-v0.4.0
 services-rhoam:master/github.com/prometheus/common-v0.4.1
 services-rhoam:master/github.com/prometheus/common-v0.6.0
@@ -4975,6 +4981,7 @@ services-rhoam:master/github.com/prometheus/procfs-v0.1.3
 services-rhoam:master/github.com/prometheus/procfs-v0.2.0
 services-rhoam:master/github.com/prometheus/procfs-v0.6.0
 services-rhoam:master/github.com/prometheus/procfs-v0.7.3
+services-rhoam:master/github.com/prometheus/procfs-v0.8.0
 services-rhoam:master/github.com/prometheus/prometheus-v0.0.0-20180315085919-58e2a31db8de
 services-rhoam:master/github.com/prometheus/prometheus-v0.0.0-20190818123050-43acd0e2e93f
 services-rhoam:master/github.com/prometheus/prometheus-v1.8.2-0.20200107122003-4708915ac6ef
@@ -5467,6 +5474,7 @@ services-rhoam:master/golang.org/x/oauth2-v0.0.0-20210615190721-d04028783cf1
 services-rhoam:master/golang.org/x/oauth2-v0.0.0-20210628180205-a41e5a781914
 services-rhoam:master/golang.org/x/oauth2-v0.0.0-20210805134026-6f1e6394065a
 services-rhoam:master/golang.org/x/oauth2-v0.0.0-20210819190943-2bc19b11175f
+services-rhoam:master/golang.org/x/oauth2-v0.0.0-20220223155221-ee480838109b
 services-rhoam:master/golang.org/x/sync-v0.0.0-20180314180146-1d60e4601c6f
 services-rhoam:master/golang.org/x/sync-v0.0.0-20181108010431-42b317875d0f
 services-rhoam:master/golang.org/x/sync-v0.0.0-20181221193216-37e7f081c4d4
@@ -5481,6 +5489,7 @@ services-rhoam:master/golang.org/x/sync-v0.0.0-20201008141435-b3e1573b7520
 services-rhoam:master/golang.org/x/sync-v0.0.0-20201020160332-67f06af15bc9
 services-rhoam:master/golang.org/x/sync-v0.0.0-20201207232520-09787c993a3a
 services-rhoam:master/golang.org/x/sync-v0.0.0-20210220032951-036812b2e83c
+services-rhoam:master/golang.org/x/sync-v0.0.0-20220601150217-0de741cfad7f
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180823144017-11551d06cbcc
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180830151530-49385e6e1522
 services-rhoam:master/golang.org/x/sys-v0.0.0-20180903190138-2b024373dcd9
@@ -5620,6 +5629,7 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20211124211545-fe61309f8881
 services-rhoam:master/golang.org/x/sys-v0.0.0-20211216021012-1d35b9e2eb4e
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220114195835-da31bd327af9
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220319134239-a9b59b0215f8
+services-rhoam:master/golang.org/x/sys-v0.0.0-20220520151302-bc2c85ada10a
 services-rhoam:master/golang.org/x/term-v0.0.0-20201117132131-f5c789dd3221
 services-rhoam:master/golang.org/x/term-v0.0.0-20201126162022-7de9c90e9dd1
 services-rhoam:master/golang.org/x/term-v0.0.0-20210503060354-a79de5458b56
@@ -5951,6 +5961,7 @@ services-rhoam:master/google.golang.org/protobuf-v1.25.0
 services-rhoam:master/google.golang.org/protobuf-v1.26.0
 services-rhoam:master/google.golang.org/protobuf-v1.26.0-rc.1
 services-rhoam:master/google.golang.org/protobuf-v1.27.1
+services-rhoam:master/google.golang.org/protobuf-v1.28.1
 services-rhoam:master/gopkg.in/airbrake/gobrake.v2-v2.0.9
 services-rhoam:master/gopkg.in/alecthomas/kingpin.v2-v2.2.6
 services-rhoam:master/gopkg.in/asn1-ber.v1-v1.0.0-20181015200546-f715ec2f112d
@@ -12349,9 +12360,11 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/go-kit/kit-v0.10.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-kit/kit-v0.8.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-kit/kit-v0.9.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-kit/log-v0.1.0
+services-rhoam:master/rhsso-operator:18.0.x/github.com/go-kit/log-v0.2.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logfmt/logfmt-v0.3.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logfmt/logfmt-v0.4.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logfmt/logfmt-v0.5.0
+services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logfmt/logfmt-v0.5.1
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logr/logr-v0.1.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logr/logr-v0.2.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/go-logr/logr-v0.2.1
@@ -12627,6 +12640,7 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-cmp-v0.5.3
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-cmp-v0.5.4
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-cmp-v0.5.5
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-cmp-v0.5.6
+services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-cmp-v0.5.8
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-containerregistry-v0.0.0-20200115214256-379933c9c22b
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-github-v17.0.0+incompatible
 services-rhoam:master/rhsso-operator:18.0.x/github.com/google/go-jsonnet-v0.16.0
@@ -13304,7 +13318,9 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.1.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.10.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.11.0
+services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.12.1
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.12.2
+services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.13.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.2.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.2.1
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/client_golang-v1.3.0
@@ -13338,6 +13354,7 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.26.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.28.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.31.1
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.32.1
+services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.37.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.4.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.4.1
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/common-v0.6.0
@@ -13365,6 +13382,7 @@ services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/procfs-v0.1.3
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/procfs-v0.2.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/procfs-v0.6.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/procfs-v0.7.3
+services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/procfs-v0.8.0
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/prometheus-v0.0.0-20180315085919-58e2a31db8de
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/prometheus-v0.0.0-20190818123050-43acd0e2e93f
 services-rhoam:master/rhsso-operator:18.0.x/github.com/prometheus/prometheus-v1.8.2-0.20200107122003-4708915ac6ef
@@ -13857,6 +13875,7 @@ services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/oauth2-v0.0.0-202106151
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/oauth2-v0.0.0-20210628180205-a41e5a781914
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/oauth2-v0.0.0-20210805134026-6f1e6394065a
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/oauth2-v0.0.0-20210819190943-2bc19b11175f
+services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/oauth2-v0.0.0-20220223155221-ee480838109b
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20180314180146-1d60e4601c6f
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20181108010431-42b317875d0f
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20181221193216-37e7f081c4d4
@@ -13871,6 +13890,7 @@ services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20201008141
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20201020160332-67f06af15bc9
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20201207232520-09787c993a3a
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20210220032951-036812b2e83c
+services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sync-v0.0.0-20220601150217-0de741cfad7f
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20180823144017-11551d06cbcc
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20180830151530-49385e6e1522
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20180903190138-2b024373dcd9
@@ -14010,6 +14030,7 @@ services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-202111242115
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20211216021012-1d35b9e2eb4e
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20220114195835-da31bd327af9
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20220319134239-a9b59b0215f8
+services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/sys-v0.0.0-20220520151302-bc2c85ada10a
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/term-v0.0.0-20201117132131-f5c789dd3221
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/term-v0.0.0-20201126162022-7de9c90e9dd1
 services-rhoam:master/rhsso-operator:18.0.x/golang.org/x/term-v0.0.0-20210503060354-a79de5458b56
@@ -14341,6 +14362,7 @@ services-rhoam:master/rhsso-operator:18.0.x/google.golang.org/protobuf-v1.25.0
 services-rhoam:master/rhsso-operator:18.0.x/google.golang.org/protobuf-v1.26.0
 services-rhoam:master/rhsso-operator:18.0.x/google.golang.org/protobuf-v1.26.0-rc.1
 services-rhoam:master/rhsso-operator:18.0.x/google.golang.org/protobuf-v1.27.1
+services-rhoam:master/rhsso-operator:18.0.x/google.golang.org/protobuf-v1.28.1
 services-rhoam:master/rhsso-operator:18.0.x/gopkg.in/airbrake/gobrake.v2-v2.0.9
 services-rhoam:master/rhsso-operator:18.0.x/gopkg.in/alecthomas/kingpin.v2-v2.2.6
 services-rhoam:master/rhsso-operator:18.0.x/gopkg.in/asn1-ber.v1-v1.0.0-20181015200546-f715ec2f112d
@@ -14737,28 +14759,7 @@ services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
 services-rhoam:master/sourcegraph.com/sourcegraph/appdash-v0.0.0-20190731080439-ebfcffb1b5c0
 services-rhoam:master/vbom.ml/util-v0.0.0-20160121211510-db5cfe13f5cc
 services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
-m:master/sigs.k8s.io/structured-merge-diff/v4-v4.2.0
-services-rhoam:master/sigs.k8s.io/yaml-v1.1.0
-services-rhoam:master/sigs.k8s.io/yaml-v1.2.0
-services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
-services-rhoam:master/sourcegraph.com/sourcegraph/appdash-v0.0.0-20190731080439-ebfcffb1b5c0
-services-rhoam:master/vbom.ml/util-v0.0.0-20160121211510-db5cfe13f5cc
-services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
-.0.x/sigs.k8s.io/controller-tools-v0.2.1
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/controller-tools-v0.2.4
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/controller-tools-v0.2.8
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/controller-tools-v0.3.0
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/controller-tools-v0.4.1
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/controller-tools-v0.7.0
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/json-v0.0.0-20211020170558-c049b76a60c6
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kind-v0.10.0
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kube-storage-version-migrator-v0.0.3
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kubebuilder-v1.0.9-0.20200409105744-27812b07d2db
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kubebuilder-v1.0.9-0.20200513134826-f07a0146a40b
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kubebuilder/v3-v3.0.0-alpha.0.0.20211001202619-87eb9d55ecdc
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kustomize-v2.0.3+incompatible
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kustomize/api-v0.8.5
-services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/kustomize/kyaml-v0.10.21
+ter/rhsso-operator:18.0.x/sigs.k8s.io/kustomize/kyaml-v0.10.21
 services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/structured-merge-diff/v4-v4.0.2
 services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/structured-merge-diff/v4-v4.1.2
 services-rhoam:master/rhsso-operator:18.0.x/sigs.k8s.io/structured-merge-diff/v4-v4.2.0
