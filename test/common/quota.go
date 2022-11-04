@@ -136,10 +136,8 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 			Namespace: ThreeScaleProductNamespace,
 		},
 	}
-	key, err := k8sclient.ObjectKeyFromObject(threescaleCR)
-	if err != nil {
-		t.Fatalf("Error getting APIManager CR key: %v", err)
-	}
+	key := k8sclient.ObjectKeyFromObject(threescaleCR)
+
 	new3scaleLimit := resource.MustParse(new3scaleLimits)
 	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
 		new3scaleLimit = resource.MustParse(new3scaleLimitsMT)
@@ -162,10 +160,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		}
 		newKeycloakLimit = resource.MustParse(newKeycloakLimits)
 
-		key, err = k8sclient.ObjectKeyFromObject(keycloakCR)
-		if err != nil {
-			t.Fatalf("Error getting Keycloak CR key: %v", err)
-		}
+		key = k8sclient.ObjectKeyFromObject(keycloakCR)
 
 		err = ctx.Client.Get(context.TODO(), key, keycloakCR)
 		if err != nil {
@@ -182,10 +177,7 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	}
 	newRatelimitLimit := resource.MustParse(newRatelimitLimits)
 
-	key, err = k8sclient.ObjectKeyFromObject(ratelimitCR)
-	if err != nil {
-		t.Fatalf("Error getting Ratelimit CR key: %v", err)
-	}
+	key = k8sclient.ObjectKeyFromObject(ratelimitCR)
 
 	err = ctx.Client.Get(context.TODO(), key, ratelimitCR)
 	if err != nil {

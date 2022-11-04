@@ -315,10 +315,8 @@ func createQuarkusDeployment(ctx *TestingContext) error {
 				Namespace: quickStartNamespace,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(imageStream)
-		if err != nil {
-			return false, nil
-		}
+		key := k8sclient.ObjectKeyFromObject(imageStream)
+	
 		err = ctx.Client.Get(context.TODO(), key, imageStream)
 		if err != nil {
 			return false, nil
@@ -395,10 +393,8 @@ func createQuarkusService(ctx *TestingContext) error {
 				Namespace: quickStartNamespace,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(deployment)
-		if err != nil {
-			return false, nil
-		}
+		key := k8sclient.ObjectKeyFromObject(deployment)
+
 		err = ctx.Client.Get(context.TODO(), key, deployment)
 		if err != nil {
 			return false, nil
@@ -459,10 +455,8 @@ func createAndVerifyQuarkusRoute(ctx *TestingContext, rhmi *integreatlyv1alpha1.
 				Namespace: quickStartNamespace,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(service)
-		if err != nil {
-			return false, nil
-		}
+		key := k8sclient.ObjectKeyFromObject(service)
+
 		err = ctx.Client.Get(context.TODO(), key, service)
 		if err != nil {
 			return false, nil
@@ -514,10 +508,8 @@ func createAndVerifyQuarkusRoute(ctx *TestingContext, rhmi *integreatlyv1alpha1.
 				Namespace: quickStartNamespace,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(route)
-		if err != nil {
-			return false, nil
-		}
+		key := k8sclient.ObjectKeyFromObject(route)
+
 		err = ctx.Client.Get(context.TODO(), key, route)
 		if err != nil {
 			return false, nil
@@ -1031,10 +1023,8 @@ func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, te
 				Name: testUserName,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(user)
-		if err != nil {
-			return false, nil
-		}
+		key := k8sclient.ObjectKeyFromObject(user)
+
 		err = ctx.Client.Get(context.TODO(), key, user)
 		if err != nil {
 			return false, nil
