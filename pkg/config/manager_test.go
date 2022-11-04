@@ -93,11 +93,15 @@ func TestWriteConfig(t *testing.T) {
 				Namespace: mockNamespaceName,
 			},
 		}
-		fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: mockConfigMapName, Namespace: mockNamespaceName}, readCfgMap)
+		if err := fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: mockConfigMapName, Namespace: mockNamespaceName}, readCfgMap); err != nil {
+			t.Fatal(err)
+		}
 
 		decoder := yaml.NewDecoder(strings.NewReader(readCfgMap.Data[test.productName]))
 		testCfg := map[string]string{}
-		decoder.Decode(testCfg)
+		if err := decoder.Decode(testCfg); err != nil {
+			t.Fatal(err)
+		}
 
 		for key, value := range test.expected {
 			if strings.Compare(testCfg[key], value) != 0 {

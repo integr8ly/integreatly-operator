@@ -9,7 +9,7 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	configv1 "github.com/openshift/api/config/v1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -22,7 +22,6 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -34,13 +33,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
-	oauthv1 "github.com/openshift/api/oauth/v1"
-	projectv1 "github.com/openshift/api/project/v1"
-	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -91,75 +86,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 			}), nil
 		},
 	}
-}
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = operatorsv1alpha1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = appsv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = usersv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = oauthv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = routev1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = projectv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = crov1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = configv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = grafanav1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	return scheme, err
 }
 
 func setupRecorder() record.EventRecorder {
@@ -258,7 +184,7 @@ func TestReconciler_config(t *testing.T) {
 }
 
 func TestReconciler_reconcileComponents(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -621,8 +547,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 }
 
 func TestReconciler_fullReconcile(t *testing.T) {
-
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1198,7 +1123,10 @@ func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptes
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(output)
+		_, err = w.Write(output)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}))
 	return server
 }

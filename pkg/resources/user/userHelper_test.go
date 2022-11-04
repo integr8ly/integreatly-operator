@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -15,7 +16,6 @@ import (
 	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -27,12 +27,9 @@ const (
 )
 
 func TestGetUserEmailFromIdentity(t *testing.T) {
-
-	scheme := runtime.NewScheme()
-	err := userv1.AddToScheme(scheme)
-
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error creating build scheme")
+		t.Fatal(err)
 	}
 
 	tests := []struct {
@@ -75,12 +72,9 @@ func TestGetUserEmailFromIdentity(t *testing.T) {
 }
 
 func TestGetUsersInActiveIDPs(t *testing.T) {
-
-	scheme := runtime.NewScheme()
-	err := userv1.AddToScheme(scheme)
-	err = configv1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error creating build scheme")
+		t.Fatal(err)
 	}
 
 	tests := []struct {
@@ -404,8 +398,10 @@ func TestSetUserNameAsEmail(t *testing.T) {
 }
 
 func TestUsersReturnedByProvider(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = userv1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		Name       string
@@ -466,8 +462,10 @@ func TestUsersReturnedByProvider(t *testing.T) {
 }
 
 func TestGetIdentitiesByProviderName(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = userv1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		Name                  string
@@ -594,8 +592,10 @@ func assertThatUsersAreReturnedCorrectly(usersList userv1.UserList) error {
 }
 
 func TestGetMultitenantUsers(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = userv1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		Name           string

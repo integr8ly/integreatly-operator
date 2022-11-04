@@ -4,6 +4,7 @@ import (
 	"context"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	apiappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -58,30 +59,13 @@ func getNode(name string, zone string, ip string) corev1.Node {
 	}
 }
 
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := corev1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = appsv1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = apiappsv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	return scheme, err
-}
-
 func newTrue() *bool {
 	b := true
 	return &b
 }
 
 func TestPodDistribution(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

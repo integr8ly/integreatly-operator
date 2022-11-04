@@ -4,7 +4,6 @@ output:
 
 linters:
   disable:
-    - errcheck
     - ineffassign
     - unused
 
@@ -27,3 +26,4 @@ presets:
 
 run:
   modules-download-mode: vendor
+  timeout: 5m

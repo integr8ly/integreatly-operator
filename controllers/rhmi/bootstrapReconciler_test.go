@@ -10,9 +10,9 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -261,12 +261,7 @@ func Test_tenantExists(t *testing.T) {
 }
 
 func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := corev1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,10 +347,11 @@ func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 }
 
 func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = routev1.Install(scheme)
-	_ = corev1.AddToScheme(scheme)
-	_ = olmv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
@@ -651,9 +647,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 }
 
 func TestReconciler_retrieveAPIServerURL(t *testing.T) {
-
-	scheme := runtime.NewScheme()
-	err := configv1.Install(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

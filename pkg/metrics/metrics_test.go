@@ -4,10 +4,9 @@ import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
-	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -15,12 +14,9 @@ import (
 )
 
 func TestGetContainerCPUMetric(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := userv1.Install(scheme)
-	err = configv1.Install(scheme)
-
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error creating build scheme")
+		t.Fatal(err)
 	}
 
 	tests := []struct {

@@ -98,7 +98,11 @@ func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Failed to validate response Pod apicast received %s, instead of %s", outputCurlCommand, podEndpoitResponse)
 	}
 
-	defer cleanUp(ctx)
+	defer func(ctx *TestingContext) {
+		if err := cleanUp(ctx); err != nil {
+			t.Log(err)
+		}
+	}(ctx)
 
 }
 

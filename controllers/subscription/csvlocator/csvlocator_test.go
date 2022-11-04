@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -216,10 +217,15 @@ func TestGetCSV(t *testing.T) {
 		binaryDataConfigMapScenario(t),
 	}
 
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			initObjs := append([]runtime.Object{scenario.InstallPlan}, scenario.InitObjs...)
-			client := fake.NewFakeClientWithScheme(buildScheme(), initObjs...)
+			client := fake.NewFakeClientWithScheme(scheme, initObjs...)
 
 			csv, err := scenario.Locator.GetCSV(context.TODO(), client, scenario.InstallPlan)
 			scenario.Assertion(t, err, csv)
@@ -346,8 +352,12 @@ status:
 			},
 		},
 	}
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	client := fake.NewFakeClientWithScheme(buildScheme(), configMap)
+	client := fake.NewFakeClientWithScheme(scheme, configMap)
 
 	locator := NewConditionalCSVLocator(
 		SwitchLocators(
@@ -392,13 +402,6 @@ func assertCorrectCSV(t *testing.T, err error, csv *olmv1alpha1.ClusterServiceVe
 	if csv.Spec.Version.String() != "1.0.0" {
 		t.Errorf("expected csv version to be 1.0.0, got %s", csv.Spec.Version.String())
 	}
-}
-
-func buildScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	olmv1alpha1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
-	return scheme
 }
 
 type mockCSVLocator struct {

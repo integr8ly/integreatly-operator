@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"errors"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
 
@@ -21,15 +22,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func buildConfigMapCatalogSourceReconcilerTestScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-	coreosv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	corev1.SchemeBuilder.AddToScheme(scheme)
-
-	return scheme
-}
-
 func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testNameSpace := "test-namespace"
 
@@ -42,7 +39,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 	}{
 		{
 			Name:                     "Test catalog source created successfully",
-			FakeClient:               fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme()),
+			FakeClient:               fake.NewFakeClientWithScheme(scheme),
 			DesiredConfigMapName:     "example-configmap",
 			DesiredCatalogSourceName: "example-catalogsourcename",
 			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
@@ -62,7 +59,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		},
 		{
 			Name: "Test catalog source updated successfully",
-			FakeClient: fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme(), &coreosv1alpha1.CatalogSource{
+			FakeClient: fake.NewFakeClientWithScheme(scheme, &coreosv1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cs-" + testNameSpace,
 					Namespace: testNameSpace,
@@ -153,6 +150,10 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 }
 
 func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testNameSpace := "test-namespace"
 
@@ -164,7 +165,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 	}{
 		{
 			Name:        "Test registry config map created successfully",
-			FakeClient:  fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme()),
+			FakeClient:  fake.NewFakeClientWithScheme(scheme),
 			FakeMapData: map[string]string{"test": "someData"},
 			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err != nil {
@@ -181,7 +182,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		},
 		{
 			Name: "Test registry config map gets updated successfully",
-			FakeClient: fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme(), &corev1.ConfigMap{
+			FakeClient: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cm-" + testNameSpace,
 					Namespace: testNameSpace,

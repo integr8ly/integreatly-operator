@@ -2,15 +2,12 @@ package resources
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
-
-	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
-	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,18 +16,16 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func basicClient(objects ...runtime.Object) k8sclient.Client {
-	scheme := runtime.NewScheme()
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	rbacv1.SchemeBuilder.AddToScheme(scheme)
-	corev1.SchemeBuilder.AddToScheme(scheme)
-	batchv1.SchemeBuilder.AddToScheme(scheme)
-	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
-	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
+func basicClient(scheme *runtime.Scheme, objects ...runtime.Object) k8sclient.Client {
 	return fakeclient.NewFakeClientWithScheme(scheme, objects...)
 }
 
 func TestBackups(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	scenarios := []struct {
 		Name          string
 		BackupConfig  BackupConfig
@@ -43,7 +38,7 @@ func TestBackups(t *testing.T) {
 		{
 			Name:          "test backups reconcile without errors",
 			Context:       context.TODO(),
-			Client:        basicClient(backupsSecretMock()),
+			Client:        basicClient(scheme, backupsSecretMock()),
 			ConfigManager: getMockConfigManager(),
 			BackupConfig: BackupConfig{
 				Name:      "test-backups",
@@ -69,6 +64,7 @@ func TestBackups(t *testing.T) {
 			Name:    "test backups reconcile without errors when objects already exist",
 			Context: context.TODO(),
 			Client: basicClient(
+				scheme,
 				&rbacv1.ClusterRole{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "backupjob",

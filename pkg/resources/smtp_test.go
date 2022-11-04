@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -10,9 +11,9 @@ import (
 )
 
 func TestGetExistingSMTPFromAddress(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 
 	scenarios := []struct {

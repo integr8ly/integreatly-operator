@@ -5,11 +5,10 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
@@ -20,7 +19,7 @@ const (
 )
 
 func TestReconciler_scaleDeployment(t *testing.T) {
-	basicScheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +42,7 @@ func TestReconciler_scaleDeployment(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(basicScheme, deployment)
+	client := fakeclient.NewFakeClientWithScheme(scheme, deployment)
 	reconciler := getBasicReconciler()
 
 	tests := []struct {
@@ -85,24 +84,6 @@ func TestReconciler_scaleDeployment(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := appsv1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := operatorsv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-
-	return scheme, nil
 }
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {

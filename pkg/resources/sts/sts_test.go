@@ -6,8 +6,8 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,28 +17,10 @@ import (
 	"testing"
 )
 
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := cloudcredentialv1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = olmv1alpha1.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-
-	return scheme, err
-}
-
 func TestIsClusterSTS(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error obtaining scheme")
+		t.Fatal(err)
 	}
 
 	type args struct {
@@ -114,9 +96,10 @@ func TestIsClusterSTS(t *testing.T) {
 }
 
 func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-	_ = olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	const namespace = "test"
 
@@ -214,9 +197,9 @@ func buildAddonSecret(namespace string, secretData map[string][]byte) *corev1.Se
 }
 
 func Test_CreateSTSArnSecret(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("Error obtaining scheme")
+		t.Fatal(err)
 	}
 
 	type args struct {

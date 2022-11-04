@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"errors"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -24,11 +25,8 @@ const (
 )
 
 func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
-	scheme := runtime.NewScheme()
-	if err := crov1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	if err := corev1.AddToScheme(scheme); err != nil {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
 		t.Fatal(err)
 	}
 

@@ -3,10 +3,9 @@ package custom_smtp
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -14,9 +13,10 @@ import (
 )
 
 func TestGetCustomAddonValues(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
-	_ = v1alpha12.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		serverClient k8sclient.Client
@@ -178,8 +178,10 @@ func TestParameterValidation(t *testing.T) {
 }
 
 func TestCreateOrUpdateCustomSMTPSecret(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		ctx          context.Context
@@ -264,8 +266,10 @@ func TestCreateOrUpdateCustomSMTPSecret(t *testing.T) {
 }
 
 func TestDeleteCustomSMTP(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type args struct {
 		ctx          context.Context

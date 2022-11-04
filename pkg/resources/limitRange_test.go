@@ -4,16 +4,16 @@ import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
 
 func TestReconcileLimitRange(t *testing.T) {
 	namespaceName := "test-namespace"
-	scheme, err := getBuildSchemeForLimitRangeTests()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,13 +122,4 @@ func TestReconcileLimitRange(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getBuildSchemeForLimitRangeTests() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-
-	return scheme, nil
 }

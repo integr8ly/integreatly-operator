@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
@@ -20,9 +21,10 @@ import (
 var genericError = errors.New("generic error")
 
 func TestGetSubscription(t *testing.T) {
-	scheme := runtime.NewScheme()
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	operatorsv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scenarios := []struct {
 		Name                    string
@@ -98,9 +100,10 @@ func getSub(name string, labelName string, labelValue string) operatorsv1alpha1.
 }
 
 func TestCPaaSSubscription(t *testing.T) {
-	scheme := runtime.NewScheme()
-	operatorsv1alpha1.AddToScheme(scheme)
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	validSub := &operatorsv1alpha1.SubscriptionList{
 		Items: []operatorsv1alpha1.Subscription{
@@ -175,10 +178,10 @@ func noSubscription() *string {
 }
 
 func TestOperatorHiveManaged(t *testing.T) {
-	scheme := runtime.NewScheme()
-	corev1.SchemeBuilder.AddToScheme(scheme)
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	_ = corev1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scenarios := []struct {
 		Name          string
@@ -286,15 +289,11 @@ func TestOperatorHiveManaged(t *testing.T) {
 }
 
 func TestInferOperatorRunType(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := operatorsv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = appsv1.AddToScheme(scheme)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	type args struct {
 		ctx          context.Context
 		client       client.Client
@@ -401,11 +400,11 @@ func TestInferOperatorRunType(t *testing.T) {
 }
 
 func TestOperatorInstalledViaOLM(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := operatorsv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	type args struct {
 		ctx          context.Context
 		client       client.Client
@@ -474,11 +473,11 @@ func TestOperatorInstalledViaOLM(t *testing.T) {
 }
 
 func TestGetCatalogSource(t *testing.T) {
-	scheme := runtime.NewScheme()
-	err := operatorsv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	type args struct {
 		ctx          context.Context
 		client       client.Client

@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
 
@@ -17,7 +18,10 @@ import (
 )
 
 func TestReconcileTopologySpreadConstraints(t *testing.T) {
-	scheme := testScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scenarios := []struct {
 		Name             string
@@ -206,14 +210,4 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 			}
 		})
 	}
-}
-
-func testScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-
-	appsv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
-	openshiftappsv1.AddToScheme(scheme)
-
-	return scheme
 }

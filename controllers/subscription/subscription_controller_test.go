@@ -3,13 +3,15 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"reflect"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	"testing"
 	"time"
+
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
@@ -17,7 +19,6 @@ import (
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -28,19 +29,6 @@ const (
 	operatorNamespace      = "openshift-operators"
 	defaultInstallPlanName = "installplan"
 )
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return nil, err
-	}
-	err = crov1alpha1.SchemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		return scheme, err
-	}
-	return scheme, integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-}
 
 func TestSubscriptionReconciler(t *testing.T) {
 
@@ -258,10 +246,11 @@ func TestSubscriptionReconciler(t *testing.T) {
 		},
 	}
 
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
+		t.Fatal(err)
 	}
+
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			APIObject := scenario.APISubscription
@@ -360,9 +349,9 @@ func getCatalogSourceClient(replaces string) catalogsourceClient.CatalogSourceCl
 }
 
 func TestAllowDatabaseUpdates(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
+		t.Fatal(err)
 	}
 
 	type fields struct {
@@ -590,7 +579,7 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 		},
 	}
 
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatalf("failed to build scheme: %s", err.Error())
 	}

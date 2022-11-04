@@ -12,12 +12,11 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	projectv1 "github.com/openshift/api/project/v1"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -261,7 +260,7 @@ func TestReconciler_VerifyVersion(t *testing.T) {
 }
 
 func TestReconciler_reconcileComponents(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -441,7 +440,7 @@ func TestReconciler_reconcileSubscription(t *testing.T) {
 }
 
 func TestReconciler_fullReconcile(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -538,27 +537,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := observability.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := v1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := v1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := projectv1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := rbac.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-
-	return scheme, nil
 }
 
 func basicInstallation() *v1alpha1.RHMI {
@@ -694,7 +672,7 @@ func TestCreatePrometheusProbe(t *testing.T) {
 }
 
 func TestReconciler_deleteObservabilityCR(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}

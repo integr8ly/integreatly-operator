@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/integr8ly/integreatly-operator/test/utils"
+
 	"github.com/foxcpp/go-mockdns"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
@@ -18,37 +20,24 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	openshiftv1 "github.com/openshift/api/apps/v1"
-	configv1 "github.com/openshift/api/config/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
-	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	rbacv1 "k8s.io/api/rbac/v1"
-
-	oauthv1 "github.com/openshift/api/oauth/v1"
-	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
-	consolev1 "github.com/openshift/api/console/v1"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,41 +45,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 )
 
 var (
 	integreatlyOperatorNamespace = "integreatly-operator-ns"
-	defaultOperatorNamespace     = "integreatly-operator"
 	localProductDeclaration      = marketplace.LocalProductDeclaration("integreatly-3scale")
 )
-
-func getBuildScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err = operatorsv1alpha1.AddToScheme(scheme)
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = crov1.SchemeBuilder.AddToScheme(scheme)
-	err = usersv1.AddToScheme(scheme)
-	err = oauthv1.AddToScheme(scheme)
-	err = routev1.AddToScheme(scheme)
-	err = projectv1.AddToScheme(scheme)
-	err = appsv1.AddToScheme(scheme)
-	err = monitoringv1.AddToScheme(scheme)
-	err = consolev1.AddToScheme(scheme)
-	err = openshiftv1.AddToScheme(scheme)
-	err = configv1.AddToScheme(scheme)
-	err = customdomainv1alpha1.AddToScheme(scheme)
-	err = marin3rv1alpha1.AddToScheme(scheme)
-	err = cloudcredentialv1.AddToScheme(scheme)
-
-	return scheme, err
-}
 
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
@@ -127,7 +87,7 @@ type ThreeScaleTestScenario struct {
 }
 
 func TestReconciler_Reconcile3scale(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +279,7 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 }
 
 func TestReconciler_reconcileBlobStorage(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -393,7 +353,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 }
 
 func TestReconciler_reconcileComponents(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -923,7 +883,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 }
 
 func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1131,7 +1091,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 }
 
 func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1538,7 +1498,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 }
 
 func TestReconciler_getUserDiff(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1846,9 +1806,10 @@ func TestReconciler_getUserDiff(t *testing.T) {
 }
 
 func TestReconciler_findCustomDomainCr(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = corev1.AddToScheme(scheme)
-	_ = customdomainv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
@@ -2004,7 +1965,7 @@ func TestReconciler_useCustomDomain(t *testing.T) {
 }
 
 func TestReconcileRatelimitPortAnnotation(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2128,7 +2089,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 	}
 }
 func TestReconciler_reconcileExternalDatasources(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2305,7 +2266,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 }
 
 func TestReconciler_getTenantAccountPassword(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2419,7 +2380,7 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 }
 
 func TestReconciler_removeTenantAccountPassword(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2501,7 +2462,7 @@ func TestReconciler_removeTenantAccountPassword(t *testing.T) {
 }
 
 func TestReconciler_getAccountsCreatedCM(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2564,9 +2525,10 @@ func verifyMessageBusDoesNotExist(serverClient k8sclient.Client) bool {
 }
 
 func TestReconciler_ping3scalePortals(t *testing.T) {
-	scheme := runtime.NewScheme()
-	_ = routev1.Install(scheme)
-	_ = integreatlyv1alpha1.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
@@ -2717,9 +2679,10 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 }
 
 func TestReconciler_reconcileCustomDomainAlerts(t *testing.T) {
-
-	scheme := runtime.NewScheme()
-	_ = monitoringv1.SchemeBuilder.AddToScheme(scheme)
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
@@ -3064,7 +3027,7 @@ func productConfigMock() *quota.ProductConfigMock {
 }
 
 func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3150,7 +3113,7 @@ func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
 }
 
 func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
-	scheme, err := getBuildScheme()
+	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
