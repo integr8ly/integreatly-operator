@@ -2,6 +2,7 @@ package addon
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"

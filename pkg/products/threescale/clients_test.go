@@ -16,7 +16,7 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -26,7 +26,7 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"

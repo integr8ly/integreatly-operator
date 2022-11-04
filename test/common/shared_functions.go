@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"

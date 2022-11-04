@@ -24,7 +24,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 
 	v12 "github.com/openshift/api/config/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"

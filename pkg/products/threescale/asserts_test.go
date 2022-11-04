@@ -11,7 +11,7 @@ import (
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"

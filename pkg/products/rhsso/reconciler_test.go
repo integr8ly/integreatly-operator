@@ -19,7 +19,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"

@@ -17,13 +17,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	pkgerr "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"

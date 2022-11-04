@@ -22,19 +22,19 @@ func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtim
 		GetSigsClientFunc: func() k8sclient.Client {
 			return sigsClient
 		},
-		GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj runtime.Object) error {
+		GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object) error {
 			return sigsClient.Get(ctx, key, obj)
 		},
-		CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+		CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 			return sigsClient.Create(ctx, obj)
 		},
-		UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+		UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 			return sigsClient.Update(ctx, obj)
 		},
-		DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+		DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 			return sigsClient.Delete(ctx, obj)
 		},
-		ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+		ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 			return sigsClient.List(ctx, list, opts...)
 		},
 		StatusFunc: func() k8sclient.StatusWriter {

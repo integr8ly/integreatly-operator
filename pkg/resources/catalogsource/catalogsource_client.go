@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	grpc "github.com/operator-framework/operator-registry/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
