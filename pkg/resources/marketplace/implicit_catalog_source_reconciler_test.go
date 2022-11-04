@@ -2,6 +2,8 @@ package marketplace
 
 import (
 	"context"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -9,9 +11,7 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -89,9 +89,7 @@ func TestImplicitCatalogSourceReconcile(t *testing.T) {
 		},
 	}
 
-	if err := os.Setenv("WATCH_NAMESPACE", "redhat-rhoam-operator"); err != nil {
-		return
-	}
+	t.Setenv("WATCH_NAMESPACE", "redhat-rhoam-operator")
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
