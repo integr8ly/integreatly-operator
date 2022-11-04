@@ -50,8 +50,55 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     support: RHOAM
     containerImages: |-
-      [
-        {"component_name":"3scale-operator.v0.11.0-mas","component_url":"registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af"},{"component_name":"backend","component_url":"registry.redhat.io/3scale-mas/backend-rhel8@sha256:39c35b3c87c3ec1a3a632b68ec708779ed04d13115d019c4c0b9db997c3d94db"},{"component_name":"apicast","component_url":"registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:7bfd5d3b177ca3776956ae2eb9dc5efa72471eaa2d44c93abc6a862a5db216a4"},{"component_name":"system","component_url":"registry.redhat.io/3scale-mas/system-rhel7@sha256:b3df54cf7ae8db539b554e8eca577849e8381015aadc5cf164932f3be085045f"},{"component_name":"zync","component_url":"registry.redhat.io/3scale-mas/zync-rhel8@sha256:6ed07da1ed6002b9947a68a00b91eddd1e0cf722a0829ee845e0a4c3b13bfa97"},{"component_name":"system_memcached","component_url":"registry.redhat.io/3scale-mas/memcached-rhel7@sha256:2854f6fd01a72408c8e98682fceebec8cdfb25378edec2187b1e2cef6293739c"},{"component_name":"system_postgresql","component_url":"registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c7fb6983d3255e275abd4bbcbe5081214b83769d2df02c8b8bb51bdc08320d79"},{"component_name":"cloud-resources.v0.42.0","component_url":"quay.io/integreatly/cloud-resource-operator:v0.42.0"},{"component_name":"grafana-operator.v4.2.0","component_url":"quay.io/grafana-operator/grafana-operator:v4.2.0"},{"component_name":"marin3r.v0.11.0","component_url":"quay.io/3scale/marin3r:v0.11.0"},{"component_name":"rhsso-operator.7.6.1-opr-001","component_url":"registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"},{"component_name":"rhsso_openjdk","component_url":"registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:13db1f0ec97cef3264e7939f453181b4c32dc9125ab9f39d10fc27a18697e14b"},{"component_name":"keycloak_init_container","component_url":"registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2"},{"component_name":"observability-operator.v4.0.0","component_url":"quay.io/rhoas/observability-operator:v4.0.0"},{"component_name":"3scale-openshift-service-mesh","component_url":"registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.2.3-6"},{"component_name":"marin3r-limitador","component_url":"quay.io/3scale/limitador:v0.5.1"},{"component_name":"observability-grafana-plugins-init","component_url":"quay.io/grafana-operator/grafana_plugins_init:0.0.6"},{"component_name":"observability-origin-oauth-proxy","component_url":"registry.redhat.io/openshift4/ose-oauth-proxy@sha256:24802df1766a74114169d3d151036e3eaf725124bc52ab86c8f24469b2781ca7"},{"component_name":"observability-prometheus-operator","component_url":"quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"},{"component_name":"rhsso-operator","component_url":"registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"},{"component_name":"observability-prometheus-alertmanager","component_url":"quay.io/prometheus/alertmanager:v0.22.2"},{"component_name":"observability-openshift-oauth-proxy","component_url":"quay.io/openshift/origin-oauth-proxy:4.8"},{"component_name":"observability-grafana-operator","component_url":"quay.io/rhoas/grafana-operator:v3.10.5"},{"component_name":"observability-prometheus","component_url":"quay.io/prometheus/prometheus:v2.29.2"},{"component_name":"observability-prometheus-blackbox","component_url":"quay.io/prometheus/blackbox-exporter:v0.19.0"},{"component_name":"observability-observability-operator","component_url":"quay.io/rhoas/observability-operator-index:v3.0.16"}]
+      {
+        "3scale-operator.3scale-2.12.1-GA": {
+          "3scale-operator.v0.11.0-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
+          "3scale-rhel7-operator-f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
+          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:39c35b3c87c3ec1a3a632b68ec708779ed04d13115d019c4c0b9db997c3d94db",
+          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:7bfd5d3b177ca3776956ae2eb9dc5efa72471eaa2d44c93abc6a862a5db216a4",
+          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:b3df54cf7ae8db539b554e8eca577849e8381015aadc5cf164932f3be085045f",
+          "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:6ed07da1ed6002b9947a68a00b91eddd1e0cf722a0829ee845e0a4c3b13bfa97",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:2854f6fd01a72408c8e98682fceebec8cdfb25378edec2187b1e2cef6293739c",
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:c7fb6983d3255e275abd4bbcbe5081214b83769d2df02c8b8bb51bdc08320d79"
+        },
+        "cloud-resource-operator.v0.42.0": {
+          "cloud-resources.v0.42.0": "quay.io/integreatly/cloud-resource-operator:v0.42.0"
+        },
+        "grafana-operator.v4.2.0": {
+          "grafana-operator.v4.2.0": "quay.io/grafana-operator/grafana-operator:v4.2.0",
+          "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:24802df1766a74114169d3d151036e3eaf725124bc52ab86c8f24469b2781ca7"
+        },
+        "marin3r.v0.11.0": {
+          "marin3r.v0.11.0": "quay.io/3scale/marin3r:v0.11.0"
+        },
+        "rhsso-operator.18.0.x": {
+          "rhsso-operator.7.6.1-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580",
+          "sso7-rhel8-operator-f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:13db1f0ec97cef3264e7939f453181b4c32dc9125ab9f39d10fc27a18697e14b",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:13db1f0ec97cef3264e7939f453181b4c32dc9125ab9f39d10fc27a18697e14b",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2"
+        },
+        "observability-operator.v3.0.16": {
+          "observability-operator.v4.0.0": "quay.io/rhoas/observability-operator:v4.0.0",
+          "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.0.6",
+          "observability-prometheus-operator": "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b",
+          "observability-prometheus-alertmanager": "quay.io/prometheus/alertmanager:v0.22.2",
+          "observability-openshift-oauth-proxy": "quay.io/openshift/origin-oauth-proxy:4.8",
+          "observability-grafana-operator": "quay.io/rhoas/grafana-operator:v3.10.5",
+          "observability-prometheus": "quay.io/prometheus/prometheus:v2.29.2",
+          "observability-prometheus-blackbox": "quay.io/prometheus/blackbox-exporter:v0.19.0",
+          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v3.0.16"
+        },
+        "ratelimit": {
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.2.3-6"
+        },
+        "limitador": {
+          "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
+        }
+      }
     serviceAffecting: "true"
   name: managed-api-service.v1.31.0
   namespace: placeholder

@@ -1,19 +1,22 @@
-# This file represents informations around components used within RHOAM and RHMI
-# name - the name of the components
-# url - url to quay / redhat registry repo of the component
-additionalImages:
+# This file represents information around components used within RHOAM and RHMI
+# key - the product name (try to match from name in products.yaml if there is an entry)
+## name - the name of the subcomponent
+## url - url to quay / redhat registry repo of the subcomponent
+
+ratelimit:
   - name: 3scale-openshift-service-mesh
     url: "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.2.3-6"
+limitador:
   - name: marin3r-limitador
     url: "quay.io/3scale/limitador:v0.5.1"
-  - name: observability-grafana-plugins-init
-    url: "quay.io/grafana-operator/grafana_plugins_init:0.0.6"
+grafana-operator:
   - name: observability-origin-oauth-proxy
     url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:24802df1766a74114169d3d151036e3eaf725124bc52ab86c8f24469b2781ca7"
+observability-operator:
+  - name: observability-grafana-plugins-init
+    url: "quay.io/grafana-operator/grafana_plugins_init:0.0.6"
   - name: observability-prometheus-operator
     url: "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"
-  - name: rhsso-operator
-    url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"
   - name: observability-prometheus-alertmanager
     url: quay.io/prometheus/alertmanager:v0.22.2
   - name: observability-openshift-oauth-proxy
@@ -26,3 +29,6 @@ additionalImages:
     url: quay.io/prometheus/blackbox-exporter:v0.19.0
   - name: observability-observability-operator
     url: quay.io/rhoas/observability-operator-index:v3.0.16
+rhsso-operator:
+  - name: rhsso-operator
+    url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"
