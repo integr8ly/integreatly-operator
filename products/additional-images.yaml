@@ -13,7 +13,7 @@ additionalImages:
   - name: observability-prometheus-operator
     url: "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b"
   - name: rhsso-operator
-    url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:e364ff41a9a15707bb8f6306e126a24691d15b2864c371a45ef5c6a3a9e3a506"
+    url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"
   - name: observability-prometheus-alertmanager
     url: quay.io/prometheus/alertmanager:v0.22.2
   - name: observability-openshift-oauth-proxy
