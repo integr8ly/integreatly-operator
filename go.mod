@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.18
 
 require (
-	github.com/3scale-ops/marin3r v0.10.0
+	github.com/3scale-ops/marin3r v0.11.0
 	github.com/3scale/3scale-operator v0.2.1-0.20221104110007-5c915e60e418
 	github.com/3scale/3scale-porta-go-client v0.7.0
 	github.com/3scale/apicast-operator v0.0.0-20221027105137-6adddcc8c2b4
@@ -200,7 +200,6 @@ require (
 )
 
 replace (
-	github.com/3scale-ops/marin3r => ../marin3r
 	github.com/integr8ly/keycloak-client => ../keycloak-client
 	// Required for the marin3r which uses an older version of the operator-lib library.
 	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
