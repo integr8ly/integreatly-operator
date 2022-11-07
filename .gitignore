@@ -113,3 +113,6 @@ test-cases/package-lock.json
 
 ### readthedocs/mkdocs
 /site
+
+# Exeption in vendor folder
+!vendor/**/.DS_Store
