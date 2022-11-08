@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -16,10 +17,6 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
-
-	"github.com/foxcpp/go-mockdns"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -32,7 +29,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	// "github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"

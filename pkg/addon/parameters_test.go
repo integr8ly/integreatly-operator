@@ -5,7 +5,7 @@ import (
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"testing"
 
@@ -419,7 +419,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 	}
 }
 
-func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) client.Client {
+func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) k8sclient.Client {
 	return fake.NewFakeClientWithScheme(scheme, getValidInits(namespace, secretType, subscriptionType)...)
 }
 

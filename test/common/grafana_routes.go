@@ -5,7 +5,6 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -92,7 +91,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
 		// t.Fatal("failed to create serviceAccount", err)
 	}
-	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
+	defer func(Client k8sclient.Client, ctx goctx.Context, obj client.Object) {
 		if err := Client.Delete(ctx, obj); err != nil {
 			t.Log(err)
 		}
@@ -120,7 +119,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
 		// t.Fatal("failed to create clusterRoleBinding", err)
 	}
-	defer func(Client k8sclient.Client, ctx goctx.Context, obj runtime.Object) {
+	defer func(Client k8sclient.Client, ctx goctx.Context, obj client.Object) {
 		if err := Client.Delete(ctx, obj); err != nil {
 			t.Log(err)
 		}

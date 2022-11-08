@@ -5,13 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
@@ -441,7 +441,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 					IsDefault: true,
 					JsonData: grafanav1alpha1.GrafanaDataSourceJsonData{
 						TimeInterval: "5s",
-						EsVersion: intstr.IntOrString{Type: intstr.String},
+						EsVersion:    intstr.IntOrString{Type: intstr.String},
 					},
 					Type:    "prometheus",
 					Url:     url,
