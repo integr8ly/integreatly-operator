@@ -262,9 +262,9 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				{
 					Alert: "RHOAMCSVRequirementsNotMet",
 					Annotations: map[string]string{
-						"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.namespace}}'. Phase is {{$labels.phase}}",
+						"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.exported_namespace}}'. Phase is not succeeded",
 					},
-					Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{phase=~'Pending|Failed',exported_namespace=~'%s.*'}", r.Config.GetNamespacePrefix())),
+					Expr:   intstr.FromString(fmt.Sprintf(`csv_succeeded{exported_namespace=~"%s.*"} != 1`, r.Config.GetNamespacePrefix())),
 					For:    "15m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
