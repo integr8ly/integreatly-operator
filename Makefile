@@ -120,7 +120,7 @@ endif
 
 .PHONY: setup/moq
 setup/moq:
-	GO111MODULE=off go get github.com/matryer/moq
+	go install github.com/matryer/moq@latest
 
 .PHONY: setup/service_account/oc_login
 setup/service_account/oc_login:
