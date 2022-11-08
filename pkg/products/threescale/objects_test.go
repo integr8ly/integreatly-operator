@@ -24,7 +24,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 
 	v12 "github.com/openshift/api/config/v1"
-	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
@@ -62,6 +62,19 @@ var ComponentDockerSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
 		Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
+	},
+}
+
+var subscription3scale = &coreosv1alpha1.Subscription{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "rhmi-3scale",
+		Namespace: "3scale",
+	},
+	Status: coreosv1alpha1.SubscriptionStatus{
+		InstalledCSV: "rhmi-3scale",
+		Install: &coreosv1alpha1.InstallPlanReference{
+			Name: "installplan-for-3scale",
+		},
 	},
 }
 
@@ -838,7 +851,8 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		testDedicatedAdminsGroup,
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
-		installation,
+		installPlanFor3ScaleSubscription,
+		subscription3scale,
 		blobStorage,
 		blobStorageSec,
 		threescaleRoute1,
@@ -881,9 +895,11 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 func getValidInstallation(installationType integreatlyv1alpha1.InstallationType) *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-installation",
-			Namespace:  integreatlyOperatorNamespace,
-			Finalizers: []string{"finalizer.3scale.integreatly.org"},
+			Name:            "test-installation",
+			Namespace:       integreatlyOperatorNamespace,
+			Finalizers:      []string{"finalizer.3scale.integreatly.org"},
+			Generation:      1,
+			ResourceVersion: "1",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakesigs "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -13,11 +14,14 @@ type SigsClientInterface interface {
 	k8sclient.Reader
 	k8sclient.Writer
 	k8sclient.StatusClient
+	k8sclient.WithWatch
 	GetSigsClient() k8sclient.Client
+	Scheme() *runtime.Scheme
+	RESTMapper() meta.RESTMapper
 }
 
 func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtime.Object) *SigsClientInterfaceMock {
-	sigsClient := fakesigs.NewFakeClientWithScheme(clientScheme, initObjs...)
+	sigsClient := fakesigs.NewClientBuilder().WithRuntimeObjects(initObjs...).WithScheme(clientScheme).Build()
 	return &SigsClientInterfaceMock{
 		GetSigsClientFunc: func() k8sclient.Client {
 			return sigsClient

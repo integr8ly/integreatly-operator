@@ -210,13 +210,13 @@ func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},
@@ -284,13 +284,13 @@ func TestReconcileSecretToProductNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},

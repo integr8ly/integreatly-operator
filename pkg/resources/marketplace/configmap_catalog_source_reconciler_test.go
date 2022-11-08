@@ -18,7 +18,7 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 
-	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -90,7 +90,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("General error")
 				},
 			},
@@ -105,10 +105,10 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -123,10 +123,10 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source updating error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},
@@ -202,7 +202,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("General error")
 				},
 			},
@@ -215,10 +215,10 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -231,10 +231,10 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map updating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},

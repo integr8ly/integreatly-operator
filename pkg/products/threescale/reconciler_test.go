@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/foxcpp/go-mockdns"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +32,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	// "github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -62,7 +66,7 @@ func getLogger() l.Logger {
 
 type fields struct {
 	sigsClient       k8sclient.Client
-	mpm              marketplace.MarketplaceInterface
+	mpm              *marketplace.MarketplaceInterfaceMock
 	appsv1Client     appsv1Client.AppsV1Interface
 	oauthv1Client    oauthClient.OauthV1Interface
 	recorder         record.EventRecorder
@@ -92,12 +96,40 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	objects := getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
+	objects = append(objects, getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi))
+
 	tests := []ThreeScaleTestScenario{
 		{
 			name: "Test successful installation of MT RHOAM",
 			fields: fields{
-				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
-				mpm:              marketplace.NewManager(),
+				sigsClient: moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "3scale-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-3scale",
+									Namespace: "3scale",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "3scale-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
@@ -122,8 +154,33 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		{
 			name: "Test successful installation of RHOAM",
 			fields: fields{
-				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
-				mpm:              marketplace.NewManager(),
+				sigsClient: moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "3scale-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-3scale",
+									Namespace: "3scale",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "3scale-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
@@ -148,8 +205,33 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		{
 			name: "Test successful installation without errors",
 			fields: fields{
-				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
-				mpm:              marketplace.NewManager(),
+				sigsClient: moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "3scale-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-3scale",
+									Namespace: "3scale",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "3scale-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
@@ -174,8 +256,33 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		{
 			name: "failed to retrieve ingress router ips",
 			fields: fields{
-				sigsClient:       getSigClient(getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
-				mpm:              marketplace.NewManager(),
+				sigsClient: moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "3scale-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-3scale",
+									Namespace: "3scale",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "3scale-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
@@ -209,7 +316,32 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 					}
 					return getSigClient(preReqs, scheme)
 				}(),
-				mpm:              marketplace.NewManager(),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "3scale-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-3scale",
+									Namespace: "3scale",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "3scale-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
 				appsv1Client:     getAppsV1Client(successfulTestAppsV1Objects),
 				oauthv1Client:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 				recorder:         setupRecorder(),
@@ -917,7 +1049,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			name: "Test - Unable to get deployment config - PhaseFailed",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 					return fmt.Errorf("fetch error")
 				}},
 				productNamespace: defaultInstallationNamespace,
@@ -1147,7 +1279,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("get error")
 					},
 				},
@@ -1170,10 +1302,10 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 						return fmt.Errorf("list error")
 					},
 				},
@@ -1201,10 +1333,10 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 						return nil
 					},
 				},
@@ -1425,7 +1557,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 				accessToken: &accessToken,
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("get error")
 					},
 				},
@@ -1459,10 +1591,10 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 				accessToken: &accessToken,
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 						return nil
 					},
 				},
@@ -2641,7 +2773,7 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.ListFunc = func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 						return errors.New("generic error")
 					}
 					return mockClient

@@ -26,7 +26,7 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -321,10 +321,10 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("failed to create keycloak custom resource")
 				},
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "keycloak")
 				},
 			},

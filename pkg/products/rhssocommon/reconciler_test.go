@@ -19,7 +19,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -121,7 +121,7 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			installation: &integreatlyv1alpha1.RHMI{},
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -1079,7 +1079,7 @@ func TestReconciler_SetRollingStrategyForUpgrade(t *testing.T) {
 					"VERSION": "7.4",
 				}},
 				productVersion: integreatlyv1alpha1.ProductVersion("8.4"),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return fmt.Errorf("GetError")
 				}},
 				keycloakName: keycloakName,

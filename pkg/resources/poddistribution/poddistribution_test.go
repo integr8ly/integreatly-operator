@@ -207,11 +207,11 @@ func TestPodDistribution(t *testing.T) {
 			Name: "Test pods are forced to distribute",
 			FakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, nodeList1, podList1, dc1, rs1, ss1)
-				mockClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+				mockClient.DeleteFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.DeleteOption) error {
 					deleteCount1++
 					return nil
 				}
-				mockClient.UpdateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				mockClient.UpdateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.UpdateOption) error {
 					updateCount1++
 					return nil
 				}
@@ -231,11 +231,11 @@ func TestPodDistribution(t *testing.T) {
 			Name: "Test no distribution as pods are correctly distributed",
 			FakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, nodeList1, podList2, dc2, rs2, ss2)
-				mockClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+				mockClient.DeleteFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.DeleteOption) error {
 					deleteCount2++
 					return nil
 				}
-				mockClient.UpdateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				mockClient.UpdateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.UpdateOption) error {
 					updateCount2++
 					return nil
 				}
@@ -256,11 +256,11 @@ func TestPodDistribution(t *testing.T) {
 			Name: "Test no distribution as limits are reached",
 			FakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, nodeList1, podList2, dc2, rs2, ss2)
-				mockClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+				mockClient.DeleteFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.DeleteOption) error {
 					deleteCount3++
 					return nil
 				}
-				mockClient.UpdateFunc = func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				mockClient.UpdateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...client.UpdateOption) error {
 					updateCount3++
 					return nil
 				}

@@ -318,7 +318,8 @@ func TestGetClusterVersionCR(t *testing.T) {
 					APIVersion: "config.openshift.io/v1",
 				},
 				ObjectMeta: v1.ObjectMeta{
-					Name: "version",
+					Name:            "version",
+					ResourceVersion: "999",
 				},
 				Spec:   configv1.ClusterVersionSpec{},
 				Status: configv1.ClusterVersionStatus{},

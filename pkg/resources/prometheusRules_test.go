@@ -113,7 +113,7 @@ func TestReconcileAlerts(t *testing.T) {
 
 				// Assert that the existing rule is unmodified
 				existingRule := &monitoringv1.PrometheusRule{}
-				objectKey, _ := k8sclient.ObjectKeyFromObject(existingRules)
+				objectKey := k8sclient.ObjectKeyFromObject(existingRules)
 				if err := client.Get(context.TODO(), objectKey, existingRule); err != nil {
 					return fmt.Errorf("unexpected error retrieving existing rule: %v", err)
 				}
@@ -152,7 +152,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Alerts:        []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return genericError
 				},
 			},
@@ -169,7 +169,7 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return genericError
 				},
 			},
@@ -186,10 +186,10 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+				DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 					return genericError
 				},
 			},
@@ -201,10 +201,10 @@ func TestReconcileAlerts(t *testing.T) {
 			ExistingRules: []*monitoringv1.PrometheusRule{},
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return genericError
 				},
 			},

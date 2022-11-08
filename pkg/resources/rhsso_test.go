@@ -87,7 +87,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -111,7 +111,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("test error")
 				}
 				return mockClient

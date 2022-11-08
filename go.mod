@@ -24,10 +24,9 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/cloud-resource-operator v0.42.0
-	github.com/integr8ly/keycloak-client v0.1.9
+	github.com/integr8ly/keycloak-client v0.1.10
 	github.com/onsi/gomega v1.20.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
-	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/api v0.17.1
 	github.com/operator-framework/operator-lifecycle-manager v0.21.1
@@ -56,6 +55,7 @@ require (
 require (
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/prometheus/common v0.37.0
 	k8s.io/metrics v0.20.6
@@ -115,14 +115,13 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/cel-go v0.10.1 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/hashicorp/go-version v1.5.0 // indirect
@@ -199,9 +198,18 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-replace (
-	github.com/integr8ly/keycloak-client => ../keycloak-client
-	// Required for the marin3r which uses an older version of the operator-lib library.
-	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
-	github.com/redhat-developer/observability-operator/v3 => ../observability-operator
-)
+// Please ensure all replaces are tracked.
+
+// Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+
+// Required for the marin3r which uses an older version of the operator-lib library - https://issues.redhat.com/browse/MGDAPI-4893
+replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
+
+// Required for managaing OLM resources - can be removed once following Jira is resolved - https://issues.redhat.com/browse/MGDAPI-4898
+replace github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
+
+replace github.com/redhat-developer/observability-operator/v3 => ../observability-operator
+
+// Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4895
+replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0

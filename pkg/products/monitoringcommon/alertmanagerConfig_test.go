@@ -265,7 +265,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			name: "fails when alert manager route fails to be retrieved",
 			serverClient: func() k8sclient.Client {
 				return &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("test")
 					},
 				}

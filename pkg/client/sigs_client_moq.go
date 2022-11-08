@@ -5,7 +5,10 @@ package client
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
@@ -41,11 +44,20 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 // 			PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
 // 				panic("mock out the Patch method")
 // 			},
+// 			RESTMapperFunc: func() meta.RESTMapper {
+// 				panic("mock out the RESTMapper method")
+// 			},
+// 			SchemeFunc: func() *runtime.Scheme {
+// 				panic("mock out the Scheme method")
+// 			},
 // 			StatusFunc: func() k8sclient.StatusWriter {
 // 				panic("mock out the Status method")
 // 			},
 // 			UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 // 				panic("mock out the Update method")
+// 			},
+// 			WatchFunc: func(ctx context.Context, obj k8sclient.ObjectList, opts ...k8sclient.ListOption) (watch.Interface, error) {
+// 				panic("mock out the Watch method")
 // 			},
 // 		}
 //
@@ -75,11 +87,20 @@ type SigsClientInterfaceMock struct {
 	// PatchFunc mocks the Patch method.
 	PatchFunc func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error
 
+	// RESTMapperFunc mocks the RESTMapper method.
+	RESTMapperFunc func() meta.RESTMapper
+
+	// SchemeFunc mocks the Scheme method.
+	SchemeFunc func() *runtime.Scheme
+
 	// StatusFunc mocks the Status method.
 	StatusFunc func() k8sclient.StatusWriter
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error
+
+	// WatchFunc mocks the Watch method.
+	WatchFunc func(ctx context.Context, obj k8sclient.ObjectList, opts ...k8sclient.ListOption) (watch.Interface, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -142,6 +163,12 @@ type SigsClientInterfaceMock struct {
 			// Opts is the opts argument value.
 			Opts []k8sclient.PatchOption
 		}
+		// RESTMapper holds details about calls to the RESTMapper method.
+		RESTMapper []struct {
+		}
+		// Scheme holds details about calls to the Scheme method.
+		Scheme []struct {
+		}
 		// Status holds details about calls to the Status method.
 		Status []struct {
 		}
@@ -154,6 +181,15 @@ type SigsClientInterfaceMock struct {
 			// Opts is the opts argument value.
 			Opts []k8sclient.UpdateOption
 		}
+		// Watch holds details about calls to the Watch method.
+		Watch []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Obj is the obj argument value.
+			Obj k8sclient.ObjectList
+			// Opts is the opts argument value.
+			Opts []k8sclient.ListOption
+		}
 	}
 	lockCreate        sync.RWMutex
 	lockDelete        sync.RWMutex
@@ -162,8 +198,11 @@ type SigsClientInterfaceMock struct {
 	lockGetSigsClient sync.RWMutex
 	lockList          sync.RWMutex
 	lockPatch         sync.RWMutex
+	lockRESTMapper    sync.RWMutex
+	lockScheme        sync.RWMutex
 	lockStatus        sync.RWMutex
 	lockUpdate        sync.RWMutex
+	lockWatch         sync.RWMutex
 }
 
 // Create calls CreateFunc.
@@ -430,6 +469,58 @@ func (mock *SigsClientInterfaceMock) PatchCalls() []struct {
 	return calls
 }
 
+// RESTMapper calls RESTMapperFunc.
+func (mock *SigsClientInterfaceMock) RESTMapper() meta.RESTMapper {
+	if mock.RESTMapperFunc == nil {
+		panic("SigsClientInterfaceMock.RESTMapperFunc: method is nil but SigsClientInterface.RESTMapper was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockRESTMapper.Lock()
+	mock.calls.RESTMapper = append(mock.calls.RESTMapper, callInfo)
+	mock.lockRESTMapper.Unlock()
+	return mock.RESTMapperFunc()
+}
+
+// RESTMapperCalls gets all the calls that were made to RESTMapper.
+// Check the length with:
+//     len(mockedSigsClientInterface.RESTMapperCalls())
+func (mock *SigsClientInterfaceMock) RESTMapperCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockRESTMapper.RLock()
+	calls = mock.calls.RESTMapper
+	mock.lockRESTMapper.RUnlock()
+	return calls
+}
+
+// Scheme calls SchemeFunc.
+func (mock *SigsClientInterfaceMock) Scheme() *runtime.Scheme {
+	if mock.SchemeFunc == nil {
+		panic("SigsClientInterfaceMock.SchemeFunc: method is nil but SigsClientInterface.Scheme was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockScheme.Lock()
+	mock.calls.Scheme = append(mock.calls.Scheme, callInfo)
+	mock.lockScheme.Unlock()
+	return mock.SchemeFunc()
+}
+
+// SchemeCalls gets all the calls that were made to Scheme.
+// Check the length with:
+//     len(mockedSigsClientInterface.SchemeCalls())
+func (mock *SigsClientInterfaceMock) SchemeCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockScheme.RLock()
+	calls = mock.calls.Scheme
+	mock.lockScheme.RUnlock()
+	return calls
+}
+
 // Status calls StatusFunc.
 func (mock *SigsClientInterfaceMock) Status() k8sclient.StatusWriter {
 	if mock.StatusFunc == nil {
@@ -492,5 +583,44 @@ func (mock *SigsClientInterfaceMock) UpdateCalls() []struct {
 	mock.lockUpdate.RLock()
 	calls = mock.calls.Update
 	mock.lockUpdate.RUnlock()
+	return calls
+}
+
+// Watch calls WatchFunc.
+func (mock *SigsClientInterfaceMock) Watch(ctx context.Context, obj k8sclient.ObjectList, opts ...k8sclient.ListOption) (watch.Interface, error) {
+	if mock.WatchFunc == nil {
+		panic("SigsClientInterfaceMock.WatchFunc: method is nil but SigsClientInterface.Watch was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Obj  k8sclient.ObjectList
+		Opts []k8sclient.ListOption
+	}{
+		Ctx:  ctx,
+		Obj:  obj,
+		Opts: opts,
+	}
+	mock.lockWatch.Lock()
+	mock.calls.Watch = append(mock.calls.Watch, callInfo)
+	mock.lockWatch.Unlock()
+	return mock.WatchFunc(ctx, obj, opts...)
+}
+
+// WatchCalls gets all the calls that were made to Watch.
+// Check the length with:
+//     len(mockedSigsClientInterface.WatchCalls())
+func (mock *SigsClientInterfaceMock) WatchCalls() []struct {
+	Ctx  context.Context
+	Obj  k8sclient.ObjectList
+	Opts []k8sclient.ListOption
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Obj  k8sclient.ObjectList
+		Opts []k8sclient.ListOption
+	}
+	mock.lockWatch.RLock()
+	calls = mock.calls.Watch
+	mock.lockWatch.RUnlock()
 	return calls
 }

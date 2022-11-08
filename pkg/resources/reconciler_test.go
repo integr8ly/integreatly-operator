@@ -160,7 +160,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name: "test reconcile subscription returns phase failed if unable to delete subscription due for re-install ",
-			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 				return fmt.Errorf("some error")
 			}},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -180,7 +180,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name: "test reconcile subscription returns phase failed if unable to delete csv for re-install ",
-			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+			client: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 				return fmt.Errorf("some error")
 			}},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

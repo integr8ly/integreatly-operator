@@ -28,8 +28,8 @@ import (
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
-
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -48,8 +48,8 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(
 		AddToSchemes,
-		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
+		operatorsv1alpha1.AddToScheme,
 		authv1.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,

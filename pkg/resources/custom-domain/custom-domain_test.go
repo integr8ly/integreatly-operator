@@ -416,7 +416,7 @@ func TestGetIngressRouterService(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() client.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
 						return errors.New("generic error")
 					}
 					return mockClient

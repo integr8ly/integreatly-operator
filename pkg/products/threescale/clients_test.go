@@ -26,7 +26,7 @@ import (
 
 func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
 	sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
-	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+	sigsFakeClient.CreateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 		switch obj := obj.(type) {
 		case *corev1.Namespace:
 			obj.Status.Phase = corev1.NamespaceActive
@@ -41,10 +41,10 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 					Namespace: obj.Namespace,
 				},
 			}
-			err := sigsFakeClient.GetSigsClient().Create(ctx, obj)
-			if err != nil {
-				return err
-			}
+			// err := sigsFakeClient.GetSigsClient().Create(ctx, obj)
+			// if err != nil {
+			// 	return err
+			// }
 			installPlanFor3ScaleSubscription.Namespace = obj.Namespace
 			// reset install plan
 			installPlanFor3ScaleSubscription.ResourceVersion = ""
@@ -54,7 +54,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
 	}
 
-	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 		switch obj := obj.(type) {
 		case *corev1.Secret:
 			if key.Name == "alertmanager-application-monitoring" {

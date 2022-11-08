@@ -696,7 +696,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 					return fmt.Errorf("listError")
 				}},
 			},
@@ -939,7 +939,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
+				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 					return fmt.Errorf("listError")
 				}},
 			},
