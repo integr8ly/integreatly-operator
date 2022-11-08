@@ -147,11 +147,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		},
 	}
 
-	key, err := k8sclient.ObjectKeyFromObject(deployment)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
+	key := k8sclient.ObjectKeyFromObject(deployment)
 	err = client.Get(ctx, key, deployment)
 	if err != nil {
 		if !k8sError.IsNotFound(err) {
@@ -253,7 +249,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		}
 		deployment.Spec.Template.Spec.Containers[0].Env = envs
 		deployment.Spec.Template.Spec.Containers[0].LivenessProbe = &corev1.Probe{
-			Handler: corev1.Handler{
+			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path: "/status",
 					Port: intstr.IntOrString{
@@ -271,7 +267,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		}
 
 		deployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
-			Handler: corev1.Handler{
+			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path: "/status",
 					Port: intstr.IntOrString{
@@ -332,13 +328,13 @@ func (r *RateLimitServiceReconciler) reconcileService(ctx context.Context, clien
 				Name:       "http",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       8080,
-				TargetPort: intstr.IntOrString{StrVal: "http"},
+				TargetPort: intstr.IntOrString{IntVal: 8080},
 			},
 			{
 				Name:       "grpc",
 				Protocol:   corev1.ProtocolTCP,
 				Port:       8081,
-				TargetPort: intstr.IntOrString{StrVal: "grpc"},
+				TargetPort: intstr.IntOrString{IntVal: 8081},
 			},
 		}
 		service.Spec.Selector = map[string]string{

@@ -116,7 +116,7 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 		}
 		envoyClusterResource = append(envoyClusterResource,
 			marin3rv1alpha1.EnvoyResource{
-				Name:  cluster.Name,
+				Name:  &cluster.Name,
 				Value: string(yamlClusterResource),
 			},
 		)
@@ -135,7 +135,7 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 		}
 		envoyListenerResource = append(envoyListenerResource,
 			marin3rv1alpha1.EnvoyResource{
-				Name:  listener.Name,
+				Name:  &listener.Name,
 				Value: string(yamlListenerResource),
 			},
 		)
