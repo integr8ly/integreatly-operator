@@ -311,12 +311,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	}
 
-	key, err := k8sclient.ObjectKeyFromObject(kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	err = serverClient.Get(ctx, key, kc)
+	key := k8sclient.ObjectKeyFromObject(kc)
+	err := serverClient.Get(ctx, key, kc)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err

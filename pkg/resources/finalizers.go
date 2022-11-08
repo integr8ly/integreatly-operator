@@ -38,7 +38,7 @@ func UpdateFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 		inst.SetFinalizers(Replace(inst.GetFinalizers(), previousFinalizer, finalizer))
 		err := client.Update(ctx, inst)
 		if err != nil {
-			log.Error("Error replacing finalizer to custom resource", err)
+			log.Error("error replacing finalizer to custom resource", err)
 			return err
 		}
 	}

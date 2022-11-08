@@ -35,7 +35,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -102,7 +101,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
-func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 	return nil
 }
 

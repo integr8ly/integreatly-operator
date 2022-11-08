@@ -23,7 +23,6 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -52,7 +51,7 @@ type Reconciler struct {
 	recorder record.EventRecorder
 }
 
-func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 	return nil
 }
 

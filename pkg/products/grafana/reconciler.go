@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -29,7 +30,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -56,7 +56,7 @@ type Reconciler struct {
 	recorder      record.EventRecorder
 }
 
-func (r *Reconciler) GetPreflightObject(_ string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 	return nil
 }
 
@@ -432,7 +432,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 	status, err = controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(dataSourceCR, r.installation)
 
-		spec := grafanav1alpha1.GrafanaDataSourceSpec{
+		dataSourceCR.Spec = grafanav1alpha1.GrafanaDataSourceSpec{
 			Datasources: []grafanav1alpha1.GrafanaDataSourceFields{
 				{
 					Name:      "Prometheus",
@@ -441,6 +441,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 					IsDefault: true,
 					JsonData: grafanav1alpha1.GrafanaDataSourceJsonData{
 						TimeInterval: "5s",
+						EsVersion: intstr.IntOrString{Type: intstr.String},
 					},
 					Type:    "prometheus",
 					Url:     url,
@@ -449,9 +450,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 			},
 		}
 
-		dataSourceCR.Spec = spec
 		dataSourceCR.Spec.Name = "customer.yaml"
-
 		return nil
 	})
 

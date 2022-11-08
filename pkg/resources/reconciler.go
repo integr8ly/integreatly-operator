@@ -12,9 +12,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -78,8 +77,8 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 }
 
 // GetNS gets the specified corev1.Namespace from the k8s API server
-func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*corev1.Namespace, error) {
-	ns := &corev1.Namespace{
+func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*v1.Namespace, error) {
+	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
@@ -149,12 +148,12 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
 	}
 
-	if ns.Status.Phase == corev1.NamespaceTerminating {
+	if ns.Status.Phase == v1.NamespaceTerminating {
 		log.Debugf("namespace terminating, maintaining phase to try again on next reconcile", l.Fields{"ns": namespace})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	if ns.Status.Phase != corev1.NamespaceActive {
+	if ns.Status.Phase != v1.NamespaceActive {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
