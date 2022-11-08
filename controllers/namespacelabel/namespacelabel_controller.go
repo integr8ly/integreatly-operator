@@ -146,9 +146,7 @@ type NamespaceLabelReconciler struct {
 
 // Reconcile : The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *NamespaceLabelReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
-	ctx := context.TODO()
-
+func (r *NamespaceLabelReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	if request.NamespacedName.Name == r.operatorNamespace {
 		r.log.Info("Reconciling namespace labels")
 
@@ -341,7 +339,7 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 // namespacePredicate is a reusable predicate to watch only resources on a given
 // namespace
 func namespacePredicate(namespace string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+	return predicate.NewPredicateFuncs(func(m k8sclient.Object) bool {
 		return m.GetNamespace() == namespace
 	})
 }
@@ -349,7 +347,7 @@ func namespacePredicate(namespace string) predicate.Predicate {
 // namePredicate is a reusable predicate to watch only resources on a given
 // name
 func namePredicate(name string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(m metav1.Object, _ runtime.Object) bool {
+	return predicate.NewPredicateFuncs(func(m k8sclient.Object) bool {
 		return m.GetName() == name
 	})
 }

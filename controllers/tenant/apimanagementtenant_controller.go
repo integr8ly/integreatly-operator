@@ -54,7 +54,7 @@ type TenantReconciler struct {
 	log    l.Logger
 }
 
-func (r *TenantReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
+func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 
 	log.Info(fmt.Sprintf("TenantReconciler request: %s", request))
@@ -130,11 +130,8 @@ func (r *TenantReconciler) getAPIManagementTenant(crName string, crNamespace str
 			Namespace: crNamespace,
 		},
 	}
-	key, err := k8sclient.ObjectKeyFromObject(tenant)
-	if err != nil {
-		return tenant, fmt.Errorf("error getting ObjectKey for tenant %s: %v", crName, err)
-	}
-	err = r.Get(context.TODO(), key, tenant)
+	key := k8sclient.ObjectKeyFromObject(tenant)
+	err := r.Get(context.TODO(), key, tenant)
 	if err != nil {
 		return tenant, fmt.Errorf("error getting tenant %s: %v", crName, err)
 	}
@@ -329,11 +326,8 @@ func (r *TenantReconciler) getUserByTenantNamespace(ns string) (*usersv1.User, e
 			Name: username,
 		},
 	}
-	key, err := k8sclient.ObjectKeyFromObject(user)
-	if err != nil {
-		return nil, fmt.Errorf("error getting ObjectKey for user %s: %v", username, err)
-	}
-	err = r.Client.Get(context.TODO(), key, user)
+	key := k8sclient.ObjectKeyFromObject(user)
+	err := r.Client.Get(context.TODO(), key, user)
 	if err != nil {
 		return nil, err
 	}

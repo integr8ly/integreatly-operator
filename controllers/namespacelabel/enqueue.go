@@ -20,40 +20,40 @@ var _ handler.EventHandler = &EnqueueNamespaceFromObject{}
 
 // Create implements EventHandler
 func (e *EnqueueNamespaceFromObject) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
-	if evt.Meta == nil {
+	if evt.Object == nil {
 		return
 	}
 
-	addNamespaceRequest(evt.Meta, q)
+	addNamespaceRequest(evt.Object, q)
 }
 
 // Update implements EventHandler
 func (e *EnqueueNamespaceFromObject) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	if evt.MetaOld != nil {
-		addNamespaceRequest(evt.MetaOld, q)
+	if evt.ObjectOld != nil {
+		addNamespaceRequest(evt.ObjectOld, q)
 	}
 
-	if evt.MetaNew != nil {
-		addNamespaceRequest(evt.MetaNew, q)
+	if evt.ObjectNew != nil {
+		addNamespaceRequest(evt.ObjectNew, q)
 	}
 }
 
 // Delete implements EventHandler
 func (e *EnqueueNamespaceFromObject) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	if evt.Meta == nil {
+	if evt.Object == nil {
 		return
 	}
 
-	addNamespaceRequest(evt.Meta, q)
+	addNamespaceRequest(evt.Object, q)
 }
 
 // Generic implements EventHandler
 func (e *EnqueueNamespaceFromObject) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
-	if evt.Meta == nil {
+	if evt.Object == nil {
 		return
 	}
 
-	addNamespaceRequest(evt.Meta, q)
+	addNamespaceRequest(evt.Object, q)
 }
 
 func addNamespaceRequest(meta metav1.Object, q workqueue.RateLimitingInterface) {

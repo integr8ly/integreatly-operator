@@ -23,25 +23,25 @@ type EnqueueIntegreatlyOwner struct {
 }
 
 func (e *EnqueueIntegreatlyOwner) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
-	if req, err := e.getIntegreatlyOwner(evt.Meta); err == nil {
+	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
 func (e *EnqueueIntegreatlyOwner) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	if req, err := e.getIntegreatlyOwner(evt.MetaNew); err == nil {
+	if req, err := e.getIntegreatlyOwner(evt.ObjectNew); err == nil {
 		q.Add(req)
 	}
 }
 
 func (e *EnqueueIntegreatlyOwner) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
-	if req, err := e.getIntegreatlyOwner(evt.Meta); err == nil {
+	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
 
 func (e *EnqueueIntegreatlyOwner) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
-	if req, err := e.getIntegreatlyOwner(evt.Meta); err == nil {
+	if req, err := e.getIntegreatlyOwner(evt.Object); err == nil {
 		q.Add(req)
 	}
 }
