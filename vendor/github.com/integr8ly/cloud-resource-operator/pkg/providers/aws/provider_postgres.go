@@ -379,6 +379,14 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 			Database: *foundInstance.DBName,
 			Port:     int(*foundInstance.Endpoint.Port),
 		}
+
+		if !annotations.Has(cr, ResourceIdentifierAnnotation) {
+			statusMsg, err := addAnnotation(ctx, p.Client, cr, *rdsCfg.DBInstanceIdentifier)
+			if err != nil {
+				return nil, statusMsg, err
+			}
+		}
+
 		// return secret information
 		return &providers.PostgresInstance{DeploymentDetails: pdd}, croType.StatusMessage(fmt.Sprintf("%s, aws rds status is %s", msg, *foundInstance.DBInstanceStatus)), nil
 	}
@@ -404,9 +412,9 @@ func (p *PostgresProvider) reconcileRDSInstance(ctx context.Context, cr *v1alpha
 		return nil, croType.StatusMessage(fmt.Sprintf("error creating rds instance %s", err)), err
 	}
 
-	annotations.Add(cr, ResourceIdentifierAnnotation, *rdsCfg.DBInstanceIdentifier)
-	if err := p.Client.Update(ctx, cr); err != nil {
-		return nil, "failed to add annotation", err
+	statusMsg, err := addAnnotation(ctx, p.Client, cr, *rdsCfg.DBInstanceIdentifier)
+	if err != nil {
+		return nil, statusMsg, err
 	}
 	return nil, "started rds provision", nil
 }
@@ -1323,4 +1331,13 @@ func (p *PostgresProvider) rdsApplyServiceUpdates(rdsSvc rdsiface.RDSAPI, servic
 		}
 	}
 	return upgrading, "completed check for service updates", nil
+}
+
+func addAnnotation(ctx context.Context, client client.Client, cr *v1alpha1.Postgres, rdsDBInstanceIdentifier string) (croType.StatusMessage, error) {
+	annotations.Add(cr, ResourceIdentifierAnnotation, rdsDBInstanceIdentifier)
+	if err := client.Update(ctx, cr); err != nil {
+		errMsg := "failed to add annotation"
+		return croType.StatusMessage(errMsg), err
+	}
+	return croType.StatusEmpty, nil
 }

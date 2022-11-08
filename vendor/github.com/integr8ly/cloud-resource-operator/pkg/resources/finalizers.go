@@ -45,7 +45,7 @@ func remove(list []string, s string) []string {
 	return list
 }
 
-func CreateFinalizer(ctx context.Context, c client.Client, inst runtime.Object, df string) error {
+func CreateFinalizer(ctx context.Context, c client.Client, inst client.Object, df string) error {
 	dt := &v1.ObjectMeta{}
 	if err := runtime.Field(reflect.ValueOf(inst).Elem(), "ObjectMeta", dt); err != nil {
 		return errorUtil.Wrap(err, "failed to retrieve timestamp")

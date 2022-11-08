@@ -139,7 +139,12 @@ type APIManager struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   APIManagerSpec   `json:"spec,omitempty"`
+	// XPreserveUnknownFields Does not work at type level. Tested on OCP 4.8
+
+	// +kubebuilder:validation:XPreserveUnknownFields
+	Spec APIManagerSpec `json:"spec,omitempty"`
+
+	// +kubebuilder:validation:XPreserveUnknownFields
 	Status APIManagerStatus `json:"status,omitempty"`
 }
 
@@ -702,12 +707,12 @@ func (apimanager *APIManager) setAPIManagerAnnotationsDefaults() bool {
 		changed = true
 	}
 
-	if _, ok := apimanager.Annotations[OperatorVersionAnnotation]; !ok {
+	if v, ok := apimanager.Annotations[OperatorVersionAnnotation]; !ok || v != version.Version {
 		apimanager.Annotations[OperatorVersionAnnotation] = version.Version
 		changed = true
 	}
 
-	if _, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; !ok {
+	if v, ok := apimanager.Annotations[ThreescaleVersionAnnotation]; !ok || v != product.ThreescaleRelease {
 		apimanager.Annotations[ThreescaleVersionAnnotation] = product.ThreescaleRelease
 		changed = true
 	}
@@ -755,22 +760,7 @@ func (apimanager *APIManager) setApicastSpecDefaults() bool {
 		changed = true
 	}
 
-	if spec.Apicast.StagingSpec.Replicas == nil {
-		spec.Apicast.StagingSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
-	if spec.Apicast.ProductionSpec.Replicas == nil {
-		spec.Apicast.ProductionSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
 	return changed
-}
-
-func (apimanager *APIManager) defaultReplicas() *int64 {
-	var defaultReplicas int64 = 1
-	return &defaultReplicas
 }
 
 func (apimanager *APIManager) setBackendSpecDefaults() bool {
@@ -794,21 +784,6 @@ func (apimanager *APIManager) setBackendSpecDefaults() bool {
 
 	if spec.Backend.WorkerSpec == nil {
 		spec.Backend.WorkerSpec = &BackendWorkerSpec{}
-		changed = true
-	}
-
-	if spec.Backend.ListenerSpec.Replicas == nil {
-		spec.Backend.ListenerSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
-	if spec.Backend.CronSpec.Replicas == nil {
-		spec.Backend.CronSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
-	if spec.Backend.WorkerSpec.Replicas == nil {
-		spec.Backend.WorkerSpec.Replicas = apimanager.defaultReplicas()
 		changed = true
 	}
 
@@ -886,16 +861,6 @@ func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
 		changed = true
 	}
 
-	if spec.System.AppSpec.Replicas == nil {
-		spec.System.AppSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
-	if spec.System.SidekiqSpec.Replicas == nil {
-		spec.System.SidekiqSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
 	return changed, nil
 }
 
@@ -949,16 +914,6 @@ func (apimanager *APIManager) setZyncDefaults() bool {
 
 	if spec.Zync.QueSpec == nil {
 		spec.Zync.QueSpec = &ZyncQueSpec{}
-		changed = true
-	}
-
-	if spec.Zync.AppSpec.Replicas == nil {
-		spec.Zync.AppSpec.Replicas = apimanager.defaultReplicas()
-		changed = true
-	}
-
-	if spec.Zync.QueSpec.Replicas == nil {
-		spec.Zync.QueSpec.Replicas = apimanager.defaultReplicas()
 		changed = true
 	}
 

@@ -3,9 +3,9 @@ package component
 import (
 	"fmt"
 
-	"github.com/coreos/prometheus-operator/pkg/apis/monitoring"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	"github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -78,11 +78,11 @@ func (system *System) SystemAppPodMonitor() *monitoringv1.PodMonitor {
 	}
 }
 
-func (system *System) SystemGrafanaDashboard() *grafanav1alpha1.GrafanaDashboard {
+func (system *System) SystemGrafanaDashboard(sumRate string) *grafanav1alpha1.GrafanaDashboard {
 	data := &struct {
-		Namespace string
+		Namespace, SumRate string
 	}{
-		system.Options.Namespace,
+		system.Options.Namespace, sumRate,
 	}
 	return &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -91,7 +91,6 @@ func (system *System) SystemGrafanaDashboard() *grafanav1alpha1.GrafanaDashboard
 		},
 		Spec: grafanav1alpha1.GrafanaDashboardSpec{
 			Json: assets.TemplateAsset("monitoring/system-grafana-dashboard-1.json.tpl", data),
-			Name: fmt.Sprintf("%s/system-grafana-dashboard-1.json", system.Options.Namespace),
 		},
 	}
 }
@@ -114,6 +113,7 @@ func (system *System) SystemAppPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleSystemApp5XXRequestsHigh",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleSystemApp5XXRequestsHighURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} has more than 50 HTTP 5xx requests in the last minute",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} has more than 50 HTTP 5xx requests in the last minute",
 							},
@@ -126,6 +126,7 @@ func (system *System) SystemAppPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleSystemAppJobDown",
 							Annotations: map[string]string{
+								"sop_url":     ThreescalePrometheusJobDownURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 							},
@@ -160,6 +161,7 @@ func (system *System) SystemSidekiqPrometheusRules() *monitoringv1.PrometheusRul
 						{
 							Alert: "ThreescaleSystemSidekiqJobDown",
 							Annotations: map[string]string{
+								"sop_url":     ThreescalePrometheusJobDownURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 							},

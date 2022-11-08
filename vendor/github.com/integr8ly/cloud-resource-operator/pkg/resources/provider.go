@@ -32,7 +32,7 @@ func NewResourceProvider(c client.Client, s *runtime.Scheme, l *logrus.Entry) *R
 	}
 }
 
-func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o runtime.Object, d map[string][]byte) error {
+func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o client.Object, d map[string][]byte) error {
 	obj := o.(metav1.Object)
 	secNs := obj.GetNamespace()
 	rts := &croType.ResourceTypeSpec{}

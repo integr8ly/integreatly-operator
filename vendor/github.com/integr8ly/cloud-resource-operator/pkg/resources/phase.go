@@ -14,7 +14,7 @@ import (
 )
 
 //UpdatePhase Updates the custom resource with the current phase
-func UpdatePhase(ctx context.Context, client client.Client, inst runtime.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
+func UpdatePhase(ctx context.Context, client client.Client, inst client.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil
 	}
@@ -34,7 +34,7 @@ func UpdatePhase(ctx context.Context, client client.Client, inst runtime.Object,
 }
 
 //UpdateSnapshotPhase Updates the snapshot custom resource with the current phase
-func UpdateSnapshotPhase(ctx context.Context, client client.Client, inst runtime.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
+func UpdateSnapshotPhase(ctx context.Context, client client.Client, inst client.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil
 	}
