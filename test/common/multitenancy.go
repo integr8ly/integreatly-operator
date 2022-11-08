@@ -316,7 +316,6 @@ func createQuarkusDeployment(ctx *TestingContext) error {
 			},
 		}
 		key := k8sclient.ObjectKeyFromObject(imageStream)
-	
 		err = ctx.Client.Get(context.TODO(), key, imageStream)
 		if err != nil {
 			return false, nil

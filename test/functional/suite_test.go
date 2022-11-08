@@ -19,7 +19,7 @@ import (
 	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 )
 
 const (
