@@ -65,7 +65,6 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -167,7 +166,7 @@ type Reconciler struct {
 	log         l.Logger
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
 	return &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "system-app",
@@ -186,6 +185,12 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Reconciling")
+	freshRMICr := &integreatlyv1alpha1.RHMI{}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: installation.Name, Namespace: installation.Namespace}, freshRMICr)
+	if err != nil {
+		// log.Error("error obtaining fresh copy of RHMI CR while setting up finalizers", err)
+		// return err
+	}
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	customDomainActive := r.useCustomDomain()
@@ -710,84 +715,104 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		antiAffinityRequired = false
 	}
 
-	key, err := k8sclient.ObjectKeyFromObject(apim)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
+	key := k8sclient.ObjectKeyFromObject(apim)
 	err = serverClient.Get(ctx, key, apim)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
-
-		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
-		apim.Spec.APIManagerCommonSpec.ResourceRequirementsEnabled = &resourceRequirements
-		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
-		apim.Spec.System.FileStorageSpec = fss
-		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
-		apim.Spec.Monitoring = &threescalev1.MonitoringSpec{Enabled: false}
-
 		replicas := r.Config.GetReplicasConfig(r.installation)
-
-		if *apim.Spec.System.AppSpec.Replicas < replicas["systemApp"] {
-			*apim.Spec.System.AppSpec.Replicas = replicas["systemApp"]
+		systemAppReplicas := replicas["systemApp"]
+		systemSidekiqReplicas := replicas["systemSidekiq"]
+		apicastStageReplicas := replicas["apicastStage"]
+		backendCronReplicas := replicas["backendCron"]
+		zyncReplicas := replicas["zyncApp"]
+		zyncQueReplicas := replicas["zyncQue"]
+		apim.Spec = threescalev1.APIManagerSpec{
+			HighAvailability: &threescalev1.HighAvailabilitySpec{
+				Enabled: true,
+			},
+			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
+				ResourceRequirementsEnabled: &resourceRequirements,
+				WildcardDomain:              r.installation.Spec.RoutingSubdomain,
+			},
+			System: &threescalev1.SystemSpec{
+				FileStorageSpec: fss,
+				AppSpec: &threescalev1.SystemAppSpec{
+					Replicas: &systemAppReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "system",
+						"threescale_component_element": "app",
+					}),
+				},
+				SidekiqSpec: &threescalev1.SystemSidekiqSpec{
+					Replicas: &systemSidekiqReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "system",
+						"threescale_component_element": "sidekiq",
+					}),
+				},
+			},
+			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{
+				Enabled: true,
+			},
+			Monitoring: &threescalev1.MonitoringSpec{
+				Enabled: false,
+			},
+			Apicast: &threescalev1.ApicastSpec{
+				StagingSpec: &threescalev1.ApicastStagingSpec{
+					Replicas: &apicastStageReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "apicast",
+						"threescale_component_element": "staging",
+					}),
+				},
+				ProductionSpec: &threescalev1.ApicastProductionSpec{
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "apicast",
+						"threescale_component_element": "production",
+					}),
+				},
+			},
+			Backend: &threescalev1.BackendSpec{
+				CronSpec: &threescalev1.BackendCronSpec{
+					Replicas: &backendCronReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "backend",
+						"threescale_component_element": "cron",
+					}),
+				},
+				ListenerSpec: &threescalev1.BackendListenerSpec{
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "backend",
+						"threescale_component_element": "listener",
+					}),
+				},
+				WorkerSpec: &threescalev1.BackendWorkerSpec{
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "backend",
+						"threescale_component_element": "worker",
+					}),
+				},
+			},
+			Zync: &threescalev1.ZyncSpec{
+				AppSpec: &threescalev1.ZyncAppSpec{
+					Replicas: &zyncReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "zync",
+						"threescale_component_element": "zync",
+					}),
+				},
+				QueSpec: &threescalev1.ZyncQueSpec{
+					Replicas: &zyncQueReplicas,
+					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+						"threescale_component":         "zync",
+						"threescale_component_element": "zync-que",
+					}),
+				},
+			},
 		}
-		if *apim.Spec.System.SidekiqSpec.Replicas < replicas["systemSidekiq"] {
-			*apim.Spec.System.SidekiqSpec.Replicas = replicas["systemSidekiq"]
-		}
-		if *apim.Spec.Apicast.StagingSpec.Replicas < replicas["apicastStage"] {
-			*apim.Spec.Apicast.StagingSpec.Replicas = replicas["apicastStage"]
-		}
-		if *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
-			*apim.Spec.Backend.CronSpec.Replicas = replicas["backendCron"]
-		}
-		if *apim.Spec.Zync.AppSpec.Replicas < replicas["zyncApp"] {
-			*apim.Spec.Zync.AppSpec.Replicas = replicas["zyncApp"]
-		}
-		if *apim.Spec.Zync.QueSpec.Replicas < replicas["zyncQue"] {
-			*apim.Spec.Zync.QueSpec.Replicas = replicas["zyncQue"]
-		}
-
-		apim.Spec.System.AppSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "system",
-			"threescale_component_element": "app",
-		})
-		apim.Spec.System.SidekiqSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "system",
-			"threescale_component_element": "sidekiq",
-		})
-		apim.Spec.Apicast.ProductionSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "apicast",
-			"threescale_component_element": "production",
-		})
-		apim.Spec.Apicast.StagingSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "apicast",
-			"threescale_component_element": "staging",
-		})
-
-		apim.Spec.Backend.ListenerSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "backend",
-			"threescale_component_element": "listener",
-		})
-		apim.Spec.Backend.WorkerSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "backend",
-			"threescale_component_element": "worker",
-		})
-		apim.Spec.Backend.CronSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "backend",
-			"threescale_component_element": "cron",
-		})
-		apim.Spec.Zync.AppSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "zync",
-			"threescale_component_element": "zync",
-		})
-		apim.Spec.Zync.QueSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
-			"threescale_component":         "zync",
-			"threescale_component_element": "zync-que",
-		})
-
 		err = productConfig.Configure(apim)
 
 		if err != nil {
@@ -2415,12 +2440,7 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 					Namespace: rhssoConfig.GetNamespace(),
 				},
 			}
-			objectKey, err := k8sclient.ObjectKeyFromObject(genKcUser)
-			if err != nil {
-				r.log.Warning("Failed to get object key from object: " + err.Error())
-				continue
-			}
-
+			objectKey := k8sclient.ObjectKeyFromObject(genKcUser)
 			err = serverClient.Get(ctx, objectKey, genKcUser)
 			if err != nil {
 				r.log.Warning("Failed get generated Keycloak User: " + err.Error())
@@ -2806,11 +2826,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 			},
 		}
 
-		objKey, err := k8sclient.ObjectKeyFromObject(deploymentConfig)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
+		objKey := k8sclient.ObjectKeyFromObject(deploymentConfig)
 		if err := serverClient.Get(ctx, objKey, deploymentConfig); err != nil {
 			if k8serr.IsNotFound(err) {
 				return integreatlyv1alpha1.PhaseInProgress, nil
@@ -3155,11 +3171,8 @@ func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8s
 			Name: name,
 		},
 	}
-	key, err := k8sclient.ObjectKeyFromObject(userToAnnotate)
-	if err != nil {
-		return fmt.Errorf("error getting ObjectKey for user %s: %v", name, err)
-	}
-	err = client.Get(context.TODO(), key, userToAnnotate)
+	key := k8sclient.ObjectKeyFromObject(userToAnnotate)
+	err := client.Get(context.TODO(), key, userToAnnotate)
 	if err != nil {
 		return fmt.Errorf("error getting user %s: %v", name, err)
 	}
