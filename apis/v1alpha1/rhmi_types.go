@@ -74,7 +74,7 @@ var (
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMonitoringSpec ProductVersion = "1.0"
-	VersionMarin3r        ProductVersion = "0.10.0"
+	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionGrafana        ProductVersion = "4.2.0"
 	VersionObservability  ProductVersion = "3.0.16"
 
