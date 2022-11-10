@@ -7,7 +7,6 @@ import (
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,7 +36,7 @@ func (e *CronJobBackupExecutor) PerformBackup(client k8sclient.Client, timeout t
 	jobName := fmt.Sprintf("%s-%s", e.JobGenerateName, time.Now().Format("2006-01-02-150405"))
 
 	// Get the CronJob to run
-	cronJob := &batchv1beta1.CronJob{}
+	cronJob := &batchv1.CronJob{}
 	err := client.Get(context.TODO(), types.NamespacedName{
 		Name:      e.CronJobName,
 		Namespace: e.Namespace,

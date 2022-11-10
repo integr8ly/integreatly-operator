@@ -995,7 +995,7 @@ github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
 # github.com/redhat-developer/observability-operator/v3 v3.0.16 => ../observability-operator
-## explicit; go 1.18
+## explicit; go 1.19
 github.com/redhat-developer/observability-operator/v3/api/v1
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13

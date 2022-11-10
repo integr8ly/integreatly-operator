@@ -8,7 +8,6 @@ import (
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,15 +22,15 @@ func TestCronJob(t *testing.T) {
 		generateJobName = "job-foo"
 	)
 
-	jobTemplate := batchv1beta1.JobTemplateSpec{}
+	jobTemplate := batchv1.JobTemplateSpec{}
 
 	// Test backup CronJob
-	cronJob := &batchv1beta1.CronJob{
+	cronJob := &batchv1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: namespace,
 			Name:      cronJobName,
 		},
-		Spec: batchv1beta1.CronJobSpec{
+		Spec: batchv1.CronJobSpec{
 			JobTemplate: jobTemplate,
 		},
 	}
@@ -110,15 +109,15 @@ func TestCronJob_FailedJob(t *testing.T) {
 		errorMessage    = "MOCK FAIL"
 	)
 
-	jobTemplate := batchv1beta1.JobTemplateSpec{}
+	jobTemplate := batchv1.JobTemplateSpec{}
 
 	// Test backup CronJob
-	cronJob := &batchv1beta1.CronJob{
+	cronJob := &batchv1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: namespace,
 			Name:      cronJobName,
 		},
-		Spec: batchv1beta1.CronJobSpec{
+		Spec: batchv1.CronJobSpec{
 			JobTemplate: jobTemplate,
 		},
 	}
