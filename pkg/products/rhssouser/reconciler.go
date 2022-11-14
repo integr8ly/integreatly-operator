@@ -421,6 +421,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	_, err = r.ReconcilePodDisruptionBudget(ctx, serverClient, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
