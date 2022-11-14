@@ -41,7 +41,7 @@ SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.29.0
+RHOAM_TAG ?= 1.30.0
 
 export SKIP_FLAKES := true
 
