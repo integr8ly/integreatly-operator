@@ -24,7 +24,7 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/cloud-resource-operator v0.42.0
-	github.com/integr8ly/keycloak-client v0.1.10
+	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/onsi/gomega v1.20.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71

@@ -765,7 +765,7 @@ github.com/integr8ly/cloud-resource-operator/pkg/client
 github.com/integr8ly/cloud-resource-operator/pkg/providers
 github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
 github.com/integr8ly/cloud-resource-operator/pkg/resources
-# github.com/integr8ly/keycloak-client v0.1.10
+# github.com/integr8ly/keycloak-client v0.1.11
 ## explicit; go 1.18
 github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1
 github.com/integr8ly/keycloak-client/pkg
