@@ -181,6 +181,9 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 // GetCrdDetails reads the crd file
 func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
 	yamlFile, err := ioutil.ReadFile(filepath.Clean(currentFolder + string(os.PathSeparator) + f.Name()))
+	if err != nil {
+		fmt.Printf("Error reading file: %s\n", err)
+	}
 
 	err = yaml.Unmarshal(yamlFile, &crdConfig)
 	if err != nil {

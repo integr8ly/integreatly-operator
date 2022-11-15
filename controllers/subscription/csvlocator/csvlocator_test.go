@@ -270,6 +270,9 @@ func TestCachedCSVLocator(t *testing.T) {
 
 	// Call GetCSV again, the counter should remain the same as the CSV is cached
 	csv, err = cached.GetCSV(context.TODO(), nil, ip1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if mockLocator.Counter != 1 {
 		t.Errorf("unexpected value for counter. Expected 1, got %d", mockLocator.Counter)

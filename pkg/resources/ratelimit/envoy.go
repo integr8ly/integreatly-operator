@@ -53,13 +53,13 @@ func (envoyProxy *envoyProxyServer) CreateEnvoyProxyContainer(dcName, namespace,
 	// patches deployment config to add the sidecar container
 	phase, err := envoyProxy.patchDeploymentConfig(dcName, namespace, envoyNodeID, svcProxyPort)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		return phase, err
 	}
 
 	// forwards request to the envoy proxy container
 	phase, err = envoyProxy.patchService(svcProxyName, namespace, svcProxyPortName, svcProxyPort)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		return phase, err
 	}
 
 	return phase, nil

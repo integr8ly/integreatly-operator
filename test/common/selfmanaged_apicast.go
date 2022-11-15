@@ -371,6 +371,9 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 		log.Info("Install plan found for subscription " + subscription.Name)
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -454,6 +457,9 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 		}
 		return true, nil
 	})
+	if err != nil {
+		return "", err
+	}
 	routeHost := route.Spec.Host
 	log.Info("routeHost: " + routeHost)
 	return routeHost, nil
@@ -709,6 +715,9 @@ func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client, insta
 			log.Info(apicastNamespace + " namespace deleted")
 			return true, nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -978,6 +987,9 @@ func customerLogin(t TestingTB, ctx *TestingContext, installation *integreatlyv1
 		}
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1067,7 +1079,13 @@ func serviceCreate(token3scale, url, name string) ([]byte, error) {
 
 func addBackendToProduct(threeScaleAdminPortal, token3scale string) error {
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		return err
+	}
 	backendId, err := getBackendId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		return err
+	}
 	url := "https://" + threeScaleAdminPortal + "/admin/api/services/" + serviceId + "/backend_usages.json"
 	_, err = backendUsageCreate(token3scale, url, serviceId, backendId)
 	if err != nil {
@@ -1116,8 +1134,17 @@ func backendUsageCreate(token3scale, url, serviceId, backendId string) ([]byte, 
 
 func addApplicationToProduct(threeScaleAdminPortal, token3scale string) error {
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		return err
+	}
 	accId, err := getAccountId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		return err
+	}
 	planId, err := getBasicApllicationPlanId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		return err
+	}
 	url := "https://" + threeScaleAdminPortal + "/admin/api/accounts/" + accId + "/applications.xml"
 	_, err = applicationCreate(token3scale, url, accId, planId, applicationName, applicationDescription, serviceId)
 	if err != nil {
@@ -1168,6 +1195,9 @@ func applicationCreate(token3scale, url, accountId, planId, name, description, s
 
 func deleteProduct(threeScaleAdminPortal, token3scale string) {
 	serviceId, err := getServiceId(threeScaleAdminPortal, token3scale)
+	if err != nil {
+		log.Error("Failed to get service ID", err)
+	}
 	_, err = serviceDelete(token3scale, threeScaleAdminPortal, serviceId)
 	if err != nil {
 		log.Error("Failed to delete product:", err)

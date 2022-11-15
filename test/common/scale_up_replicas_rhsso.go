@@ -121,6 +121,9 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 		Namespace(keycloakCRNamespace).
 		RequestURI(requestURLSSO).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
+	if err != nil {
+		return keycloakv1alpha1.Keycloak{}, err
+	}
 
 	keycloakCR, err := getKeycloakCR(dynClient.Client, keycloakCRName, keycloakCRNamespace)
 	if err != nil {

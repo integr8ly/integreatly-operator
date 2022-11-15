@@ -203,6 +203,9 @@ func (m *Manager) ReadObservability() (*Observability, error) {
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {
 	stringConfig, err := yaml.Marshal(config.Read())
+	if err != nil {
+		return err
+	}
 	err = m.Client.Get(m.context, k8sclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
 	if errors.IsNotFound(err) {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}

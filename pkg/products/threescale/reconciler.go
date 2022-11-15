@@ -864,6 +864,10 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-sidekiq"}),
 	}
 	err := client.List(ctx, pods, listOpts...)
+	if err != nil {
+		r.log.Error("Error getting list of pods", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	for _, pod := range pods.Items {
 		if pod.Status.Phase == "Running" {

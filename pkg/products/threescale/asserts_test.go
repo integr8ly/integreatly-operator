@@ -40,6 +40,9 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	oauthID := installationCR.Spec.NamespacePrefix + string(tsConfig.GetProductName())
 	oauthClientSecret := &corev1.Secret{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecret)
+	if err != nil {
+		return err
+	}
 	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthID, oauthClientSecret.Data[string(tsConfig.GetProductName())])
 
 	// A ns should have been created.
@@ -98,6 +101,9 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
+	if err != nil {
+		return err
+	}
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
 		return fmt.Errorf("Service discovery config is misconfigured")
 	}

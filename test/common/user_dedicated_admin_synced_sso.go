@@ -355,6 +355,9 @@ func getKeycloakUsers(httpClient *http.Client, host, token string, options keycl
 func createKeycloakUser(httpClient *http.Client, host, realmName, token string, user keycloakUser) error {
 	createKeycloakUserPath := fmt.Sprintf("%s/auth/admin/realms/%s/users", host, realmName)
 	createKeycloakUserBody, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
 	createKeycloakUserReq, err := http.NewRequest("POST", createKeycloakUserPath, strings.NewReader(string(createKeycloakUserBody)))
 	if err != nil {
 		return fmt.Errorf("failed to init create users request for Keycloak: %v", err)

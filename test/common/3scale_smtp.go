@@ -197,6 +197,9 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 		return false, nil
 
 	})
+	if err != nil {
+		t.Errorf("CR conditions not meet", err)
+	}
 
 	if inst.Status.CustomSmtp.Error != "" {
 		t.Fatal("Unexpected error in the custom smtp status block")
@@ -222,6 +225,9 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 			}
 			return false, nil
 		})
+		if err != nil {
+			t.Errorf("failed to find running pods", err)
+		}
 	}
 	restartThreeScalePods(t, ctx, inst)
 
@@ -586,6 +592,9 @@ func patch3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
 func patchSecret(ctx *TestingContext, t TestingTB) (string, bool, error) {
 	// Update secret with our test smtp details
 	serviceIP, err := getServiceIP(ctx)
+	if err != nil {
+		return "", false, err
+	}
 
 	secret, err := getSecret(ctx)
 	if k8errors.IsNotFound(err) {
@@ -788,7 +797,7 @@ func resetSecretData(t TestingTB, ctx *TestingContext, data map[string][]byte, s
 
 func copyAddonSecretData(secret *v1.Secret, ctx *TestingContext, err error, inst *rhmiv1alpha1.RHMI) (map[string][]byte, error) {
 	// copy the current custom smtp values
-	err = addonSecret(inst, ctx.Client, secret)
+	secret, err = addonSecret(inst, ctx.Client)
 	if err != nil {
 		return nil, fmt.Errorf("error getting addon: %v", err)
 	}
@@ -858,8 +867,7 @@ func customSmtpParameters(inst *rhmiv1alpha1.RHMI, require string, client k8scli
 	fields := []string{"custom-smtp-username", "custom-smtp-port", "custom-smtp-password",
 		"custom-smtp-address", "custom-smtp-from_address"}
 
-	secret := &v1.Secret{}
-	err := addonSecret(inst, client, secret)
+	secret, err := addonSecret(inst, client)
 	if err != nil {
 		return false, err
 	}
@@ -909,10 +917,10 @@ func customSmtpParameters(inst *rhmiv1alpha1.RHMI, require string, client k8scli
 	return false, nil
 }
 
-func addonSecret(inst *rhmiv1alpha1.RHMI, client k8sclient.Client, secret *v1.Secret) error {
+func addonSecret(inst *rhmiv1alpha1.RHMI, client k8sclient.Client) (*v1.Secret, error) {
 	secret, err := addon.GetAddonParametersSecret(context.TODO(), client, inst.Namespace)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return secret, nil
 }

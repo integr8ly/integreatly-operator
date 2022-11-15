@@ -172,6 +172,9 @@ func (tsc *threeScaleClient) SetFromEmailAddress(emailAddress string, accessToke
 		"access_token": accessToken,
 		"from_email":   emailAddress,
 	})
+	if err != nil {
+		return nil, err
+	}
 	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/provider.xml", tsc.wildCardDomain)
 	req, err := http.NewRequest(
 		"PUT",
@@ -202,7 +205,9 @@ func (tsc *threeScaleClient) AddUser(username string, email string, password str
 	data["email"] = email
 	data["password"] = password
 	reqData, err := json.Marshal(data)
-
+	if err != nil {
+		return nil, err
+	}
 	res, err := tsc.httpc.Post(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users.json", tsc.wildCardDomain),
 		"application/json",
@@ -219,11 +224,16 @@ func (tsc *threeScaleClient) DeleteUser(userID int, accessToken string) (*http.R
 	data := make(map[string]string)
 	data["access_token"] = accessToken
 	reqData, err := json.Marshal(data)
-
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(
 		http.MethodDelete,
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID),
 		bytes.NewBuffer(reqData))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-type", "application/json")
 	tsc.httpc.Timeout = time.Second * 10
 	res, err := tsc.httpc.Do(req)
@@ -238,6 +248,9 @@ func (tsc *threeScaleClient) SetUserAsAdmin(userID int, accessToken string) (*ht
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
+	if err != nil {
+		return nil, err
+	}
 	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/admin.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",
@@ -260,6 +273,9 @@ func (tsc *threeScaleClient) SetUserAsMember(userID int, accessToken string) (*h
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
+	if err != nil {
+		return nil, err
+	}
 	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/member.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",
@@ -283,6 +299,9 @@ func (tsc *threeScaleClient) UpdateUser(userID int, username string, email strin
 		"username":     username,
 		"email":        email,
 	})
+	if err != nil {
+		return nil, err
+	}
 	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",

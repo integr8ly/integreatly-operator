@@ -79,6 +79,9 @@ func getClient() (*kube.Clientset, *restclient.Config, error) {
 		&clientcmd.ConfigOverrides{},
 	)
 	restCfg, err := kubeCfg.ClientConfig()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	kubeClient, err := kube.NewForConfig(restCfg)
 	if err != nil {

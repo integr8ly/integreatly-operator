@@ -100,6 +100,7 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, err := common.NewTestingContext(cfg)
+		Expect(err).NotTo(HaveOccurred())
 
 		// wait for operator deployment to deploy
 		err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
@@ -151,6 +152,7 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 
 	ctx, err := common.NewTestingContext(cfg)
+	Expect(err).NotTo(HaveOccurred())
 
 	artifactsDir := os.Getenv(artifactsDirEnv)
 	if failed && artifactsDir != "" {

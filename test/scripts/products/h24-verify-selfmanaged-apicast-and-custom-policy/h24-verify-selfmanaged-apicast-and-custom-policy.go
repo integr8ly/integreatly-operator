@@ -208,6 +208,10 @@ func createNamespace(ctx context.Context, client k8sclient.Client) error {
 		}
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
+
 	//set namespace
 	command := "oc project " + apicastNamespace
 	err = runShellCommand(command)
@@ -382,6 +386,9 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 		}
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -465,6 +472,9 @@ func createApicastRoute(ctx context.Context, client k8sclient.Client, threeScale
 		}
 		return true, nil
 	})
+	if err != nil {
+		return "", err
+	}
 	routeHost := route.Spec.Host
 	log.Info("routeHost: " + routeHost)
 	return routeHost, nil
@@ -808,6 +818,9 @@ func cleanUpBeforeTest(ctx context.Context, serverClient k8sclient.Client) error
 			log.Info(apicastNamespace + " namespace deleted")
 			return true, nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

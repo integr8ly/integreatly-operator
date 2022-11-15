@@ -380,6 +380,9 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 		fmt.Sprintf("%s-api", baseName),
 		fmt.Sprintf("%s-api", baseName),
 	)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("  ✔️  Created Service ID: %s\n", serviceID)
 
 	if err = threescaleClient.CreateBackendUsage(accessToken,

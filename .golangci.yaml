@@ -4,7 +4,6 @@ output:
 
 linters:
   disable:
-    - ineffassign
     - unused
 
 issues:

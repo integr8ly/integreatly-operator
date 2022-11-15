@@ -72,7 +72,7 @@ type limitadorLimit struct {
 func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, client)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+		return phase, err
 	}
 
 	phase, err = r.reconcileDeployment(ctx, client, productConfig)
@@ -564,6 +564,9 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 
 	// Get limits from configuration
 	limitadorSetting, err := r.getLimitadorSetting(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	// If there are difference, delete the limits and delete a pod to reload the limits from the config map
 	if r.differentLimitSettings(limitadorLimitsInRedis, limitadorSetting) {
