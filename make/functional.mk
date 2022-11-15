@@ -13,7 +13,7 @@ image/external/build:
 	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) . -f Dockerfile.external -t $(INTEGREATLY_OPERATOR_TEST_EXTERNAL_IMAGE)
 
 .PHONY: image/external/push
-image/functional/push:
+image/external/push:
 	$(CONTAINER_ENGINE) push $(INTEGREATLY_OPERATOR_TEST_EXTERNAL_IMAGE)
 
 
