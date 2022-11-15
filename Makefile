@@ -28,9 +28,9 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
-ROLE_ARN ?= ''
-S3_ACCESS_KEY_ID ?= ''
-S3_SECRET_ACCESS_KEY ?= ''
+ROLE_ARN ?= 'arn:aws:iam::408612754352:role/s3-amp'
+S3_ACCESS_KEY_ID ?= 'REPLACEME'
+S3_SECRET_ACCESS_KEY ?= 'REPLACEME'
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -41,7 +41,7 @@ SANDBOX_NAMESPACE ?= sandbox-rhoam-operator
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.9.0
-RHOAM_TAG ?= 1.29.0
+RHOAM_TAG ?= 1.29.1
 
 export SKIP_FLAKES := true
 
