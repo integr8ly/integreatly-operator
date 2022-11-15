@@ -1,5 +1,6 @@
 DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 INTEGREATLY_OPERATOR_TEST_HARNESS_IMAGE ?= $(REG)/$(ORG)/integreatly-operator-test-harness:latest
+INTEGREATLY_OPERATOR_TEST_EXTERNAL_IMAGE ?= $(REG)/$(ORG)/integreatly-operator-test-external:latest
 
 .PHONY: image/functional/build
 image/functional/build:
@@ -9,7 +10,11 @@ image/functional/build:
 .PHONY: image/external/build
 image/external/build:
 	go mod vendor
-	docker build . -f Dockerfile.external 
+	$(CONTAINER_ENGINE) build --platform=$(CONTAINER_PLATFORM) . -f Dockerfile.external -t $(INTEGREATLY_OPERATOR_TEST_EXTERNAL_IMAGE)
+
+.PHONY: image/external/push
+image/functional/push:
+	$(CONTAINER_ENGINE) push $(INTEGREATLY_OPERATOR_TEST_EXTERNAL_IMAGE)
 
 
 .PHONY: image/functional/push
