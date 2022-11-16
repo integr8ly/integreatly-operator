@@ -144,13 +144,15 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // We are using ProjectRequests API to create namespaces where we automatically become admins
 // +kubebuilder:rbac:groups="";project.openshift.io,resources=projectrequests,verbs=create
 
+// +kubebuilder:rbac:groups=project.openshift.io,resources=projects,verbs=delete
+
 // Preflight check for existing installations of products
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;get;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=list;get;watch
-// +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs,verbs=list;get;watch
+// +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs,verbs=list;get;watch;update
 
 // We need to get console route for solution explorer
-// +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get
+// +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;update
 
 // Reconciling Fuse templates and image streams
 // +kubebuilder:rbac:groups=template.openshift.io,resources=templates,verbs=get;create;update;delete
@@ -174,8 +176,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // - Installation of product operators
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources;operatorgroups,verbs=create;list;get
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=update,resourceNames=rhmi-registry-cs
-// +kubebuilder:rbac:groups=operators.coreos.com,resources=installplans,verbs=update
-// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=update
+// +kubebuilder:rbac:groups=operators.coreos.com,resources=installplans,verbs=update;get
+// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=update;create
 
 // Monitoring resources not covered by namespace "admin" permissions
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors,verbs=get;list;create;update;delete
@@ -210,7 +212,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=*
 
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
-// +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch
+// +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch;create;update
 
 // For accessing limitador api from pod
 // +kubebuilder:rbac:groups="",resources=pods,verbs=create
@@ -244,6 +246,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=managed.openshift.io,resources=customdomains,verbs=list
 
 // +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
+
+// +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list
+
+// +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
 func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
