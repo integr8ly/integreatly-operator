@@ -29,7 +29,6 @@ type UserReconciler struct {
 // +kubebuilder:rbac:groups=user.openshift.io,resources=users,verbs=watch;get;list
 
 func (r *UserReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
 	log.Info("Reconciling User")
 
 	// new client to avoid caching issues

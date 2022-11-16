@@ -41,10 +41,6 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 					Namespace: obj.Namespace,
 				},
 			}
-			// err := sigsFakeClient.GetSigsClient().Create(ctx, obj)
-			// if err != nil {
-			// 	return err
-			// }
 			installPlanFor3ScaleSubscription.Namespace = obj.Namespace
 			// reset install plan
 			installPlanFor3ScaleSubscription.ResourceVersion = ""

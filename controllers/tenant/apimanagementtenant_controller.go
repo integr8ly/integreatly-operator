@@ -55,8 +55,6 @@ type TenantReconciler struct {
 }
 
 func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-
 	log.Info(fmt.Sprintf("TenantReconciler request: %s", request))
 
 	tenant, err := r.getAPIManagementTenant(request.Name, request.Namespace)
