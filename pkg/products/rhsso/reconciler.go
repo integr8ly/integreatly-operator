@@ -3,6 +3,12 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
+	"strconv"
+	"strings"
+	"time"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -43,12 +49,14 @@ var (
 	ssoType                   = "rhsso"
 	postgresResourceName      = "rhsso-postgres-rhmi"
 	routeName                 = "keycloak-edge"
+	lastPodRestart            = time.Now()
 )
 
 const (
-	SSOLabelKey   = "sso"
-	SSOLabelValue = "integreatly"
-	RHSSOProfile  = "RHSSO"
+	SSOLabelKey    = "sso"
+	SSOLabelValue  = "integreatly"
+	RHSSOProfile   = "RHSSO"
+	multiTenantCPU = 2000
 )
 
 type Reconciler struct {
@@ -280,9 +288,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 
 		if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+			cpu := strconv.Itoa(multiTenantCPU) + "m"
 			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("2000m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("2000m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse(cpu), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse(cpu), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 			}
 		} else {
 			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
@@ -417,7 +426,110 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		r.Log.Infof("Operation result", l.Fields{"keycloakuser": user.UserName, "result": or})
 	}
+
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		r.CheckCPUUsage(ctx, serverClient)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// This is a temporary work around to a known memory leak issue in Keycloak
+// The memory leak leads to a CPU spike and ultimately the Pod becoming unstable.
+// The instability can last for a prolonged period, several days, until OpenShift
+// eventually restarts the pod. To avoid the delayed restarting of the pod and therefore
+// the instability, we restart the pod proactively at the 75% limit
+// More background in this JIRA:
+// https://issues.redhat.com/browse/MGDAPI-4296
+func (r *Reconciler) CheckCPUUsage(ctx context.Context, serverClient k8sclient.Client) {
+
+	r.Log.Info("Checking CPU usage on keycloak pods")
+	ns := r.Config.GetNamespace()
+
+	// Get the stateful set and only proceed with this if all pods are in a ready state
+	// otherwise we can get in a state of continual deleting
+	ss := &appsv1.StatefulSet{}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      "keycloak",
+		Namespace: ns,
+	}, ss)
+	if err != nil {
+		r.Log.Error("Error getting stateful set", err)
+		return
+	}
+	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
+		r.Log.Infof("Not doing CPU check as replicas not ready", l.Fields{"Replicas:": *ss.Spec.Replicas, "Ready Replicas": ss.Status.ReadyReplicas})
+		return
+	}
+	if lastPodRestart.Add(time.Minute * 30).After(time.Now()) {
+		r.Log.Info("Not doing CPU check as the last pod deletion was less than 30 mins ago")
+		return
+	}
+
+	var kubeconfig, master string //empty, assuming inClusterConfig
+	config, err := clientcmd.BuildConfigFromFlags(master, kubeconfig)
+	if err != nil {
+		r.Log.Error("Error building config", err)
+		return
+	}
+
+	mc, err := metrics.NewForConfig(config)
+	if err != nil {
+		r.Log.Error("Error building metrics config", err)
+		return
+	}
+
+	podMetrics, err := mc.MetricsV1beta1().PodMetricses(ns).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		r.Log.Error("Error getting pod metrics", err)
+		return
+	}
+
+	if podMetrics == nil {
+		r.Log.Warning("No pod metrics found")
+		return
+	}
+
+	for _, podMetric := range podMetrics.Items {
+
+		r.Log.Infof("Found pod metrics", l.Fields{"pod": podMetric.Name})
+
+		podContainers := podMetric.Containers
+		for _, container := range podContainers {
+
+			if container.Usage != nil && container.Usage.Cpu() != nil {
+
+				cpuQuantityString := container.Usage.Cpu().String()
+				r.Log.Infof("Found keycloak container", l.Fields{"cpu": cpuQuantityString})
+
+				cpu := strings.TrimSuffix(cpuQuantityString, "m")
+
+				cpuInt, err := strconv.Atoi(cpu)
+				if err != nil {
+					r.Log.Error("Error converting cpu string to int", err)
+					continue
+				}
+
+				seventyFivePercent := int(multiTenantCPU * .75)
+				if cpuInt > seventyFivePercent {
+
+					r.Log.Infof("Restarting Pod with CPU > 75% limit", l.Fields{"pod": podMetric.Name})
+
+					if err := serverClient.Delete(ctx, &corev1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      podMetric.Name,
+							Namespace: ns,
+						},
+					}); err != nil {
+						r.Log.Errorf("Error deleting pod", l.Fields{"pod": podMetric.Name}, err)
+					}
+					lastPodRestart = time.Now()
+					// Return as we don't want to restart 2 pods at the same time
+					return
+				}
+			}
+		}
+	}
 }
 
 func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {

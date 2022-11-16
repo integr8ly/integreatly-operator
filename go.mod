@@ -62,6 +62,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/prometheus/common v0.37.0
+	k8s.io/metrics v0.20.6
 )
 
 require (
