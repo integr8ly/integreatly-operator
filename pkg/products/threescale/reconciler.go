@@ -3041,9 +3041,12 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		apiCastFilters,
 	)
 
+	// apicast runtime
+	apiCastRuntimes := ratelimit.CreateRuntimesResource()
+
 	// create envoy config for apicast
 	apiCastProxyConfig := ratelimit.NewEnvoyConfig(ApicastClusterName, r.Config.GetNamespace(), ApicastNodeID)
-	err = apiCastProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{apiCastClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{apiCastListenerResource}, installation)
+	err = apiCastProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{apiCastClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{apiCastListenerResource}, apiCastRuntimes, installation)
 	if err != nil {
 		r.log.Errorf("Failed to create envoyconfig for apicast", l.Fields{"APICast": ApicastClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -3069,9 +3072,12 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		backendFilters,
 	)
 
+	// backend runtimes
+	backendRuntimes := ratelimit.CreateRuntimesResource()
+
 	// create envoy config for backend listener
 	backendProxyConfig := ratelimit.NewEnvoyConfig(BackendClusterName, r.Config.GetNamespace(), BackendNodeID)
-	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{backendListenerResource}, installation)
+	err = backendProxyConfig.CreateEnvoyConfig(ctx, serverClient, []*envoyclusterv3.Cluster{backendClusterResource, ratelimitClusterResource}, []*envoylistenerv3.Listener{backendListenerResource}, backendRuntimes, installation)
 	if err != nil {
 		r.log.Errorf("Failed to create envoyconfig for backend-listener", l.Fields{"BackendListener": BackendClusterName}, err)
 		return integreatlyv1alpha1.PhaseFailed, err
