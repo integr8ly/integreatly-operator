@@ -318,15 +318,15 @@ create/olm/bundle:
 
 .PHONY: create/3scale/index
 create/3scale/index:
-	PRODUCT=3scale ./scripts/create-3scale-index.sh
+	PRODUCT=3scale ./scripts/create-product-index.sh
 
 .PHONY: create/rhsso/index
 create/rhsso/index:
-	PRODUCT=rhsso ./scripts/create-3scale-index.sh
+	PRODUCT=rhsso ./scripts/create-product-index.sh
 
 .PHONY: create/mcg/index
 create/mcg/index:
-	PRODUCT=mcg ./scripts/create-3scale-index.sh
+	PRODUCT=mcg ./scripts/create-product-index.sh
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
