@@ -1646,18 +1646,6 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				continue
 			}
 
-			err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
-			if err != nil {
-				r.log.Errorf("Error reconciling console link for the tenant account",
-					l.Fields{
-						"tenantAccountId":   account.Id,
-						"tenantAccountName": account.Name,
-					},
-					err,
-				)
-				continue
-			}
-
 			// Only add the ssoReady annotation if the tenant account's corresponding KeycloakUser and KeycloakClient CR's are ready.
 			// If not, continue to next account.
 			if kcUser.Status.Phase == keycloak.UserPhaseReconciled && kcClient.Status.Ready == true {
@@ -1673,6 +1661,20 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					)
 					continue
 				}
+
+				// Only add the dashboard link when account fully ready
+				err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
+				if err != nil {
+					r.log.Errorf("Error reconciling console link for the tenant account",
+						l.Fields{
+							"tenantAccountId":   account.Id,
+							"tenantAccountName": account.Name,
+						},
+						err,
+					)
+					continue
+				}
+
 			} else {
 				continue
 			}
