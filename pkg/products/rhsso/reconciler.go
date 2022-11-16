@@ -188,6 +188,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcileCsvDeploymentsPriority(
+		ctx,
+		serverClient,
+		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-001"),
+		r.Config.GetOperatorNamespace(),
+		installation.Spec.PriorityClassName,
+	)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile rhsso-operator csv deployments priority class name", err)
+		return phase, err
+	}
+
 	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon, routeName)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)

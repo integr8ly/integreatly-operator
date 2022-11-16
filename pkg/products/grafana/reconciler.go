@@ -154,6 +154,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcileCsvDeploymentsPriority(
+		ctx,
+		client,
+		fmt.Sprintf("grafana-operator.v%s", integreatlyv1alpha1.OperatorVersionGrafana),
+		r.Config.GetOperatorNamespace(),
+		r.installation.Spec.PriorityClassName,
+	)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana-operator csv deployments priority class name", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileComponents(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)

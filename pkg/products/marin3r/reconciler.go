@@ -3,7 +3,6 @@ package marin3r
 import (
 	"context"
 	"fmt"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -106,12 +105,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
-		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
-		}
+	threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
+	}
 
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		enabledNamespaces := []string{threescaleConfig.GetNamespace()}
 		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, client, enabledNamespaces...)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -186,6 +185,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
+		return phase, err
+	}
+
+	phase, err = r.ReconcileDeploymentPriority(
+		ctx,
+		client,
+		"marin3r-instance",
+		threescaleConfig.GetNamespace(),
+		r.installation.Spec.PriorityClassName,
+	)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, r.installation, phase, "Failed to reconcile marin3r-instance deployment priority class name", err)
+		return phase, err
+	}
+
+	phase, err = r.ReconcileCsvDeploymentsPriority(
+		ctx,
+		client,
+		fmt.Sprintf("marin3r.v%s", integreatlyv1alpha1.OperatorVersionMarin3r),
+		r.Config.GetOperatorNamespace(),
+		r.installation.Spec.PriorityClassName,
+	)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile marin3r csv deployments priority class name", err)
 		return phase, err
 	}
 

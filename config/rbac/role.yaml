@@ -108,6 +108,16 @@ rules:
   - apps
   resources:
   - deployments
+  - replicasets
+  - statefulsets
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
   - statefulsets
   verbs:
   - get
@@ -300,6 +310,7 @@ rules:
   - delete
   - get
   - list
+  - patch
   - update
 - apiGroups:
   - operators.coreos.com
@@ -452,15 +463,6 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/finalizers
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - update
 - apiGroups:
   - marin3r.3scale.net
   resources:

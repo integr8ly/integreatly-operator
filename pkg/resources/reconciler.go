@@ -6,7 +6,9 @@ import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	projectv1 "github.com/openshift/api/project/v1"
+	k8sappsv1 "k8s.io/api/apps/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -357,4 +359,35 @@ func IsOwnedBy(o metav1.Object, owner *integreatlyv1alpha1.RHMI) bool {
 		}
 	}
 	return false
+}
+
+func (r *Reconciler) ReconcileCsvDeploymentsPriority(ctx context.Context, client k8sclient.Client, csvName, csvNamespace, priorityClassName string) (integreatlyv1alpha1.StatusPhase, error) {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      csvName,
+			Namespace: csvNamespace,
+		},
+	}
+	mutateFn := func() error {
+		deployments := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs
+		for i := range deployments {
+			deployments[i].Spec.Template.Spec.PriorityClassName = priorityClassName
+		}
+		return nil
+	}
+	return k8s.PatchIfExists(ctx, client, mutateFn, csv)
+}
+
+func (r *Reconciler) ReconcileDeploymentPriority(ctx context.Context, client k8sclient.Client, deploymentName, deploymentNamespace, priorityClassName string) (integreatlyv1alpha1.StatusPhase, error) {
+	deployment := &k8sappsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploymentName,
+			Namespace: deploymentNamespace,
+		},
+	}
+	mutateFn := func() error {
+		deployment.Spec.Template.Spec.PriorityClassName = priorityClassName
+		return nil
+	}
+	return k8s.PatchIfExists(ctx, client, mutateFn, deployment)
 }

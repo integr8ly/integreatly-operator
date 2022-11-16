@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/utils"
+	k8sappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
 	"time"
@@ -641,4 +642,183 @@ func verifyNSLabelExistsAndIsTrue(client k8sclient.Client) (bool, bool, error) {
 		labelIsTrue = true
 	}
 	return labelExists, labelIsTrue, nil
+}
+
+func TestReconciler_ReconcileDeploymentPriority(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		mpm                marketplace.MarketplaceInterface
+		productDeclaration *marketplace.ProductDeclaration
+	}
+	type args struct {
+		ctx                 context.Context
+		client              k8sclient.Client
+		deploymentName      string
+		deploymentNamespace string
+		priorityClassName   string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name:   "success reconciling deployment priority",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				client: fakeclient.NewFakeClientWithScheme(scheme, &k8sappsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "deploymentName",
+						Namespace: "deploymentNamespace",
+					},
+				}),
+				deploymentName:      "deploymentName",
+				deploymentNamespace: "deploymentNamespace",
+				priorityClassName:   "priorityClassName",
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name:   "failure reconciling deployment priority",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				client: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+						return nil
+					},
+					PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
+						return fmt.Errorf("generic error")
+					},
+				},
+				deploymentName:      "deploymentName",
+				deploymentNamespace: "deploymentNamespace",
+				priorityClassName:   "priorityClassName",
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				mpm:                tt.fields.mpm,
+				productDeclaration: tt.fields.productDeclaration,
+			}
+			got, err := r.ReconcileDeploymentPriority(tt.args.ctx, tt.args.client, tt.args.deploymentName, tt.args.deploymentNamespace, tt.args.priorityClassName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReconcileDeploymentPriority() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ReconcileDeploymentPriority() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_ReconcileCsvDeploymentsPriority(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		mpm                marketplace.MarketplaceInterface
+		productDeclaration *marketplace.ProductDeclaration
+	}
+	type args struct {
+		ctx               context.Context
+		client            k8sclient.Client
+		csvName           string
+		csvNamespace      string
+		priorityClassName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name:   "success reconciling csv deployments priority",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.ClusterServiceVersion{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "csvName",
+						Namespace: "csvNamespace",
+					},
+					Spec: alpha1.ClusterServiceVersionSpec{
+						InstallStrategy: alpha1.NamedInstallStrategy{
+							StrategyName: "",
+							StrategySpec: alpha1.StrategyDetailsDeployment{
+								DeploymentSpecs: []alpha1.StrategyDeploymentSpec{
+									{
+										Spec: k8sappsv1.DeploymentSpec{
+											Template: corev1.PodTemplateSpec{
+												Spec: corev1.PodSpec{
+													PriorityClassName: "priorityClassName",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				csvName:           "csvName",
+				csvNamespace:      "csvNamespace",
+				priorityClassName: "priorityClassName",
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name:   "failure reconciling csv deployments priority",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				client: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+						return nil
+					},
+					PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
+						return fmt.Errorf("generic error")
+					},
+				},
+				csvName:           "csvName",
+				csvNamespace:      "csvNamespace",
+				priorityClassName: "priorityClassName",
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				mpm:                tt.fields.mpm,
+				productDeclaration: tt.fields.productDeclaration,
+			}
+			got, err := r.ReconcileCsvDeploymentsPriority(tt.args.ctx, tt.args.client, tt.args.csvName, tt.args.csvNamespace, tt.args.priorityClassName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReconcileCsvDeploymentsPriority() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ReconcileCsvDeploymentsPriority() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
