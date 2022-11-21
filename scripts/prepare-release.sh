@@ -253,10 +253,8 @@ if [[ "${OLM_TYPE}" == "multitenant-managed-api-service" ]]; then
  update_smtp_from
 fi
 
-# Move bundle.Dockerfile to the bundle folder for standard RHOAM
-if [[ "${OLM_TYPE}" == "managed-api-service" ]]; then
-  mv bundle.Dockerfile bundles/$OLM_TYPE/$VERSION
-fi
+# Move bundle.Dockerfile to the bundle folder
+mv bundle.Dockerfile bundles/$OLM_TYPE/$VERSION
 
 # Ensure code is formatted correctly
 "${GOFMT[@]}" -w `find . -type f -name '*.go' -not -path "./vendor/*"`
