@@ -5,6 +5,7 @@ products:
       - osd-post-upgrade
     targets:
       - 1.26.0
+      - 1.29.0
 estimate: 10m
 ---
 
