@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -741,7 +742,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							obj.(*corev1.Namespace).Labels = map[string]string{
-								"hive.openshift.io/managed": "true",
+								addon.RhoamAddonInstallManagedLabel: "true",
 							}
 							return nil
 						case *corev1.Secret:
@@ -774,7 +775,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
-							obj.(*corev1.Namespace).Labels = map[string]string{"hive.openshift.io/managed": "true"}
+							obj.(*corev1.Namespace).Labels = map[string]string{addon.RhoamAddonInstallManagedLabel: "true"}
 							return nil
 						case *corev1.Secret:
 							obj.(*corev1.Secret).Data = map[string][]byte{"SNITCH_URL": []byte("www.example.com")}
