@@ -326,6 +326,10 @@ create/rhsso-operator/index:
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
+	@ - oc new-project $(NAMESPACE_PREFIX)cloud-resources-operator
+	@oc label namespace $(NAMESPACE_PREFIX)cloud-resources-operator monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
+	@ - oc new-project $(NAMESPACE_PREFIX)3scale
+	@oc label namespace $(NAMESPACE_PREFIX)3scale monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 	@ - oc new-project $(NAMESPACE)
 	@oc label namespace $(NAMESPACE) monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 	@oc project $(NAMESPACE)
