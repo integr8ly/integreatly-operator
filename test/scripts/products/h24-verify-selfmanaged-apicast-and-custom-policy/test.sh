@@ -8,8 +8,8 @@
 #  If script executed in batch mode (-interactive-mode=false) - no input required, just to be logged as admin.
 
 go run h24-verify-selfmanaged-apicast-and-custom-policy.go \
--apicast-operator-version="0.5.0" \
--apicast-image-stream-tag="3scale2.11.0" \
+-apicast-operator-version="0.7.0-mas" \
+-apicast-image-stream-tag="3scale-mas" \
 -apicast-namespace="selfmanaged-apicast" \
 -use-customer-admin-user=true \
 -interactive-mode=false \
