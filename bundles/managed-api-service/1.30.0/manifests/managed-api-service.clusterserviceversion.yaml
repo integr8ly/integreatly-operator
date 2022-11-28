@@ -200,8 +200,10 @@ spec:
                 - services
                 - subscriptions
               verbs:
+                - create
                 - get
                 - list
+                - update
                 - watch
             - apiGroups:
                 - admissionregistration.k8s.io
@@ -240,13 +242,29 @@ spec:
                 - list
                 - watch
             - apiGroups:
+                - apps.3scale.net
+              resources:
+                - apimanagers
+              verbs:
+                - create
+                - get
+                - list
+                - update
+            - apiGroups:
                 - apps.openshift.io
               resources:
                 - deploymentconfigs
               verbs:
                 - get
                 - list
+                - update
                 - watch
+            - apiGroups:
+                - apps.openshift.io
+              resources:
+                - deploymentconfigs/instantiate
+              verbs:
+                - create
             - apiGroups:
                 - config.openshift.io
               resources:
@@ -404,13 +422,21 @@ spec:
               resources:
                 - installplans
               verbs:
+                - get
                 - update
             - apiGroups:
                 - operators.coreos.com
               resources:
                 - subscriptions
               verbs:
+                - create
                 - update
+            - apiGroups:
+                - project.openshift.io
+              resources:
+                - projects
+              verbs:
+                - delete
             - apiGroups:
                 - rbac.authorization.k8s.io
               resources:
@@ -426,6 +452,8 @@ spec:
                 - routes
               verbs:
                 - get
+                - list
+                - update
             - apiGroups:
                 - samples.operator.openshift.io
               resourceNames:
