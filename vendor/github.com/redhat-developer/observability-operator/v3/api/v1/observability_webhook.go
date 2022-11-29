@@ -37,8 +37,7 @@ func (in *Observability) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-// +kubebuilder:webhook:verbs=update,admissionReviewVersions=v1,sideEffects=None,path=/validate-observability-redhat-com-v1-observability,mutating=false,failurePolicy=fail,groups=observability.redhat.com,resources=observabilities,versions=v1,name=vobservability.kb.io
-
+// +kubebuilder:webhook:verbs=update,path=/validate-observability-redhat-com-v1-observability,mutating=false,failurePolicy=fail,groups=observability.redhat.com,resources=observabilities,versions=v1beta1,name=vobservability.kb.io
 var _ webhook.Validator = &Observability{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type

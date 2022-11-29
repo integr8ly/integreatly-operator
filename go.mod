@@ -45,7 +45,7 @@ require (
 	k8s.io/api v0.24.3
 	k8s.io/apiextensions-apiserver v0.24.3
 	k8s.io/apimachinery v0.24.3
-	k8s.io/client-go v0.24.3
+	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20220803164354-a70c9af30aea // indirect
 	k8s.io/utils v0.0.0-20220922133306-665eaaec4324
 	sigs.k8s.io/controller-runtime v0.12.3
@@ -213,3 +213,6 @@ replace github.com/redhat-developer/observability-operator/v3 => ../observabilit
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4895
 replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
+
+// Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
+replace k8s.io/client-go => k8s.io/client-go v0.24.3

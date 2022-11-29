@@ -1459,7 +1459,7 @@ k8s.io/apiserver/pkg/server/egressselector/metrics
 k8s.io/apiserver/pkg/util/feature
 k8s.io/apiserver/pkg/util/webhook
 k8s.io/apiserver/pkg/util/x509metrics
-# k8s.io/client-go v0.24.3
+# k8s.io/client-go v12.0.0+incompatible => k8s.io/client-go v0.24.3
 ## explicit; go 1.16
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -1729,3 +1729,4 @@ sigs.k8s.io/yaml
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 # github.com/redhat-developer/observability-operator/v3 => ../observability-operator
 # go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
+# k8s.io/client-go => k8s.io/client-go v0.24.3
