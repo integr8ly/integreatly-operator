@@ -200,7 +200,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name: "redhat-rhoam-operator",
 						Labels: map[string]string{
-							"hive.openshift.io/managed": "true",
+							RhoamAddonInstallManagedLabel: "true",
 						},
 					},
 				},
@@ -221,7 +221,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name: "redhat-rhoam-operator",
 						Labels: map[string]string{
-							"hive.openshift.io/managed": "false",
+							RhoamAddonInstallManagedLabel: "false",
 						},
 					},
 				},
@@ -260,7 +260,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 					ObjectMeta: v1.ObjectMeta{
 						Name: "redhat-rhoam-operator",
 						Labels: map[string]string{
-							"hive.openshift.io/managed": "true",
+							RhoamAddonInstallManagedLabel: "true",
 						},
 					},
 				},

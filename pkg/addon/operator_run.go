@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	hiveManagedLabel = "hive.openshift.io/managed"
+	RhoamAddonInstallManagedLabel = "rhoam.addon.install/managed"
 )
 
 // OperatorRunType is used to indicate how the operator is being currently
@@ -121,7 +121,7 @@ func OperatorIsHiveManaged(ctx context.Context, client k8sclient.Client, install
 	}
 
 	labels := ns.GetLabels()
-	value, ok := labels[hiveManagedLabel]
+	value, ok := labels[RhoamAddonInstallManagedLabel]
 	if ok {
 		if value == "true" {
 			logrus.Info("operator is hive managed")
