@@ -727,3 +727,48 @@ func TestReconciler_retrieveAPIServerURL(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_generateSecret(t *testing.T) {
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		length int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "Test you get a string of correct length",
+			args: args{
+				length: 32,
+			},
+			want: "V8bHJmLKToT1La4GHkKTVt1NlCECK7W8",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			if got := r.generateSecret(tt.args.length); len(got) != len(tt.want) {
+				t.Errorf("generateSecret() = %v, want %v", len(got), len(tt.want))
+			}
+		})
+	}
+}
