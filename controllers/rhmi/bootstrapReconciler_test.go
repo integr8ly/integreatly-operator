@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -767,6 +768,121 @@ func TestReconciler_generateSecret(t *testing.T) {
 			}
 			if got := r.generateSecret(tt.args.length); len(got) != len(tt.want) {
 				t.Errorf("generateSecret() = %v, want %v", len(got), len(tt.want))
+			}
+		})
+	}
+}
+
+func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	scheme, _ := utils.NewTestScheme()
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "successfully check cloud resources config",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: rhoamOperatorNs,
+					},
+				},
+			},
+			args: args{
+				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Name:       DefaultCloudResourceConfigName,
+						Namespace:  rhoamOperatorNs,
+						Finalizers: []string{previousDeletionFinalizer},
+					},
+				}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "successfully check cloud resources config with enabled useClusterStorage",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: rhoamOperatorNs,
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						UseClusterStorage: "true",
+					},
+				},
+			},
+			args: args{
+				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+					ObjectMeta: v1.ObjectMeta{
+						Name:       DefaultCloudResourceConfigName,
+						Namespace:  rhoamOperatorNs,
+						Finalizers: []string{previousDeletionFinalizer},
+					},
+				}),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "fail to check cloud resources config",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: rhoamOperatorNs,
+					},
+				},
+			},
+			args: args{
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("generic error")
+					}
+					return mockClient
+				}(),
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.checkCloudResourcesConfig(context.TODO(), tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("checkCloudResourcesConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("checkCloudResourcesConfig() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -278,7 +278,6 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			Namespace: r.installation.Namespace,
 		},
 	}
-
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
 		if cloudConfig.Data == nil {
 			cloudConfig.Data = map[string]string{}
@@ -295,6 +294,7 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 		}
+		cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
