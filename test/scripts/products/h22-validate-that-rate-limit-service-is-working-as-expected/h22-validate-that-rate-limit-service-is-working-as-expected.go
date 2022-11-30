@@ -213,7 +213,7 @@ func createRedis(ctx context.Context, client k8sclient.Client, namespace string)
 			done <- struct {
 				PodName string
 				Error   error
-			}{Error: errors.New("Redis created but Pod not found")}
+			}{Error: errors.New("redis created but Pod not found")}
 			break
 		}
 	}()

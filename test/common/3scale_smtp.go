@@ -380,7 +380,7 @@ func checkHostAddressIsReady(ctx *TestingContext, t TestingTB, retryInterval, ti
 	})
 	if err != nil {
 		//return fmt.Error("Number of replicas for threescale replicas is not correct : Replicas - %w, Expected")
-		return fmt.Errorf("Error, Host url not ready before timeout - %v", err)
+		return fmt.Errorf("error, Host url not ready before timeout - %v", err)
 	}
 	return nil
 
@@ -683,7 +683,7 @@ func createNamespace(ctx *TestingContext, t TestingTB) error {
 
 	_, err := ctx.KubeClient.CoreV1().Namespaces().Create(goctx.TODO(), nsSpec, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("Unable to create namespace : %v", err)
+		return fmt.Errorf("unable to create namespace : %v", err)
 	}
 
 	// Create deployement for smtp-server
@@ -725,7 +725,7 @@ func createNamespace(ctx *TestingContext, t TestingTB) error {
 
 	_, err = ctx.KubeClient.AppsV1().Deployments(testNamespace).Create(goctx.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("Unable to create deployment : %v", err)
+		return fmt.Errorf("unable to create deployment : %v", err)
 	}
 
 	// Create service for smtp-server
@@ -747,7 +747,7 @@ func createNamespace(ctx *TestingContext, t TestingTB) error {
 
 	_, err = ctx.KubeClient.CoreV1().Services(testNamespace).Create(goctx.TODO(), &service, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("Unable to create service : %v", err)
+		return fmt.Errorf("unable to create service : %v", err)
 	}
 	return nil
 }

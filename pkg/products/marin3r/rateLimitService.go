@@ -427,7 +427,7 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 
 	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
 	if err != nil && !k8sError.IsNotFound(err) {
-		return 0, fmt.Errorf("Error when getting the config map %w", err)
+		return 0, fmt.Errorf("error when getting the config map %w", err)
 	} else if k8sError.IsNotFound(err) {
 		configMap.Data = map[string]string{}
 		_, err = controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
@@ -435,13 +435,13 @@ func (r *RateLimitServiceReconciler) getLimitPerTenantFromConfigMap(client k8scl
 			return nil
 		})
 		if err != nil {
-			return 0, fmt.Errorf("Error when creating config map %w", err)
+			return 0, fmt.Errorf("error when creating config map %w", err)
 		}
 	}
 
 	limitPerTenant, err := strconv.ParseInt(configMap.Data[multitenantRateLimit], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("Error converting limit per tenant value %w", err)
+		return 0, fmt.Errorf("error converting limit per tenant value %w", err)
 	}
 
 	return uint32(limitPerTenant), nil
@@ -467,7 +467,7 @@ func (r *RateLimitServiceReconciler) getCurrentLimitPerTenant(client k8sclient.C
 
 	err := client.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: multitenantLimitConfigMap}, configMap)
 	if err != nil {
-		return "", fmt.Errorf("Error when getting the config map %w", err)
+		return "", fmt.Errorf("error when getting the config map %w", err)
 	}
 
 	currentLimit := configMap.Data[multitenantRateLimit]

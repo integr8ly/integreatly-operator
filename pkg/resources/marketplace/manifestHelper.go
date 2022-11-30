@@ -278,7 +278,7 @@ func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
 	r, _ := regexp.Compile(`[a-zA-Z]\.[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)($|\n)`)
 	matches := r.FindStringSubmatch(packageYaml)
 	if len(matches) < 5 {
-		return "", errors.New("Invalid csv version from manifest package")
+		return "", errors.New("invalid csv version from manifest package")
 	}
 
 	major, _ := strconv.Atoi(matches[1])

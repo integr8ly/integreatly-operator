@@ -700,7 +700,7 @@ func (tsc *threeScaleClient) AddAuthProviderToAccount(accessToken string, accoun
 		tsc,
 	)
 	if err != nil {
-		return fmt.Errorf("Error creating new authentication provider for %s tenant account: , %w", account.OrgName, err)
+		return fmt.Errorf("error creating new authentication provider for %s tenant account: , %w", account.OrgName, err)
 	}
 
 	if err := assertStatusCode(http.StatusCreated, res); err != nil {
@@ -745,7 +745,7 @@ func (tsc *threeScaleClient) DeleteTenants(accessToken string, accounts []Accoun
 	for _, account := range accounts {
 		err := tsc.DeleteTenant(accessToken, account.Id)
 		if err == nil {
-			return fmt.Errorf("Error deleting tenant: %s", account.Name)
+			return fmt.Errorf("error deleting tenant: %s", account.Name)
 		}
 	}
 	return nil

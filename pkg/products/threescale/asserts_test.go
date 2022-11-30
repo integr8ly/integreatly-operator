@@ -79,7 +79,7 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	// RHSSO integration should be configured.
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
-		return errors.New("Error getting RHSSO config")
+		return errors.New("error getting RHSSO config")
 	}
 	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)
 	if tsIsNotFoundError(err) {
@@ -105,7 +105,7 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 		return err
 	}
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
-		return fmt.Errorf("Service discovery config is misconfigured")
+		return fmt.Errorf("service discovery config is misconfigured")
 	}
 
 	if v1alpha1.IsRHOAMSingletenant(v1alpha1.InstallationType(t.args.installation.Spec.Type)) {
@@ -123,14 +123,14 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
 	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-app", metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Error getting deplymentconfig: %v", err)
+		return fmt.Errorf("error getting deplymentconfig: %v", err)
 	}
 	if sa.Status.LatestVersion == 1 {
 		return fmt.Errorf("system-app was not rolled out")
 	}
 	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-sidekiq", metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Error getting deplymentconfig: %v", err)
+		return fmt.Errorf("error getting deplymentconfig: %v", err)
 	}
 	if ssk.Status.LatestVersion == 1 {
 		return fmt.Errorf("system-sidekiq was not rolled out")

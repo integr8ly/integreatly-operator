@@ -333,7 +333,7 @@ func (r *ThreeScaleAPIClientImpl) GetUserId(username string) (string, error) {
 	})
 
 	if link == "" {
-		return "", fmt.Errorf("Failed to retrieve link to edit user")
+		return "", fmt.Errorf("failed to retrieve link to edit user")
 	}
 
 	userId := ""

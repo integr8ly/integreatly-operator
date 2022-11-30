@@ -219,7 +219,7 @@ func (oc *OpenshiftClient) DoOpenshiftPostRequest(path string, data []byte) (*ht
 	requestUrl := fmt.Sprintf("https://%s%s", oc.ApiUrl, path)
 	req, err := http.NewRequest(http.MethodPost, requestUrl, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("Error reading request: %w", err)
+		return nil, fmt.Errorf("error reading request: %w", err)
 	}
 
 	return oc.PerformRequest(req)

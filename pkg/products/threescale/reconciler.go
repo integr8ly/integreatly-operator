@@ -544,12 +544,12 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+		return "", fmt.Errorf("could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return "", fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return "", fmt.Errorf("could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	return string(clientSecretBytes), nil
 }
@@ -944,7 +944,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 
 	isSTS, err := sts.IsClusterSTS(ctx, serverClient, r.log)
 	if err != nil {
-		return nil, fmt.Errorf("Error checking STS mode: %w", err)
+		return nil, fmt.Errorf("error checking STS mode: %w", err)
 	}
 	addOnSecretNamespace := r.ConfigManager.GetOperatorNamespace()
 
@@ -957,7 +957,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 				if isSTS {
 					credentialKeyID, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3AccessKeyId)
 					if err != nil {
-						return fmt.Errorf("Error getting addon parameter %s: %w", sts.CredsS3AccessKeyId, err)
+						return fmt.Errorf("error getting addon parameter %s: %w", sts.CredsS3AccessKeyId, err)
 					}
 					if !found {
 						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3AccessKeyId, addon.DefaultSecretName)
@@ -970,7 +970,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 				if isSTS {
 					credentialSecretKey, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3SecretAccessKey)
 					if err != nil {
-						return fmt.Errorf("Error getting addon parameter %s: %w", sts.CredsS3SecretAccessKey, err)
+						return fmt.Errorf("error getting addon parameter %s: %w", sts.CredsS3SecretAccessKey, err)
 					}
 					if !found {
 						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3SecretAccessKey, addon.DefaultSecretName)
@@ -1515,7 +1515,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		)
 		accounts, err := r.tsClient.ListTenantAccounts(*accessToken, page)
 		if err != nil {
-			r.log.Error("Failed to get accounts from 3scale API:", err)
+			r.log.Error("failed to get accounts from 3scale API:", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		allAccounts = append(allAccounts, accounts...)
@@ -1750,7 +1750,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 			// Attempt a delete of Tenant to force re-entry !!!
 
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating tenant account: %s, Error=[%v]", account.OrgName, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating tenant account: %s, Error=[%v]", account.OrgName, err)
 		}
 
 		r.log.Infof("New tenant account created",
@@ -1784,7 +1784,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	)
 	err = r.tsClient.DeleteTenants(*accessToken, accountsToBeDeleted)
 	if err != nil {
-		r.log.Error("Error deleting tenant accounts:", err)
+		r.log.Error("error deleting tenant accounts:", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -1796,18 +1796,18 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 		err := r.removeTenantAccountPassword(ctx, serverClient, account)
 		if err != nil {
-			r.log.Errorf("Error deleting tenant account password",
+			r.log.Errorf("error deleting tenant account password",
 				l.Fields{
 					"tenantAccount": account,
 				},
 				err,
 			)
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error deleting tenant account password: %s, Error=[%v]", account.OrgName, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error deleting tenant account password: %s, Error=[%v]", account.OrgName, err)
 		}
 	}
 
 	if len(accountsToBeCreated) > 0 {
-		r.log.Infof("Returning in progess as there were accounts created and users need to be activated",
+		r.log.Infof("Returning in progress as there were accounts created and users need to be activated",
 			l.Fields{"totalAccountsCreated": len(accountsToBeCreated)},
 		)
 		return integreatlyv1alpha1.PhaseInProgress, nil
@@ -1844,7 +1844,7 @@ func getAccessTokenSecret(ctx context.Context, serverClient k8sclient.Client, na
 	}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: signUpAccountsSecret.Name, Namespace: signUpAccountsSecret.Namespace}, signUpAccountsSecret)
 	if !k8serr.IsNotFound(err) && err != nil {
-		return nil, fmt.Errorf("Error getting access token secret: %w", err)
+		return nil, fmt.Errorf("error getting access token secret: %w", err)
 	} else if k8serr.IsNotFound(err) {
 		signUpAccountsSecret.Data = map[string][]byte{}
 	}
@@ -1861,7 +1861,7 @@ func getAccountsCreatedCM(ctx context.Context, serverClient k8sclient.Client, na
 	}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: accountsCM.Name, Namespace: accountsCM.Namespace}, accountsCM)
 	if !k8serr.IsNotFound(err) && err != nil {
-		return nil, fmt.Errorf("Error getting accounts created configmap: %w", err)
+		return nil, fmt.Errorf("error getting accounts created configmap: %w", err)
 	} else if k8serr.IsNotFound(err) {
 		accountsCM.Data = map[string]string{}
 	}
@@ -2002,7 +2002,7 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 	secret, ok := oauthClientSecrets.Data[tenantID]
 	if !ok {
 		r.log.Errorf("could not find tenant key in secret", l.Fields{"tenant": tenantID, "secret": oauthClientSecrets.Name}, err)
-		return fmt.Errorf("Could not find %s key in %s Secret: %w", tenantID, oauthClientSecrets.Name, err)
+		return fmt.Errorf("could not find %s key in %s Secret: %w", tenantID, oauthClientSecrets.Name, err)
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, oauthClientSecrets, func() error {
@@ -2014,7 +2014,7 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
-		return fmt.Errorf("Error getting RHSSO config: %w", err)
+		return fmt.Errorf("error getting RHSSO config: %w", err)
 	}
 
 	r.log.Infof("Add auth provider to new account", l.Fields{"SignUpAccount": account})
@@ -2456,7 +2456,7 @@ func getGeneratedKeycloakUser(ctx context.Context, serverClient k8sclient.Client
 		}
 	}
 
-	return nil, fmt.Errorf("Genrated Keycloak user was not found")
+	return nil, fmt.Errorf("genrated Keycloak user was not found")
 }
 
 // tsUserIDInKc checks if a 3scale user ID is listed in the keycloak user attributes
@@ -2657,7 +2657,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling edit routes role %v: %w", editRoutesRole, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling edit routes role %v: %w", editRoutesRole, err)
 	}
 
 	// Bind the amq online service admin role to the dedicated-admins group
@@ -2685,7 +2685,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role binding %v: %w", editRoutesRoleBinding, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling service admin role binding %v: %w", editRoutesRoleBinding, err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -3121,7 +3121,7 @@ func (r *Reconciler) createBackendListenerProxyService(ctx context.Context, serv
 	backendRoute.Spec.To.Name = backendListenerService.Name
 	err = serverClient.Update(ctx, backendRoute)
 	if err != nil {
-		return fmt.Errorf("Error updating the backend-listener external route to the backend-listener proxy server: %v", err)
+		return fmt.Errorf("error updating the backend-listener external route to the backend-listener proxy server: %v", err)
 	}
 
 	r.log.Infof("Created service to rate limit external backend-listener route",
@@ -3137,7 +3137,7 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 		Name:      "backend",
 	}, backendRoute)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting the backend-listener external route: %v", err)
+		return nil, fmt.Errorf("error getting the backend-listener external route: %v", err)
 	}
 	return backendRoute, nil
 }
