@@ -54,8 +54,8 @@ cloud.google.com/go/storage v1.16.0/go.mod h1:ieKBmUyzcftN5tbxwnXClMKH00CfcQ+xL6
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/3scale-ops/marin3r v0.11.0 h1:qED8VTjAoTHcxq4RsGlzWBbW0ggbBF4beA4lx1UuVOg=
 github.com/3scale-ops/marin3r v0.11.0/go.mod h1:nXdvew/pGUwtBld3blL+HMoeW0KR2Jp8hDfSRMszDoM=
-github.com/3scale/3scale-operator v0.2.1-0.20221104110007-5c915e60e418 h1:9DOFtgL0E1lC0tpqcx/NXSYm7RrdjR0mPra3Y9MwMDU=
-github.com/3scale/3scale-operator v0.2.1-0.20221104110007-5c915e60e418/go.mod h1:enzyiDBAJWcRdoyXZ1Zrih8r/TRhmF+N+NdXGJuCrpc=
+github.com/3scale/3scale-operator v0.10.1-0.20221124111601-7d484662c79a h1:3FSJvEXNnMn6cRq5bxS6BP+MzCU9mps6iVfkkKmKxio=
+github.com/3scale/3scale-operator v0.10.1-0.20221124111601-7d484662c79a/go.mod h1:enzyiDBAJWcRdoyXZ1Zrih8r/TRhmF+N+NdXGJuCrpc=
 github.com/3scale/3scale-porta-go-client v0.7.0 h1:q0pDr+07H7t+7ng8jxwRVNZRTodpQyq+Cwy0ASxU4g8=
 github.com/3scale/3scale-porta-go-client v0.7.0/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/3scale/apicast-operator v0.0.0-20221027105137-6adddcc8c2b4 h1:5HBpOCpschJvKGtDXEjku6F9h0lO88sfLrDcjr6GbJI=

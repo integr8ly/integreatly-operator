@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/3scale-ops/marin3r v0.11.0
-	github.com/3scale/3scale-operator v0.2.1-0.20221104110007-5c915e60e418
+	github.com/3scale/3scale-operator v0.10.1-0.20221124111601-7d484662c79a
 	github.com/3scale/3scale-porta-go-client v0.7.0
 	github.com/3scale/apicast-operator v0.0.0-20221027105137-6adddcc8c2b4
 	github.com/Masterminds/semver v1.5.0
