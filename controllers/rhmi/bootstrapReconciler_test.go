@@ -787,7 +787,10 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 		ctx          context.Context
 		serverClient k8sclient.Client
 	}
-	scheme, _ := utils.NewTestScheme()
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -855,7 +858,7 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 			args: args{
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("generic error")
 					}
 					return mockClient
