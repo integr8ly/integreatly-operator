@@ -994,7 +994,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/observability-operator/v3 v3.0.16 => ../observability-operator
+# github.com/redhat-developer/observability-operator/v3 v3.0.16 => github.com/redhat-developer/observability-operator/v3 v3.0.17-0.20221201111910-2a918e074db6
 ## explicit; go 1.19
 github.com/redhat-developer/observability-operator/v3/api/v1
 # github.com/sirupsen/logrus v1.8.1
@@ -1727,6 +1727,6 @@ sigs.k8s.io/yaml
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 # github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
 # github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
-# github.com/redhat-developer/observability-operator/v3 => ../observability-operator
+# github.com/redhat-developer/observability-operator/v3 => github.com/redhat-developer/observability-operator/v3 v3.0.17-0.20221201111910-2a918e074db6
 # go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
 # k8s.io/client-go => k8s.io/client-go v0.24.3
