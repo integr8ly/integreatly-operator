@@ -51,6 +51,9 @@ func (oc *OpenshiftClient) ListPods(projectName string) (*corev1.PodList, error)
 	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	foundPods := &corev1.PodList{}
 	if err = json.Unmarshal(respBody, &foundPods); err != nil {
 		return nil, fmt.Errorf("error occurred while unmarshalling pod list: %w", err)
@@ -76,6 +79,9 @@ func (oc *OpenshiftClient) GetProject(projectName string) (*projectv1.Project, e
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	project := &projectv1.Project{}
 	if err := json.Unmarshal(respBody, project); err != nil {
 		return nil, fmt.Errorf("error occurred while unmarshalling project: %v", err)
@@ -93,6 +99,9 @@ func (oc *OpenshiftClient) ListProjects() (*projectv1.ProjectList, error) {
 	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	foundProjects := &projectv1.ProjectList{}
 	if err = json.Unmarshal(respBody, &foundProjects); err != nil {
 		return nil, fmt.Errorf("error occured while unmarshalling project list: %w", err)
@@ -210,7 +219,7 @@ func (oc *OpenshiftClient) DoOpenshiftPostRequest(path string, data []byte) (*ht
 	requestUrl := fmt.Sprintf("https://%s%s", oc.ApiUrl, path)
 	req, err := http.NewRequest(http.MethodPost, requestUrl, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("Error reading request: %w", err)
+		return nil, fmt.Errorf("error reading request: %w", err)
 	}
 
 	return oc.PerformRequest(req)

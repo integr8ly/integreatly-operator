@@ -213,7 +213,7 @@ func createRedis(ctx context.Context, client k8sclient.Client, namespace string)
 			done <- struct {
 				PodName string
 				Error   error
-			}{Error: errors.New("Redis created but Pod not found")}
+			}{Error: errors.New("redis created but Pod not found")}
 			break
 		}
 	}()
@@ -380,6 +380,9 @@ func createAPI(ctx context.Context, client k8sclient.Client, namespacePrefix, ba
 		fmt.Sprintf("%s-api", baseName),
 		fmt.Sprintf("%s-api", baseName),
 	)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("  ✔️  Created Service ID: %s\n", serviceID)
 
 	if err = threescaleClient.CreateBackendUsage(accessToken,

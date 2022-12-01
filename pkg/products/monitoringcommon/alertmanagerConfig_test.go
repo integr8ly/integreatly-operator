@@ -182,6 +182,9 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 
 	// generate alertmanager custom email template
 	testEmailConfigContents, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Errorf("Failed reading file: %v", err)
+	}
 
 	testEmailConfigContentsStr := string(testEmailConfigContents)
 	cluster_vars := map[string]string{
@@ -195,6 +198,9 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	}
 
 	testSecretData, err := templateUtil.LoadTemplate(config.AlertManagerConfigTemplatePath)
+	if err != nil {
+		t.Errorf("Failed loading template: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -353,6 +359,9 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 
 				// generate alertmanager custom email template
 				testEmailConfigContents, err := ioutil.ReadFile(path)
+				if err != nil {
+					return err
+				}
 
 				testEmailConfigContentsStr := string(testEmailConfigContents)
 				cluster_vars := map[string]string{

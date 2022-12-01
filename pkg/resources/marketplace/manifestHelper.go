@@ -181,6 +181,9 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 // GetCrdDetails reads the crd file
 func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
 	yamlFile, err := ioutil.ReadFile(filepath.Clean(currentFolder + string(os.PathSeparator) + f.Name()))
+	if err != nil {
+		fmt.Printf("Error reading file: %s\n", err)
+	}
 
 	err = yaml.Unmarshal(yamlFile, &crdConfig)
 	if err != nil {
@@ -275,7 +278,7 @@ func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
 	r, _ := regexp.Compile(`[a-zA-Z]\.[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)($|\n)`)
 	matches := r.FindStringSubmatch(packageYaml)
 	if len(matches) < 5 {
-		return "", errors.New("Invalid csv version from manifest package")
+		return "", errors.New("invalid csv version from manifest package")
 	}
 
 	major, _ := strconv.Atoi(matches[1])

@@ -173,6 +173,9 @@ func updateAPIManager(dynClient *TestingContext, replicas map[string]int64) (thr
 		Namespace(GetPrefixedNamespace("3scale")).
 		RequestURI(requestURL3scale).Body(replicaBytes).Do(goctx.TODO())
 	_, err := request.Raw()
+	if err != nil {
+		return threescalev1.APIManager{}, err
+	}
 
 	apim, err := getAPIManager(dynClient.Client)
 	if err != nil {

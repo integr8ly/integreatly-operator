@@ -97,6 +97,9 @@ func TestImplicitCatalogSourceReconcile(t *testing.T) {
 				tc.Log,
 				tc.FakeClient,
 			)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
 
 			_, err = testReconciler.Reconcile(context.TODO(), "3scale")
 

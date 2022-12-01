@@ -198,6 +198,9 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 
 	// Parse the html to get a link back to the created service
 	doc, err := ParseHtmlResponse(resp)
+	if err != nil {
+		return "", err
+	}
 	selector := doc.Find("a.pf-c-nav__link")
 	if selector.Length() == 0 {
 		return "", errors.New("unable to retrieve service id")
@@ -330,7 +333,7 @@ func (r *ThreeScaleAPIClientImpl) GetUserId(username string) (string, error) {
 	})
 
 	if link == "" {
-		return "", fmt.Errorf("Failed to retrieve link to edit user")
+		return "", fmt.Errorf("failed to retrieve link to edit user")
 	}
 
 	userId := ""

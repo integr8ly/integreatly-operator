@@ -233,6 +233,9 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 
 		var foundRoute *routev1.Route
 		user, err := r.getUserByTenantNamespace(tenant.Namespace)
+		if err != nil {
+			return tenantUrlReconciled, err
+		}
 		for i := range routes.Items {
 			rt := routes.Items[i]
 			if strings.Contains(rt.Spec.Host, user.Name) {
@@ -249,6 +252,9 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 			}
 			// Update the value of lastError to reflect the user's SSO not being ready
 			err = r.updateLastError(tenant, fmt.Sprintf("waiting for route creation for tenant %s", tenant.Name))
+			if err != nil {
+				return tenantUrlReconciled, err
+			}
 			return tenantUrlReconciled, nil
 		}
 
@@ -263,6 +269,9 @@ func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTena
 			}
 			// Update the value of lastError to reflect the user's SSO not being ready
 			err = r.updateLastError(tenant, fmt.Sprintf("waiting for SSO for user %s to be ready", user.Name))
+			if err != nil {
+				return tenantUrlReconciled, err
+			}
 			return tenantUrlReconciled, nil
 		}
 

@@ -141,7 +141,6 @@ func getCSVfromCM(csvStr *string, resourceStr string) (*olmv1alpha1.ClusterServi
 		return nil, nil
 	}
 
-	csvStr = &resourceStr
 	// Encode the unstructured CSV as Json to decode it back to the
 	// structured object
 	resourceJSON, err := resource.MarshalJSON()

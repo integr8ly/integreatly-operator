@@ -185,7 +185,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileCloudResourceStrategies(client)
 	if err != nil {
-		phase := integreatlyv1alpha1.PhaseFailed
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
 		return phase, err
 	}

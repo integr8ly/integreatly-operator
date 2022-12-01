@@ -304,6 +304,9 @@ func dumpResponse(r *http.Response) string {
 		if selection.Length() == 1 {
 			var b bytes.Buffer
 			err = html.Render(&b, selection.Nodes[0])
+			if err != nil {
+				msg += "html reader failed"
+			}
 			msg += b.String()
 		}
 	}

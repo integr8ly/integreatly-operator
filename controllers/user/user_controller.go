@@ -37,6 +37,9 @@ func (r *UserReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	restConfig.Timeout = time.Second * 10
 	scheme := runtime.NewScheme()
 	err := rhmiv1alpha1.AddToSchemes.AddToScheme(scheme)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	c, _ := k8sclient.New(restConfig, k8sclient.Options{Scheme: scheme})
 	ctx := context.TODO()

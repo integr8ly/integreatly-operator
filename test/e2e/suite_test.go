@@ -100,6 +100,7 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, err := common.NewTestingContext(cfg)
+		Expect(err).NotTo(HaveOccurred())
 
 		// wait for operator deployment to deploy
 		err = waitForProductDeployment(ctx.KubeClient, "", "rhmi-operator")
@@ -151,6 +152,7 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 
 	ctx, err := common.NewTestingContext(cfg)
+	Expect(err).NotTo(HaveOccurred())
 
 	artifactsDir := os.Getenv(artifactsDirEnv)
 	if failed && artifactsDir != "" {
@@ -172,7 +174,7 @@ func waitForInstallationStageCompletion(k8sClient client.Client, retryInterval, 
 
 		installation, err := common.GetRHMI(k8sClient, false)
 		if installation == nil {
-			return false, fmt.Errorf("Waiting for availability of rhmi installation %s", err)
+			return false, fmt.Errorf("waiting for availability of rhmi installation %s", err)
 		}
 
 		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[rhmiv1alpha1.StageName(phase)].Phase)

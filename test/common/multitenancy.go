@@ -1041,6 +1041,9 @@ func createTestingUserApiManagementTenantCR(t TestingTB, testUserName string, te
 		}
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	tenantCR := &integreatlyv1alpha1.APIManagementTenant{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1095,8 +1098,8 @@ func getQuarkusPod(ctx *TestingContext) (*corev1.Pod, error) {
 
 func createPortaClient(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI, username string) (*portaclient.ThreeScaleClient, error) {
 	// If username == "master", then function call is requesting the master portaClient which needs the master accessToken
-	var accessToken = ""
-	var admRoutePrefix = ""
+	var accessToken string
+	var admRoutePrefix string
 	if username == "master" {
 		// Get access token for portaClient
 		s := &corev1.Secret{

@@ -332,6 +332,9 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 
 		return nil
 	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed create or update redis secret: %w", err)
+	}
 
 	phase, err := resources.ReconcileRedisAlerts(ctx, client, r.installation, rateLimitRedis, r.log)
 	if err != nil {
