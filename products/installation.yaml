@@ -60,7 +60,8 @@ products:
         channel: threescale-mas
         installFrom: index
         package: 3scale-operator
-        index: quay.io/integreatly/3scale-index:v0.10.0-mas
+        # temp solution for 4.12
+        index: quay.io/mstoklus/3scale-index:0.11.0
     cloud-resources:
         channel: rhmi
         installFrom: index
@@ -78,7 +79,7 @@ products:
         channel: alpha
         installFrom: index
         package: observability-operator
-        # tmp solution
+        # tmp solution for 4.12
         index: quay.io/mstoklus/observability-operator-index:v4.0.4
     rhsso:
         channel: stable
