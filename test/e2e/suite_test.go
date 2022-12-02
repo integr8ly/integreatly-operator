@@ -118,21 +118,15 @@ var _ = BeforeSuite(func() {
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "rhsso-operator")
 		Expect(err).NotTo(HaveOccurred())
 
-		//Product Stage - verify operators deploy
-		products := map[string]string{
-			"3scale":   "threescale-operator-controller-manager-v2",
-			"user-sso": "rhsso-operator",
-		}
-		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-			products = map[string]string{
-				"3scale": "threescale-operator-controller-manager-v2",
-			}
-		}
-
-		for product, deploymentName := range products {
-			err = waitForProductDeployment(ctx.KubeClient, product, deploymentName)
+		if !rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
+			// wait for keycloak-operator (user sso) to deploy
+			err = waitForProductDeployment(ctx.KubeClient, "user-sso", "rhsso-operator")
 			Expect(err).NotTo(HaveOccurred())
 		}
+
+		// wait for 3scale to deploy
+		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.Product3Scale), "threescale-operator-controller-manager-v2")
+		Expect(err).NotTo(HaveOccurred())
 
 		// wait for installation phase to complete (40 minutes timeout)
 		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
