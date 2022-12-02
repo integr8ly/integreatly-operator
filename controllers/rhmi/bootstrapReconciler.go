@@ -435,11 +435,11 @@ func (r *Reconciler) reconcileOauthSecretData(ctx context.Context, serverClient 
 			r.log.Error("Error getting oauth client secret", err)
 			return err
 		} else if k8serr.IsNotFound(err) {
-			oauthClientSecret.Data[key] = []byte(generateSecret(32))
+			oauthClientSecret.Data[key] = []byte(r.generateSecret(32))
 		} else {
 			// recover secret from existing OAuthClient object in case Secret object was deleted
 			oauthClientSecret.Data[key] = []byte(oauthClient.Secret)
-			r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"key": key})
+			r.log.Warningf("OAuth client secret recovered from OAuthClient object", l.Fields{"key": key})
 		}
 	}
 	return nil
@@ -476,6 +476,13 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 			oauthClientSecrets.Data = map[string][]byte{}
 		}
 		for _, product := range productsList {
+			// ugly check the first char is the same as the next three to remove duplicate string if it is, would like a better way to do this
+			// this can be removed again after a successful upgrade using this version
+			buf := oauthClientSecrets.Data[string(product)]
+			if buf != nil && buf[0] == buf[1] && buf[0] == buf[2] && buf[0] == buf[3] {
+				oauthClientSecrets.Data[string(product)] = []byte(r.generateSecret(32))
+			}
+
 			if _, ok := oauthClientSecrets.Data[string(product)]; !ok {
 				oauthClient := &oauthv1.OAuthClient{
 					ObjectMeta: metav1.ObjectMeta{
@@ -486,11 +493,13 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 				if !k8serr.IsNotFound(err) && err != nil {
 					return err
 				} else if k8serr.IsNotFound(err) {
-					oauthClientSecrets.Data[string(product)] = []byte(generateSecret(32))
+					oauthClientSecrets.Data[string(product)] = []byte(r.generateSecret(32))
 				} else {
+
 					// recover secret from existing OAuthClient object in case Secret object was deleted
 					oauthClientSecrets.Data[string(product)] = []byte(oauthClient.Secret)
-					r.log.Warningf("OAuth client secret recovered from OAutchClient object", l.Fields{"product": string(product)})
+					r.log.Warningf("OAuth client secret recovered from OAuthClient object", l.Fields{"product": string(product)})
+
 				}
 			}
 		}
@@ -641,11 +650,14 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 
 }
 
-func generateSecret(length int) string {
+func (r *Reconciler) generateSecret(length int) string {
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
-	rnd, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 	buf := make([]rune, length)
 	for i := range buf {
+		rnd, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			r.log.Error("error generating client secret: ", err)
+		}
 		buf[i] = chars[rnd.Int64()]
 	}
 	return string(buf)
