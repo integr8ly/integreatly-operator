@@ -15,7 +15,6 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +91,7 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	return ns, err
 }
 
-func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, addRHMIMonitoringLabels, addClusterMonitoringLabel, disableUserAlerting bool) (*v1.Namespace, error) {
+func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, addRHMIMonitoringLabels, addClusterMonitoringLabel, disableUserAlerting bool) (*corev1.Namespace, error) {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,

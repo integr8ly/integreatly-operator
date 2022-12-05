@@ -13,7 +13,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	appsv1alpha1 "github.com/3scale/apicast-operator/pkg/apis/apps/v1alpha1"
+	appsv1alpha1 "github.com/3scale/apicast-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
 	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"

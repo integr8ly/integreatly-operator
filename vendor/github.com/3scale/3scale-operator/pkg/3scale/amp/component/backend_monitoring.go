@@ -5,9 +5,9 @@ import (
 
 	"github.com/3scale/3scale-operator/pkg/assets"
 	"github.com/3scale/3scale-operator/pkg/common"
-	"github.com/coreos/prometheus-operator/pkg/apis/monitoring"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	"github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -50,11 +50,11 @@ func (backend *Backend) BackendWorkerPodMonitor() *monitoringv1.PodMonitor {
 	}
 }
 
-func (backend *Backend) BackendGrafanaDashboard() *grafanav1alpha1.GrafanaDashboard {
+func (backend *Backend) BackendGrafanaDashboard(sumRate string) *grafanav1alpha1.GrafanaDashboard {
 	data := &struct {
-		Namespace string
+		Namespace, SumRate string
 	}{
-		backend.Options.Namespace,
+		backend.Options.Namespace, sumRate,
 	}
 	return &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -63,7 +63,6 @@ func (backend *Backend) BackendGrafanaDashboard() *grafanav1alpha1.GrafanaDashbo
 		},
 		Spec: grafanav1alpha1.GrafanaDashboardSpec{
 			Json: assets.TemplateAsset("monitoring/backend-grafana-dashboard-1.json.tpl", data),
-			Name: fmt.Sprintf("%s/backend-grafana-dashboard-1.json", backend.Options.Namespace),
 		},
 	}
 }
@@ -86,6 +85,7 @@ func (backend *Backend) BackendWorkerPrometheusRules() *monitoringv1.PrometheusR
 						{
 							Alert: "ThreescaleBackendWorkerJobsCountRunningHigh",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleBackendWorkerJobsCountRunningHighURL,
 								"summary":     "{{$labels.container_name}} replica controller on {{$labels.namespace}}: Has more than 10000 jobs processed in the last 5 minutes",
 								"description": "{{$labels.container_name}} replica controller on {{$labels.namespace}} project: Has more than 1000 jobs processed in the last 5 minutes",
 							},
@@ -98,6 +98,7 @@ func (backend *Backend) BackendWorkerPrometheusRules() *monitoringv1.PrometheusR
 						{
 							Alert: "ThreescaleBackendWorkerJobDown",
 							Annotations: map[string]string{
+								"sop_url":     ThreescalePrometheusJobDownURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 							},
@@ -132,6 +133,7 @@ func (backend *Backend) BackendListenerPrometheusRules() *monitoringv1.Prometheu
 						{
 							Alert: "ThreescaleBackendListener5XXRequestsHigh",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleBackendListener5XXRequestsHighURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} has more than 5000 HTTP 5xx requests in the last 5 minutes",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} has more than 5000 HTTP 5xx requests in the last 5 minutes",
 							},
@@ -144,6 +146,7 @@ func (backend *Backend) BackendListenerPrometheusRules() *monitoringv1.Prometheu
 						{
 							Alert: "ThreescaleBackendListenerJobDown",
 							Annotations: map[string]string{
+								"sop_url":     ThreescalePrometheusJobDownURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 							},

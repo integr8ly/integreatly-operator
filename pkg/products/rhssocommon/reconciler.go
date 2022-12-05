@@ -27,10 +27,10 @@ import (
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/record"
@@ -42,6 +42,7 @@ var (
 	idpAlias        = "openshift-v4"
 	manifestPackage = "integreatly-rhsso"
 	podMonitorName  = "keycloak-pod-monitor"
+	keycloakPDBName = "keycloak"
 )
 
 type Reconciler struct {
@@ -84,7 +85,7 @@ func SetNameSpaces(installation *integreatlyv1alpha1.RHMI, config *config.RHSSOC
 	}
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
 	return &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "sso",
@@ -796,4 +797,39 @@ func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion,
 
 func removeRule(slice []monitoringv1.Rule, s int) []monitoringv1.Rule {
 	return append(slice[:s], slice[s+1:]...)
+}
+
+func (r *Reconciler) ReconcilePodDisruptionBudget(ctx context.Context, apiClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+
+	pdb := &policyv1.PodDisruptionBudget{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PodDisruptionBudget",
+			APIVersion: "policy/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakPDBName,
+			Namespace: productNamespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, apiClient, pdb, func() error {
+		pdb.Spec = policyv1.PodDisruptionBudgetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"component": keycloakPDBName},
+			},
+			MaxUnavailable: &intstr.IntOrString{IntVal: 1},
+		}
+
+		pdb.ObjectMeta.Labels = map[string]string{
+			"app": keycloakPDBName,
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

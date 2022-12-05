@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -123,7 +123,7 @@ func TestCPaaSSubscription(t *testing.T) {
 		Name          string
 		ExpectedFound bool
 		ExpectedError bool
-		Client        client.Client
+		Client        k8sclient.Client
 	}{
 		{
 			Name:          "test CPaaS subscription exists",
@@ -148,7 +148,7 @@ func TestCPaaSSubscription(t *testing.T) {
 			ExpectedFound: false,
 			ExpectedError: true,
 			Client: &clientMock.SigsClientInterfaceMock{
-				ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+				ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 					return genericError
 				},
 			},
@@ -187,7 +187,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 		Name          string
 		ExpectedError bool
 		HiveManaged   bool
-		Client        client.Client
+		Client        k8sclient.Client
 		Installation  *integreatlyv1alpha1.RHMI
 	}{
 		{
@@ -296,7 +296,7 @@ func TestInferOperatorRunType(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		client       client.Client
+		client       k8sclient.Client
 		installation *integreatlyv1alpha1.RHMI
 	}
 	tests := []struct {
@@ -310,7 +310,7 @@ func TestInferOperatorRunType(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return genericError
 					},
 				},
@@ -407,7 +407,7 @@ func TestOperatorInstalledViaOLM(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		client       client.Client
+		client       k8sclient.Client
 		installation *integreatlyv1alpha1.RHMI
 	}
 	tests := []struct {
@@ -421,7 +421,7 @@ func TestOperatorInstalledViaOLM(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return genericError
 					},
 				},
@@ -480,7 +480,7 @@ func TestGetCatalogSource(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		client       client.Client
+		client       k8sclient.Client
 		installation *integreatlyv1alpha1.RHMI
 	}
 	tests := []struct {
@@ -494,7 +494,7 @@ func TestGetCatalogSource(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return genericError
 					},
 				},

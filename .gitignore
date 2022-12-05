@@ -8,7 +8,6 @@ perf-test-start-time.txt
 perf-test-end-time.txt
 # Temporary Build Files
 tmp/_output/bin/managed-api-service
-debug
 build/_output
 build/_test
 test-results

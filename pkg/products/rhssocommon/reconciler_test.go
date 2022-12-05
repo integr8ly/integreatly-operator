@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	policyv1 "k8s.io/api/policy/v1"
+
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "k8s.io/api/apps/v1"
@@ -121,7 +123,7 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			installation: &integreatlyv1alpha1.RHMI{},
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -1079,7 +1081,7 @@ func TestReconciler_SetRollingStrategyForUpgrade(t *testing.T) {
 					"VERSION": "7.4",
 				}},
 				productVersion: integreatlyv1alpha1.ProductVersion("8.4"),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return fmt.Errorf("GetError")
 				}},
 				keycloakName: keycloakName,
@@ -1901,4 +1903,122 @@ func kcAlertHasNotBeenRemovedorUpdated(existingRules *monitoringv1.PrometheusRul
 	}
 
 	return true
+}
+
+func TestReconciler_ReconcilePodDisruptionBudget(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name        string
+		fakeClient  k8sclient.Client
+		want        integreatlyv1alpha1.StatusPhase
+		wantErr     bool
+		expectedPDB policyv1.PodDisruptionBudget
+	}{
+		{
+			name:       "pdb created correctly created when initially not present",
+			fakeClient: moqclient.NewSigsClientMoqWithScheme(scheme),
+			wantErr:    false,
+			want:       integreatlyv1alpha1.PhaseCompleted,
+			expectedPDB: policyv1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": keycloakPDBName,
+					},
+				},
+				Spec: policyv1.PodDisruptionBudgetSpec{
+					MaxUnavailable: &intstr.IntOrString{IntVal: 1},
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"component": keycloakPDBName},
+					},
+				},
+			},
+		},
+		{
+			name: "pdb updated correctly created when present with wrong values",
+			fakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &policyv1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      keycloakPDBName,
+					Namespace: defaultNamespace,
+					Labels: map[string]string{
+						"app": "wrong value",
+					},
+				},
+				Spec: policyv1.PodDisruptionBudgetSpec{
+					MaxUnavailable: &intstr.IntOrString{IntVal: 1},
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"component": "wrong value"},
+					},
+				},
+			}),
+			wantErr: false,
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			expectedPDB: policyv1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": keycloakPDBName,
+					},
+				},
+				Spec: policyv1.PodDisruptionBudgetSpec{
+					MaxUnavailable: &intstr.IntOrString{IntVal: 1},
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"component": keycloakPDBName},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Log: getLogger(),
+			}
+
+			got, err := r.ReconcilePodDisruptionBudget(context.TODO(), tt.fakeClient, defaultNamespace)
+
+			if err != nil {
+				t.Errorf("ReconcilePodDisruptionBudget() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("ReconcilePodDisruptionBudget() got = %v, want %v", got, tt.want)
+			}
+
+			pdb, err := retrievePdb(tt.fakeClient)
+			if err != nil {
+				t.Errorf("ReconcilePodDisruptionBudget() failed to retrieve pdbs")
+			}
+
+			MaxUnavailableOnCluster := *pdb.Spec.MaxUnavailable
+			MaxUnavailableExpected := *tt.expectedPDB.Spec.MaxUnavailable
+
+			if MaxUnavailableOnCluster != MaxUnavailableExpected {
+				t.Errorf("ReconcilePodDisruptionBudget() MaxUnavailable does not match: got = %v, want %v", pdb.Spec.MaxUnavailable, tt.expectedPDB.Spec.MaxUnavailable)
+			}
+
+			if value, ok := pdb.ObjectMeta.Labels["app"]; !ok {
+				t.Errorf("ReconcilePodDisruptionBudget() 'app' label does exist")
+			} else {
+				if value != keycloakPDBName {
+					t.Errorf("ReconcilePodDisruptionBudget() component label value is wrong")
+				}
+			}
+
+		})
+	}
+}
+
+func retrievePdb(client k8sclient.Client) (*policyv1.PodDisruptionBudget, error) {
+	pdb := &policyv1.PodDisruptionBudget{}
+
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: keycloakPDBName, Namespace: defaultNamespace}, pdb)
+	if err != nil {
+		return pdb, err
+	}
+
+	return pdb, nil
 }

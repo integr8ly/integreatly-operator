@@ -70,13 +70,13 @@ var (
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionMonitoring     ProductVersion = "1.8.0"
 	Version3Scale         ProductVersion = "2.12.1"
-	VersionCloudResources ProductVersion = "0.41.0"
+	VersionCloudResources ProductVersion = "0.42.0"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMonitoringSpec ProductVersion = "1.0"
-	VersionMarin3r        ProductVersion = "0.10.0"
+	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "3.0.16"
+	VersionObservability  ProductVersion = "4.0.4"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -87,12 +87,12 @@ var (
 	OperatorVersionRHSSO      OperatorVersion = "7.6.1-3"
 	OperatorVersionRHSSOUser  OperatorVersion = "7.6.1-3"
 
-	OperatorVersion3Scale         OperatorVersion = "0.10.0-mas"
-	OperatorVersionCloudResources OperatorVersion = "0.41.0"
+	OperatorVersion3Scale         OperatorVersion = "0.11.0-mas"
+	OperatorVersionCloudResources OperatorVersion = "0.42.0"
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
-	OperatorVersionMarin3r        OperatorVersion = "0.10.0"
+	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "3.0.16"
+	OperatorVersionObservability  OperatorVersion = "4.0.4"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

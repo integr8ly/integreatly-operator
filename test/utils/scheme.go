@@ -24,8 +24,8 @@ import (
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -36,6 +36,7 @@ import (
 func NewTestScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
+		policyv1.AddToScheme,
 		corev1.AddToScheme,
 		appsv1.AddToScheme,
 		threescaleAppsv1.AddToScheme,
@@ -53,7 +54,6 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		openshiftappsv1.Install,
 		rbacv1.AddToScheme,
 		batchv1.AddToScheme,
-		batchv1beta1.AddToScheme,
 		configv1.Install,
 		grafanav1alpha1.AddToScheme,
 		consolev1.Install,

@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -265,7 +264,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			name: "fails when alert manager route fails to be retrieved",
 			serverClient: func() k8sclient.Client {
 				return &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("test")
 					},
 				}

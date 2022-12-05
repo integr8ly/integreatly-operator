@@ -30,7 +30,6 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -79,7 +78,7 @@ type Interface interface {
 	//
 	//For example, codeready looks for a deployment in the scanned namespace with the name "codeready", if found this
 	//installation will stall until that product is removed.
-	GetPreflightObject(ns string) runtime.Object
+	GetPreflightObject(ns string) k8sclient.Object
 
 	//VerifyVersion checks if the version of the product installed is the same as the one defined in the operator
 	//
@@ -195,7 +194,7 @@ func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *inte
 	return integreatlyv1alpha1.PhaseNone, nil
 }
 
-func (n *NoOp) GetPreflightObject(_ string) runtime.Object {
+func (n *NoOp) GetPreflightObject(_ string) k8sclient.Object {
 	return &appsv1.Deployment{}
 }
 

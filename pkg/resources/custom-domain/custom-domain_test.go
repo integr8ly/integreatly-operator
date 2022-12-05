@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"net"
 	"reflect"
@@ -416,7 +415,7 @@ func TestGetIngressRouterService(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() client.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
 						return errors.New("generic error")
 					}
 					return mockClient

@@ -7,7 +7,6 @@ import (
 	"context"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
@@ -22,7 +21,7 @@ var _ Interface = &InterfaceMock{}
 //
 // 		// make and configure a mocked Interface
 // 		mockedInterface := &InterfaceMock{
-// 			GetPreflightObjectFunc: func(ns string) runtime.Object {
+// 			GetPreflightObjectFunc: func(ns string) k8sclient.Object {
 // 				panic("mock out the GetPreflightObject method")
 // 			},
 // 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
@@ -39,7 +38,7 @@ var _ Interface = &InterfaceMock{}
 // 	}
 type InterfaceMock struct {
 	// GetPreflightObjectFunc mocks the GetPreflightObject method.
-	GetPreflightObjectFunc func(ns string) runtime.Object
+	GetPreflightObjectFunc func(ns string) k8sclient.Object
 
 	// ReconcileFunc mocks the Reconcile method.
 	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error)
@@ -81,7 +80,7 @@ type InterfaceMock struct {
 }
 
 // GetPreflightObject calls GetPreflightObjectFunc.
-func (mock *InterfaceMock) GetPreflightObject(ns string) runtime.Object {
+func (mock *InterfaceMock) GetPreflightObject(ns string) k8sclient.Object {
 	if mock.GetPreflightObjectFunc == nil {
 		panic("InterfaceMock.GetPreflightObjectFunc: method is nil but Interface.GetPreflightObject was just called")
 	}

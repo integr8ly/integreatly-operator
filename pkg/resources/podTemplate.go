@@ -10,8 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // PodTemplateMutation represents a mutating function over a PodTemplate.
@@ -44,13 +43,13 @@ func SelectFromDeployment(obj v1.Object) *corev1.PodTemplateSpec {
 // UpdatePodTemplateIfExists updates the template retrieved by templateSelector
 // on obj by applying the given mutation. If the object obj is not found, it
 // returns InProgress and no error
-func UpdatePodTemplateIfExists(ctx context.Context, client client.Client, templateSelector PodTemplateSelector, mutation PodTemplateMutation, obj metav1.Object) (integreatlyv1alpha1.StatusPhase, error) {
+func UpdatePodTemplateIfExists(ctx context.Context, client k8sclient.Client, templateSelector PodTemplateSelector, mutation PodTemplateMutation, obj metav1.Object) (integreatlyv1alpha1.StatusPhase, error) {
 	mutateFn := func() error {
 		podTemplate := templateSelector(obj)
 		return mutation(obj, podTemplate)
 	}
 
-	return k8s.UpdateIfExists(ctx, client, mutateFn, obj.(runtime.Object))
+	return k8s.UpdateIfExists(ctx, client, mutateFn, obj.(k8sclient.Object))
 }
 
 // SetPodTemplate updates the template retrieved by templateSelector

@@ -41,6 +41,8 @@ const (
 	PromtailInstallation     ObservabilityStageName = "PromtailInstallation"
 	AlertmanagerInstallation ObservabilityStageName = "AlertmanagerInstallation"
 	Configuration            ObservabilityStageName = "configuration"
+	LoggingInstallation      ObservabilityStageName = "Logging"
+	Migration                ObservabilityStageName = "resource name migration"
 )
 
 const (
@@ -88,6 +90,7 @@ type SelfContained struct {
 	GrafanaResourceRequirement            *v1.ResourceRequirements `json:"grafanaResourceRequirement,omitempty"`
 	GrafanaOperatorResourceRequirement    *v1.ResourceRequirements `json:"grafanaOperatorResourceRequirement,omitempty"`
 	GrafanaVersion                        string                   `json:"grafanaVersion,omitempty"`
+	DisableLogging                        *bool                    `json:"disableLogging,omitempty"`
 }
 
 // ObservabilitySpec defines the desired state of Observability
@@ -120,6 +123,7 @@ type ObservabilityStatus struct {
 	TokenExpires int64                    `json:"tokenExpires,omitempty"`
 	ClusterID    string                   `json:"clusterId,omitempty"`
 	LastSynced   int64                    `json:"lastSynced,omitempty"`
+	Migrated     bool                     `json:"migrated,omitempty"`
 }
 
 // +kubebuilder:object:root=true

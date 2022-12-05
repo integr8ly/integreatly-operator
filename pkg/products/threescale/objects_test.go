@@ -65,6 +65,19 @@ var ComponentDockerSecret = &corev1.Secret{
 	},
 }
 
+var subscription3scale = &coreosv1alpha1.Subscription{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "rhmi-3scale",
+		Namespace: "3scale",
+	},
+	Status: coreosv1alpha1.SubscriptionStatus{
+		InstalledCSV: "rhmi-3scale",
+		Install: &coreosv1alpha1.InstallPlanReference{
+			Name: "installplan-for-3scale",
+		},
+	},
+}
+
 var installPlanFor3ScaleSubscription = &coreosv1alpha1.InstallPlan{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "installplan-for-3scale",
@@ -838,7 +851,8 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		testDedicatedAdminsGroup,
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
-		installation,
+		installPlanFor3ScaleSubscription,
+		subscription3scale,
 		blobStorage,
 		blobStorageSec,
 		threescaleRoute1,
@@ -881,9 +895,11 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 func getValidInstallation(installationType integreatlyv1alpha1.InstallationType) *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-installation",
-			Namespace:  integreatlyOperatorNamespace,
-			Finalizers: []string{"finalizer.3scale.integreatly.org"},
+			Name:            "test-installation",
+			Namespace:       integreatlyOperatorNamespace,
+			Finalizers:      []string{"finalizer.3scale.integreatly.org"},
+			Generation:      1,
+			ResourceVersion: "1",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",

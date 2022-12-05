@@ -77,7 +77,7 @@ func (e *AWSBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.
 	}
 
 	// Create the CR
-	err := client.Create(context.TODO(), snapshotCR)
+	err := client.Create(context.TODO(), snapshotCR.(k8sclient.Object))
 	if err != nil {
 		return fmt.Errorf("Error creating %s for backup of resource %s: %v",
 			e.SnapshotType, e.ResourceName, err)
@@ -104,7 +104,7 @@ func (e *AWSBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.
 		err = client.Get(context.TODO(), types.NamespacedName{
 			Name:      snapshotName,
 			Namespace: e.SnapshotNamespace,
-		}, queryCR)
+		}, queryCR.(k8sclient.Object))
 		if err != nil {
 			return fmt.Errorf("Error occurred querying snapshot for backup %s", e.ResourceName)
 		}

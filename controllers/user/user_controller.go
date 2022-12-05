@@ -28,8 +28,7 @@ type UserReconciler struct {
 // +kubebuilder:rbac:groups=user.openshift.io,resources=groups,resourceNames=rhmi-developers,verbs=update;delete
 // +kubebuilder:rbac:groups=user.openshift.io,resources=users,verbs=watch;get;list
 
-func (r *UserReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+func (r *UserReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.Info("Reconciling User")
 
 	// new client to avoid caching issues
@@ -42,7 +41,6 @@ func (r *UserReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
 	}
 
 	c, _ := k8sclient.New(restConfig, k8sclient.Options{Scheme: scheme})
-	ctx := context.TODO()
 
 	rhmiGroup := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{

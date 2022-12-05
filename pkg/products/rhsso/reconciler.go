@@ -431,6 +431,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		r.CheckCPUUsage(ctx, serverClient)
 	}
 
+	_, err = r.ReconcilePodDisruptionBudget(ctx, serverClient, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

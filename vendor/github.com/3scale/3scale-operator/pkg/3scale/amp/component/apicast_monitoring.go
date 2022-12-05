@@ -3,9 +3,9 @@ package component
 import (
 	"fmt"
 
-	"github.com/coreos/prometheus-operator/pkg/apis/monitoring"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	"github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -51,11 +51,11 @@ func (apicast *Apicast) ApicastStagingPodMonitor() *monitoringv1.PodMonitor {
 	}
 }
 
-func (apicast *Apicast) ApicastMainAppGrafanaDashboard() *grafanav1alpha1.GrafanaDashboard {
+func (apicast *Apicast) ApicastMainAppGrafanaDashboard(sumRate string) *grafanav1alpha1.GrafanaDashboard {
 	data := &struct {
-		Namespace string
+		Namespace, SumRate string
 	}{
-		apicast.Options.Namespace,
+		apicast.Options.Namespace, sumRate,
 	}
 
 	return &grafanav1alpha1.GrafanaDashboard{
@@ -65,16 +65,15 @@ func (apicast *Apicast) ApicastMainAppGrafanaDashboard() *grafanav1alpha1.Grafan
 		},
 		Spec: grafanav1alpha1.GrafanaDashboardSpec{
 			Json: assets.TemplateAsset("monitoring/apicast-grafana-dashboard-1.json.tpl", data),
-			Name: fmt.Sprintf("%s/apicast-grafana-dashboard-1.json", apicast.Options.Namespace),
 		},
 	}
 }
 
-func (apicast *Apicast) ApicastServicesGrafanaDashboard() *grafanav1alpha1.GrafanaDashboard {
+func (apicast *Apicast) ApicastServicesGrafanaDashboard(sumRate string) *grafanav1alpha1.GrafanaDashboard {
 	data := &struct {
-		Namespace string
+		Namespace, SumRate string
 	}{
-		apicast.Options.Namespace,
+		apicast.Options.Namespace, sumRate,
 	}
 	return &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,7 +82,6 @@ func (apicast *Apicast) ApicastServicesGrafanaDashboard() *grafanav1alpha1.Grafa
 		},
 		Spec: grafanav1alpha1.GrafanaDashboardSpec{
 			Json: assets.TemplateAsset("monitoring/apicast-grafana-dashboard-2.json.tpl", data),
-			Name: fmt.Sprintf("%s/apicast-grafana-dashboard-2.json", apicast.Options.Namespace),
 		},
 	}
 }
@@ -106,6 +104,7 @@ func (apicast *Apicast) ApicastPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleApicastJobDown",
 							Annotations: map[string]string{
+								"sop_url":     ThreescalePrometheusJobDownURL,
 								"summary":     "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 								"description": "Job {{ $labels.job }} on {{ $labels.namespace }} is DOWN",
 							},
@@ -118,6 +117,7 @@ func (apicast *Apicast) ApicastPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleApicastRequestTime",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleApicastRequestTimeURL,
 								"summary":     "Request on instance {{ $labels.instance }} is taking more than one second to process the requests",
 								"description": "High number of request taking more than a second to be processed",
 							},
@@ -130,6 +130,7 @@ func (apicast *Apicast) ApicastPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleApicastHttp4xxErrorRate",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleApicastHttp4xxErrorRateURL,
 								"summary":     "APICast high HTTP 4XX error rate (instance {{ $labels.instance }})",
 								"description": "The number of request with 4XX is bigger than the 5% of total request.",
 							},
@@ -142,6 +143,7 @@ func (apicast *Apicast) ApicastPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleApicastLatencyHigh",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleApicastLatencyHighURL,
 								"summary":     "APICast latency high (instance {{ $labels.instance }})",
 								"description": "APIcast p99 latency is higher than 5 seconds\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}",
 							},
@@ -154,6 +156,7 @@ func (apicast *Apicast) ApicastPrometheusRules() *monitoringv1.PrometheusRule {
 						{
 							Alert: "ThreescaleApicastWorkerRestart",
 							Annotations: map[string]string{
+								"sop_url":     ThreescaleApicastWorkerRestartURL,
 								"summary":     "A new worker process in Nginx has been started",
 								"description": "A new thread has been started. This could indicate that a worker process has died due to the memory limits being exceeded. Please investigate the memory pressure on pod (instance {{ $labels.instance }})",
 							},

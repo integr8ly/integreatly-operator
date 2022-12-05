@@ -10,7 +10,6 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -203,7 +202,7 @@ func reconcileCronjobs(ctx context.Context, serverClient k8sclient.Client, confi
 func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, component BackupComponent) error {
 	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
 
-	cronjob := &batchv1beta1.CronJob{
+	cronjob := &batchv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      component.Name,
 			Namespace: config.Namespace,
@@ -212,10 +211,10 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cronjob, func() error {
 		cronjob.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
-		cronjob.Spec = batchv1beta1.CronJobSpec{
+		cronjob.Spec = batchv1.CronJobSpec{
 			Schedule:          component.Schedule,
 			ConcurrencyPolicy: "Forbid",
-			JobTemplate: batchv1beta1.JobTemplateSpec{
+			JobTemplate: batchv1.JobTemplateSpec{
 				Spec: batchv1.JobSpec{
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{

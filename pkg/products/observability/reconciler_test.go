@@ -314,7 +314,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return genericError
 					},
 				},
@@ -327,10 +327,10 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 						return nil
 					},
 				},
@@ -543,8 +543,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 func basicInstallation() *v1alpha1.RHMI {
 	return &v1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installation",
-			Namespace: defaultInstallationNamespace,
+			Name:            "installation",
+			Namespace:       defaultInstallationNamespace,
+			ResourceVersion: "1",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RHMI",
@@ -618,10 +619,10 @@ func TestCreatePrometheusProbe(t *testing.T) {
 					},
 				},
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 						return genericError
 					},
 				},
@@ -646,10 +647,10 @@ func TestCreatePrometheusProbe(t *testing.T) {
 					},
 				},
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return nil
 					},
-					UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 						return nil
 					},
 				},
@@ -715,7 +716,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						return fmt.Errorf("generic error")
 					}
 					return fakeClient
@@ -738,7 +739,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							obj.(*corev1.Namespace).Labels = map[string]string{
@@ -772,7 +773,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							obj.(*corev1.Namespace).Labels = map[string]string{addon.RhoamAddonInstallManagedLabel: "true"}
@@ -808,7 +809,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							return nil
@@ -841,7 +842,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							return nil
@@ -874,7 +875,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							return nil
@@ -886,7 +887,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 							return nil
 						}
 					}
-					fakeClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+					fakeClient.DeleteFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 						return fmt.Errorf("generic error")
 					}
 					return fakeClient
@@ -910,7 +911,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
-					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 						switch obj.(type) {
 						case *corev1.Namespace:
 							return nil
@@ -922,7 +923,7 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 							return nil
 						}
 					}
-					fakeClient.DeleteFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
+					fakeClient.DeleteFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
 						return nil
 					}
 					return fakeClient

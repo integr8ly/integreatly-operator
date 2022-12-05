@@ -109,12 +109,9 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		},
 	}
 
-	key, err := k8sclient.ObjectKeyFromObject(ratelimitCR)
-	if err != nil {
-		t.Fatalf("Error getting key from ratelimit Deployment: %v", err)
-	}
+	key := k8sclient.ObjectKeyFromObject(ratelimitCR)
 
-	err = ctx.Client.Get(context.TODO(), key, ratelimitCR)
+	err := ctx.Client.Get(context.TODO(), key, ratelimitCR)
 	if err != nil {
 		if !k8sError.IsNotFound(err) {
 			t.Fatalf("Error obtaining ratelimit CR: %v", err)
@@ -352,10 +349,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 				Namespace: RHSSOUserProductNamespace,
 			},
 		}
-		key, err := k8sclient.ObjectKeyFromObject(keycloakCR)
-		if err != nil {
-			t.Fatalf("Error getting Keycloak CR key: %v", err)
-		}
+		key := k8sclient.ObjectKeyFromObject(keycloakCR)
 
 		err = ctx.Client.Get(context.TODO(), key, keycloakCR)
 		if err != nil {

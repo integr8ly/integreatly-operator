@@ -9,7 +9,6 @@ import (
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,7 +89,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("General error")
 				},
 			},
@@ -105,10 +104,10 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -123,10 +122,10 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source updating error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},
@@ -202,7 +201,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return errors.New("General error")
 				},
 			},
@@ -215,10 +214,10 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -231,10 +230,10 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map updating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},

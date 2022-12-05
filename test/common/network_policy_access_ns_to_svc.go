@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -261,7 +260,7 @@ func cleanUp(ctx *TestingContext) error {
 	service := &corev1.Service{ObjectMeta: v1.ObjectMeta{Name: serviceName, Namespace: projectName}}
 	pod := &corev1.Pod{ObjectMeta: v1.ObjectMeta{Name: podName, Namespace: projectName}}
 
-	models := []runtime.Object{pod, service, project}
+	models := []k8sclient.Object{pod, service, project}
 	for _, model := range models {
 		if err := ctx.Client.Delete(goctx.TODO(), model); err != nil {
 			return err

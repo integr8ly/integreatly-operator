@@ -110,9 +110,7 @@ type SubscriptionReconciler struct {
 
 // Reconcile will ensure that that Subscription object(s) have Manual approval for the upgrades
 // In a namespaced installation of integreatly operator it will only reconcile Subscription of the integreatly operator itself
-func (r *SubscriptionReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-
+func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
 	if !r.shouldReconcileSubscription(request) {
 		log.Infof("Not our subscription", l.Fields{"request": request, "opNS": r.operatorNamespace})

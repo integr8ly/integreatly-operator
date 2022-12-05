@@ -5,7 +5,7 @@ import (
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"testing"
 
@@ -49,7 +49,7 @@ func TestGetParameter(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		client    client.Client
+		client    k8sclient.Client
 		namespace string
 		parameter string
 	}
@@ -145,7 +145,7 @@ func TestGetParameter(t *testing.T) {
 				namespace: testRHOAMnamespace,
 				ctx:       context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 						return genericError
 					},
 				},
@@ -177,7 +177,7 @@ func TestGetStringParameter(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		client    client.Client
+		client    k8sclient.Client
 		namespace string
 		parameter string
 	}
@@ -237,7 +237,7 @@ func TestGetIntParameter(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		client    client.Client
+		client    k8sclient.Client
 		namespace string
 		parameter string
 	}
@@ -308,7 +308,7 @@ func TestGetBoolParameter(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		client    client.Client
+		client    k8sclient.Client
 		namespace string
 		parameter string
 	}
@@ -379,7 +379,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		client    client.Client
+		client    k8sclient.Client
 		install   *integreatlyv1alpha1.RHMI
 		parameter string
 	}
@@ -419,7 +419,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 	}
 }
 
-func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) client.Client {
+func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) k8sclient.Client {
 	return fake.NewFakeClientWithScheme(scheme, getValidInits(namespace, secretType, subscriptionType)...)
 }
 

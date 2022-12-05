@@ -65,7 +65,9 @@ func verifyRebalanceCount(ctx context.Context, client k8sclient.Client, obj runt
 
 func getObject(ctx context.Context, client k8sclient.Client, knn *KindNameSpaceName) (runtime.Object, error) {
 	object := knn.Obj
-	err := client.Get(ctx, k8sTypes.NamespacedName{Name: knn.Name, Namespace: knn.Namespace}, object)
+	k8sclientObject := object.(k8sclient.Object)
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: knn.Name, Namespace: knn.Namespace}, k8sclientObject)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting object %s, on ns %s: %w", knn.Name, knn.Namespace, err)
 	}
@@ -276,11 +278,12 @@ func deletePod(ctx context.Context, client k8sclient.Client, podName string, ns 
 
 func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client, knn *KindNameSpaceName) error {
 	obj := knn.Obj
+	k8sclientObject := obj.(k8sclient.Object)
 
 	err := client.Get(ctx, k8sclient.ObjectKey{
 		Name:      knn.Name,
 		Namespace: knn.Namespace,
-	}, obj)
+	}, k8sclientObject)
 
 	if err != nil {
 		return fmt.Errorf("Error getting %s %s on namespace %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
@@ -294,7 +297,7 @@ func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client,
 		return err
 	}
 	metaObj.SetAnnotations(ant)
-	if err := client.Update(ctx, obj); err != nil {
+	if err := client.Update(ctx, k8sclientObject); err != nil {
 		return fmt.Errorf("Error Updating %s %s on %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
 	}
 	logrus.Infof("Successfully updated %s %s on %s", knn.Kind, knn.Name, knn.Namespace)

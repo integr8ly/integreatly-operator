@@ -10,7 +10,6 @@ import (
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -38,7 +37,7 @@ func TestIsClusterSTS(t *testing.T) {
 			name: "failed to get cluster cloud credential",
 			args: args{
 				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+				client: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
 					return fmt.Errorf("get error")
 				}},
 				log: logger.NewLogger(),
@@ -117,7 +116,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 			name: "test: can't get secret",
 			args: args{
 				client: &moqclient.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+					ListFunc: func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
 						return fmt.Errorf("listError")
 					},
 				},

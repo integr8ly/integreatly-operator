@@ -54,7 +54,7 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: constants.ThreeScaleSubscriptionName, Namespace: defaultInstallationNamespace + "-operator"}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: constants.ThreeScaleSubscriptionName, Namespace: defaultInstallationNamespace}, sub)
 	if k8serr.IsNotFound(err) {
 		return fmt.Errorf("%s operator subscription was not created", constants.ThreeScaleSubscriptionName)
 	}
@@ -121,14 +121,14 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	}
 
 	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
-	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-app", metav1.GetOptions{})
+	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(context.TODO(), "system-app", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error getting deplymentconfig: %v", err)
 	}
 	if sa.Status.LatestVersion == 1 {
 		return fmt.Errorf("system-app was not rolled out")
 	}
-	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(ctx, "system-sidekiq", metav1.GetOptions{})
+	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get(context.TODO(), "system-sidekiq", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("error getting deplymentconfig: %v", err)
 	}

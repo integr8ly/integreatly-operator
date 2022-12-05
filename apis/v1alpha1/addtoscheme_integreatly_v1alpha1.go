@@ -8,8 +8,6 @@ import (
 	discoveryservicev1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	prometheusmonitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-
 	consolev1 "github.com/openshift/api/console/v1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -17,7 +15,6 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 
@@ -31,7 +28,6 @@ import (
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
-
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -52,12 +48,10 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(
 		AddToSchemes,
-		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
+		operatorsv1alpha1.AddToScheme,
 		authv1.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
-		chev1.SchemeBuilder.AddToScheme,
-		syndesisv1beta1.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,

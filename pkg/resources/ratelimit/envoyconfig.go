@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"time"
+
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +15,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_runtime "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
@@ -95,7 +98,7 @@ func NewEnvoyConfig(name, namespace, nodeID string) *EnvoyConfig {
 	nodeID:
 	serialization: yaml
 **/
-func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.Client, clusterResources []*envoyclusterv3.Cluster, listenerResources []*envoylistenerv3.Listener, installation *integreatlyv1alpha1.RHMI) error {
+func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.Client, clusterResources []*envoyclusterv3.Cluster, listenerResources []*envoylistenerv3.Listener, runtimes *envoy_runtime.Runtime, installation *integreatlyv1alpha1.RHMI) error {
 	envoyconfig := &marin3rv1alpha1.EnvoyConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ec.name,
@@ -107,16 +110,16 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 	for _, cluster := range clusterResources {
 		jsonClusterResource, err := ResourcesToJSON(cluster)
 		if err != nil {
-			return fmt.Errorf("Failed to convert envoy rate limiting cluster configuration to JSON %v", err)
+			return fmt.Errorf("failed to convert envoy rate limiting cluster configuration to JSON %v", err)
 		}
 
 		yamlClusterResource, err := yaml.JSONToYAML(jsonClusterResource)
 		if err != nil {
-			return fmt.Errorf("Failed to convert envoy rate limiting cluster JSON configuration to YAML %v", err)
+			return fmt.Errorf("failed to convert envoy rate limiting cluster JSON configuration to YAML %v", err)
 		}
 		envoyClusterResource = append(envoyClusterResource,
 			marin3rv1alpha1.EnvoyResource{
-				Name:  cluster.Name,
+				Name:  &cluster.Name,
 				Value: string(yamlClusterResource),
 			},
 		)
@@ -126,22 +129,38 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 	for _, listener := range listenerResources {
 		jsonListenerResource, err := ResourcesToJSON(listener)
 		if err != nil {
-			return fmt.Errorf("Failed to convert envoy rate limiting cluster configuration to JSON %v", err)
+			return fmt.Errorf("failed to convert envoy rate limiting listeners configuration to JSON %v", err)
 		}
 
 		yamlListenerResource, err := yaml.JSONToYAML(jsonListenerResource)
 		if err != nil {
-			return fmt.Errorf("Failed to convert envoy rate limiting listener JSON configuration to YAML %v", err)
+			return fmt.Errorf("failed to convert envoy rate limiting listener JSON configuration to YAML %v", err)
 		}
 		envoyListenerResource = append(envoyListenerResource,
 			marin3rv1alpha1.EnvoyResource{
-				Name:  listener.Name,
+				Name:  &listener.Name,
 				Value: string(yamlListenerResource),
 			},
 		)
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
+	envoyRuntimeResource := []marin3rv1alpha1.EnvoyResource{}
+	jsonRuntimeResource, err := ResourcesToJSON(runtimes)
+	if err != nil {
+		return fmt.Errorf("failed to convert envoy rate limiting runtimes configuration to JSON %v", err)
+	}
+
+	yamlRuntimeResource, err := yaml.JSONToYAML(jsonRuntimeResource)
+	if err != nil {
+		return fmt.Errorf("failed to convert envoy rate limiting runtimes JSON configuration to YAML %v", err)
+	}
+
+	envoyRuntimeResource = append(envoyRuntimeResource, marin3rv1alpha1.EnvoyResource{
+		Name:  &runtimes.Name,
+		Value: string(yamlRuntimeResource),
+	})
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, installation)
 		serialization := "yaml"
 		envoyAPIVersion := EnvoyAPIVersion
@@ -151,11 +170,12 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha1.EnvoyResources{
 			Clusters:  envoyClusterResource,
 			Listeners: envoyListenerResource,
+			Runtimes:  envoyRuntimeResource,
 		}
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to create envoy config CR %v", err)
+		return fmt.Errorf("failed to create envoy config CR %v", err)
 	}
 	return nil
 }
@@ -226,7 +246,6 @@ func CreateClusterResource(containerAddress, clusterName string, containerPort i
 	name: http
 */
 func CreateListenerResource(listenerName, listenerAddress string, listenerPort int, filters []*envoylistenerv3.Filter) *envoylistenerv3.Listener {
-
 	envoyListener := envoylistenerv3.Listener{
 		Name: listenerName,
 		Address: &envoycorev3.Address{
@@ -246,6 +265,27 @@ func CreateListenerResource(listenerName, listenerAddress string, listenerPort i
 	}
 
 	return &envoyListener
+}
+
+/**
+    runtimes:
+      - name: runtime
+        value: >-
+          {"name":
+          "runtime","layer":{"envoy.reloadable_features.sanitize_http_header_referer":
+          "false"}}
+**/
+func CreateRuntimesResource() *envoy_runtime.Runtime {
+	layer, _ := structpb.NewStruct(map[string]interface{}{
+		"envoy.reloadable_features.sanitize_http_header_referer": false,
+	})
+
+	envoyRuntime := &envoy_runtime.Runtime{
+		Name:  "runtime",
+		Layer: layer,
+	}
+
+	return envoyRuntime
 }
 
 func ResourcesToJSON(pb proto.Message) ([]byte, error) {

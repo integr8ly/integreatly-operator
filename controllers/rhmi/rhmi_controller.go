@@ -58,7 +58,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -74,7 +73,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products"
-	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -138,6 +136,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
 
+// We need to add leases permissions to establish the leader election
+// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update;delete;watch
+
 // We need to create consolelinks which are cluster level objects
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consolelinks,verbs=get;create;update;delete
 
@@ -180,7 +181,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=update;create
 
 // Monitoring resources not covered by namespace "admin" permissions
-// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors,verbs=get;list;create;update;delete
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
 
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings;roles;rolebindings,verbs=*
 
@@ -251,7 +252,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
-func (r *RHMIReconciler) Reconcile(request ctrl.Request) (ctrl.Result, error) {
+func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
@@ -662,6 +663,7 @@ func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.
 }
 
 func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
+
 	client, err := appsv1Client.NewForConfig(rc)
 	if err != nil {
 		return "", fmt.Errorf("unable to create rest client %s", err)
@@ -1318,19 +1320,15 @@ func (r *RHMIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	enqueueAllInstallations := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: installationMapper{context: context.TODO(), client: mgr.GetClient()},
-	}
-
 	// Instead of calling .Complete(r), we call .Build(r), which
 	// does the same but returns the controller instance, to be
 	// stored in the reconciler
 	reconcileController, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhmiv1alpha1.RHMI{}).
-		Watches(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, enqueueAllInstallations).
-		Watches(&source.Kind{Type: &usersv1.Group{}}, enqueueAllInstallations).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, enqueueAllInstallations, builder.WithPredicates(newObjectPredicate(isName(marin3rconfig.RateLimitConfigMapName)))).
+		Watches(&source.Kind{Type: &usersv1.User{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &usersv1.Group{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}).
 		Build(r)
 
 	if err != nil {
@@ -1589,7 +1587,7 @@ func (r *RHMIReconciler) addCustomInformer(crd runtime.Object, namespace string)
 		time.Sleep(10 * time.Second)
 		close(timeoutChannel)
 	}()
-	if !store.WaitForCacheSync(timeoutChannel) {
+	if !store.WaitForCacheSync(context.TODO()) {
 		return fmt.Errorf("failed to sync cache for %s watch in %s namespace", gvk, namespace)
 	}
 

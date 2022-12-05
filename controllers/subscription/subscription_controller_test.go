@@ -262,7 +262,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 				operatorNamespace:   operatorNamespace,
 				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
 			}
-			res, err := reconciler.Reconcile(scenario.Request)
+			res, err := reconciler.Reconcile(context.TODO(), scenario.Request)
 			scenario.Verify(client, res, err, t)
 		})
 	}
