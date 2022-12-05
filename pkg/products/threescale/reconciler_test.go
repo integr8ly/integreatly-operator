@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/foxcpp/go-mockdns"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/foxcpp/go-mockdns"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
@@ -24,6 +25,7 @@ import (
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
+	threescaleAmp "github.com/3scale/3scale-operator/pkg/3scale/amp/component"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -519,12 +521,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm:           nil,
 				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
 				productConfig: productConfigMock(),
 			},
 			args: args{
@@ -538,6 +535,9 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						Data: map[string][]byte{
 							"credentialKeyID":     []byte("test"),
 							"credentialSecretKey": []byte("test"),
+							"bucketName":          []byte("test"),
+							"bucketRegion":        []byte("test"),
+							"minio":               []byte("test"),
 						},
 					},
 					&threescalev1.APIManager{
@@ -572,12 +572,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm:           nil,
 				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
 				productConfig: productConfigMock(),
 			},
 			args: args{
@@ -589,8 +584,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							Namespace: "test",
 						},
 						Data: map[string][]byte{
-							"credentialKeyID":     []byte("test"),
-							"credentialSecretKey": []byte("test"),
+							"bucketName":   []byte("test"),
+							"bucketRegion": []byte("test"),
 						},
 					},
 					&threescalev1.APIManager{
@@ -612,12 +607,11 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "redhat-rhoam-operator",
+							Name:      stsS3CredentialsSecretName,
+							Namespace: "test",
 						},
 						Data: map[string][]byte{
-							sts.CredsS3AccessKeyId:     []byte("123"),
-							sts.CredsS3SecretAccessKey: []byte("123"),
+							"role_arn": []byte("role"),
 						},
 					}),
 			},
@@ -625,7 +619,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test Unsuccessful reconcile of s3 blob storage, STS mode, Error getting credentialKeyID parameter",
+			name: "test Unsuccessful reconcile of s3 blob storage, STS mode, Error getting sts secret",
 			fields: fields{
 				ConfigManager: &config.ConfigReadWriterMock{
 					GetOperatorNamespaceFunc: func() string {
@@ -635,12 +629,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
+				installation: getTestInstallation("managed"),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -652,7 +641,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						},
 						Data: map[string][]byte{
 							"credentialKeyID": []byte("test"),
-							//"credentialSecretKey": []byte("test"),
 						},
 					},
 					&threescalev1.APIManager{
@@ -670,202 +658,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						},
 						Spec: cloudcredentialv1.CloudCredentialSpec{
 							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "redhat-rhoam-operator",
-						},
-						Data: map[string][]byte{
-							sts.CredsS3AccessKeyId: []byte("123"),
-							//sts.CredsS3SecretAccessKey: []byte("123"),
-						},
-					}),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "test Unsuccessful reconcile of s3 blob storage, STS mode, Error getting credentialSecretKey parameter",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return "null"
-					},
-				},
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test",
-						},
-						Data: map[string][]byte{
-							//"credentialKeyID":     []byte("test"),
-							"credentialSecretKey": []byte("test"),
-						},
-					},
-					&threescalev1.APIManager{
-						TypeMeta: metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3scale",
-							Namespace: "test",
-						},
-						Spec:   threescalev1.APIManagerSpec{},
-						Status: threescalev1.APIManagerStatus{},
-					},
-					&cloudcredentialv1.CloudCredential{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: sts.ClusterCloudCredentialName,
-						},
-						Spec: cloudcredentialv1.CloudCredentialSpec{
-							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "redhat-rhoam-operator",
-						},
-						Data: map[string][]byte{
-							//sts.CredsS3AccessKeyId:     []byte("123"),
-							sts.CredsS3SecretAccessKey: []byte("123"),
-						},
-					}),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "test Unsuccessful reconcile of s3 blob storage, STS mode, missing credentialKeyID parameter",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return "redhat-rhoam-operator"
-					},
-				},
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test",
-						},
-						Data: map[string][]byte{
-							"credentialKeyID":     []byte("test"),
-							"credentialSecretKey": []byte("test"),
-						},
-					},
-					&threescalev1.APIManager{
-						TypeMeta: metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3scale",
-							Namespace: "test",
-						},
-						Spec:   threescalev1.APIManagerSpec{},
-						Status: threescalev1.APIManagerStatus{},
-					},
-					&cloudcredentialv1.CloudCredential{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: sts.ClusterCloudCredentialName,
-						},
-						Spec: cloudcredentialv1.CloudCredentialSpec{
-							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "redhat-rhoam-operator",
-						},
-						Data: map[string][]byte{
-							//sts.CredsS3AccessKeyId:     []byte("123"),
-							sts.CredsS3SecretAccessKey: []byte("123"),
-						},
-					}),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "test Unsuccessful reconcile of s3 blob storage, STS mode, missing CredsS3SecretAccessKey parameter",
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					GetOperatorNamespaceFunc: func() string {
-						return "redhat-rhoam-operator"
-					},
-				},
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test",
-						},
-						Data: map[string][]byte{
-							"credentialKeyID":     []byte("test"),
-							"credentialSecretKey": []byte("test"),
-						},
-					},
-					&threescalev1.APIManager{
-						TypeMeta: metav1.TypeMeta{},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3scale",
-							Namespace: "test",
-						},
-						Spec:   threescalev1.APIManagerSpec{},
-						Status: threescalev1.APIManagerStatus{},
-					},
-					&cloudcredentialv1.CloudCredential{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: sts.ClusterCloudCredentialName,
-						},
-						Spec: cloudcredentialv1.CloudCredentialSpec{
-							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
-						},
-					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
-							Namespace: "redhat-rhoam-operator",
-						},
-						Data: map[string][]byte{
-							sts.CredsS3AccessKeyId: []byte("123"),
-							//sts.CredsS3SecretAccessKey: []byte("123"),
 						},
 					}),
 			},
@@ -883,12 +675,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm:           nil,
-				installation:  getTestInstallation("managed"),
-				tsClient:      nil,
-				appsv1Client:  nil,
-				oauthv1Client: nil,
-				Reconciler:    nil,
+				installation: getTestInstallation("managed"),
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -3314,6 +3101,106 @@ func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
 			}
 			if err := r.SetAdminDetailsOnSecret(context.TODO(), tt.args.serverClient, tt.args.username, tt.args.email); (err != nil) != tt.wantErr {
 				t.Errorf("SetAdminDetailsOnSecret() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestReconciler_createStsS3Secret(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		ctx            context.Context
+		serverClient   k8sclient.Client
+		credSec        *corev1.Secret
+		blobStorageSec *corev1.Secret
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test unable to get secret",
+			args: args{
+				ctx:            context.TODO(),
+				serverClient:   fake.NewClientBuilder().WithScheme(scheme).Build(),
+				credSec:        &corev1.Secret{},
+				blobStorageSec: &corev1.Secret{},
+			},
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{}),
+			},
+			wantErr: true,
+		},
+		{
+			name: "test success creating s3 secret",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      stsS3CredentialsSecretName,
+						Namespace: defaultInstallationNamespace,
+					},
+					Data: map[string][]byte{
+						"role_arn": []byte("roleArn"),
+					},
+				}).Build(),
+				credSec: &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      s3CredentialsSecretName,
+						Namespace: defaultInstallationNamespace,
+					},
+					Data: map[string][]byte{},
+				},
+				blobStorageSec: &corev1.Secret{
+					Data: map[string][]byte{
+						threescaleAmp.AwsBucket: []byte("bucket"),
+						threescaleAmp.AwsRegion: []byte("region"),
+					},
+				},
+			},
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			if err := r.createStsS3Secret(tt.args.ctx, tt.args.serverClient, tt.args.credSec, tt.args.blobStorageSec); (err != nil) != tt.wantErr {
+				t.Errorf("createStsS3Secret() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

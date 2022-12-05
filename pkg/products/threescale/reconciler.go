@@ -16,7 +16,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
@@ -47,6 +46,7 @@ import (
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
+	threescaleAmp "github.com/3scale/3scale-operator/pkg/3scale/amp/component"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
@@ -94,6 +94,11 @@ const (
 	labelRouteToSystemMaster    = "system-master"
 	labelRouteToSystemDeveloper = "system-developer"
 	labelRouteToSystemProvider  = "system-provider"
+
+	// STS
+	stsS3CredentialsSecretName  = "sts-s3-credentials"                              // #nosec G101 -- This is a false positive
+	stsWebIdentityTokenFilePath = "/var/run/secrets/openshift/serviceaccount/token" // #nosec G101 -- This is a false positive
+	stsTokenAudience            = "openshift"
 )
 
 var (
@@ -1011,7 +1016,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sc
 }
 
 func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
-	// create blob storage cr
+	// get blob storage cr
 	blobStorage := &crov1.BlobStorage{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
 	if err != nil {
@@ -1038,60 +1043,76 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	if err != nil {
 		return nil, fmt.Errorf("error checking STS mode: %w", err)
 	}
-	addOnSecretNamespace := r.ConfigManager.GetOperatorNamespace()
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
-		// Map known key names from CRO, and append any additional values that may be used for Minio
-		// In case of STS cluster - get AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from addon secret (temporary solution)
-		for key, value := range blobStorageSec.Data {
-			switch key {
-			case "credentialKeyID":
-				if isSTS {
-					credentialKeyID, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3AccessKeyId)
-					if err != nil {
-						return fmt.Errorf("error getting addon parameter %s: %w", sts.CredsS3AccessKeyId, err)
-					}
-					if !found {
-						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3AccessKeyId, addon.DefaultSecretName)
-					}
-					credSec.Data["AWS_ACCESS_KEY_ID"] = []byte(credentialKeyID)
-				} else {
-					credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+	if isSTS {
+		err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
+	} else {
+		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
+			// Map known key names from CRO, and append any additional values that may be used for Minio
+			for key, value := range blobStorageSec.Data {
+				switch key {
+				case "credentialKeyID":
+					credSec.Data[threescaleAmp.AwsAccessKeyID] = blobStorageSec.Data["credentialKeyID"]
+				case "credentialSecretKey":
+					credSec.Data[threescaleAmp.AwsSecretAccessKey] = blobStorageSec.Data["credentialSecretKey"]
+				case "bucketName":
+					credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
+				case "bucketRegion":
+					credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
+				default:
+					credSec.Data[key] = value
 				}
-			case "credentialSecretKey":
-				if isSTS {
-					credentialSecretKey, found, err := addon.GetStringParameter(context.TODO(), serverClient, addOnSecretNamespace, sts.CredsS3SecretAccessKey)
-					if err != nil {
-						return fmt.Errorf("error getting addon parameter %s: %w", sts.CredsS3SecretAccessKey, err)
-					}
-					if !found {
-						return fmt.Errorf("AddOn parameter %s not found in secret %s", sts.CredsS3SecretAccessKey, addon.DefaultSecretName)
-					}
-					credSec.Data["AWS_SECRET_ACCESS_KEY"] = []byte(credentialSecretKey)
-				} else {
-					credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
-				}
-			case "bucketName":
-				credSec.Data["AWS_BUCKET"] = blobStorageSec.Data["bucketName"]
-			case "bucketRegion":
-				credSec.Data["AWS_REGION"] = blobStorageSec.Data["bucketRegion"]
-			default:
-				credSec.Data[key] = value
 			}
-		}
-		return nil
-	})
+			return nil
+		})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create or update blob storage aws credentials secret: %w", err)
 	}
-	// return the file storage spec
-	return &threescalev1.SystemFileStorageSpec{
+
+	systemFileSpec := &threescalev1.SystemFileStorageSpec{
 		S3: &threescalev1.SystemS3Spec{
 			ConfigurationSecretRef: corev1.LocalObjectReference{
 				Name: s3CredentialsSecretName,
 			},
 		},
-	}, nil
+	}
+
+	if isSTS {
+		audience := stsTokenAudience
+		systemFileSpec.S3.STS = &threescalev1.STSSpec{
+			Enabled:  &isSTS,
+			Audience: &audience,
+		}
+	}
+
+	return systemFileSpec, nil
+}
+
+func (r *Reconciler) createStsS3Secret(ctx context.Context, serverClient k8sclient.Client, credSec *corev1.Secret, blobStorageSec *corev1.Secret) error {
+	stsSecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: stsS3CredentialsSecretName, Namespace: r.Config.GetNamespace()}, stsSecret); err != nil {
+		return fmt.Errorf("failed to get 3scale sts secret resource: %w", err)
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
+		for key := range blobStorageSec.Data {
+			switch key {
+			case "bucketName":
+				credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
+			case "bucketRegion":
+				credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
+			}
+		}
+
+		credSec.Data[threescaleAmp.AwsRoleArn] = stsSecret.Data["role_arn"]
+		credSec.Data[threescaleAmp.AwsWebIdentityTokenFile] = []byte(stsWebIdentityTokenFilePath)
+
+		return nil
+	})
+
+	return err
 }
 
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance

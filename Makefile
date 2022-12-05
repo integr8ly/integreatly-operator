@@ -28,9 +28,9 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
-ROLE_ARN ?= ''
-S3_ACCESS_KEY_ID ?= ''
-S3_SECRET_ACCESS_KEY ?= ''
+CRO_ROLE_ARN ?= 'arn:aws:iam::123456789012:role/example'
+THREESCALE_ROLE_ARN ?= 'arn:aws:iam::123456789012:role/example'
+
 TYPE_OF_MANIFEST ?= master
 
 CONTAINER_ENGINE ?= docker
@@ -349,6 +349,13 @@ cluster/prepare/crd: kustomize
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
+		echo "manual mode (sts)"; \
+		$(MAKE) cluster/prepare/sts; \
+	else \
+	  	echo "mint mode"; \
+	fi \
+
 	@ - oc create -f config/rbac/service_account.yaml -n $(NAMESPACE)
 	@ - $(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc create -f -
 
@@ -382,20 +389,13 @@ cluster/prepare/dms:
 
 .PHONY: cluster/prepare/addon-params
 cluster/prepare/addon-params:
-	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
-		echo "manual mode (sts)"; \
-		if [ -z $(ROLE_ARN) ] || [ -z $(S3_ACCESS_KEY_ID) ] || [ -z $(S3_SECRET_ACCESS_KEY) ]; then \
-			echo "Environment variables ROLE_ARN, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY are required for STS clusters!"; \
-			echo "Exiting..."; \
-			exit 1; \
-        fi; \
-	else \
-	  	echo "mint mode"; \
-	fi \
-
-	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) STS_ROLE_ARN=$(ROLE_ARN) \
-		S3_ACCESS_KEY_ID=$(S3_ACCESS_KEY_ID) S3_SECRET_ACCESS_KEY=$(S3_SECRET_ACCESS_KEY) \
+	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) \
  		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
+
+.PHONY: cluster/prepare/sts
+cluster/prepare/sts:
+	@-oc process -n $(NAMESPACE_PREFIX)cloud-resources-operator NAME=sts-credentials NAMESPACE=$(NAMESPACE_PREFIX)cloud-resources-operator ROLE_ARN=$(CRO_ROLE_ARN) -f config/secrets/sts-secret.yaml | oc apply -f -
+	@-oc process -n $(NAMESPACE_PREFIX)3scale NAME=sts-s3-credentials NAMESPACE=$(NAMESPACE_PREFIX)3scale ROLE_ARN=$(THREESCALE_ROLE_ARN) -f config/secrets/sts-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:

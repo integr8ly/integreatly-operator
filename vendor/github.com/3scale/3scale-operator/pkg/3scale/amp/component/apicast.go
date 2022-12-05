@@ -365,6 +365,10 @@ func (apicast *Apicast) buildApicastStagingEnv() []v1.EnvVar {
 		result = append(result, helper.EnvVarFromValue("NO_PROXY", *apicast.Options.StagingNoProxy))
 	}
 
+	if apicast.Options.StagingServiceCacheSize != nil {
+		result = append(result, helper.EnvVarFromValue("APICAST_SERVICE_CACHE_SIZE", fmt.Sprintf("%d", *apicast.Options.StagingServiceCacheSize)))
+	}
+
 	return result
 }
 
@@ -435,6 +439,10 @@ func (apicast *Apicast) buildApicastProductionEnv() []v1.EnvVar {
 
 	if apicast.Options.ProductionNoProxy != nil {
 		result = append(result, helper.EnvVarFromValue("NO_PROXY", *apicast.Options.ProductionNoProxy))
+	}
+
+	if apicast.Options.ProductionServiceCacheSize != nil {
+		result = append(result, helper.EnvVarFromValue("APICAST_SERVICE_CACHE_SIZE", fmt.Sprintf("%d", *apicast.Options.ProductionServiceCacheSize)))
 	}
 
 	return result
@@ -765,6 +773,7 @@ func (apicast *Apicast) productionServicePorts() []v1.ServicePort {
 	ports := []v1.ServicePort{
 		v1.ServicePort{Name: "gateway", Protocol: v1.ProtocolTCP, Port: 8080, TargetPort: intstr.FromInt(8080)},
 		v1.ServicePort{Name: "management", Protocol: v1.ProtocolTCP, Port: 8090, TargetPort: intstr.FromInt(8090)},
+		v1.ServicePort{Name: "metrics", Protocol: v1.ProtocolTCP, Port: 9421, TargetPort: intstr.FromInt(9421)},
 	}
 
 	if apicast.Options.ProductionHTTPSPort != nil {
@@ -795,6 +804,7 @@ func (apicast *Apicast) stagingServicePorts() []v1.ServicePort {
 	ports := []v1.ServicePort{
 		v1.ServicePort{Name: "gateway", Protocol: v1.ProtocolTCP, Port: 8080, TargetPort: intstr.FromInt(8080)},
 		v1.ServicePort{Name: "management", Protocol: v1.ProtocolTCP, Port: 8090, TargetPort: intstr.FromInt(8090)},
+		v1.ServicePort{Name: "metrics", Protocol: v1.ProtocolTCP, Port: 9421, TargetPort: intstr.FromInt(9421)},
 	}
 
 	if apicast.Options.StagingHTTPSPort != nil {
