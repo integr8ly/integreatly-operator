@@ -209,8 +209,8 @@ replace github.com/operator-framework/operator-lib => github.com/operator-framew
 // Required for managaing OLM resources - can be removed once following Jira is resolved - https://issues.redhat.com/browse/MGDAPI-4898
 replace github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 
-// Temporary solution to speed up verification of 4.12 support. To be updated once we get next version of OO
-replace github.com/redhat-developer/observability-operator/v3 => github.com/redhat-developer/observability-operator/v3 v3.0.17-0.20221201111910-2a918e074db6
+// Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4994
+replace github.com/redhat-developer/observability-operator/v3 => github.com/redhat-developer/observability-operator/v3 v3.0.17-0.20221205150227-e335ad3a1a56
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4895
 replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
