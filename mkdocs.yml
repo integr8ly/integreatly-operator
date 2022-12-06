@@ -26,6 +26,7 @@ nav:
       - Product tests: tests/product_tests.md
       - Scorecard tests: tests/scorecard_tests.md
       - Testing Alerts: tests/testing_alerts.md
+      - Workshop postgres/redis instances: tests/workshop.md
     - Uninstallation:
       - Local and OLM: uninstallation/local_and_olm.md
       - Addon flow: uninstallation/addon_flow.md
