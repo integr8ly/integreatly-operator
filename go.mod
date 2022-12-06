@@ -217,3 +217,6 @@ replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
 
 // Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
 replace k8s.io/client-go => k8s.io/client-go v0.24.3
+
+// Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
+replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -438,15 +439,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 					Access:    "proxy",
 					Editable:  true,
 					IsDefault: true,
-					JsonData: grafanav1alpha1.GrafanaDataSourceJsonData{
-						TimeInterval: "5s",
-					},
-					Type:    "prometheus",
-					Url:     url,
-					Version: 1,
+					Type:      "prometheus",
+					Url:       url,
+					Version:   1,
 				},
 			},
 		}
+
+		dataSourceCR.Spec.Datasources[0].JsonData.TimeInterval = "5s"
 
 		dataSourceCR.Spec.Name = "customer.yaml"
 		return nil
