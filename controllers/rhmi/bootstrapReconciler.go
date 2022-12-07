@@ -477,10 +477,10 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 		for _, product := range productsList {
 			// ugly check the first char is the same as the next three to remove duplicate string if it is, would like a better way to do this
 			// this can be removed again after a successful upgrade using this version
-			buf := oauthClientSecrets.Data[string(product)]
-			if buf != nil && buf[0] == buf[1] && buf[0] == buf[2] && buf[0] == buf[3] {
-				oauthClientSecrets.Data[string(product)] = []byte(r.generateSecret(32))
-			}
+			//buf := oauthClientSecrets.Data[string(product)]
+			//if buf != nil && buf[0] == buf[1] && buf[0] == buf[2] && buf[0] == buf[3] {
+			//	oauthClientSecrets.Data[string(product)] = []byte(r.generateSecret(32))
+			//}
 
 			if _, ok := oauthClientSecrets.Data[string(product)]; !ok {
 				oauthClient := &oauthv1.OAuthClient{
