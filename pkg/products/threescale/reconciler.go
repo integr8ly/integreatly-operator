@@ -714,7 +714,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				}),
 			}
 			apim.Spec.System.SidekiqSpec = &threescalev1.SystemSidekiqSpec{
-				Replicas: apim.Spec.System.SidekiqSpec.Replicas,
+				Replicas:  apim.Spec.System.SidekiqSpec.Replicas,
+				Resources: apim.Spec.System.SidekiqSpec.Resources,
 				Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 					"threescale_component":         "system",
 					"threescale_component_element": "sidekiq",
@@ -748,7 +749,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 		if apim.Spec.Apicast != nil {
 			apim.Spec.Apicast.StagingSpec = &threescalev1.ApicastStagingSpec{
-				Replicas: apim.Spec.Apicast.StagingSpec.Replicas,
+				Replicas:  apim.Spec.Apicast.StagingSpec.Replicas,
+				Resources: apim.Spec.Apicast.StagingSpec.Resources,
 				Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 					"threescale_component":         "apicast",
 					"threescale_component_element": "staging",
@@ -756,7 +758,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			}
 
 			apim.Spec.Apicast.ProductionSpec = &threescalev1.ApicastProductionSpec{
-				Replicas: apim.Spec.Apicast.ProductionSpec.Replicas,
+				Replicas:  apim.Spec.Apicast.ProductionSpec.Replicas,
+				Resources: apim.Spec.Apicast.ProductionSpec.Resources,
 				Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 					"threescale_component":         "apicast",
 					"threescale_component_element": "production",
@@ -782,21 +785,24 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		if apim.Spec.Backend != nil {
 			apim.Spec.Backend = &threescalev1.BackendSpec{
 				CronSpec: &threescalev1.BackendCronSpec{
-					Replicas: apim.Spec.Backend.CronSpec.Replicas,
+					Replicas:  apim.Spec.Backend.CronSpec.Replicas,
+					Resources: apim.Spec.Backend.CronSpec.Resources,
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "backend",
 						"threescale_component_element": "cron",
 					}),
 				},
 				ListenerSpec: &threescalev1.BackendListenerSpec{
-					Replicas: apim.Spec.Backend.ListenerSpec.Replicas,
+					Replicas:  apim.Spec.Backend.ListenerSpec.Replicas,
+					Resources: apim.Spec.Backend.ListenerSpec.Resources,
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "backend",
 						"threescale_component_element": "listener",
 					}),
 				},
 				WorkerSpec: &threescalev1.BackendWorkerSpec{
-					Replicas: apim.Spec.Backend.WorkerSpec.Replicas,
+					Replicas:  apim.Spec.Backend.WorkerSpec.Replicas,
+					Resources: apim.Spec.Backend.WorkerSpec.Resources,
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "backend",
 						"threescale_component_element": "worker",
@@ -829,14 +835,16 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		if apim.Spec.Zync != nil {
 			apim.Spec.Zync = &threescalev1.ZyncSpec{
 				AppSpec: &threescalev1.ZyncAppSpec{
-					Replicas: apim.Spec.Zync.AppSpec.Replicas,
+					Replicas:  apim.Spec.Zync.AppSpec.Replicas,
+					Resources: apim.Spec.Zync.AppSpec.Resources,
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync",
 					}),
 				},
 				QueSpec: &threescalev1.ZyncQueSpec{
-					Replicas: apim.Spec.Zync.QueSpec.Replicas,
+					Replicas:  apim.Spec.Zync.QueSpec.Replicas,
+					Resources: apim.Spec.Zync.QueSpec.Resources,
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync-que",
