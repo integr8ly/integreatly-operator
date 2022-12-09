@@ -96,7 +96,7 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			IsAuthProviderAddedFunc: func(accessToken string, authProviderName string, account AccountDetail) (bool, error) {
 // 				panic("mock out the IsAuthProviderAdded method")
 // 			},
-// 			ListTenantAccountsFunc: func(accessToken string, page int) ([]AccountDetail, error) {
+// 			ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
 // 				panic("mock out the ListTenantAccounts method")
 // 			},
 // 			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
@@ -203,7 +203,7 @@ type ThreeScaleInterfaceMock struct {
 	IsAuthProviderAddedFunc func(accessToken string, authProviderName string, account AccountDetail) (bool, error)
 
 	// ListTenantAccountsFunc mocks the ListTenantAccounts method.
-	ListTenantAccountsFunc func(accessToken string, page int) ([]AccountDetail, error)
+	ListTenantAccountsFunc func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error)
 
 	// PromoteProxyFunc mocks the PromoteProxy method.
 	PromoteProxyFunc func(accessToken string, serviceID string, env string, to string) (string, error)
@@ -453,6 +453,8 @@ type ThreeScaleInterfaceMock struct {
 			AccessToken string
 			// Page is the page argument value.
 			Page int
+			// FilterFn is the filterFn argument value.
+			FilterFn func(ac AccountDetail) bool
 		}
 		// PromoteProxy holds details about calls to the PromoteProxy method.
 		PromoteProxy []struct {
@@ -1529,21 +1531,23 @@ func (mock *ThreeScaleInterfaceMock) IsAuthProviderAddedCalls() []struct {
 }
 
 // ListTenantAccounts calls ListTenantAccountsFunc.
-func (mock *ThreeScaleInterfaceMock) ListTenantAccounts(accessToken string, page int) ([]AccountDetail, error) {
+func (mock *ThreeScaleInterfaceMock) ListTenantAccounts(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
 	if mock.ListTenantAccountsFunc == nil {
 		panic("ThreeScaleInterfaceMock.ListTenantAccountsFunc: method is nil but ThreeScaleInterface.ListTenantAccounts was just called")
 	}
 	callInfo := struct {
 		AccessToken string
 		Page        int
+		FilterFn    func(ac AccountDetail) bool
 	}{
 		AccessToken: accessToken,
 		Page:        page,
+		FilterFn:    filterFn,
 	}
 	mock.lockListTenantAccounts.Lock()
 	mock.calls.ListTenantAccounts = append(mock.calls.ListTenantAccounts, callInfo)
 	mock.lockListTenantAccounts.Unlock()
-	return mock.ListTenantAccountsFunc(accessToken, page)
+	return mock.ListTenantAccountsFunc(accessToken, page, filterFn)
 }
 
 // ListTenantAccountsCalls gets all the calls that were made to ListTenantAccounts.
@@ -1552,10 +1556,12 @@ func (mock *ThreeScaleInterfaceMock) ListTenantAccounts(accessToken string, page
 func (mock *ThreeScaleInterfaceMock) ListTenantAccountsCalls() []struct {
 	AccessToken string
 	Page        int
+	FilterFn    func(ac AccountDetail) bool
 } {
 	var calls []struct {
 		AccessToken string
 		Page        int
+		FilterFn    func(ac AccountDetail) bool
 	}
 	mock.lockListTenantAccounts.RLock()
 	calls = mock.calls.ListTenantAccounts

@@ -45,7 +45,7 @@ type ThreeScaleInterface interface {
 	DeleteAccount(accessToken, accountID string) error
 
 	CreateTenant(accessToken string, account AccountDetail, password string, email string) (*SignUpAccount, error)
-	ListTenantAccounts(accessToken string, page int) ([]AccountDetail, error)
+	ListTenantAccounts(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error)
 	GetTenantAccount(accessToken string, id int) (*SignUpAccount, error)
 	DeleteTenant(accessToken string, id int) error
 	DeleteTenants(accessToken string, accounts []AccountDetail) error
@@ -583,7 +583,13 @@ func (tsc *threeScaleClient) DeleteAccount(accessToken, accountID string) error 
 	return assertStatusCode(http.StatusOK, res)
 }
 
-func (tsc *threeScaleClient) ListTenantAccounts(accessToken string, page int) ([]AccountDetail, error) {
+func (tsc *threeScaleClient) ListTenantAccounts(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+	if filterFn == nil {
+		filterFn = func(ac AccountDetail) bool {
+			return true
+		}
+	}
+
 	// curl -v  -X GET "https://master.apps.jmonteir.edy6.s1.devshift.org/admin/api/accounts.json?access_token=AIjluIOs"
 	res, err := tsc.makeRequestToMaster(
 		"GET",
@@ -596,19 +602,18 @@ func (tsc *threeScaleClient) ListTenantAccounts(accessToken string, page int) ([
 		return nil, err
 	}
 
-	if err := assertStatusCode(http.StatusOK, res); err != nil {
+	if err = assertStatusCode(http.StatusOK, res); err != nil {
 		return nil, err
 	}
 
 	accountList := XMLAccountList{}
-	if err := responseFromXML(res, &accountList); err != nil {
+	if err = responseFromXML(res, &accountList); err != nil {
 		return nil, err
 	}
 
-	accounts := []AccountDetail{}
-	// removes pre created 3scale accounts
+	var accounts []AccountDetail
 	for _, account := range accountList.Accounts {
-		if account.Id != 1 && account.Id != 2 {
+		if filterFn(account) {
 			accounts = append(accounts, account)
 		}
 	}

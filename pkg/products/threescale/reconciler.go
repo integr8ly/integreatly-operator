@@ -1626,7 +1626,9 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		r.log.Infof("Retrieving list of MT accounts available ",
 			l.Fields{"Page": page},
 		)
-		accounts, err := r.tsClient.ListTenantAccounts(*accessToken, page)
+		accounts, err := r.tsClient.ListTenantAccounts(*accessToken, page, func(ac AccountDetail) bool {
+			return ac.Id != 1 && ac.Id != 2
+		})
 		if err != nil {
 			r.log.Error("failed to get accounts from 3scale API:", err)
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -3337,15 +3339,27 @@ func (r *Reconciler) useCustomDomain() bool {
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
 	format := "failed to retrieve %s 3scale route"
 	portals := map[string]metrics.PortalInfo{}
+
+	accessToken, err := r.GetMasterToken(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	accounts, err := r.tsClient.ListTenantAccounts(*accessToken, 1, nil)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	filter := NewTenantAccountsFilter(accounts)
+
 	systemMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemMaster, nil)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemMaster)
 	}
-	systemDeveloperRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemDeveloper, nil)
+	systemDeveloperRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemDeveloper, filter.Developer)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemDeveloper)
 	}
-	systemProviderRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemProvider, nil)
+	systemProviderRoute, err := r.getThreescaleRoute(ctx, serverClient, labelRouteToSystemProvider, filter.Provider)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf(format, labelRouteToSystemProvider)
 	}
