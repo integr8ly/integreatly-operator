@@ -61,7 +61,7 @@ products:
         installFrom: index
         package: 3scale-operator
         # temp solution for 4.12
-        index: quay.io/mstoklus/3scale-index:0.11.0
+        index: quay.io/integreatly/3scale-index:v0.11.0-mas
     cloud-resources:
         channel: rhmi
         installFrom: index
