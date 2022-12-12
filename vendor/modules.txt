@@ -14,7 +14,7 @@ github.com/3scale-ops/marin3r/pkg/envoy/serializer
 github.com/3scale-ops/marin3r/pkg/envoy/serializer/v3
 github.com/3scale-ops/marin3r/pkg/image
 github.com/3scale-ops/marin3r/pkg/util
-# github.com/3scale/3scale-operator v0.10.1-0.20221124111601-7d484662c79a
+# github.com/3scale/3scale-operator v0.10.1-0.20221206164259-31a0ef8b04df
 ## explicit; go 1.17
 github.com/3scale/3scale-operator/apis/apps
 github.com/3scale/3scale-operator/apis/apps/v1alpha1
