@@ -16,7 +16,6 @@ import (
 
 var (
 	rhssoName     = "rhsso"
-	userSSOName   = "rhssouser"
 	requestURLSSO = "/apis/keycloak.org/v1alpha1"
 	kindSSO       = "Keycloaks"
 )

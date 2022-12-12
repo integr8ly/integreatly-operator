@@ -3,7 +3,6 @@ package functional
 import (
 	goctx "context"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 
@@ -18,7 +17,6 @@ var (
 		common.RHSSOProductNamespace,
 		common.ThreeScaleProductNamespace,
 	}
-	availableZones = map[string]bool{}
 )
 
 type podDistribution struct {
@@ -36,8 +34,6 @@ func TestMultiAZPodDistribution(t common.TestingTB, ctx *common.TestingContext) 
 	if err != nil {
 		t.Fatalf("error listing nodes: %s", err)
 	}
-
-	availableZones = GetClustersAvailableZones(nodes)
 
 	// If "NAMESPACES_TO_CHECK" env var contains a list of namespaces, use that instead of the predefined list
 	namespacesFromEnvVar := os.Getenv("NAMESPACES_TO_CHECK")
@@ -142,21 +138,4 @@ func testCorrectPodDistribution(dist map[string]*podDistribution) []string {
 	}
 	return testErrors
 
-}
-
-// Takes the total number of pods belonging to the pod owner
-// and calculates the minimal and maximal amount of pods that should be running
-// per zone to meet the criteria for uniform pod distribution across the zones
-// Examples:
-// - 5 pods, 3 zones => 5/3 => min 1, max 2 pods per zone
-// - 4 pods, 2 zones => 4/2 => min 2, max 2 pods per zone
-func getAllowedNumberOfPodsPerZone(podsTotal int) (min int, max int) {
-	if podsTotal%len(availableZones) == 0 {
-		min = podsTotal / len(availableZones)
-		max = min
-		return
-	}
-	min = int(math.Floor(float64(podsTotal) / float64(len(availableZones))))
-	max = min + 1
-	return
 }

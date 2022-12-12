@@ -301,48 +301,6 @@ func removeKeyCloakUserFinalizers(ctx *TestingContext, nameSpace string) error {
 	return err
 }
 
-// Remove finalizers from Monitoring resources in a target namespace
-func removeMonitoringFinalizers(ctx *TestingContext, nameSpace string) error {
-
-	err := removeBlackBoxTargetFinalizers(ctx, nameSpace)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Poll removal of all finalizers from BlackBoxTargets from a namespace
-func removeBlackBoxTargetFinalizers(ctx *TestingContext, nameSpace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		blackBoxes := &integreatlyv1alpha1.BlackboxTargetList{}
-
-		err = ctx.Client.List(goctx.TODO(), blackBoxes, &k8sclient.ListOptions{
-			Namespace: nameSpace,
-		})
-
-		if err != nil {
-			return false, err
-		}
-
-		for i := range blackBoxes.Items {
-			blackBox := blackBoxes.Items[i]
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &blackBox, func() error {
-				blackBox.Finalizers = []string{}
-				return nil
-			})
-
-			if err != nil {
-				return false, err
-			}
-		}
-
-		return true, nil
-	})
-
-	return err
-}
-
 // Poll removal of all finalizers from EnvoyConfigRevisions from a namespace
 func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) error {
 	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {

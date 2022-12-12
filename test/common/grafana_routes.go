@@ -21,11 +21,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	grafanaCredsUsername = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
-	grafanaCredsPassword = DefaultPassword
-)
-
 func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
 	if os.Getenv("SKIP_FLAKES") == "true" {
 		// https://issues.redhat.com/browse/MGDAPI-555

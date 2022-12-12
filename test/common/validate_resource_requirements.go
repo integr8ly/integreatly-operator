@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -44,7 +43,6 @@ var (
 			"namespace":         Marin3rProductNamespace,
 		},
 	}
-	testLog = l.NewLoggerWithContext(l.Fields{l.ProductLogContext: "TeST"}).Logger
 )
 
 func ValidateResourceRequirements(t TestingTB, ctx *TestingContext) {

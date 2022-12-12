@@ -19,10 +19,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (t ThreeScaleTestScenario) assertNoop() error {
-	return nil
-}
-
 func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 	ctx := context.TODO()
 	accessToken := "test123"

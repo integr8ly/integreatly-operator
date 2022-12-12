@@ -155,16 +155,6 @@ func createRole(name, namespace string) *rbac.Role {
 	}
 	return role
 }
-func basicConfigMock() *config.ConfigReadWriterMock {
-	return &config.ConfigReadWriterMock{
-		ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
-			return config.NewMonitoringSpec(config.ProductConfig{}), nil
-		},
-		WriteConfigFunc: func(config config.ConfigReadable) error {
-			return nil
-		},
-	}
-}
 
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)

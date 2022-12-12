@@ -784,7 +784,6 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 		log           l.Logger
 	}
 	type args struct {
-		ctx          context.Context
 		serverClient k8sclient.Client
 	}
 	scheme, err := utils.NewTestScheme()

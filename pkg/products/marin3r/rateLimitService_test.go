@@ -896,9 +896,8 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 		ConfigManager   config.ConfigReadWriter
 	}
 	type args struct {
-		ctx             context.Context
-		client          k8sclient.Client
-		limitadorClient *LimitadorClient
+		ctx    context.Context
+		client k8sclient.Client
 	}
 	tests := []struct {
 		name    string

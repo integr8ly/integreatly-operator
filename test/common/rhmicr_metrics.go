@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -106,11 +105,4 @@ func parsePrometheusMetricToMap(metric, metricName string) map[string]string {
 		parsedStrings[value[0]] = strings.ReplaceAll(value[1], "\"", "")
 	}
 	return parsedStrings
-}
-
-func sanitizeForPrometheusLabel(productName integreatlyv1alpha1.ProductName) string {
-	if productName == integreatlyv1alpha1.Product3Scale {
-		productName = "threescale"
-	}
-	return fmt.Sprintf("%s_status", strings.ReplaceAll(string(productName), "-", "_"))
 }

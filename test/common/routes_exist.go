@@ -74,17 +74,6 @@ var (
 		},
 	}
 
-	userSsoRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "keycloak",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "keycloak-edge",
-			isTLS: true,
-		},
-	}
-
 	rhoamUserSsoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",

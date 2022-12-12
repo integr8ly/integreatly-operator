@@ -1871,40 +1871,6 @@ func kcAlertHasNotBeenMirrored(existingRules *monitoringv1.PrometheusRule) bool 
 	return true
 }
 
-func kcAlertHasNotBeenRemovedorUpdated(existingRules *monitoringv1.PrometheusRule) bool {
-	var alert1exists = false
-	var alert2exists = false
-	var alertKCexists = false
-	var expressionUpdated = false
-
-	for _, alertRuleGroups := range existingRules.Spec.Groups {
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "testAlert1" {
-				alert1exists = true
-			}
-		}
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "testAlert2" {
-				alert2exists = true
-			}
-		}
-		for _, alert := range alertRuleGroups.Rules {
-			if alert.Alert == "KeycloakInstanceNotAvailable" {
-				if alert.Expr.StrVal != "testExpression" {
-					expressionUpdated = true
-				}
-				alertKCexists = true
-			}
-		}
-	}
-
-	if !alert1exists || !alert2exists || !alertKCexists || expressionUpdated {
-		return false
-	}
-
-	return true
-}
-
 func TestReconciler_ReconcilePodDisruptionBudget(t *testing.T) {
 	scheme, err := utils.NewTestScheme()
 	if err != nil {

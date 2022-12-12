@@ -2,10 +2,6 @@ output:
   format: tab
   sort-results: true
 
-linters:
-  disable:
-    - unused
-
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

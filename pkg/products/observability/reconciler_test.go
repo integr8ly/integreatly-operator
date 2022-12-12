@@ -129,11 +129,6 @@ func TestReconciler_GetPreflightObject(t *testing.T) {
 		Reconciler    *resources.Reconciler
 		ConfigManager config.ConfigReadWriter
 		Config        *config.Observability
-		installation  *v1alpha1.RHMI
-		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
-		extraParams   map[string]string
-		recorder      record.EventRecorder
 	}
 	type args struct {
 		ns string
