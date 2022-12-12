@@ -67,11 +67,15 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 		if err != nil {
 			t.Fatalf("failed to get elasticache resource tags: %v", err)
 		}
-		if !elasticacheTagsContains(resp.TagList, awsManagedTagKey, awsManagedTagValue) {
-			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsManagedTagKey))
-		}
-		if isSTS && !elasticacheTagsContains(resp.TagList, awsClusterTypeKey, awsClusterTypeRosaValue) {
-			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsClusterTypeKey))
+
+		if isSTS {
+			// Check for managed tag for sts clusters only until https://issues.redhat.com/browse/MGDAPI-4729
+			if !elasticacheTagsContains(resp.TagList, awsManagedTagKey, awsManagedTagValue) {
+				testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsManagedTagKey))
+			}
+			if !elasticacheTagsContains(resp.TagList, awsClusterTypeKey, awsClusterTypeRosaValue) {
+				testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s does not have %s tag", resourceID, awsClusterTypeKey))
+			}
 		}
 	}
 
