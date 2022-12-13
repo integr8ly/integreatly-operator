@@ -57,7 +57,7 @@ func TestNewTenantAccountsFilter(t *testing.T) {
 						AdminBaseURL: "test3-admin.example.com",
 					},
 				},
-				developers: []developerAccounts{
+				developers: []developerRoute{
 					{
 						Url:   "test2.example.com",
 						State: "approved",
@@ -125,7 +125,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []developerAccounts
+		want []developerRoute
 	}{
 		{
 			name: "All accounts are admin",
@@ -141,7 +141,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 					AdminBaseURL: "test-admin.example.com",
 				},
 			}},
-			want: []developerAccounts{
+			want: []developerRoute{
 				{
 					Url:   "3scale.example.com",
 					State: "approved",
@@ -166,7 +166,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 					AdminBaseURL: "test.example.com",
 				},
 			}},
-			want: []developerAccounts{
+			want: []developerRoute{
 				{
 					Url:   "3scale.example.com",
 					State: "approved",
@@ -181,7 +181,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 					AdminBaseURL: "x-admin.dev-admin.example.com",
 				},
 			}},
-			want: []developerAccounts{
+			want: []developerRoute{
 				{
 					Url: "x-admin.dev.example.com",
 				},
@@ -207,7 +207,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &TenantAccountsFilter{}
-			f.generateDeveloperAccounts(tt.args.accounts)
+			f.generateDeveloperRoutes(tt.args.accounts)
 
 			if !reflect.DeepEqual(tt.want, f.developers) {
 				t.Errorf("developers list not as expected. \nWant: %s \nGot: %s", tt.want, f.developers)
@@ -219,7 +219,7 @@ func TestTenantAccountsFilter_GenerateDeveloperAccounts(t *testing.T) {
 
 func TestTenantAccountsFilter_Developer(t *testing.T) {
 	type fields struct {
-		developers []developerAccounts
+		developers []developerRoute
 	}
 	type args struct {
 		r v1.Route
@@ -232,7 +232,7 @@ func TestTenantAccountsFilter_Developer(t *testing.T) {
 	}{
 		{
 			name: "Url exist and is approved",
-			fields: fields{developers: []developerAccounts{
+			fields: fields{developers: []developerRoute{
 				{
 					Url:   "dummy.example.com",
 					State: "approved",
@@ -253,7 +253,7 @@ func TestTenantAccountsFilter_Developer(t *testing.T) {
 		},
 		{
 			name: "Url exist but not approved",
-			fields: fields{developers: []developerAccounts{
+			fields: fields{developers: []developerRoute{
 				{
 					Url:   "dummy.example.com",
 					State: "approved",
@@ -274,7 +274,7 @@ func TestTenantAccountsFilter_Developer(t *testing.T) {
 		},
 		{
 			name: "Url does not exist",
-			fields: fields{developers: []developerAccounts{
+			fields: fields{developers: []developerRoute{
 				{
 					Url:   "dummy.example.com",
 					State: "approved",

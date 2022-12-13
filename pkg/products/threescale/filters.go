@@ -7,10 +7,10 @@ import (
 
 type TenantAccountsFilter struct {
 	providers  []AccountDetail
-	developers []developerAccounts
+	developers []developerRoute
 }
 
-type developerAccounts struct {
+type developerRoute struct {
 	Url   string
 	State string
 }
@@ -18,7 +18,7 @@ type developerAccounts struct {
 func NewTenantAccountsFilter(accounts []AccountDetail) TenantAccountsFilter {
 	f := TenantAccountsFilter{}
 	f.setProviders(accounts)
-	f.generateDeveloperAccounts(accounts)
+	f.generateDeveloperRoutes(accounts)
 
 	return f
 }
@@ -41,10 +41,10 @@ func (f *TenantAccountsFilter) Developer(r v1.Route) bool {
 	return false
 }
 
-func (f *TenantAccountsFilter) generateDeveloperAccounts(accounts []AccountDetail) {
+func (f *TenantAccountsFilter) generateDeveloperRoutes(accounts []AccountDetail) {
 	for _, account := range accounts {
 		if strings.Contains(account.AdminBaseURL, "-admin.") {
-			d := developerAccounts{}
+			d := developerRoute{}
 			d.State = account.State
 			search := "-admin."
 			i := strings.LastIndex(account.AdminBaseURL, search)
