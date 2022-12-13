@@ -65,6 +65,7 @@ var (
 				Name: integreatlyv1alpha1.InstallStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
+					integreatlyv1alpha1.ProductMCG:            {Name: integreatlyv1alpha1.ProductMCG},
 					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability},
 					integreatlyv1alpha1.ProductRHSSO:          {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.Product3Scale:         {Name: integreatlyv1alpha1.Product3Scale},
@@ -88,6 +89,7 @@ var (
 			{
 				Name: integreatlyv1alpha1.UninstallCloudResourcesStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductMCG:            {Name: integreatlyv1alpha1.ProductMCG},
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
 				},
 			},
@@ -113,8 +115,8 @@ func (t *Type) HasProduct(product string) bool {
 	return false
 }
 
-//GetInstallStages returns indexed arrays of products names this is worked through starting at 0
-//the install will not move to the next index until all installs in the current index have completed successfully
+// GetInstallStages returns indexed arrays of products names this is worked through starting at 0
+// the install will not move to the next index until all installs in the current index have completed successfully
 func (t *Type) GetInstallStages() []Stage {
 	return t.InstallStages
 }
