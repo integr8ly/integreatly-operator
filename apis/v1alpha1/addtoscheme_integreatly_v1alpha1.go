@@ -17,7 +17,8 @@ import (
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-
+	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
+	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
 	confv1 "github.com/openshift/api/config/v1"
@@ -72,6 +73,8 @@ func init() {
 		observabilityoperator.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
 		cloudcredentialv1.Install,
+		noobaav1.SchemeBuilder.AddToScheme,
+		obv1.SchemeBuilder.AddToScheme,
 		// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
 		clusterloggingv1.AddToScheme,
 	)

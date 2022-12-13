@@ -3,15 +3,16 @@ package custom_domain
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
+	"strings"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
-	"net"
-	"net/url"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const CustomDomainDomain = "custom-domain_domain"
@@ -104,10 +105,18 @@ func GetIngressRouterService(ctx context.Context, serverClient client.Client) (*
 	return ingressRouterService, nil
 }
 
-func GetIngressRouterIPs(hostname string) ([]net.IP, error) {
-	ips, err := net.LookupIP(hostname)
-	if err != nil {
-		return nil, fmt.Errorf("unable to perform ip lookup for hostname %s: %v", hostname, err)
+func GetIngressRouterIPs(ingress []v1.LoadBalancerIngress) ([]net.IP, error) {
+	var ips []net.IP
+	if hostname := ingress[0].Hostname; hostname != "" {
+		var err error
+		ips, err = net.LookupIP(hostname)
+		if err != nil {
+			return nil, fmt.Errorf("unable to perform ip lookup for hostname %s: %v", hostname, err)
+		}
+	} else {
+		for i := range ingress {
+			ips = append(ips, net.ParseIP(ingress[i].IP))
+		}
 	}
 	return ips, nil
 }

@@ -21,6 +21,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	configv1 "github.com/openshift/api/config/v1"
 	v12 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
@@ -282,15 +283,15 @@ var blobStorage = &crov1.BlobStorage{
 		Name:      "threescale-blobstorage-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: types.ResourceTypeStatus{
-		Phase: types.PhaseComplete,
-		SecretRef: &types.SecretRef{
+	Status: crotypes.ResourceTypeStatus{
+		Phase: crotypes.PhaseComplete,
+		SecretRef: &crotypes.SecretRef{
 			Name:      "threescale-blobstorage-test",
 			Namespace: "integreatly-operator-ns",
 		},
 	},
 	Spec: types.ResourceTypeSpec{
-		SecretRef: &types.SecretRef{
+		SecretRef: &crotypes.SecretRef{
 			Name:      "threescale-blobstorage-test",
 			Namespace: "integreatly-operator-ns",
 		},
@@ -416,11 +417,11 @@ var postgres = &crov1.Postgres{
 		Name:      "threescale-postgres-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: types.ResourceTypeStatus{
+	Status: crotypes.ResourceTypeStatus{
 		Message:  "reconcile complete",
-		Phase:    types.PhaseComplete,
+		Phase:    crotypes.PhaseComplete,
 		Provider: "openshift-postgres",
-		SecretRef: &types.SecretRef{
+		SecretRef: &crotypes.SecretRef{
 			Name:      "test-postgres",
 			Namespace: "integreatly-operator-ns",
 		},
@@ -447,11 +448,11 @@ var redis = &crov1.Redis{
 		Name:      "threescale-redis-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: types.ResourceTypeStatus{
+	Status: crotypes.ResourceTypeStatus{
 		Message:  "reconcile complete",
-		Phase:    types.PhaseComplete,
+		Phase:    crotypes.PhaseComplete,
 		Provider: "openshift-redis",
-		SecretRef: &types.SecretRef{
+		SecretRef: &crotypes.SecretRef{
 			Name:      "test-redis",
 			Namespace: "integreatly-operator-ns",
 		},
@@ -475,10 +476,10 @@ var backendRedis = &crov1.Redis{
 		Name:      "threescale-backend-redis-test-installation",
 		Namespace: "integreatly-operator-ns",
 	},
-	Status: types.ResourceTypeStatus{
+	Status: crotypes.ResourceTypeStatus{
 		Message: "reconcile complete",
-		Phase:   types.PhaseComplete,
-		SecretRef: &types.SecretRef{
+		Phase:   crotypes.PhaseComplete,
+		SecretRef: &crotypes.SecretRef{
 			Name:      "test-backend-redis",
 			Namespace: "integreatly-operator-ns",
 		},
@@ -1009,6 +1010,16 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 				},
 			},
 		},
+		&configv1.Infrastructure{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cluster",
+			},
+			Status: configv1.InfrastructureStatus{
+				PlatformStatus: &configv1.PlatformStatus{
+					Type: configv1.AWSPlatformType,
+				},
+			},
+		},
 	)
 }
 
@@ -1061,15 +1072,15 @@ func getTestBlobStorage() *crov1.BlobStorage {
 			Name:      "threescale-blobstorage-rhmi",
 			Namespace: "test",
 		},
-		Status: types.ResourceTypeStatus{
-			Phase: types.PhaseComplete,
-			SecretRef: &types.SecretRef{
+		Status: crotypes.ResourceTypeStatus{
+			Phase: crotypes.PhaseComplete,
+			SecretRef: &crotypes.SecretRef{
 				Name:      "test",
 				Namespace: "test",
 			},
 		},
-		Spec: types.ResourceTypeSpec{
-			SecretRef: &types.SecretRef{
+		Spec: crotypes.ResourceTypeSpec{
+			SecretRef: &crotypes.SecretRef{
 				Name:      "test",
 				Namespace: "test",
 			},
