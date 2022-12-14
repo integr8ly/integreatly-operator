@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	//cprovider "k8s.io/cloud-provider"
 	"reflect"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -27,6 +28,7 @@ const (
 	ApicastStagingName    = "apicast_staging"
 	KeycloakName          = "rhssouser"
 	GrafanaName           = "grafana"
+	NoobaaDbName          = "noobaa-db-pg"
 )
 
 var (
@@ -109,6 +111,9 @@ func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota)
 	retQuota.name = quotaReceiver.Name
 	retQuota.productConfigs = map[v1alpha1.ProductName]QuotaProductConfig{}
 
+	//if cprovider.IsCloudProvider("gcp") {
+	//	products[v1alpha1.ProductMcg] = []string{NoobaaDbName}
+	//}
 	// loop through array of ddcss (deployment deploymentConfig StatefulSets)
 	for product, ddcssNames := range products {
 		pc := QuotaProductConfig{

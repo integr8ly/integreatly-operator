@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 
 	goctx "context"
 
@@ -87,6 +88,21 @@ var (
 			isTLS: true,
 		},
 	}
+
+	mcgRoutes = []ExpectedRoute{
+		ExpectedRoute{
+			Name:  "noobaa-mgmt",
+			isTLS: true,
+		},
+		ExpectedRoute{
+			Name:  "s3",
+			isTLS: true,
+		},
+		ExpectedRoute{
+			Name:  "sts",
+			isTLS: true,
+		},
+	}
 )
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
@@ -113,7 +129,7 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 
-	expectedRoutes := getExpectedRoutes(rhmi.Spec.Type)
+	expectedRoutes := getExpectedRoutes(rhmi.Spec.Type, ctx)
 
 	for product, routes := range expectedRoutes {
 		for _, expectedRoute := range routes {
@@ -134,10 +150,16 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
+func getExpectedRoutes(installType string, ctx *TestingContext) map[string][]ExpectedRoute {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+		if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+			mtManagedApiExpectedRoutes["mcg-operator"] = mcgRoutes
+		}
 		return mtManagedApiExpectedRoutes
 	} else {
+		if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+			managedApiExpectedRoutes["mcg-operator"] = mcgRoutes
+		}
 		return managedApiExpectedRoutes
 	}
 }

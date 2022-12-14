@@ -34,6 +34,8 @@ var (
 	Marin3rOperatorNamespace       = NamespacePrefix + "marin3r-operator"
 	Marin3rProductNamespace        = NamespacePrefix + "marin3r"
 	CustomerGrafanaNamespace       = NamespacePrefix + "customer-monitoring-operator"
+	McgOperatorNamespace           = NamespacePrefix + "mcg-operator"
+	GCPCloudProvider               = "gcp"
 )
 
 type TestingContext struct {

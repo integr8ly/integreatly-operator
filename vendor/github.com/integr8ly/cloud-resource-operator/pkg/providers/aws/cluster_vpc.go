@@ -5,11 +5,11 @@
 // provisioning resources for could be single AZ
 //
 // Problem statement:
-// - A single-AZ OpenShift cluster exists in a VPC, in a single AZ, which contains a public and a private sub-network
-// - A multi-AZ RDS instance for that OpenShift cluster exists in the same VPC, in at least 2 AZ's which must contain
-//   at least a private sub-network
-// - By default, if we try to provision a multi-AZ RDS instance in the cluster VPC it will fail as there is only one
-//   private sub-network available in one AZ
+//   - A single-AZ OpenShift cluster exists in a VPC, in a single AZ, which contains a public and a private sub-network
+//   - A multi-AZ RDS instance for that OpenShift cluster exists in the same VPC, in at least 2 AZ's which must contain
+//     at least a private sub-network
+//   - By default, if we try to provision a multi-AZ RDS instance in the cluster VPC it will fail as there is only one
+//     private sub-network available in one AZ
 //
 // To allow for this, we must create the missing private sub-networks in the AZ's that the cluster is not provisioned
 // in, so that RDS can successfully provision
@@ -60,7 +60,7 @@ func configureSecurityGroup(ctx context.Context, c client.Client, ec2Svc ec2ifac
 	logger.Infof("ensuring security group is correct for cluster %s", clusterID)
 
 	// build security group name
-	secName, err := BuildInfraName(ctx, c, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	secName, err := resources.BuildInfraName(ctx, c, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	logger.Info(fmt.Sprintf("setting resource security group %s", secName))
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")

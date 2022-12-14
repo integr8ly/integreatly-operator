@@ -7,4 +7,5 @@ const (
 	GrafanaSubscriptionName       = "rhmi-grafana"
 	Marin3rSubscriptionName       = "rhmi-marin3r"
 	ObservabilitySubscriptionName = "rhmi-observability"
+	MCGSubscriptionName           = "rhmi-mcg"
 )

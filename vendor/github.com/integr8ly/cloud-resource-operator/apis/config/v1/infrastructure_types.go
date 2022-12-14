@@ -114,6 +114,10 @@ type PlatformStatus struct {
 	// AWS contains settings specific to the Amazon Web Services infrastructure provider.
 	// +optional
 	AWS *AWSPlatformStatus `json:"aws,omitempty"`
+
+	// GCP contains settings specific to the Google Cloud Platform infrastructure provider.
+	// +optional
+	GCP *GCPPlatformStatus `json:"gcp,omitempty"`
 }
 
 // AWSPlatformStatus holds the current status of the Amazon Web Services infrastructure provider.
@@ -148,6 +152,15 @@ type AWSResourceTag struct {
 	// +kubebuilder:validation:Pattern=`^[0-9A-Za-z_.:/=+-@]+$`
 	// +required
 	Value string `json:"value"`
+}
+
+// GCPPlatformStatus holds the current status of the Google Cloud Platform infrastructure provider.
+type GCPPlatformStatus struct {
+	// resourceGroupName is the Project ID for new GCP resources created for the cluster.
+	ProjectID string `json:"projectID"`
+
+	// region holds the region for new GCP resources created for the cluster.
+	Region string `json:"region"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
