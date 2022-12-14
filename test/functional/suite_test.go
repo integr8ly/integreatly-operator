@@ -19,6 +19,7 @@ import (
 	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
+	confv1 "github.com/openshift/api/config/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 )
 
@@ -90,6 +91,9 @@ var _ = BeforeSuite(func() {
 		err = operatorsv1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 		// +kubebuilder:scaffold:scheme
+
+		err = confv1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
 
 		close(done)
 	}()

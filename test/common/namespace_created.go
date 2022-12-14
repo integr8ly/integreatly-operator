@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -63,8 +64,14 @@ func getNamespaces(t TestingTB, ctx *TestingContext) []string {
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+		if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+			return append(mtManagedApiNamespaces(), McgOperatorNamespace)
+		}
 		return mtManagedApiNamespaces()
 	} else {
+		if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+			return append(managedApiNamespaces(), McgOperatorNamespace)
+		}
 		return managedApiNamespaces()
 	}
 }

@@ -85,7 +85,7 @@ func (p *RedisSnapshotProvider) CreateRedisSnapshot(ctx context.Context, snapsho
 func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapshot *v1alpha1.RedisSnapshot, redis *v1alpha1.Redis, cacheSvc elasticacheiface.ElastiCacheAPI) (*providers.RedisSnapshotInstance, croType.StatusMessage, error) {
 	logger := resources.NewActionLogger(p.logger, "createRedisSnapshot")
 	// generate snapshot name
-	snapshotName, err := BuildTimestampedInfraNameFromObjectCreation(ctx, p.client, snapshot.ObjectMeta, defaultAwsIdentifierLength)
+	snapshotName, err := resources.BuildTimestampedInfraNameFromObjectCreation(ctx, p.client, snapshot.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		errMsg := "failed to generate snapshot name"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -100,7 +100,7 @@ func (p *RedisSnapshotProvider) createRedisSnapshot(ctx context.Context, snapsho
 	}
 
 	// generate cache cluster name
-	clusterName, err := BuildInfraNameFromObject(ctx, p.client, redis.ObjectMeta, defaultAwsIdentifierLength)
+	clusterName, err := resources.BuildInfraNameFromObject(ctx, p.client, redis.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		errMsg := "failed to get cluster name"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)

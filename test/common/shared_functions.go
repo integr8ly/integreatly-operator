@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -462,4 +463,13 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 		return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
 	}
 	return nil
+}
+
+func GetPlatformType(ctx *TestingContext) string {
+	infra, err := pkgresources.GetClusterInfrastructure(context.TODO(), ctx.Client)
+	if err != nil || infra.Status.PlatformStatus == nil {
+		fmt.Errorf("failed to retrieve cluster infrastructure: %w", err)
+		return ""
+	}
+	return string(infra.Status.PlatformStatus.Type)
 }

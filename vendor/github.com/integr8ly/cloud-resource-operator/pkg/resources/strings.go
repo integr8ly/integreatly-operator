@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//ShortenString Cut string size, but maintain a reference to the original string using a hash of the full string in the result
+// ShortenString Cut string size, but maintain a reference to the original string using a hash of the full string in the result
 func ShortenString(s string, n int) string {
 	hashLen := 4
 	anReg, err := buildAlphanumRegexp()
