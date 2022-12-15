@@ -5,6 +5,7 @@ products:
       - external
     targets:
       - 1.27.0
+      - 1.30.0
 estimate: 2h
 ---
 

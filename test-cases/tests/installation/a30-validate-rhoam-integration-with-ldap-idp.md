@@ -9,6 +9,7 @@ products:
       - osd-fresh-install
     targets:
       - 1.27.0
+      - 1.30.0
 ---
 
 # A30 - Validate RHOAM integration with LDAP IDP
@@ -21,7 +22,7 @@ We want to validate that customer can use LDAP server as a RHOAM IDP.
 
 - access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) installed locally
-- login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
+- login to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/)
 
 ## Steps
 

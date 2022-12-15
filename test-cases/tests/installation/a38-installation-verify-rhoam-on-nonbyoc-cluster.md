@@ -19,7 +19,7 @@ More information: https://issues.redhat.com/browse/MGDAPI-2397
 
 ## Steps
 
-1. Go to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/) and log in
+1. Go to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/) and log in
 2. Click on `Create cluster` and select `Red Hat OpenShift Dedicated`
 3. Select AWS and click on `Standard`
 4. Fill in the following parameters:

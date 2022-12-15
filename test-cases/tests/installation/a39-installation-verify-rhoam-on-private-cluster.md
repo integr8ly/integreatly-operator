@@ -24,7 +24,7 @@ estimate: 3h
 1. Go to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs) and select "AWS accounts" sheet
 2. Look for AWS account ID that is free (doesn't have anything specified in 'Note'). If no account is free, you can use account that is used by nightly pipelines (but don't forget to clean it up for night)
 3. Open the [AWS secrets file from 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) locally and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
-4. Go to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/) and log in
+4. Go to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/) and log in
 5. Click on `Create cluster` and again `Create cluster` in `Red Hat OpenShift Dedicated` row (not Trial)
 6. Click on `Customer cloud subscription` and click `Next`
 7. Click on `AWS`, insert AWS account ID, access key ID and secret access key from the SECRETS.md file (from the step above), click on `Validate` and then `Next`
