@@ -52,7 +52,6 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
 	log           l.Logger
-	extraParams   map[string]string
 	recorder      record.EventRecorder
 }
 

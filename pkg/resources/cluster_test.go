@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +15,6 @@ import (
 type ClusterVersionTestScenario struct {
 	Name           string
 	FakeSigsClient k8sclient.Client
-	logger         l.Logger
 	ExpectedError  string
 	ExpectedValue  bool
 }

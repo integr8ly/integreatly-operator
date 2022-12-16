@@ -3,7 +3,6 @@ package resources
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -235,15 +234,6 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 	}
 
 	return client, nil
-}
-
-func verifyRedirect(redirectUrl, host string) error {
-	if redirectUrl != host {
-		return errors.New(fmt.Sprintf("redirect host does not match product host: %v / %v",
-			redirectUrl,
-			host))
-	}
-	return nil
 }
 
 // Submit permission approval form

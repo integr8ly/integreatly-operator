@@ -16,7 +16,6 @@ import (
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -184,22 +183,6 @@ func TestReconciler_config(t *testing.T) {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
 		})
-	}
-}
-
-func getUser(name string) userHelper.MultiTenantUser {
-	return userHelper.MultiTenantUser{
-		Username:   name,
-		TenantName: name,
-		Email:      "asdf@bla.com",
-		UID:        "123",
-	}
-}
-
-func getAddedUsers() []userHelper.MultiTenantUser {
-	return []userHelper.MultiTenantUser{
-		getUser("user1"),
-		getUser("user2"),
 	}
 }
 

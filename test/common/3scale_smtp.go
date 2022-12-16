@@ -37,22 +37,21 @@ const (
 )
 
 var (
-	r1, _                         = rand.Int(rand.Reader, big.NewInt(200))
-	smtpReplicas            int32 = 1
-	threescaleLoginUserSMTP       = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
-	emailAddress                  = fmt.Sprintf("test%v@test.com", r1.Int64())
-	serviceIP                     = ""
-	emailUsername                 = "dummy"
-	emailPassword                 = "dummy"
-	emailPort                     = "1587"
-	originalHost                  = ""
-	originalPassword              = ""
-	originalPort                  = ""
-	originalUsername              = ""
-	original3scalePassword        = ""
-	original3scalePort            = ""
-	original3scaleHost            = ""
-	original3scaleUsername        = ""
+	r1, _                        = rand.Int(rand.Reader, big.NewInt(200))
+	smtpReplicas           int32 = 1
+	emailAddress                 = fmt.Sprintf("test%v@test.com", r1.Int64())
+	serviceIP                    = ""
+	emailUsername                = "dummy"
+	emailPassword                = "dummy"
+	emailPort                    = "1587"
+	originalHost                 = ""
+	originalPassword             = ""
+	originalPort                 = ""
+	originalUsername             = ""
+	original3scalePassword       = ""
+	original3scalePort           = ""
+	original3scaleHost           = ""
+	original3scaleUsername       = ""
 )
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email

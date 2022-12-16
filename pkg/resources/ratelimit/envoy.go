@@ -22,13 +22,6 @@ const (
 	EnvoyAPIVersion = "v3"
 )
 
-type container struct {
-	namespace          string
-	dcName             string
-	envoyNodeID        string
-	envoyContainerPort int32
-}
-
 type envoyProxyServer struct {
 	ctx    context.Context
 	client k8sclient.Client

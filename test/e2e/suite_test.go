@@ -34,15 +34,10 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var cfg *rest.Config
-var k8sClient client.Client
 var testEnv *envtest.Environment
 var installType string
 var err error
 var retryInterval = time.Second * 30
-var cloudResourcesStageTimeout = time.Minute * 10
-var monitoringStageTimeout = time.Minute * 10
-var authenticationStageTimeout = time.Minute * 30
-var productsStageTimout = time.Minute * 30
 var deploymentTimeout = time.Minute * 25
 var installStageTimeout = time.Minute * 40
 var failed = false

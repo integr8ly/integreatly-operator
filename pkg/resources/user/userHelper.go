@@ -9,8 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	v1 "github.com/openshift/api/config/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -184,36 +182,6 @@ func getIdentity(name string, identities *usersv1.IdentityList) *usersv1.Identit
 		}
 	}
 	return nil
-}
-
-func getUsersFromAdminGroups(ctx context.Context, serverClient k8sclient.Client, excludeGroups []string) (*usersv1.UserList, error) {
-	adminGroups := &usersv1.GroupList{}
-	err := serverClient.List(ctx, adminGroups)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not list users")
-	}
-
-	adminUsers := &usersv1.UserList{}
-	for _, adminGroup := range adminGroups.Items {
-		if excludeGroup(excludeGroups, adminGroup.Name) {
-			for _, user := range adminGroup.Users {
-				adminUsers.Items = append(adminUsers.Items, usersv1.User{
-					ObjectMeta: metav1.ObjectMeta{Name: user}},
-				)
-			}
-		}
-	}
-
-	return adminUsers, nil
-}
-
-func excludeGroup(groups []string, group string) bool {
-	for _, gr := range groups {
-		if group == gr {
-			return true
-		}
-	}
-	return false
 }
 
 func GetIdentitiesByProviderName(ctx context.Context, serverClient k8sclient.Client, providerName string) (*usersv1.IdentityList, error) {

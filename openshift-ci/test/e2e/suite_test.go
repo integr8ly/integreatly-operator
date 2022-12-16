@@ -5,29 +5,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-const (
-	testResultsDirectory = "/test-run-results"
-	jUnitOutputFilename  = "junit-integreatly-operator.xml"
-	addonMetadataName    = "addon-metadata.json"
-	testOutputFileName   = "test-output.txt"
-	testSuiteName        = "integreatly-operator"
-)
-
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var cfg *rest.Config
-var k8sClient client.Client
 var testEnv *envtest.Environment
-var installType string
-var err error
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -39,7 +25,7 @@ func TestAPIs(t *testing.T) {
 		AttachControlPlaneOutput: true,
 	}
 	var err error
-	cfg, err = testEnv.Start()
+	_, err = testEnv.Start()
 	if err != nil {
 		t.Fatalf("could not get start test environment %s", err)
 	}

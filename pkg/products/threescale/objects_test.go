@@ -9,14 +9,12 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	cloudcredentialv1 "github.com/openshift/api/operator/v1"
-	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -763,19 +761,6 @@ var clusterVersion = &v12.ClusterVersion{
 				Verified:       false,
 			},
 		},
-	},
-}
-
-var customDomainCR = &customdomainv1alpha1.CustomDomain{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "customDomain",
-		Namespace: "ns",
-	},
-	Spec: customdomainv1alpha1.CustomDomainSpec{
-		Domain: "apps.example.com",
-	},
-	Status: customdomainv1alpha1.CustomDomainStatus{
-		State: customdomainv1alpha1.CustomDomainStateReady,
 	},
 }
 

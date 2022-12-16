@@ -41,8 +41,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -138,7 +136,6 @@ type NamespaceLabelReconciler struct {
 	Scheme *runtime.Scheme
 
 	operatorNamespace string
-	controller        controller.Controller
 	log               l.Logger
 }
 
