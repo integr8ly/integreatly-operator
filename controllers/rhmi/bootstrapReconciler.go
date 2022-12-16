@@ -8,7 +8,6 @@ import (
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	v1 "github.com/openshift/api/config/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"math/big"
 	"os"
 	"strings"
@@ -101,14 +100,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
-
-	// TODO(MGDAPI-4641) remove this block
-	phase, err = r.deleteRHMIConfig(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to remove RHMIconfig", err)
-		return phase, errors.Wrap(err, "failed to remove RHMIConfig")
-	}
-	// MGDAPI-4641 block end
 
 	phase, err = resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -769,24 +760,6 @@ func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sc
 	}
 
 	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("no Status.apiServerURL found in infrastricture CR")
-}
-
-// TODO(MGDAPI-4641) remove this function
-func (r *Reconciler) deleteRHMIConfig(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-config",
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-
-	err := serverClient.Delete(ctx, rhmiConfig)
-	if err != nil && !k8serr.IsNotFound(err) && !meta.IsNoMatchError(err) {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error removing rhmi-config: %v", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {
