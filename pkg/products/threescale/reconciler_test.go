@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/foxcpp/go-mockdns"
@@ -2463,87 +2466,78 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 		serverClient func() k8sclient.Client
 		ips          []net.IP
 	}
+
+	systemSeed := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-seed",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"MASTER_ACCESS_TOKEN": []byte("abc"),
+		},
+	}
+
+	masterRoute := routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      labelRouteToSystemMaster,
+			Namespace: "test",
+			Labels: map[string]string{
+				"zync.3scale.net/route-to": labelRouteToSystemMaster,
+			},
+		},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{
+				{
+					Host: "host",
+				},
+			},
+		},
+	}
+
+	developerRoute := routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      labelRouteToSystemDeveloper,
+			Namespace: "test",
+			Labels: map[string]string{
+				"zync.3scale.net/route-to": labelRouteToSystemDeveloper,
+			},
+		},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{
+				{
+					Host: "3scale-admin.example.com",
+				},
+			},
+		},
+	}
+
+	providerRoute := routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      labelRouteToSystemProvider,
+			Namespace: "test",
+			Labels: map[string]string{
+				"zync.3scale.net/route-to": labelRouteToSystemProvider,
+			},
+		},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{
+				{
+					Host: "3scale.example.com",
+				},
+			},
+		},
+	}
+
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    integreatlyv1alpha1.StatusPhase
-		wantErr bool
+		name       string
+		fields     fields
+		args       args
+		want       integreatlyv1alpha1.StatusPhase
+		wantErr    bool
+		errMessage string
 	}{
 		{
-			name: "failed to ping 3scale portal",
-			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{
-					Status: integreatlyv1alpha1.RHMIStatus{},
-				},
-				Config: config.NewThreeScale(config.ProductConfig{
-					"NAMESPACE": "test",
-				}),
-			},
-			args: args{
-				ctx: context.TODO(),
-				serverClient: func() k8sclient.Client {
-					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme,
-						&routev1.Route{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      labelRouteToSystemMaster,
-								Namespace: "test",
-								Labels: map[string]string{
-									"zync.3scale.net/route-to": labelRouteToSystemMaster,
-								},
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-						&routev1.Route{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      labelRouteToSystemDeveloper,
-								Namespace: "test",
-								Labels: map[string]string{
-									"zync.3scale.net/route-to": labelRouteToSystemDeveloper,
-								},
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-						&routev1.Route{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      labelRouteToSystemProvider,
-								Namespace: "test",
-								Labels: map[string]string{
-									"zync.3scale.net/route-to": labelRouteToSystemProvider,
-								},
-							},
-							Status: routev1.RouteStatus{
-								Ingress: []routev1.RouteIngress{
-									{
-										Host: "host",
-									},
-								},
-							},
-						},
-					)
-					return mockClient
-				},
-				ips: []net.IP{
-					{127, 0, 0, 1},
-				},
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "failed to retrieve 3scale route",
+			name: "Get Master Token Failed",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					Status: integreatlyv1alpha1.RHMIStatus{},
@@ -2556,14 +2550,195 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+					return mockClient
+				},
+			},
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "secrets \"system-seed\" not found",
+		},
+		{
+			name: "List tenant accounts failed",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{},
+				},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				tsClient: &ThreeScaleInterfaceMock{
+					ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+						return nil, errors.New("test no accounts returned")
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
+					return mockClient
+				},
+			},
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "test no accounts returned",
+		},
+		{
+			name: "Get system master route failed",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{},
+				},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				tsClient: &ThreeScaleInterfaceMock{
+					ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+						return nil, nil
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
 					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
-						return errors.New("generic error")
+						return errors.New("failed to list routes")
 					}
 					return mockClient
 				},
 			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "failed to retrieve system-master 3scale route",
+		},
+		{
+			name: "Get system developer route failed",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{},
+				},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				tsClient: &ThreeScaleInterfaceMock{
+					ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+						return nil, nil
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+						listOpts := k8sclient.ListOptions{}
+						listOpts.ApplyOptions(opts)
+
+						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
+							list = &routev1.RouteList{ // nolint:ineffassign
+								Items: []routev1.Route{
+									masterRoute,
+								},
+							}
+							return nil
+						}
+						return errors.New("failed to list routes")
+					}
+					return mockClient
+				},
+			},
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "failed to retrieve system-developer 3scale route",
+		},
+		{
+			name: "Get system Provider route failed",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{},
+				},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				tsClient: &ThreeScaleInterfaceMock{
+					ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+						return nil, nil
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+						listOpts := k8sclient.ListOptions{}
+						listOpts.ApplyOptions(opts)
+
+						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
+							list = &routev1.RouteList{ // nolint:ineffassign
+								Items: []routev1.Route{
+									masterRoute,
+								},
+							}
+							return nil
+						}
+						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemDeveloper})) {
+							list = &routev1.RouteList{ // nolint:ineffassign
+								Items: []routev1.Route{
+									masterRoute,
+									developerRoute,
+								},
+							}
+							return nil
+						}
+
+						return errors.New("failed to list routes")
+					}
+					return mockClient
+				},
+			},
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "failed to retrieve system-provider 3scale route",
+		},
+		{
+			name: "failed to ping 3scale portal",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					Status: integreatlyv1alpha1.RHMIStatus{},
+				},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				tsClient: &ThreeScaleInterfaceMock{
+					ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+						return []AccountDetail{
+							{
+								AdminBaseURL: "3scale-admin.example.com",
+								State:        "approved",
+							},
+						}, nil
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed,
+						&masterRoute,
+						&developerRoute,
+						&providerRoute,
+					)
+					return mockClient
+				},
+				ips: []net.IP{
+					{127, 0, 0, 1},
+				},
+			},
+			want:       integreatlyv1alpha1.PhaseFailed,
+			wantErr:    true,
+			errMessage: "failed to ping",
 		},
 	}
 	for _, tt := range tests {
@@ -2585,6 +2760,9 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ping3scalePortals() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if tt.wantErr && !strings.Contains(err.Error(), tt.errMessage) {
+				t.Errorf("Unexpected error message returned: \nRecived error: %s\nExpected error to contain: %s", err, tt.errMessage)
 			}
 			if got != tt.want {
 				t.Errorf("ping3scalePortals() got = %v, want %v", got, tt.want)

@@ -219,7 +219,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				},
 			}, nil
 		},
-		ListTenantAccountsFunc: func(accessToken string, page int) ([]AccountDetail, error) {
+		ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
 			return accounts, nil
 		},
 		DeleteTenantsFunc: func(accessToken string, accounts []AccountDetail) error {
