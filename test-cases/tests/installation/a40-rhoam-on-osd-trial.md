@@ -16,8 +16,8 @@ Verify RHOAM installation on OSD Trial works as expected.
 
 ## Steps
 
-1. Login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
-2. Get the [OCM API Token](https://qaprodauth.cloud.redhat.com/beta/openshift/token)
+1. Login to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/)
+2. Get the [OCM API Token](https://qaprodauth.console.redhat.com/beta/openshift/token)
 3. Provision an OSD Trial Cluster through [Jenkins](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
    - Specify your ocmAccessToken in the pipeline parameters.
    - Reach out for AWS credentials needed to provision an OSD Trial Cluster

@@ -20,7 +20,7 @@ We want to validate that RHOAM can be installed via Addon Flow on all currently 
 ## Prerequisites
 
 - Access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
-- Login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
+- Login to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/)
 - Access to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs)
 - Access to [RHOAM Addon Flow pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow/)
 
@@ -28,8 +28,8 @@ We want to validate that RHOAM can be installed via Addon Flow on all currently 
 
 **Find OSD versions to be validated**
 
-1. Login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
-2. Get the [OCM API Token](https://qaprodauth.cloud.redhat.com/beta/openshift/token)
+1. Login to [OCM UI (staging environment)](https://qaprodauth.console.redhat.com/beta/openshift/)
+2. Get the [OCM API Token](https://qaprodauth.console.redhat.com/beta/openshift/token)
 3. Use the command displayed on the screen after the step above to log in to ocm cli
 4. `ocm cluster versions`
 5. Repeat the testing for latest micro (patch) of current minor version and minor -1 and minor -2

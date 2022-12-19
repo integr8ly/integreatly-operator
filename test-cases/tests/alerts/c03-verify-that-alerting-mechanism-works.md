@@ -34,7 +34,7 @@ watch "oc scale deployment --replicas=0 keycloak-operator -n redhat-rhoam-user-s
 > Verify that the alert starts firing by confirming that the alert in the prometheus UI eventually goes yellow -> red (it can take couple of minutes)
 > Verify that the firing alert is also visible in the `Monitoring` tab in the ocm dashboard:
 
-https://qaprodauth.cloud.redhat.com/beta/openshift/details/<cluster_id>
+https://qaprodauth.console.redhat.com/beta/openshift/details/<cluster_id>
 
 2. Check email, pagerduty and DMS configuration in alertmanager is as expected
 
