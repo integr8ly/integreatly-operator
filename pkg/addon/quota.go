@@ -1,12 +1,91 @@
 package addon
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"strings"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 )
 
 var quotaConfig = `
 [
+    {
+        "name":"100 Million",
+        "param":"1000",
+        "rate-limiting":{
+            "unit":"minute",
+            "requests_per_unit":69445,
+            "alert_limits":[
+                
+            ]
+        },
+        "resources":{
+            "backend_listener":{
+                "replicas":7,
+                "resources":{
+                    "requests":{
+                        "cpu":0.5,
+                        "memory":"600Mi"
+                    },
+                    "limits":{
+                        "cpu":1,
+                        "memory":"700Mi"
+                    }
+                }
+            },
+            "backend_worker":{
+                "replicas":5,
+                "resources":{
+                    "requests":{
+                        "cpu":0.4,
+                        "memory":"100Mi"
+                    },
+                    "limits":{
+                        "cpu":0.6,
+                        "memory":"100Mi"
+                    }
+                }
+            },
+            "apicast_production":{
+                "replicas":8,
+                "resources":{
+                    "requests":{
+                        "cpu":0.6,
+                        "memory":"275Mi"
+                    },
+                    "limits":{
+                        "cpu":1,
+                        "memory":"300Mi"
+                    }
+                }
+            },
+            "rhssouser":{
+                "replicas":3,
+                "resources":{
+                    "requests":{
+                        "cpu":1,
+                        "memory":"2000Mi"
+                    },
+                    "limits":{
+                        "cpu":2,
+                        "memory":"2000Mi"
+                    }
+                }
+            },
+            "ratelimit":{
+                "replicas":3,
+                "resources":{
+                    "requests":{
+                        "cpu":0.15,
+                        "memory":"50Mi"
+                    },
+                    "limits":{
+                        "cpu":0.3,
+                        "memory":"100Mi"
+                    }
+                }
+            }
+        }
+    },
     {
         "name":"50 Million",
         "param":"500",
