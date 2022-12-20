@@ -51,7 +51,7 @@ metadata:
     support: RHOAM
     containerImages: |-
       {
-        "3scale-operator.3scale-2.12.1-GA": {
+        "3scale-operator.v2.13.0": {
           "3scale-operator.v0.11.0-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
           "3scale-rhel7-operator-f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
           "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:f1a9fd03c1eb402a86d47617131b5ffa3c88da28c60298b6812625a8bb6a39af",
@@ -81,7 +81,7 @@ metadata:
           "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2",
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2"
         },
-        "observability-operator.v3.0.16": {
+        "observability-operator.v4.0.0": {
           "observability-operator.v4.0.0": "quay.io/rhoas/observability-operator:v4.0.0",
           "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.0.6",
           "observability-prometheus-operator": "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b",
