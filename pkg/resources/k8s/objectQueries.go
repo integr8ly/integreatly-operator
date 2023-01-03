@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -45,6 +44,31 @@ func UpdateIfExists(ctx context.Context, serverClient k8sclient.Client, fn contr
 	}
 
 	if err := serverClient.Update(ctx, obj); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// PatchIfExists uses serverClient to retrieve obj by its object key.
+// If obj is not found, it returns InProgress.
+// If obj is found, it applies fn and merge patches the object
+func PatchIfExists(ctx context.Context, serverClient k8sclient.Client, fn controllerutil.MutateFn, obj k8sclient.Object) (integreatlyv1alpha1.StatusPhase, error) {
+	objKey := k8sclient.ObjectKeyFromObject(obj)
+
+	if err := serverClient.Get(ctx, objKey, obj); err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := fn(); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := serverClient.Patch(ctx, obj, k8sclient.Merge); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 

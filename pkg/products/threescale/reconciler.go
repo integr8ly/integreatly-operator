@@ -294,6 +294,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcileCsvDeploymentsPriority(
+		ctx,
+		serverClient,
+		fmt.Sprintf("3scale-operator.v%s", integreatlyv1alpha1.OperatorVersion3Scale),
+		r.Config.GetOperatorNamespace(),
+		r.installation.Spec.PriorityClassName,
+	)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale-operator csv deployments priority class name"), err)
+		return phase, err
+	}
+
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -1167,7 +1179,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 	}
-
 	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
