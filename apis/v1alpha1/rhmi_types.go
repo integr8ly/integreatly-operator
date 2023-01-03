@@ -69,7 +69,7 @@ var (
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionMonitoring     ProductVersion = "1.8.0"
-	Version3Scale         ProductVersion = "2.12.1"
+	Version3Scale         ProductVersion = "2.13.0"
 	VersionCloudResources ProductVersion = "0.42.0"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
