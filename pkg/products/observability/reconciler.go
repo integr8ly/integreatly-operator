@@ -20,7 +20,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
+	observability "github.com/laurafitzgerald/observability-operator/api/v4/v1"
 	v1 "k8s.io/api/core/v1"
 	flowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	rbac "k8s.io/api/rbac/v1"

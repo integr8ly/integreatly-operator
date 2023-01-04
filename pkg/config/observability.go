@@ -2,7 +2,7 @@ package config
 
 import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	oo "github.com/redhat-developer/observability-operator/v3/api/v1"
+	oo "github.com/laurafitzgerald/observability-operator/api/v4/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
