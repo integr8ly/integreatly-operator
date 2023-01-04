@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -29,7 +30,7 @@ type AlertConfig struct {
 	Type      string                `json:"type"`
 	Level     string                `json:"level"`
 	RuleName  string                `json:"ruleName"`
-	Period    string                `json:"period"`
+	Duration  v1.Duration           `json:"period"`
 	Threshold *AlertThresholdConfig `json:"threshold,omitempty"`
 }
 

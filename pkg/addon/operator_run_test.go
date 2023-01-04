@@ -6,7 +6,6 @@ import (
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -310,7 +309,7 @@ func TestInferOperatorRunType(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return genericError
 					},
 				},
@@ -421,7 +420,7 @@ func TestOperatorInstalledViaOLM(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return genericError
 					},
 				},
@@ -494,7 +493,7 @@ func TestGetCatalogSource(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &clientMock.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return genericError
 					},
 				},

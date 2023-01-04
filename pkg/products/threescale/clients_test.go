@@ -7,8 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -50,7 +48,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
 	}
 
-	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+	sigsFakeClient.GetFunc = func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 		switch obj := obj.(type) {
 		case *corev1.Secret:
 			if key.Name == "alertmanager-application-monitoring" {

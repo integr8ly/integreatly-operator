@@ -10,10 +10,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"net"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
@@ -38,7 +37,7 @@ func TestGetDomain(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		client       client.Client
+		client       k8sclient.Client
 		installation *v1alpha1.RHMI
 	}
 	tests := []struct {
@@ -220,7 +219,7 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		serverClient client.Client
+		serverClient k8sclient.Client
 		domain       string
 	}
 	tests := []struct {
@@ -384,7 +383,7 @@ func TestGetIngressRouterService(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		serverClient func() client.Client
+		serverClient func() k8sclient.Client
 	}
 	tests := []struct {
 		name    string
@@ -396,7 +395,7 @@ func TestGetIngressRouterService(t *testing.T) {
 			name: "successfully retrieve ingress router service",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: func() client.Client {
+				serverClient: func() k8sclient.Client {
 					return moqclient.NewSigsClientMoqWithScheme(scheme,
 						&corev1.Service{
 							ObjectMeta: v1.ObjectMeta{
@@ -413,9 +412,9 @@ func TestGetIngressRouterService(t *testing.T) {
 			name: "failed to retrieve ingress router service",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: func() client.Client {
+				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return errors.New("generic error")
 					}
 					return mockClient

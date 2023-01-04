@@ -10,8 +10,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"testing"
@@ -24,9 +23,9 @@ func TestPatchIfExists(t *testing.T) {
 	}
 	type args struct {
 		ctx          context.Context
-		serverClient client.Client
+		serverClient k8sclient.Client
 		fn           controllerutil.MutateFn
-		obj          client.Object
+		obj          k8sclient.Object
 	}
 	tests := []struct {
 		name    string
@@ -62,7 +61,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("generic error")
 					},
 				},
@@ -84,7 +83,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return k8serr.NewNotFound(schema.GroupResource{}, "generic")
 					},
 				},
@@ -106,7 +105,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 				},
@@ -128,10 +127,10 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
-					PatchFunc: func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+					PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
 						return fmt.Errorf("generic error")
 					},
 				},

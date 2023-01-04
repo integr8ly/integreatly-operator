@@ -8,11 +8,9 @@ import (
 	"reflect"
 	"testing"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"k8s.io/apimachinery/pkg/types"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,7 +207,7 @@ func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
@@ -283,7 +281,7 @@ func TestReconcileSecretToProductNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {

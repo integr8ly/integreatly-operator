@@ -72,8 +72,8 @@ func TestGetAlertConfig(t *testing.T) {
 						MaxRate: &maxRate,
 						MinRate: "80%",
 					},
-					Period: "2h",
-					Type:   AlertTypeThreshold,
+					Duration: "2h",
+					Type:     AlertTypeThreshold,
 				}
 
 				if !reflect.DeepEqual(alertConfig, expectedConfig) {

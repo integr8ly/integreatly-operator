@@ -10,8 +10,7 @@ import (
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
@@ -24,7 +23,7 @@ func TestIsClusterSTS(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		client client.Client
+		client k8sclient.Client
 		log    logger.Logger
 	}
 	tests := []struct {
@@ -37,9 +36,10 @@ func TestIsClusterSTS(t *testing.T) {
 			name: "failed to get cluster cloud credential",
 			args: args{
 				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
-					return fmt.Errorf("get error")
-				}},
+				client: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+						return fmt.Errorf("get error")
+					}},
 				log: logger.NewLogger(),
 			},
 			want:    false,
@@ -103,7 +103,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 	const namespace = "test"
 
 	type args struct {
-		client    client.Client
+		client    k8sclient.Client
 		namespace string
 	}
 	tests := []struct {
@@ -116,7 +116,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 			name: "test: can't get secret",
 			args: args{
 				client: &moqclient.SigsClientInterfaceMock{
-					ListFunc: func(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
 						return fmt.Errorf("listError")
 					},
 				},
@@ -203,7 +203,7 @@ func Test_CreateSTSArnSecret(t *testing.T) {
 
 	type args struct {
 		ctx                   context.Context
-		client                client.Client
+		client                k8sclient.Client
 		installationNamespace string
 		operatorNamespace     string
 	}

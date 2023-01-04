@@ -307,7 +307,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("failed to create keycloak custom resource")
 				},
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "keycloak")
 				},
 			},

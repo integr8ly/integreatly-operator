@@ -42,7 +42,7 @@ type AlertConfiguration struct {
 	AlertName string
 	GroupName string
 	Namespace string
-	Interval  string
+	Interval  monitoringv1.Duration
 	Rules     []monitoringv1.Rule
 }
 

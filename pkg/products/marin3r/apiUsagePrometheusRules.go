@@ -63,16 +63,16 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 		case marin3rconfig.AlertTypeSpike:
 			expr := fmt.Sprintf(
 				"max_over_time((sum(increase(authorized_calls[1m])) + sum(increase(limited_calls[1m])))[%s:]) > %d",
-				alertConfig.Period, rateLimitRequestsPerUnit)
+				alertConfig.Duration, rateLimitRequestsPerUnit)
 			annotations := map[string]string{
-				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),
+				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Duration),
 				"grafanaConsole": grafanaDashboardURL,
 			}
 			alert := mapSpikeAlert(alertConfig, alertName, namespace, expr, annotations, installationName)
 			result = append(result, alert)
 		case marin3rconfig.AlertTypeThreshold:
 
-			usageFrequencyMins, err := intervalToMinutes(alertConfig.Period)
+			usageFrequencyMins, err := intervalToMinutes(string(alertConfig.Duration))
 			if err != nil {
 				return nil, err
 			}
@@ -86,8 +86,8 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 				return nil, err
 			}
 
-			lowerExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, ">=", requestsAllowedOverTimePeriod, &minRateValue)
-			upperExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, "<=", requestsAllowedOverTimePeriod, maxRateValue)
+			lowerExpr := increaseExpr(totalRequestsMetric, string(alertConfig.Duration), ">=", requestsAllowedOverTimePeriod, &minRateValue)
+			upperExpr := increaseExpr(totalRequestsMetric, string(alertConfig.Duration), "<=", requestsAllowedOverTimePeriod, maxRateValue)
 
 			// Get the complete expression by ANDing the lower and the upper if the
 			// upper limit is set, if not, assign the lower one
@@ -100,7 +100,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 			annotations := map[string]string{
 				"message": fmt.Sprintf(
 					"Total API usage in your API Management service is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
-					alertConfig.Threshold.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
+					alertConfig.Threshold.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Duration,
 				),
 				"grafanaConsole": grafanaDashboardURL,
 			}
@@ -120,7 +120,7 @@ func mapSpikeAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, nam
 		AlertName: alertName,
 		GroupName: "ratelimit-spike.rules",
 		Namespace: namespace,
-		Interval:  alertConfig.Period,
+		Interval:  alertConfig.Duration,
 		Rules: []monitoringv1.Rule{
 			{
 				Alert:       alertConfig.RuleName,

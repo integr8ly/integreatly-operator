@@ -46,7 +46,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -123,7 +122,7 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			installation: &integreatlyv1alpha1.RHMI{},
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -1081,9 +1080,10 @@ func TestReconciler_SetRollingStrategyForUpgrade(t *testing.T) {
 					"VERSION": "7.4",
 				}},
 				productVersion: integreatlyv1alpha1.ProductVersion("8.4"),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
-					return fmt.Errorf("GetError")
-				}},
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+						return fmt.Errorf("GetError")
+					}},
 				keycloakName: keycloakName,
 			},
 			fields:  fields{Log: getLogger()},

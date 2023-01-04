@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"testing"
 
@@ -151,7 +150,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Alerts:        []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return genericError
 				},
 			},
@@ -168,7 +167,7 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return genericError
 				},
 			},
@@ -185,7 +184,7 @@ func TestReconcileAlerts(t *testing.T) {
 			},
 			Alerts: []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
@@ -200,7 +199,7 @@ func TestReconcileAlerts(t *testing.T) {
 			ExistingRules: []*monitoringv1.PrometheusRule{},
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Client: &client.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {

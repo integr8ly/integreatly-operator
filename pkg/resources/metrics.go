@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/prometheus/common/model"
+	"strconv"
 	"strings"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -827,6 +829,10 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 // reconcilePrometheusRule will create a PrometheusRule object
 func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc, sopURL, alertFor string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
 	alertGroupName := alertName + "Group"
+	duration, err := model.ParseDuration(alertFor)
+	if err != nil {
+		return err
+	}
 	groups := []prometheusv1.RuleGroup{
 		{
 			Name: alertGroupName,
@@ -834,7 +840,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 				{
 					Alert:  alertName,
 					Expr:   alertExp,
-					For:    alertFor,
+					For:    prometheusv1.Duration(strconv.FormatInt(int64(duration), 10)),
 					Labels: labels,
 					Annotations: map[string]string{
 						"description": desc,
@@ -859,7 +865,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 	}
 
 	// create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 		rule.Name = ruleName
 		rule.Namespace = ns
 		rule.Spec.Groups = []prometheusv1.RuleGroup{
@@ -869,7 +875,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 					{
 						Alert:  alertName,
 						Expr:   alertExp,
-						For:    alertFor,
+						For:    prometheusv1.Duration(strconv.FormatInt(int64(duration), 10)),
 						Labels: labels,
 						Annotations: map[string]string{
 							"description": desc,

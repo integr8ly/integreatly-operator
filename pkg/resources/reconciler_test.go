@@ -691,7 +691,7 @@ func TestReconciler_ReconcileDeploymentPriority(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 					PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
@@ -790,7 +790,7 @@ func TestReconciler_ReconcileCsvDeploymentsPriority(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				client: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 					PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {

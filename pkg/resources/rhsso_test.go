@@ -8,7 +8,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -86,7 +85,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -110,7 +109,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("test error")
 				}
 				return mockClient
