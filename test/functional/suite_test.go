@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -22,8 +23,7 @@ import (
 )
 
 const (
-	testResultsDirectory = "/test-run-results"
-	testSuiteName        = "integreatly-operator"
+	testSuiteName = "integreatly-operator"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -58,7 +58,10 @@ func TestAPIs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not get install type %s", err)
 	}
-
+	testResultsDirectory := os.Getenv("OUTPUT_DIR")
+	if len(testResultsDirectory) == 0 {
+		testResultsDirectory = "/test-run-results"
+	}
 	jUnitReportLocation := fmt.Sprintf("%s/%s", testResultsDirectory, utils.JUnitFileName(testSuiteName))
 
 	// Fetch the current config

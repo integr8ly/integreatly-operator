@@ -1,0 +1,31 @@
+FROM registry.ci.openshift.org/openshift/release:golang-1.18 AS builder
+
+ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
+WORKDIR ${PKG}
+
+# compile test binary
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY vendor ./vendor
+COPY make ./make
+COPY apis/ apis/
+COPY controllers/ controllers/
+COPY pkg ./pkg
+COPY test ./test
+COPY Makefile ./
+COPY manifests/ ./manifests
+COPY products ./products
+COPY version ./version
+
+RUN make test/compile/functional
+
+FROM quay.io/openshift/origin-cli
+# Install chrome for tests
+COPY test-dependency/*.repo /etc/yum.repos.d/
+COPY build/bin/setup_external.sh ./setup_external.sh
+RUN dnf -y install google-chrome-stable && dnf clean all
+ENV WATCH_NAMESPACE=redhat-rhoam-operator
+RUN mkdir test-run-results
+
+COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
+ENTRYPOINT [ "/bin/bash", "-c", "./setup_external.sh"]
