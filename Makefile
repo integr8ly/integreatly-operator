@@ -606,3 +606,9 @@ test/unit/prometheus/single:
 .PHONY: test/lint
 test/lint: golangci-lint
 	@$(GOLANGCI_LINT) run
+
+.PHONY: test/scripts
+test/scripts:
+	# Preform a basic check on scripts checking for a non zero exit
+	echo "Running make release/prepare"
+	SEMVER=$(RHOAM_TAG) make release/prepare
