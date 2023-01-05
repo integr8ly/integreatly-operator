@@ -149,7 +149,7 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "Namespace")
 			os.Exit(1)
 		}
-		if err = (&usercontroller.UserReconciler{}).SetupWithManager(mgr); err != nil {
+		if err = usercontroller.New(mgr).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "User")
 			os.Exit(1)
 		}

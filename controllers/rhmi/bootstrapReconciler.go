@@ -72,7 +72,7 @@ type Reconciler struct {
 	log      l.Logger
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
+func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 	return nil
 }
 
@@ -371,7 +371,7 @@ func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClien
 
 func (r *Reconciler) reconcileTenantOauthSecrets(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	allTenants, err := userHelper.GetMultiTenantUsers(ctx, serverClient, r.installation)
+	allTenants, err := userHelper.GetMultiTenantUsers(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting teants for OAuth clients secrets: %w", err)
 	}

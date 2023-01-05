@@ -619,7 +619,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 
 func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User, groups *usersv1.GroupList) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
 	for _, osUser := range openshiftUsers {
-		if !kcContainsOsUser(keycloakUsers, osUser) && !userHelper.UserInExclusionGroup(osUser, groups) {
+		if !kcContainsOsUser(keycloakUsers, osUser) && !userHelper.IsInExclusionGroup(osUser, groups) {
 			added = append(added, osUser)
 		}
 	}
@@ -662,7 +662,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	}
 
 	for _, osUser := range added {
-		email := userHelper.GetUserEmailFromIdentity(ctx, serverClient, osUser, identitiesList)
+		email := userHelper.GetEmailFromIdentity(osUser, identitiesList)
 
 		if email == "" {
 			email = userHelper.SetUserNameAsEmail(osUser.Name)

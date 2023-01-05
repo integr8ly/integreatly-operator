@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"time"
 
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -18,29 +18,39 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "user_controller"})
-
-// UserReconciler reconciles a User object
-type UserReconciler struct {
-}
-
 // +kubebuilder:rbac:groups=user.openshift.io,resources=groups,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=user.openshift.io,resources=groups,resourceNames=rhmi-developers,verbs=update;delete
 // +kubebuilder:rbac:groups=user.openshift.io,resources=users,verbs=watch;get;list
 
-func (r *UserReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	log.Info("Reconciling User")
+var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "user_controller"})
 
-	// new client to avoid caching issues
+// UserReconciler reconciles a User object
+type UserReconciler struct {
+	k8sclient.Client
+	Scheme *runtime.Scheme
+	mgr    manager.Manager
+}
+
+func New(mgr manager.Manager) *UserReconciler {
 	restConfig := controllerruntime.GetConfigOrDie()
 	restConfig.Timeout = time.Second * 10
-	scheme := runtime.NewScheme()
-	err := rhmiv1alpha1.AddToSchemes.AddToScheme(scheme)
+
+	client, err := k8sclient.New(restConfig, k8sclient.Options{
+		Scheme: mgr.GetScheme(),
+	})
 	if err != nil {
-		return ctrl.Result{}, err
+		panic("could not setup k8s client for user controller")
 	}
 
-	c, _ := k8sclient.New(restConfig, k8sclient.Options{Scheme: scheme})
+	return &UserReconciler{
+		Client: client,
+		Scheme: mgr.GetScheme(),
+		mgr:    mgr,
+	}
+}
+
+func (r *UserReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
+	log.Info("Reconciling User")
 
 	rhmiGroup := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
@@ -48,18 +58,19 @@ func (r *UserReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, c, rhmiGroup, func() error {
-		users := &usersv1.UserList{}
-		err := c.List(ctx, users)
-		if err != nil {
-			return err
-		}
+	users := &usersv1.UserList{}
+	err := r.Client.List(ctx, users)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-		groups := &usersv1.GroupList{}
-		err = c.List(ctx, groups)
-		if err != nil {
-			return err
-		}
+	groups := &usersv1.GroupList{}
+	err = r.Client.List(ctx, groups)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, r.Client, rhmiGroup, func() error {
 
 		rhmiGroup.Users = mapUserNames(users, groups)
 
@@ -74,7 +85,7 @@ func mapUserNames(users *usersv1.UserList, groups *usersv1.GroupList) []string {
 	var result = []string{}
 	for _, user := range users.Items {
 		// Certain users such as sre do not need to be added
-		if !userHelper.UserInExclusionGroup(user, groups) {
+		if !userHelper.IsInExclusionGroup(user, groups) {
 			result = append(result, user.Name)
 		}
 	}
