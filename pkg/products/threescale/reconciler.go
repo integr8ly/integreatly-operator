@@ -355,7 +355,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, fmt.Errorf("%s: %v", errorMessage, err)
 	}
 
-	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
+	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress)
 	if err != nil {
 		errorMessage := "failed to retrieve ingress router ips"
 		r.log.Error(errorMessage, err)
