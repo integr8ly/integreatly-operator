@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
 )
 
 const clusterVersionName = "version"
@@ -83,6 +84,8 @@ func GetClusterType(infra *configv1.Infrastructure) (string, error) {
 			}
 		}
 		return "", fmt.Errorf("key \"red-hat-clustertype\" not in AWS resource tags")
+	case configv1.GCPPlatformType:
+		return string(configv1.GCPPlatformType), nil
 	default:
 		return "", fmt.Errorf("no platform information found for type %s", infra.Status.PlatformStatus.Type)
 

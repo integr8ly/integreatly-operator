@@ -33,6 +33,10 @@ func (m *MCG) GetHost() string {
 	return m.config["HOST"]
 }
 
+func (m *MCG) SetHost(newHost string) {
+	m.config["HOST"] = newHost
+}
+
 func (m *MCG) GetProductName() integreatlyv1alpha1.ProductName {
 	return integreatlyv1alpha1.ProductMCG
 }

@@ -95,4 +95,4 @@ products:
         channel: stable-4.11
         installFrom: index
         package: mcg-operator
-        index: quay.io/acatterm/mcg-index:v4.11.3
+        index: quay.io/acatterm/mcg-index:v4.11.4

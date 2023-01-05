@@ -2,6 +2,7 @@ package mcg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -10,16 +11,37 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
+	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
+	k8spointer "k8s.io/utils/pointer"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	defaultInstallationNamespace = "mcg"
+	DefaultInstallationNamespace  = "mcg"
+	noobaaName                    = "noobaa"
+	noobaaDefaultBackingStore     = noobaaName + "-default-backing-store"
+	noobaaDefaultBucketClass      = noobaaName + "-default-bucket-class"
+	pvpoolStorageSize             = "32Gi"
+	defaultStorageClassAnnotation = "storageclass.kubernetes.io/is-default-class"
+	threescaleBucket              = "3scale-operator-bucket"
+	ThreescaleBucketClaim         = threescaleBucket + "-claim"
+	s3CredentialsSecretName       = "s3-credentials"
+	s3BucketRegion                = "global"
+	s3PathStyle                   = "true"
 )
 
 type Reconciler struct {
@@ -42,7 +64,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("could not retrieve mcg config: %w", err)
 	}
 	if mcgConfig.GetNamespace() == "" {
-		mcgConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+		mcgConfig.SetNamespace(installation.Spec.NamespacePrefix + DefaultInstallationNamespace)
 		if err := configManager.WriteConfig(mcgConfig); err != nil {
 			return nil, fmt.Errorf("error writing mcg config : %w", err)
 		}
@@ -85,7 +107,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		// TODO: cleanup resources
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
+		phase, err := r.cleanupResources(ctx, serverClient, installation)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -118,15 +144,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if r.installation.GetDeletionTimestamp() == nil {
+	phase, err = r.ReconcileNoobaa(ctx, serverClient)
+	r.log.Infof("ReconcileNoobaa", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile NooBaa", err)
+		return phase, err
 	}
 
-	//TODO:
-	// - Reconcile NooBaa CR
-	// - Reconcile ObjectBucketClaim CR
-	// - Retrieve credentials once provisioned
-	// - Create 3scale secret with credentials
+	phase, err = r.ReconcileObjectBucketClaim(ctx, serverClient)
+	r.log.Infof("ReconcileObjectBucketClaim", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile ObjectBucketClaim", err)
+		return phase, err
+	}
 
+	productStatus.Host = r.Config.GetHost()
 	productStatus.Version = r.Config.GetProductVersion()
 	productStatus.OperatorVersion = r.Config.GetOperatorVersion()
 
@@ -160,4 +192,197 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		catalogSourceReconciler,
 		r.log,
 	)
+}
+
+func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	noobaa := &noobaav1.NooBaa{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      noobaaName,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+	key := k8sclient.ObjectKeyFromObject(noobaa)
+	err := serverClient.Get(ctx, key, noobaa)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	defaultStorageClass, err := retrieveDefaultStorageClass(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, noobaa, func() error {
+		noobaa.Spec.CleanupPolicy.AllowNoobaaDeletion = true
+		noobaa.Spec.PVPoolDefaultStorageClass = k8spointer.StringPtr(defaultStorageClass.Name)
+		quant, err := resource.ParseQuantity(pvpoolStorageSize)
+		if err != nil {
+			return err
+		}
+		noobaa.Spec.DefaultBackingStoreSpec = &noobaav1.BackingStoreSpec{
+			PVPool: &noobaav1.PVPoolSpec{
+				StorageClass: defaultStorageClass.Name,
+				NumVolumes:   1,
+				VolumeResources: &corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: quant,
+					},
+				},
+			},
+			Type: noobaav1.StoreTypePVPool,
+		}
+		owner.AddIntegreatlyOwnerAnnotations(noobaa, r.installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if noobaa.Status.Phase != noobaav1.SystemPhaseReady {
+		r.log.Infof("NooBaa deployment in progress", l.Fields{"status": noobaa.Status.Phase})
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	if noobaa.Status.Services != nil && len(noobaa.Status.Services.ServiceS3.ExternalDNS) > 0 {
+		r.Config.SetHost(noobaa.Status.Services.ServiceS3.ExternalDNS[0])
+	}
+
+	r.log.Infof("NooBaa: ", l.Fields{"status": status})
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) ReconcileObjectBucketClaim(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	objbc := &noobaav1.ObjectBucketClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ThreescaleBucketClaim,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	key := k8sclient.ObjectKeyFromObject(objbc)
+	err := serverClient.Get(ctx, key, objbc)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, objbc, func() error {
+		objbc.Spec.GenerateBucketName = threescaleBucket
+		objbc.Spec.StorageClassName = r.Config.GetOperatorNamespace() + ".noobaa.io"
+		objbc.Spec.AdditionalConfig = map[string]string{
+			"bucketclass": noobaaDefaultBucketClass,
+		}
+		owner.AddIntegreatlyOwnerAnnotations(objbc, r.installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.log.Infof("ObjectBucketClaim: ", l.Fields{"status": status})
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func retrieveDefaultStorageClass(ctx context.Context, serverClient k8sclient.Client) (*storagev1.StorageClass, error) {
+	storageList := &storagev1.StorageClassList{}
+	err := serverClient.List(ctx, storageList)
+	if err != nil {
+		return nil, err
+	}
+	var defaultStorageClass *storagev1.StorageClass
+	for _, storageClass := range storageList.Items {
+		if storageClass.Annotations[defaultStorageClassAnnotation] == "true" {
+			defaultStorageClass = &storageClass
+			break
+		}
+	}
+	if defaultStorageClass == nil {
+		return nil, errors.New("unable to determine default storage class")
+	}
+
+	return defaultStorageClass, nil
+}
+
+func (r *Reconciler) cleanupResources(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	if inst.DeletionTimestamp == nil {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	opts := &k8sclient.ListOptions{
+		Namespace: r.Config.GetOperatorNamespace(),
+	}
+
+	noobaaCRD := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "noobaas.noobaa.io",
+		},
+	}
+	crdExists, err := k8s.Exists(ctx, serverClient, noobaaCRD)
+	if err != nil {
+		r.log.Error("Error checking NooBaa CRD existence: ", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if !crdExists {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	// Ensure buckets are deleted before we remove the noobaa system
+	objectBucketClaims := &noobaav1.ObjectBucketClaimList{}
+	err = serverClient.List(ctx, objectBucketClaims, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for i := range objectBucketClaims.Items {
+		objclaim := objectBucketClaims.Items[i]
+		err = serverClient.Delete(ctx, &objclaim)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Check all object bucket claims have been deleted
+	err = serverClient.List(ctx, objectBucketClaims, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if len(objectBucketClaims.Items) > 0 {
+		r.log.Info("ObjectBucketClaim deletion in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Check all object buckets have been deleted
+	objectBuckets := &noobaav1.ObjectBucketList{}
+	err = serverClient.List(ctx, objectBuckets, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if len(objectBuckets.Items) > 0 {
+		r.log.Info("ObjectBucket deletion in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	noobaas := &noobaav1.NooBaaList{}
+	err = serverClient.List(ctx, noobaas, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for i := range noobaas.Items {
+		noobaa := noobaas.Items[i]
+		err = serverClient.Delete(ctx, &noobaa)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Check all noobaas have been deleted
+	err = serverClient.List(ctx, noobaas, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if len(noobaas.Items) > 0 {
+		r.log.Info("NooBaa deletion in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
