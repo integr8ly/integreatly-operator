@@ -121,7 +121,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
-
 			phase, err := r.removeSnapshots(ctx, installation, client)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
@@ -139,10 +138,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 
-			// remove the namespace
-			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				return phase, err
+			// the ns can be managed by hive and removing it here can cause rhoam uninstall to get stuck
+			isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, client, installation)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			if !isHiveManaged {
+				phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
+				if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+					return phase, err
+				}
 			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil

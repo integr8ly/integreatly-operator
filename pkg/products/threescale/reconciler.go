@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"net"
 	"net/http"
 	"os"
@@ -200,9 +201,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+		// the ns can be managed by hive and removing it here can cause rhoam uninstall to get stuck
+		isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, serverClient, installation)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if !isHiveManaged {
+			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
 
 		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
