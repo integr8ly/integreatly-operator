@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/mail"
 	"regexp"
@@ -39,8 +38,7 @@ type MultiTenantUser struct {
 	UID        string
 }
 
-func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User, identitiesList usersv1.IdentityList) string {
-	email := ""
+func GetEmailFromIdentity(user usersv1.User, identitiesList usersv1.IdentityList) string {
 
 	// User can have multiple identities
 	for _, identityName := range user.Identities {
@@ -53,7 +51,7 @@ func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client
 		}
 	}
 
-	return email
+	return ""
 }
 
 func AppendUpdateProfileActionForUserWithoutEmail(keycloakUser *keycloak.KeycloakAPIUser) {
@@ -84,7 +82,7 @@ func GetValidGeneratedUserName(keycloakUser keycloak.KeycloakAPIUser) string {
 	return fmt.Sprintf("%v%v", GeneratedNamePrefix, processedString)
 }
 
-func UserInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
+func IsInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
 
 	// Below is a slightly complex way to determine if the user exists in an exlcusion group
 	// Ideally we would use the user.Groups field but this does not seem to get populated.
@@ -221,22 +219,22 @@ func GetUsersByProviderName(ctx context.Context, serverClient k8sclient.Client, 
 	return usersByProvider, nil
 }
 
-func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (users []MultiTenantUser, err error) {
+func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (users []MultiTenantUser, err error) {
 	identities := &usersv1.IdentityList{}
 	err = serverClient.List(ctx, identities)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting identity list")
+		return nil, fmt.Errorf("error getting identity list")
 	}
 
 	usersList := &usersv1.UserList{}
 	err = serverClient.List(ctx, usersList)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting users list")
+		return nil, fmt.Errorf("error getting users list")
 	}
 
 	for i := range usersList.Items {
 		user := usersList.Items[i]
-		if isUserHasTenantAnnotation(&user, installation) {
+		if hasTenantAnnotation(&user) {
 			users = append(users, MultiTenantUser{
 				Username:   user.Name,
 				TenantName: SanitiseTenantUserName(user.Name),
@@ -249,7 +247,7 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client, ins
 	return users, nil
 }
 
-func isUserHasTenantAnnotation(user *usersv1.User, installation *integreatlyv1alpha1.RHMI) bool {
+func hasTenantAnnotation(user *usersv1.User) bool {
 	if user.Annotations == nil {
 		return false
 	}

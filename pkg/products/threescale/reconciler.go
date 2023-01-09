@@ -1613,7 +1613,7 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 }
 
 func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	mtUserIdentities, err := userHelper.GetMultiTenantUsers(ctx, serverClient, r.installation)
+	mtUserIdentities, err := userHelper.GetMultiTenantUsers(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}

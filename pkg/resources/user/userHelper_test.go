@@ -6,17 +6,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
 
-	configv1 "github.com/openshift/api/config/v1"
-	corev1 "k8s.io/api/core/v1"
-	"time"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -27,22 +23,16 @@ const (
 )
 
 func TestGetUserEmailFromIdentity(t *testing.T) {
-	scheme, err := utils.NewTestScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	tests := []struct {
 		Name          string
-		FakeClient    k8sclient.Client
 		User          userv1.User
 		Identities    userv1.IdentityList
 		ExpectedEmail string
 		ExpectedError bool
 	}{
 		{
-			Name:       "Test get email from identity",
-			FakeClient: fake.NewFakeClientWithScheme(scheme),
+			Name: "Test get email from identity",
 			User: userv1.User{
 				Identities: []string{testIdentity},
 			},
@@ -59,13 +49,31 @@ func TestGetUserEmailFromIdentity(t *testing.T) {
 			ExpectedEmail: testEmail,
 			ExpectedError: false,
 		},
+		{
+			Name: "Test user email not in identity",
+			User: userv1.User{
+				Identities: []string{testIdentity},
+			},
+			Identities: userv1.IdentityList{
+				Items: []userv1.Identity{
+					{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "notTestIdentity",
+						},
+						Extra: map[string]string{"email": testEmail},
+					},
+				},
+			},
+			ExpectedEmail: "",
+			ExpectedError: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			got := GetUserEmailFromIdentity(context.TODO(), tt.FakeClient, tt.User, tt.Identities)
+			got := GetEmailFromIdentity(tt.User, tt.Identities)
 
 			if got != tt.ExpectedEmail {
-				t.Errorf("GetUserEmailFromIdentity() got = %v, want %v", got, tt.ExpectedEmail)
+				t.Errorf("GetEmailFromIdentity() got = %v, want %v", got, tt.ExpectedEmail)
 			}
 		})
 	}
@@ -121,7 +129,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 				TypeMeta: v1.TypeMeta{},
 				ListMeta: v1.ListMeta{},
 				Items: []userv1.User{
-					userv1.User{
+					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "exists",
 						},
@@ -185,7 +193,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 				TypeMeta: v1.TypeMeta{},
 				ListMeta: v1.ListMeta{},
 				Items: []userv1.User{
-					userv1.User{
+					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "exists",
 						},
@@ -236,7 +244,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 				TypeMeta: v1.TypeMeta{},
 				ListMeta: v1.ListMeta{},
 				Items: []userv1.User{
-					userv1.User{
+					{
 						ObjectMeta: v1.ObjectMeta{
 							Name: "exists",
 						},
@@ -483,13 +491,13 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name: "test-1",
-								UID:  types.UID("test-1"),
+								UID:  "test-1",
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name: "test-2",
-								UID:  types.UID("test-2"),
+								UID:  "test-2",
 							},
 						},
 					},
@@ -502,7 +510,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-1",
-								UID:  types.UID("test-1"),
+								UID:  "test-1",
 							},
 							ProviderName: "testing-idp",
 						},
@@ -512,7 +520,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-2",
-								UID:  types.UID("test-2"),
+								UID:  "test-2",
 							},
 							ProviderName: "testing-idp",
 						},
@@ -530,13 +538,13 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name: "test-1",
-								UID:  types.UID("test-1"),
+								UID:  "test-1",
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name: "test-2",
-								UID:  types.UID("test-2"),
+								UID:  "test-2",
 							},
 						},
 					},
@@ -549,7 +557,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-1",
-								UID:  types.UID("test-1"),
+								UID:  "test-1",
 							},
 							ProviderName: "testing-idp",
 						},
@@ -559,7 +567,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-2",
-								UID:  types.UID("test-2"),
+								UID:  "test-2",
 							},
 							ProviderName: "testing-idp",
 						},
@@ -598,10 +606,9 @@ func TestGetMultitenantUsers(t *testing.T) {
 	}
 
 	tests := []struct {
-		Name           string
-		FakeClient     k8sclient.Client
-		InstallationCR *integreatlyv1alpha1.RHMI
-		Assertion      func(users []MultiTenantUser) error
+		Name       string
+		FakeClient k8sclient.Client
+		Assertion  func(users []MultiTenantUser) error
 	}{
 		{
 			Name: "Test that users are returned correctly",
@@ -610,36 +617,28 @@ func TestGetMultitenantUsers(t *testing.T) {
 					Items: []userv1.User{
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-1",
-								UID:               types.UID("test-1"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-1",
+								UID:         "test-1",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-2",
-								UID:               types.UID("test-2"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-2",
+								UID:         "test-2",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-3",
-								UID:               types.UID("test-3"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-3",
+								UID:         "test-3",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 					},
 				},
 			),
-			InstallationCR: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
-				},
-			},
 			Assertion: confirmThatCorrectNumberOfUsersIsReturned,
 		},
 		{
@@ -649,26 +648,23 @@ func TestGetMultitenantUsers(t *testing.T) {
 					Items: []userv1.User{
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-1",
-								UID:               types.UID("test-1"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-1",
+								UID:         "test-1",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-2",
-								UID:               types.UID("test-2"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-2",
+								UID:         "test-2",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 						{
 							ObjectMeta: v1.ObjectMeta{
-								CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 01, 00, 00, time.UTC)},
-								Name:              "test-3",
-								UID:               types.UID("test-3"),
-								Annotations:       map[string]string{"tenant": "yes"},
+								Name:        "test-3",
+								UID:         "test-3",
+								Annotations: map[string]string{"tenant": "yes"},
 							},
 						},
 					},
@@ -682,7 +678,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-1",
-								UID:  types.UID("test-1"),
+								UID:  "test-1",
 							},
 							Extra: map[string]string{
 								"email": "test1email@email.com",
@@ -696,24 +692,19 @@ func TestGetMultitenantUsers(t *testing.T) {
 							},
 							User: corev1.ObjectReference{
 								Name: "test-2",
-								UID:  types.UID("test-2"),
+								UID:  "test-2",
 							},
 							ProviderName: "devsandbox",
 						},
 					},
 				},
 			),
-			InstallationCR: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: v1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: time.Date(2021, time.March, 01, 00, 00, 00, 00, time.UTC)},
-				},
-			},
 			Assertion: confirmThatUsersHaveCorrectEmailAddressesSet,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			multitenantUsers, err := GetMultiTenantUsers(context.TODO(), tt.FakeClient, tt.InstallationCR)
+			multitenantUsers, err := GetMultiTenantUsers(context.TODO(), tt.FakeClient)
 			if err != nil {
 				t.Fatalf("Failed test with: %v", err)
 			}
