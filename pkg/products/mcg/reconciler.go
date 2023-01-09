@@ -214,6 +214,7 @@ func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient
 
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, noobaa, func() error {
 		noobaa.Spec.CleanupPolicy.AllowNoobaaDeletion = true
+		noobaa.Spec.DisableLoadBalancerService = true
 		noobaa.Spec.PVPoolDefaultStorageClass = k8spointer.StringPtr(defaultStorageClass.Name)
 		quant, err := resource.ParseQuantity(pvpoolStorageSize)
 		if err != nil {
