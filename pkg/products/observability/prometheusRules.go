@@ -350,9 +350,12 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Alert: fmt.Sprintf("%sCriticalMetricsMissing", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
 						"sop_url": resources.SopUrlCriticalMetricsMissing,
-						"message": "one or more critical metrics have been missing for 10+ minutes",
+						"message": "one or more critical metrics have been missing for 20+ minutes",
 					},
-					Expr:   intstr.FromString(`(absent(kube_endpoint_address_available) or absent(kube_pod_container_status_ready) or absent(kube_pod_labels) or absent(kube_pod_status_phase) or absent(kube_pod_status_ready) or absent(kube_secret_info) or absent(rhoam_version) or absent(threescale_portals)) == 1`),
+					// absent_over_time we can set individual time vectors for each metric
+					// this pushes the complete time for the alert to trigger to 20min
+					// 10min for absent_over_time and 10min for the alert to trigger
+					Expr:   intstr.FromString(`(absent_over_time(kube_endpoint_address_available[10m]) or absent_over_time(kube_pod_container_status_ready[10m]) or absent_over_time(kube_pod_labels[10m]) or absent_over_time(kube_pod_status_phase[10m]) or absent_over_time(kube_pod_status_ready[10m]) or absent_over_time(kube_secret_info[10m]) or absent_over_time(rhoam_version[10m]) or absent_over_time(threescale_portals[10m])) == 1`),
 					For:    "10m",
 					Labels: map[string]string{"severity": "critical"},
 				},
