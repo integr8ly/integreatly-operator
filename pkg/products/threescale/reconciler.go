@@ -200,7 +200,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-
+		phase, err = r.deleteApiManager(ctx, serverClient, productNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
 		// the ns can be managed by hive and removing it here can cause rhoam uninstall to get stuck
 		isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, serverClient, installation)
 		if err != nil {
@@ -212,7 +215,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 		}
-
 		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -3540,4 +3542,21 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) deleteApiManager(ctx context.Context, client k8sclient.Client, ns string) (integreatlyv1alpha1.StatusPhase, error) {
+	apiManager := &threescalev1.APIManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apiManagerName,
+			Namespace: ns,
+		},
+	}
+	err := client.Delete(ctx, apiManager)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseInProgress, nil
 }
