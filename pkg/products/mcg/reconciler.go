@@ -17,6 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
+	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -106,7 +107,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
-		// TODO: cleanup resources
 		phase, err := r.cleanupResources(ctx, serverClient, installation)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -279,6 +279,11 @@ func (r *Reconciler) ReconcileObjectBucketClaim(ctx context.Context, serverClien
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	r.log.Infof("ObjectBucketClaim: ", l.Fields{"status": status})
+
+	if objbc.Status.Phase != obv1.ObjectBucketClaimStatusPhaseBound {
+		r.log.Infof("ObjectBucket provisioning in progress", l.Fields{"phase": objbc.Status.Phase})
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
