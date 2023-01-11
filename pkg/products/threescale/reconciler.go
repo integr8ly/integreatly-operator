@@ -1178,11 +1178,17 @@ func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclie
 
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 		// Set required fields for MCG
-		credSec.Data[threescaleAmp.AwsAccessKeyID] = bucketSecret.Data[threescaleAmp.AwsAccessKeyID]
-		credSec.Data[threescaleAmp.AwsSecretAccessKey] = bucketSecret.Data[threescaleAmp.AwsSecretAccessKey]
+		for key := range bucketSecret.Data {
+			switch key {
+			case threescaleAmp.AwsAccessKeyID:
+				credSec.Data[threescaleAmp.AwsAccessKeyID] = bucketSecret.Data[threescaleAmp.AwsAccessKeyID]
+			case threescaleAmp.AwsSecretAccessKey:
+				credSec.Data[threescaleAmp.AwsSecretAccessKey] = bucketSecret.Data[threescaleAmp.AwsSecretAccessKey]
+			}
+		}
 		credSec.Data[threescaleAmp.AwsBucket] = []byte(objbc.Spec.BucketName)
-		credSec.Data[threescaleAmp.AwsRegion] = []byte(s3BucketRegion)
 		credSec.Data[threescaleAmp.AwsHostname] = []byte(s3Route.Spec.Host)
+		credSec.Data[threescaleAmp.AwsRegion] = []byte(s3BucketRegion)
 		credSec.Data[threescaleAmp.AwsPathStyle] = []byte(s3PathStyle)
 		return nil
 	})
