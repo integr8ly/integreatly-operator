@@ -304,6 +304,7 @@ spec:
                 - apimanagers
               verbs:
                 - create
+                - delete
                 - get
                 - list
                 - update
