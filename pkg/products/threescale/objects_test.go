@@ -179,6 +179,22 @@ var systemApp = appsv1.DeploymentConfig{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-app",
 	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Env: []corev1.EnvVar{
+							{
+								Name:  "SUPPORT_EMAIL",
+								Value: "wrong@example.com",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 	Status: appsv1.DeploymentConfigStatus{
 		LatestVersion: 1,
 	},
@@ -187,6 +203,22 @@ var systemApp = appsv1.DeploymentConfig{
 var systemSidekiq = appsv1.DeploymentConfig{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-sidekiq",
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Env: []corev1.EnvVar{
+							{
+								Name:  "SUPPORT_EMAIL",
+								Value: "wrong@example.com",
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 	Status: appsv1.DeploymentConfigStatus{
 		LatestVersion: 1,
@@ -953,6 +985,22 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 					"tenant": "true",
 				},
 				Name: "test_user",
+			},
+		},
+		&corev1.PodList{
+			Items: []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "system-app-1-abcde",
+						Namespace: "3scale",
+						Labels: map[string]string{
+							"deploymentConfig": "system-app",
+						},
+					},
+					Status: corev1.PodStatus{
+						Phase: "Running",
+					},
+				},
 			},
 		},
 	)
