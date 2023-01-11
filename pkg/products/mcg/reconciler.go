@@ -36,7 +36,8 @@ const (
 	noobaaName                    = "noobaa"
 	noobaaDefaultBackingStore     = noobaaName + "-default-backing-store"
 	noobaaDefaultBucketClass      = noobaaName + "-default-bucket-class"
-	pvpoolStorageSize             = "32Gi"
+	pvpoolStorageSize             = "25Gi"
+	dbStorageSize                 = "16Gi"
 	defaultStorageClassAnnotation = "storageclass.kubernetes.io/is-default-class"
 	threescaleBucket              = "3scale-operator-bucket"
 	ThreescaleBucketClaim         = threescaleBucket + "-claim"
@@ -216,7 +217,16 @@ func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient
 		noobaa.Spec.CleanupPolicy.AllowNoobaaDeletion = true
 		noobaa.Spec.DisableLoadBalancerService = true
 		noobaa.Spec.PVPoolDefaultStorageClass = k8spointer.StringPtr(defaultStorageClass.Name)
-		quant, err := resource.ParseQuantity(pvpoolStorageSize)
+		dbStorageQuantity, err := resource.ParseQuantity(dbStorageSize)
+		if err != nil {
+			return err
+		}
+		noobaa.Spec.DBVolumeResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceStorage: dbStorageQuantity,
+			},
+		}
+		pvPoolStorageQuantity, err := resource.ParseQuantity(pvpoolStorageSize)
 		if err != nil {
 			return err
 		}
@@ -226,7 +236,7 @@ func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient
 				NumVolumes:   1,
 				VolumeResources: &corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: quant,
+						corev1.ResourceStorage: pvPoolStorageQuantity,
 					},
 				},
 			},
