@@ -383,7 +383,12 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockNetwork {
 				dnsSrv, err := mockDNS("xxx.eu-west-1.elb.amazonaws.com", "127.0.0.1")
-				defer dnsSrv.Close()
+				defer func(dnsSrv *mockdns.Server) {
+					err := dnsSrv.Close()
+					if err != nil {
+						t.Logf("error during defered function, %v", err)
+					}
+				}(dnsSrv)
 				defer mockdns.UnpatchNet(net.DefaultResolver)
 				if err != nil {
 					t.Fatalf("error mocking dns server: %v", err)
@@ -3124,7 +3129,10 @@ func mockHTTP(ip string) (*httptest.Server, error) {
 	})
 	srv := httptest.NewUnstartedServer(handler)
 	// NewUnstartedServer creates a listener. Close that listener and replace with the one we created
-	srv.Listener.Close()
+	err = srv.Listener.Close()
+	if err != nil {
+		return nil, err
+	}
 	srv.Listener = listener
 	srv.StartTLS()
 	return srv, nil

@@ -1500,7 +1500,7 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
@@ -2887,7 +2887,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
 		SubscriptionName: constants.ThreeScaleSubscriptionName,
 		Namespace:        operatorNamespace,
@@ -3354,7 +3354,7 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 	return backendRoute, nil
 }
 
-func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8sclient.Client, name string) error {
+func (r *Reconciler) addSSOReadyAnnotationToUser(_ context.Context, client k8sclient.Client, name string) error {
 	// Get the User CR to annotate
 	userToAnnotate := &usersv1.User{
 		ObjectMeta: metav1.ObjectMeta{
