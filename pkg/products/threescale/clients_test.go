@@ -3,6 +3,7 @@ package threescale
 import (
 	"context"
 	"fmt"
+	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"math/rand"
 	"net/http"
@@ -226,6 +227,9 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			return nil
 		},
 		DeleteTenantFunc: func(accessToken string, id int) error {
+			return nil
+		},
+		UpdateTenantFunc: func(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error {
 			return nil
 		},
 	}

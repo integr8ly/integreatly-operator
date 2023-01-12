@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/3scale/3scale-porta-go-client/client"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -28,6 +29,7 @@ type ThreeScaleInterface interface {
 	SetUserAsMember(userID int, accessToken string) (*http.Response, error)
 	SetFromEmailAddress(emailAddress string, accessToken string) (*http.Response, error)
 	UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error)
+	UpdateTenant(id int64, params client.Params, portaClient *client.ThreeScaleClient) error
 
 	CreateAccount(accessToken, orgName, username string) (string, error)
 	CreateBackend(accessToken, name, privateEndpoint string) (int, error)
@@ -800,6 +802,15 @@ func (tsc *threeScaleClient) makeRequest(method, path string, parameters map[str
 func (tsc *threeScaleClient) makeRequestToMaster(method, path string, parameters map[string]interface{}) (*http.Response, error) {
 	url := fmt.Sprintf("https://master.%s/%s", tsc.wildCardDomain, path)
 	return makeRequest(url, method, parameters, tsc)
+}
+
+func (tsc *threeScaleClient) UpdateTenant(id int64, params client.Params, portaClient *client.ThreeScaleClient) error {
+
+	_, err := portaClient.UpdateTenant(id, params)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func xmlFromResponse(res *http.Response, xpath string) (string, error) {

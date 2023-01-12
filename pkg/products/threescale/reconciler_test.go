@@ -409,6 +409,12 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
+
+			r.podExecutor = &resources.PodExecutorInterfaceMock{
+				ExecuteRemoteContainerCommandFunc: func(ns string, podName string, container string, command []string) (string, string, error) {
+					return "ok", "", nil
+				}}
+
 			got, err := r.Reconcile(context.TODO(), tt.args.installation, tt.args.productStatus, tt.fields.sigsClient, tt.args.productConfig, tt.args.uninstall)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)

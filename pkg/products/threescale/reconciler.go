@@ -163,6 +163,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 		log:           logger,
+		podExecutor:   resources.NewPodExecutor(logger),
 	}, nil
 }
 
@@ -178,6 +179,7 @@ type Reconciler struct {
 	extraParams map[string]string
 	recorder    record.EventRecorder
 	log         l.Logger
+	podExecutor resources.PodExecutorInterface
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
@@ -1072,7 +1074,7 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	stdout, stderr, err := resources.NewPodExecutor(r.log).ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
+	stdout, stderr, err := r.podExecutor.ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
 		"-c", "bundle exec rake zync:resync:domains"})
 	if err != nil {
 		r.log.Error("Failed to resync 3Scale routes", err)
@@ -3688,7 +3690,7 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	stdout, stderr, err := resources.NewPodExecutor(r.log).ExecuteRemoteContainerCommand(ns, podname, "system-master", []string{"/bin/bash",
+	stdout, stderr, err := r.podExecutor.ExecuteRemoteContainerCommand(ns, podname, "system-master", []string{"/bin/bash",
 		"-c", fmt.Sprintf("bundle exec rails runner \"a=Account.find_by_master true; a.from_email = '%v'; a.save;\"", fromAddress)})
 	if err != nil {
 		r.log.Error("Failed to set 3Scale invitation email", err)
@@ -3801,7 +3803,7 @@ func (r *Reconciler) reconcileTenantOutgoingEmailAddress(ctx context.Context, se
 	}
 
 	for _, account := range accountList {
-		_, err = pc.UpdateTenant(int64(account.Id), portaClient.Params{"from_email": address})
+		err = r.tsClient.UpdateTenant(int64(account.Id), portaClient.Params{"from_email": address}, pc)
 		if err != nil {
 			return err
 		}

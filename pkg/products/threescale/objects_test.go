@@ -960,6 +960,13 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 				Host: "backend-3scale.apps",
 			},
 		},
+		&v1.RouteList{
+
+			Items: []v1.Route{
+				{ObjectMeta: metav1.ObjectMeta{Name: "master", Namespace: "3scale"},
+					Spec: v1.RouteSpec{Host: "master.apps.example.com"}},
+			},
+		},
 		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "apicast-staging",
