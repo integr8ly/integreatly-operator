@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"net"
 	"net/http"
 	"os"
@@ -200,11 +202,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = r.deleteApiManager(ctx, serverClient, productNamespace)
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &threescalev1.APIManager{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      apiManagerName,
+				Namespace: productNamespace,
+			},
+		})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		// the ns can be managed by hive and removing it here can cause rhoam uninstall to get stuck
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &operatorsv1alpha1.Subscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ThreeScaleSubscriptionName,
+				Namespace: operatorNamespace,
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &operatorsv1alpha1.ClusterServiceVersion{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("3scale-operator.v%s", integreatlyv1alpha1.OperatorVersion3Scale),
+				Namespace: operatorNamespace,
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
 		isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, serverClient, installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -3542,21 +3566,4 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) deleteApiManager(ctx context.Context, client k8sclient.Client, ns string) (integreatlyv1alpha1.StatusPhase, error) {
-	apiManager := &threescalev1.APIManager{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiManagerName,
-			Namespace: ns,
-		},
-	}
-	err := client.Delete(ctx, apiManager)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	return integreatlyv1alpha1.PhaseInProgress, nil
 }

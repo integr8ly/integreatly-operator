@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
@@ -158,6 +159,75 @@ func TestPatchIfExists(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("PatchIfExists() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEnsureObjectDeleted(t *testing.T) {
+	type args struct {
+		client client.Client
+		object client.Object
+	}
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sampleObject := &threescalev1.APIManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testName",
+			Namespace: "testNs",
+		},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "success triggering kubernetes object deletion",
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, sampleObject),
+				object: sampleObject,
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+		{
+			name: "success deleting kubernetes object",
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+				object: sampleObject,
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "failure deleting kubernetes object",
+			args: args{
+				client: func() client.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
+					mockClient.DeleteFunc = func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+						return fmt.Errorf("generic error")
+					}
+					return mockClient
+				}(),
+				object: sampleObject,
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := EnsureObjectDeleted(context.TODO(), tt.args.client, tt.args.object)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EnsureObjectDeleted() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("EnsureObjectDeleted() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
