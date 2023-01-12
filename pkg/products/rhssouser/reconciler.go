@@ -3,6 +3,7 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -321,6 +322,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
+		Spec: keycloak.KeycloakSpec{
+			KeycloakDeploymentSpec: keycloak.KeycloakDeploymentSpec{
+				Experimental: keycloak.ExperimentalSpec{
+					Env: []corev1.EnvVar{
+						{
+							Name:  "DISABLE_EXTERNAL_ACCESS",
+							Value: "TRUE",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	key := k8sclient.ObjectKeyFromObject(kc)
@@ -334,7 +347,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi-2.5.3.jar",
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()

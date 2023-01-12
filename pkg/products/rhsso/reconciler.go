@@ -285,10 +285,22 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
+		Spec: keycloak.KeycloakSpec{
+			KeycloakDeploymentSpec: keycloak.KeycloakDeploymentSpec{
+				Experimental: keycloak.ExperimentalSpec{
+					Env: []corev1.EnvVar{
+						{
+							Name:  "DISABLE_EXTERNAL_ACCESS",
+							Value: "TRUE",
+						},
+					},
+				},
+			},
+		},
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi-2.5.3.jar",
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.2/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
