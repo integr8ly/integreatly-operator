@@ -7,6 +7,8 @@ import (
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type alertsTestRule struct {
@@ -35,12 +37,15 @@ var (
 	fileAdditional alertsTestFileStatus = "File found but not expected"
 	fileExists     alertsTestFileStatus = "File found with missing or unexpected rules"
 	fileCorrect    alertsTestFileStatus = "File found with all alerts present"
+
+	// Caser for use in test
+	caser = cases.Title(language.English)
 )
 
 // Managed-Api-Service rules
 func managedApiSpecificRules(installationName string) []alertsTestRule {
 
-	titledName := strings.Title(installationName)
+	titledName := caser.String(installationName)
 
 	return []alertsTestRule{
 		{
@@ -270,7 +275,7 @@ func mtManagedApiSpecificRules() []alertsTestRule {
 
 // Common to all install types
 func commonExpectedRules(installationName string) []alertsTestRule {
-	titledName := strings.Title(installationName)
+	titledName := caser.String(installationName)
 	return []alertsTestRule{
 		{
 			File: ObservabilityNamespacePrefix + "backup-monitoring-alerts.yaml",
@@ -475,7 +480,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 
 // common aws rules applicable to all install types
 func commonExpectedAWSRules(installationName string) []alertsTestRule {
-	titledName := strings.Title(installationName)
+	titledName := caser.String(installationName)
 
 	return []alertsTestRule{
 		{
@@ -662,7 +667,7 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 }
 
 func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
-	titledName := strings.Title(installationName)
+	titledName := caser.String(installationName)
 
 	return []alertsTestRule{
 		{

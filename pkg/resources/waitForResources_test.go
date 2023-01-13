@@ -2,16 +2,17 @@ package resources
 
 import (
 	"fmt"
+
+	"testing"
+
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 func TestWaitForRHSSOPostgresToBeComplete(t *testing.T) {
@@ -37,7 +38,7 @@ func TestWaitForRHSSOPostgresToBeComplete(t *testing.T) {
 		{
 			name: "test phase complete when postgres phase complete",
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme, &crov1alpha1.Postgres{
+				serverClient: utils.NewTestClient(scheme, &crov1alpha1.Postgres{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 						Namespace: installationNameSpace,
@@ -52,7 +53,7 @@ func TestWaitForRHSSOPostgresToBeComplete(t *testing.T) {
 		{
 			name: "test phase awaiting components when postgres phase not complete",
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme, &crov1alpha1.Postgres{
+				serverClient: utils.NewTestClient(scheme, &crov1alpha1.Postgres{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
 						Namespace: installationNameSpace,
@@ -67,7 +68,7 @@ func TestWaitForRHSSOPostgresToBeComplete(t *testing.T) {
 		{
 			name: "test phase awaiting components when unable to get postgres cr",
 			args: args{
-				serverClient:     fake.NewFakeClientWithScheme(scheme),
+				serverClient:     utils.NewTestClient(scheme),
 				installName:      installationName,
 				installNamespace: installationNameSpace,
 			},

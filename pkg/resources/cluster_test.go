@@ -2,14 +2,14 @@ package resources
 
 import (
 	"context"
+	"reflect"
+	"strconv"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strconv"
-	"testing"
 )
 
 type ClusterVersionTestScenario struct {
@@ -136,37 +136,37 @@ func TestVersions(t *testing.T) {
 	scenarios := []ClusterVersionTestScenario{
 		{
 			Name:           "Test cluster versions 4.9",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version1),
+			FakeSigsClient: utils.NewTestClient(scheme, version1),
 			ExpectedError:  "",
 			ExpectedValue:  false,
 		},
 		{
 			Name:           "Test cluster versions 4.8",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version2),
+			FakeSigsClient: utils.NewTestClient(scheme, version2),
 			ExpectedError:  "",
 			ExpectedValue:  true,
 		},
 		{
 			Name:           "Test cluster versions 10.8",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version3),
+			FakeSigsClient: utils.NewTestClient(scheme, version3),
 			ExpectedError:  "",
 			ExpectedValue:  false,
 		},
 		{
 			Name:           "Test when cluster CR does not exist",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version4),
+			FakeSigsClient: utils.NewTestClient(scheme, version4),
 			ExpectedError:  "failed to fetch version: clusterversions.config.openshift.io \"version\" not found",
 			ExpectedValue:  false,
 		},
 		{
 			Name:           "Test invalid version syntax 1",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version5),
+			FakeSigsClient: utils.NewTestClient(scheme, version5),
 			ExpectedError:  "Error splitting cluster version history fakeversion",
 			ExpectedValue:  false,
 		},
 		{
 			Name:           "Test invalid version syntax 2",
-			FakeSigsClient: fake.NewFakeClientWithScheme(scheme, version6),
+			FakeSigsClient: utils.NewTestClient(scheme, version6),
 			ExpectedError:  "Error parsing cluster version string1.string2",
 			ExpectedValue:  false,
 		},
@@ -297,17 +297,18 @@ func TestGetClusterVersionCR(t *testing.T) {
 			name: "Cluster version exists",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &configv1.ClusterVersion{
-					TypeMeta: v1.TypeMeta{
-						Kind:       "ClusterVersion",
-						APIVersion: "config.openshift.io/v1",
+				serverClient: utils.NewTestClient(scheme,
+					&configv1.ClusterVersion{
+						TypeMeta: v1.TypeMeta{
+							Kind:       "ClusterVersion",
+							APIVersion: "config.openshift.io/v1",
+						},
+						ObjectMeta: v1.ObjectMeta{
+							Name: "version",
+						},
+						Spec:   configv1.ClusterVersionSpec{},
+						Status: configv1.ClusterVersionStatus{},
 					},
-					ObjectMeta: v1.ObjectMeta{
-						Name: "version",
-					},
-					Spec:   configv1.ClusterVersionSpec{},
-					Status: configv1.ClusterVersionStatus{},
-				},
 				),
 			},
 			want: &configv1.ClusterVersion{
@@ -328,17 +329,18 @@ func TestGetClusterVersionCR(t *testing.T) {
 			name: "Cluster version does not exists",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &configv1.ClusterVersion{
-					TypeMeta: v1.TypeMeta{
-						Kind:       "ClusterVersion",
-						APIVersion: "config.openshift.io/v1",
+				serverClient: utils.NewTestClient(scheme,
+					&configv1.ClusterVersion{
+						TypeMeta: v1.TypeMeta{
+							Kind:       "ClusterVersion",
+							APIVersion: "config.openshift.io/v1",
+						},
+						ObjectMeta: v1.ObjectMeta{
+							Name: "does not exist",
+						},
+						Spec:   configv1.ClusterVersionSpec{},
+						Status: configv1.ClusterVersionStatus{},
 					},
-					ObjectMeta: v1.ObjectMeta{
-						Name: "does not exist",
-					},
-					Spec:   configv1.ClusterVersionSpec{},
-					Status: configv1.ClusterVersionStatus{},
-				},
 				),
 			},
 			want:    nil,

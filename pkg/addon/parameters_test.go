@@ -2,18 +2,18 @@ package addon
 
 import (
 	"context"
+	"strconv"
+	"testing"
+
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 type SecretType string
@@ -420,7 +420,7 @@ func TestExistsParameterByInstallation(t *testing.T) {
 }
 
 func getDefaultClient(scheme *runtime.Scheme, namespace string, secretType SecretType, subscriptionType string) k8sclient.Client {
-	return fake.NewFakeClientWithScheme(scheme, getValidInits(namespace, secretType, subscriptionType)...)
+	return utils.NewTestClient(scheme, getValidInits(namespace, secretType, subscriptionType)...)
 }
 
 func getValidInits(namespace string, secretType SecretType, subscriptionType string) []runtime.Object {

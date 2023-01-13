@@ -15,9 +15,11 @@ import (
 	"strings"
 	"time"
 
+	envoyextentionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	"google.golang.org/protobuf/types/known/anypb"
 
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
@@ -3147,7 +3149,21 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		ratelimit.RateLimitClusterName,
 		getRatelimitServicePort(ratelimitServiceCR),
 	)
-	ratelimitClusterResource.Http2ProtocolOptions = &envoycorev3.Http2ProtocolOptions{}
+
+	serial, err := anypb.New(&envoyextentionv3.HttpProtocolOptions{
+		UpstreamProtocolOptions: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{},
+			},
+		},
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	ratelimitClusterResource.TypedExtensionProtocolOptions = map[string]*any.Any{
+		"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": serial,
+	}
 
 	// apicast cluster
 	apiCastClusterResource := ratelimit.CreateClusterResource(

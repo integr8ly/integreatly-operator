@@ -2,8 +2,9 @@ package resources
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -13,11 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func basicClient(scheme *runtime.Scheme, objects ...runtime.Object) k8sclient.Client {
-	return fakeclient.NewFakeClientWithScheme(scheme, objects...)
+	return utils.NewTestClient(scheme, objects...)
 }
 
 func TestBackups(t *testing.T) {

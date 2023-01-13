@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"github.com/integr8ly/integreatly-operator/test/utils"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestPrepareTarget(t *testing.T) {
@@ -180,7 +181,7 @@ func TestPrepareTarget(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			// Client should not be used. Empty client will suffice
-			client := fake.NewFakeClient()
+			client := utils.NewTestClient(runtime.NewScheme())
 
 			target := &scenario.Target
 

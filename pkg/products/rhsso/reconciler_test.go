@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +49,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -126,7 +126,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:     true,
 			ExpectedError:   "could not read rhsso config",
 			Installation:    &integreatlyv1alpha1.RHMI{},
-			FakeClient:      fakeclient.NewFakeClient(),
+			FakeClient:      utils.NewTestClient(runtime.NewScheme()),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadRHSSOFunc: func() (ready *config.RHSSO, e error) {
@@ -283,7 +283,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:                  "Test reconcile custom resource returns completed when successful created",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -295,7 +295,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:                  "No product declaration found for RHSSO",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -307,7 +307,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name: "Test reconcile custom resource returns completed when successful created (on upgrade, use rolling strategy)",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, &keycloak.Keycloak{
+			FakeClient: utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, &keycloak.Keycloak{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      keycloakName,
 					Namespace: defaultOperandNamespace,
@@ -361,7 +361,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:            "URL for Keycloak not yet available",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:      utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: func() *config.ConfigReadWriterMock {
 				basicConfig := basicConfigMock()
@@ -385,7 +385,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Openshift IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         utils.NewTestClient(scheme, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -398,7 +398,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Github IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         utils.NewTestClient(scheme, oauthClientSecrets, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -411,7 +411,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to authenticate client in keycloak api",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -431,7 +431,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to create and add keycloak authentication flow",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -455,7 +455,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to sync openshift idp client secret",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,

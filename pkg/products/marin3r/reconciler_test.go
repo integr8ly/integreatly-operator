@@ -2,10 +2,11 @@ package marin3r
 
 import (
 	"context"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/client-go/tools/record"
-	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -19,7 +20,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -155,7 +155,7 @@ func TestAlertCreation(t *testing.T) {
 		{
 			name: "returns expected alerts",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap(), getGrafanaRoute())
+				return utils.NewTestClient(scheme, getRateLimitConfigMap(), getGrafanaRoute())
 			},
 
 			installation: getBasicInstallation(),
@@ -166,7 +166,7 @@ func TestAlertCreation(t *testing.T) {
 		{
 			name: "returns PhaseInProgress when grafana not installed",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap())
+				return utils.NewTestClient(scheme, getRateLimitConfigMap())
 			},
 			installation: getBasicInstallation(),
 			FakeConfig:   getBasicConfig(),
@@ -208,7 +208,7 @@ func TestReconcileServiceMonitor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := fakeclient.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 
 	type args struct {
 		namespace string
@@ -253,7 +253,7 @@ func TestReconcileDiscoveryService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := fakeclient.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 
 	type args struct {
 		namespace string

@@ -3,16 +3,16 @@ package marketplace
 import (
 	"context"
 	"errors"
+	"testing"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	"testing"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -37,7 +37,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 	}{
 		{
 			Name:                     "Test catalog source created successfully",
-			FakeClient:               fake.NewFakeClientWithScheme(scheme),
+			FakeClient:               utils.NewTestClient(scheme),
 			DesiredGRPCImage:         "example-grpcimage",
 			DesiredCatalogSourceName: "example-catalogsourcename",
 			Verify: func(desiredCSName string, desiredGRPCImage string, res reconcile.Result, err error, c k8sclient.Client) {
@@ -65,7 +65,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 		},
 		{
 			Name: "Test catalog source updated successfully",
-			FakeClient: fake.NewFakeClientWithScheme(scheme, &coreosv1alpha1.CatalogSource{
+			FakeClient: utils.NewTestClient(scheme, &coreosv1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cs-" + testNameSpace,
 					Namespace: testNameSpace,

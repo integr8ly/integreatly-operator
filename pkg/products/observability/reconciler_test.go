@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -24,12 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-	"time"
 )
 
 var (
@@ -287,7 +287,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			name: "created observability component, await successful reconcile",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ServiceAccount{
+				serverClient: utils.NewTestClient(scheme, &corev1.ServiceAccount{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      blackboxExporterPrefix,
 						Namespace: "ns",

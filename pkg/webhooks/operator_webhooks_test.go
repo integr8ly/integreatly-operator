@@ -3,9 +3,10 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"os"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -14,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -75,7 +75,7 @@ func TestReconcile(t *testing.T) {
 
 	rhmi := &v1alpha1.RHMI{}
 
-	client := fake.NewFakeClientWithScheme(testScheme, rhmi)
+	client := utils.NewTestClient(testScheme, rhmi)
 
 	// Start mock of CA controller
 	done := make(chan struct{})

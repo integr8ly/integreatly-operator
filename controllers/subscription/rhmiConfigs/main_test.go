@@ -3,16 +3,16 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/integr8ly/integreatly-operator/version"
-	"testing"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -179,7 +179,7 @@ func TestApproveUpgrade(t *testing.T) {
 	}{
 		{
 			Name:            "Test install plan already upgrading",
-			FakeClient:      fake.NewFakeClientWithScheme(scheme, installPlanAlreadyUpgrading, rhoamMock),
+			FakeClient:      utils.NewTestClient(scheme, installPlanAlreadyUpgrading, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
@@ -197,7 +197,7 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 		{
 			Name:            "Test install plan ready to upgrade",
-			FakeClient:      fake.NewFakeClientWithScheme(scheme, installPlanReadyForApproval, rhoamMock),
+			FakeClient:      utils.NewTestClient(scheme, installPlanReadyForApproval, rhoamMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,

@@ -3,6 +3,8 @@ package sts
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -12,8 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestIsClusterSTS(t *testing.T) {
@@ -49,7 +49,7 @@ func TestIsClusterSTS(t *testing.T) {
 			name: "STS cluster",
 			args: args{
 				ctx: context.TODO(),
-				client: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
+				client: utils.NewTestClient(scheme, &cloudcredentialv1.CloudCredential{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: ClusterCloudCredentialName,
 					},
@@ -66,7 +66,7 @@ func TestIsClusterSTS(t *testing.T) {
 			name: "Non STS cluster",
 			args: args{
 				ctx: context.TODO(),
-				client: fakeclient.NewFakeClientWithScheme(scheme, &cloudcredentialv1.CloudCredential{
+				client: utils.NewTestClient(scheme, &cloudcredentialv1.CloudCredential{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: ClusterCloudCredentialName,
 					},
@@ -128,7 +128,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn not found",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme),
+				client:    utils.NewTestClient(scheme),
 				namespace: namespace,
 			},
 			wantErr: true,
@@ -137,7 +137,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn empty",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("")})),
+				client:    utils.NewTestClient(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("")})),
 				namespace: namespace,
 			},
 			wantErr: true,
@@ -146,7 +146,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex not match",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("notAnARN")})),
+				client:    utils.NewTestClient(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("notAnARN")})),
 				namespace: namespace,
 			},
 			wantErr: true,
@@ -155,7 +155,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex match",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
+				client:    utils.NewTestClient(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("arn:aws:iam::123456789012:role/12345")})),
 				namespace: namespace,
 			},
 			wantErr: false,
@@ -164,7 +164,7 @@ func Test_ValidateAddOnStsRoleArnParameterPattern(t *testing.T) {
 		{
 			name: "test: role arn regex match for AWS GovCloud (US) Regions",
 			args: args{
-				client:    fakeclient.NewFakeClientWithScheme(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
+				client:    utils.NewTestClient(scheme, buildAddonSecret(namespace, map[string][]byte{RoleArnParameterName: []byte("arn:aws-us-gov:iam::123456789012:role/12345")})),
 				namespace: namespace,
 			},
 			wantErr: false,

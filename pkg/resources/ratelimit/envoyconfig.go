@@ -1,7 +1,6 @@
 package ratelimit
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -16,8 +15,8 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_runtime "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -289,12 +288,10 @@ func CreateRuntimesResource() *envoy_runtime.Runtime {
 }
 
 func ResourcesToJSON(pb proto.Message) ([]byte, error) {
-	m := jsonpb.Marshaler{}
-
-	json := bytes.NewBuffer([]byte{})
-	err := m.Marshal(json, pb)
+	json, err := protojson.Marshal(pb)
 	if err != nil {
 		return []byte{}, err
 	}
-	return json.Bytes(), nil
+
+	return json, nil
 }

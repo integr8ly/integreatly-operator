@@ -11,15 +11,15 @@ import (
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
-	cloudcredentialv1 "github.com/openshift/api/operator/v1"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
+	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	v12 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -27,7 +27,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (

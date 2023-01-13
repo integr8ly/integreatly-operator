@@ -3,11 +3,12 @@ package resources
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
-	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
@@ -17,7 +18,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestReconcileAlerts(t *testing.T) {
@@ -219,7 +219,7 @@ func TestReconcileAlerts(t *testing.T) {
 			continue
 		}
 
-		serverClient := fake.NewFakeClientWithScheme(scheme, scenario.Installation)
+		serverClient := utils.NewTestClient(scheme, scenario.Installation)
 		for _, rule := range scenario.ExistingRules {
 			if err := serverClient.Create(context.TODO(), rule); err != nil {
 				t.Errorf("Failed to create alert for test: %s", scenario.Name)

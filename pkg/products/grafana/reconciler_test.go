@@ -2,6 +2,8 @@ package grafana
 
 import (
 	"context"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -9,8 +11,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 const (
@@ -42,7 +42,7 @@ func TestReconciler_scaleDeployment(t *testing.T) {
 		},
 	}
 
-	client := fakeclient.NewFakeClientWithScheme(scheme, deployment)
+	client := utils.NewTestClient(scheme, deployment)
 	reconciler := getBasicReconciler()
 
 	tests := []struct {

@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -254,7 +253,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			APIObject := scenario.APISubscription
-			client := fakeclient.NewFakeClientWithScheme(scheme, APIObject, installPlan, rhmiCR)
+			client := utils.NewTestClient(scheme, APIObject, installPlan, rhmiCR)
 			reconciler := SubscriptionReconciler{
 				Client:              client,
 				Scheme:              scheme,
@@ -377,7 +376,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 				},
 			},
 			Fields: fields{
-				Client: fakeclient.NewFakeClientWithScheme(scheme,
+				Client: utils.NewTestClient(scheme,
 					&crov1alpha1.Postgres{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testpg",
@@ -404,7 +403,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 				},
 			},
 			Fields: fields{
-				Client: fakeclient.NewFakeClientWithScheme(scheme,
+				Client: utils.NewTestClient(scheme,
 					&crov1alpha1.Postgres{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testpg",
@@ -434,7 +433,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 				},
 			},
 			Fields: fields{
-				Client: fakeclient.NewFakeClientWithScheme(scheme,
+				Client: utils.NewTestClient(scheme,
 					&crov1alpha1.Postgres{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testpg",
@@ -461,7 +460,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 				},
 			},
 			Fields: fields{
-				Client: fakeclient.NewFakeClientWithScheme(scheme,
+				Client: utils.NewTestClient(scheme,
 					&crov1alpha1.Postgres{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "testpg",
@@ -712,7 +711,7 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := fakeclient.NewFakeClientWithScheme(scheme, tt.fields.csv, tt.fields.installPlan, tt.args.rhmiSubscription, tt.args.installation)
+			client := utils.NewTestClient(scheme, tt.fields.csv, tt.fields.installPlan, tt.args.rhmiSubscription, tt.args.installation)
 			r := &SubscriptionReconciler{
 				Client:              client,
 				Scheme:              scheme,

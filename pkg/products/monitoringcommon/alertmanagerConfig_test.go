@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -11,14 +15,10 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/openshift/api/route/v1"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strings"
-	"testing"
 )
 
 const (
@@ -212,7 +212,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "succeeds when smtp secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -220,7 +220,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, alertmanagerRoute)
 			},
 			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -230,7 +230,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
 				emptyPagerdutySecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
 			},
 			wantErr: "secret key is undefined in pager duty secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -238,7 +238,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "succeeds when dead mans snitch secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -248,7 +248,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -256,7 +256,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "awaiting components when alert manager route cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, dmsSecret)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret)
 			},
 			want: integreatlyv1alpha1.PhaseAwaitingComponents,
 		},
@@ -275,14 +275,14 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "fails cluster infra cannot  be retrieved",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			want: integreatlyv1alpha1.PhaseFailed,
 		},
 		{
 			name: "secret created successfully",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -302,7 +302,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "secret data is overridden if already exists",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -322,7 +322,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "alert address env override is successful",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -439,7 +439,7 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme)
+				return utils.NewTestClient(scheme)
 			},
 			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
 		},
@@ -448,7 +448,7 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
 				emptyPagerdutySecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(scheme, emptyPagerdutySecret)
+				return utils.NewTestClient(scheme, emptyPagerdutySecret)
 			},
 			wantErr: "secret key is undefined in pager duty secret",
 		},
@@ -459,14 +459,14 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
 				emptyPagerdutySecret.Data = map[string][]byte{}
 				emptyPagerdutySecret.Data["serviceKey"] = []byte("")
-				return fakeclient.NewFakeClientWithScheme(scheme, emptyPagerdutySecret)
+				return utils.NewTestClient(scheme, emptyPagerdutySecret)
 			},
 			wantErr: "secret key is undefined in pager duty secret",
 		},
 		{
 			name: "secret read successfully - from pager duty operator secret",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, pagerdutySecret)
+				return utils.NewTestClient(scheme, pagerdutySecret)
 			},
 			want: "test",
 		},
@@ -476,7 +476,7 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 				cssrePagerDutySecret := pagerdutySecret.DeepCopy()
 				cssrePagerDutySecret.Data = make(map[string][]byte, 0)
 				cssrePagerDutySecret.Data["serviceKey"] = []byte("cssre-pg-secret")
-				return fakeclient.NewFakeClientWithScheme(scheme, cssrePagerDutySecret)
+				return utils.NewTestClient(scheme, cssrePagerDutySecret)
 			},
 			want: "cssre-pg-secret",
 		},
@@ -527,7 +527,7 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 		{
 			name: "fails when dead man switch secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme)
+				return utils.NewTestClient(scheme)
 			},
 			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
 		},
@@ -536,7 +536,7 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(scheme, emptyDMSSecret)
+				return utils.NewTestClient(scheme, emptyDMSSecret)
 			},
 			wantErr: "url is undefined in dead mans snitch secret",
 		},
@@ -547,14 +547,14 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
 				emptyDMSSecret.Data["SNITCH_URL"] = []byte("")
-				return fakeclient.NewFakeClientWithScheme(scheme, emptyDMSSecret)
+				return utils.NewTestClient(scheme, emptyDMSSecret)
 			},
 			wantErr: "url is undefined in dead mans snitch secret",
 		},
 		{
 			name: "secret read successfully - from dead man switch operator secret",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, dmsSecret)
+				return utils.NewTestClient(scheme, dmsSecret)
 			},
 			want: "https://example.com",
 		},
@@ -564,7 +564,7 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 				cssreDMSSecret := dmsSecret.DeepCopy()
 				cssreDMSSecret.Data = make(map[string][]byte, 0)
 				cssreDMSSecret.Data["url"] = []byte("https://example-cssredms-secret.com")
-				return fakeclient.NewFakeClientWithScheme(scheme, cssreDMSSecret)
+				return utils.NewTestClient(scheme, cssreDMSSecret)
 			},
 			want: "https://example-cssredms-secret.com",
 		},

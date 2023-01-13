@@ -194,7 +194,7 @@ func CreateAWSSession(ctx context.Context, client client.Client) (*session.Sessi
 			awsConfig.Credentials = stscreds.NewCredentials(sess, roleARN)
 		} else {
 			svc := stsSvc.New(session.Must(session.NewSession(&awsConfig)))
-			credentialsProvider := stscreds.NewWebIdentityRoleProvider(svc, roleARN, sts.RoleSessionName, tokenPath)
+			credentialsProvider := stscreds.NewWebIdentityRoleProviderWithOptions(svc, roleARN, sts.RoleSessionName, stscreds.FetchTokenPath(tokenPath))
 			awsConfig.Credentials = credentials.NewCredentials(credentialsProvider)
 		}
 	} else {

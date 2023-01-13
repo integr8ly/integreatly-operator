@@ -3,15 +3,15 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestGetAlertConfig(t *testing.T) {
@@ -87,7 +87,7 @@ func TestGetAlertConfig(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			k8sClient := fake.NewFakeClientWithScheme(scheme, scenario.InitialObjs...)
+			k8sClient := utils.NewTestClient(scheme, scenario.InitialObjs...)
 			config, err := GetAlertConfig(context.TODO(), k8sClient, scenario.Namespace)
 
 			if err := scenario.Assert(k8sClient, config, err); err != nil {
