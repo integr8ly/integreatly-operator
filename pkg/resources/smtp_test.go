@@ -2,9 +2,9 @@ package resources
 
 import (
 	"context"
-	"testing"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -12,7 +12,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
-
 )
 
 func TestGetExistingSMTPFromAddress(t *testing.T) {
