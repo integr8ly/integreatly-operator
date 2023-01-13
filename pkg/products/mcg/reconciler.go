@@ -305,9 +305,9 @@ func retrieveDefaultStorageClass(ctx context.Context, serverClient k8sclient.Cli
 		return nil, err
 	}
 	var defaultStorageClass *storagev1.StorageClass
-	for _, storageClass := range storageList.Items {
-		if storageClass.Annotations[defaultStorageClassAnnotation] == "true" {
-			defaultStorageClass = &storageClass
+	for i := range storageList.Items {
+		if storageList.Items[i].Annotations[defaultStorageClassAnnotation] == "true" {
+			defaultStorageClass = &storageList.Items[i]
 			break
 		}
 	}
