@@ -705,7 +705,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			Enabled: true,
 		}
 		apim.Spec.APIManagerCommonSpec.ResourceRequirementsEnabled = &resourceRequirements
-		apim.Spec.WildcardDomain = r.installation.Spec.RoutingSubdomain
+		/** RHOAM will only update the WildcardDomain for the following cases,
+		* - Fresh installs without customDomain set
+		* - Fresh installs with customDomain set
+		* The wildcardDomain will be editable for other cases installs. See MGDAPI-4974
+		**/
+		if apim.Spec.WildcardDomain == "" {
+			apim.Spec.WildcardDomain = r.installation.Spec.RoutingSubdomain
+		}
 		apim.Spec.ExternalComponents = &threescalev1.ExternalComponentsSpec{
 			System: &threescalev1.ExternalSystemComponents{
 				Redis:    &ExternalComponentsTrue,
