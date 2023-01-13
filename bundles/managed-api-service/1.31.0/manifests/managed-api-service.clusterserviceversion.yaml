@@ -216,6 +216,7 @@ spec:
                 - pods
               verbs:
                 - create
+                - list
             - apiGroups:
                 - ""
               resourceNames:

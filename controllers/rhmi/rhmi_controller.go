@@ -216,7 +216,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch;create;update
 
 // For accessing limitador api from pod
-// +kubebuilder:rbac:groups="",resources=pods,verbs=create
+// +kubebuilder:rbac:groups="",resources=pods,verbs=create;list
 
 // LimitRanges are used to assign default CPU/Memory requests and limits for containers that don't specify values for compute resources
 // +kubebuilder:rbac:groups="",resources=limitranges,verbs=get;create;update;delete
