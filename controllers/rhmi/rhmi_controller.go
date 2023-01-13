@@ -215,8 +215,9 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
 // +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch;create;update
 
-// For accessing limitador api from pod
+// For accessing limitador api and rails console from pod
 // +kubebuilder:rbac:groups="",resources=pods,verbs=create;list
+// +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
 
 // LimitRanges are used to assign default CPU/Memory requests and limits for containers that don't specify values for compute resources
 // +kubebuilder:rbac:groups="",resources=limitranges,verbs=get;create;update;delete

@@ -442,15 +442,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.syncInvitationEmail(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		if err != nil {
-			r.log.Warning("Failed to syncInvitationEmail: " + err.Error())
-			events.HandleError(r.recorder, installation, phase, "Failed to syncInvitationEmail", err)
-		}
-		return phase, err
-	}
-
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
 	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -576,6 +567,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
+		return phase, err
+	}
+
+	phase, err = r.syncInvitationEmail(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("Failed to syncInvitationEmail: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to syncInvitationEmail", err)
+		}
 		return phase, err
 	}
 
