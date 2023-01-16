@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/openshift/api/project/v1"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -472,4 +473,67 @@ func GetPlatformType(ctx *TestingContext) string {
 		return ""
 	}
 	return string(infra.Status.PlatformStatus.Type)
+}
+
+func getRoutes(ctx *TestingContext, routeName string, namespace string) (routev1.Route, error) {
+	routes := &routev1.RouteList{}
+
+	routeFound := routev1.Route{}
+	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
+		Namespace: ThreeScaleProductNamespace,
+	})
+
+	if err != nil {
+		return routeFound, fmt.Errorf("failed to get 3scale routes with error: %v", err)
+	}
+
+	for _, route := range routes.Items {
+		if strings.Contains(route.Spec.Host, routeName) {
+			routeFound = route
+		}
+	}
+
+	return routeFound, nil
+}
+
+func getToken(ctx *TestingContext, namespace, tokenType, objectMetaName string) (*string, error) {
+	token := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: objectMetaName,
+		},
+	}
+	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
+	if err != nil {
+		return nil, err
+	}
+	accessToken := string(token.Data[tokenType])
+	return &accessToken, nil
+}
+
+func makeProject(ctx *TestingContext, namespace string) (*v1.Project, error) {
+	project := &v1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	if err := ctx.Client.Create(goctx.TODO(), project); err != nil {
+		return project, fmt.Errorf("failed to create testing namespace with error: %v", err)
+	}
+
+	return project, nil
+}
+
+func genSecret(ctx *TestingContext, datamap map[string][]byte, secretName string, namespace string) (*corev1.Secret, error) {
+	secretRef := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Data: datamap,
+	}
+	if err := ctx.Client.Create(goctx.TODO(), secretRef); err != nil {
+		return secretRef, fmt.Errorf("failed to create secret with error: %v", err)
+	}
+
+	return secretRef, nil
 }

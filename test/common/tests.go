@@ -82,6 +82,12 @@ var (
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
+		{
+			[]TestCase{
+				{"N01 - Verify that Noobaa can be created via product CR", TestNoobaaViaCR},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
 	}
 
 	//Threescale cluster scoped test suite to be used when Threescale becomes cluster scoped.
