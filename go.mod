@@ -57,6 +57,8 @@ require (
 	cloud.google.com/go/storage v1.28.1
 	cloud.google.com/go/vpcaccess v1.5.0
 	github.com/foxcpp/go-mockdns v1.0.0
+	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
+	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
@@ -64,12 +66,12 @@ require (
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
-	k8s.io/cloud-provider v0.24.3
 	k8s.io/metrics v0.20.6
 )
 
 require (
 	cloud.google.com/go/iam v0.7.0 // indirect
+	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 )
 

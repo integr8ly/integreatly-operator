@@ -9,5 +9,4 @@ const (
 	RHSSOUserProstgresPrefix     = "rhssouser-postgres-"
 	ThreeScaleBlobStoragePrefix  = "threescale-blobstorage-"
 	PostgresApplyImmediately     = true
-	McgPostgresPrefix            = "db-noobaa-db-pg"
 )
