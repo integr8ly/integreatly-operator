@@ -117,7 +117,7 @@ func OperatorIsHiveManaged(ctx context.Context, client k8sclient.Client, install
 	}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 	if err != nil {
-		return false, fmt.Errorf("could not retrieve %s namespace:", err)
+		return false, fmt.Errorf("could not retrieve %s namespace: %w", installation.Namespace, err)
 	}
 
 	labels := ns.GetLabels()

@@ -304,6 +304,7 @@ spec:
                 - apimanagers
               verbs:
                 - create
+                - delete
                 - get
                 - list
                 - update
@@ -500,6 +501,7 @@ spec:
                 - subscriptions
               verbs:
                 - create
+                - delete
                 - update
             - apiGroups:
                 - project.openshift.io

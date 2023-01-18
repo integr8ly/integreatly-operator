@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
@@ -121,7 +122,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
-
 			phase, err := r.removeSnapshots(ctx, installation, client)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
@@ -139,10 +139,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 
-			// remove the namespace
-			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
+			phase, err = k8s.EnsureObjectDeleted(ctx, client, &operatorsv1alpha1.Subscription{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      constants.CloudResourceSubscriptionName,
+					Namespace: operatorNamespace,
+				},
+			})
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
+			}
+			phase, err = k8s.EnsureObjectDeleted(ctx, client, &operatorsv1alpha1.ClusterServiceVersion{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("cloud-resources.v%s", integreatlyv1alpha1.OperatorVersionCloudResources),
+					Namespace: operatorNamespace,
+				},
+			})
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+			isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, client, installation)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			if !isHiveManaged {
+				phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
+				if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+					return phase, err
+				}
 			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil

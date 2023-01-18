@@ -178,7 +178,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources;operatorgroups,verbs=create;list;get
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=update,resourceNames=rhmi-registry-cs
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=installplans,verbs=update;get
-// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=update;create
+// +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=update;create;delete
 
 // Monitoring resources not covered by namespace "admin" permissions
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
@@ -248,7 +248,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=operator.openshift.io,resources=cloudcredentials,verbs=get;list;watch
 
-// +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list
+// +kubebuilder:rbac:groups=apps.3scale.net,resources=apimanagers,verbs=get;create;update;list;delete
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 

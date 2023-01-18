@@ -5,6 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"net"
 	"net/http"
 	"os"
@@ -199,12 +202,43 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &threescalev1.APIManager{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      apiManagerName,
+				Namespace: productNamespace,
+			},
+		})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &operatorsv1alpha1.Subscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.ThreeScaleSubscriptionName,
+				Namespace: operatorNamespace,
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		phase, err = k8s.EnsureObjectDeleted(ctx, serverClient, &operatorsv1alpha1.ClusterServiceVersion{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("3scale-operator.v%s", integreatlyv1alpha1.OperatorVersion3Scale),
+				Namespace: operatorNamespace,
+			},
+		})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		isHiveManaged, err := addon.OperatorIsHiveManaged(ctx, serverClient, installation)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if !isHiveManaged {
+			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+		}
 		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err

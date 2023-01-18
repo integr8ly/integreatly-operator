@@ -74,3 +74,14 @@ func PatchIfExists(ctx context.Context, serverClient k8sclient.Client, fn contro
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+// EnsureObjectDeleted attempts to delete a kubernetes object and if it's not found returns PhaseCompleted
+func EnsureObjectDeleted(ctx context.Context, client k8sclient.Client, object k8sclient.Object) (integreatlyv1alpha1.StatusPhase, error) {
+	if err := client.Delete(ctx, object); err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseInProgress, nil
+}
