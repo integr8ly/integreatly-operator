@@ -424,7 +424,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, "system-app", updateSystemAppAddresses)
+	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, systemAppDCName, updateSystemAppAddresses)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
 			r.log.Warning("Failed to reconcileDcEnvarEmailAddress: " + err.Error())
@@ -3666,7 +3666,7 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	pods := &corev1.PodList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ns),
-		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-app"}),
+		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": systemAppDCName}),
 	}
 	err = serverClient.List(ctx, pods, listOpts...)
 	if err != nil {
@@ -3675,7 +3675,7 @@ func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8scl
 	}
 
 	for _, pod := range pods.Items {
-		if pod.Status.Phase == "Running" {
+		if pod.Status.Phase == corev1.PodRunning {
 			podname = pod.ObjectMeta.Name
 			break
 		}

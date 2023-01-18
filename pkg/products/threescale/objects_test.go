@@ -961,7 +961,6 @@ func getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, threeScaleInst
 			},
 		},
 		&v1.RouteList{
-
 			Items: []v1.Route{
 				{ObjectMeta: metav1.ObjectMeta{Name: "master", Namespace: "3scale"},
 					Spec: v1.RouteSpec{Host: "master.apps.example.com"}},

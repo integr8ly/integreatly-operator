@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
 	"testing"
 
