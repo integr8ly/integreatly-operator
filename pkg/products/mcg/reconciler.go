@@ -34,16 +34,12 @@ import (
 const (
 	DefaultInstallationNamespace  = "mcg"
 	noobaaName                    = "noobaa"
-	noobaaDefaultBackingStore     = noobaaName + "-default-backing-store"
 	noobaaDefaultBucketClass      = noobaaName + "-default-bucket-class"
 	pvpoolStorageSize             = "25Gi"
 	dbStorageSize                 = "16Gi"
 	defaultStorageClassAnnotation = "storageclass.kubernetes.io/is-default-class"
 	threescaleBucket              = "3scale-operator-bucket"
 	ThreescaleBucketClaim         = threescaleBucket + "-claim"
-	s3CredentialsSecretName       = "s3-credentials"
-	s3BucketRegion                = "global"
-	s3PathStyle                   = "true"
 )
 
 type Reconciler struct {

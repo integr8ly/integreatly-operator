@@ -1194,7 +1194,7 @@ func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclie
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to create or update blob storage aws credentials secret: %w", err)
+		return fmt.Errorf("failed to create or update mcg blob storage aws credentials secret: %w", err)
 	}
 	return nil
 }

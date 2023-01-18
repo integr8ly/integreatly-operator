@@ -2,6 +2,8 @@ package config
 
 import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,7 +16,14 @@ func NewMCG(config ProductConfig) *MCG {
 }
 
 func (m *MCG) GetWatchableCRDs() []runtime.Object {
-	return []runtime.Object{}
+	return []runtime.Object{
+		&obv1.ObjectBucketClaim{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       obv1.ObjectBucketClaimKind,
+				APIVersion: obv1.SchemeGroupVersion.String(),
+			},
+		},
+	}
 }
 
 func (m *MCG) Read() ProductConfig {
