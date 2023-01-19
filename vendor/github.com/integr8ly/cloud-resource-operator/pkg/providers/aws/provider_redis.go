@@ -318,7 +318,7 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 
 	if maintenanceWindow {
 		// check if any modifications are required to bring the elasticache instance up to date with the strategy map.
-		modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger, r)
+		modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger)
 		if err != nil {
 			errMsg := "failed to build elasticache modify strategy"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -537,7 +537,7 @@ func (p *RedisProvider) DeleteRedis(ctx context.Context, r *v1alpha1.Redis) (cro
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	isLastResource, err := p.isLastResource(ctx)
+	isLastResource, err := resources.IsLastResource(ctx, p.Client)
 	if err != nil {
 		errMsg := "failed to check if this cr is the last cr of type postgres and redis"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -681,11 +681,6 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
 	}
 
-	// Override if node size is defined in the CR spec
-	if r.Spec.Size != "" {
-		elasticacheCreateConfig.CacheNodeType = aws.String(r.Spec.Size)
-	}
-
 	elasticacheDeleteConfig := &elasticache.DeleteReplicationGroupInput{}
 	if err := json.Unmarshal(stratCfg.DeleteStrategy, elasticacheDeleteConfig); err != nil {
 		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
@@ -710,30 +705,13 @@ func (p *RedisProvider) getDefaultElasticacheTags(ctx context.Context, cr *v1alp
 	return genericToElasticacheTags(tags), clusterID, nil
 }
 
-func (p *RedisProvider) isLastResource(ctx context.Context) (bool, error) {
-	listOptions := client.ListOptions{
-		Namespace: "",
-	}
-	var postgresList = &v1alpha1.PostgresList{}
-	if err := p.Client.List(ctx, postgresList, &listOptions); err != nil {
-		msg := "failed to retrieve postgres cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	var redisList = &v1alpha1.RedisList{}
-	if err := p.Client.List(ctx, redisList, &listOptions); err != nil {
-		msg := "failed to retrieve redis cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	return len(postgresList.Items) == 0 && len(redisList.Items) == 1, nil
-}
-
 // buildElasticacheUpdateStrategy compare the current elasticache state to the proposed elasticache state from the
 // strategy map.
 //
 // if modifications are required, a modify input struct will be returned with all proposed changes.
 //
 // if no modifications are required, nil will be returned.
-func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry, r *v1alpha1.Redis) (*elasticache.ModifyReplicationGroupInput, error) {
+func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry) (*elasticache.ModifyReplicationGroupInput, error) {
 	// setup logger.
 	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
 	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
@@ -788,7 +766,6 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 		// the instance type is supported, go ahead with the modification.
 		if instanceTypeSupported {
 			modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
-			modifyInput.ApplyImmediately = aws.Bool(r.Spec.ApplyImmediately)
 			updateFound = true
 		} else {
 			// the instance type isn't supported, log and skip.
@@ -868,7 +845,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 	if elasticacheConfig.TransitEncryptionEnabled == nil {
 		elasticacheConfig.TransitEncryptionEnabled = aws.Bool(defaultInTransitEncryption)
 	}
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve elasticache config")
 	}
@@ -876,7 +853,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.ReplicationGroupId = aws.String(cacheName)
 	}
 
-	subGroup, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subGroup, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to build subnet group name")
 	}
@@ -884,7 +861,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.CacheSubnetGroupName = aws.String(subGroup)
 	}
 	// build security group name
-	secName, err := BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	secName, err := resources.BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -904,7 +881,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 
 // buildElasticacheDeleteConfig checks redis config, if none exists sets values to defaults
 func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1alpha1.Redis, elasticacheCreateConfig *elasticache.CreateReplicationGroupInput, elasticacheDeleteConfig *elasticache.DeleteReplicationGroupInput) error {
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve elasticache config")
 	}
@@ -917,7 +894,7 @@ func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1al
 	if elasticacheDeleteConfig.RetainPrimaryCluster == nil {
 		elasticacheDeleteConfig.RetainPrimaryCluster = aws.Bool(false)
 	}
-	snapshotIdentifier, err := buildTimestampedInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	snapshotIdentifier, err := resources.BuildTimestampedInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve rds config")
 	}
@@ -931,7 +908,7 @@ func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1al
 func (p *RedisProvider) configureElasticacheVpc(ctx context.Context, cacheSvc elasticacheiface.ElastiCacheAPI, ec2Svc ec2iface.EC2API) error {
 	logrus.Info("configuring cluster vpc for redis resource")
 	// get subnet group id
-	sgName, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	sgName, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -1164,7 +1141,7 @@ func (p *RedisProvider) createElasticacheConnectionMetric(ctx context.Context, c
 }
 
 func (p *RedisProvider) buildCacheName(ctx context.Context, rd *v1alpha1.Redis) (string, error) {
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, rd.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, rd.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return "", errorUtil.Errorf("error occurred building cache name: %v", err)
 	}

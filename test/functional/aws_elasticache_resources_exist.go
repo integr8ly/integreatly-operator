@@ -18,7 +18,7 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 	}
 
 	// build an array of redis resources to check and test error array
-	elasticacheResourceIDs, testErrors := GetElasticacheResourceIDs(goContext, ctx.Client, rhmi)
+	elasticacheResourceIDs, testErrors := GetRedisInstancesIDs(goContext, ctx.Client, rhmi)
 
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro redis exists failed with the following errors : %s", testErrors)

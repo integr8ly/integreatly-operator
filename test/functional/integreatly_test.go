@@ -70,13 +70,19 @@ var _ = Describe("integreatly", func() {
 			},
 		}
 
-		// Run functional (AWS) tests only in case of AWS storage type installation (useClusterStorage: false)
+		// Run functional (AWS or GCP) tests only in case of cloud provider storage type installation (useClusterStorage: false)
 		// or if overriden by BYPASS_STORAGE_TYPE_CHECK=true env var
 		if shouldRunFunctionalTests() {
-			tests = append(tests, common.Tests{
-				Type:      fmt.Sprintf("%s Functional", installType),
-				TestCases: FUNCTIONAL_TESTS,
-			})
+			tests = append(tests,
+				common.Tests{
+					Type:      fmt.Sprintf("%s Functional", installType),
+					TestCases: FUNCTIONAL_TESTS_AWS,
+				},
+				common.Tests{
+					Type:      fmt.Sprintf("%s Functional", installType),
+					TestCases: FUNCTIONAL_TESTS_GCP,
+				},
+			)
 		}
 
 		if os.Getenv("MULTIAZ") == "true" {

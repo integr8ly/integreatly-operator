@@ -3,6 +3,8 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	configv1 "github.com/openshift/api/config/v1"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
@@ -199,7 +201,7 @@ func podLogs(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	podNamespaces := getPodNamespaces(rhmi.Spec.Type)
+	podNamespaces := getPodNamespaces(rhmi.Spec.Type, ctx)
 
 	for _, namespaces := range podNamespaces {
 		err := ctx.Client.List(goctx.TODO(), pods, &k8sclient.ListOptions{Namespace: namespaces})
@@ -213,7 +215,10 @@ func podLogs(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getPodNamespaces(installType string) []string {
+func getPodNamespaces(installType string, ctx *TestingContext) []string {
+	if platformType, err := resources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+		commonPodNamespaces = append(commonPodNamespaces, McgOperatorNamespace)
+	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return commonPodNamespaces
 	} else {

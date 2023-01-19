@@ -8,14 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"io"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 	"time"
+
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -29,6 +30,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	goctx "context"
+
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -159,11 +161,11 @@ func getConsoleRoute(client k8sclient.Client) (*string, error) {
 
 func GetInstallType(config *rest.Config) (string, error) {
 
-	context, err := NewTestingContext(config)
+	testingContext, err := NewTestingContext(config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi, err := GetRHMI(context.Client, true)
+	rhmi, err := GetRHMI(testingContext.Client, true)
 
 	if err != nil {
 		return "", err
@@ -220,11 +222,11 @@ func ExecToPodArgs(client kubernetes.Interface, config *rest.Config, command []s
 		Namespace(namespace).
 		SubResource("exec").
 		Param("container", container)
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
+	newScheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(newScheme); err != nil {
 		return "", fmt.Errorf("error adding to scheme: %v", err)
 	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
+	parameterCodec := runtime.NewParameterCodec(newScheme)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   command,
