@@ -64,6 +64,7 @@ var (
 	ProductMonitoringSpec ProductName = "monitoring-spec"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
+	ProductMCG            ProductName = "mcg"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)

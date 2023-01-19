@@ -3,13 +3,14 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // common to all installTypes including managed-api
-func commonPvcNamespaces() []PersistentVolumeClaim {
-	return []PersistentVolumeClaim{
+func commonPvcNamespaces(ctx *TestingContext) []PersistentVolumeClaim {
+	pvc := []PersistentVolumeClaim{
 		{
 
 			Namespace: NamespacePrefix + "observability",
@@ -19,6 +20,18 @@ func commonPvcNamespaces() []PersistentVolumeClaim {
 			},
 		},
 	}
+	if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+		pvc = append(pvc, []PersistentVolumeClaim{
+			{
+				Namespace: McgOperatorNamespace,
+				PersistentVolumeClaimNames: []string{
+					"db-noobaa-db-pg-0",
+					"noobaa-default-backing-store-noobaa-pvc",
+				},
+			},
+		}...)
+	}
+	return pvc
 }
 
 func TestPVClaims(t TestingTB, ctx *TestingContext) {
@@ -30,7 +43,7 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	pvcNamespaces := getPvcNamespaces(rhmi.Spec.Type)
+	pvcNamespaces := getPvcNamespaces(rhmi.Spec.Type, ctx)
 
 	for _, pvcNamespace := range pvcNamespaces {
 		err := ctx.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: pvcNamespace.Namespace})
@@ -49,8 +62,8 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getPvcNamespaces(installType string) []PersistentVolumeClaim {
-	return commonPvcNamespaces()
+func getPvcNamespaces(installType string, ctx *TestingContext) []PersistentVolumeClaim {
+	return commonPvcNamespaces(ctx)
 }
 
 func checkForClaim(claim string, pvcs *corev1.PersistentVolumeClaimList) error {

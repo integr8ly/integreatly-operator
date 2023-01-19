@@ -27,6 +27,7 @@ const (
 	ApicastStagingName    = "apicast_staging"
 	KeycloakName          = "rhssouser"
 	GrafanaName           = "grafana"
+	NoobaaDbName          = "noobaa-db-pg"
 )
 
 var (

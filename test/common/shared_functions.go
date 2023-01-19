@@ -8,15 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 	"time"
-
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -41,8 +39,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	goctx "context"
 )
 
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
@@ -161,11 +157,11 @@ func getConsoleRoute(client k8sclient.Client) (*string, error) {
 
 func GetInstallType(config *rest.Config) (string, error) {
 
-	context, err := NewTestingContext(config)
+	testingContext, err := NewTestingContext(config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi, err := GetRHMI(context.Client, true)
+	rhmi, err := GetRHMI(testingContext.Client, true)
 
 	if err != nil {
 		return "", err
@@ -222,11 +218,11 @@ func ExecToPodArgs(client kubernetes.Interface, config *rest.Config, command []s
 		Namespace(namespace).
 		SubResource("exec").
 		Param("container", container)
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
+	sch := runtime.NewScheme()
+	if err := corev1.AddToScheme(sch); err != nil {
 		return "", fmt.Errorf("error adding to scheme: %v", err)
 	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
+	parameterCodec := runtime.NewParameterCodec(sch)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   command,
@@ -392,43 +388,43 @@ func GetScalabilityTestCases(installType string) []TestCase {
 	return testCases
 }
 
-func GetClusterScopedTestCases(installType string) []TestCase {
-	testCases := []TestCase{}
-	for _, testSuite := range THREESCALE_CLUSTER_SCOPED_TESTS {
-		for _, tsInstallType := range testSuite.InstallType {
-			if string(tsInstallType) == installType {
-				testCases = append(testCases, testSuite.TestCases...)
-			}
-		}
-	}
-	return testCases
-}
+//func GetClusterScopedTestCases(installType string) []TestCase {
+//	testCases := []TestCase{}
+//	for _, testSuite := range THREESCALE_CLUSTER_SCOPED_TESTS {
+//		for _, tsInstallType := range testSuite.InstallType {
+//			if string(tsInstallType) == installType {
+//				testCases = append(testCases, testSuite.TestCases...)
+//			}
+//		}
+//	}
+//	return testCases
+//}
 
-func IsClusterScoped(restConfig *rest.Config) (bool, error) {
-	context, err := NewTestingContext(restConfig)
-	if err != nil {
-		return false, err
-	}
-	threeScaleOperatorGroup := &operatorsv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-registry-og",
-			Namespace: ThreeScaleOperatorNamespace,
-		},
-	}
-
-	err = context.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
-	if err != nil {
-		return false, err
-	}
-
-	for _, namespace := range threeScaleOperatorGroup.Status.Namespaces {
-		if namespace == "" {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
+//func IsClusterScoped(restConfig *rest.Config) (bool, error) {
+//	newTestingContext, err := NewTestingContext(restConfig)
+//	if err != nil {
+//		return false, err
+//	}
+//	threeScaleOperatorGroup := &operatorsv1.OperatorGroup{
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name:      "rhmi-registry-og",
+//			Namespace: ThreeScaleOperatorNamespace,
+//		},
+//	}
+//
+//	err = newTestingContext.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	for _, namespace := range threeScaleOperatorGroup.Status.Namespaces {
+//		if namespace == "" {
+//			return true, nil
+//		}
+//	}
+//
+//	return false, nil
+//}
 
 func writeObjToYAMLFile(obj interface{}, out string) error {
 	data, err := yaml.Marshal(obj)
@@ -462,4 +458,13 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 		return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
 	}
 	return nil
+}
+
+func GetPlatformType(ctx *TestingContext) string {
+	infra, err := pkgresources.GetClusterInfrastructure(context.TODO(), ctx.Client)
+	if err != nil || infra.Status.PlatformStatus == nil {
+		fmt.Println("can't retrieve cluster infrastructure")
+		return ""
+	}
+	return string(infra.Status.PlatformStatus.Type)
 }

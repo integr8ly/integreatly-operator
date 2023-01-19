@@ -14,7 +14,7 @@ import (
 const (
 	requestUrl        = "/apis/integreatly.org/v1alpha1"
 	openShiftProvider = "openshift"
-	externalProvider  = "aws"
+	externalProvider  = "cloud"
 )
 
 func getPostgres(installType string, installationName string) []string {

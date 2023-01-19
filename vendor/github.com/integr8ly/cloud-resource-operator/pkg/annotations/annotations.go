@@ -30,3 +30,19 @@ func Has(instance metav1.Object, key string) bool {
 
 	return false
 }
+
+// Get returns annotation string if the annotation is already set
+func Get(instance metav1.Object, key string) string {
+	annotations := instance.GetAnnotations()
+	if annotations == nil {
+		return ""
+	}
+
+	for k := range annotations {
+		if key == k {
+			return annotations[key]
+		}
+	}
+
+	return ""
+}
