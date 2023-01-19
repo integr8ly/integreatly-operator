@@ -48,7 +48,7 @@ const (
 	defaultInstallationNamespace = "cloud-resources"
 )
 
-var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002"}
+var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109"}
 
 // this timestamp is 2022-01-15-00:00:01
 var postgresServiceUpdateTimestamp = []string{"1642204801"}
