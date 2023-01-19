@@ -186,9 +186,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to create observability operand namespace")
 	}
 
-	// temp code to be removed once all versions of RHOAM are bumped to 1.27
-	r.deleteObsoleteService(ctx, serverClient)
-
 	if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
 		installation.Status.LastError = err.Error()
@@ -209,22 +206,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	r.log.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// temp code to be removed once all versions of RHOAM are bumped to 1.27
-func (r *Reconciler) deleteObsoleteService(ctx context.Context, serverClient k8sclient.Client) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		service := &corev1.Service{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{
-			Name:      "rhmi-operator-metrics",
-			Namespace: r.installation.Namespace,
-		}, service)
-		if err == nil {
-			if err := serverClient.Delete(ctx, service); err != nil {
-				r.log.Info("Service \"rhmi-operator-metrics\" has been deleted")
-			}
-		}
-	}
 }
 
 func (r *Reconciler) setTenantMetrics(ctx context.Context, serverClient k8sclient.Client) error {
