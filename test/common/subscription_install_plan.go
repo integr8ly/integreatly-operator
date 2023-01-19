@@ -3,8 +3,9 @@ package common
 import (
 	"context"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	configv1 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -57,7 +58,7 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	subscriptionsToCheck := getSubscriptionsToCheck(rhmi.Spec.Type)
+	subscriptionsToCheck := getSubscriptionsToCheck(rhmi.Spec.Type, ctx)
 
 	for _, subscription := range subscriptionsToCheck {
 		// Check subscription install plan approval strategy
@@ -97,10 +98,17 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
+func getSubscriptionsToCheck(installType string, ctx *TestingContext) []SubscriptionCheck {
+	commonSubscriptionsToCheck := commonSubscriptionsToCheck()
+	if platformType, err := resources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+		commonSubscriptionsToCheck = append(commonSubscriptionsToCheck, SubscriptionCheck{
+			Name:      constants.MCGSubscriptionName,
+			Namespace: McgOperatorNamespace,
+		})
+	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return commonSubscriptionsToCheck()
+		return commonSubscriptionsToCheck
 	} else {
-		return append(commonSubscriptionsToCheck(), managedApiSubscriptionsToCheck()...)
+		return append(commonSubscriptionsToCheck, managedApiSubscriptionsToCheck()...)
 	}
 }

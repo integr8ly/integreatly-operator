@@ -134,17 +134,17 @@ func NewNetworkManager(session *session.Session, client client.Client, logger *l
 	}
 }
 
-//CreateNetwork returns a Network type or error
+// CreateNetwork returns a Network type or error
 //
-//VPC's created by the cloud resource operator are identified by having a tag with the name `<organizationTag>/clusterID`.
-//By default, `integreatly.org/clusterID`.
+// VPC's created by the cloud resource operator are identified by having a tag with the name `<organizationTag>/clusterID`.
+// By default, `integreatly.org/clusterID`.
 //
-//CreateNetwork does:
-//    * create a VPC with CIDR block and tag it, if a VPC does not exist,
-//	  * reconcile on subnets and subnet groups
+// CreateNetwork does:
+//   - create a VPC with CIDR block and tag it, if a VPC does not exist,
+//   - reconcile on subnets and subnet groups
 //
-//CreateNetwork does not:
-//	  * reconcile the vpc if the VPC already exist (this is to avoid potential changes to the CIDR range and unwanted/unexpected behaviour)
+// CreateNetwork does not:
+//   - reconcile the vpc if the VPC already exist (this is to avoid potential changes to the CIDR range and unwanted/unexpected behaviour)
 func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.IPNet) (*Network, error) {
 	logger := n.Logger.WithField("action", "CreateNetwork")
 
@@ -281,16 +281,16 @@ func (n *NetworkProvider) CreateNetwork(ctx context.Context, vpcCidrBlock *net.I
 	}, nil
 }
 
-//DeleteNetwork returns an error
+// DeleteNetwork returns an error
 //
-//VPCs are tagged with the name `<organizationTag>/clusterID`.
-//By default, `integreatly.org/clusterID`.
+// VPCs are tagged with the name `<organizationTag>/clusterID`.
+// By default, `integreatly.org/clusterID`.
 //
-//This tag is used to find a standalone VPC
-//If found DeleteNetwork will attempt to remove:
-//	* all vpc associated subnets
-//	* both subnet groups (rds and elasticache)
-//	* the vpc
+// This tag is used to find a standalone VPC
+// If found DeleteNetwork will attempt to remove:
+//   - all vpc associated subnets
+//   - both subnet groups (rds and elasticache)
+//   - the vpc
 func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 	logger := n.Logger.WithField("action", "DeleteNetwork")
 
@@ -319,7 +319,7 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 		}
 	}
 
-	subnetGroupName, err := BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subnetGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -367,9 +367,9 @@ func (n *NetworkProvider) DeleteNetwork(ctx context.Context) error {
 
 // CreateNetworkConnection handles the creation of a connection from the vpc provisioned by cro to the cluster vpc
 // here we handle :
-// 		* the standalone security group
-//		* cro standalone vpc route table
-//		* cluster vpc route table
+//   - the standalone security group
+//   - cro standalone vpc route table
+//   - cluster vpc route table
 func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *Network) (*NetworkConnection, error) {
 	logger := n.Logger.WithField("action", "CreateNetworkConnection")
 	logger.Info("preparing to configure network connection")
@@ -469,7 +469,7 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 func (n *NetworkProvider) DeleteNetworkConnection(ctx context.Context, networkPeering *NetworkPeering) error {
 	logger := n.Logger.WithField("action", "DeleteNetworkConnection")
 	// build security group name
-	standaloneSecurityGroupName, err := BuildInfraName(ctx, n.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	standaloneSecurityGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	logger.Info(fmt.Sprintf("setting resource security group %s", standaloneSecurityGroupName))
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
@@ -677,13 +677,13 @@ func (n *NetworkProvider) DeleteNetworkPeering(peering *NetworkPeering) error {
 	return nil
 }
 
-//IsEnabled returns true when no bundled subnets are found in the openshift cluster vpc.
+// IsEnabled returns true when no bundled subnets are found in the openshift cluster vpc.
 //
-//All subnets created by the cloud resource operator are identified by having a tag with the name `<organizationTag>/clusterID`.
-//By default, `integreatly.org/clusterID`.
+// All subnets created by the cloud resource operator are identified by having a tag with the name `<organizationTag>/clusterID`.
+// By default, `integreatly.org/clusterID`.
 //
-//this check allows us to maintain backwards compatibility with openshift clusters that used the cloud resource operator before this standalone vpc provider was added.
-//If this function returns false, we should continue using the backwards compatible approach of bundling resources in with the openshift cluster vpc.
+// this check allows us to maintain backwards compatibility with openshift clusters that used the cloud resource operator before this standalone vpc provider was added.
+// If this function returns false, we should continue using the backwards compatible approach of bundling resources in with the openshift cluster vpc.
 func (n *NetworkProvider) IsEnabled(ctx context.Context) (bool, error) {
 	logger := n.Logger.WithField("action", "isEnabled")
 
@@ -733,7 +733,7 @@ func (n *NetworkProvider) IsEnabled(ctx context.Context) (bool, error) {
 func (n *NetworkProvider) DeleteBundledCloudResources(ctx context.Context) error {
 	logger := n.Logger.WithField("action", "deleteBundledCloudResources")
 
-	subnetGroupName, err := BuildInfraName(ctx, n.Client, "subnetgroup", defaultAwsIdentifierLength)
+	subnetGroupName, err := resources.BuildInfraName(ctx, n.Client, "subnetgroup", defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building bundle subnet group resource name on deletion")
 	}
@@ -753,7 +753,7 @@ func (n *NetworkProvider) DeleteBundledCloudResources(ctx context.Context) error
 	if err != nil && isAwsErr && dbSubnetErr.Code() != rds.ErrCodeDBSubnetGroupNotFoundFault {
 		return errorUtil.Wrap(err, "error deleting rds subnet group")
 	}
-	securityGroupName, err := BuildInfraName(ctx, n.Client, "securitygroup", defaultAwsIdentifierLength)
+	securityGroupName, err := resources.BuildInfraName(ctx, n.Client, "securitygroup", defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building bundle security group resource name on deletion")
 	}
@@ -836,7 +836,7 @@ func (n *NetworkProvider) getNetworkPeering(ctx context.Context, network *Networ
 // see -> https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-security-groups.html
 func (n *NetworkProvider) reconcileStandaloneSecurityGroup(ctx context.Context, logger *logrus.Entry) (*ec2.SecurityGroup, error) {
 	// build security group name
-	standaloneSecurityGroupName, err := BuildInfraName(ctx, n.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	standaloneSecurityGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	logger.Info(fmt.Sprintf("setting resource security group %s", standaloneSecurityGroupName))
 	if err != nil {
 		return nil, errorUtil.Wrap(err, "error building subnet group name")
@@ -1007,11 +1007,11 @@ func (n *NetworkProvider) reconcileStandaloneRouteTableTags(ctx context.Context,
 	return nil
 }
 
-//reconcileStandaloneVPCSubnets returns an array list of private subnets associated with a vpc or an error
+// reconcileStandaloneVPCSubnets returns an array list of private subnets associated with a vpc or an error
 //
-//each standalone vpc cidr block is split in half, to create two private subnets.
-//these subnets are located in different az's
-//the az is determined by the cro strategy, either provided by override config map or provided by the infrastructure CR
+// each standalone vpc cidr block is split in half, to create two private subnets.
+// these subnets are located in different az's
+// the az is determined by the cro strategy, either provided by override config map or provided by the infrastructure CR
 func (n *NetworkProvider) reconcileStandaloneVPCSubnets(ctx context.Context, logger *logrus.Entry, vpc *ec2.Vpc) ([]*ec2.Subnet, error) {
 	logger.Info("gathering all private subnets in cluster vpc")
 
@@ -1245,10 +1245,10 @@ func (n *NetworkProvider) getCRORouteTables(ctx context.Context) ([]*ec2.RouteTa
 	return foundRouteTables, nil
 }
 
-//reconcileVPCTags will tag a VPC or return an error
+// reconcileVPCTags will tag a VPC or return an error
 //
-//VPCs are tagged with the name `<organizationTag>/clusterID`.
-//By default, `integreatly.org/clusterID`.
+// VPCs are tagged with the name `<organizationTag>/clusterID`.
+// By default, `integreatly.org/clusterID`.
 func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2.Vpc) error {
 	logger := n.Logger.WithField("action", "reconcileVPCTags")
 
@@ -1272,14 +1272,14 @@ func (n *NetworkProvider) reconcileVPCTags(ctx context.Context, vpc *ec2.Vpc) er
 	return nil
 }
 
-//an rds subnet group is required to be in place when provisioning rds resources
+// an rds subnet group is required to be in place when provisioning rds resources
 //
-//reconcileRDSVpcConfiguration ensures that an rds subnet group is created with 2 private subnets
+// reconcileRDSVpcConfiguration ensures that an rds subnet group is created with 2 private subnets
 func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, privateVPCSubnets []*ec2.Subnet) error {
 	logger := n.Logger.WithField("action", "reconcileRDSVpcConfiguration")
 	logger.Info("ensuring rds subnet groups in vpc are as expected")
 	// get subnet group id
-	subnetGroupName, err := BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subnetGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -1364,7 +1364,7 @@ func (n *NetworkProvider) reconcileRDSVpcConfiguration(ctx context.Context, priv
 	return nil
 }
 
-//this function removes tags and reads them to an rds subnet group
+// this function removes tags and reads them to an rds subnet group
 func (n *NetworkProvider) updateRdsSubnetGroupTags(foundSubnet *rds.DBSubnetGroup, rdsTags []*rds.Tag) error {
 	var tagKeys []*string
 	for _, tag := range rdsTags {
@@ -1387,14 +1387,14 @@ func (n *NetworkProvider) updateRdsSubnetGroupTags(foundSubnet *rds.DBSubnetGrou
 	return nil
 }
 
-//It is required to have an elasticache subnet group in place when provisioning elasticache resources
+// It is required to have an elasticache subnet group in place when provisioning elasticache resources
 //
-//reconcileElasticacheVPCConfiguration ensures that an elasticache subnet group is created with 2 private subnets
+// reconcileElasticacheVPCConfiguration ensures that an elasticache subnet group is created with 2 private subnets
 func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Context, privateVPCSubnets []*ec2.Subnet) error {
 	logger := n.Logger.WithField("action", "reconcileElasticacheVPCConfiguration")
 	logger.Info("ensuring elasticache subnet groups in vpc are as expected")
 	// get subnet group id
-	subnetGroupName, err := BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subnetGroupName, err := resources.BuildInfraName(ctx, n.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -1460,12 +1460,12 @@ func (n *NetworkProvider) reconcileElasticacheVPCConfiguration(ctx context.Conte
 	return nil
 }
 
-//getStandaloneVpc will return a vpc type or error
+// getStandaloneVpc will return a vpc type or error
 //
-//Standalone VPCs are tagged with the name `<organizationTag>/clusterID`.
-//By default, `integreatly.org/clusterID`.
+// Standalone VPCs are tagged with the name `<organizationTag>/clusterID`.
+// By default, `integreatly.org/clusterID`.
 //
-//This tag is used to identify a standalone vpc
+// This tag is used to identify a standalone vpc
 func getStandaloneVpc(ctx context.Context, client client.Client, ec2Svc ec2iface.EC2API, logger *logrus.Entry) (*ec2.Vpc, error) {
 	// get all vpcs
 	vpcs, err := ec2Svc.DescribeVpcs(&ec2.DescribeVpcsInput{})
@@ -1696,7 +1696,7 @@ func (n *NetworkProvider) getNonOverlappingDefaultCIDR(ctx context.Context) (*ne
 }
 
 // Makes a call to the cluster to get the pod cidr from the network CR, parses it into a ip notation
-//then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
+// then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
 func getPodCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
 	var podNet *net.IPNet
 	var err error
@@ -1714,7 +1714,7 @@ func getPodCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
 }
 
 // Makes a call to the cluster to get the service cidr from the network CR, parses it into a ip notation
-//then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
+// then checks to see if the value is actually being returned in case of a scenario where the cidr is empty in the CR
 func getServiceCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
 	var err error
 	var serviceNet *net.IPNet
@@ -1733,7 +1733,7 @@ func getServiceCIDR(networkConf *v12.Network) (*net.IPNet, bool, error) {
 	return serviceNet, true, nil
 }
 
-//subnetExists is a helper function for checking if a subnet exists with a specific cidr block
+// subnetExists is a helper function for checking if a subnet exists with a specific cidr block
 func subnetExists(subnets []*ec2.Subnet, cidr string) bool {
 	for _, subnet := range subnets {
 		if *subnet.CidrBlock == cidr {
@@ -1743,9 +1743,9 @@ func subnetExists(subnets []*ec2.Subnet, cidr string) bool {
 	return false
 }
 
-//isValidCIDRRange returns a bool denoting if a cidr mask is valid
+// isValidCIDRRange returns a bool denoting if a cidr mask is valid
 //
-//we accept cidr mask ranges from \16 to \26
+// we accept cidr mask ranges from \16 to \26
 func isValidCIDRRange(CIDR *net.IPNet) bool {
 	mask, _ := CIDR.Mask.Size()
 	return mask > 15 && mask < 27
@@ -1767,8 +1767,8 @@ func incrementIPForDefaultCIDR(ip net.IP) net.IP {
 
 // validateStandaloneCidrBlock validates the standalone cidr block before creation, returning an error if the cidr is not valid
 // checks carried out :
-// 		* has a cidr range between \16 and \26
-// 		* does not overlap with cluster vpc cidr block
+//   - has a cidr range between \16 and \26
+//   - does not overlap with cluster vpc cidr block
 func validateStandaloneCidrBlock(validateCIDR *net.IPNet, clusterCIDR *net.IPNet) error {
 	// validate has a cidr range between \16 and \26
 	if !isValidCIDRRange(validateCIDR) {
