@@ -29,7 +29,7 @@ const (
 	DefaultRedisSnapshotNotAvailable          = "cro_redis_snapshot_not_found"
 	DefaultRedisSnapshotStatusMetricName      = "cro_redis_snapshot_status_phase"
 	DefaultRedisStatusMetricName              = "cro_redis_status_phase"
-	DefaultSTSCredentialsSecretMetricName     = "cro_sts_credentials_secret"
+	DefaultSTSCredentialsSecretMetricName     = "cro_sts_credentials_secret" // #nosec G101 -- false positive (ref: https://securego.io/docs/rules/g101.html)
 	DefaultVpcActionMetricName                = "cro_vpc_action"
 )
 

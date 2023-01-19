@@ -681,6 +681,11 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")
 	}
 
+	// Override if node size is defined in the CR spec
+	if r.Spec.Size != "" {
+		elasticacheCreateConfig.CacheNodeType = aws.String(r.Spec.Size)
+	}
+
 	elasticacheDeleteConfig := &elasticache.DeleteReplicationGroupInput{}
 	if err := json.Unmarshal(stratCfg.DeleteStrategy, elasticacheDeleteConfig); err != nil {
 		return nil, nil, nil, nil, errorUtil.Wrap(err, "failed to unmarshal aws elasticache cluster configuration")

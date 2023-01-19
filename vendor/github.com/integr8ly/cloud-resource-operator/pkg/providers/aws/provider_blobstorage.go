@@ -40,7 +40,7 @@ const (
 	defaultAwsBucketNameLength            = 40
 	DetailsBlobStorageBucketName          = "bucketName"
 	DetailsBlobStorageBucketRegion        = "bucketRegion"
-	DetailsBlobStorageCredentialKeyID     = "credentialKeyID"
+	DetailsBlobStorageCredentialKeyID     = "credentialKeyID" // #nosec G101 -- false positive (ref: https://securego.io/docs/rules/g101.html)
 	DetailsBlobStorageCredentialSecretKey = "credentialSecretKey"
 	defaultForceBucketDeletion            = false
 

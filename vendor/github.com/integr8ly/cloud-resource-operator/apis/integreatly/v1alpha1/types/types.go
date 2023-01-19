@@ -30,6 +30,8 @@ type ResourceTypeSpec struct {
 	ApplyImmediately  bool       `json:"applyImmediately,omitempty"`
 	MaintenanceWindow bool       `json:"maintenanceWindow,omitempty"`
 	SecretRef         *SecretRef `json:"secretRef"`
+	// Size allows defining the node size. It is only available to Redis CR. Blobstorage and Postgres CR's currently does nothing
+	Size string `json:"size,omitempty"`
 }
 
 type StatusPhase string
