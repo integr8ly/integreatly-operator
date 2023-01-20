@@ -2,14 +2,14 @@ package custom_smtp
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestGetCustomAddonValues(t *testing.T) {
@@ -33,7 +33,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 		{
 			name: "Happy path all values are returned",
 			args: args{
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -61,7 +61,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 		{
 			name: "some values are returned",
 			args: args{
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -85,7 +85,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 		{
 			name: "no values are returned",
 			args: args{
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -100,7 +100,7 @@ func TestGetCustomAddonValues(t *testing.T) {
 		{
 			name: "no secret found",
 			args: args{
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "fake-name",
@@ -202,7 +202,7 @@ func TestCreateOrUpdateCustomSMTPSecret(t *testing.T) {
 			name: "Custom smtp secret is created",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				serverClient: utils.NewTestClient(scheme, &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "custom-smtp",
 						Namespace: namespace,
@@ -231,7 +231,7 @@ func TestCreateOrUpdateCustomSMTPSecret(t *testing.T) {
 			name: "Custom smtp secret is created",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				serverClient: utils.NewTestClient(scheme, &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "custom-smtp",
 						Namespace: namespace,
@@ -289,7 +289,7 @@ func TestDeleteCustomSMTP(t *testing.T) {
 			name: "Secret is deleted correctly",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				serverClient: utils.NewTestClient(scheme, &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "custom-smtp",
 						Namespace: namespace,

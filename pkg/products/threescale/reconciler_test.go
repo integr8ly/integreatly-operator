@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +11,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/foxcpp/go-mockdns"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -49,7 +50,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -454,7 +454,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 			},
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage()),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage()),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -529,7 +529,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -580,7 +580,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -636,7 +636,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -682,7 +682,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -854,7 +854,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&openshiftappsv1.DeploymentConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
@@ -883,7 +883,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&openshiftappsv1.DeploymentConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
@@ -913,7 +913,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&openshiftappsv1.DeploymentConfig{
 						TypeMeta: metav1.TypeMeta{},
 						ObjectMeta: metav1.ObjectMeta{
@@ -946,7 +946,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&openshiftappsv1.DeploymentConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "apicast-production",
@@ -975,7 +975,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			name: "Test - Replicas all rolled out - PhaseComplete",
 			args: args{
 				ctx:              context.TODO(),
-				serverClient:     fake.NewFakeClientWithScheme(scheme, getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)...),
+				serverClient:     utils.NewTestClient(scheme, getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)...),
 				productNamespace: defaultInstallationNamespace,
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
@@ -1186,7 +1186,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 				},
 			},
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					append(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace),
 						&keycloak.KeycloakUser{
 							ObjectMeta: metav1.ObjectMeta{
@@ -1523,7 +1523,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						UserName: defaultInstallationNamespace,
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+				serverClient: utils.NewTestClient(scheme, &keycloak.KeycloakUser{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "generated-3scale",
 						Namespace: "rhsso",
@@ -1568,7 +1568,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						UserName: defaultInstallationNamespace,
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme),
+				serverClient: utils.NewTestClient(scheme),
 			},
 			want: nil,
 			want1: []*User{
@@ -1604,7 +1604,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						UserName: defaultInstallationNamespace,
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+				serverClient: utils.NewTestClient(scheme, &keycloak.KeycloakUser{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("generated-%s", defaultInstallationNamespace),
 						Namespace: "rhsso",
@@ -1660,7 +1660,7 @@ func TestReconciler_getUserDiff(t *testing.T) {
 						},
 					},
 				},
-				serverClient: fake.NewFakeClientWithScheme(scheme, &keycloak.KeycloakUser{
+				serverClient: utils.NewTestClient(scheme, &keycloak.KeycloakUser{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("generated-uppercase-%s", defaultInstallationNamespace),
 						Namespace: "rhsso",
@@ -1760,7 +1760,7 @@ func TestReconciler_findCustomDomainCr(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &customdomainv1alpha1.CustomDomainList{
+				serverClient: utils.NewTestClient(scheme, &customdomainv1alpha1.CustomDomainList{
 					Items: []customdomainv1alpha1.CustomDomain{
 						{
 							ObjectMeta: metav1.ObjectMeta{
@@ -1786,7 +1786,7 @@ func TestReconciler_findCustomDomainCr(t *testing.T) {
 			},
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme),
+				serverClient: utils.NewTestClient(scheme),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -1924,7 +1924,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&threescalev1.APIManager{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      apiManagerName,
@@ -1945,7 +1945,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&threescalev1.APIManager{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:        apiManagerName,
@@ -1967,7 +1967,7 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&threescalev1.APIManager{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:        apiManagerName,
@@ -2126,7 +2126,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			},
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, postgres, backendRedis, systemRedis, credSec),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec),
 			},
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
@@ -2148,7 +2148,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			},
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, postgres, backendRedis, systemRedis, credSec, redisSecret),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec, redisSecret),
 			},
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
@@ -2210,7 +2210,7 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret doesn't exist",
 			args: args{
 				ctx:            context.TODO(),
-				serverClient:   fake.NewFakeClientWithScheme(scheme),
+				serverClient:   utils.NewTestClient(scheme),
 				shouldCheckPwd: false,
 			},
 			want:    "",
@@ -2220,7 +2220,7 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret exists but is empty",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenant-account-passwords",
@@ -2236,7 +2236,7 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret exists but account doesn't have password yet",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenant-account-passwords",
@@ -2255,7 +2255,7 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 			name: "test tenant-account-passwords Secret exists and account has password",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenant-account-passwords",
@@ -2322,7 +2322,7 @@ func TestReconciler_removeTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret doesn't exist",
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme),
+				serverClient: utils.NewTestClient(scheme),
 			},
 			wantErr: false,
 		},
@@ -2330,7 +2330,7 @@ func TestReconciler_removeTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret exists but account doesn't have password",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenant-account-passwords",
@@ -2344,7 +2344,7 @@ func TestReconciler_removeTenantAccountPassword(t *testing.T) {
 			name: "tenant-account-passwords Secret exists and account has password",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenant-account-passwords",
@@ -2398,7 +2398,7 @@ func TestReconciler_getAccountsCreatedCM(t *testing.T) {
 			name: "tenants-created ConfigMap doesn't exist",
 			args: args{
 				ctx:          context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme),
+				serverClient: utils.NewTestClient(scheme),
 			},
 			wantErr: false,
 		},
@@ -2406,7 +2406,7 @@ func TestReconciler_getAccountsCreatedCM(t *testing.T) {
 			name: "tenants-created ConfigMap exists",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme,
+				serverClient: utils.NewTestClient(scheme,
 					&corev1.ConfigMap{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "tenants-created",
@@ -3163,7 +3163,7 @@ func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
 				log: getLogger(),
 			},
 			args: args{
-				client:   fake.NewFakeClientWithScheme(scheme, testUser),
+				client:   utils.NewTestClient(scheme, testUser),
 				userName: "test-user01",
 			},
 			wantErr: false,
@@ -3177,7 +3177,7 @@ func TestReconciler_addSSOReadyAnnotationToUser(t *testing.T) {
 				log: getLogger(),
 			},
 			args: args{
-				client:   fake.NewFakeClientWithScheme(scheme, testUser),
+				client:   utils.NewTestClient(scheme, testUser),
 				userName: "bad-username",
 			},
 			wantErr: true,
@@ -3255,7 +3255,7 @@ func TestReconciler_SetAdminDetailsOnSecret(t *testing.T) {
 				log: getLogger(),
 			},
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme, secret),
+				serverClient: utils.NewTestClient(scheme, secret),
 				username:     "username",
 				email:        "email",
 			},
@@ -3319,7 +3319,7 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 			name: "test unable to get secret",
 			args: args{
 				ctx:            context.TODO(),
-				serverClient:   fake.NewClientBuilder().WithScheme(scheme).Build(),
+				serverClient:   utils.NewTestClient(scheme),
 				credSec:        &corev1.Secret{},
 				blobStorageSec: &corev1.Secret{},
 			},
@@ -3332,7 +3332,7 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 			name: "test success creating s3 secret",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(&corev1.Secret{
+				serverClient: utils.NewTestClient(scheme, &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      stsS3CredentialsSecretName,
 						Namespace: defaultInstallationNamespace,
@@ -3340,7 +3340,7 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 					Data: map[string][]byte{
 						"role_arn": []byte("roleArn"),
 					},
-				}).Build(),
+				}),
 				credSec: &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      s3CredentialsSecretName,

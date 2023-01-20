@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -21,8 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 var (
@@ -310,12 +310,13 @@ func TestReconciler_reconcileAddonManagedApiServiceParameters(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "addon-managed-api-service-parameters",
-						Namespace: rhoamOperatorNs,
+				serverClient: utils.NewTestClient(scheme,
+					&corev1.Secret{
+						ObjectMeta: v1.ObjectMeta{
+							Name:      "addon-managed-api-service-parameters",
+							Namespace: rhoamOperatorNs,
+						},
 					},
-				},
 					getNamespaces(),
 				),
 			},
@@ -674,32 +675,30 @@ func TestReconciler_retrieveAPIServerURL(t *testing.T) {
 	}{
 		{
 			name:    "No Infrastructure CR found",
-			args:    args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme)},
+			args:    args{ctx: context.TODO(), serverClient: utils.NewTestClient(scheme)},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
 		},
 		{
 			name: "No URL found starting with APi",
-			args: args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme,
-				&configv1.Infrastructure{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "cluster",
-					},
-					Status: configv1.InfrastructureStatus{APIServerURL: ""},
-				})},
+			args: args{ctx: context.TODO(), serverClient: utils.NewTestClient(scheme, &configv1.Infrastructure{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster",
+				},
+				Status: configv1.InfrastructureStatus{APIServerURL: ""},
+			})},
 			fields:  fields{installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{}}},
 			wantErr: true,
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
 			name: "Found API URL from list of names",
-			args: args{ctx: context.TODO(), serverClient: fake.NewFakeClientWithScheme(scheme,
-				&configv1.Infrastructure{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "cluster",
-					},
-					Status: configv1.InfrastructureStatus{APIServerURL: "https://api.example.com"},
-				})},
+			args: args{ctx: context.TODO(), serverClient: utils.NewTestClient(scheme, &configv1.Infrastructure{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "cluster",
+				},
+				Status: configv1.InfrastructureStatus{APIServerURL: "https://api.example.com"},
+			})},
 			fields:  fields{installation: &integreatlyv1alpha1.RHMI{Spec: integreatlyv1alpha1.RHMISpec{}}},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -808,7 +807,7 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+				serverClient: utils.NewTestClient(scheme, &corev1.ConfigMap{
 					ObjectMeta: v1.ObjectMeta{
 						Name:       DefaultCloudResourceConfigName,
 						Namespace:  rhoamOperatorNs,
@@ -833,7 +832,7 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				serverClient: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+				serverClient: utils.NewTestClient(scheme, &corev1.ConfigMap{
 					ObjectMeta: v1.ObjectMeta{
 						Name:       DefaultCloudResourceConfigName,
 						Namespace:  rhoamOperatorNs,

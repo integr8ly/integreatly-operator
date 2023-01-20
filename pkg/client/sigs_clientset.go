@@ -3,10 +3,10 @@ package client
 import (
 	"context"
 
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakesigs "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 //go:generate moq -out sigs_client_moq.go . SigsClientInterface
@@ -21,7 +21,7 @@ type SigsClientInterface interface {
 }
 
 func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtime.Object) *SigsClientInterfaceMock {
-	sigsClient := fakesigs.NewClientBuilder().WithRuntimeObjects(initObjs...).WithScheme(clientScheme).Build()
+	sigsClient := utils.NewTestClient(clientScheme, initObjs...)
 	return &SigsClientInterfaceMock{
 		GetSigsClientFunc: func() k8sclient.Client {
 			return sigsClient

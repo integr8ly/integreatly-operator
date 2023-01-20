@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestConcurrentBackup(t *testing.T) {
 	scheme := runtime.NewScheme()
-	client := fake.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 
 	// 7 concurrent backups that take 1 second each. Should still take approximately
 	// 1 second as they're concurrent

@@ -2,17 +2,17 @@ package backup
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestCronJob(t *testing.T) {
@@ -188,5 +188,5 @@ func createMockClientForCronJob(t *testing.T, initObjects ...runtime.Object) k8s
 		t.Errorf("Error creating testing scheme: %v", err)
 	}
 
-	return fake.NewFakeClientWithScheme(scheme, initObjects...)
+	return utils.NewTestClient(scheme, initObjects...)
 }

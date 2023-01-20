@@ -3,6 +3,8 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -13,9 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"testing"
 )
 
 func TestPatchIfExists(t *testing.T) {
@@ -39,7 +39,7 @@ func TestPatchIfExists(t *testing.T) {
 			name: "success patching an existing cr",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fakeclient.NewFakeClientWithScheme(scheme, &k8sappsv1.Deployment{
+				serverClient: utils.NewTestClient(scheme, &k8sappsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "deploymentName",
 						Namespace: "deploymentNamespace",

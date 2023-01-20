@@ -2,13 +2,13 @@ package resources
 
 import (
 	"context"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestReconcileLimitRange(t *testing.T) {
@@ -17,7 +17,7 @@ func TestReconcileLimitRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := fake.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+	client := utils.NewTestClient(scheme, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespaceName,
 		},

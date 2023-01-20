@@ -21,7 +21,6 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
@@ -66,7 +65,7 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 				installation:  &rhmiv1alpha1.RHMI{Spec: rhmiv1alpha1.RHMISpec{Type: string(rhmiv1alpha1.InstallationTypeManagedApi)}},
 				configManager: &config.Manager{},
 			},
-			fields: fields{Client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+			fields: fields{Client: utils.NewTestClient(scheme, &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: resourceName},
 				Data: map[string]string{
 					"observability": "NAMESPACE: redhat-rhoam-observability",
@@ -192,7 +191,7 @@ func TestHandleCROConfigDeletion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		r := &RHMIReconciler{
-			Client: fakeclient.NewFakeClientWithScheme(scheme, getCROConfigMap()),
+			Client: utils.NewTestClient(scheme, getCROConfigMap()),
 		}
 		err := r.handleCROConfigDeletion(tt.installation)
 		if (err != nil) != tt.wantErr {

@@ -3,14 +3,15 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	"reflect"
-	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -21,7 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestRateLimitService(t *testing.T) {
@@ -263,7 +263,7 @@ func TestRateLimitService(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			client := fake.NewFakeClientWithScheme(scheme, scenario.InitObjs...)
+			client := utils.NewTestClient(scheme, scenario.InitObjs...)
 			phase, err := scenario.Reconciler.ReconcileRateLimitService(context.TODO(), client, scenario.ProductConfig)
 
 			if err := scenario.Assert(client, phase, err); err != nil {
@@ -522,7 +522,7 @@ func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
 			name: "test get rhoam multitenant limitator config",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &corev1.ConfigMap{
+				client: utils.NewTestClient(scheme, &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      multitenantLimitConfigMap,
 						Namespace: "test",
@@ -570,7 +570,7 @@ func TestRateLimitServiceReconciler_getLimitadorSetting(t *testing.T) {
 			name: "test error get rhoam multitenant limitator config",
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 			},
 			fields: fields{
 				Namespace: "test",
@@ -710,7 +710,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPodPending),
+				client: utils.NewTestClient(scheme, rateLimitPodPending),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -722,7 +722,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPodFailed),
+				client: utils.NewTestClient(scheme, rateLimitPodFailed),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -734,7 +734,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 			},
 			want: integreatlyv1alpha1.PhaseAwaitingComponents,
 		},
@@ -748,7 +748,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+				client: utils.NewTestClient(scheme, rateLimitPod),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -763,7 +763,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod),
+				client: utils.NewTestClient(scheme, rateLimitPod),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -786,7 +786,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 				}}},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -808,7 +808,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseInProgress,
 		},
@@ -829,7 +829,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},
@@ -925,7 +925,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -962,7 +962,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 			},
 			want: integreatlyv1alpha1.PhaseAwaitingComponents,
 		},
@@ -983,7 +983,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, observabilityOperatorPod),
+				client: utils.NewTestClient(scheme, observabilityOperatorPod),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -999,7 +999,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, observabilityOperatorPod, rateLimitService),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -1021,7 +1021,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, observabilityOperatorPod, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},

@@ -4,14 +4,17 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+
+	"net/http"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -20,10 +23,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -87,22 +88,11 @@ type Interface interface {
 
 func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log l.Logger, productsInstalllationLoader marketplace.ProductsInstallationLoader) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
-	/* #nosec */
-	oauthHttpClient := &http.Client{
-		Timeout: time.Second * 10,
-		Transport: &http.Transport{
-			DisableKeepAlives: true,
-			IdleConnTimeout:   time.Second * 10,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts}, // gosec G402, value is read from CR config
-		},
-	}
 
 	if installation.Spec.SelfSignedCerts {
 		log.Warning("TLS insecure skip verify is enabled")
 	}
 
-	oauthResolver := resources.NewOauthResolver(oauthHttpClient, log)
-	oauthResolver.Host = rc.Host
 	recorder := mgr.GetEventRecorderFor(string(product))
 
 	productsInstallation, err := productsInstalllationLoader.GetProductsInstallation()

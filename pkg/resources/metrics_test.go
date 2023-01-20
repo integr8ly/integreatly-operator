@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -9,10 +11,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 var (
@@ -96,7 +97,7 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 			name: "test create AddonManagedApiServiceParametersExists alert successful",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &monitoringv1.PrometheusRule{
+				client: utils.NewTestClient(scheme, &monitoringv1.PrometheusRule{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "AddonManagedApiServiceParameters",
 					},
@@ -124,7 +125,7 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 			name: "test create AddonManagedApiServiceParametersExists alert failure",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &corev1.Secret{
+				client: utils.NewTestClient(scheme, &corev1.Secret{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "addon-testfailed-parameters",
 						Namespace: defaultOperatorNamespace,
@@ -180,7 +181,7 @@ func TestCreateDeadMansSnitchSecretExists(t *testing.T) {
 			name: "test create CreateDeadMansSnitchSecretExists alert successful",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &monitoringv1.PrometheusRule{
+				client: utils.NewTestClient(scheme, &monitoringv1.PrometheusRule{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "DeadMansSnitchSecretExists",
 					},
@@ -194,7 +195,7 @@ func TestCreateDeadMansSnitchSecretExists(t *testing.T) {
 			name: "test create CreateDeadMansSnitchSecretExists alert failure",
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClient(),
+				client: utils.NewTestClient(runtime.NewScheme()),
 				cr:     getRHMIcr(),
 			},
 			want:    v1alpha1.PhaseFailed,
@@ -236,7 +237,7 @@ func TestCreateSmtpSecretExists(t *testing.T) {
 			name: "test create CreateSmtpSecretExists alert successful",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &monitoringv1.PrometheusRule{
+				client: utils.NewTestClient(scheme, &monitoringv1.PrometheusRule{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "CreateSmtpSecretExists",
 					},
@@ -250,7 +251,7 @@ func TestCreateSmtpSecretExists(t *testing.T) {
 			name: "test create CreateSmtpSecretExists alert failure",
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClient(),
+				client: utils.NewTestClient(runtime.NewScheme()),
 				cr:     getRHMIcr(),
 			},
 			want:    v1alpha1.PhaseFailed,

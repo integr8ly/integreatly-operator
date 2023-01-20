@@ -3,18 +3,18 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestReconcileTopologySpreadConstraints(t *testing.T) {
@@ -196,7 +196,7 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			client := fake.NewFakeClientWithScheme(scheme, scenario.InitObjs...)
+			client := utils.NewTestClient(scheme, scenario.InitObjs...)
 			phase, reconcileErr := UpdatePodTemplateIfExists(
 				context.TODO(),
 				client,

@@ -3,12 +3,11 @@ package backup
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"strings"
 	"testing"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -26,7 +25,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := fake.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -77,7 +76,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := fake.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
@@ -128,7 +127,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-postgres"
 
-	client := fake.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
@@ -187,7 +186,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhoam-redis"
 
-	client := fake.NewFakeClientWithScheme(scheme)
+	client := utils.NewTestClient(scheme)
 	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {

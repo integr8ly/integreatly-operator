@@ -2,9 +2,6 @@ package cloudresources
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	"github.com/integr8ly/integreatly-operator/test/utils"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -14,6 +11,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -213,10 +212,7 @@ func TestReconciler_checkStsCredentialsPresent(t *testing.T) {
 				recorder:      nil,
 			},
 			args: args{
-				client: fakeclient.NewFakeClientWithScheme(
-					scheme,
-					&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "cro-operator-test"}},
-				),
+				client:            utils.NewTestClient(scheme, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: sts.CredsSecretName, Namespace: "cro-operator-test"}}),
 				operatorNamespace: "cro-operator-test",
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -234,9 +230,7 @@ func TestReconciler_checkStsCredentialsPresent(t *testing.T) {
 				recorder:      nil,
 			},
 			args: args{
-				client: fakeclient.NewFakeClientWithScheme(
-					scheme,
-				),
+				client:            utils.NewTestClient(scheme),
 				operatorNamespace: "cro-operator-test",
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,

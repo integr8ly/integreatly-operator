@@ -3,19 +3,19 @@ package addon
 import (
 	"context"
 	"errors"
+	"testing"
+
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var genericError = errors.New("generic error")
@@ -73,7 +73,7 @@ func TestGetSubscription(t *testing.T) {
 				})
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme, initObjs...)
+			client := utils.NewTestClient(scheme, initObjs...)
 
 			subscription, err := GetSubscription(context.TODO(), client, installation)
 			if err != nil {
@@ -129,19 +129,19 @@ func TestCPaaSSubscription(t *testing.T) {
 			Name:          "test CPaaS subscription exists",
 			ExpectedFound: true,
 			ExpectedError: false,
-			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{validSub}...),
+			Client:        utils.NewTestClient(scheme, []runtime.Object{validSub}...),
 		},
 		{
 			Name:          "test no subs exist",
 			ExpectedFound: false,
 			ExpectedError: false,
-			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{nosubs}...),
+			Client:        utils.NewTestClient(scheme, []runtime.Object{nosubs}...),
 		},
 		{
 			Name:          "test wrong label",
 			ExpectedFound: false,
 			ExpectedError: false,
-			Client:        fake.NewFakeClientWithScheme(scheme, []runtime.Object{wrongLabel}...),
+			Client:        utils.NewTestClient(scheme, []runtime.Object{wrongLabel}...),
 		},
 		{
 			Name:          "error getting list of subscriptions",
@@ -194,7 +194,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 			Name:          "test hive managed operator",
 			ExpectedError: false,
 			HiveManaged:   true,
-			Client: fake.NewFakeClientWithScheme(scheme,
+			Client: utils.NewTestClient(scheme,
 				&corev1.Namespace{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
@@ -215,7 +215,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 			Name:          "test not hive managed operator with managed false",
 			ExpectedError: false,
 			HiveManaged:   false,
-			Client: fake.NewFakeClientWithScheme(scheme,
+			Client: utils.NewTestClient(scheme,
 				&corev1.Namespace{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
@@ -236,7 +236,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 			Name:          "test not hive managed operator without label",
 			ExpectedError: false,
 			HiveManaged:   false,
-			Client: fake.NewFakeClientWithScheme(scheme,
+			Client: utils.NewTestClient(scheme,
 				&corev1.Namespace{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
@@ -254,7 +254,7 @@ func TestOperatorHiveManaged(t *testing.T) {
 			Name:          "test hive managed error if empty installation cr is found",
 			ExpectedError: true,
 			HiveManaged:   true,
-			Client: fake.NewFakeClientWithScheme(scheme,
+			Client: utils.NewTestClient(scheme,
 				&corev1.Namespace{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
@@ -326,7 +326,7 @@ func TestInferOperatorRunType(t *testing.T) {
 			name: "infer operator run type from subscription",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.Subscription{
+				client: utils.NewTestClient(scheme, &operatorsv1alpha1.Subscription{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      ManagedAPIService,
@@ -349,7 +349,7 @@ func TestInferOperatorRunType(t *testing.T) {
 			name: "operator run type is cluster",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &appsv1.Deployment{
+				client: utils.NewTestClient(scheme, &appsv1.Deployment{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "rhoam-operator",
 						Namespace: "ns",
@@ -371,7 +371,7 @@ func TestInferOperatorRunType(t *testing.T) {
 			name: "fallback to local run type",
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
 						Namespace: "ns",
@@ -438,7 +438,7 @@ func TestOperatorInstalledViaOLM(t *testing.T) {
 			name: "operator run type is olm",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.Subscription{
+				client: utils.NewTestClient(scheme, &operatorsv1alpha1.Subscription{
 					TypeMeta: v1.TypeMeta{},
 					ObjectMeta: v1.ObjectMeta{
 						Name:      ManagedAPIService,
@@ -510,7 +510,7 @@ func TestGetCatalogSource(t *testing.T) {
 			name: "rhoam cpaas subscription",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme, &operatorsv1alpha1.SubscriptionList{
+				client: utils.NewTestClient(scheme, &operatorsv1alpha1.SubscriptionList{
 					Items: []operatorsv1alpha1.Subscription{
 						{
 							ObjectMeta: v1.ObjectMeta{
@@ -540,7 +540,7 @@ func TestGetCatalogSource(t *testing.T) {
 			name: "subscription is nil",
 			args: args{
 				ctx:    context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme),
+				client: utils.NewTestClient(scheme),
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
 						Namespace: "ns",
@@ -556,7 +556,7 @@ func TestGetCatalogSource(t *testing.T) {
 			name: "retrieved catalog source from the subscription",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&operatorsv1alpha1.Subscription{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      ManagedAPIService,
@@ -582,7 +582,7 @@ func TestGetCatalogSource(t *testing.T) {
 			name: "failed to retrieve catalog source",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&operatorsv1alpha1.Subscription{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      ManagedAPIService,

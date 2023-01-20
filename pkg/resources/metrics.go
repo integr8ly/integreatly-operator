@@ -20,8 +20,11 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"strings"
+
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
@@ -48,6 +51,10 @@ const (
 	alertFor30Mins  = "30m"
 	alertFor60Mins  = "60m"
 	alertPercentage = "90"
+)
+
+var (
+	caser = cases.Title(language.English)
 )
 
 func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger) (v1alpha1.StatusPhase, error) {
@@ -248,7 +255,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	}
 
 	productName := cr.Labels["productName"]
-	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	postgresCRName := caser.String(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresInstanceUnavailable"
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
@@ -289,7 +296,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	postgresCRName := caser.String(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresConnectionFailed"
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
@@ -329,7 +336,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	postgresCRName := caser.String(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresResourceStatusPhasePending"
 	ruleName := fmt.Sprintf("resource-status-phase-pending-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -360,7 +367,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	postgresCRName := caser.String(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresResourceStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -391,7 +398,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	postgresCRName := caser.String(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -556,7 +563,7 @@ func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	redisCRName := caser.String(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisResourceStatusPhasePending"
 	ruleName := fmt.Sprintf("resource-status-phase-pending-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -649,7 +656,7 @@ func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	redisCRName := caser.String(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisResourceStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -677,7 +684,7 @@ func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	redisCRName := caser.String(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -705,7 +712,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	redisCRName := caser.String(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheUnavailable"
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
@@ -743,7 +750,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	redisCRName := caser.String(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheConnectionFailed"
 	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"

@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestGetExistingSMTPFromAddress(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 	}{
 		{
 			Name: "successfully retrieve existing smtp from address",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      alertManagerConfigSecretName,
 					Namespace: "test",
@@ -38,13 +38,13 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 		},
 		{
 			Name:       "failed to retrieve alert manager config secret",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient: utils.NewTestClient(scheme),
 			WantRes:    "",
 			WantErr:    true,
 		},
 		{
 			Name: "failed to find alertmanager.yaml in alertmanager-application-monitoring secret data",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      alertManagerConfigSecretName,
 					Namespace: "test",
@@ -58,7 +58,7 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 		},
 		{
 			Name: "failed to find smtp_from in alert manager config map",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      alertManagerConfigSecretName,
 					Namespace: "test",
@@ -72,7 +72,7 @@ func TestGetExistingSMTPFromAddress(t *testing.T) {
 		},
 		{
 			Name: "failed to unmarshal yaml from secret data",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Secret{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      alertManagerConfigSecretName,
 					Namespace: "test",

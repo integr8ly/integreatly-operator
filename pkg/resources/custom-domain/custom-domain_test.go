@@ -3,6 +3,10 @@ package custom_domain
 import (
 	"context"
 	"errors"
+	"net"
+	"reflect"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
@@ -11,11 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"net"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestGetDomain(t *testing.T) {
@@ -52,7 +52,7 @@ func TestGetDomain(t *testing.T) {
 			name: "Custom Domain successfully gotten",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -73,7 +73,7 @@ func TestGetDomain(t *testing.T) {
 			name: "Custom Domain has leading/trailing white spaces",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -93,7 +93,7 @@ func TestGetDomain(t *testing.T) {
 			name: "No Custom Domain set in addon secret",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -111,7 +111,7 @@ func TestGetDomain(t *testing.T) {
 			name: "Invalid Custom Domain set in addon secret",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      "addon-managed-api-service-parameters",
@@ -131,7 +131,7 @@ func TestGetDomain(t *testing.T) {
 			name: "Error getting addon secret",
 			args: args{
 				ctx: context.TODO(),
-				client: fake.NewFakeClientWithScheme(scheme,
+				client: utils.NewTestClient(scheme,
 					&corev1.Secret{
 						ObjectMeta: v1.ObjectMeta{
 							Name:      "addon-dummy-service-parameters",
@@ -234,7 +234,7 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 			args: args{
 				domain: "apps.example.com",
 				ctx:    context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &customdomainv1alpha1.CustomDomainList{
+				serverClient: utils.NewTestClient(scheme, &customdomainv1alpha1.CustomDomainList{
 					Items: []customdomainv1alpha1.CustomDomain{
 						{
 							ObjectMeta: v1.ObjectMeta{
@@ -258,7 +258,7 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 			args: args{
 				domain: "apps.example.com",
 				ctx:    context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &customdomainv1alpha1.CustomDomainList{
+				serverClient: utils.NewTestClient(scheme, &customdomainv1alpha1.CustomDomainList{
 					Items: []customdomainv1alpha1.CustomDomain{
 						{
 							ObjectMeta: v1.ObjectMeta{
@@ -299,7 +299,7 @@ func TestHasValidCustomDomainCR(t *testing.T) {
 			args: args{
 				domain: "apps.example.com",
 				ctx:    context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, &customdomainv1alpha1.CustomDomainList{
+				serverClient: utils.NewTestClient(scheme, &customdomainv1alpha1.CustomDomainList{
 					Items: []customdomainv1alpha1.CustomDomain{
 						{
 							ObjectMeta: v1.ObjectMeta{

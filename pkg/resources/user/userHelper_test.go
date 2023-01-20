@@ -3,8 +3,9 @@ package user
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -14,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -95,7 +95,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 		{
 			Name:       "Test get user with no associated identity",
 			FakeLogger: getLogger(),
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.Identity{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "active-idp",
@@ -142,7 +142,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 		{
 			Name:       "Test orphaned identities have no side affect",
 			FakeLogger: getLogger(),
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.Identity{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "active-idp",
@@ -206,7 +206,7 @@ func TestGetUsersInActiveIDPs(t *testing.T) {
 		{
 			Name:       "Test get user with active idp",
 			FakeLogger: getLogger(),
-			FakeClient: fake.NewFakeClientWithScheme(scheme, &userv1.Identity{
+			FakeClient: utils.NewTestClient(scheme, &userv1.Identity{
 				ObjectMeta: v1.ObjectMeta{
 					Name: "active-idp",
 				},
@@ -418,7 +418,7 @@ func TestUsersReturnedByProvider(t *testing.T) {
 	}{
 		{
 			Name: "Test that users are returned correctly",
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.UserList{
 					Items: []userv1.User{
 						{
@@ -485,7 +485,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 			Name:                  "Test that identities are returned correctly when given correct provider name",
 			ProviderName:          "testing-idp",
 			ExpectedNumIdentities: 2,
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.UserList{
 					Items: []userv1.User{
 						{
@@ -532,7 +532,7 @@ func TestGetIdentitiesByProviderName(t *testing.T) {
 			Name:                  "Test that identities are returned correctly when given incorrect provider name",
 			ProviderName:          "bad-provider-name",
 			ExpectedNumIdentities: 0,
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.UserList{
 					Items: []userv1.User{
 						{
@@ -612,7 +612,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 	}{
 		{
 			Name: "Test that users are returned correctly",
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.UserList{
 					Items: []userv1.User{
 						{
@@ -643,7 +643,7 @@ func TestGetMultitenantUsers(t *testing.T) {
 		},
 		{
 			Name: "Test that users email addresses are setup correctly",
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&userv1.UserList{
 					Items: []userv1.User{
 						{

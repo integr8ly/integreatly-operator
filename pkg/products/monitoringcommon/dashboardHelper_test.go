@@ -2,6 +2,8 @@ package monitoringcommon
 
 import (
 	"context"
+	"testing"
+
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	monitoringcommon "github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon/dashboards"
@@ -10,8 +12,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func Test_getSpecDetailsForDashboard(t *testing.T) {
@@ -37,7 +37,7 @@ func Test_getSpecDetailsForDashboard(t *testing.T) {
 			},
 		},
 	}
-	client := fakeclient.NewFakeClientWithScheme(scheme, version)
+	client := utils.NewTestClient(scheme, version)
 	containerCpuMetric, err := metrics.GetContainerCPUMetric(context.TODO(), client, l.NewLoggerWithContext(l.Fields{}))
 	if err != nil {
 		t.Fatal(err)

@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
-	"time"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 
@@ -27,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -87,7 +87,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
-			client: fakeclient.NewFakeClientWithScheme(scheme),
+			client: utils.NewTestClient(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 
@@ -105,7 +105,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:             "test reconcile subscription returns phase failed when unable to create catalog source",
-			client:           fakeclient.NewFakeClientWithScheme(runtime.NewScheme()),
+			client:           utils.NewTestClient(runtime.NewScheme()),
 			SubscriptionName: "something",
 			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:          marketplace.NewManager(),
@@ -201,7 +201,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:   "test reconcile subscription returns phase awaiting operator after successful delete of failed install plan and csv",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.ClusterServiceVersion{ObjectMeta: metav1.ObjectMeta{Name: "test-csv", Namespace: "test-ns"}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}),
+			client: utils.NewTestClient(scheme, &alpha1.ClusterServiceVersion{ObjectMeta: metav1.ObjectMeta{Name: "test-csv", Namespace: "test-ns"}}, &alpha1.Subscription{Status: alpha1.SubscriptionStatus{InstalledCSV: "test-csv"}}),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
@@ -218,7 +218,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name: "test reconcile subscription deletes CSV and subscription if the CSV doesn't have a deployment",
-			client: fakeclient.NewFakeClientWithScheme(scheme,
+			client: utils.NewTestClient(scheme,
 				&alpha1.ClusterServiceVersion{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-csv",
@@ -348,7 +348,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 	}{
 		{
 			Name:   "test pull secret is reconciled successfully",
-			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, customPullSecret),
+			Client: utils.NewTestClient(scheme, defPullSecret, customPullSecret),
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testinstall",
@@ -430,7 +430,7 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 					Name: "test-install",
 				},
 			},
-			client:         fakeclient.NewFakeClientWithScheme(scheme),
+			client:         utils.NewTestClient(scheme),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
@@ -445,7 +445,7 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 					Name: "test-install",
 				},
 			},
-			client:         fakeclient.NewFakeClientWithScheme(scheme, existingClient),
+			client:         utils.NewTestClient(scheme, existingClient),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
@@ -494,7 +494,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 	}{
 		{
 			Name: "Test namespace reconcile completes without error",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -511,7 +511,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns not ready",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -526,7 +526,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns is terminating",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -543,7 +543,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test namespace reconcile return error when pulling secret fails",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -568,7 +568,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test if label is added to an existing namespace",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 				},
@@ -580,7 +580,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test if label is changed to false when namespace is reconciled",
-			client: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			client: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 					Labels: map[string]string{
@@ -672,7 +672,7 @@ func TestReconciler_ReconcileDeploymentPriority(t *testing.T) {
 			fields: fields{},
 			args: args{
 				ctx: context.TODO(),
-				client: fakeclient.NewFakeClientWithScheme(scheme, &k8sappsv1.Deployment{
+				client: utils.NewTestClient(scheme, &k8sappsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "deploymentName",
 						Namespace: "deploymentNamespace",
@@ -752,7 +752,7 @@ func TestReconciler_ReconcileCsvDeploymentsPriority(t *testing.T) {
 			fields: fields{},
 			args: args{
 				ctx: context.TODO(),
-				client: fakeclient.NewFakeClientWithScheme(scheme, &alpha1.ClusterServiceVersion{
+				client: utils.NewTestClient(scheme, &alpha1.ClusterServiceVersion{
 					TypeMeta: metav1.TypeMeta{},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "csvName",

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"reflect"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -17,7 +18,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -49,7 +49,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	}{
 		{
 			Name: "Test Default Pull Secret is successfully copied over to target namespace",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, &corev1.Namespace{
+			FakeClient: utils.NewTestClient(scheme, defPullSecret, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test-namespace",
 					Name:      "test-namespace",
@@ -72,7 +72,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 		},
 		{
 			Name: "Test Get Default Pull Secret error when trying to copy",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testDestinationNameSpace,
 					Name:      testDestinationNameSpace,
@@ -122,7 +122,7 @@ func TestCopySecret(t *testing.T) {
 	}{
 		{
 			Name: "Test Secret is successfully copied over to target namespace",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, sourceSecret, &corev1.Namespace{
+			FakeClient: utils.NewTestClient(scheme, sourceSecret, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testDestinationNameSpace,
 					Name:      testDestinationNameSpace,
@@ -145,7 +145,7 @@ func TestCopySecret(t *testing.T) {
 		},
 		{
 			Name: "Test error when trying to copy secret",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
+			FakeClient: utils.NewTestClient(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testDestinationNameSpace,
 					Name:      testDestinationNameSpace,
@@ -202,7 +202,7 @@ func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
 			Name:           "Test - Successfully copied secret to operator namespace",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			ExpectedError:  false,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, operatorSecret),
+			FakeClient:     utils.NewTestClient(scheme, operatorSecret),
 		},
 		{
 			Name:           "Test - Failed copying secret to operator namespace",
@@ -270,13 +270,13 @@ func TestReconcileSecretToProductNamespace(t *testing.T) {
 			Name:           "Test - Successfully copied secret to product namespace",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			ExpectedError:  false,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, productSecret),
+			FakeClient:     utils.NewTestClient(scheme, productSecret),
 		},
 		{
 			Name:           "Test - Phase complete on failure to get secret",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			ExpectedError:  false,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     utils.NewTestClient(scheme),
 		},
 		{
 			Name:           "Test - Failed copied secret to product namespace",

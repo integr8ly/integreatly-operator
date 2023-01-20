@@ -2,15 +2,15 @@ package metrics
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestGetContainerCPUMetric(t *testing.T) {
@@ -27,7 +27,7 @@ func TestGetContainerCPUMetric(t *testing.T) {
 	}{
 		{
 			Name: "Test GetContainerCPUMetric for OpenShift < 4.9",
-			FakeClient: fake.NewFakeClientWithScheme(scheme,
+			FakeClient: utils.NewTestClient(scheme,
 				&configv1.ClusterVersionList{
 					Items: []configv1.ClusterVersion{
 						{

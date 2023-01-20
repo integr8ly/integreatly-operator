@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
@@ -51,7 +52,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var (
@@ -129,7 +129,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:     true,
 			ExpectedError:   "could not read rhsso config",
 			Installation:    &integreatlyv1alpha1.RHMI{},
-			FakeClient:      fakeclient.NewFakeClient(),
+			FakeClient:      utils.NewTestClient(runtime.NewScheme()),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadRHSSOUserFunc: func() (ready *config.RHSSOUser, e error) {
@@ -279,7 +279,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
+			FakeClient:      utils.NewTestClient(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group, croPostgres, croPostgresSecret, credentialRhsso),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{

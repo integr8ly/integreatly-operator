@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	policyv1 "k8s.io/api/policy/v1"
 
@@ -50,7 +51,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 // Were not tested before:
@@ -1742,7 +1742,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 					"NAMESPACE": "redhat-rhoam-observability",
 				}), nil
 			}},
-			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOO),
+			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOO),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			verificationFunction: kcAlertHasNotBeenMirrored,
@@ -1756,7 +1756,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 					"NAMESPACE": "redhat-rhoam-observability",
 				}), nil
 			}},
-			fakeClient:           fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
+			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			verificationFunction: kcAlertHasNotBeenMirrored,
@@ -1770,7 +1770,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 					"NAMESPACE": "redhat-rhoam-observability",
 				}), nil
 			}},
-			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesOOwithKcExisting),
+			fakeClient: utils.NewTestClient(scheme, prometheusRulesOOwithKcExisting),
 			wantErr:    true,
 			want:       integreatlyv1alpha1.PhaseFailed,
 			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {
@@ -1784,7 +1784,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return nil, fmt.Errorf("mock error from config writer")
 			}},
-			fakeClient: fakeclient.NewFakeClientWithScheme(scheme, prometheusRulesOOwithKcExisting, prometheusRulesSSO),
+			fakeClient: utils.NewTestClient(scheme, prometheusRulesOOwithKcExisting, prometheusRulesSSO),
 			wantErr:    true,
 			want:       integreatlyv1alpha1.PhaseFailed,
 			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {

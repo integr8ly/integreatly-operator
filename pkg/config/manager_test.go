@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	"gopkg.in/yaml.v2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -13,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -23,6 +23,11 @@ const (
 )
 
 func TestWriteConfig(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	defaultProductConfig := ProductConfig{"testKey": "testVal"}
 	defaultConfigReadable := &ConfigReadableMock{
 		GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
@@ -78,7 +83,7 @@ func TestWriteConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		fakeClient := fake.NewFakeClient(test.existingResources...)
+		fakeClient := utils.NewTestClient(scheme, test.existingResources...)
 
 		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName, fakeInst)
 		if err != nil {
@@ -112,6 +117,11 @@ func TestWriteConfig(t *testing.T) {
 }
 
 func TestReadConfigForProduct(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	fakeInst := &integreatlyv1alpha1.RHMI{}
 
 	tests := []struct {
@@ -140,7 +150,7 @@ func TestReadConfigForProduct(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		fakeClient := fake.NewFakeClient(test.existingResources...)
+		fakeClient := utils.NewTestClient(scheme, test.existingResources...)
 		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName, fakeInst)
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)

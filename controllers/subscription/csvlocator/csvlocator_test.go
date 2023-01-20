@@ -6,15 +6,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 type testScenario struct {
@@ -225,7 +225,7 @@ func TestGetCSV(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			initObjs := append([]runtime.Object{scenario.InstallPlan}, scenario.InitObjs...)
-			client := fake.NewFakeClientWithScheme(scheme, initObjs...)
+			client := utils.NewTestClient(scheme, initObjs...)
 
 			csv, err := scenario.Locator.GetCSV(context.TODO(), client, scenario.InstallPlan)
 			scenario.Assertion(t, err, csv)
@@ -360,7 +360,7 @@ status:
 		t.Fatal(err)
 	}
 
-	client := fake.NewFakeClientWithScheme(scheme, configMap)
+	client := utils.NewTestClient(scheme, configMap)
 
 	locator := NewConditionalCSVLocator(
 		SwitchLocators(

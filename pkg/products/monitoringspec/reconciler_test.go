@@ -3,8 +3,11 @@ package monitoringspec
 import (
 	"context"
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/test/utils"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"testing"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -28,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -178,7 +180,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "could not read monitoring config",
 			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient:     fakeclient.NewFakeClient(),
+			FakeClient:     utils.NewTestClient(runtime.NewScheme()),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return nil, errors.New("could not read monitoring config")
@@ -192,7 +194,7 @@ func TestReconciler_config(t *testing.T) {
 		{
 			Name:         "test namespace is set without fail",
 			Installation: &integreatlyv1alpha1.RHMI{},
-			FakeClient:   fakeclient.NewFakeClient(),
+			FakeClient:   utils.NewTestClient(runtime.NewScheme()),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return config.NewMonitoringSpec(config.ProductConfig{
