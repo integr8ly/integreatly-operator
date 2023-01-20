@@ -786,7 +786,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					},
 					&routev1.Route{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      s3RouteName,
+							Name:      mcg.S3RouteName,
 							Namespace: mcg.DefaultInstallationNamespace + "-operator",
 						},
 					}),
@@ -3509,7 +3509,7 @@ func TestReconciler_createMCGS3Secret(t *testing.T) {
 
 	s3Route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s3RouteName,
+			Name:      mcg.S3RouteName,
 			Namespace: mcg.DefaultInstallationNamespace + "-operator",
 		},
 	}
