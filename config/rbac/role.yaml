@@ -280,6 +280,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - objectbucket.io
   resources:
