@@ -88,7 +88,6 @@ const (
 	s3CredentialsSecretName        = "s3-credentials"
 	s3BucketRegion                 = "global"
 	s3PathStyle                    = "true"
-	s3RouteName                    = "s3"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
@@ -1233,7 +1232,7 @@ func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclie
 
 	// Retrieve s3 route
 	s3Route := &routev1.Route{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: s3RouteName, Namespace: mcgNamespace}, s3Route)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.S3RouteName, Namespace: mcgNamespace}, s3Route)
 	if err != nil {
 		return fmt.Errorf("failed to get s3 route: %w", err)
 	}

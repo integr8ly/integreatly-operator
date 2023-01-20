@@ -818,7 +818,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					},
 					&routev1.Route{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      s3RouteName,
+							Name:      mcg.S3RouteName,
 							Namespace: mcg.DefaultInstallationNamespace + "-operator",
 						},
 					}),
