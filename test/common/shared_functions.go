@@ -2,12 +2,14 @@ package common
 
 import (
 	"bytes"
-	"context"
+	goctx "context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/openshift/api/project/v1"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gopkg.in/yaml.v2"
@@ -26,6 +29,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"golang.org/x/net/publicsuffix"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +58,7 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 	if err := extscheme.AddToScheme(scheme.Scheme); err != nil {
 		return nil, fmt.Errorf("failed to add api extensions scheme to runtime scheme: (%v)", err)
 	}
-	if err := routev1.AddToScheme(scheme.Scheme); err != nil {
+	if err := configv1.Install(scheme.Scheme); err != nil {
 		return nil, fmt.Errorf("failed to add route scheme to runtime scheme: (%v)", err)
 	}
 	if err := rhmiv1alpha1.AddToScheme(scheme.Scheme); err != nil {
@@ -145,7 +149,7 @@ func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
 
 func getConsoleRoute(client k8sclient.Client) (*string, error) {
 	route := &routev1.Route{}
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: OpenShiftConsoleRoute, Namespace: OpenShiftConsoleNamespace}, route); err != nil {
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: OpenShiftConsoleRoute, Namespace: OpenShiftConsoleNamespace}, route); err != nil {
 		return nil, err
 	}
 	if len(route.Status.Ingress) > 0 {
@@ -174,7 +178,7 @@ func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, er
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(RHOAMOperatorNamespace),
 	}
-	err := client.List(context.TODO(), installationList, listOpts...)
+	err := client.List(goctx.TODO(), installationList, listOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +368,7 @@ func GetIDPBasedTestCases(installType string) []TestCase {
 }
 
 func GetAllTestCases(installType string) []TestCase {
-	testCases := []TestCase{}
+	var testCases []TestCase
 	for _, testSuite := range ALL_TESTS {
 		for _, tsInstallType := range testSuite.InstallType {
 			if string(tsInstallType) == installType {
@@ -376,8 +380,20 @@ func GetAllTestCases(installType string) []TestCase {
 }
 
 func GetScalabilityTestCases(installType string) []TestCase {
-	testCases := []TestCase{}
+	var testCases []TestCase
 	for _, testSuite := range SCALABILITY_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
+func GetGCPTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range GCP_TESTS {
 		for _, tsInstallType := range testSuite.InstallType {
 			if string(tsInstallType) == installType {
 				testCases = append(testCases, testSuite.TestCases...)
@@ -457,4 +473,76 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 		return fmt.Errorf("error waiting for RHMI CR status.stage to be \"complete\"")
 	}
 	return nil
+}
+
+func GetPlatformType(ctx *TestingContext) string {
+	infra, err := pkgresources.GetClusterInfrastructure(goctx.TODO(), ctx.Client)
+	if err != nil || infra.Status.PlatformStatus == nil {
+		fmt.Println("can't retrieve cluster infrastructure")
+		return ""
+	}
+	return string(infra.Status.PlatformStatus.Type)
+}
+
+func getRoutes(ctx *TestingContext, routeName string, namespace string) (routev1.Route, error) {
+	routes := &routev1.RouteList{}
+
+	routeFound := routev1.Route{}
+	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
+		Namespace: namespace,
+	})
+
+	if err != nil {
+		return routeFound, fmt.Errorf("failed to get 3scale routes with error: %v", err)
+	}
+
+	for _, route := range routes.Items {
+		if strings.Contains(route.Spec.Host, routeName) {
+			routeFound = route
+		}
+	}
+
+	return routeFound, nil
+}
+
+func getToken(ctx *TestingContext, namespace, tokenType, objectMetaName string) (*string, error) {
+	token := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: objectMetaName,
+		},
+	}
+	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
+	if err != nil {
+		return nil, err
+	}
+	accessToken := string(token.Data[tokenType])
+	return &accessToken, nil
+}
+
+func makeProject(ctx *TestingContext, namespace string) (*v1.Project, error) {
+	project := &v1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	if err := ctx.Client.Create(goctx.TODO(), project); err != nil {
+		return project, fmt.Errorf("failed to create testing namespace with error: %v", err)
+	}
+
+	return project, nil
+}
+
+func genSecret(ctx *TestingContext, datamap map[string][]byte, secretName string, namespace string) (*corev1.Secret, error) {
+	secretRef := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Data: datamap,
+	}
+	if err := ctx.Client.Create(goctx.TODO(), secretRef); err != nil {
+		return secretRef, fmt.Errorf("failed to create secret with error: %v", err)
+	}
+
+	return secretRef, nil
 }

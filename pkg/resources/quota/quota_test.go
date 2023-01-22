@@ -1,16 +1,21 @@
 package quota
 
 import (
+	"context"
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	v1 "github.com/openshift/api/apps/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 )
 
@@ -22,6 +27,10 @@ const (
 )
 
 func TestGetQuota(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	pointerToQuota := &Quota{}
 
@@ -30,6 +39,7 @@ func TestGetQuota(t *testing.T) {
 		QuotaConfig *corev1.ConfigMap
 		Quota       *Quota
 		isUpdated   bool
+		client      client.Client
 	}
 	tests := []struct {
 		name     string
@@ -39,21 +49,33 @@ func TestGetQuota(t *testing.T) {
 		validate func(*Quota, *testing.T)
 	}{
 		{
-			name: "ensure error on no quotaid found in config",
+			name: "ensure error on no quotaid found in config on AWS platform",
 			args: args{
 				QuotaId:     "QUOTA_NOT_PRESENT_QUOTA",
 				QuotaConfig: getQuotaConfig(nil),
 				Quota:       pointerToQuota,
+				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 			},
 			wantErr: true,
 		},
 		{
-			name: "test successful parsing of config map to quota object for 1 million quota",
+			name: "ensure error on no quotaid found in config on GCP platform",
+			args: args{
+				QuotaId:     "QUOTA_NOT_PRESENT_QUOTA",
+				QuotaConfig: getQuotaConfig(nil),
+				Quota:       pointerToQuota,
+				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.GCPPlatformType)).Build(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "test successful parsing of config map to quota object for 1 million quota on AWS",
 			args: args{
 				QuotaId:     DEVQUOTAPARAM,
 				QuotaConfig: getQuotaConfig(nil),
 				Quota:       pointerToQuota,
 				isUpdated:   false,
+				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 			},
 			want: &Quota{
 				name: DEVQUOTACONFIGNAME,
@@ -122,12 +144,13 @@ func TestGetQuota(t *testing.T) {
 			},
 		},
 		{
-			name: "test successful parsing of config map to quota object for TWENTY million Quota",
+			name: "test successful parsing of config map to quota object for TWENTY million Quota on AWS",
 			args: args{
 				QuotaId:     TWENTYMILLIONQUOTAPARAM,
 				QuotaConfig: getQuotaConfig(nil),
 				Quota:       pointerToQuota,
 				isUpdated:   false,
+				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
 			},
 			want: &Quota{
 				name: TWENTYMILLIONQUOTACONFIGNAME,
@@ -196,10 +219,92 @@ func TestGetQuota(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "test successful parsing of config map to quota object for 1 million quota on GCP",
+			args: args{
+				QuotaId:     DEVQUOTAPARAM,
+				QuotaConfig: getQuotaConfig(nil),
+				Quota:       pointerToQuota,
+				isUpdated:   false,
+				client:      fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.GCPPlatformType)).Build(),
+			},
+			want: &Quota{
+				name: DEVQUOTACONFIGNAME,
+				productConfigs: map[v1alpha1.ProductName]QuotaProductConfig{
+					v1alpha1.Product3Scale: {
+						productName: v1alpha1.Product3Scale,
+						resourceConfigs: getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[ApicastProductionName] = ResourceConfig{
+								Replicas: int32(1),
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("50m"),
+										corev1.ResourceMemory: resource.MustParse("50Mi"),
+									},
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("150m"),
+										corev1.ResourceMemory: resource.MustParse("100Mi"),
+									},
+								},
+							}
+							rcs[ApicastStagingName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendListenerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						quota: pointerToQuota,
+					},
+					v1alpha1.ProductGrafana: {
+						v1alpha1.ProductGrafana,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+					v1alpha1.ProductMarin3r: {
+						v1alpha1.ProductMarin3r,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[RateLimitName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+					v1alpha1.ProductRHSSOUser: {
+						v1alpha1.ProductRHSSOUser,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[KeycloakName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+					v1alpha1.ProductMCG: {
+						v1alpha1.ProductMCG,
+						getResourceConfig(func(rcs map[string]ResourceConfig) {
+							rcs[NoobaaCoreName] = ResourceConfig{0, corev1.ResourceRequirements{}}
+						}),
+						pointerToQuota,
+					},
+				},
+				isUpdated: false,
+				rateLimitConfig: marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 1,
+				},
+			},
+			validate: func(quota *Quota, t *testing.T) {
+				gotReplicas := quota.GetProduct(v1alpha1.Product3Scale).GetReplicas(ApicastProductionName)
+				wantReplicas := int32(1)
+				if gotReplicas != wantReplicas {
+					t.Errorf("Expected apicast_production replicas to be '%v' but got '%v'", wantReplicas, gotReplicas)
+				}
+				gotRequestsPerUnit := quota.GetProduct(v1alpha1.Product3Scale).GetRateLimitConfig().RequestsPerUnit
+				wantRequestsPerUnit := uint32(1)
+				if gotRequestsPerUnit != wantRequestsPerUnit {
+					t.Errorf("Expected requests per unti to be '%v' but got '%v'", wantRequestsPerUnit, gotRequestsPerUnit)
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := GetQuota(tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
+			err := GetQuota(context.TODO(), tt.args.client, tt.args.QuotaId, tt.args.QuotaConfig, tt.args.Quota)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetQuota() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -965,4 +1070,17 @@ func getQuotaConfig(modifyFn func(*corev1.ConfigMap)) *corev1.ConfigMap {
 		modifyFn(mock)
 	}
 	return mock
+}
+
+func buildTestInfra(platformType configv1.PlatformType) *configv1.Infrastructure {
+	return &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: platformType,
+			},
+		},
+	}
 }

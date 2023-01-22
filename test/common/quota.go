@@ -444,7 +444,7 @@ func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 	}
 
 	quotaConfig := &quota.Quota{}
-	err = quota.GetQuota(quotaParam, quotaConfigMap, quotaConfig)
+	err = quota.GetQuota(context.TODO(), c, quotaParam, quotaConfigMap, quotaConfig)
 	if err != nil {
 		t.Fatal("failed GetQuota", err)
 		return nil, err

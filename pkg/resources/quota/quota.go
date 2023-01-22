@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
+	configv1 "github.com/openshift/api/config/v1"
 	"reflect"
 
+	"context"
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -15,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -27,6 +31,7 @@ const (
 	ApicastStagingName    = "apicast_staging"
 	KeycloakName          = "rhssouser"
 	GrafanaName           = "grafana"
+	NoobaaCoreName        = "noobaa-core"
 )
 
 var (
@@ -86,7 +91,7 @@ type quotaConfigReceiver struct {
 	Resources map[string]ResourceConfig     `json:"resources,omitempty"`
 }
 
-func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota) error {
+func GetQuota(ctx context.Context, c client.Client, quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota) error {
 	allQuotas := &[]quotaConfigReceiver{}
 	err := json.Unmarshal([]byte(QuotaConfig.Data[ConfigMapData]), allQuotas)
 	if err != nil {
@@ -120,6 +125,20 @@ func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota)
 			pc.resourceConfigs[ddcssName] = quotaReceiver.Resources[ddcssName]
 		}
 		retQuota.productConfigs[product] = pc
+	}
+
+	platform, err := pkgresources.GetPlatformType(ctx, c)
+	if err != nil {
+		return fmt.Errorf("failed to determine platform type: %v", err)
+	}
+	if platform == configv1.GCPPlatformType {
+		mcgpc := QuotaProductConfig{
+			quota:           retQuota,
+			productName:     v1alpha1.ProductMCG,
+			resourceConfigs: map[string]ResourceConfig{},
+		}
+		mcgpc.resourceConfigs[NoobaaCoreName] = quotaReceiver.Resources[NoobaaCoreName]
+		retQuota.productConfigs[v1alpha1.ProductMCG] = mcgpc
 	}
 
 	//populate rate limit configuration

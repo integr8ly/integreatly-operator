@@ -21,7 +21,7 @@ const (
 
 func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	// make project
-	project, err := makeProject(ctx)
+	project, err := makeProject(ctx, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -33,7 +33,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	}
 
 	// get admin url
-	route, err := getRoutes(ctx, adminRoute)
+	route, err := getRoutes(ctx, adminRoute, ThreeScaleProductNamespace)
 	if err != nil {
 		t.Fatalf("failed to get route %v", err)
 	}
@@ -43,7 +43,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	secret, err := genSecret(ctx, map[string][]byte{
 		"adminURL": []byte(adminURL),
 		"token":    []byte(*accessToken),
-	})
+	}, projectAdminSecret, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create secret %v", err)
 	}
