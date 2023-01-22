@@ -252,6 +252,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
+// +kubebuilder:rbac:groups=noobaa.io,resources=noobaas;backingstores;bucketclasses,verbs=get;create;update;list
+// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbucketclaims,verbs=get;create;update;list;watch
+// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbuckets,verbs=list
+
 func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed

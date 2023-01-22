@@ -25,6 +25,7 @@ require (
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/cloud-resource-operator v0.42.0
 	github.com/integr8ly/keycloak-client v0.1.11
+	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/gomega v1.20.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -57,6 +58,7 @@ require (
 	cloud.google.com/go/storage v1.27.0
 	cloud.google.com/go/vpcaccess v1.6.0
 	github.com/foxcpp/go-mockdns v1.0.0
+	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20220105185820-c1da9586e05b
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
@@ -100,6 +102,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -148,7 +151,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/miekg/dns v1.1.31 // indirect
+	github.com/miekg/dns v1.1.40 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
@@ -163,6 +166,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
+	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	github.com/operator-framework/operator-lib v0.11.0 // indirect
 	github.com/otiai10/copy v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -231,6 +235,12 @@ replace k8s.io/client-go => k8s.io/client-go v0.24.3
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
 replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0
+
+// Required by mcg-operator until they update support for sched-ops
+replace github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-openstorage-rc3
+
+// tag does not exist but referenced by above package
+exclude github.com/kubernetes-incubator/external-storage v0.20.4-openstorage-rc2
 
 // Required until the branch merged mgdapi-3425-gcp
 replace github.com/integr8ly/cloud-resource-operator => github.com/integr8ly/cloud-resource-operator v0.41.1-0.20221214092311-15f86a12e586

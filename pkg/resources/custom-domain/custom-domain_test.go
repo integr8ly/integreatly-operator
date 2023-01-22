@@ -3,6 +3,10 @@ package custom_domain
 import (
 	"context"
 	"errors"
+	"net"
+	"reflect"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
@@ -11,11 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"net"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func TestGetDomain(t *testing.T) {
@@ -441,7 +442,7 @@ func TestGetIngressRouterService(t *testing.T) {
 
 func TestGetIngressRouterIPs(t *testing.T) {
 	type args struct {
-		hostname string
+		loadBalancerIngress []corev1.LoadBalancerIngress
 	}
 	tests := []struct {
 		name    string
@@ -452,15 +453,31 @@ func TestGetIngressRouterIPs(t *testing.T) {
 		{
 			name: "failed to perform ip lookup for hostname",
 			args: args{
-				hostname: "hostname",
+				loadBalancerIngress: []corev1.LoadBalancerIngress{
+					{
+						Hostname: "hostname",
+					},
+				},
 			},
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "valid ip address in load balancer",
+			args: args{
+				loadBalancerIngress: []corev1.LoadBalancerIngress{
+					{
+						IP: "0.0.0.0",
+					},
+				},
+			},
+			want:    []net.IP{net.ParseIP("0.0.0.0")},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetIngressRouterIPs(tt.args.hostname)
+			got, err := GetIngressRouterIPs(tt.args.loadBalancerIngress)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetIngressRouterIPs() error = %v, wantErr %v", err, tt.wantErr)
 				return
