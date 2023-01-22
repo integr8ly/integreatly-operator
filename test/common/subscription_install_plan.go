@@ -2,8 +2,9 @@ package common
 
 import (
 	"context"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	configv1 "github.com/openshift/api/config/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -100,7 +101,7 @@ func TestSubscriptionInstallPlanType(t TestingTB, ctx *TestingContext) {
 
 func getSubscriptionsToCheck(installType string, ctx *TestingContext) []SubscriptionCheck {
 	commonSubscriptionsToCheck := commonSubscriptionsToCheck()
-	if platformType, err := resources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		commonSubscriptionsToCheck = append(commonSubscriptionsToCheck, SubscriptionCheck{
 			Name:      constants.MCGSubscriptionName,
 			Namespace: McgOperatorNamespace,

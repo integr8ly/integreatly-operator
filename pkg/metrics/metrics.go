@@ -3,8 +3,12 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/version"
 	prometheusApi "github.com/prometheus/client_golang/api"
@@ -13,8 +17,6 @@ import (
 	prometheusConfig "github.com/prometheus/common/config"
 	prometheusModel "github.com/prometheus/common/model"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
 )
 
 // Custom metrics
@@ -304,7 +306,7 @@ func SetQuota(quota string, toQuota string) {
 
 // GetContainerCPUMetric node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate was renamed in 4.9
 func GetContainerCPUMetric(ctx context.Context, serverClient k8sclient.Client, l l.Logger) (string, error) {
-	before49, err := resources.ClusterVersionBefore49(ctx, serverClient, l)
+	before49, err := cluster.ClusterVersionBefore49(ctx, serverClient, l)
 	if err != nil {
 		return "", err
 	}

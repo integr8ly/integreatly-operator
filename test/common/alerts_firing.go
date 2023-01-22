@@ -3,12 +3,13 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"strings"
+	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	configv1 "github.com/openshift/api/config/v1"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
-	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -216,7 +217,7 @@ func podLogs(t TestingTB, ctx *TestingContext) {
 }
 
 func getPodNamespaces(installType string, ctx *TestingContext) []string {
-	if platformType, err := resources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		commonPodNamespaces = append(commonPodNamespaces, McgOperatorNamespace)
 	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {

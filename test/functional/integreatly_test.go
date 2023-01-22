@@ -1,8 +1,12 @@
 package functional
 
 import (
+	"context"
 	"fmt"
 	"os"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
+	v1 "github.com/openshift/api/config/v1"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo/v2"
@@ -107,6 +111,18 @@ var _ = Describe("integreatly", func() {
 			tests = append(tests, common.Tests{
 				Type:      "Destructive Tests",
 				TestCases: common.DESTRUCTIVE_TESTS,
+			})
+		}
+
+		testingContext, err := common.NewTestingContext(restConfig)
+		platform, err := cluster.GetPlatformType(context.TODO(), testingContext.Client)
+		if err != nil {
+			t.Fatal("failed to determine platform type", err)
+		}
+		if platform == v1.GCPPlatformType {
+			tests = append(tests, common.Tests{
+				Type:      "GCP Tests",
+				TestCases: common.GetGCPTestCases(installType),
 			})
 		}
 

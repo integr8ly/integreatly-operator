@@ -160,4 +160,13 @@ var (
 		// Add all destructive tests here that should not be executed as part of the happy path tests
 		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
 	}
+
+	GCP_TESTS = []TestSuite{
+		{
+			[]TestCase{
+				{"N01 - Verify that Noobaa can be created via product CR", TestNoobaaViaCR},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+	}
 )

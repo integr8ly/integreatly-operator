@@ -60,6 +60,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -1135,7 +1136,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
 	} else {
 		var infra *configv1.Infrastructure
-		infra, err = resources.GetClusterInfrastructure(ctx, serverClient)
+		infra, err = cluster.GetClusterInfrastructure(ctx, serverClient)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve cluster infrastructure: %w", err)
 		}

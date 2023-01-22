@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	configv1 "github.com/openshift/api/config/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -132,7 +132,7 @@ func TypeFactory(ctx context.Context, installationType string, c client.Client) 
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
 	case string(integreatlyv1alpha1.InstallationTypeManagedApi):
-		platform, err := resources.GetPlatformType(ctx, c)
+		platform, err := cluster.GetPlatformType(ctx, c)
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine platform type: %v", err)
 		}

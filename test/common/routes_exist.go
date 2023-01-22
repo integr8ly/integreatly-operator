@@ -3,8 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	configv1 "github.com/openshift/api/config/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -152,12 +153,12 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 
 func getExpectedRoutes(installType string, ctx *TestingContext) map[string][]ExpectedRoute {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		if platformType, err := resources.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 			mtManagedApiExpectedRoutes["mcg-operator"] = mcgRoutes
 		}
 		return mtManagedApiExpectedRoutes
 	} else {
-		if platformType, err := resources.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 			managedApiExpectedRoutes["mcg-operator"] = mcgRoutes
 		}
 		return managedApiExpectedRoutes

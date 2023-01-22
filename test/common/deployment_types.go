@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
@@ -12,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	pkgresources "github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -125,7 +126,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 		},
 	}
 
-	if platformType, err := pkgresources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		deployment["mcgOperatorDeployment"] = Namespace{
 			Name: McgOperatorNamespace,
 			Products: []Product{
@@ -399,7 +400,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		}...)
 	}
 
-	if platformType, err := pkgresources.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(context.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		statefulSets = append(statefulSets, []Namespace{
 			{
 				Name: McgOperatorNamespace,

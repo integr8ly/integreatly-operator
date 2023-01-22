@@ -3,11 +3,12 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"strings"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const (
@@ -28,7 +29,7 @@ func commonPvcNamespaces(ctx *TestingContext) []PersistentVolumeClaim {
 		},
 	}
 
-	if platformType, err := resources.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		pvc = append(pvc, []PersistentVolumeClaim{
 			{
 				Namespace: McgOperatorNamespace,

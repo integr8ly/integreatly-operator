@@ -6,7 +6,7 @@ import (
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v4/api/v1"
@@ -325,7 +325,7 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 }
 
 func getStagesForInstallType(installType string, ctx *TestingContext) []StageDeletion {
-	if platformType, err := resources.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		managedApiStages = append(managedApiStages, []StageDeletion{
 			{
 				productStageName: integreatlyv1alpha1.ProductsStage,
