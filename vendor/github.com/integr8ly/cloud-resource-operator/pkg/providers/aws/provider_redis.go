@@ -318,7 +318,7 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 
 	if maintenanceWindow {
 		// check if any modifications are required to bring the elasticache instance up to date with the strategy map.
-		modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger)
+		modifyInput, err := buildElasticacheUpdateStrategy(ec2Svc, elasticacheConfig, foundCache, replicationGroupClusters, logger, r)
 		if err != nil {
 			errMsg := "failed to build elasticache modify strategy"
 			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -733,7 +733,7 @@ func (p *RedisProvider) isLastResource(ctx context.Context) (bool, error) {
 // if modifications are required, a modify input struct will be returned with all proposed changes.
 //
 // if no modifications are required, nil will be returned.
-func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry) (*elasticache.ModifyReplicationGroupInput, error) {
+func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry, r *v1alpha1.Redis) (*elasticache.ModifyReplicationGroupInput, error) {
 	// setup logger.
 	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
 	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
@@ -788,6 +788,7 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 		// the instance type is supported, go ahead with the modification.
 		if instanceTypeSupported {
 			modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
+			modifyInput.ApplyImmediately = aws.Bool(r.Spec.ApplyImmediately)
 			updateFound = true
 		} else {
 			// the instance type isn't supported, log and skip.
