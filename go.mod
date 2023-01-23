@@ -55,6 +55,7 @@ require (
 
 require (
 	github.com/foxcpp/go-mockdns v1.0.0
+	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20220105185820-c1da9586e05b
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
@@ -135,7 +136,6 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20220105185820-c1da9586e05b // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect

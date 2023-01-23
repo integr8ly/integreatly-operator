@@ -1,9 +1,14 @@
 package controllers
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	configv1 "github.com/openshift/api/config/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Stage struct {
@@ -65,7 +70,6 @@ var (
 				Name: integreatlyv1alpha1.InstallStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
-					integreatlyv1alpha1.ProductMCG:            {Name: integreatlyv1alpha1.ProductMCG},
 					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability},
 					integreatlyv1alpha1.ProductRHSSO:          {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.Product3Scale:         {Name: integreatlyv1alpha1.Product3Scale},
@@ -89,7 +93,6 @@ var (
 			{
 				Name: integreatlyv1alpha1.UninstallCloudResourcesStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMCG:            {Name: integreatlyv1alpha1.ProductMCG},
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
 				},
 			},
@@ -125,11 +128,30 @@ func (t *Type) GetUninstallStages() []Stage {
 	return t.UninstallStages
 }
 
-func TypeFactory(installationType string) (*Type, error) {
+func TypeFactory(ctx context.Context, installationType string, c client.Client) (*Type, error) {
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
 	case string(integreatlyv1alpha1.InstallationTypeManagedApi):
-		return newManagedApiType(), nil
+		platform, err := resources.GetPlatformType(ctx, c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to determine platform type: %v", err)
+		}
+		managedApiType := newManagedApiType()
+		if platform == configv1.GCPPlatformType {
+			for i := range managedApiType.InstallStages {
+				if managedApiType.InstallStages[i].Name == integreatlyv1alpha1.InstallStage {
+					managedApiType.InstallStages[i].Products[integreatlyv1alpha1.ProductMCG] = integreatlyv1alpha1.RHMIProductStatus{Name: integreatlyv1alpha1.ProductMCG}
+					break
+				}
+			}
+			for i := range managedApiType.UninstallStages {
+				if managedApiType.UninstallStages[i].Name == integreatlyv1alpha1.UninstallCloudResourcesStage {
+					managedApiType.UninstallStages[i].Products[integreatlyv1alpha1.ProductMCG] = integreatlyv1alpha1.RHMIProductStatus{Name: integreatlyv1alpha1.ProductMCG}
+					break
+				}
+			}
+		}
+		return managedApiType, nil
 	case string(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi):
 		return newMultitenantManagedApiType(), nil
 	default:

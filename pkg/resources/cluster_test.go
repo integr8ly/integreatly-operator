@@ -2,14 +2,17 @@ package resources
 
 import (
 	"context"
+	"errors"
+	"reflect"
+	"strconv"
+	"strings"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	configv1 "github.com/openshift/api/config/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strconv"
-	"testing"
 )
 
 type ClusterVersionTestScenario struct {
@@ -20,14 +23,14 @@ type ClusterVersionTestScenario struct {
 }
 
 var version1 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "version",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "4.9.0-rc123",
 				Image:          "",
@@ -38,14 +41,14 @@ var version1 = &configv1.ClusterVersion{
 }
 
 var version2 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "version",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "4.8.0-rc123",
 				Image:          "",
@@ -56,14 +59,14 @@ var version2 = &configv1.ClusterVersion{
 }
 
 var version3 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "version",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "10.8.0-rc123",
 				Image:          "",
@@ -74,14 +77,14 @@ var version3 = &configv1.ClusterVersion{
 }
 
 var version4 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "wrongname",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "10.8.0-rc123",
 				Image:          "",
@@ -92,14 +95,14 @@ var version4 = &configv1.ClusterVersion{
 }
 
 var version5 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "version",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "fakeversion",
 				Image:          "",
@@ -110,14 +113,14 @@ var version5 = &configv1.ClusterVersion{
 }
 
 var version6 = &configv1.ClusterVersion{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "version",
 	},
 	Status: configv1.ClusterVersionStatus{
 		History: []configv1.UpdateHistory{
 			{
 				State:          "",
-				StartedTime:    v1.Time{},
+				StartedTime:    metav1.Time{},
 				CompletionTime: nil,
 				Version:        "string1.string2.string3",
 				Image:          "",
@@ -263,16 +266,68 @@ func TestGetClusterType(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		actual, err := GetClusterType(scenario.Input)
+		t.Run(scenario.Name, func(t *testing.T) {
+			actual, err := GetClusterType(scenario.Input)
 
-		if actual != scenario.Expected {
-			t.Fatalf("Test: %s; Infrstructure does not contain the expected result; Actual: %s, Expected: %s", scenario.Name, actual, scenario.Expected)
-		}
+			if actual != scenario.Expected {
+				t.Fatalf("Test: %s; Infrastructure does not contain the expected result; Actual: %s, Expected: %s", scenario.Name, actual, scenario.Expected)
+			}
 
-		if scenario.Error && err == nil {
-			t.Fatalf("Test: %s; Failed to raise error when error was expected", scenario.Name)
-		}
+			if scenario.Error && err == nil {
+				t.Fatalf("Test: %s; Failed to raise error when error was expected", scenario.Name)
+			}
+		})
+	}
+}
 
+func TestGetPlatformType(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type args struct {
+		client k8sclient.Client
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  configv1.PlatformType
+		Error error
+	}{
+		{
+			name: "retrieve AWS platform type",
+			args: args{
+				client: fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.AWSPlatformType)).Build(),
+			},
+			want: configv1.AWSPlatformType,
+		},
+		{
+			name: "retrieve GCP platform type",
+			args: args{
+				client: fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(buildTestInfra(configv1.GCPPlatformType)).Build(),
+			},
+			want: configv1.GCPPlatformType,
+		},
+		{
+			name: "error retrieving platform type",
+			args: args{
+				client: fake.NewClientBuilder().WithScheme(scheme).Build(),
+			},
+			want:  "",
+			Error: errors.New("failed to retrieve cluster infrastructure:"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetPlatformType(context.TODO(), tt.args.client)
+			if err != nil && tt.Error != nil && !strings.Contains(err.Error(), tt.Error.Error()) {
+				t.Errorf("GetPlatformType() error = %v, Error %v", err, tt.Error)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetPlatformType() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -298,11 +353,11 @@ func TestGetClusterVersionCR(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: fake.NewFakeClientWithScheme(scheme, &configv1.ClusterVersion{
-					TypeMeta: v1.TypeMeta{
+					TypeMeta: metav1.TypeMeta{
 						Kind:       "ClusterVersion",
 						APIVersion: "config.openshift.io/v1",
 					},
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "version",
 					},
 					Spec:   configv1.ClusterVersionSpec{},
@@ -311,11 +366,11 @@ func TestGetClusterVersionCR(t *testing.T) {
 				),
 			},
 			want: &configv1.ClusterVersion{
-				TypeMeta: v1.TypeMeta{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "ClusterVersion",
 					APIVersion: "config.openshift.io/v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:            "version",
 					ResourceVersion: "999",
 				},
@@ -329,11 +384,11 @@ func TestGetClusterVersionCR(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: fake.NewFakeClientWithScheme(scheme, &configv1.ClusterVersion{
-					TypeMeta: v1.TypeMeta{
+					TypeMeta: metav1.TypeMeta{
 						Kind:       "ClusterVersion",
 						APIVersion: "config.openshift.io/v1",
 					},
-					ObjectMeta: v1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: "does not exist",
 					},
 					Spec:   configv1.ClusterVersionSpec{},
@@ -456,5 +511,18 @@ func TestGetClusterVersion(t *testing.T) {
 				t.Errorf("GetClusterVersion() got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func buildTestInfra(platformType configv1.PlatformType) *configv1.Infrastructure {
+	return &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: platformType,
+			},
+		},
 	}
 }

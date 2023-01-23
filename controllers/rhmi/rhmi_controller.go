@@ -322,7 +322,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		}
 	}
 
-	installType, err := TypeFactory(installation.Spec.Type)
+	installType, err := TypeFactory(ctx, installation.Spec.Type, r.Client)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
