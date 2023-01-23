@@ -2,8 +2,10 @@ package config
 
 import (
 	"errors"
+
 	threescaleapps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -120,30 +122,34 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 	}
 
 	switch inst.Status.Quota {
-	case "100K":
+	case quota.OneHundredThousandQuotaName:
 		threeScaleComponents["apicastProd"] = 2
 		threeScaleComponents["backendListener"] = 2
 		threeScaleComponents["backendWorker"] = 2
-	case "1 Million":
+	case quota.OneMillionQuotaName:
 		threeScaleComponents["apicastProd"] = 2
 		threeScaleComponents["backendListener"] = 2
 		threeScaleComponents["backendWorker"] = 2
-	case "5 Million":
+	case quota.FiveMillionQuotaName:
 		threeScaleComponents["apicastProd"] = 3
 		threeScaleComponents["backendListener"] = 3
 		threeScaleComponents["backendWorker"] = 3
-	case "10 Million":
+	case quota.TenMillionQuotaName:
 		threeScaleComponents["apicastProd"] = 3
 		threeScaleComponents["backendListener"] = 3
 		threeScaleComponents["backendWorker"] = 3
-	case "20 Million":
+	case quota.TwentyMillionQuotaName:
 		threeScaleComponents["apicastProd"] = 3
 		threeScaleComponents["backendListener"] = 3
 		threeScaleComponents["backendWorker"] = 3
-	case "50 Million":
+	case quota.FiftyMillionQuotaName:
 		threeScaleComponents["apicastProd"] = 3
 		threeScaleComponents["backendWorker"] = 4
 		threeScaleComponents["backendListener"] = 5
+	case quota.OneHundredMillionQuotaName:
+		threeScaleComponents["apicastProd"] = 8
+		threeScaleComponents["backendWorker"] = 5
+		threeScaleComponents["backendListener"] = 7
 	}
 
 	return threeScaleComponents
@@ -153,4 +159,12 @@ func setDefaultNumberOfReplicas(defaultNumberOfReplicas int64, threeScaleCompone
 	for i := range threeScaleComponents {
 		threeScaleComponents[i] = int64(defaultNumberOfReplicas)
 	}
+}
+
+func (t *ThreeScale) GetBackendRedisNodeSize(activeQuota string) string {
+	if activeQuota == quota.OneHundredMillionQuotaName {
+		return "cache.m5.large"
+	}
+
+	return ""
 }

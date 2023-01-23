@@ -195,10 +195,10 @@ func (r *SubscriptionReconciler) shouldReconcileSubscription(request ctrl.Reques
 }
 
 func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (ctrl.Result, error) {
-	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
-		log.Info("no upgrade available")
+	if rhmiSubscription == nil || installation == nil {
 		return ctrl.Result{}, nil
 	}
+
 	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
 	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
@@ -228,23 +228,25 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 	}
 
 	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestCSV)
+	log.Info(fmt.Sprintf("Upgrade is service affecting: %v", isServiceAffecting))
 
 	err = r.allowDatabaseUpdates(ctx, installation, isServiceAffecting)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
+	log.Info(fmt.Sprintf("to version is currently: %s", installation.Status.ToVersion))
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
-		log.Info("no upgrade available")
-
 		// if we have not started update but are due to, and it was a serviceAffecting upgrade
 		// requeue so that we can enable maintenance window
-		if installation.Status.ToVersion != "" && installation.Status.Version != version.GetVersion() && isServiceAffecting {
+		if (installation.Status.ToVersion != "" || installation.Status.Version != version.GetVersion()) && isServiceAffecting {
+			log.Info("upgrade still in progress, requeue-ing")
 			return ctrl.Result{
 				Requeue:      true,
 				RequeueAfter: 10 * time.Second,
 			}, nil
 		}
+		log.Info("no upgrade available")
 		return ctrl.Result{}, nil
 	}
 

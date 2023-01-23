@@ -418,6 +418,12 @@ func (n *NetworkProvider) CreateNetworkConnection(ctx context.Context, network *
 				DestinationCidrBlock:   clusterVpcRoute.DestinationCidrBlock,
 				RouteTableId:           routeTable.RouteTableId,
 			}); err != nil {
+				if awsErr, ok := err.(awserr.Error); ok {
+					if awsErr.Code() == "RouteNotSupported" {
+						logger.Infof("not adding route to %s route table because it is not supported/required", aws.StringValue(routeTable.RouteTableId))
+						continue
+					}
+				}
 				return nil, errorUtil.Wrap(err, "failure while adding route to route table")
 			}
 		}

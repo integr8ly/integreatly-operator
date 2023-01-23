@@ -600,19 +600,6 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "HandleUpgrades shouldn't fail if Subscription is nils",
-			args: args{
-				rhmiSubscription: &v1alpha1.Subscription{},
-				installation:     defaultInstallation,
-			},
-			fields: fields{
-				csv:         defaultCSV,
-				installPlan: defaultInstallPlan,
-			},
-			want:    controllerruntime.Result{},
-			wantErr: false,
-		},
-		{
 			name: "HandleUpgrades should pass on valid input and already approved InstallPlan",
 			args: args{
 				rhmiSubscription: defaultSubscription,

@@ -44,7 +44,7 @@ const (
 	defaultAwsDBInstanceClass            = "db.t3.small"
 	defaultAwsDeleteAutomatedBackups     = true
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "13.4"
+	defaultAwsEngineVersion              = "13.8"
 	defaultAwsIdentifierLength           = 40
 	defaultAwsMaxAllocatedStorage        = 100
 	defaultAwsMultiAZ                    = true
@@ -54,7 +54,7 @@ const (
 	defaultAwsPostgresUser               = "postgres"
 	defaultAwsPubliclyAccessible         = false
 	defaultAwsSkipFinalSnapshot          = false
-	defaultCredSecSuffix                 = "-aws-rds-credentials"
+	defaultCredSecSuffix                 = "-aws-rds-credentials" // #nosec G101 -- false positive (ref: https://securego.io/docs/rules/g101.html)
 	defaultPostgresPasswordKey           = "password"
 	defaultPostgresUserKey               = "user"
 	defaultStorageEncrypted              = true
@@ -62,7 +62,7 @@ const (
 )
 
 var (
-	defaultSupportedEngineVersions = []string{"13.4", "10.18", "10.16", "10.15", "10.13", "10.6", "9.6", "9.5"}
+	defaultSupportedEngineVersions = []string{"13.8", "13.4", "10.18", "10.16", "10.15", "10.13", "10.6", "9.6", "9.5"}
 	healthyAWSDBInstanceStatuses   = []string{
 		"backtracking",
 		"available",
