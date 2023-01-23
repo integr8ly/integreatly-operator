@@ -144,6 +144,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 					ConfigureFunc: func(obj metav1.Object) error {
 						return nil
 					},
+					GetActiveQuotaFunc: func() string {
+						return quota.OneHundredMillionQuotaName
+					},
 				},
 				uninstall: false,
 			},
@@ -194,6 +197,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
 						return nil
+					},
+					GetActiveQuotaFunc: func() string {
+						return quota.OneHundredThousandQuotaName
 					},
 				},
 				uninstall: false,
@@ -246,6 +252,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 					ConfigureFunc: func(obj metav1.Object) error {
 						return nil
 					},
+					GetActiveQuotaFunc: func() string {
+						return quota.OneMillionQuotaName
+					},
 				},
 				uninstall: false,
 			},
@@ -296,6 +305,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
 						return nil
+					},
+					GetActiveQuotaFunc: func() string {
+						return quota.FiveMillionQuotaName
 					},
 				},
 				uninstall: false,
@@ -355,6 +367,9 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
 						return nil
+					},
+					GetActiveQuotaFunc: func() string {
+						return quota.TenMillionQuotaName
 					},
 				},
 				uninstall: false,
@@ -2101,6 +2116,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		serverClient k8sclient.Client
+		activeQuota  string
 	}
 	tests := []struct {
 		name                 string
@@ -2168,7 +2184,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient)
+			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient, tt.args.activeQuota)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileExternalDatasources() error = %v, wantErr %v", err, tt.wantErr)
 				return

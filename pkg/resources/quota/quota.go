@@ -18,15 +18,22 @@ import (
 )
 
 const (
-	ConfigMapData         = "quota-configs"
-	ConfigMapName         = "quota-config-managed-api-service"
-	RateLimitName         = "ratelimit"
-	BackendListenerName   = "backend_listener"
-	BackendWorkerName     = "backend_worker"
-	ApicastProductionName = "apicast_production"
-	ApicastStagingName    = "apicast_staging"
-	KeycloakName          = "rhssouser"
-	GrafanaName           = "grafana"
+	ConfigMapData               = "quota-configs"
+	ConfigMapName               = "quota-config-managed-api-service"
+	RateLimitName               = "ratelimit"
+	BackendListenerName         = "backend_listener"
+	BackendWorkerName           = "backend_worker"
+	ApicastProductionName       = "apicast_production"
+	ApicastStagingName          = "apicast_staging"
+	KeycloakName                = "rhssouser"
+	GrafanaName                 = "grafana"
+	OneHundredThousandQuotaName = "100K"
+	OneMillionQuotaName         = "1 Million"
+	FiveMillionQuotaName        = "5 Million"
+	TenMillionQuotaName         = "10 Million"
+	TwentyMillionQuotaName      = "20 Million"
+	FiftyMillionQuotaName       = "50 Million"
+	OneHundredMillionQuotaName  = "100 Million"
 )
 
 var (
