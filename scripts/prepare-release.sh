@@ -32,16 +32,10 @@ fi
 
 # Optional environment variable to set a different Kustomize path. If this
 # variable is not set, it will use the one from the $PATH or try a default Kustomize path
-if [[ -n $KUSTOMIZE_PATH ]]; then
-  KUSTOMIZE=$KUSTOMIZE_PATH
+if [[ -z $KUSTOMIZE_PATH ]]; then
+  KUSTOMIZE="/usr/local/bin/kustomize"
 else
-  if command -v kustomize >/dev/null 2>&1; then
-    echo "kustomize on path found"
-    KUSTOMIZE=$(which kustomize)
-  else
-    echo "Kustomize not found on path: defaulting to /usr/local/bin/kustomize"
-    KUSTOMIZE="/usr/local/bin/kustomize"
-  fi
+  KUSTOMIZE=$(which kustomize)
 fi
 
 echo "Using kustomize path: $KUSTOMIZE"
