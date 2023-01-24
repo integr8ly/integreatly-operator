@@ -4,14 +4,18 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
+	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+
+	"net/http"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -23,7 +27,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -179,6 +182,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductObservability:
 		reconciler, err = observability.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
+	case integreatlyv1alpha1.ProductMCG:
+		reconciler, err = mcg.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
