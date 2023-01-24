@@ -282,7 +282,7 @@ func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
 
 // getVpcCidrBlock returns a cidr block using a key/value tag pairing
 func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
-	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
+	vpcs, err := describeVpcs(session, &ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String(clusterTagName),
@@ -295,7 +295,6 @@ func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (
 	}
 
 	// only one vpc is expected
-	vpcs := describeVpcs.Vpcs
 	if len(vpcs) != 1 {
 		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
 	}
@@ -337,4 +336,61 @@ func ec2TagsContains(tags []*ec2.Tag, key, value string) bool {
 		}
 	}
 	return false
+}
+
+func getClusterSubnets(session *ec2.EC2, clusterID string) ([]*ec2.Subnet, error) {
+	describeSubnetsOutput, err := session.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String(vpcClusterTagKey),
+				Values: []*string{aws.String(clusterID)},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not describe cluster subnets: %v", err)
+	}
+	if len(describeSubnetsOutput.Subnets) == 0 {
+		return nil, fmt.Errorf("could not find any cluster subnets: %v", err)
+	}
+	return describeSubnetsOutput.Subnets, nil
+}
+
+func describeVpcs(ec2svc *ec2.EC2, input *ec2.DescribeVpcsInput) ([]*ec2.Vpc, error) {
+	describeVpcsOutput, err := ec2svc.DescribeVpcs(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe vpcs: %w", err)
+	}
+	if len(describeVpcsOutput.Vpcs) == 0 {
+		return nil, fmt.Errorf("could not find any vpcs: %v", err)
+	}
+	return describeVpcsOutput.Vpcs, nil
+}
+
+func getClusterVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
+	clusterSubnets, err := getClusterSubnets(ec2svc, clusterID)
+	if err != nil {
+		return nil, fmt.Errorf("could not find cluster vpc: %w", err)
+	}
+	clusterTagKey := fmt.Sprintf("%s%s", clusterOwnedTagKeyPrefix, clusterID)
+	var vpcID *string
+	for _, subnet := range clusterSubnets {
+		for _, tag := range subnet.Tags {
+			if tag != nil && *tag.Key == clusterTagKey && (*tag.Value == clusterOwnedTagValue || *tag.Value == clusterSharedTagValue) {
+				vpcID = subnet.VpcId
+				break
+			}
+		}
+	}
+	if vpcID == nil {
+		return nil, fmt.Errorf("could not find cluster vpc: no subnet tags matched key %s with value %s or %s", clusterTagKey, clusterOwnedTagValue, clusterSharedTagValue)
+	}
+	vpcs, err := describeVpcs(ec2svc, &ec2.DescribeVpcsInput{VpcIds: []*string{vpcID}})
+	if err != nil {
+		return nil, fmt.Errorf("could not describe cluster vpc: %w", err)
+	}
+	if len(vpcs) > 1 {
+		return nil, fmt.Errorf("more than one vpc found associated with cluster subnets")
+	}
+	return vpcs[0], nil
 }
