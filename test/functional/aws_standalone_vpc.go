@@ -38,10 +38,10 @@ var (
 )
 
 const (
-	vpcClusterTagKey         = "tag:integreatly.org/clusterID"
-	clusterOwnedTagKeyPrefix = "tag:kubernetes.io/cluster/"
-	clusterOwnedTagValue     = "owned"
-	clusterSharedTagValue    = "shared"
+	standaloneResourceTagKey    = "integreatly.org/clusterID"
+	clusterResourceTagKeyPrefix = "kubernetes.io/cluster/"
+	clusterOwnedTagValue        = "owned"
+	clusterSharedTagValue       = "shared"
 )
 
 type strategyMap struct {
@@ -171,6 +171,16 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 		t.Fatal("failure fetching cluster vpc", err)
 	}
 
+	standaloneVpc, err := getStandaloneVpc(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching standalone vpc", err)
+	}
+
+	standaloneSubnets, err := getStandaloneSubnets(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching standalone subnets", err)
+	}
+
 	// get the vpc cidr block
 	expectedCidr, err := getCidrBlockFromStrategyMap(strat)
 	if err != nil {
@@ -179,21 +189,13 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 
 	// if the cidr strategy map is empty then attempt to retrieve the standaloneCidr cidr block from the vpc
 	if expectedCidr == "" {
-		standaloneCidr, err := getVpcCidrBlock(ec2Sess, vpcClusterTagKey, clusterTag)
-		if err != nil {
-			t.Fatal("could not get cidr block from vpc", err)
-		}
-
-		// check if the cidr block is in the allowed range
+		standaloneCidr := *standaloneVpc.CidrBlock
 		if err = verifyCidrBlockIsInAllowedRange(standaloneCidr); err != nil {
 			t.Fatalf("cidr block %s is not within the allowed range %s", standaloneCidr, err)
 		}
-
-		// check if the cidr blocks overlap
 		if err = checkForOverlappingCidrBlocks(standaloneCidr, *clusterVpc.CidrBlock); err != nil {
 			t.Fatal(err)
 		}
-
 		expectedCidr = standaloneCidr
 	}
 
@@ -204,18 +206,13 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	}
 	availableZones := GetClustersAvailableZones(clusterNodes)
 
-	err = verifyVpc(clusterVpc, expectedCidr, isSTS)
+	err = verifyVpc(standaloneVpc, expectedCidr, isSTS)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 	if len(testErrors.vpcError) > 0 {
 		t.Fatal(testErrors.Error())
 	}
 
-	// verify subnets
-	clusterSubnets, err := getClusterSubnets(ec2Sess, clusterTag)
-	if err != nil {
-		t.Fatal("failure fetching cluster clusterSubnets", err)
-	}
-	err = verifySubnets(clusterSubnets, expectedCidr)
+	err = verifySubnets(standaloneSubnets, expectedCidr)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
 
 	// verify security groups
@@ -228,7 +225,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 
 	// build array list of all vpc private subnets
 	var subnetIDs []*string
-	for _, subnet := range clusterSubnets {
+	for _, subnet := range standaloneSubnets {
 		subnetIDs = append(subnetIDs, subnet.SubnetId)
 	}
 
@@ -324,7 +321,7 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 	describeGroups, err := session.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(vpcClusterTagKey),
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -434,7 +431,7 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 	peeringConn, err := session.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(vpcClusterTagKey),
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -479,7 +476,7 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 	describeRouteTables, err := session.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(vpcClusterTagKey),
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
