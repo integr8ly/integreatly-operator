@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
+	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
@@ -57,6 +58,11 @@ var (
 				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
 					return err
 				}
+
+				if err := removeDiscoveryServiceFinalizers(ctx, ThreeScaleProductNamespace); err != nil {
+					return err
+				}
+
 				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
 			},
 		},
@@ -87,6 +93,11 @@ var (
 				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
 					return err
 				}
+
+				if err := removeDiscoveryServiceFinalizers(ctx, ThreeScaleProductNamespace); err != nil {
+					return err
+				}
+
 				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
 			},
 		},
@@ -334,6 +345,36 @@ func removeObservabilityFinalizers(ctx *TestingContext, namespace string) error 
 			observability := observabilityList.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &observability, func() error {
 				observability.Finalizers = []string{}
+				return nil
+			})
+
+			if err != nil {
+				return false, err
+			}
+		}
+
+		return true, nil
+	})
+
+	return err
+}
+
+func removeDiscoveryServiceFinalizers(ctx *TestingContext, namespace string) error {
+	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+		discoveryServiceList := &marin3rOperatorv1alpha1.DiscoveryServiceList{}
+
+		err = ctx.Client.List(goctx.TODO(), discoveryServiceList, &k8sclient.ListOptions{
+			Namespace: namespace,
+		})
+
+		if err != nil {
+			return false, err
+		}
+
+		for i := range discoveryServiceList.Items {
+			discoveryService := discoveryServiceList.Items[i]
+			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &discoveryService, func() error {
+				discoveryService.Finalizers = []string{}
 				return nil
 			})
 
