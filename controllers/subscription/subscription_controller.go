@@ -10,6 +10,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"github.com/integr8ly/integreatly-operator/version"
+	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/sirupsen/logrus"
@@ -42,6 +45,7 @@ const (
 	ManagedAPIAddonSubscription     = "addon-managed-api-service"
 	ManagedAPIAddonSubscriptionEdge = "addon-managed-api-service-internal"
 	ManagedAPIolmSubscription       = "managed-api-service"
+	RHOAMUpgradeConfigMap           = "rhoam-upgrades"
 )
 
 var subscriptionsToReconcile []string = []string{
@@ -248,7 +252,15 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		return ctrl.Result{}, nil
 	}
 
-	if !isServiceAffecting && !latestInstallPlan.Spec.Approved {
+	upgradeAllowed, err := r.upgradeAllowed()
+	if err != nil {
+		return ctrl.Result{
+			Requeue:      true,
+			RequeueAfter: 10 * time.Second,
+		}, nil
+	}
+
+	if !isServiceAffecting && !latestInstallPlan.Spec.Approved && upgradeAllowed {
 		eventRecorder := r.mgr.GetEventRecorderFor("Operator Upgrade")
 		logrus.Infof("Approving install plan %s ", latestInstallPlan.Name)
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.Client, installation, latestInstallPlan, eventRecorder)
@@ -267,6 +279,23 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		Requeue:      true,
 		RequeueAfter: time.Minute,
 	}, nil
+}
+
+func (r *SubscriptionReconciler) upgradeAllowed() (bool, error) {
+	upgradeConfigMap := &corev1.ConfigMap{}
+	err := r.Get(context.TODO(), types.NamespacedName{Namespace: r.operatorNamespace, Name: RHOAMUpgradeConfigMap}, upgradeConfigMap)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return false, err
+		}
+	}
+
+	if upgradeConfigMap.Data["allowRhoamUpdates"] == "false" {
+		log.Info("Not allowing upgrades, rhoam config map in place")
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (r *SubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
