@@ -1,17 +1,15 @@
 package mcg
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *Reconciler) newAlertReconciler(ctx context.Context, client k8sclient.Client, logger l.Logger, installType string) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
 	observabilityConfig, err := r.ConfigManager.ReadObservability()
@@ -37,7 +35,7 @@ func (r *Reconciler) newAlertReconciler(ctx context.Context, client k8sclient.Cl
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{namespace='%s', endpoint='noobaa-operator-service'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{ready='true',namespace='%s', endpoint='noobaa-operator-service'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
@@ -47,7 +45,7 @@ func (r *Reconciler) newAlertReconciler(ctx context.Context, client k8sclient.Cl
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace=`%s`} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{ready='true',endpoint='rhmi-registry-cs', namespace=`%s`})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -104,7 +102,7 @@ func (r *Reconciler) newAlertReconciler(ctx context.Context, client k8sclient.Cl
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": "MCG s3 endpoint is not available.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{namespace='%[1]s', endpoint='s3'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address{ready='true',namespace='%[1]s', endpoint='s3'})", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},

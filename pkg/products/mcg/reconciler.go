@@ -156,7 +156,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler, err := r.newAlertReconciler(ctx, serverClient, r.log, r.installation.Spec.Type)
+	alertsReconciler, err := r.newAlertReconciler(r.log, r.installation.Spec.Type)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
