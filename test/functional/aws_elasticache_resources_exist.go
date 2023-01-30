@@ -44,7 +44,7 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 			continue
 		}
 		if len(foundElasticacheReplicationGroups.ReplicationGroups[0].NodeGroups) > 1 {
-			testErrors = append(testErrors, fmt.Sprintf("insufficient number of nodes in elasticache group"))
+			testErrors = append(testErrors, "insufficient number of nodes in elasticache group")
 			continue
 		}
 		replicationGroup := foundElasticacheReplicationGroups.ReplicationGroups[0]

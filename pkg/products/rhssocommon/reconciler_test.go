@@ -1706,7 +1706,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 					Rules: []monitoringv1.Rule{
 						{
 							Alert: "KeycloakInstanceNotAvailable",
-							Expr:  intstr.FromString(fmt.Sprint("testExpression")),
+							Expr:  intstr.FromString("testExpression"),
 						},
 					},
 				},
@@ -1715,7 +1715,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 					Rules: []monitoringv1.Rule{
 						{
 							Alert: "test-alert",
-							Expr:  intstr.FromString(fmt.Sprint("testExpression")),
+							Expr:  intstr.FromString("testExpression"),
 						},
 					},
 				},

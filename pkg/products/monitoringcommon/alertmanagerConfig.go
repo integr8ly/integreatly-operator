@@ -156,11 +156,11 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 		"SMTPToBUAddress":       smtpToBUAddress,
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
-		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+		"Subject":               `{{template "email.integreatly.subject" . }}`,
 		"clusterID":             clusterID,
 		"clusterName":           clusterName,
 		"clusterConsole":        clusterConsoleRoute,
-		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
+		"html":                  `{{ template "email.integreatly.html" . }}`,
 	})
 
 	templatePath := GetTemplatePath()

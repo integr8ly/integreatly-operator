@@ -169,11 +169,11 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
 		"SMTPToSREAddress":      mockAlertingEmailAddress,
 		"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-		"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+		"Subject":               `{{template "email.integreatly.subject" . }}`,
 		"clusterID":             clusterID,
 		"clusterName":           clusterName,
 		"clusterConsole":        clusterConsoleRoute,
-		"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
+		"html":                  `{{ template "email.integreatly.html" . }}`,
 	})
 
 	templatePath := GetTemplatePath()
@@ -346,11 +346,11 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 					"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
 					"SMTPToSREAddress":      mockAlertingEmailAddress,
 					"SMTPToBUAddress":       mockBUAlertingEmailAddress,
-					"Subject":               fmt.Sprintf(`{{template "email.integreatly.subject" . }}`),
+					"Subject":               `{{template "email.integreatly.subject" . }}`,
 					"clusterID":             clusterID,
 					"clusterName":           clusterName,
 					"clusterConsole":        clusterConsoleRoute,
-					"html":                  fmt.Sprintf(`{{ template "email.integreatly.html" . }}`),
+					"html":                  `{{ template "email.integreatly.html" . }}`,
 				})
 
 				templatePath := GetTemplatePath()

@@ -185,7 +185,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Info("about to start reconciling the discovery service")
 	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile DiscoveryService cr", err)
 		return phase, err
 	}
 
@@ -216,7 +216,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	// Wait for RHSSO postgres to be completed
 	phase, err = resources.WaitForRHSSOPostgresToBeComplete(client, installation.Name, r.ConfigManager.GetOperatorNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+		events.HandleError(r.recorder, installation, phase, "Waiting for RHSSO postgres to be completed", err)
 		return phase, err
 	}
 
@@ -240,7 +240,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileServiceMonitor(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus service monitor"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Prometheus service monitor", err)
 		return phase, err
 	}
 

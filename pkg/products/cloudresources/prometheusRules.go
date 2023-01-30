@@ -121,7 +121,7 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 		Alert: "RHOAMCloudResourceOperatorElasticCacheSnapshotsNotFound",
 		Annotations: map[string]string{
 			"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-			"message": fmt.Sprintf("Elastic Cache snapshot not found or not available for tagging."),
+			"message": "Elastic Cache snapshot not found or not available for tagging.",
 		},
 		Expr:   intstr.FromString(metricsCheck),
 		Labels: map[string]string{"severity": "warning", "product": installationName},
