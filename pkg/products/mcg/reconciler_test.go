@@ -18,6 +18,7 @@ import (
 	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -50,16 +51,27 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
+		ReadObservabilityFunc: func() (*config.Observability, error) {
+			return config.NewObservability(config.ProductConfig{
+				"NAMESPACE": "namespace",
+			}), nil
+		},
 	}
 }
 
-func basicInstallation() *integreatlyv1alpha1.RHMI {
-	return &integreatlyv1alpha1.RHMI{
+func basicInstallation(delete bool) *integreatlyv1alpha1.RHMI {
+	rhmi := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			DeletionTimestamp: &metav1.Time{},
+			Name:            "rhoam",
+			Generation:      1,
+			ResourceVersion: "1",
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{},
 	}
+	if delete {
+		rhmi.ObjectMeta.DeletionTimestamp = &metav1.Time{}
+	}
+	return rhmi
 }
 
 func setupRecorder() record.EventRecorder {
@@ -127,7 +139,7 @@ func TestReconciler_ReconcileMCG(t *testing.T) {
 				},
 			},
 			args: args{
-				installation:  basicInstallation(),
+				installation:  basicInstallation(false),
 				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
 				productConfig: &quota.ProductConfigMock{
 					ConfigureFunc: func(obj metav1.Object) error {
@@ -139,6 +151,112 @@ func TestReconciler_ReconcileMCG(t *testing.T) {
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
+		},
+		{
+			name: "test errors create alerting reconciler",
+			fields: fields{
+				FakeConfig: func() *config.ConfigReadWriterMock {
+					conf := basicConfigMock()
+					conf.ReadObservabilityFunc = func() (*config.Observability, error) {
+						return nil, errors.New("test error")
+					}
+					return conf
+				}(),
+				recorder: setupRecorder(),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mcg-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-mcg",
+									Namespace: "mcg",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "mcg-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
+			},
+			args: args{
+				installation:  basicInstallation(false),
+				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+				productConfig: &quota.ProductConfigMock{
+					ConfigureFunc: func(obj metav1.Object) error {
+						return nil
+					},
+				},
+				client:    moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
+				uninstall: false,
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "test errors reconciling alerts",
+			fields: fields{
+				FakeConfig: basicConfigMock(),
+				recorder:   setupRecorder(),
+				mpm: &marketplace.MarketplaceInterfaceMock{
+					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+						return nil
+					},
+					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+						return &operatorsv1alpha1.InstallPlan{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mcg-install-plan",
+								},
+								Status: operatorsv1alpha1.InstallPlanStatus{
+									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+								},
+							}, &operatorsv1alpha1.Subscription{
+								ObjectMeta: metav1.ObjectMeta{
+									Name:      "rhmi-mcg",
+									Namespace: "mcg",
+								},
+								Status: operatorsv1alpha1.SubscriptionStatus{
+									Install: &operatorsv1alpha1.InstallPlanReference{
+										Name: "mcg-install-plan",
+									},
+								},
+							}, nil
+					},
+				},
+			},
+			args: args{
+				installation:  basicInstallation(false),
+				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
+				productConfig: &quota.ProductConfigMock{
+					ConfigureFunc: func(obj metav1.Object) error {
+						return nil
+					},
+				},
+				client: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, objects...)
+					mockClient.CreateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
+						switch obj.(type) {
+						case *monitoringv1.PrometheusRule:
+							return errors.New("test error")
+						default:
+							return nil
+						}
+					}
+					return mockClient
+				}(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -211,7 +329,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			name: "test successfully reconcile noobaa",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: moqclient.NewSigsClientMoqWithScheme(scheme, storageClass, noobaa),
@@ -223,7 +341,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			name: "test reconcile noobaa in progress",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: moqclient.NewSigsClientMoqWithScheme(scheme, storageClass),
@@ -235,7 +353,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			name: "test error retrieving noobaa",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -253,7 +371,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			name: "test error creating noobaa",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -271,7 +389,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			name: "test error updating noobaa",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -348,7 +466,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			name: "test successfully reconcile object bucket claim",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: moqclient.NewSigsClientMoqWithScheme(scheme, obc),
@@ -360,7 +478,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			name: "test reconcile object bucket claim in progress",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: moqclient.NewSigsClientMoqWithScheme(scheme),
@@ -372,7 +490,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			name: "test error retrieving object bucket claim",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -390,7 +508,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			name: "test error creating object bucket claim",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -408,7 +526,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			name: "test error updating object bucket claim",
 			fields: fields{
 				FakeConfig:   basicConfigMock(),
-				installation: basicInstallation(),
+				installation: basicInstallation(false),
 			},
 			args: args{
 				client: func() k8sclient.Client {
@@ -517,7 +635,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 			},
 			args: args{
 				client:       moqclient.NewSigsClientMoqWithScheme(scheme),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -535,7 +653,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -553,7 +671,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -571,7 +689,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -592,7 +710,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -604,7 +722,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 			},
 			args: args{
 				client:       moqclient.NewSigsClientMoqWithScheme(scheme, noobaaCRD, obc, ob, noobaa),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -625,7 +743,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -646,7 +764,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 					}
 					return mockClient
 				}(),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -658,7 +776,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 			},
 			args: args{
 				client:       moqclient.NewSigsClientMoqWithScheme(scheme, noobaaCRD, obc, noobaa),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -670,7 +788,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 			},
 			args: args{
 				client:       moqclient.NewSigsClientMoqWithScheme(scheme, noobaaCRD),
-				installation: basicInstallation(),
+				installation: basicInstallation(true),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -768,7 +886,7 @@ func TestReconciler_retrieveDefaultStorageClass(t *testing.T) {
 }
 
 func getSuccessfulTestPreReqs() []runtime.Object {
-	return []runtime.Object{
+	return append([]runtime.Object{
 		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "s3",
@@ -778,9 +896,6 @@ func getSuccessfulTestPreReqs() []runtime.Object {
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: DefaultInstallationNamespace,
-				// Labels: map[string]string{
-				// 	resources.OwnerLabelKey: string(installation.GetUID()),
-				// },
 			},
 			Status: corev1.NamespaceStatus{
 				Phase: corev1.NamespaceActive,
@@ -789,9 +904,6 @@ func getSuccessfulTestPreReqs() []runtime.Object {
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: defaultOperatorNamespace,
-				// Labels: map[string]string{
-				// 	resources.OwnerLabelKey: string(installation.GetUID()),
-				// },
 			},
 			Status: corev1.NamespaceStatus{
 				Phase: corev1.NamespaceActive,
@@ -823,5 +935,5 @@ func getSuccessfulTestPreReqs() []runtime.Object {
 				Phase: obv1.ObjectBucketClaimStatusPhaseBound,
 			},
 		},
-	}
+	}, basicInstallation(false))
 }

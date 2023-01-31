@@ -40,6 +40,7 @@ const (
 	defaultStorageClassAnnotation = "storageclass.kubernetes.io/is-default-class"
 	threescaleBucket              = "3scale-operator-bucket"
 	ThreescaleBucketClaim         = threescaleBucket + "-claim"
+	S3RouteName                   = "s3"
 )
 
 type Reconciler struct {
@@ -152,6 +153,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("ReconcileObjectBucketClaim", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile ObjectBucketClaim", err)
+		return phase, err
+	}
+
+	alertsReconciler, err := r.newAlertReconciler(r.log, r.installation.Spec.Type)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile mcg alerts", err)
 		return phase, err
 	}
 
