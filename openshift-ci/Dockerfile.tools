@@ -4,7 +4,8 @@ FROM registry.ci.openshift.org/openshift/release:golang-1.18
 ENV OPERATOR_SDK_VERSION=v1.21.0 \
     DELOREAN_VERSION=master \
     GOFLAGS="" \
-    PROMETHEUS_VERSION=2.37.0
+    PROMETHEUS_VERSION=2.37.0 \
+    KUSTOMIZE_VERSION=v4.5.2
 
 RUN set -o pipefail && \
     INSTALL_PKGS="skopeo rsync" && \
@@ -28,6 +29,9 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && make install \
     && chmod -R 0777 $GOPATH \
     && rm -rf $GOPATH/.cache
+
+# install kustomize
+RUN go install sigs.k8s.io/kustomize/kustomize/v4@$KUSTOMIZE_VERSION
 
 # install jq and yq
 RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \

@@ -8,6 +8,7 @@
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'gosec --version'
+docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'kustomize version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'operator-sdk version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'go version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'jq --version'
