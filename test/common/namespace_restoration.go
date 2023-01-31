@@ -4,7 +4,9 @@ import (
 	goctx "context"
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -122,7 +124,7 @@ func TestNamespaceRestoration(t TestingTB, ctx *TestingContext) {
 		t.Fatal(err)
 	}
 
-	for _, stage := range getStagesForInstallType(rhmi.Spec.Type) {
+	for _, stage := range getStagesForInstallType(rhmi.Spec.Type, ctx) {
 
 		// Delete all the namespaces defined in product stage
 		for _, nameSpace := range stage.namespaces {
@@ -332,7 +334,20 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 	return err
 }
 
-func getStagesForInstallType(installType string) []StageDeletion {
+func getStagesForInstallType(installType string, ctx *TestingContext) []StageDeletion {
+	if platformType, err := resources.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
+		commonStages = append(commonStages, []StageDeletion{
+			{
+				productStageName: integreatlyv1alpha1.ProductsStage,
+				namespaces: []string{
+					McgOperatorNamespace,
+				},
+				removeFinalizers: func(ctx *TestingContext) error {
+					return nil
+				},
+			},
+		}...)
+	}
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
 		return append(commonStages, mtManagedApiStages...)
 	} else {

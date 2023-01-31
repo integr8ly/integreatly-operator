@@ -35,7 +35,7 @@ const (
 	ResourceIdentifierAnnotation = "resourceIdentifier"
 )
 
-//DefaultConfigMapNamespace is the default namespace that Configmaps will be created in
+// DefaultConfigMapNamespace is the default namespace that Configmaps will be created in
 var DefaultConfigMapNamespace, _ = k8sutil.GetWatchNamespace()
 
 /*
@@ -122,41 +122,6 @@ func BuildDefaultConfigMap(name, namespace string) *v1.ConfigMap {
 			"_network":    "{\"development\": { \"region\": \"\", \"_network\": \"\", \"createStrategy\": {}, \"deleteStrategy\": {} }, \"production\": { \"region\": \"\", \"_network\": \"\",\"createStrategy\": {}, \"deleteStrategy\": {} }}",
 		},
 	}
-}
-
-// BuildInfraName builds and returns an id used for infra resources
-func BuildInfraName(ctx context.Context, c client.Client, postfix string, n int) (string, error) {
-	// get cluster id
-	clusterID, err := resources.GetClusterID(ctx, c)
-	if err != nil {
-		return "", errorUtil.Wrap(err, "error getting clusterID")
-	}
-	return resources.ShortenString(fmt.Sprintf("%s-%s", clusterID, postfix), n), nil
-}
-
-func BuildInfraNameFromObject(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
-	clusterID, err := resources.GetClusterID(ctx, c)
-	if err != nil {
-		return "", errorUtil.Wrap(err, "failed to retrieve cluster identifier")
-	}
-	return resources.ShortenString(fmt.Sprintf("%s-%s-%s", clusterID, om.Namespace, om.Name), n), nil
-}
-
-func buildTimestampedInfraNameFromObject(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
-	clusterID, err := resources.GetClusterID(ctx, c)
-	if err != nil {
-		return "", errorUtil.Wrap(err, "failed to retrieve timestamped cluster identifier")
-	}
-	curTime := time.Now().Unix()
-	return resources.ShortenString(fmt.Sprintf("%s-%s-%s-%d", clusterID, om.Namespace, om.Name, curTime), n), nil
-}
-
-func BuildTimestampedInfraNameFromObjectCreation(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
-	clusterID, err := resources.GetClusterID(ctx, c)
-	if err != nil {
-		return "", errorUtil.Wrap(err, "failed to retrieve timestamped cluster identifier")
-	}
-	return resources.ShortenString(fmt.Sprintf("%s-%s-%s-%s", clusterID, om.Namespace, om.Name, om.GetObjectMeta().GetCreationTimestamp()), n), nil
 }
 
 func CreateSessionFromStrategy(ctx context.Context, c client.Client, credentials *Credentials, strategy *StrategyConfig) (*session.Session, error) {

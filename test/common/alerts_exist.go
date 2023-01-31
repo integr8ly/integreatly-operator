@@ -473,8 +473,8 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 	}
 }
 
-// common aws rules applicable to all install types
-func commonExpectedAWSRules(installationName string) []alertsTestRule {
+// common AWS and GCP rules applicable to all install types
+func commonExpectedCloudPlatformRules(installationName string) []alertsTestRule {
 	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
@@ -661,7 +661,7 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 	}
 }
 
-func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
+func managedApiCommonExpectedRules(installationName string) []alertsTestRule {
 	titledName := strings.Title(installationName)
 
 	return []alertsTestRule{
@@ -740,7 +740,7 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	expectedAWSRules := getExpectedAWSRules(rhmi.Spec.Type, rhmi.Name)
+	expectedAWSRules := getExpectedCloudPlatformRules(rhmi.Spec.Type, rhmi.Name)
 	expectedRules := getExpectedRules(rhmi.Spec.Type, rhmi.Name)
 
 	// add external database alerts to list of expected rules if
@@ -856,11 +856,11 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getExpectedAWSRules(installType string, installationName string) []alertsTestRule {
+func getExpectedCloudPlatformRules(installType string, installationName string) []alertsTestRule {
 	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-		return commonExpectedAWSRules(installationName)
+		return commonExpectedCloudPlatformRules(installationName)
 	} else {
-		return append(commonExpectedAWSRules(installationName), managedApiAwsExpectedRules(installationName)...)
+		return append(commonExpectedCloudPlatformRules(installationName), managedApiCommonExpectedRules(installationName)...)
 	}
 }
 
