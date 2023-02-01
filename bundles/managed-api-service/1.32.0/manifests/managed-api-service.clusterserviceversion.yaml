@@ -81,16 +81,20 @@ metadata:
           "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2",
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:831eadb007df23517596e91de098c7973f303cb15631566540de38a30a9c5dc2"
         },
-        "observability-operator.v4.0.0": {
-          "observability-operator.v4.0.0": "quay.io/rhoas/observability-operator:v4.0.0",
-          "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.0.6",
+        "observability-operator.v4.0.4": {
+          "observability-operator.v4.0.4": "quay.io/rhoas/observability-operator:v4.0.4",
+          "observability-prometheus-operator-index": "quay.io/integreatly/custom-prometheus-index:1.0.0",
           "observability-prometheus-operator": "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b",
           "observability-prometheus-alertmanager": "quay.io/prometheus/alertmanager:v0.22.2",
           "observability-openshift-oauth-proxy": "quay.io/openshift/origin-oauth-proxy:4.8",
-          "observability-grafana-operator": "quay.io/rhoas/grafana-operator:v3.10.5",
           "observability-prometheus": "quay.io/prometheus/prometheus:v2.29.2",
           "observability-prometheus-blackbox": "quay.io/prometheus/blackbox-exporter:v0.19.0",
-          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v3.0.16"
+          "observability-prometheus-config-reloader": "quay.io/prometheus-operator/prometheus-config-reloader@sha256:c8f6b2fb77894bc06b6c5257b5935a591ed7e9b6ac0821f9e42bd44193325441",
+          "observability-grafana-operator-index": "quay.io/rhoas/grafana-operator-bundle:v3.10.7",
+          "observability-grafana-operator": "quay.io/rhoas/grafana-operator:v3.10.7",
+          "observability-grafana": "docker.io/grafana/grafana:7.3.10",
+          "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.0.6",
+          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v4.0.4"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.2.3-6"
