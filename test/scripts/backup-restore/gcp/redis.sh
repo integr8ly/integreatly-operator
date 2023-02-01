@@ -15,7 +15,7 @@ SERVICE_ACCOUNT=$(gcloud redis instances describe $INSTANCE_NAME --region $REGIO
 # create cloud storage bucket for backups
 gcloud storage buckets create gs://$BUCKET_NAME --project $PROJECT_ID --location $REGION
 # allow the redis service agent to use it for backups
-gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.admin
 # trigger redis database backup and save it in the bucket
 gcloud redis instances export gs://$BUCKET_NAME/original.rdb $INSTANCE_NAME --project $PROJECT_ID --region $REGION
 # prepare blank redis database

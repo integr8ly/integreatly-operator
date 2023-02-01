@@ -15,17 +15,17 @@ SERVICE_ACCOUNT=serviceAccount:$(gcloud sql instances describe $INSTANCE_NAME --
 # create cloud storage bucket for backups
 gcloud storage buckets create gs://$BUCKET_NAME --project $PROJECT_ID --location $REGION
 # allow the postgres service agent to use it for backups
-gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.admin
 # trigger postgres database backup and save it in the bucket
 gcloud sql export sql $INSTANCE_NAME gs://$BUCKET_NAME/original.sql --project $PROJECT_ID --database postgres
 # prepare blank postgres database
 gcloud sql instances create $RESTORED_INSTANCE_NAME --project $PROJECT_ID --region $REGION --database-version POSTGRES_14 --tier db-f1-micro
 # restore it to the original database state
 SERVICE_ACCOUNT=serviceAccount:$(gcloud sql instances describe $RESTORED_INSTANCE_NAME --project $PROJECT_ID --format json | jq -r '.serviceAccountEmailAddress')
-gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.admin
 gcloud sql import sql $RESTORED_INSTANCE_NAME gs://$BUCKET_NAME/original.sql --project $PROJECT_ID --database postgres --quiet
 # create backup of the current state and save it in the bucket
-gcloud sql export sql $INSTANCE_NAME gs://$BUCKET_NAME/current.sql --project $PROJECT_ID --database postgres
+gcloud sql export sql $RESTORED_INSTANCE_NAME gs://$BUCKET_NAME/current.sql --project $PROJECT_ID --database postgres
 # copy the original and current database backups locally
 gsutil cp gs://$BUCKET_NAME/original.sql original.sql
 gsutil cp gs://$BUCKET_NAME/current.sql current.sql
