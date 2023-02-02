@@ -1,16 +1,15 @@
 ---
 products:
   - name: rhoam
-    environments:
-      - osd-post-upgrade
-    targets:
-      - 1.28.0
-estimate: 5m
+tags:
+  - automated
 ---
 
 # C08B - Verify alert links to SOPs
 
 ## Description
+
+Automated, see [verify_alert_links_to_SOPs.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/verify_alert_links_to_SOPs.go). The `GITLAB_TOKEN` required for the test is passed into test container, see [runFunctionalTest.groovy](https://gitlab.cee.redhat.com/integreatly-qe/ci-cd/-/blob/master/vars/runFunctionalTest.groovy#L83).
 
 This test case should verify that all SOP links in alerts point to correct SOPs.
 
