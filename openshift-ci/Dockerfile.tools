@@ -26,12 +26,14 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && git clone --depth 1 -b $OPERATOR_SDK_VERSION https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
     && go mod vendor \
-    && make install \
-    && chmod -R 0777 $GOPATH \
-    && rm -rf $GOPATH/.cache
+    && make install
 
 # install kustomize
 RUN go install sigs.k8s.io/kustomize/kustomize/v4@$KUSTOMIZE_VERSION
+
+# Allow the GOPATH directory to be accessible to all users
+# Any go install should be before this
+RUN chmod -R 0777 $GOPATH && rm -rf $GOPATH/.cache
 
 # install jq and yq
 RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
