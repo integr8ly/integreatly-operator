@@ -20,9 +20,9 @@ Requires you to be oc logged in to any cluster on your host machine.
 $ docker build -t registry.svc.ci.openshift.org/integr8ly/intly-operator-base-image:latest - < Dockerfile.tools
 $ IMAGE_NAME=registry.svc.ci.openshift.org/integr8ly/intly-operator-base-image:latest test/run
 operator-sdk version: "v1.21.0", commit: "215fc50b2d4acc7d92b36828f42d7d1ae212015c", kubernetes version: "v1.18.8", go version: "go1.13.5", GOOS: "linux", GOARCH: "amd64"
-go version go1.13.5 linux/amd64
+go version go1.18.1 linux/amd64
 jq-1.6
-yq version 4.9.8
+yq version v4.30.6
 git version 1.8.3.1
 v12.16.3
 Delorean CLI
