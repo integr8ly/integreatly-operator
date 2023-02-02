@@ -56,5 +56,5 @@ func verifyRDSInstanceConfig(instance rds.DBInstance, isSTS bool) bool {
 	// and the rosa cluster type is present, and the rest of the config is expected
 	return rdsTagsContains(instance.TagList, awsManagedTagKey, awsManagedTagValue) &&
 		(!isSTS || rdsTagsContains(instance.TagList, awsClusterTypeKey, awsClusterTypeRosaValue)) &&
-		*instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && !*instance.AutoMinorVersionUpgrade && *instance.EngineVersion == "13.4"
+		*instance.MultiAZ && *instance.DeletionProtection && *instance.StorageEncrypted && !*instance.AutoMinorVersionUpgrade && *instance.EngineVersion == "13.8"
 }
