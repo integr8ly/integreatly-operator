@@ -5,16 +5,15 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
+	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	envoyextentionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/golang/protobuf/ptypes/any"
@@ -160,6 +159,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Reconciler:    resources.NewReconciler(mpm).WithProductDeclaration(*productDeclaration),
 		recorder:      recorder,
 		log:           logger,
+		podExecutor:   resources.NewPodExecutor(logger),
 	}, nil
 }
 
@@ -175,6 +175,7 @@ type Reconciler struct {
 	extraParams map[string]string
 	recorder    record.EventRecorder
 	log         l.Logger
+	podExecutor resources.PodExecutorInterface
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
@@ -423,6 +424,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, systemAppDCName, updateSystemAppAddresses)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("Failed to reconcileDcEnvarEmailAddress: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDcEnvarEmailAddress", err)
+		}
+		return phase, err
+	}
+
+	phase, err = r.reconcileDcEnvarEmailAddress(ctx, serverClient, "system-sidekiq", updateSystemSidekiqAddresses)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("Failed to reconcileDcEnvarEmailAddress: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcileDcEnvarEmailAddress", err)
+		}
+		return phase, err
+	}
+
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
 	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -548,6 +567,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
+		return phase, err
+	}
+
+	phase, err = r.syncInvitationEmail(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("Failed to syncInvitationEmail: " + err.Error())
+			events.HandleError(r.recorder, installation, phase, "Failed to syncInvitationEmail", err)
+		}
 		return phase, err
 	}
 
@@ -1042,7 +1070,7 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	stdout, stderr, err := resources.NewPodExecutor(r.log).ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
+	stdout, stderr, err := r.podExecutor.ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
 		"-c", "bundle exec rake zync:resync:domains"})
 	if err != nil {
 		r.log.Error("Failed to resync 3Scale routes", err)
@@ -1369,28 +1397,9 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	var existingSMTPFromAddress string
-	if r.installation.Status.CustomSmtp != nil && r.installation.Status.CustomSmtp.Enabled {
-		existingSMTPFromAddress, err = cs.GetFromAddress(ctx, serverClient, r.installation.Namespace)
-
-		if err != nil {
-			r.log.Error("error getting smtp_from address from custom smtp secret", err)
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	} else {
-		existingSMTPFromAddress, err = resources.GetExistingSMTPFromAddress(ctx, serverClient, observabilityConfig.GetNamespace())
-
-		if err != nil {
-			if !k8serr.IsNotFound(err) {
-				r.log.Error("Error getting smtp_from address from secret alertmanager-application-monitoring", err)
-				return integreatlyv1alpha1.PhaseFailed, nil
-			}
-			r.log.Warning("failure finding secret alertmanager-application-monitoring: " + err.Error())
-		}
-	}
-	if existingSMTPFromAddress == "" {
-		r.log.Warning("Couldn't find SMTP in a secret, retrieving it from the envar")
-		existingSMTPFromAddress = os.Getenv(integreatlyv1alpha1.EnvKeyAlertSMTPFrom)
+	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
@@ -1398,8 +1407,9 @@ func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverCl
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
-		existingSMTPFromAddress = "test@rhmw.io"
+	err = r.reconcileTenantOutgoingEmailAddress(ctx, serverClient, existingSMTPFromAddress)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	_, err = r.tsClient.SetFromEmailAddress(existingSMTPFromAddress, *accessToken)
@@ -1490,7 +1500,7 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
@@ -1773,8 +1783,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 						"tenantAccountName":  account.Name,
 						"tenantAccountState": account.State,
 					},
+					//TODO: delete account?
 				)
-				//TODO: delete account?
 				continue
 			}
 
@@ -2877,7 +2887,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
 		SubscriptionName: constants.ThreeScaleSubscriptionName,
 		Namespace:        operatorNamespace,
@@ -3019,7 +3029,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 
 			// Have to use the index when iterating here because when using range go creates a copy of the variable
 			// so any update will be applied to the copy
-			for envVarName, _ := range envVars {
+			for envVarName := range envVars {
 				foundEnv := false
 				envVarValue := envVars[envVarName]
 
@@ -3344,7 +3354,7 @@ func (r *Reconciler) getBackendListenerRoute(ctx context.Context, serverClient k
 	return backendRoute, nil
 }
 
-func (r *Reconciler) addSSOReadyAnnotationToUser(ctx context.Context, client k8sclient.Client, name string) error {
+func (r *Reconciler) addSSOReadyAnnotationToUser(_ context.Context, client k8sclient.Client, name string) error {
 	// Get the User CR to annotate
 	userToAnnotate := &usersv1.User{
 		ObjectMeta: metav1.ObjectMeta{
@@ -3603,4 +3613,197 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileDcEnvarEmailAddress(ctx context.Context, serverClient k8sclient.Client, dcName string, updateFn func(dc *appsv1.DeploymentConfig, value string) bool) (integreatlyv1alpha1.StatusPhase, error) {
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	dc, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Get(ctx, dcName, metav1.GetOptions{})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	updated := updateFn(dc, existingSMTPFromAddress)
+
+	if updated {
+		dc, err = r.appsv1Client.DeploymentConfigs(dc.Namespace).Update(ctx, dc, metav1.UpdateOptions{})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		err = r.RolloutDeployment(ctx, dcName)
+		if err != nil {
+			r.log.Error(fmt.Sprintf("Rollout %v deployment", dcName), err)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	fromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	ns := r.Config.GetNamespace()
+	podname := ""
+
+	pods := &corev1.PodList{}
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": systemAppDCName}),
+	}
+	err = serverClient.List(ctx, pods, listOpts...)
+	if err != nil {
+		r.log.Error("Error getting list of pods", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == corev1.PodRunning {
+			podname = pod.ObjectMeta.Name
+			break
+		}
+	}
+
+	if podname == "" {
+		r.log.Info("Waiting on system-app pod to start, 3Scale install in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	stdout, stderr, err := r.podExecutor.ExecuteRemoteContainerCommand(ns, podname, "system-master", []string{"/bin/bash",
+		"-c", fmt.Sprintf("bundle exec rails runner \"a=Account.find_by_master true; a.from_email = '%v'; a.save;\"", fromAddress)})
+	if err != nil {
+		r.log.Error("Failed to set 3Scale invitation email", err)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else if stderr != "" {
+		err := errors.New(stderr)
+		r.log.Error("Error attempting to set 3Scale invitation email", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else {
+		r.log.Infof("Set 3Scale invitation email", l.Fields{"stdout": stdout})
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+}
+
+func updateContainerSupportEmail(dc *appsv1.DeploymentConfig, existingSMTPFromAddress string, envar string) bool {
+	updated := false
+	for index, container := range dc.Spec.Template.Spec.Containers {
+		found := false
+		for i, envVar := range container.Env {
+			if envVar.Name == envar {
+				found = true
+				if envVar.Value != existingSMTPFromAddress {
+					dc.Spec.Template.Spec.Containers[index].Env[i].Value = existingSMTPFromAddress
+					updated = true
+				}
+			}
+		}
+		if !found {
+
+			dc.Spec.Template.Spec.Containers[index].Env = append(dc.Spec.Template.Spec.Containers[index].Env, corev1.EnvVar{
+				Name:  envar,
+				Value: existingSMTPFromAddress,
+			})
+			updated = true
+		}
+	}
+	return updated
+}
+
+func updateSystemAppAddresses(dc *appsv1.DeploymentConfig, value string) bool {
+	return updateContainerSupportEmail(dc, value, "SUPPORT_EMAIL")
+
+}
+
+func updateSystemSidekiqAddresses(dc *appsv1.DeploymentConfig, value string) bool {
+	support := updateContainerSupportEmail(dc, value, "SUPPORT_EMAIL")
+	notification := updateContainerSupportEmail(dc, value, "NOTIFICATION_EMAIL")
+
+	if support || notification {
+		return true
+	}
+	return false
+}
+
+func (r *Reconciler) reconcileTenantOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client, address string) error {
+
+	masterAccessToken, err := r.GetMasterToken(ctx, serverClient)
+	if err != nil {
+		return err
+	}
+
+	routes := &routev1.RouteList{}
+	admRoute := routev1.Route{}
+	found := false
+	err = serverClient.List(ctx, routes, &k8sclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get 3scale route list during portaClient creation, error: %v", err)
+	}
+	for _, route := range routes.Items {
+		if strings.Contains(route.Spec.Host, "master.apps") {
+			admRoute = route
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("failed to get 3scale route during portaClient creation, error: %v", err)
+	}
+
+	adminPortal, err := portaClient.NewAdminPortal("https", admRoute.Spec.Host, 443)
+	if err != nil {
+		return fmt.Errorf("could not create admin portal during portaClient creation, error: %v", err)
+	}
+
+	/* #nosec */
+	httpc := &http.Client{
+		Timeout: time.Second * 10,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			IdleConnTimeout:   time.Second * 10,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: r.installation.Spec.SelfSignedCerts}, //#nosec G402 -- value is read from CR config
+		},
+	}
+
+	pc := portaClient.NewThreeScale(adminPortal, *masterAccessToken, httpc)
+	var accountList []AccountDetail
+	for page := 1; page <= 100; page++ {
+		accounts, err := r.tsClient.ListTenantAccounts(*masterAccessToken, page, func(ac AccountDetail) bool {
+			return ac.Id != 1 && ac.Id != 2
+		})
+		if err != nil {
+			return err
+		}
+		if accounts == nil {
+			break
+		}
+		accountList = append(accountList, accounts...)
+	}
+
+	for _, account := range accountList {
+		err = r.tsClient.UpdateTenant(int64(account.Id), portaClient.Params{"from_email": address}, pc)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
 }

@@ -20,6 +20,9 @@ var _ PodExecutorInterface = &PodExecutorInterfaceMock{}
 // 			ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
 // 				panic("mock out the ExecuteRemoteCommand method")
 // 			},
+// 			ExecuteRemoteContainerCommandFunc: func(ns string, podName string, container string, command []string) (string, string, error) {
+// 				panic("mock out the ExecuteRemoteContainerCommand method")
+// 			},
 // 		}
 //
 // 		// use mockedPodExecutorInterface in code that requires PodExecutorInterface
@@ -29,6 +32,9 @@ var _ PodExecutorInterface = &PodExecutorInterfaceMock{}
 type PodExecutorInterfaceMock struct {
 	// ExecuteRemoteCommandFunc mocks the ExecuteRemoteCommand method.
 	ExecuteRemoteCommandFunc func(ns string, podName string, command []string) (string, string, error)
+
+	// ExecuteRemoteContainerCommandFunc mocks the ExecuteRemoteContainerCommand method.
+	ExecuteRemoteContainerCommandFunc func(ns string, podName string, container string, command []string) (string, string, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -41,8 +47,20 @@ type PodExecutorInterfaceMock struct {
 			// Command is the command argument value.
 			Command []string
 		}
+		// ExecuteRemoteContainerCommand holds details about calls to the ExecuteRemoteContainerCommand method.
+		ExecuteRemoteContainerCommand []struct {
+			// Ns is the ns argument value.
+			Ns string
+			// PodName is the podName argument value.
+			PodName string
+			// Container is the container argument value.
+			Container string
+			// Command is the command argument value.
+			Command []string
+		}
 	}
-	lockExecuteRemoteCommand sync.RWMutex
+	lockExecuteRemoteCommand          sync.RWMutex
+	lockExecuteRemoteContainerCommand sync.RWMutex
 }
 
 // ExecuteRemoteCommand calls ExecuteRemoteCommandFunc.
@@ -81,5 +99,48 @@ func (mock *PodExecutorInterfaceMock) ExecuteRemoteCommandCalls() []struct {
 	mock.lockExecuteRemoteCommand.RLock()
 	calls = mock.calls.ExecuteRemoteCommand
 	mock.lockExecuteRemoteCommand.RUnlock()
+	return calls
+}
+
+// ExecuteRemoteContainerCommand calls ExecuteRemoteContainerCommandFunc.
+func (mock *PodExecutorInterfaceMock) ExecuteRemoteContainerCommand(ns string, podName string, container string, command []string) (string, string, error) {
+	if mock.ExecuteRemoteContainerCommandFunc == nil {
+		panic("PodExecutorInterfaceMock.ExecuteRemoteContainerCommandFunc: method is nil but PodExecutorInterface.ExecuteRemoteContainerCommand was just called")
+	}
+	callInfo := struct {
+		Ns        string
+		PodName   string
+		Container string
+		Command   []string
+	}{
+		Ns:        ns,
+		PodName:   podName,
+		Container: container,
+		Command:   command,
+	}
+	mock.lockExecuteRemoteContainerCommand.Lock()
+	mock.calls.ExecuteRemoteContainerCommand = append(mock.calls.ExecuteRemoteContainerCommand, callInfo)
+	mock.lockExecuteRemoteContainerCommand.Unlock()
+	return mock.ExecuteRemoteContainerCommandFunc(ns, podName, container, command)
+}
+
+// ExecuteRemoteContainerCommandCalls gets all the calls that were made to ExecuteRemoteContainerCommand.
+// Check the length with:
+//     len(mockedPodExecutorInterface.ExecuteRemoteContainerCommandCalls())
+func (mock *PodExecutorInterfaceMock) ExecuteRemoteContainerCommandCalls() []struct {
+	Ns        string
+	PodName   string
+	Container string
+	Command   []string
+} {
+	var calls []struct {
+		Ns        string
+		PodName   string
+		Container string
+		Command   []string
+	}
+	mock.lockExecuteRemoteContainerCommand.RLock()
+	calls = mock.calls.ExecuteRemoteContainerCommand
+	mock.lockExecuteRemoteContainerCommand.RUnlock()
 	return calls
 }

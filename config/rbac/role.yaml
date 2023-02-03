@@ -44,6 +44,12 @@ rules:
   - list
 - apiGroups:
   - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - ""
   resourceNames:
   - grafana-datasources
   resources:

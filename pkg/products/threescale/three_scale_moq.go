@@ -4,6 +4,7 @@
 package threescale
 
 import (
+	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	"net/http"
 	"sync"
 )
@@ -114,6 +115,9 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 // 			SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 				panic("mock out the SetUserAsMember method")
 // 			},
+// 			UpdateTenantFunc: func(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error {
+// 				panic("mock out the UpdateTenant method")
+// 			},
 // 			UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
 // 				panic("mock out the UpdateUser method")
 // 			},
@@ -219,6 +223,9 @@ type ThreeScaleInterfaceMock struct {
 
 	// SetUserAsMemberFunc mocks the SetUserAsMember method.
 	SetUserAsMemberFunc func(userID int, accessToken string) (*http.Response, error)
+
+	// UpdateTenantFunc mocks the UpdateTenant method.
+	UpdateTenantFunc func(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error
 
 	// UpdateUserFunc mocks the UpdateUser method.
 	UpdateUserFunc func(userID int, username string, email string, accessToken string) (*http.Response, error)
@@ -493,6 +500,15 @@ type ThreeScaleInterfaceMock struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
+		// UpdateTenant holds details about calls to the UpdateTenant method.
+		UpdateTenant []struct {
+			// ID is the id argument value.
+			ID int64
+			// Params is the params argument value.
+			Params portaClient.Params
+			// PortaClientMoqParam is the portaClientMoqParam argument value.
+			PortaClientMoqParam *portaClient.ThreeScaleClient
+		}
 		// UpdateUser holds details about calls to the UpdateUser method.
 		UpdateUser []struct {
 			// UserID is the userID argument value.
@@ -537,6 +553,7 @@ type ThreeScaleInterfaceMock struct {
 	lockSetNamespace                    sync.RWMutex
 	lockSetUserAsAdmin                  sync.RWMutex
 	lockSetUserAsMember                 sync.RWMutex
+	lockUpdateTenant                    sync.RWMutex
 	lockUpdateUser                      sync.RWMutex
 }
 
@@ -1745,6 +1762,45 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
 	mock.lockSetUserAsMember.RLock()
 	calls = mock.calls.SetUserAsMember
 	mock.lockSetUserAsMember.RUnlock()
+	return calls
+}
+
+// UpdateTenant calls UpdateTenantFunc.
+func (mock *ThreeScaleInterfaceMock) UpdateTenant(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error {
+	if mock.UpdateTenantFunc == nil {
+		panic("ThreeScaleInterfaceMock.UpdateTenantFunc: method is nil but ThreeScaleInterface.UpdateTenant was just called")
+	}
+	callInfo := struct {
+		ID                  int64
+		Params              portaClient.Params
+		PortaClientMoqParam *portaClient.ThreeScaleClient
+	}{
+		ID:                  id,
+		Params:              params,
+		PortaClientMoqParam: portaClientMoqParam,
+	}
+	mock.lockUpdateTenant.Lock()
+	mock.calls.UpdateTenant = append(mock.calls.UpdateTenant, callInfo)
+	mock.lockUpdateTenant.Unlock()
+	return mock.UpdateTenantFunc(id, params, portaClientMoqParam)
+}
+
+// UpdateTenantCalls gets all the calls that were made to UpdateTenant.
+// Check the length with:
+//     len(mockedThreeScaleInterface.UpdateTenantCalls())
+func (mock *ThreeScaleInterfaceMock) UpdateTenantCalls() []struct {
+	ID                  int64
+	Params              portaClient.Params
+	PortaClientMoqParam *portaClient.ThreeScaleClient
+} {
+	var calls []struct {
+		ID                  int64
+		Params              portaClient.Params
+		PortaClientMoqParam *portaClient.ThreeScaleClient
+	}
+	mock.lockUpdateTenant.RLock()
+	calls = mock.calls.UpdateTenant
+	mock.lockUpdateTenant.RUnlock()
 	return calls
 }
 
