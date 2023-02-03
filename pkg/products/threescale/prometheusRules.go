@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -157,7 +158,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace=`%s`} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
@@ -167,7 +168,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='threescale-operator-metrics', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='threescale-operator-controller-manager-metrics-service', namespace='%s'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
