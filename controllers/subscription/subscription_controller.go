@@ -113,10 +113,10 @@ type SubscriptionReconciler struct {
 func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
 	if !r.shouldReconcileSubscription(request) {
-		log.Infof("Not our subscription", l.Fields{"request": request, "opNS": r.operatorNamespace})
 		return ctrl.Result{}, nil
 	}
 
+	log.Infof("Reconciling subscription", l.Fields{"request": request, "opNS": r.operatorNamespace})
 	subscription := &operatorsv1alpha1.Subscription{}
 	err := r.Get(context.TODO(), request.NamespacedName, subscription)
 	if err != nil {

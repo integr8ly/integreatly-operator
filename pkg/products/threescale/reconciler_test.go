@@ -3399,3 +3399,198 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_getKeycloakUserFromAccount(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testKCUserAccountName := "test-kc-user"
+
+	testKCUser := &keycloak.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("generated-%s", testKCUserAccountName),
+			Namespace: "rhsso",
+		},
+		Spec: keycloak.KeycloakUserSpec{
+			User: keycloak.KeycloakAPIUser{
+				UserName: testKCUserAccountName,
+				Attributes: map[string][]string{
+					user3ScaleID: {fmt.Sprint(1)},
+				},
+			},
+		},
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		client      k8sclient.Client
+		accountName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *keycloak.KeycloakUser
+		wantErr bool
+	}{
+		{
+			name: "Keycloak User with acccountName does not exist",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client:      utils.NewTestClient(scheme),
+				accountName: testKCUserAccountName,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Keycloak User with acccountName exists",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client:      utils.NewTestClient(scheme, testKCUser),
+				accountName: testKCUserAccountName,
+			},
+			want:    testKCUser,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.getKeycloakUserFromAccount(tt.args.client, tt.args.accountName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getKeycloakUserFromAccount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getKeycloakUserFromAccount() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_getKeycloakClientFromAccount(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testKCUserAccountName := "test-kc-user"
+
+	testKCClient := &keycloak.KeycloakClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("rhoam-mt-%s", testKCUserAccountName),
+			Namespace: "rhsso",
+		},
+		Spec: keycloak.KeycloakClientSpec{},
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+	}
+	type args struct {
+		client      k8sclient.Client
+		accountName string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *keycloak.KeycloakClient
+		wantErr bool
+	}{
+		{
+			name: "Keycloak Client for user with acccountName does not exist",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client:      utils.NewTestClient(scheme),
+				accountName: testKCUserAccountName,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Keycloak Client for user with acccountName exists",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client:      utils.NewTestClient(scheme, testKCClient),
+				accountName: testKCUserAccountName,
+			},
+			want:    testKCClient,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+			}
+			got, err := r.getKeycloakClientFromAccount(tt.args.client, tt.args.accountName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getKeycloakClientFromAccount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getKeycloakClientFromAccount() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

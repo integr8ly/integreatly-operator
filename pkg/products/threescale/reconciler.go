@@ -1728,6 +1728,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 	// looping through the accounts to reconcile default config back
 	for index, account := range allAccounts {
+		r.log.Infof("Checking 3scale account", l.Fields{"tenantAccountName": account.Name})
 
 		state, created := tenantsCreated.Data[account.OrgName]
 		if created && state == "true" {
@@ -1735,6 +1736,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 
 		if account.State == "approved" {
+			r.log.Infof("3scale account is approved", l.Fields{"tenantAccountName": account.Name})
 			breakout := false
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
@@ -1833,9 +1835,14 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				continue
 			}
 
+			r.log.Infof("Checking Keycloak state", l.Fields{"tenantAccountName": account.Name})
+
 			// Only add the ssoReady annotation if the tenant account's corresponding KeycloakUser and KeycloakClient CR's are ready.
 			// If not, continue to next account.
 			if kcUser.Status.Phase == keycloak.UserPhaseReconciled && kcClient.Status.Ready == true {
+
+				r.log.Infof("Adding SSO on 3scale account ", l.Fields{"tenantAccountName": account.Name})
+
 				// Add ssoReady annotation to the user CR associated with the tenantAccount's OrgName
 				// This is required by the apimanagementtenant_controller so it can finish reconciling the APIManagementTenant CR
 				err = r.addSSOReadyAnnotationToUser(ctx, serverClient, account.OrgName)
@@ -1848,6 +1855,8 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					)
 					continue
 				}
+
+				r.log.Infof("Reconciling Dashboard link for ", l.Fields{"tenantAccountName": account.Name})
 
 				// Only add the dashboard link when account fully ready
 				err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
@@ -1862,16 +1871,15 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					continue
 				}
 
-			} else {
-				continue
-			}
-
-			if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantsCreated, func() error {
-				tenantsCreated.Data[account.OrgName] = "true"
-				tenantsCreated.ObjectMeta.ResourceVersion = ""
-				return nil
-			}); err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating tenant created CM: %w", err)
+				r.log.Infof("Setting account created in config map to true", l.Fields{"tenantAccountName": account.Name})
+				if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantsCreated, func() error {
+					tenantsCreated.Data[account.OrgName] = "true"
+					tenantsCreated.ObjectMeta.ResourceVersion = ""
+					return nil
+				}); err != nil {
+					r.log.Errorf("Error setting account created in config map to true", l.Fields{"tenantAccountName": account.Name}, err)
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating tenant created CM: %w", err)
+				}
 			}
 		} else if account.State != "scheduled_for_deletion" {
 			r.log.Infof("Deleting broke account for recreation",
