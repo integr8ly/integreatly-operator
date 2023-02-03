@@ -2,7 +2,7 @@
 products:
   - name: rhoam
     environments:
-      - external
+      - osd-post-upgrade
     targets:
       - 1.0.0
       - 1.3.0
@@ -14,7 +14,10 @@ products:
       - 1.22.0
       - 1.25.0
       - 1.28.0
+      - 1.31.0
 estimate: 90m
+tags:
+  - destructive
 ---
 
 # C18 - Validate API usage alerts
@@ -27,124 +30,119 @@ estimate: 90m
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
 
-2. RHOAM is installed using the [Jenkins pipeline](https://master-jenkins-csb-intly.apps.ocp-c1.prod.psi.redhat.com/job/ManagedAPI/job/managed-api-install-master/build?delay=0sec) with following parameters:
-
-   - integreatlyOperatorBranchName: (Go to integreatly-operator github repo and select latest RHOAM release branch)
-   - ocmClusterLifespan: 36
-   - openshiftVersion: (search for the version in the test plan document)
-   - useByoc: false
-   - quota: 10
-   - multiAZ: false
-   - clusterID: api-usage-alerts
-   - emailRecipients: <your@email.address>
-   - pipelineSteps: provisionCluster, installProduct, setupIdp
-
-3. Valid SMTP credentials have been added to the `redhat-rhoam-smtp` secret
-
-   _NOTE:_ Please reach out to Paul McCarthy <pamccart@redhat.com> for a valid SendGrid API Key
-
-   Details on how to create a valid smtp secret can be found in this [SOP](https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/2.x/install/create_cluster_smtp_configuration.md). The verification section of this SOP regarding DMS and PagerDuty configs can be skipped. Also make sure to specify the `redhat-rhoam-operator` namespace rather than `redhat-rhmi-operator`.
-
-4. k6 installed -> https://github.com/k6io/k6#install
+2. k6 installed -> https://github.com/k6io/k6#install
 
 > **NOTE:** This test case is easier read in markdown format here https://github.com/integr8ly/integreatly-operator/tree/master/test-cases/tests/alerts/c18-validate-api-usage-alerts.md
 
 ## Steps
 
-1. Validate that rate-limiting alerts ConfigMap has been created
+1.  Validate that rate-limiting alerts ConfigMap has been created
 
-   ```shell script
+    ```shell script
 
-   oc get cm rate-limit-alerts -n redhat-rhoam-operator
-   ```
+    oc get cm rate-limit-alerts -n redhat-rhoam-operator
+    ```
 
-2. Verify that level1, level2 and level3 rate-limiting alerts are present
+2.  Verify that level1, level2 and level3 rate-limiting alerts are present
 
-   ```shell script
+    ```shell script
 
-   oc get prometheusrules -n redhat-rhoam-observability | grep marin3r-api
-   ```
+    oc get prometheusrules -n redhat-rhoam-observability | grep marin3r-api
+    ```
 
-3. Ensure the installation is on 1 million quota to test
-   Run
+3.  Ensure the installation is on 1 million quota to test
+    Run
 
-   ```shell script
+    ```shell script
 
-   oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
-   ```
+    oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r '.status.quota'
+    ```
 
-   If the quota is not set to "1 Million", then update it using:
+    If the quota is not set to "1 Million" then get the cluster ID and update it using:
 
-   ```shell script
+    ```bash
 
-   INSTALLATION_TYPE=managed-api make cluster/prepare/quota DEV_QUOTA="10"
-   ```
+    CLUSTER_ID=$(ocm get clusters --parameter search="name like '%<your-cluster-name>%'" | jq -r '.items[].id')
+    ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service --body=<<EOF
+    {
+    "parameters":{
+       "items":[
+          {
+             "id":"addon-managed-api-service",
+             "value":"10"
+          }
+       ]
+    }
+    }
+    EOF
+    ```
 
-   This updates the per minute rate limit to 694
+    This updates the per minute rate limit to 694
 
-4. Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis:
+4.  Modify the `rate-limit-alerts` to allow alerts to fire on a per minute basis. Note the original values to revert them back once finished:
 
-   ```shell script
+    ```shell script
 
-   oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": { "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"30m\"\n  }\n}"}'
-   ```
+    oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": { "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"30m\"\n  }\n}"}'
+    ```
 
-5. Patch the `rhoam` CR to specify BU, SRE and Customer email addresses:
+5.  Patch the `rhoam` CR to specify BU, SRE and Customer email addresses. Note the original values to revert them back once finished:
 
-   _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`.
+    _NOTE:_ Replace `<rh_username>` references in the below commands with a valid Red Hat username. For example: `pamccart+BU@redhat.com`.
 
-   Patch BU and SRE email addresses:
+    Patch BU and SRE email addresses:
 
-   ```shell script
+    ```shell script
 
-   oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p '{"spec":{"alertingEmailAddresses":{"businessUnit":"<rh_username>+BU@redhat.com", "cssre":"<rh_username>+SRE@redhat.com"}}}'
-   ```
+    oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p '{"spec":{"alertingEmailAddresses":{"businessUnit":"<rh_username>+BU@redhat.com", "cssre":"<rh_username>+SRE@redhat.com"}}}'
+    ```
 
-   Patch Customer email addresses with two emails to validate multiple addresses:
+    Patch Customer email addresses with two emails to validate multiple addresses:
 
-   ```shell script
+    ```shell script
 
-   oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p '{"spec":{"alertingEmailAddress":"<rh_username>+CUSTOMER1@redhat.com <rh_username>+CUSTOMER2@redhat.com"}}'
-   ```
+    oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p '{"spec":{"alertingEmailAddress":"<rh_username>+CUSTOMER1@redhat.com <rh_username>+CUSTOMER2@redhat.com"}}'
+    ```
 
-6. Verify email addresses are added to Alert Manager configurations
+6.  Verify email addresses are added to Alert Manager configurations
 
-   Open the Alert Manager console and login via Openshift:
+    Open the Alert Manager console and login via Openshift:
 
-   ```shell script
+    ```shell script
 
-   # For Mac
-   open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
-   # For Linux
-   xdg-open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
-   ```
+    # For Mac
+    open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    # For Linux
+    xdg-open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    ```
 
-   Go to `Status -> Config` and check that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
+    Go to `Status -> Config` and check that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
 
-7. From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
+7.  From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
 
-8. Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password
+8.  Next, open the 3Scale admin console and login with `admin` as the username and the retrieved password
 
-   ```shell script
+    ```shell script
 
-   # For Mac
-   open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
-   # For Linux
-   xdg-open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
-   ```
+    # For Mac
+    open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
+    # For Linux
+    xdg-open "https://$(oc get route -n redhat-rhoam-3scale | grep 3scale-admin | awk {'print $2'})"
+    ```
 
-   (If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://\<YOUR-3SCALE-ROUTE\>/p/admin/onboarding/wizard" to access the 3scale wizard)
+    (If the 3scale wizard doesn't show up after accessing the 3scale webpage, update the webpage URL to "https://\<YOUR-3SCALE-ROUTE\>/p/admin/onboarding/wizard" to access the 3scale wizard)
 
-9. Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
+9.  Click on `Ok, how does 3scale work?` and `Got it! Lets add my API`
 
 10. On the page for adding a backend, you need to add a custom one. Run the following commands:
 
-```bash
-oc new-project httpbin && \
-oc new-app quay.io/trepel/httpbin
-oc scale deploymentconfig/httpbin --replicas=6
-printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
-```
+    ```bash
+
+    oc new-project httpbin && \
+    oc new-app quay.io/trepel/httpbin
+    oc scale deploymentconfig/httpbin --replicas=6
+    printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
+    ```
 
 11. Copy the `3scale Backend Base URL` to clipboard and add it to Base URL field in the 3scale wizard
 
@@ -264,3 +262,9 @@ printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers |
 
     In an earlier step the presence of the RHOAMApiUsageOverLimit was verified and a time noted. If 30 minutes has passed
     since then please verify that the alert is firing and that an email has been received to the BU and Customer email.
+
+20. Revert the changes back
+
+    - revert back the quota
+    - revert back the email addresses
+    - revert back the alert period length

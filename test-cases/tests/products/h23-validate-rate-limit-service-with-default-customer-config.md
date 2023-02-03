@@ -14,6 +14,7 @@ products:
       - 1.22.0
       - 1.25.0
       - 1.28.0
+      - 1.31.0
 estimate: 1h
 tags:
   - destructive
@@ -197,7 +198,7 @@ ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
 
 ```bash
 oc new-project httpbin && \
-oc new-app jsmadis/httpbin && \
+oc new-app trepel/httpbin && \
 oc scale deployment/httpbin --replicas=6 && \
 printf "\n3scale Backend Base URL: http://$(oc get svc -n httpbin --no-headers | awk '{print $3}'):8080\n"
 ```

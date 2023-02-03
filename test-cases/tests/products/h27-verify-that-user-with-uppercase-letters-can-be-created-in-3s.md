@@ -14,6 +14,7 @@ products:
       - 1.22.0
       - 1.25.0
       - 1.28.0
+      - 1.31.0
 estimate: 30m
 ---
 
@@ -34,9 +35,12 @@ This test verifies that if there is an existing user with uppercase letters in t
 
 **Set up Github IDP for OSD cluster**
 
-Alternative to the steps below: there is an [app](https://github.com/organizations/integr8ly/settings/applications/1773465) created already created by `trepel` GitHub user in `integr8ly` GitHub org that can be used. Reach out to him to update the app's callback URL with the desired value (or do it yourself if having strong enough permissions), e.g. `https://oauth-openshift.apps.<YOUR-DOMAIN>/oauth2callback/GitHub`. You can find the CLIENT_ID and CLIENT_SECRET of the app in [vault](https://gitlab.cee.redhat.com/integreatly-qe/vault) repo in `SECRETS.md` file.
+Alternative to the steps below: there is an [app](https://github.com/organizations/integr8ly/settings/applications/1773465) created by `trepel` GitHub user in `integr8ly` GitHub org that can be used. Reach out to trepel to update the app's callback URL with the desired value (or do it yourself if having strong enough permissions), e.g. `https://oauth-openshift.apps.<YOUR-DOMAIN>/oauth2callback/GitHub`. You can find the CLIENT_ID and CLIENT_SECRET of the app in [vault](https://gitlab.cee.redhat.com/integreatly-qe/vault) repo in `SECRETS.md` file (or just ask trepel again).
 
-1. Register an openshift application by following this [guide](https://docs.openshift.com/container-platform/4.10/authentication/identity_providers/configuring-github-identity-provider.html#identity-provider-overview_configuring-github-identity-provider).
+1. Do the "Registering a GitHub application" step from this [guide](https://docs.openshift.com/container-platform/4.12/authentication/identity_providers/configuring-github-identity-provider.html#identity-provider-registering-github_configuring-github-identity-provider).
+
+- do this in "Development Settings" of organization, not your personal account
+- callback URL is case sensitive and it should end with `/GitHub` (not `/github` as is written in the guide)
 
 2. Grant the [application](https://github.com/settings/connections/applications) access to an org where you have admin access. Select the application and under orgnization access grant the application permissions to the org.
 
