@@ -41,13 +41,13 @@ func PreTest(t common.TestingTB, ctx *common.TestingContext) {
 
 		// Patch RHMI CR CR with cluster storage
 		if rhmi.Spec.UseClusterStorage == "false" || rhmi.Spec.UseClusterStorage == "" {
-			rhmiCR := fmt.Sprintf(`{
+			rhmiCR := `{
 				"apiVersion": "integreatly.org/v1alpha1",
 				"kind": "RHMI",
 				"spec": {
 					"useClusterStorage" : "true"
 				}
-			}`)
+			}`
 
 			rhmiCRBytes := []byte(rhmiCR)
 

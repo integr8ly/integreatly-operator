@@ -339,7 +339,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.installation.Spec.PriorityClassName,
 	)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale-operator csv deployments priority class name"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale-operator csv deployments priority class name", err)
 		return phase, err
 	}
 
@@ -353,7 +353,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Wait for RHSSO postgres to be completed
 		phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+			events.HandleError(r.recorder, installation, phase, "Waiting for RHSSO postgres to be completed", err)
 			return phase, err
 		}
 
@@ -397,7 +397,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.ping3scalePortals(ctx, serverClient, ips)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		errorMessage := fmt.Sprintf("failed pinging 3scale portals through the ingress cluster router")
+		errorMessage := "failed pinging 3scale portals through the ingress cluster router"
 		r.log.Error(errorMessage, err)
 		events.HandleError(r.recorder, installation, phase, errorMessage, err)
 		return phase, err
@@ -515,7 +515,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileServiceMonitor(ctx, serverClient, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale service monitor"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale service monitor", err)
 		return phase, err
 	}
 

@@ -239,7 +239,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	// Wait for RHSSO postgres to be completed
 	phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+		events.HandleError(r.Recorder, installation, phase, "Waiting for RHSSO postgres to be completed", err)
 		return phase, err
 	}
 

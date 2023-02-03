@@ -594,7 +594,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	productName := cr.Labels["productName"]
 
 	alertName := "RedisMemoryUsageHigh"
-	ruleName := fmt.Sprintf("redis-memory-usage-high")
+	ruleName := "redis-memory-usage-high"
 	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
 		"severity":    "warning",
@@ -613,7 +613,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	job := "operator-metrics-service"
 
 	alertName = "RedisMemoryUsageMaxIn4Hours"
-	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
+	ruleName = "redis-memory-usage-will-max-in-4-hours"
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
 		"severity":    "warning",
@@ -630,7 +630,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	}
 
 	alertName = "RedisMemoryUsageMaxIn4Days"
-	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days")
+	ruleName = "redis-memory-usage-max-fill-in-4-days"
 	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
 		"severity":    "warning",
@@ -789,7 +789,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	}
 	productName := cr.Labels["productName"]
 	alertName := "RedisCpuUsageHigh"
-	ruleName := fmt.Sprintf("redis-cpu-usage-high")
+	ruleName := "redis-cpu-usage-high"
 	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
 		"severity":    "warning",
@@ -814,14 +814,14 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 	}
 	productName := cr.Labels["productName"]
 	alertName := "RedisServiceMaintenanceCritical"
-	ruleName := fmt.Sprintf("redis-service-maintenance-critical")
+	ruleName := "redis-service-maintenance-critical"
 	alertDescription := "Redis service maintenance update is available, this is a critical security update for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
 	}
 
-	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!~'complete|waiting-to-start|in-progress|scheduled|stopping',ServiceUpdateSeverity='critical'}"))
+	alertExp := intstr.FromString("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!~'complete|waiting-to-start|in-progress|scheduled|stopping',ServiceUpdateSeverity='critical'}")
 
 	ruleNs := inst.Spec.NamespacePrefix + "observability"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisServiceMaintenanceCritical, alertFor15Mins, alertExp, labels)
