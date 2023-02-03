@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
+	marin3rOperatorv1alpha1 "github.com/3scale-ops/marin3r/apis/operator.marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
@@ -30,31 +31,9 @@ type StageDeletion struct {
 }
 
 var (
-	commonStages = []StageDeletion{
-		{
-			productStageName: integreatlyv1alpha1.AuthenticationStage,
-			namespaces: []string{
-				RHSSOProductNamespace,
-				RHSSOOperatorNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeKeyCloakFinalizers(ctx, RHSSOProductNamespace)
-			},
-		},
-		{
-			productStageName: integreatlyv1alpha1.CloudResourcesStage,
-			namespaces: []string{
-				CloudResourceOperatorNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return nil
-			},
-		},
-	}
-
 	managedApiStages = []StageDeletion{
 		{
-			productStageName: integreatlyv1alpha1.ProductsStage,
+			productStageName: integreatlyv1alpha1.InstallStage,
 			namespaces: []string{
 				CustomerGrafanaNamespace,
 				Marin3rOperatorNamespace,
@@ -63,53 +42,63 @@ var (
 				RHSSOUserOperatorNamespace,
 				ThreeScaleProductNamespace,
 				ThreeScaleOperatorNamespace,
+				RHSSOProductNamespace,
+				RHSSOOperatorNamespace,
+				CloudResourceOperatorNamespace,
+				ObservabilityOperatorNamespace,
+				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
 				if err := removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace); err != nil {
 					return err
 				}
+				if err := removeKeyCloakFinalizers(ctx, RHSSOProductNamespace); err != nil {
+					return err
+				}
+				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
+					return err
+				}
+
+				if err := removeDiscoveryServiceFinalizers(ctx, ThreeScaleProductNamespace); err != nil {
+					return err
+				}
 
 				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
-			},
-		},
-		{
-			productStageName: integreatlyv1alpha1.ObservabilityStage,
-			namespaces: []string{
-				ObservabilityOperatorNamespace,
-				ObservabilityProductNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeObservabilityFinalizers(ctx, ObservabilityProductNamespace)
 			},
 		},
 	}
 
 	mtManagedApiStages = []StageDeletion{
 		{
-			productStageName: integreatlyv1alpha1.ProductsStage,
+			productStageName: integreatlyv1alpha1.InstallStage,
 			namespaces: []string{
 				CustomerGrafanaNamespace,
 				Marin3rOperatorNamespace,
 				Marin3rProductNamespace,
 				ThreeScaleProductNamespace,
 				ThreeScaleOperatorNamespace,
+				RHSSOProductNamespace,
+				RHSSOOperatorNamespace,
+				CloudResourceOperatorNamespace,
+				ObservabilityOperatorNamespace,
+				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
 				if err := removeKeyCloakFinalizers(ctx, RHSSOUserProductNamespace); err != nil {
 					return err
 				}
+				if err := removeKeyCloakFinalizers(ctx, RHSSOProductNamespace); err != nil {
+					return err
+				}
+				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
+					return err
+				}
+
+				if err := removeDiscoveryServiceFinalizers(ctx, ThreeScaleProductNamespace); err != nil {
+					return err
+				}
 
 				return removeEnvoyConfigRevisionFinalizers(ctx, ThreeScaleProductNamespace)
-			},
-		},
-		{
-			productStageName: integreatlyv1alpha1.ObservabilityStage,
-			namespaces: []string{
-				ObservabilityOperatorNamespace,
-				ObservabilityProductNamespace,
-			},
-			removeFinalizers: func(ctx *TestingContext) error {
-				return removeObservabilityFinalizers(ctx, ObservabilityProductNamespace)
 			},
 		},
 	}
@@ -334,9 +323,9 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 
 func getStagesForInstallType(installType string) []StageDeletion {
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonStages, mtManagedApiStages...)
+		return mtManagedApiStages
 	} else {
-		return append(commonStages, managedApiStages...)
+		return managedApiStages
 	}
 }
 
@@ -356,6 +345,36 @@ func removeObservabilityFinalizers(ctx *TestingContext, namespace string) error 
 			observability := observabilityList.Items[i]
 			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &observability, func() error {
 				observability.Finalizers = []string{}
+				return nil
+			})
+
+			if err != nil {
+				return false, err
+			}
+		}
+
+		return true, nil
+	})
+
+	return err
+}
+
+func removeDiscoveryServiceFinalizers(ctx *TestingContext, namespace string) error {
+	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
+		discoveryServiceList := &marin3rOperatorv1alpha1.DiscoveryServiceList{}
+
+		err = ctx.Client.List(goctx.TODO(), discoveryServiceList, &k8sclient.ListOptions{
+			Namespace: namespace,
+		})
+
+		if err != nil {
+			return false, err
+		}
+
+		for i := range discoveryServiceList.Items {
+			discoveryService := discoveryServiceList.Items[i]
+			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &discoveryService, func() error {
+				discoveryService.Finalizers = []string{}
 				return nil
 			})
 
