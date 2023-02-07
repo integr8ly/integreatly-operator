@@ -37,7 +37,6 @@ This test case should verify that the pod priority class is name is updated on R
 | redhat-rhoam-marin3r                      | ratelimit                                 |
 | redhat-rhoam-marin3r-operator             | marin3r-controller-webhook                |
 | redhat-rhoam-marin3r-operator             | marin3r-controller-manager                |
-| redhat-rhoam-operator                     | rhmi-operator                             |
 | redhat-rhoam-rhsso-operator               | rhsso-operator                            |
 | redhat-rhoam-user-sso-operator            | rhsso-operator                            |
 

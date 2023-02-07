@@ -115,10 +115,6 @@ func priorityDeployments() []CustomResource {
 			Name:      "marin3r-controller-manager",
 		},
 		{
-			Namespace: NamespacePrefix + "operator",
-			Name:      "rhmi-operator",
-		},
-		{
 			Namespace: NamespacePrefix + "rhsso-operator",
 			Name:      "rhsso-operator",
 		},
