@@ -4,6 +4,11 @@ import (
 	"context"
 	"testing"
 
+	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
+	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	"github.com/integr8ly/integreatly-operator/test/utils"
+
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -11,8 +16,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -255,6 +259,158 @@ func TestReconciler_checkStsCredentialsPresent(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("checkStsCredentialsPresent() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_setPlatformStrategyName(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		client client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "successfully set strategy name for aws infrastructure",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.AWSPlatformType,
+						},
+					},
+				}),
+			},
+			want:    croAWS.DefaultConfigMapName,
+			wantErr: false,
+		},
+		{
+			name: "successfully set strategy name for gcp infrastructure",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.GCPPlatformType,
+						},
+					},
+				}),
+			},
+			want:    croGCP.DefaultConfigMapName,
+			wantErr: false,
+		},
+		{
+			name: "error determining platform type",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "error unsupported platform type",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.AzurePlatformType,
+						},
+					},
+				}),
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			err := r.setPlatformStrategyName(context.TODO(), tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("setPlatformStrategyName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if r.Config.GetStrategiesConfigMapName() != tt.want {
+				t.Errorf("setPlatformStrategyName() got = %v, want %v", r.Config.GetStrategiesConfigMapName(), tt.want)
 			}
 		})
 	}

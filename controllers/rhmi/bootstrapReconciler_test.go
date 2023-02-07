@@ -821,7 +821,7 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "successfully check cloud resources config",
+			name: "successfully check aws cloud resources config",
 			fields: fields{
 				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: v1.ObjectMeta{
@@ -831,13 +831,59 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				serverClient: utils.NewTestClient(scheme, &corev1.ConfigMap{
-					ObjectMeta: v1.ObjectMeta{
-						Name:       DefaultCloudResourceConfigName,
-						Namespace:  rhoamOperatorNs,
-						Finalizers: []string{previousDeletionFinalizer},
+				serverClient: utils.NewTestClient(scheme,
+					&corev1.ConfigMap{
+						ObjectMeta: v1.ObjectMeta{
+							Name:       DefaultCloudResourceConfigName,
+							Namespace:  rhoamOperatorNs,
+							Finalizers: []string{previousDeletionFinalizer},
+						},
 					},
-				}),
+					&configv1.Infrastructure{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "cluster",
+						},
+						Status: configv1.InfrastructureStatus{
+							PlatformStatus: &configv1.PlatformStatus{
+								Type: configv1.AWSPlatformType,
+							},
+						},
+					},
+				),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "successfully check gcp cloud resources config",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: rhoamOperatorNs,
+					},
+				},
+			},
+			args: args{
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme,
+					&corev1.ConfigMap{
+						ObjectMeta: v1.ObjectMeta{
+							Name:       DefaultCloudResourceConfigName,
+							Namespace:  rhoamOperatorNs,
+							Finalizers: []string{previousDeletionFinalizer},
+						},
+					},
+					&configv1.Infrastructure{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "cluster",
+						},
+						Status: configv1.InfrastructureStatus{
+							PlatformStatus: &configv1.PlatformStatus{
+								Type: configv1.GCPPlatformType,
+							},
+						},
+					},
+				),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -856,13 +902,25 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				serverClient: utils.NewTestClient(scheme, &corev1.ConfigMap{
-					ObjectMeta: v1.ObjectMeta{
-						Name:       DefaultCloudResourceConfigName,
-						Namespace:  rhoamOperatorNs,
-						Finalizers: []string{previousDeletionFinalizer},
+				serverClient: utils.NewTestClient(scheme,
+					&corev1.ConfigMap{
+						ObjectMeta: v1.ObjectMeta{
+							Name:       DefaultCloudResourceConfigName,
+							Namespace:  rhoamOperatorNs,
+							Finalizers: []string{previousDeletionFinalizer},
+						},
 					},
-				}),
+					&configv1.Infrastructure{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "cluster",
+						},
+						Status: configv1.InfrastructureStatus{
+							PlatformStatus: &configv1.PlatformStatus{
+								Type: configv1.AWSPlatformType,
+							},
+						},
+					},
+				),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -885,6 +943,29 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 					}
 					return mockClient
 				}(),
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: true,
+		},
+		{
+			name: "fail to determine platform type",
+			fields: fields{
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "rhoam",
+						Namespace: rhoamOperatorNs,
+					},
+				},
+			},
+			args: args{
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme,
+					&corev1.ConfigMap{
+						ObjectMeta: v1.ObjectMeta{
+							Name:       DefaultCloudResourceConfigName,
+							Namespace:  rhoamOperatorNs,
+							Finalizers: []string{previousDeletionFinalizer},
+						},
+					}),
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: true,
