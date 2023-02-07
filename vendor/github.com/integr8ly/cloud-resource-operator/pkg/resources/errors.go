@@ -33,6 +33,28 @@ func IsNotFoundError(err error) bool {
 	return false
 }
 
+func IsConflictError(err error) bool {
+	var googleHttpErr *googleHTTP.Error
+	if errors.As(err, &googleHttpErr) {
+		if googleHttpErr.Code == http.StatusConflict {
+			return true
+		}
+	}
+	var googleGrpcErr *googleGRPC.APIError
+	if errors.As(err, &googleGrpcErr) {
+		if googleGrpcErr.GRPCStatus().Code() == grpcCodes.AlreadyExists {
+			return true
+		}
+	}
+	var k8sErr *k8sErrors.StatusError
+	if errors.As(err, &k8sErr) {
+		if k8sErr.ErrStatus.Code == http.StatusConflict {
+			return true
+		}
+	}
+	return false
+}
+
 type ErrorGRPC struct {
 	grpcCode grpcCodes.Code
 	message  string

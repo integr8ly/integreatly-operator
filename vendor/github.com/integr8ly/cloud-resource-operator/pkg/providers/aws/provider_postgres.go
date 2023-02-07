@@ -91,7 +91,7 @@ type PostgresProvider struct {
 	Logger            *logrus.Entry
 	CredentialManager CredentialManager
 	ConfigManager     ConfigManager
-	TCPPinger         ConnectionTester
+	TCPPinger         resources.ConnectionTester
 }
 
 func NewAWSPostgresProvider(client client.Client, logger *logrus.Entry) (*PostgresProvider, error) {
@@ -104,7 +104,7 @@ func NewAWSPostgresProvider(client client.Client, logger *logrus.Entry) (*Postgr
 		Logger:            logger.WithFields(logrus.Fields{"provider": postgresProviderName}),
 		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-		TCPPinger:         NewConnectionTestManager(),
+		TCPPinger:         resources.NewConnectionTestManager(),
 	}, nil
 }
 
@@ -728,7 +728,7 @@ func (p *PostgresProvider) getRDSConfig(ctx context.Context, r *v1alpha1.Postgre
 }
 
 func (p *PostgresProvider) getDefaultRdsTags(ctx context.Context, cr *v1alpha1.Postgres) ([]*rds.Tag, error) {
-	tags, _, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	tags, _, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default RDS tags"
 		return nil, errorUtil.Wrapf(err, msg)
@@ -1039,33 +1039,6 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 	return nil
 }
 
-func buildPostgresInfoMetricLabels(cr *v1alpha1.Postgres, instance *rds.DBInstance, clusterID, instanceName string) map[string]string {
-	labels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-	if instance != nil {
-		labels["status"] = *instance.DBInstanceStatus
-		return labels
-	}
-	labels["status"] = "nil"
-	return labels
-}
-
-func buildPostgresGenericMetricLabels(cr *v1alpha1.Postgres, clusterID, instanceName string) map[string]string {
-	labels := map[string]string{}
-	labels["clusterID"] = clusterID
-	labels["resourceID"] = cr.Name
-	labels["namespace"] = cr.Namespace
-	labels["instanceID"] = instanceName
-	labels["productName"] = cr.Labels["productName"]
-	labels["strategy"] = postgresProviderName
-	return labels
-}
-
-func buildPostgresStatusMetricsLabels(cr *v1alpha1.Postgres, clusterID, instanceName string, phase croType.StatusPhase) map[string]string {
-	labels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-	labels["statusPhase"] = string(phase)
-	return labels
-}
-
 func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alpha1.Postgres, instance *rds.DBInstance, ec2Svc ec2iface.EC2API) {
 	// build instance name
 	instanceName, err := p.buildInstanceName(ctx, cr)
@@ -1082,11 +1055,12 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 	}
 
 	// build metric labels
-	infoLabels := buildPostgresInfoMetricLabels(cr, instance, clusterID, instanceName)
-	// build available mertic labels
-	genericLabels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-
-	// set status gauge
+	var status string
+	if instance != nil {
+		status = resources.SafeStringDereference(instance.DBInstanceStatus)
+	}
+	infoLabels := resources.BuildInfoMetricLabels(cr.ObjectMeta, status, clusterID, instanceName, postgresProviderName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName)
 	resources.SetMetricCurrentTime(resources.DefaultPostgresInfoMetricName, infoLabels)
 
 	// set generic status metrics
@@ -1095,7 +1069,7 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 	// the value of the metric should be 0.0 when the resource is not in that phase
 	// this follows the approach that pod status
 	for _, phase := range []croType.StatusPhase{croType.PhaseFailed, croType.PhaseDeleteInProgress, croType.PhasePaused, croType.PhaseComplete, croType.PhaseInProgress} {
-		labelsFailed := buildPostgresStatusMetricsLabels(cr, clusterID, instanceName, phase)
+		labelsFailed := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName, phase)
 		resources.SetMetric(resources.DefaultPostgresStatusMetricName, labelsFailed, resources.Btof64(cr.Status.Phase == phase))
 	}
 
@@ -1147,18 +1121,17 @@ func (p *PostgresProvider) setPostgresDeletionTimestampMetric(ctx context.Contex
 		// build instance name
 		instanceName, err := p.buildInstanceName(ctx, cr)
 		if err != nil {
-			logrus.Errorf("error occurred while building instance name during postgres metrics: %v", err)
+			p.Logger.Errorf("error occurred while building instance name during postgres metrics: %v", err)
 		}
 
 		// get Cluster Id
-		logrus.Info("setting postgres information metric")
+		p.Logger.Info("setting postgres information metric")
 		clusterID, err := resources.GetClusterID(ctx, p.Client)
 		if err != nil {
-			logrus.Errorf("failed to get cluster id while exposing information metric for %v", instanceName)
+			p.Logger.Errorf("failed to get cluster id while exposing information metric for %v", instanceName)
 			return
 		}
-
-		labels := buildPostgresStatusMetricsLabels(cr, clusterID, instanceName, cr.Status.Phase)
+		labels := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName, cr.Status.Phase)
 		resources.SetMetric(resources.DefaultPostgresDeletionMetricName, labels, float64(cr.DeletionTimestamp.Unix()))
 	}
 }
@@ -1234,8 +1207,7 @@ func (p *PostgresProvider) createRDSConnectionMetric(ctx context.Context, cr *v1
 
 	}
 
-	// build generic labels to be added to metric
-	genericLabels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName)
 
 	// check if the instance is available
 	if instance == nil {

@@ -334,7 +334,7 @@ func (p *BlobStorageProvider) removeCredsAndFinalizer(ctx context.Context, bs *v
 }
 
 func (p *BlobStorageProvider) getDefaultS3Tags(ctx context.Context, cr *v1alpha1.BlobStorage) ([]*s3.Tag, error) {
-	tags, _, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	tags, _, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default s3 tags"
 		return nil, errorUtil.Wrapf(err, msg)
@@ -370,7 +370,7 @@ func emptyBucket(s3svc s3iface.S3API, bucketCfg *s3.CreateBucketInput) error {
 
 	// Traverse iterator deleting each object
 	if err := s3manager.NewBatchDeleteWithClient(s3svc).Delete(aws.BackgroundContext(), iter); err != nil {
-		errMsg := fmt.Sprintf("unable to delete objects from bucket")
+		errMsg := "unable to delete objects from bucket"
 		return errorUtil.Wrapf(err, errMsg)
 	}
 

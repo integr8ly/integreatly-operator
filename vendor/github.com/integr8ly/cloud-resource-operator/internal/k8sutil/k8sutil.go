@@ -2,10 +2,10 @@ package k8sutil
 
 import (
 	"fmt"
-	"github.com/spf13/afero"
-	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/spf13/afero"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,7 +40,7 @@ func GetOperatorNamespace() (string, error) {
 	if IsRunModeLocal() {
 		return GetWatchNamespace() // Return the watched namespace for when running locally
 	}
-	nsBytes, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	nsBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", ErrNoNamespace

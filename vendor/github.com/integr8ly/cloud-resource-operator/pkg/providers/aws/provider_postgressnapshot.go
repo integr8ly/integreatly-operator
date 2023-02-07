@@ -143,7 +143,7 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 			return nil, croType.StatusMessage(errMsg), errorUtil.New(errMsg)
 		}
 		logger.Info("creating rds snapshot")
-		tags, _, err := getDefaultResourceTags(ctx, p.client, postgres.Spec.Type, snapshotName, postgres.ObjectMeta.Labels["productName"])
+		tags, _, err := resources.GetDefaultResourceTags(ctx, p.client, postgres.Spec.Type, snapshotName, postgres.ObjectMeta.Labels["productName"])
 		if err != nil {
 			msg := "failed to get default postgres tags"
 			return nil, "", errorUtil.Wrapf(err, msg)
