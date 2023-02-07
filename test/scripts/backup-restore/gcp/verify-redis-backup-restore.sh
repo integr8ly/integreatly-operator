@@ -12,34 +12,56 @@ BUCKET_NAME=$CLUSTER_ID-redis-$INSTANCE_NAME
 RESTORED_INSTANCE_NAME=$INSTANCE_NAME-restored
 SERVICE_ACCOUNT=$(gcloud redis instances describe $INSTANCE_NAME --region $REGION --format json | jq -r '.persistenceIamIdentity')
 
-# create cloud storage bucket for backups
+draw_horizontal_line () { printf '%.s─' $(seq 1 $(tput cols)); }
+
+echo "creating cloud storage bucket for redis backups..."
 gcloud storage buckets create gs://$BUCKET_NAME --project $PROJECT_ID --location $REGION
-# allow the redis service agent to use it for backups
+
+draw_horizontal_line
+echo "allowing the redis service agent to manage bucket '$BUCKET_NAME'..."
 gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME --member $SERVICE_ACCOUNT --role roles/storage.admin
-# trigger redis database backup and save it in the bucket
+
+draw_horizontal_line
+echo "creating backup of redis instance '$INSTANCE_NAME' and saving it to bucket '$BUCKET_NAME'..."
 gcloud redis instances export gs://$BUCKET_NAME/original.rdb $INSTANCE_NAME --project $PROJECT_ID --region $REGION
-# prepare blank redis database
+
+draw_horizontal_line
+echo "preparing blank redis instance '$RESTORED_INSTANCE_NAME'..."
 gcloud redis instances create $RESTORED_INSTANCE_NAME --project $PROJECT_ID --region $REGION
-# restore it to the original database state
+
+draw_horizontal_line
+echo "restoring backup to redis instance '$RESTORED_INSTANCE_NAME'..."
 gcloud redis instances import gs://$BUCKET_NAME/original.rdb $RESTORED_INSTANCE_NAME --project $PROJECT_ID --region $REGION
-# create backup of the current state and save it in the bucket
+
+draw_horizontal_line
+echo "creating backup of redis instance '$RESTORED_INSTANCE_NAME' and saving it to bucket '$BUCKET_NAME'..."
 gcloud redis instances export gs://$BUCKET_NAME/current.rdb $RESTORED_INSTANCE_NAME --project $PROJECT_ID --region $REGION
-# install rdbtools, python-lzf in order to parse redis database files
+
+draw_horizontal_line
+echo "installing rdbtools, python-lzf in order to parse redis database files..."
 pip install rdbtools==0.1.15
 pip install python-lzf==0.2.4
-# copy the original and current database backups locally
+
+draw_horizontal_line
+echo "downloading redis backups from cloud storage bucket '$BUCKET_NAME'..."
 gsutil cp gs://$BUCKET_NAME/original.rdb original.rdb
 gsutil cp gs://$BUCKET_NAME/current.rdb current.rdb
-# save the sorted database backup output to a text file
+
+draw_horizontal_line
+echo "comparing the original and current redis backup files..."
 rdb --command diff original.rdb | sort > original.txt
 rdb --command diff current.rdb | sort > current.txt
-# compare the original and current state of backup files
 if cmp --silent -- "original.txt" "current.txt"; then
-  echo "redis backups are identical"
+  echo "redis backups are identical!"
 else
-  echo "redis backups differ"
+  echo "redis backups differ!"
 fi
-# clean up resources
+
+draw_horizontal_line
+echo "cleaning up temporary files, cloud storage bucket '$BUCKET_NAME' and redis instance '$RESTORED_INSTANCE_NAME'..."
 rm original.rdb original.txt current.rdb current.txt
 gcloud storage rm --recursive gs://$BUCKET_NAME
 gcloud redis instances delete $RESTORED_INSTANCE_NAME --project $PROJECT_ID --region $REGION --quiet
+
+draw_horizontal_line
+echo 'test completed successfully!'
