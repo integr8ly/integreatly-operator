@@ -508,6 +508,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		serverClient k8sclient.Client
+		platformType configv1.PlatformType
 	}
 	tests := []struct {
 		name    string
@@ -562,17 +563,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 						Spec: cloudcredentialv1.CloudCredentialSpec{
 							CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
 						},
-					},
-					&configv1.Infrastructure{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "cluster",
-						},
-						Status: configv1.InfrastructureStatus{
-							PlatformStatus: &configv1.PlatformStatus{
-								Type: configv1.AWSPlatformType,
-							},
-						},
 					}),
+				platformType: configv1.AWSPlatformType,
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -630,6 +622,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							"role_arn": []byte("role"),
 						},
 					}),
+				platformType: configv1.AWSPlatformType,
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -676,6 +669,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
 						},
 					}),
+				platformType: configv1.AWSPlatformType,
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -710,6 +704,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							CredentialsMode: cloudcredentialv1.CloudCredentialsModeManual,
 						},
 					}),
+				platformType: configv1.AWSPlatformType,
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -761,16 +756,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							CredentialsMode: cloudcredentialv1.CloudCredentialsModeDefault,
 						},
 					},
-					&configv1.Infrastructure{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "cluster",
-						},
-						Status: configv1.InfrastructureStatus{
-							PlatformStatus: &configv1.PlatformStatus{
-								Type: configv1.GCPPlatformType,
-							},
-						},
-					},
 					&noobaav1.ObjectBucketClaim{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      mcg.ThreescaleBucketClaim,
@@ -790,6 +775,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							Namespace: mcg.DefaultInstallationNamespace + "-operator",
 						},
 					}),
+				platformType: configv1.GCPPlatformType,
 			},
 			want:    integreatlyv1alpha1.PhaseInProgress,
 			wantErr: false,
@@ -808,7 +794,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.fields.productConfig)
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient, tt.fields.productConfig, tt.args.platformType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
