@@ -83,10 +83,25 @@ func (cmm *ConfigMapConfigManager) getTierStrategyForProvider(ctx context.Contex
 	if err = json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to unmarshal strategy mapping for resource type %s", rt)
 	}
-	if strategyMapping[tier] == nil {
+	strategyConfig := strategyMapping[tier]
+	if strategyConfig == nil {
 		return nil, errorUtil.New(fmt.Sprintf("no strategy found for deployment type %s and deployment tier %s", rt, tier))
 	}
-	return strategyMapping[tier], nil
+	if strategyConfig.ProjectID == "" {
+		defaultProject, err := GetProjectFromStrategyOrDefault(ctx, cmm.client, strategyConfig)
+		if err != nil {
+			return nil, errorUtil.Wrap(err, "failed to get default gcp project")
+		}
+		strategyConfig.ProjectID = defaultProject
+	}
+	if strategyConfig.Region == "" {
+		defaultRegion, err := GetRegionFromStrategyOrDefault(ctx, cmm.client, strategyConfig)
+		if err != nil {
+			return nil, errorUtil.Wrap(err, "failed to get default gcp region")
+		}
+		strategyConfig.Region = defaultRegion
+	}
+	return strategyConfig, nil
 }
 
 func BuildDefaultConfigMap(name, namespace string) *v1.ConfigMap {

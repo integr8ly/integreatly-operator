@@ -144,12 +144,12 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 			metrics = append(metrics, &providers.GenericCloudMetric{
 				Name: *metricData.Id,
 				Labels: map[string]string{
-					"clusterID":   clusterID,
-					"resourceID":  postgres.Name,
-					"namespace":   postgres.Namespace,
-					"instanceID":  resourceID,
-					"productName": postgres.Labels["productName"],
-					"strategy":    postgresProviderName,
+					resources.LabelClusterIDKey:   clusterID,
+					resources.LabelResourceIDKey:  postgres.Name,
+					resources.LabelNamespaceKey:   postgres.Namespace,
+					resources.LabelInstanceIDKey:  resourceID,
+					resources.LabelProductNameKey: postgres.Labels["productName"],
+					resources.LabelStrategyKey:    postgresProviderName,
 				},
 				Value: *value,
 			})
@@ -165,7 +165,7 @@ func buildRDSMetricDataQuery(metricTypes []providers.CloudProviderMetricType, re
 		metricDataQueries = append(metricDataQueries, &cloudwatch.MetricDataQuery{
 			// id needs to be unique, and is built from the metric name and type
 			// the metric name is converted from camel case to snake case to allow it to be easily reused when exposing the metric
-			Id: aws.String(metricType.PromethuesMetricName),
+			Id: aws.String(metricType.PrometheusMetricName),
 			MetricStat: &cloudwatch.MetricStat{
 				Metric: &cloudwatch.Metric{
 					MetricName: aws.String(metricType.ProviderMetricName),

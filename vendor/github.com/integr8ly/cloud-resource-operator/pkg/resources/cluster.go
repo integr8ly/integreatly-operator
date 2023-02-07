@@ -5,7 +5,7 @@ import (
 	"context"
 	"io"
 
-	v1 "github.com/integr8ly/cloud-resource-operator/apis/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,7 +33,7 @@ func GetAWSRegion(ctx context.Context, c client.Client) (string, error) {
 	if err != nil {
 		return "", errorUtil.Wrapf(err, "failure happened while retrieving cluster infrastructure")
 	}
-	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == v1.AWSPlatformType {
+	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == configv1.AWSPlatformType {
 		return infra.Status.PlatformStatus.AWS.Region, nil
 	}
 	return "", errorUtil.New("infrastructure does not contain aws region")
@@ -44,7 +44,7 @@ func GetGCPProject(ctx context.Context, c client.Client) (string, error) {
 	if err != nil {
 		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
 	}
-	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == v1.GCPPlatformType {
+	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == configv1.GCPPlatformType {
 		return infra.Status.PlatformStatus.GCP.ProjectID, nil
 	}
 	return "", errorUtil.New("infrastructure does not contain gcp project")
@@ -55,18 +55,26 @@ func GetGCPRegion(ctx context.Context, c client.Client) (string, error) {
 	if err != nil {
 		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
 	}
-	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == v1.GCPPlatformType {
+	if infra.Status.PlatformStatus != nil && infra.Status.PlatformStatus.Type == configv1.GCPPlatformType {
 		return infra.Status.PlatformStatus.GCP.Region, nil
 	}
 	return "", errorUtil.New("infrastructure does not contain gcp project")
 }
 
-func GetClusterInfrastructure(ctx context.Context, c client.Client) (*v1.Infrastructure, error) {
-	infra := &v1.Infrastructure{}
+func GetClusterInfrastructure(ctx context.Context, c client.Client) (*configv1.Infrastructure, error) {
+	infra := &configv1.Infrastructure{}
 	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
 		return nil, errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
 	}
 	return infra, nil
+}
+
+func GetPlatformType(ctx context.Context, c client.Client) (configv1.PlatformType, error) {
+	infra, err := GetClusterInfrastructure(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrap(err, "failed to retrieve cluster platform type")
+	}
+	return infra.Status.PlatformStatus.Type, nil
 }
 
 //go:generate moq -out cluster_moq.go . PodCommander

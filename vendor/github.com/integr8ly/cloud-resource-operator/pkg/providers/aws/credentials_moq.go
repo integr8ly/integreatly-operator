@@ -14,22 +14,22 @@ var _ CredentialManager = &CredentialManagerMock{}
 
 // CredentialManagerMock is a mock implementation of CredentialManager.
 //
-// 	func TestSomethingThatUsesCredentialManager(t *testing.T) {
+//	func TestSomethingThatUsesCredentialManager(t *testing.T) {
 //
-// 		// make and configure a mocked CredentialManager
-// 		mockedCredentialManager := &CredentialManagerMock{
-// 			ReconcileBucketOwnerCredentialsFunc: func(ctx context.Context, name string, ns string, bucket string) (*Credentials, error) {
-// 				panic("mock out the ReconcileBucketOwnerCredentials method")
-// 			},
-// 			ReconcileProviderCredentialsFunc: func(ctx context.Context, ns string) (*Credentials, error) {
-// 				panic("mock out the ReconcileProviderCredentials method")
-// 			},
-// 		}
+//		// make and configure a mocked CredentialManager
+//		mockedCredentialManager := &CredentialManagerMock{
+//			ReconcileBucketOwnerCredentialsFunc: func(ctx context.Context, name string, ns string, bucket string) (*Credentials, error) {
+//				panic("mock out the ReconcileBucketOwnerCredentials method")
+//			},
+//			ReconcileProviderCredentialsFunc: func(ctx context.Context, ns string) (*Credentials, error) {
+//				panic("mock out the ReconcileProviderCredentials method")
+//			},
+//		}
 //
-// 		// use mockedCredentialManager in code that requires CredentialManager
-// 		// and then make assertions.
+//		// use mockedCredentialManager in code that requires CredentialManager
+//		// and then make assertions.
 //
-// 	}
+//	}
 type CredentialManagerMock struct {
 	// ReconcileBucketOwnerCredentialsFunc mocks the ReconcileBucketOwnerCredentials method.
 	ReconcileBucketOwnerCredentialsFunc func(ctx context.Context, name string, ns string, bucket string) (*Credentials, error)
@@ -86,7 +86,8 @@ func (mock *CredentialManagerMock) ReconcileBucketOwnerCredentials(ctx context.C
 
 // ReconcileBucketOwnerCredentialsCalls gets all the calls that were made to ReconcileBucketOwnerCredentials.
 // Check the length with:
-//     len(mockedCredentialManager.ReconcileBucketOwnerCredentialsCalls())
+//
+//	len(mockedCredentialManager.ReconcileBucketOwnerCredentialsCalls())
 func (mock *CredentialManagerMock) ReconcileBucketOwnerCredentialsCalls() []struct {
 	Ctx    context.Context
 	Name   string
@@ -125,7 +126,8 @@ func (mock *CredentialManagerMock) ReconcileProviderCredentials(ctx context.Cont
 
 // ReconcileProviderCredentialsCalls gets all the calls that were made to ReconcileProviderCredentials.
 // Check the length with:
-//     len(mockedCredentialManager.ReconcileProviderCredentialsCalls())
+//
+//	len(mockedCredentialManager.ReconcileProviderCredentialsCalls())
 func (mock *CredentialManagerMock) ReconcileProviderCredentialsCalls() []struct {
 	Ctx context.Context
 	Ns  string

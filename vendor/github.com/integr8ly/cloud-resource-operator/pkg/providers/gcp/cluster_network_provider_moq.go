@@ -4,9 +4,9 @@
 package gcp
 
 import (
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"context"
-	servicenetworking "google.golang.org/api/servicenetworking/v1"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"google.golang.org/api/servicenetworking/v1"
 	"net"
 	"sync"
 )
@@ -39,9 +39,9 @@ var _ NetworkManager = &NetworkManagerMock{}
 //			DeleteNetworkServiceFunc: func(contextMoqParam context.Context) error {
 //				panic("mock out the DeleteNetworkService method")
 //			},
-// 			ReconcileNetworkProviderConfigFunc: func(ctx context.Context, configManager ConfigManager, tier string) (*net.IPNet, error) {
-// 				panic("mock out the ReconcileNetworkProviderConfig method")
-// 			},
+//			ReconcileNetworkProviderConfigFunc: func(ctx context.Context, configManager ConfigManager, tier string) (*net.IPNet, error) {
+//				panic("mock out the ReconcileNetworkProviderConfig method")
+//			},
 //		}
 //
 //		// use mockedNetworkManager in code that requires NetworkManager
@@ -341,7 +341,8 @@ func (mock *NetworkManagerMock) ReconcileNetworkProviderConfig(ctx context.Conte
 
 // ReconcileNetworkProviderConfigCalls gets all the calls that were made to ReconcileNetworkProviderConfig.
 // Check the length with:
-//     len(mockedNetworkManager.ReconcileNetworkProviderConfigCalls())
+//
+//	len(mockedNetworkManager.ReconcileNetworkProviderConfigCalls())
 func (mock *NetworkManagerMock) ReconcileNetworkProviderConfigCalls() []struct {
 	Ctx           context.Context
 	ConfigManager ConfigManager

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"google.golang.org/api/option"
 	"google.golang.org/api/servicenetworking/v1"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 type ServicesAPI interface {

@@ -13,7 +13,7 @@ import (
 )
 
 // define a function that allows us to perform modification logic on the
-// custom resource (e.g. setting owner refs) before creating or updating it
+// custom resource (e.g. setting owner refs) before creating it
 type modifyResourceFunc func(cr metav1.Object) error
 
 // ReconcileBlobStorage creates or updates a blob storage custom resource
@@ -93,7 +93,7 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 }
 
 // ReconcileRedis creates or updates a redis custom resource
-func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs string, applyImmediately bool, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
+func ReconcileRedis(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs, size string, applyImmediately, maintenanceWindow bool, modifyFunc modifyResourceFunc) (*v1alpha1.Redis, error) {
 	r := &v1alpha1.Redis{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -121,7 +121,9 @@ func ReconcileRedis(ctx context.Context, client client.Client, productName, depl
 			Name:      secretName,
 			Namespace: secretNs,
 		}
+		r.Spec.Size = size
 		r.Spec.ApplyImmediately = applyImmediately
+		r.Spec.MaintenanceWindow = maintenanceWindow
 
 		return nil
 	})

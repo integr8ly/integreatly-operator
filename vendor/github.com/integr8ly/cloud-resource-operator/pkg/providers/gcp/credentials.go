@@ -28,6 +28,7 @@ var (
 		"roles/redis.admin",
 		"roles/cloudsql.admin",
 		"roles/servicenetworking.networksAdmin",
+		"roles/monitoring.viewer",
 	}
 	timeOut = time.Minute * 5
 )

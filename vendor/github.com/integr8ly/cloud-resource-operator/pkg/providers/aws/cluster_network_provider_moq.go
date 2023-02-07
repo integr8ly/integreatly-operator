@@ -15,43 +15,43 @@ var _ NetworkManager = &NetworkManagerMock{}
 
 // NetworkManagerMock is a mock implementation of NetworkManager.
 //
-// 	func TestSomethingThatUsesNetworkManager(t *testing.T) {
+//	func TestSomethingThatUsesNetworkManager(t *testing.T) {
 //
-// 		// make and configure a mocked NetworkManager
-// 		mockedNetworkManager := &NetworkManagerMock{
-// 			CreateNetworkFunc: func(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error) {
-// 				panic("mock out the CreateNetwork method")
-// 			},
-// 			CreateNetworkConnectionFunc: func(contextMoqParam context.Context, network *Network) (*NetworkConnection, error) {
-// 				panic("mock out the CreateNetworkConnection method")
-// 			},
-// 			CreateNetworkPeeringFunc: func(contextMoqParam context.Context, network *Network) (*NetworkPeering, error) {
-// 				panic("mock out the CreateNetworkPeering method")
-// 			},
-// 			DeleteBundledCloudResourcesFunc: func(contextMoqParam context.Context) error {
-// 				panic("mock out the DeleteBundledCloudResources method")
-// 			},
-// 			DeleteNetworkFunc: func(contextMoqParam context.Context) error {
-// 				panic("mock out the DeleteNetwork method")
-// 			},
-// 			DeleteNetworkConnectionFunc: func(contextMoqParam context.Context, networkPeering *NetworkPeering) error {
-// 				panic("mock out the DeleteNetworkConnection method")
-// 			},
-// 			DeleteNetworkPeeringFunc: func(networkPeering *NetworkPeering) error {
-// 				panic("mock out the DeleteNetworkPeering method")
-// 			},
-// 			GetClusterNetworkPeeringFunc: func(contextMoqParam context.Context) (*NetworkPeering, error) {
-// 				panic("mock out the GetClusterNetworkPeering method")
-// 			},
-// 			IsEnabledFunc: func(contextMoqParam context.Context) (bool, error) {
-// 				panic("mock out the IsEnabled method")
-// 			},
-// 		}
+//		// make and configure a mocked NetworkManager
+//		mockedNetworkManager := &NetworkManagerMock{
+//			CreateNetworkFunc: func(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error) {
+//				panic("mock out the CreateNetwork method")
+//			},
+//			CreateNetworkConnectionFunc: func(contextMoqParam context.Context, network *Network) (*NetworkConnection, error) {
+//				panic("mock out the CreateNetworkConnection method")
+//			},
+//			CreateNetworkPeeringFunc: func(contextMoqParam context.Context, network *Network) (*NetworkPeering, error) {
+//				panic("mock out the CreateNetworkPeering method")
+//			},
+//			DeleteBundledCloudResourcesFunc: func(contextMoqParam context.Context) error {
+//				panic("mock out the DeleteBundledCloudResources method")
+//			},
+//			DeleteNetworkFunc: func(contextMoqParam context.Context) error {
+//				panic("mock out the DeleteNetwork method")
+//			},
+//			DeleteNetworkConnectionFunc: func(contextMoqParam context.Context, networkPeering *NetworkPeering) error {
+//				panic("mock out the DeleteNetworkConnection method")
+//			},
+//			DeleteNetworkPeeringFunc: func(networkPeering *NetworkPeering) error {
+//				panic("mock out the DeleteNetworkPeering method")
+//			},
+//			GetClusterNetworkPeeringFunc: func(contextMoqParam context.Context) (*NetworkPeering, error) {
+//				panic("mock out the GetClusterNetworkPeering method")
+//			},
+//			IsEnabledFunc: func(contextMoqParam context.Context) (bool, error) {
+//				panic("mock out the IsEnabled method")
+//			},
+//		}
 //
-// 		// use mockedNetworkManager in code that requires NetworkManager
-// 		// and then make assertions.
+//		// use mockedNetworkManager in code that requires NetworkManager
+//		// and then make assertions.
 //
-// 	}
+//	}
 type NetworkManagerMock struct {
 	// CreateNetworkFunc mocks the CreateNetwork method.
 	CreateNetworkFunc func(contextMoqParam context.Context, iPNet *net.IPNet) (*Network, error)
@@ -167,7 +167,8 @@ func (mock *NetworkManagerMock) CreateNetwork(contextMoqParam context.Context, i
 
 // CreateNetworkCalls gets all the calls that were made to CreateNetwork.
 // Check the length with:
-//     len(mockedNetworkManager.CreateNetworkCalls())
+//
+//	len(mockedNetworkManager.CreateNetworkCalls())
 func (mock *NetworkManagerMock) CreateNetworkCalls() []struct {
 	ContextMoqParam context.Context
 	IPNet           *net.IPNet
@@ -202,7 +203,8 @@ func (mock *NetworkManagerMock) CreateNetworkConnection(contextMoqParam context.
 
 // CreateNetworkConnectionCalls gets all the calls that were made to CreateNetworkConnection.
 // Check the length with:
-//     len(mockedNetworkManager.CreateNetworkConnectionCalls())
+//
+//	len(mockedNetworkManager.CreateNetworkConnectionCalls())
 func (mock *NetworkManagerMock) CreateNetworkConnectionCalls() []struct {
 	ContextMoqParam context.Context
 	Network         *Network
@@ -237,7 +239,8 @@ func (mock *NetworkManagerMock) CreateNetworkPeering(contextMoqParam context.Con
 
 // CreateNetworkPeeringCalls gets all the calls that were made to CreateNetworkPeering.
 // Check the length with:
-//     len(mockedNetworkManager.CreateNetworkPeeringCalls())
+//
+//	len(mockedNetworkManager.CreateNetworkPeeringCalls())
 func (mock *NetworkManagerMock) CreateNetworkPeeringCalls() []struct {
 	ContextMoqParam context.Context
 	Network         *Network
@@ -270,7 +273,8 @@ func (mock *NetworkManagerMock) DeleteBundledCloudResources(contextMoqParam cont
 
 // DeleteBundledCloudResourcesCalls gets all the calls that were made to DeleteBundledCloudResources.
 // Check the length with:
-//     len(mockedNetworkManager.DeleteBundledCloudResourcesCalls())
+//
+//	len(mockedNetworkManager.DeleteBundledCloudResourcesCalls())
 func (mock *NetworkManagerMock) DeleteBundledCloudResourcesCalls() []struct {
 	ContextMoqParam context.Context
 } {
@@ -301,7 +305,8 @@ func (mock *NetworkManagerMock) DeleteNetwork(contextMoqParam context.Context) e
 
 // DeleteNetworkCalls gets all the calls that were made to DeleteNetwork.
 // Check the length with:
-//     len(mockedNetworkManager.DeleteNetworkCalls())
+//
+//	len(mockedNetworkManager.DeleteNetworkCalls())
 func (mock *NetworkManagerMock) DeleteNetworkCalls() []struct {
 	ContextMoqParam context.Context
 } {
@@ -334,7 +339,8 @@ func (mock *NetworkManagerMock) DeleteNetworkConnection(contextMoqParam context.
 
 // DeleteNetworkConnectionCalls gets all the calls that were made to DeleteNetworkConnection.
 // Check the length with:
-//     len(mockedNetworkManager.DeleteNetworkConnectionCalls())
+//
+//	len(mockedNetworkManager.DeleteNetworkConnectionCalls())
 func (mock *NetworkManagerMock) DeleteNetworkConnectionCalls() []struct {
 	ContextMoqParam context.Context
 	NetworkPeering  *NetworkPeering
@@ -367,7 +373,8 @@ func (mock *NetworkManagerMock) DeleteNetworkPeering(networkPeering *NetworkPeer
 
 // DeleteNetworkPeeringCalls gets all the calls that were made to DeleteNetworkPeering.
 // Check the length with:
-//     len(mockedNetworkManager.DeleteNetworkPeeringCalls())
+//
+//	len(mockedNetworkManager.DeleteNetworkPeeringCalls())
 func (mock *NetworkManagerMock) DeleteNetworkPeeringCalls() []struct {
 	NetworkPeering *NetworkPeering
 } {
@@ -398,7 +405,8 @@ func (mock *NetworkManagerMock) GetClusterNetworkPeering(contextMoqParam context
 
 // GetClusterNetworkPeeringCalls gets all the calls that were made to GetClusterNetworkPeering.
 // Check the length with:
-//     len(mockedNetworkManager.GetClusterNetworkPeeringCalls())
+//
+//	len(mockedNetworkManager.GetClusterNetworkPeeringCalls())
 func (mock *NetworkManagerMock) GetClusterNetworkPeeringCalls() []struct {
 	ContextMoqParam context.Context
 } {
@@ -429,7 +437,8 @@ func (mock *NetworkManagerMock) IsEnabled(contextMoqParam context.Context) (bool
 
 // IsEnabledCalls gets all the calls that were made to IsEnabled.
 // Check the length with:
-//     len(mockedNetworkManager.IsEnabledCalls())
+//
+//	len(mockedNetworkManager.IsEnabledCalls())
 func (mock *NetworkManagerMock) IsEnabledCalls() []struct {
 	ContextMoqParam context.Context
 } {

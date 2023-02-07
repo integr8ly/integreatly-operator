@@ -154,12 +154,12 @@ func (r *RedisMetricsProvider) scrapeRedisCloudWatchMetricData(ctx context.Conte
 				metrics = append(metrics, &providers.GenericCloudMetric{
 					Name: *metricData.Id,
 					Labels: map[string]string{
-						"clusterID":   clusterID,
-						"resourceID":  redis.Name,
-						"namespace":   redis.Namespace,
-						"instanceID":  *cacheClusterId,
-						"productName": redis.Labels["productName"],
-						"strategy":    redisProviderName,
+						resources.LabelClusterIDKey:   clusterID,
+						resources.LabelResourceIDKey:  redis.Name,
+						resources.LabelNamespaceKey:   redis.Namespace,
+						resources.LabelInstanceIDKey:  *cacheClusterId,
+						resources.LabelProductNameKey: redis.Labels["productName"],
+						resources.LabelStrategyKey:    redisProviderName,
 					},
 					Value: *value,
 				})
@@ -175,7 +175,7 @@ func buildRedisMetricDataQuery(cacheClusterId string, metricTypes []providers.Cl
 	var metricDataQueries []*cloudwatch.MetricDataQuery
 	for _, metricType := range metricTypes {
 		metricDataQueries = append(metricDataQueries, &cloudwatch.MetricDataQuery{
-			Id: aws.String(metricType.PromethuesMetricName),
+			Id: aws.String(metricType.PrometheusMetricName),
 			MetricStat: &cloudwatch.MetricStat{
 				Metric: &cloudwatch.Metric{
 					MetricName: aws.String(metricType.ProviderMetricName),

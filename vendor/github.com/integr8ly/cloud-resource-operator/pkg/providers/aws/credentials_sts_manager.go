@@ -14,7 +14,7 @@ import (
 const (
 	defaultSTSCredentialSecretName = "sts-credentials"
 	defaultRoleARNKeyName          = "role_arn"
-	defaultTokenPath               = "/var/run/secrets/openshift/serviceaccount/token"
+	defaultTokenPath               = "/var/run/secrets/openshift/serviceaccount/token" // #nosec G101 -- false positive (ref: https://securego.io/docs/rules/g101.html)
 )
 
 var _ CredentialManager = (*STSCredentialManager)(nil)
