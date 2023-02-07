@@ -3,12 +3,13 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strconv"
 	"strings"
 	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -327,6 +328,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		if kc.Spec.Instances < numberOfReplicas {
 			kc.Spec.Instances = numberOfReplicas
 		}
+
+		// if running on GCP configures the experimental spec to use private IP defined in db secret
+		experimentalSpec, err := r.ConfigureExperimentalSpec(ctx, serverClient)
+		if err != nil {
+			return err
+		}
+		kc.Spec.KeycloakDeploymentSpec.Experimental = experimentalSpec
+
 		return nil
 	})
 	if err != nil {
