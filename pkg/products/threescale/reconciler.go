@@ -307,15 +307,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.installation.Spec.PriorityClassName,
 	)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale-operator csv deployments priority class name"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale-operator csv deployments priority class name", err)
 		return phase, err
 	}
 
 	platformType, err := resources.GetPlatformType(ctx, serverClient)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to determine platform type")
-		r.log.Error(errorMessage, err)
-		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+		events.HandleError(r.recorder, installation, phase, "failed to determine platform type", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -329,7 +327,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Wait for RHSSO postgres to be completed
 		phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+			events.HandleError(r.recorder, installation, phase, "Waiting for RHSSO postgres to be completed", err)
 			return phase, err
 		}
 
