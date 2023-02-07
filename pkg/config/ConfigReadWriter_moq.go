@@ -14,67 +14,67 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 
 // ConfigReadWriterMock is a mock implementation of ConfigReadWriter.
 //
-//	func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
+// 	func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
 //
-//		// make and configure a mocked ConfigReadWriter
-//		mockedConfigReadWriter := &ConfigReadWriterMock{
-//			GetBackupsSecretNameFunc: func() string {
-//				panic("mock out the GetBackupsSecretName method")
-//			},
-//			GetGHOauthClientsSecretNameFunc: func() string {
-//				panic("mock out the GetGHOauthClientsSecretName method")
-//			},
-//			GetOauthClientsSecretNameFunc: func() string {
-//				panic("mock out the GetOauthClientsSecretName method")
-//			},
-//			GetOperatorNamespaceFunc: func() string {
-//				panic("mock out the GetOperatorNamespace method")
-//			},
-//			ReadCloudResourcesFunc: func() (*CloudResources, error) {
-//				panic("mock out the ReadCloudResources method")
-//			},
-//			ReadGrafanaFunc: func() (*Grafana, error) {
-//				panic("mock out the ReadGrafana method")
-//			},
-//			ReadMCGFunc: func() (*MCG, error) {
-//				panic("mock out the ReadMCG method")
-//			},
-//			ReadMarin3rFunc: func() (*Marin3r, error) {
-//				panic("mock out the ReadMarin3r method")
-//			},
-//			ReadMonitoringFunc: func() (*Monitoring, error) {
-//				panic("mock out the ReadMonitoring method")
-//			},
-//			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
-//				panic("mock out the ReadMonitoringSpec method")
-//			},
-//			ReadObservabilityFunc: func() (*Observability, error) {
-//				panic("mock out the ReadObservability method")
-//			},
-//			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
-//				panic("mock out the ReadProduct method")
-//			},
-//			ReadRHSSOFunc: func() (*RHSSO, error) {
-//				panic("mock out the ReadRHSSO method")
-//			},
-//			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
-//				panic("mock out the ReadRHSSOUser method")
-//			},
-//			ReadThreeScaleFunc: func() (*ThreeScale, error) {
-//				panic("mock out the ReadThreeScale method")
-//			},
-//			WriteConfigFunc: func(config ConfigReadable) error {
-//				panic("mock out the WriteConfig method")
-//			},
-//			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
-//				panic("mock out the readConfigForProduct method")
-//			},
-//		}
+// 		// make and configure a mocked ConfigReadWriter
+// 		mockedConfigReadWriter := &ConfigReadWriterMock{
+// 			GetBackupsSecretNameFunc: func() string {
+// 				panic("mock out the GetBackupsSecretName method")
+// 			},
+// 			GetGHOauthClientsSecretNameFunc: func() string {
+// 				panic("mock out the GetGHOauthClientsSecretName method")
+// 			},
+// 			GetOauthClientsSecretNameFunc: func() string {
+// 				panic("mock out the GetOauthClientsSecretName method")
+// 			},
+// 			GetOperatorNamespaceFunc: func() string {
+// 				panic("mock out the GetOperatorNamespace method")
+// 			},
+// 			ReadCloudResourcesFunc: func() (*CloudResources, error) {
+// 				panic("mock out the ReadCloudResources method")
+// 			},
+// 			ReadGrafanaFunc: func() (*Grafana, error) {
+// 				panic("mock out the ReadGrafana method")
+// 			},
+// 			ReadMCGFunc: func() (*MCG, error) {
+// 				panic("mock out the ReadMCG method")
+// 			},
+// 			ReadMarin3rFunc: func() (*Marin3r, error) {
+// 				panic("mock out the ReadMarin3r method")
+// 			},
+// 			ReadMonitoringFunc: func() (*Monitoring, error) {
+// 				panic("mock out the ReadMonitoring method")
+// 			},
+// 			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
+// 				panic("mock out the ReadMonitoringSpec method")
+// 			},
+// 			ReadObservabilityFunc: func() (*Observability, error) {
+// 				panic("mock out the ReadObservability method")
+// 			},
+// 			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
+// 				panic("mock out the ReadProduct method")
+// 			},
+// 			ReadRHSSOFunc: func() (*RHSSO, error) {
+// 				panic("mock out the ReadRHSSO method")
+// 			},
+// 			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
+// 				panic("mock out the ReadRHSSOUser method")
+// 			},
+// 			ReadThreeScaleFunc: func() (*ThreeScale, error) {
+// 				panic("mock out the ReadThreeScale method")
+// 			},
+// 			WriteConfigFunc: func(config ConfigReadable) error {
+// 				panic("mock out the WriteConfig method")
+// 			},
+// 			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
+// 				panic("mock out the readConfigForProduct method")
+// 			},
+// 		}
 //
-//		// use mockedConfigReadWriter in code that requires ConfigReadWriter
-//		// and then make assertions.
+// 		// use mockedConfigReadWriter in code that requires ConfigReadWriter
+// 		// and then make assertions.
 //
-//	}
+// 	}
 type ConfigReadWriterMock struct {
 	// GetBackupsSecretNameFunc mocks the GetBackupsSecretName method.
 	GetBackupsSecretNameFunc func() string
@@ -221,8 +221,7 @@ func (mock *ConfigReadWriterMock) GetBackupsSecretName() string {
 
 // GetBackupsSecretNameCalls gets all the calls that were made to GetBackupsSecretName.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.GetBackupsSecretNameCalls())
+//     len(mockedConfigReadWriter.GetBackupsSecretNameCalls())
 func (mock *ConfigReadWriterMock) GetBackupsSecretNameCalls() []struct {
 } {
 	var calls []struct {
@@ -248,8 +247,7 @@ func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretName() string {
 
 // GetGHOauthClientsSecretNameCalls gets all the calls that were made to GetGHOauthClientsSecretName.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.GetGHOauthClientsSecretNameCalls())
+//     len(mockedConfigReadWriter.GetGHOauthClientsSecretNameCalls())
 func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretNameCalls() []struct {
 } {
 	var calls []struct {
@@ -275,8 +273,7 @@ func (mock *ConfigReadWriterMock) GetOauthClientsSecretName() string {
 
 // GetOauthClientsSecretNameCalls gets all the calls that were made to GetOauthClientsSecretName.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.GetOauthClientsSecretNameCalls())
+//     len(mockedConfigReadWriter.GetOauthClientsSecretNameCalls())
 func (mock *ConfigReadWriterMock) GetOauthClientsSecretNameCalls() []struct {
 } {
 	var calls []struct {
@@ -302,8 +299,7 @@ func (mock *ConfigReadWriterMock) GetOperatorNamespace() string {
 
 // GetOperatorNamespaceCalls gets all the calls that were made to GetOperatorNamespace.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.GetOperatorNamespaceCalls())
+//     len(mockedConfigReadWriter.GetOperatorNamespaceCalls())
 func (mock *ConfigReadWriterMock) GetOperatorNamespaceCalls() []struct {
 } {
 	var calls []struct {
@@ -329,8 +325,7 @@ func (mock *ConfigReadWriterMock) ReadCloudResources() (*CloudResources, error) 
 
 // ReadCloudResourcesCalls gets all the calls that were made to ReadCloudResources.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadCloudResourcesCalls())
+//     len(mockedConfigReadWriter.ReadCloudResourcesCalls())
 func (mock *ConfigReadWriterMock) ReadCloudResourcesCalls() []struct {
 } {
 	var calls []struct {
@@ -356,8 +351,7 @@ func (mock *ConfigReadWriterMock) ReadGrafana() (*Grafana, error) {
 
 // ReadGrafanaCalls gets all the calls that were made to ReadGrafana.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadGrafanaCalls())
+//     len(mockedConfigReadWriter.ReadGrafanaCalls())
 func (mock *ConfigReadWriterMock) ReadGrafanaCalls() []struct {
 } {
 	var calls []struct {
@@ -383,8 +377,7 @@ func (mock *ConfigReadWriterMock) ReadMCG() (*MCG, error) {
 
 // ReadMCGCalls gets all the calls that were made to ReadMCG.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMCGCalls())
+//     len(mockedConfigReadWriter.ReadMCGCalls())
 func (mock *ConfigReadWriterMock) ReadMCGCalls() []struct {
 } {
 	var calls []struct {
@@ -410,8 +403,7 @@ func (mock *ConfigReadWriterMock) ReadMarin3r() (*Marin3r, error) {
 
 // ReadMarin3rCalls gets all the calls that were made to ReadMarin3r.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMarin3rCalls())
+//     len(mockedConfigReadWriter.ReadMarin3rCalls())
 func (mock *ConfigReadWriterMock) ReadMarin3rCalls() []struct {
 } {
 	var calls []struct {
@@ -437,8 +429,7 @@ func (mock *ConfigReadWriterMock) ReadMonitoring() (*Monitoring, error) {
 
 // ReadMonitoringCalls gets all the calls that were made to ReadMonitoring.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMonitoringCalls())
+//     len(mockedConfigReadWriter.ReadMonitoringCalls())
 func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
 } {
 	var calls []struct {
@@ -464,8 +455,7 @@ func (mock *ConfigReadWriterMock) ReadMonitoringSpec() (*MonitoringSpec, error) 
 
 // ReadMonitoringSpecCalls gets all the calls that were made to ReadMonitoringSpec.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMonitoringSpecCalls())
+//     len(mockedConfigReadWriter.ReadMonitoringSpecCalls())
 func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
 } {
 	var calls []struct {
@@ -491,8 +481,7 @@ func (mock *ConfigReadWriterMock) ReadObservability() (*Observability, error) {
 
 // ReadObservabilityCalls gets all the calls that were made to ReadObservability.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadObservabilityCalls())
+//     len(mockedConfigReadWriter.ReadObservabilityCalls())
 func (mock *ConfigReadWriterMock) ReadObservabilityCalls() []struct {
 } {
 	var calls []struct {
@@ -521,8 +510,7 @@ func (mock *ConfigReadWriterMock) ReadProduct(product integreatlyv1alpha1.Produc
 
 // ReadProductCalls gets all the calls that were made to ReadProduct.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadProductCalls())
+//     len(mockedConfigReadWriter.ReadProductCalls())
 func (mock *ConfigReadWriterMock) ReadProductCalls() []struct {
 	Product integreatlyv1alpha1.ProductName
 } {
@@ -550,8 +538,7 @@ func (mock *ConfigReadWriterMock) ReadRHSSO() (*RHSSO, error) {
 
 // ReadRHSSOCalls gets all the calls that were made to ReadRHSSO.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadRHSSOCalls())
+//     len(mockedConfigReadWriter.ReadRHSSOCalls())
 func (mock *ConfigReadWriterMock) ReadRHSSOCalls() []struct {
 } {
 	var calls []struct {
@@ -577,8 +564,7 @@ func (mock *ConfigReadWriterMock) ReadRHSSOUser() (*RHSSOUser, error) {
 
 // ReadRHSSOUserCalls gets all the calls that were made to ReadRHSSOUser.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadRHSSOUserCalls())
+//     len(mockedConfigReadWriter.ReadRHSSOUserCalls())
 func (mock *ConfigReadWriterMock) ReadRHSSOUserCalls() []struct {
 } {
 	var calls []struct {
@@ -604,8 +590,7 @@ func (mock *ConfigReadWriterMock) ReadThreeScale() (*ThreeScale, error) {
 
 // ReadThreeScaleCalls gets all the calls that were made to ReadThreeScale.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadThreeScaleCalls())
+//     len(mockedConfigReadWriter.ReadThreeScaleCalls())
 func (mock *ConfigReadWriterMock) ReadThreeScaleCalls() []struct {
 } {
 	var calls []struct {
@@ -634,8 +619,7 @@ func (mock *ConfigReadWriterMock) WriteConfig(config ConfigReadable) error {
 
 // WriteConfigCalls gets all the calls that were made to WriteConfig.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.WriteConfigCalls())
+//     len(mockedConfigReadWriter.WriteConfigCalls())
 func (mock *ConfigReadWriterMock) WriteConfigCalls() []struct {
 	Config ConfigReadable
 } {
@@ -666,8 +650,7 @@ func (mock *ConfigReadWriterMock) readConfigForProduct(product integreatlyv1alph
 
 // readConfigForProductCalls gets all the calls that were made to readConfigForProduct.
 // Check the length with:
-//
-//	len(mockedConfigReadWriter.readConfigForProductCalls())
+//     len(mockedConfigReadWriter.readConfigForProductCalls())
 func (mock *ConfigReadWriterMock) readConfigForProductCalls() []struct {
 	Product integreatlyv1alpha1.ProductName
 } {
