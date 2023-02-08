@@ -322,7 +322,7 @@ func describeSubnets(ec2svc *ec2.EC2, input *ec2.DescribeSubnetsInput) ([]*ec2.S
 		return nil, fmt.Errorf("could not describe subnets: %w", err)
 	}
 	if len(describeSubnetsOutput.Subnets) == 0 {
-		return nil, fmt.Errorf("could not find any subnets: %v", err)
+		return nil, fmt.Errorf("could not find any subnets")
 	}
 	return describeSubnetsOutput.Subnets, nil
 }
@@ -366,7 +366,7 @@ func describeVpcs(ec2svc *ec2.EC2, input *ec2.DescribeVpcsInput) ([]*ec2.Vpc, er
 		return nil, fmt.Errorf("could not describe vpcs: %w", err)
 	}
 	if len(describeVpcsOutput.Vpcs) == 0 {
-		return nil, fmt.Errorf("could not find any vpcs: %v", err)
+		return nil, fmt.Errorf("could not find any vpcs")
 	}
 	return describeVpcsOutput.Vpcs, nil
 }
@@ -415,4 +415,55 @@ func getStandaloneVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
 		return nil, fmt.Errorf("found more than one vpc associated with tag %s", standaloneResourceTagKey)
 	}
 	return vpcs[0], nil
+}
+
+func describeRouteTables(ec2svc *ec2.EC2, input *ec2.DescribeRouteTablesInput) ([]*ec2.RouteTable, error) {
+	describeRouteTablesOutput, err := ec2svc.DescribeRouteTables(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe route tables: %w", err)
+	}
+	routeTables := describeRouteTablesOutput.RouteTables
+	if len(routeTables) == 0 {
+		return nil, fmt.Errorf("could not find any route tables")
+	}
+	return routeTables, nil
+}
+
+func getClusterRouteTables(ec2svc *ec2.EC2, vpcId *string, subnets []*ec2.Subnet) ([]*ec2.RouteTable, error) {
+	routeTables, err := describeRouteTables(ec2svc, &ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{vpcId},
+			},
+			{
+				Name: aws.String("association.subnet-id"),
+				Values: func() (subnetIds []*string) {
+					for i := range subnets {
+						subnetIds = append(subnetIds, subnets[i].SubnetId)
+					}
+					return
+				}(),
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch cluster route tables: %w", err)
+	}
+	return routeTables, nil
+}
+
+func getStandaloneRouteTables(ec2svc *ec2.EC2, vpcId *string) ([]*ec2.RouteTable, error) {
+	routeTables, err := describeRouteTables(ec2svc, &ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{vpcId},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch standalone route tables: %w", err)
+	}
+	return routeTables, nil
 }
