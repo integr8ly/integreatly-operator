@@ -199,7 +199,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Info("Start Reconciling")
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
-	customDomainActive := r.useCustomDomain()
+	customDomainActive := customDomain.IsCustomDomain(installation)
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
@@ -269,12 +269,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	phase, err = r.reconcileCustomDomainAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		errorMessage := fmt.Sprintf("failed reconciling custom domain alerts: %s", r.installation.Spec.RoutingSubdomain)
-		r.log.Error(errorMessage, err)
-		customDomain.UpdateErrorAndCustomDomainMetric(r.installation, customDomainActive, err)
-		events.HandleError(r.recorder, installation, phase, errorMessage, err)
+	alertsReconciler, err := r.newAlertReconciler(r.log, r.installation.Spec.Type, ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if phase, err = alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err
 	}
 
@@ -526,7 +526,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler := r.newEnvoyAlertReconciler(r.log, r.installation.Spec.Type)
+	alertsReconciler = r.newEnvoyAlertReconciler(r.log, r.installation.Spec.Type)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err
@@ -535,15 +535,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileServiceMonitor(ctx, serverClient, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale service monitor", err)
-		return phase, err
-	}
-
-	alertsReconciler, err = r.newAlertReconciler(r.log, r.installation.Spec.Type, ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err
 	}
 
@@ -1697,7 +1688,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	// adding an extra page in case of accounts set to be deleted
 	totalPages++
 
-	allAccounts := []AccountDetail{}
+	var allAccounts []AccountDetail
 	for page := 1; page <= totalPages; page++ {
 		// list 3scale tenant accounts
 
@@ -3409,31 +3400,6 @@ func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8scli
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
-}
-
-func (r *Reconciler) reconcileCustomDomainAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		r.log.Warning(fmt.Sprintf("failed to get observability configuration: %v", err))
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	observabilityNamespace := observabilityConfig.GetNamespace()
-
-	alerts := customDomain.Alerts(r.installation, r.log, observabilityNamespace)
-	_, err = alerts.ReconcileAlerts(ctx, client)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) useCustomDomain() bool {
-	domainStatus := r.installation.Status.CustomDomain
-	if domainStatus == nil {
-		return false
-	}
-	return domainStatus.Enabled
 }
 
 func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {

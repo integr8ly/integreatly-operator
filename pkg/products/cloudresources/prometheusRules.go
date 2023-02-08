@@ -100,7 +100,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 
 func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.Client, logger l.Logger, installationName string, alertsReconciler resources.AlertReconcilerImpl, ns string) (resources.AlertReconciler, error) {
 
-	names, err := getRedisCRsNames(ctx, client, logger, ns)
+	names, err := getRedisCRsNames(ctx, client, ns)
 	if err != nil {
 		logger.Error("Error getting redis names", err)
 		return &alertsReconciler, err
@@ -130,9 +130,9 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 	return &alertsReconciler, nil
 }
 
-func getRedisCRsNames(ctx context.Context, client k8sclient.Client, logger l.Logger, ns string) ([]string, error) {
+func getRedisCRsNames(ctx context.Context, client k8sclient.Client, ns string) ([]string, error) {
 
-	names := []string{}
+	var names []string
 
 	// ensure redis instances are cleaned up
 	redisInstances := &crov1alpha1.RedisList{}
@@ -141,7 +141,7 @@ func getRedisCRsNames(ctx context.Context, client k8sclient.Client, logger l.Log
 	}
 	err := client.List(ctx, redisInstances, redisInstanceOpts...)
 	if err != nil {
-		return []string{}, fmt.Errorf("failed to list redis instances: %w", err)
+		return nil, fmt.Errorf("failed to list redis instances: %w", err)
 	}
 
 	for _, redisInst := range redisInstances.Items {

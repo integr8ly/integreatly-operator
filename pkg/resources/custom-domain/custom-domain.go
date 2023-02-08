@@ -111,3 +111,11 @@ func GetIngressRouterIPs(hostname string) ([]net.IP, error) {
 	}
 	return ips, nil
 }
+
+func IsCustomDomain(installation *v1alpha1.RHMI) bool {
+	domainStatus := installation.Status.CustomDomain
+	if domainStatus == nil {
+		return false
+	}
+	return domainStatus.Enabled
+}

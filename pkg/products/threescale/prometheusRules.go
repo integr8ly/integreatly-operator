@@ -3,7 +3,9 @@ package threescale
 import (
 	"context"
 	"fmt"
+	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	"net/http"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -30,9 +32,13 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 	}
 
 	namespace := observabilityConfig.GetNamespace()
-	operatorNamespace := observabilityConfig.GetNamespace()
 	alertNamePrefix := "3scale-"
 	operatorAlertNamePrefix := "3scale-operator-"
+
+	missingMetricsExpr := intstr.FromString(`absent(threescale_portals) == 1`)
+	if customDomain.IsCustomDomain(r.installation) {
+		missingMetricsExpr = intstr.FromString(fmt.Sprintf(`absent(threescale_portals) OR absent(%s_custom_domain) == 1`, installationName))
+	}
 
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
@@ -146,11 +152,10 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					},
 				},
 			},
-
 			{
 				AlertName: operatorAlertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: " 3scale-operator-endpoint.rules",
-				Namespace: operatorNamespace,
+				Namespace: namespace,
 				Rules: []monitoringv1.Rule{
 					{
 						Alert: "RHOAMThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
@@ -197,7 +202,6 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 					},
 				},
 			},
-
 			{
 				AlertName: alertNamePrefix + "ksm-3scale-alerts",
 				GroupName: "general.rules",
@@ -326,6 +330,70 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{
 							"severity": "critical", "product": installationName,
 						},
+					},
+				},
+			},
+			{
+				AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
+				Namespace: namespace,
+				GroupName: fmt.Sprintf("%s-general.rules", installationName),
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: fmt.Sprintf("%sThreescaleCriticalMetricsMissing", strings.ToUpper(installationName)),
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlCriticalMetricsMissing,
+							"message": "one or more critical metrics have been missing for 10+ minutes",
+						},
+						Expr:   missingMetricsExpr,
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical"},
+					},
+				},
+			},
+			{
+				AlertName: fmt.Sprintf("%s-custom-domain-alert", installationName),
+				Namespace: namespace,
+				GroupName: fmt.Sprintf("%s-custom-domaim.rules", installationName),
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "CustomDomainCRErrorState",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlRHOAMServiceDefinition,
+							"message": "Error configuring custom domain, please refer to the documentation to resolve the error.",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf("%s_custom_domain{active='true'} > 0", installationName)),
+						For:    "5m",
+						Labels: map[string]string{"severity": "warning", "product": installationName},
+					},
+					{
+						Alert: "DnsBypassThreeScaleAdminUI",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlDnsBypassThreeScaleAdminUI,
+							"message": "3Scale Admin UI, bypassing DNS: If this console is unavailable, the client is unable to configure or administer their API setup.",
+						},
+						Expr:   intstr.FromString("threescale_portals{system_master='false'} > 0"),
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
+					},
+					{
+						Alert: "DnsBypassThreeScaleDeveloperUI",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlDnsBypassThreeScaleDeveloperUI,
+							"message": "3Scale Developer UI, bypassing DNS: If this console is unavailable, the client developers are unable signup or perform API management.",
+						},
+						Expr:   intstr.FromString("threescale_portals{system_developer='false'} > 0"),
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
+					},
+					{
+						Alert: "DnsBypassThreeScaleSystemAdminUI",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlDnsBypassThreeScaleSystemAdminUI,
+							"message": "3Scale System Admin UI, bypassing DNS: If this console is unavailable, the client is unable to perform Account Management, Analytics or Billing.",
+						},
+						Expr:   intstr.FromString("threescale_portals{system_provider='false'} > 0"),
+						For:    "15m",
+						Labels: map[string]string{"severity": "critical", "product": installationName},
 					},
 				},
 			},

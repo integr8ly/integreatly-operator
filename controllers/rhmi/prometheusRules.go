@@ -77,6 +77,23 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 			},
 		},
 		{
+			AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
+			Namespace: observability.OpenshiftMonitoringNamespace,
+			GroupName: fmt.Sprintf("%s-general.rules", installationName),
+			Rules: []monitoringv1.Rule{
+				{
+					Alert: fmt.Sprintf("%sCriticalMetricsMissing", strings.ToUpper(installationName)),
+					Annotations: map[string]string{
+						"sop_url": resources.SopUrlCriticalMetricsMissing,
+						"message": "one or more critical metrics relating to RHOAM installation/upgrade have been missing for 30+ minutes",
+					},
+					Expr:   intstr.FromString(fmt.Sprintf(`absent(%s_version) == 1`, installationName)),
+					For:    "30m",
+					Labels: map[string]string{"severity": "critical"},
+				},
+			},
+		},
+		{
 			AlertName: fmt.Sprintf("%s-telemetry", installationName),
 			Namespace: observability.OpenshiftMonitoringNamespace,
 			GroupName: fmt.Sprintf("%s-telemetry.rules", installationName),
