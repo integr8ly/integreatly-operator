@@ -836,10 +836,10 @@ func (r *Reconciler) ReconcilePodDisruptionBudget(ctx context.Context, apiClient
 }
 
 // create experimental keycloak spec for GCP
-func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient k8sclient.Client) (keycloak.ExperimentalSpec, error) {
+func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient k8sclient.Client) (*keycloak.ExperimentalSpec, error) {
 	platformType, err := resources.GetPlatformType(ctx, serverClient)
 	if err != nil {
-		return keycloak.ExperimentalSpec{}, err
+		return nil, err
 	}
 	if platformType == configv1.GCPPlatformType {
 		pgresSelector := &corev1.SecretKeySelector{
@@ -848,7 +848,7 @@ func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient
 				Name: resources.RHSSODatabaseSecretName,
 			},
 		}
-		return keycloak.ExperimentalSpec{
+		return &keycloak.ExperimentalSpec{
 			Env: []corev1.EnvVar{
 				{
 					Name: resources.RHSSODatabaseAddressKey,
@@ -865,5 +865,5 @@ func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient
 			},
 		}, nil
 	}
-	return keycloak.ExperimentalSpec{}, nil
+	return nil, nil
 }

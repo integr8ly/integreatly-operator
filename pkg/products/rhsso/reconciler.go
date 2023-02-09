@@ -334,7 +334,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		if err != nil {
 			return err
 		}
-		kc.Spec.KeycloakDeploymentSpec.Experimental = experimentalSpec
+		if experimentalSpec != nil {
+			kc.Spec.KeycloakDeploymentSpec.Experimental = *experimentalSpec
+		}
 
 		return nil
 	})
