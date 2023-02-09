@@ -280,29 +280,6 @@ func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
 	return zones
 }
 
-// getVpcCidrBlock returns a cidr block using a key/value tag pairing
-func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
-	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(clusterTagName),
-				Values: []*string{aws.String(clusterTagValue)},
-			},
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("could not find vpc: %v", err)
-	}
-
-	// only one vpc is expected
-	vpcs := describeVpcs.Vpcs
-	if len(vpcs) != 1 {
-		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
-	}
-
-	return aws.StringValue(vpcs[0].CidrBlock), nil
-}
-
 func elasticacheTagsContains(tags []*elasticache.Tag, key, value string) bool {
 	for _, tag := range tags {
 		if *tag.Key == key && *tag.Value == value {
@@ -337,4 +314,156 @@ func ec2TagsContains(tags []*ec2.Tag, key, value string) bool {
 		}
 	}
 	return false
+}
+
+func describeSubnets(ec2svc *ec2.EC2, input *ec2.DescribeSubnetsInput) ([]*ec2.Subnet, error) {
+	describeSubnetsOutput, err := ec2svc.DescribeSubnets(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe subnets: %w", err)
+	}
+	if len(describeSubnetsOutput.Subnets) == 0 {
+		return nil, fmt.Errorf("could not find any subnets")
+	}
+	return describeSubnetsOutput.Subnets, nil
+}
+
+func getClusterSubnets(ec2svc *ec2.EC2, clusterID string) ([]*ec2.Subnet, error) {
+	subnets, err := describeSubnets(ec2svc, &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name: aws.String("tag:" + clusterResourceTagKeyPrefix + clusterID),
+				Values: []*string{
+					aws.String(clusterSharedTagValue),
+					aws.String(clusterOwnedTagValue),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch cluster subnets: %v", err)
+	}
+	return subnets, nil
+}
+
+func getStandaloneSubnets(ec2svc *ec2.EC2, clusterID string) ([]*ec2.Subnet, error) {
+	subnets, err := describeSubnets(ec2svc, &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
+				Values: []*string{&clusterID},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch standalone subnets: %v", err)
+	}
+	return subnets, nil
+}
+
+func describeVpcs(ec2svc *ec2.EC2, input *ec2.DescribeVpcsInput) ([]*ec2.Vpc, error) {
+	describeVpcsOutput, err := ec2svc.DescribeVpcs(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe vpcs: %w", err)
+	}
+	if len(describeVpcsOutput.Vpcs) == 0 {
+		return nil, fmt.Errorf("could not find any vpcs")
+	}
+	return describeVpcsOutput.Vpcs, nil
+}
+
+func getClusterVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
+	clusterSubnets, err := getClusterSubnets(ec2svc, clusterID)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch cluster vpc: %w", err)
+	}
+	clusterTagKey := fmt.Sprintf("%s%s", clusterResourceTagKeyPrefix, clusterID)
+	var vpcID *string
+	for _, subnet := range clusterSubnets {
+		for _, tag := range subnet.Tags {
+			if tag != nil && *tag.Key == clusterTagKey && (*tag.Value == clusterOwnedTagValue || *tag.Value == clusterSharedTagValue) {
+				vpcID = subnet.VpcId
+				break
+			}
+		}
+	}
+	if vpcID == nil {
+		return nil, fmt.Errorf("could not fetch cluster vpc: no subnet tags matched key %s with value %s or %s", clusterTagKey, clusterOwnedTagValue, clusterSharedTagValue)
+	}
+	vpcs, err := describeVpcs(ec2svc, &ec2.DescribeVpcsInput{VpcIds: []*string{vpcID}})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch cluster vpc: %w", err)
+	}
+	if len(vpcs) > 1 {
+		return nil, fmt.Errorf("found more than one vpc associated with cluster subnets")
+	}
+	return vpcs[0], nil
+}
+
+func getStandaloneVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
+	vpcs, err := describeVpcs(ec2svc, &ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
+				Values: []*string{&clusterID},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch standalone vpc: %w", err)
+	}
+	if len(vpcs) > 1 {
+		return nil, fmt.Errorf("found more than one vpc associated with tag %s", standaloneResourceTagKey)
+	}
+	return vpcs[0], nil
+}
+
+func describeRouteTables(ec2svc *ec2.EC2, input *ec2.DescribeRouteTablesInput) ([]*ec2.RouteTable, error) {
+	describeRouteTablesOutput, err := ec2svc.DescribeRouteTables(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe route tables: %w", err)
+	}
+	routeTables := describeRouteTablesOutput.RouteTables
+	if len(routeTables) == 0 {
+		return nil, fmt.Errorf("could not find any route tables")
+	}
+	return routeTables, nil
+}
+
+func getClusterRouteTables(ec2svc *ec2.EC2, vpcId *string, subnets []*ec2.Subnet) ([]*ec2.RouteTable, error) {
+	routeTables, err := describeRouteTables(ec2svc, &ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{vpcId},
+			},
+			{
+				Name: aws.String("association.subnet-id"),
+				Values: func() (subnetIds []*string) {
+					for i := range subnets {
+						subnetIds = append(subnetIds, subnets[i].SubnetId)
+					}
+					return
+				}(),
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch cluster route tables: %w", err)
+	}
+	return routeTables, nil
+}
+
+func getStandaloneRouteTables(ec2svc *ec2.EC2, vpcId *string) ([]*ec2.RouteTable, error) {
+	routeTables, err := describeRouteTables(ec2svc, &ec2.DescribeRouteTablesInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{vpcId},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch standalone route tables: %w", err)
+	}
+	return routeTables, nil
 }

@@ -38,9 +38,10 @@ var (
 )
 
 const (
-	vpcClusterTagKey         = "tag:integreatly.org/clusterID"
-	clusterOwnedTagKeyPrefix = "tag:kubernetes.io/cluster/"
-	clusterOwnedTagValue     = "owned"
+	standaloneResourceTagKey    = "integreatly.org/clusterID"
+	clusterResourceTagKeyPrefix = "kubernetes.io/cluster/"
+	clusterOwnedTagValue        = "owned"
+	clusterSharedTagValue       = "shared"
 )
 
 type strategyMap struct {
@@ -165,6 +166,36 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 		t.Fatal("could not get cluster id", err)
 	}
 
+	clusterVpc, err := getClusterVpc(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching cluster vpc", err)
+	}
+
+	clusterSubnets, err := getClusterSubnets(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching cluster subnets", err)
+	}
+
+	clusterRouteTables, err := getClusterRouteTables(ec2Sess, clusterVpc.VpcId, clusterSubnets)
+	if err != nil {
+		t.Fatal("failure fetching cluster route tables", err)
+	}
+
+	standaloneVpc, err := getStandaloneVpc(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching standalone vpc", err)
+	}
+
+	standaloneSubnets, err := getStandaloneSubnets(ec2Sess, clusterTag)
+	if err != nil {
+		t.Fatal("failure fetching standalone subnets", err)
+	}
+
+	standaloneRouteTables, err := getStandaloneRouteTables(ec2Sess, standaloneVpc.VpcId)
+	if err != nil {
+		t.Fatal("failure fetching standalone route tables", err)
+	}
+
 	// get the vpc cidr block
 	expectedCidr, err := getCidrBlockFromStrategyMap(strat)
 	if err != nil {
@@ -173,33 +204,13 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 
 	// if the cidr strategy map is empty then attempt to retrieve the standaloneCidr cidr block from the vpc
 	if expectedCidr == "" {
-		standaloneCidr, err := getVpcCidrBlock(ec2Sess, vpcClusterTagKey, clusterTag)
-		if err != nil {
-			t.Fatal("could not get cidr block from vpc", err)
-		}
-
-		// check if the cidr block is in the allowed range
-		err = verifyCidrBlockIsInAllowedRange(standaloneCidr)
-		if err != nil {
+		standaloneCidr := *standaloneVpc.CidrBlock
+		if err = verifyCidrBlockIsInAllowedRange(standaloneCidr); err != nil {
 			t.Fatalf("cidr block %s is not within the allowed range %s", standaloneCidr, err)
 		}
-
-		// build tag key to retrieve cluster vpc
-		// denoted -> kubernetes.io/cluster/<cluster-id>=owned
-		clusterOwnedVpcKey := fmt.Sprintf("%s%s", clusterOwnedTagKeyPrefix, clusterTag)
-
-		// retrieve the cluster cidr
-		clusterCidr, err := getVpcCidrBlock(ec2Sess, clusterOwnedVpcKey, clusterOwnedTagValue)
-		if err != nil {
-			t.Fatal("could not get cidr block from vpc", err)
-		}
-
-		// check if the cidr blocks overlap
-		err = checkForOverlappingCidrBlocks(standaloneCidr, clusterCidr)
-		if err != nil {
+		if err = checkForOverlappingCidrBlocks(standaloneCidr, *clusterVpc.CidrBlock); err != nil {
 			t.Fatal(err)
 		}
-
 		expectedCidr = standaloneCidr
 	}
 
@@ -210,18 +221,13 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	}
 	availableZones := GetClustersAvailableZones(clusterNodes)
 
-	// verify vpc
-	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr, isSTS)
+	err = verifyVpc(standaloneVpc, expectedCidr, isSTS)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
-
-	// fail immediately if the vpc is nil, since all of the
-	// other network components are associated with it
-	if vpc == nil {
+	if len(testErrors.vpcError) > 0 {
 		t.Fatal(testErrors.Error())
 	}
 
-	// verify subnets
-	subnets, err := verifySubnets(ec2Sess, clusterTag, expectedCidr)
+	err = verifySubnets(standaloneSubnets, expectedCidr)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
 
 	// verify security groups
@@ -234,7 +240,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 
 	// build array list of all vpc private subnets
 	var subnetIDs []*string
-	for _, subnet := range subnets {
+	for _, subnet := range standaloneSubnets {
 		subnetIDs = append(subnetIDs, subnet.SubnetId)
 	}
 
@@ -249,15 +255,15 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	testErrors.cacheSubnetGroupsError = err.(*networkConfigTestError).cacheSubnetGroupsError
 
 	// verify peering connection
-	conn, err := verifyPeeringConnection(ec2Sess, clusterTag, expectedCidr, aws.StringValue(vpc.VpcId))
+	conn, err := verifyPeeringConnection(ec2Sess, clusterTag, expectedCidr, aws.StringValue(clusterVpc.VpcId))
 	testErrors.peeringConnError = err.(*networkConfigTestError).peeringConnError
 
 	// verify standalone vpc route table
-	err = verifyStandaloneRouteTable(ec2Sess, clusterTag, conn)
+	err = verifyStandaloneRouteTables(standaloneRouteTables, conn)
 	testErrors.standaloneRouteTableError = err.(*networkConfigTestError).standaloneRouteTableError
 
 	// verify cluster route table
-	err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn, availableZones)
+	err = verifyClusterRouteTables(clusterRouteTables, expectedCidr, conn, availableZones)
 	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
 	// if any error was found, fail the test
@@ -267,78 +273,37 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 }
 
 // verify that the standalone vpc is created
-func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string, isSTS bool) (*ec2.Vpc, error) {
+func verifyVpc(vpc *ec2.Vpc, expectedCidr string, isSTS bool) error {
 	newErr := &networkConfigTestError{
 		vpcError: []error{},
 	}
-
-	// filter vpcs by integreatly cluster id tag
-	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(vpcClusterTagKey),
-				Values: []*string{aws.String(clusterTag)},
-			},
-		},
-	})
-	if err != nil {
-		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("could not find vpc: %v", err))
-		return nil, newErr
-	}
-
-	// only one vpc is expected
-	vpcs := describeVpcs.Vpcs
-	if len(vpcs) != 1 {
-		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("expected 1 vpc but found %d", len(vpcs)))
-		return nil, newErr
-	}
-
 	// cidr blocks should match
-	vpc := vpcs[0]
 	foundCidr := aws.StringValue(vpc.CidrBlock)
 	if foundCidr != expectedCidr {
 		errMsg := fmt.Errorf("expected vpc cidr block to match _network cidr block in aws strategy configmap. Expected %s, but got %s", expectedCidr, foundCidr)
 		newErr.vpcError = append(newErr.vpcError, errMsg)
 	}
-
 	if !ec2TagsContains(vpc.Tags, awsManagedTagKey, awsManagedTagValue) {
 		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("vpc does not have expected %s tag", awsManagedTagKey))
 	}
 	if isSTS && !ec2TagsContains(vpc.Tags, awsClusterTypeKey, awsClusterTypeRosaValue) {
 		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("vpc does not have expected %s tag", awsClusterTypeKey))
 	}
-
-	return vpc, newErr
+	return newErr
 }
 
 // verify that the vpc subnets are created
-func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Subnet, error) {
+func verifySubnets(subnets []*ec2.Subnet, expectedCidr string) error {
 	newErr := &networkConfigTestError{
 		subnetsError: []error{},
 	}
 
-	// filter subnets by integreatly cluster id tag
-	describeSubnets, err := session.DescribeSubnets(&ec2.DescribeSubnetsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(vpcClusterTagKey),
-				Values: []*string{aws.String(clusterTag)},
-			},
-		},
-	})
-	if err != nil {
-		errMsg := fmt.Errorf("could not describe subnets: %v", err)
-		newErr.subnetsError = append(newErr.subnetsError, errMsg)
-		return nil, newErr
-	}
-
 	// parse the vpc cidr block from the createStrategy for _network
-	subnets := describeSubnets.Subnets
 	_, cidr, err := net.ParseCIDR(expectedCidr)
 	if err != nil {
 		errMsg := fmt.Errorf("could not parse vpc cidr block: %v", err)
 		newErr.subnetsError = append(newErr.subnetsError, errMsg)
-		return subnets, newErr
+		return newErr
 	}
 	cidrMask, _ := cidr.Mask.Size()
 
@@ -349,7 +314,7 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 		if err != nil {
 			errMsg := fmt.Errorf("could not parse subnet mask for vpc subnets: %v", err)
 			newErr.subnetsError = append(newErr.subnetsError, errMsg)
-			return subnets, newErr
+			return newErr
 		}
 		subnetCidrMask, _ := subnetCidr.Mask.Size()
 		if subnetCidrMask != cidrMask+1 {
@@ -358,7 +323,7 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 		}
 	}
 
-	return subnets, newErr
+	return newErr
 }
 
 // verify vpc security group
@@ -371,7 +336,7 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 	describeGroups, err := session.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(vpcClusterTagKey),
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -481,7 +446,7 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 	peeringConn, err := session.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   aws.String(vpcClusterTagKey),
+				Name:   aws.String("tag:" + standaloneResourceTagKey),
 				Values: []*string{aws.String(clusterTag)},
 			},
 		},
@@ -517,28 +482,11 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 }
 
 // verify that the standalone route table contains a route to the peering connection
-func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.VpcPeeringConnection) error {
+func verifyStandaloneRouteTables(routeTables []*ec2.RouteTable, conn *ec2.VpcPeeringConnection) error {
 	newErr := &networkConfigTestError{
 		standaloneRouteTableError: []error{},
 	}
 
-	// filter the route tables by integreatly cluster id tag
-	describeRouteTables, err := session.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(vpcClusterTagKey),
-				Values: []*string{aws.String(clusterTag)},
-			},
-		},
-	})
-	if err != nil {
-		errMsg := fmt.Errorf("could not describe route tables: %v", err)
-		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, errMsg)
-		return newErr
-	}
-
-	// expect 1 route table
-	routeTables := describeRouteTables.RouteTables
 	if len(routeTables) != 1 {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, errMsg)
@@ -561,29 +509,13 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 }
 
 // verify that the cluster route tables contain a route to the peering connection and the standalone vpc
-func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peeringConn *ec2.VpcPeeringConnection, availableZones map[string]bool) error {
+func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, peeringConn *ec2.VpcPeeringConnection, availableZones map[string]bool) error {
 	newErr := &networkConfigTestError{
 		clusterRouteTablesError: []error{},
 	}
 
-	// filter the route tables by kubernetes owner id
-	describeRouteTables, err := session.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(fmt.Sprintf("tag:kubernetes.io/cluster/%s", clusterTag)),
-				Values: []*string{aws.String("owned")},
-			},
-		},
-	})
-	if err != nil {
-		errMsg := fmt.Errorf("could not describe route tables: %v", err)
-		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
-		return newErr
-	}
-
 	// 1 private route per AZ + 1 public route
 	expectedRouteTableCount := len(availableZones) + 1
-	routeTables := describeRouteTables.RouteTables
 	if len(routeTables) != expectedRouteTableCount {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
@@ -663,8 +595,8 @@ func verifyCidrBlockIsInAllowedRange(cidrBlock string) error {
 		return fmt.Errorf("error parsing cidr %s", cidrBlock)
 	}
 
-	for _, allowedCidrRanges := range allowedCidrRanges {
-		_, cidrRangeNet, err := net.ParseCIDR(allowedCidrRanges)
+	for _, allowedCidrRange := range allowedCidrRanges {
+		_, cidrRangeNet, err := net.ParseCIDR(allowedCidrRange)
 		if err != nil {
 			return fmt.Errorf("error parsing cidr %s", cidrBlock)
 		}
