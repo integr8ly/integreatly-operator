@@ -58,11 +58,11 @@
 products:
   3scale:
     channel: threescale-mas
-    bundle: quay.io/integreatly/3scale-index:v0.11.0-mas
-    installFrom: implicit
+    installFrom: index
     package: 3scale-operator
+    index: quay.io/integreatly/3scale-index:v0.11.0-mas
   cloud-resources:
-    channel: "rhmi"
+    channel: rhmi
     installFrom: index
     package: rhmi-cloud-resources
     index: quay.io/integreatly/cloud-resource-operator:index-v0.44.0
@@ -78,7 +78,7 @@ products:
     channel: alpha
     package: observability-operator
     installFrom: index
-    index: quay.io/rhoas/observability-operator-index:v4.0.4
+    index: quay.io/rhoas/observability-operator-index:v4.1.0
   rhsso:
     channel: rhmi
     installFrom: local

@@ -60,7 +60,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.4.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
-  name: observability-operator.v4.0.4
+  name: observability-operator.v4.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -323,13 +323,25 @@ spec:
                 - --enable-leader-election
                 command:
                 - /manager
-                image: quay.io/rhoas/observability-operator:v4.0.4
+                image: quay.io/rhoas/observability-operator:v4.1.0
                 imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
                 name: manager
                 ports:
                 - containerPort: 9443
                   name: webhook-server
                   protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
                 resources:
                   limits:
                     cpu: 100m
@@ -401,14 +413,8 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  replaces: observability-operator.v3.0.16
-  skips:
-    - observability-operator.v3.0.16
-    - observability-operator.v4.0.0
-    - observability-operator.v4.0.1
-    - observability-operator.v4.0.2
-    - observability-operator.v4.0.3
-  version: 4.0.4
+  replaces: observability-operator.v4.0.4
+  version: 4.1.0
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
