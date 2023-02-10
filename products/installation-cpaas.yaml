@@ -57,12 +57,12 @@
 #
 products:
   3scale:
-    channel: threescale-2.11
-    bundle: registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata@sha256:22dbc0f17e3074a1fcbff9f61412031051ed44e7f24b3942b0d583c855693a42
-    installFrom: implicit
+    channel: threescale-mas
+    installFrom: index
     package: 3scale-operator
+    index: quay.io/integreatly/3scale-index:v0.11.0-mas
   cloud-resources:
-    channel: "rhmi"
+    channel: rhmi
     installFrom: index
     package: rhmi-cloud-resources
     index: quay.io/integreatly/cloud-resource-operator:index-v0.44.0
@@ -78,7 +78,7 @@ products:
     channel: alpha
     package: observability-operator
     installFrom: index
-    index: quay.io/rhoas/observability-operator-index:v3.0.16
+    index: quay.io/rhoas/observability-operator-index:v4.1.0
   rhsso:
     channel: rhmi
     installFrom: local

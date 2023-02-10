@@ -782,9 +782,8 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	for _, group := range rulesResult.Groups {
 		fileNameChunks := strings.Split(group.File, "/")
 		ruleName := fileNameChunks[len(fileNameChunks)-1]
-		ruleNameWithoutUUID := ruleName[:len(ruleName)-42] + ".yaml"
 		rule := alertsTestRule{
-			File: ruleNameWithoutUUID,
+			File: ruleName,
 		}
 		for _, promRule := range group.Rules {
 			switch v := promRule.(type) {

@@ -301,7 +301,7 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ObservabilityProductNamespace),
-		k8sclient.MatchingLabels{"app.kubernetes.io/name": app},
+		k8sclient.MatchingLabels{"app": app},
 	}
 
 	err := ctx.Client.List(goctx.TODO(), pods, opts...)
