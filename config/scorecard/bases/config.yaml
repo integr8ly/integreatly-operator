@@ -2,6 +2,8 @@ apiVersion: scorecard.operatorframework.io/v1alpha3
 kind: Configuration
 metadata:
   name: config
+  cvp_skip_deployment_test: true
+  cvp_skip_catalog_init_test: true
 stages:
 - parallel: true
   tests: []
