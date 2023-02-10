@@ -21,22 +21,45 @@ This test case should verify that the pod priority class is name is updated on R
 
 1. Log in to cluster console as kubeadmin
 
-2. Confirm rhoam CR has the field `priorityClassName` and it's value is `managed-service-priority`
+2. Confirm the rhmi cr has the field `priorityClassName` and its value is `rhoam-pod-priority`
 
-3. Confirm RHSSO and USERSSO `keycloak` statefulsets have the field `priorityClassName` with the value of `managed-service-priority`
+3. Confirm each of the resources below have the field `priorityClassName` and its value is `rhoam-pod-priority`
 
-4. Confirm threescale deployment configs for the below deployments have the field `priorityClassName` with the value of `managed-service-priority`
+### Deployments
 
-````"apicast-production",
-   	"apicast-staging",
-   	"backend-cron",
-   	"backend-listener",
-   	"backend-worker",
-   	"system-app",
-   	"system-memcache",
-   	"system-sidekiq",
-   	"system-sphinx",
-   	"zync",
-   	"zync-database",
-   	"zync-que",```
-````
+| **Namespace**                             | **Name**                                  |
+| ----------------------------------------- | ----------------------------------------- |
+| redhat-rhoam-3scale                       | marin3r-instance                          |
+| redhat-rhoam-3scale-operator              | threescale-operator-controller-manager-v2 |
+| redhat-rhoam-cloud-resources-operator     | cloud-resource-operator                   |
+| redhat-rhoam-customer-monitoring-operator | grafana-operator-controller-manager       |
+| redhat-rhoam-customer-monitoring-operator | grafana-deployment                        |
+| redhat-rhoam-marin3r                      | ratelimit                                 |
+| redhat-rhoam-marin3r-operator             | marin3r-controller-webhook                |
+| redhat-rhoam-marin3r-operator             | marin3r-controller-manager                |
+| redhat-rhoam-rhsso-operator               | rhsso-operator                            |
+| redhat-rhoam-user-sso-operator            | rhsso-operator                            |
+
+### DeploymentConfigs
+
+| **Namespace**       | **Name**           |
+| ------------------- | ------------------ |
+| redhat-rhoam-3scale | zync-que           |
+| redhat-rhoam-3scale | zync-database      |
+| redhat-rhoam-3scale | zync               |
+| redhat-rhoam-3scale | system-sphinx      |
+| redhat-rhoam-3scale | system-sidekiq     |
+| redhat-rhoam-3scale | system-memcache    |
+| redhat-rhoam-3scale | system-app         |
+| redhat-rhoam-3scale | backend-worker     |
+| redhat-rhoam-3scale | backend-listener   |
+| redhat-rhoam-3scale | backend-cron       |
+| redhat-rhoam-3scale | apicast-staging    |
+| redhat-rhoam-3scale | apicast-production |
+
+### StatefulSets
+
+| **Namespace**         | **Name** |
+| --------------------- | -------- |
+| redhat-rhoam-rhsso    | keycloak |
+| redhat-rhoam-user-sso | keycloak |

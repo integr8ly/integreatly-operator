@@ -124,7 +124,7 @@ type PersistentVolumeClaim struct {
 	PersistentVolumeClaimNames []string
 }
 
-type StatefulSets struct {
+type CustomResource struct {
 	Namespace string
 	Name      string
 }
@@ -138,11 +138,6 @@ type Namespace struct {
 type Product struct {
 	Name             string
 	ExpectedReplicas int32
-}
-
-type DeploymentConfigs struct {
-	Namespace string
-	Name      string
 }
 
 type keycloakUser struct {

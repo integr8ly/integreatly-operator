@@ -1,35 +1,35 @@
 package common
 
 import (
-	goctx "context"
+	"context"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
-func priorityStatefulSets(installType string) []StatefulSets {
-	rhsso := StatefulSets{
+func priorityStatefulSets(installType string) []CustomResource {
+	rhsso := CustomResource{
 		Namespace: NamespacePrefix + "rhsso",
 		Name:      "keycloak",
 	}
-	usersso := StatefulSets{
-		Namespace: NamespacePrefix + "user-sso",
-		Name:      "keycloak",
-	}
-
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return []StatefulSets{rhsso}
+		return []CustomResource{rhsso}
 	} else {
-		return []StatefulSets{rhsso, usersso}
+		usersso := CustomResource{
+			Namespace: NamespacePrefix + "user-sso",
+			Name:      "keycloak",
+		}
+		return []CustomResource{rhsso, usersso}
 	}
 }
 
-func priorityDeploymentConfigs() []DeploymentConfigs {
-	return []DeploymentConfigs{
+func priorityDeploymentConfigs() []CustomResource {
+	return []CustomResource{
 		{
 			Namespace: NamespacePrefix + "3scale",
 			Name:      "apicast-production",
@@ -81,77 +81,110 @@ func priorityDeploymentConfigs() []DeploymentConfigs {
 	}
 }
 
-// TestPriorityClass tests to ensure the pod priority class is created and verifies the deploymentconfigs and statefulsets are updated correctly
-func TestPriorityClass(t TestingTB, ctx *TestingContext) {
+func priorityDeployments() []CustomResource {
+	return []CustomResource{
+		{
+			Namespace: NamespacePrefix + "3scale",
+			Name:      "marin3r-instance",
+		},
+		{
+			Namespace: NamespacePrefix + "3scale-operator",
+			Name:      "threescale-operator-controller-manager-v2",
+		},
+		{
+			Namespace: NamespacePrefix + "cloud-resources-operator",
+			Name:      "cloud-resource-operator",
+		},
+		{
+			Namespace: NamespacePrefix + "customer-monitoring-operator",
+			Name:      "grafana-operator-controller-manager",
+		},
+		{
+			Namespace: NamespacePrefix + "customer-monitoring-operator",
+			Name:      "grafana-deployment",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r",
+			Name:      "ratelimit",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r-operator",
+			Name:      "marin3r-controller-webhook",
+		},
+		{
+			Namespace: NamespacePrefix + "marin3r-operator",
+			Name:      "marin3r-controller-manager",
+		},
+		{
+			Namespace: NamespacePrefix + "rhsso-operator",
+			Name:      "rhsso-operator",
+		},
+		{
+			Namespace: NamespacePrefix + "user-sso-operator",
+			Name:      "rhsso-operator",
+		},
+	}
+}
 
+// TestPriorityClass tests to ensure the pod priority class is created and verifies various crs are updated accordingly
+func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-
-	priorityClass := &schedulingv1.PriorityClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: rhmi.Spec.PriorityClassName,
-		},
+	priorityClass := rhmi.Spec.PriorityClassName
+	if err = checkPriorityClassExists(ctx, priorityClass); err != nil {
+		t.Errorf(err.Error())
 	}
-
-	err = checkPriorityClassExists(priorityClass, ctx)
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
-
-	for _, priority := range priorityStatefulSets(rhmi.Spec.Type) {
-		item, err := ctx.KubeClient.AppsV1().StatefulSets(priority.Namespace).Get(goctx.TODO(), priority.Name, metav1.GetOptions{})
-		if err != nil {
-			t.Errorf("Error: %v", err)
+	for _, ss := range priorityStatefulSets(rhmi.Spec.Type) {
+		statefulSet := &appsv1.StatefulSet{}
+		if err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: ss.Name, Namespace: ss.Namespace}, statefulSet); err != nil {
+			t.Errorf("Error: %s", err.Error())
+			break
 		}
-
-		err = checkStatefulSetPriorityIsSet(item, rhmi.Spec.PriorityClassName)
-		if err != nil {
-			t.Errorf("Error %v", err)
+		if err = checkPriorityIsSet(statefulSet.Spec.Template.Spec, priorityClass); err != nil {
+			t.Errorf("failure validating %s/%s: %s", statefulSet.Kind, statefulSet.Name, err.Error())
 		}
 	}
-
-	for _, priority := range priorityDeploymentConfigs() {
-		deploymentConfig := &openshiftappsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: priority.Name, Namespace: priority.Namespace}}
-		err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: deploymentConfig.Name, Namespace: deploymentConfig.Namespace}, deploymentConfig)
-
-		if err != nil {
+	for _, dc := range priorityDeploymentConfigs() {
+		deploymentConfig := &openshiftappsv1.DeploymentConfig{}
+		if err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: dc.Name, Namespace: dc.Namespace}, deploymentConfig); err != nil {
 			t.Errorf("Error: %v", err)
 			break
 		}
-
-		err = checkDeploymentConfigPriorityIsSet(deploymentConfig, rhmi.Spec.PriorityClassName)
-		if err != nil {
-			t.Errorf("Error %v", err)
+		if err = checkPriorityIsSet(deploymentConfig.Spec.Template.Spec, priorityClass); err != nil {
+			t.Errorf("failure validating %s/%s: %s", deploymentConfig.Kind, deploymentConfig.Name, err.Error())
+		}
+	}
+	for _, d := range priorityDeployments() {
+		// skip the user-sso-operator deployment if multi-tenant installation
+		if d.Name == "rhsso-operator" && strings.HasSuffix(d.Namespace, "user-sso-operator") {
+			if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+				continue
+			}
+		}
+		deployment := &appsv1.Deployment{}
+		if err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: d.Name, Namespace: d.Namespace}, deployment); err != nil {
+			t.Errorf("Error: %v", err)
+			break
+		}
+		if err = checkPriorityIsSet(deployment.Spec.Template.Spec, priorityClass); err != nil {
+			t.Errorf("failure validating %s/%s: %s", deployment.Kind, deployment.Name, err.Error())
 		}
 	}
 }
 
-func checkStatefulSetPriorityIsSet(statefulSet *appsv1.StatefulSet, priorityClassName string) error {
-	if statefulSet.Spec.Template.Spec.PriorityClassName != priorityClassName {
-		return fmt.Errorf("priorityClassName is not set in statefulSet %v", statefulSet.Name)
+func checkPriorityIsSet(spec corev1.PodSpec, priorityClassName string) error {
+	if spec.PriorityClassName != priorityClassName {
+		return fmt.Errorf("priorityClassName is not set")
 	}
 	return nil
 }
 
-func checkDeploymentConfigPriorityIsSet(deploymentConfig *openshiftappsv1.DeploymentConfig, priorityClassName string) error {
-	if deploymentConfig.Spec.Template.Spec.PriorityClassName != priorityClassName {
-		return fmt.Errorf("priorityClassName is not set in statefulSet %v", deploymentConfig.Name)
+func checkPriorityClassExists(ctx *TestingContext, priorityClassName string) error {
+	priorityClass := &schedulingv1.PriorityClass{}
+	if err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: priorityClassName}, priorityClass); err != nil {
+		return fmt.Errorf("failure fetching priority class: %w", err)
 	}
-	return nil
-}
-
-func checkPriorityClassExists(priorityClass *schedulingv1.PriorityClass, ctx *TestingContext) error {
-	//err := ctx.Client.Get(goctx.TODO(), priorityClass, &k8sclient.ListOptions{Namespace: ""})
-
-	_, err := ctx.KubeClient.SchedulingV1().PriorityClasses().Get(goctx.TODO(), priorityClass.Name, metav1.GetOptions{})
-
-	if err != nil {
-		return fmt.Errorf("priority Class : %v", err)
-
-	}
-
-	fmt.Print(priorityClass.Name)
 	return nil
 }
