@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 func priorityStatefulSets(installType string) []CustomResource {
@@ -156,6 +157,12 @@ func TestPriorityClass(t TestingTB, ctx *TestingContext) {
 		}
 	}
 	for _, d := range priorityDeployments() {
+		// skip the user-sso-operator deployment if multi-tenant installation
+		if d.Name == "rhsso-operator" && strings.HasSuffix(d.Namespace, "user-sso-operator") {
+			if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+				continue
+			}
+		}
 		deployment := &appsv1.Deployment{}
 		if err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: d.Name, Namespace: d.Namespace}, deployment); err != nil {
 			t.Errorf("Error: %v", err)
