@@ -253,8 +253,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
-func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+func (r *RHMIReconciler) Reconcile(_ context.Context, request ctrl.Request) (ctrl.Result, error) {
+
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
 	timer := time.AfterFunc(time.Minute*12, func() {
@@ -262,6 +262,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	})
 	defer timer.Stop()
 	installInProgress := false
+
 	installation := &rhmiv1alpha1.RHMI{}
 	err := r.Get(context.TODO(), request.NamespacedName, installation)
 	if err != nil {
@@ -269,6 +270,18 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
+		Scheme: r.mgr.GetScheme(),
+	})
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error creating client for alerts: %v", err)
+	}
+	// reconciles rhmi installation alerts
+	_, err = r.newAlertsReconciler(installation).ReconcileAlerts(context.TODO(), alertsClient)
+	if err != nil {
+		log.Error("Error reconciling alerts for the installation", err)
 	}
 
 	originalInstallation := installation.DeepCopy()
@@ -395,18 +408,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
-	}
-
-	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{
-		Scheme: r.mgr.GetScheme(),
-	})
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error creating client for alerts: %v", err)
-	}
-	// reconciles rhmi installation alerts
-	_, err = r.newAlertsReconciler(installation).ReconcileAlerts(context.TODO(), alertsClient)
-	if err != nil {
-		log.Error("Error reconciling alerts for the rhmi installation", err)
 	}
 
 	log.Info("set alerts summary metric")

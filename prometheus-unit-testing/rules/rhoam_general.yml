@@ -4,7 +4,7 @@ groups:
     - alert: CriticalMetricsMissing
       annotations:
         message: one or more critical metrics have been missing for 10+ minutes
-      expr: (absent(kube_endpoint_address_available) or absent(kube_pod_container_status_ready) or absent(kube_pod_labels) or absent(kube_pod_status_phase) or absent(kube_pod_status_ready) or absent(kube_secret_info) or absent(rhoam_version) or absent(threescale_portals)) == 1
+      expr: absent(rhoam_version) == 1
       for: 10m
       labels:
         severity: critical

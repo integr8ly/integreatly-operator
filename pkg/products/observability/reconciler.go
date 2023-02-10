@@ -66,7 +66,7 @@ type Reconciler struct {
 	recorder      record.EventRecorder
 }
 
-func (r *Reconciler) GetPreflightObject(ns string) k8sclient.Object {
+func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 	return nil
 }
 

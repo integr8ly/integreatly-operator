@@ -325,7 +325,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 						"sop_url": resources.SopUrlRHOAMIsInReconcilingErrorState,
 						"message": fmt.Sprintf("%s operator has finished installing, but has been in a error state while reconciling for last 10 minutes", strings.ToUpper(installationName)),
 					},
-					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0) OR absent(%[1]s_status) OR absent(%[1]s_version)`, installationName)),
+					Expr:   intstr.FromString(fmt.Sprintf(`(%s_status{stage!="complete"} > 0) * on(pod) group_left(to_version, version) (%[1]s_version{to_version="",version=~".+"} > 0)`, installationName)),
 					For:    "10m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
 				},
@@ -338,23 +338,6 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 					Expr:   intstr.FromString(installationName + `_version{version=~".+", to_version=""} * on(pod) (installation_controller_reconcile_delayed == 1)`),
 					For:    "1m",
 					Labels: map[string]string{"severity": "warning", "product": installationName},
-				},
-			},
-		},
-		{
-			AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
-			Namespace: namespace,
-			GroupName: fmt.Sprintf("%s-general.rules", installationName),
-			Rules: []monitoringv1.Rule{
-				{
-					Alert: fmt.Sprintf("%sCriticalMetricsMissing", strings.ToUpper(installationName)),
-					Annotations: map[string]string{
-						"sop_url": resources.SopUrlCriticalMetricsMissing,
-						"message": "one or more critical metrics have been missing for 10+ minutes",
-					},
-					Expr:   intstr.FromString(`(absent(kube_endpoint_address_available) or absent(kube_pod_container_status_ready) or absent(kube_pod_labels) or absent(kube_pod_status_phase) or absent(kube_pod_status_ready) or absent(kube_secret_info) or absent(rhoam_version) or absent(threescale_portals)) == 1`),
-					For:    "10m",
-					Labels: map[string]string{"severity": "critical"},
 				},
 			},
 		},
