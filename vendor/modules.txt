@@ -38,7 +38,7 @@ cloud.google.com/go/storage
 cloud.google.com/go/storage/internal
 cloud.google.com/go/storage/internal/apiv2
 cloud.google.com/go/storage/internal/apiv2/stubs
-# cloud.google.com/go/vpcaccess v1.6.0
+# cloud.google.com/go/vpcaccess v1.5.0
 ## explicit; go 1.19
 cloud.google.com/go/vpcaccess/apiv1
 cloud.google.com/go/vpcaccess/apiv1/vpcaccesspb

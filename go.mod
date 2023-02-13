@@ -23,7 +23,7 @@ require (
 	github.com/grafana-operator/grafana-operator/v4 v4.7.1
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/cloud-resource-operator v0.44.0
+	github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/gomega v1.20.1
@@ -56,7 +56,7 @@ require (
 require (
 	cloud.google.com/go/redis v1.11.0
 	cloud.google.com/go/storage v1.27.0
-	cloud.google.com/go/vpcaccess v1.6.0
+	cloud.google.com/go/vpcaccess v1.5.0
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
 	github.com/onsi/ginkgo/v2 v2.1.6
