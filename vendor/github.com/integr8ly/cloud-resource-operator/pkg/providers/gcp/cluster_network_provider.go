@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"net/url"
-	"strings"
-
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp/gcpiface"
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
-	servicenetworking "google.golang.org/api/servicenetworking/v1"
+	"google.golang.org/api/servicenetworking/v1"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	utils "k8s.io/utils/pointer"
+	"net"
+	"net/url"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
+	"time"
 )
 
 const (
@@ -44,7 +44,10 @@ type NetworkManager interface {
 	ReconcileNetworkProviderConfig(ctx context.Context, configManager ConfigManager, tier string) (*net.IPNet, error)
 }
 
-var _ NetworkManager = (*NetworkProvider)(nil)
+var (
+	_              NetworkManager = (*NetworkProvider)(nil)
+	defaultTimeout                = time.Minute
+)
 
 type NetworkProvider struct {
 	Client      client.Client
@@ -60,7 +63,7 @@ type CreateVpcInput struct {
 	CidrBlock string
 }
 
-// initialises the four required clients
+// NewNetworkManager initialises all required clients
 func NewNetworkManager(ctx context.Context, projectID string, opt option.ClientOption, client client.Client, logger *logrus.Entry) (*NetworkProvider, error) {
 	networksApi, err := gcpiface.NewNetworksAPI(ctx, opt)
 	if err != nil {
@@ -120,16 +123,45 @@ func (n *NetworkProvider) CreateNetworkIpRange(ctx context.Context, cidrRange *n
 		if err != nil {
 			return nil, errorUtil.Wrap(err, "failed to create ip address range")
 		}
-		// check if address exists
-		address, err = n.getAddressRange(ctx, ipRangeName)
-		if err != nil {
+		if address, err = n.waitForAddress(ctx, ipRangeName); err != nil {
 			return nil, errorUtil.Wrap(err, "failed to retrieve ip address range")
 		}
 	}
 	return address, nil
 }
 
-// Creates the network service connection and will return the service if it has been created successfully
+func (n *NetworkProvider) waitForAddress(ctx context.Context, ipRangeName string) (*computepb.Address, error) {
+	addressChan := make(chan *computepb.Address, 1)
+	errorChan := make(chan error, 1)
+	defer close(addressChan)
+	defer close(errorChan)
+	go func() {
+		for {
+			address, err := n.getAddressRange(ctx, ipRangeName)
+			if err != nil {
+				errorChan <- err
+				break
+			}
+			if address != nil {
+				addressChan <- address
+				break
+			}
+			time.Sleep(time.Second * 3)
+		}
+
+	}()
+	select {
+	case address := <-addressChan:
+		n.Logger.Infof("created ip address range %s: %s/%d", address.GetName(), address.GetAddress(), address.GetPrefixLength())
+		return address, nil
+	case err := <-errorChan:
+		return nil, err
+	case <-time.After(defaultTimeout):
+		return nil, fmt.Errorf("waitForAddress() timed out")
+	}
+}
+
+// CreateNetworkService Creates the network service connection and will return the service if it has been created successfully
 // This automatically creates a peering connection to the clusterVpc named after the service connection
 func (n *NetworkProvider) CreateNetworkService(ctx context.Context) (*servicenetworking.Connection, error) {
 	clusterVpc, err := getClusterVpc(ctx, n.Client, n.NetworkApi, n.ProjectID, n.Logger)
@@ -161,9 +193,7 @@ func (n *NetworkProvider) CreateNetworkService(ctx context.Context) (*servicenet
 			if err != nil {
 				return nil, errorUtil.Wrap(err, "failed to create service connection")
 			}
-			// check if service exists
-			service, err = n.getServiceConnection(clusterVpc)
-			if err != nil {
+			if service, err = n.waitForConnection(clusterVpc); err != nil {
 				return nil, errorUtil.Wrap(err, "failed to retrieve service connection")
 			}
 		}
@@ -171,7 +201,38 @@ func (n *NetworkProvider) CreateNetworkService(ctx context.Context) (*servicenet
 	return service, nil
 }
 
-// Removes the peering connection from the cluster vpc
+func (n *NetworkProvider) waitForConnection(clusterVpc *computepb.Network) (*servicenetworking.Connection, error) {
+	connectionChan := make(chan *servicenetworking.Connection, 1)
+	errorChan := make(chan error, 1)
+	defer close(connectionChan)
+	defer close(errorChan)
+	go func() {
+		for {
+			connection, err := n.getServiceConnection(clusterVpc)
+			if err != nil {
+				errorChan <- err
+				break
+			}
+			if connection != nil {
+				connectionChan <- connection
+				break
+			}
+			time.Sleep(time.Second * 3)
+		}
+
+	}()
+	select {
+	case connection := <-connectionChan:
+		n.Logger.Infof("created network service connection %s", connection.Service)
+		return connection, nil
+	case err := <-errorChan:
+		return nil, err
+	case <-time.After(defaultTimeout):
+		return nil, fmt.Errorf("waitForConnection() timed out")
+	}
+}
+
+// DeleteNetworkPeering Removes the peering connection from the cluster vpc
 // The service connection removal can get stuck if this is not performed first
 func (n *NetworkProvider) DeleteNetworkPeering(ctx context.Context) error {
 	clusterVpc, err := getClusterVpc(ctx, n.Client, n.NetworkApi, n.ProjectID, n.Logger)
@@ -189,7 +250,7 @@ func (n *NetworkProvider) DeleteNetworkPeering(ctx context.Context) error {
 	return nil
 }
 
-// This deletes the network service connection, but can get stuck if peering
+// DeleteNetworkService This deletes the network service connection, but can get stuck if peering
 // has not been removed
 func (n *NetworkProvider) DeleteNetworkService(ctx context.Context) error {
 	clusterVpc, err := getClusterVpc(ctx, n.Client, n.NetworkApi, n.ProjectID, n.Logger)

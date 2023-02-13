@@ -285,19 +285,19 @@ func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, err
 	}
 	organizationTag := resources.GetOrganizationTag()
 
-	tags := []*tag{
+	tags := []*resources.Tag{
 		{
-			key:   defaultAWSPrivateSubnetTagKey,
-			value: "1",
+			Key:   defaultAWSPrivateSubnetTagKey,
+			Value: "1",
 		}, {
-			key:   fmt.Sprintf("%sclusterID", organizationTag),
-			value: clusterID,
+			Key:   fmt.Sprintf("%sclusterID", organizationTag),
+			Value: clusterID,
 		}, {
-			key:   tagDisplayName,
-			value: defaultSubnetNameTagValue,
-		}, buildManagedTag(),
+			Key:   resources.TagDisplayName,
+			Value: defaultSubnetNameTagValue,
+		}, resources.BuildManagedTag(),
 	}
-	infraTags, err := getUserInfraTags(ctx, c)
+	infraTags, err := resources.GetUserInfraTags(ctx, c)
 	if err != nil {
 		msg := "Failed to get user infrastructure tags"
 		return nil, errorUtil.Wrapf(err, msg)
@@ -305,10 +305,10 @@ func getDefaultSubnetTags(ctx context.Context, c client.Client) ([]*ec2.Tag, err
 	if infraTags != nil {
 		// merge tags into single array, where any duplicate
 		// values in infra are discarded in favour of the default tags
-		tags = mergeTags(tags, infraTags)
+		tags = resources.MergeTags(tags, infraTags)
 	}
 
-	return genericToEc2Tags(tags), nil
+	return genericListToEc2TagList(tags), nil
 }
 
 // Builds a list of valid subnet CIDR blocks

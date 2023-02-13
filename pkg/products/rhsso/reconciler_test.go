@@ -6,17 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/test/utils"
+
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -24,6 +24,7 @@ import (
 
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -43,7 +44,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -246,6 +246,28 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
+	infrastructureAws := &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: configv1.AWSPlatformType,
+			},
+		},
+	}
+
+	infrastructureGcp := &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: configv1.GCPPlatformType,
+			},
+		},
+	}
+
 	//secret created by the cloud resource operator postgres reconciler
 	croPostgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -283,7 +305,19 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:                  "Test reconcile custom resource returns completed when successful created",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &installation,
+			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductDeclaration:    localProductDeclaration,
+		},
+		{
+			Name:                  "Test reconcile custom resource returns completed when successful created on gcp",
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureGcp),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -295,7 +329,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:                  "No product declaration found for RHSSO",
-			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
@@ -316,7 +350,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					Ready:   true,
 					Version: string(integreatlyv1alpha1.OperatorVersionRHSSO),
 				},
-			}, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			}, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: func() *config.ConfigReadWriterMock {
 				basicConfig := basicConfigMock()
@@ -339,21 +373,14 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ProductDeclaration:    localProductDeclaration,
 		},
 		{
-			Name: "Failed to add ownerReference admin credentials secret",
-			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
-					return nil
-				},
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
-					return k8serr.NewNotFound(schema.GroupResource{}, "secret")
-				},
-			},
+			Name:                  "Failed to add ownerReference admin credentials secret",
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, infrastructureAws),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
 			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			ExpectError:           true,
-			ExpectedError:         ` "secret" not found`,
+			ExpectedError:         fmt.Sprintf(` "%s" not found`, adminCredentialSecretName),
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
@@ -361,7 +388,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:            "URL for Keycloak not yet available",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: func() *config.ConfigReadWriterMock {
 				basicConfig := basicConfigMock()
@@ -385,7 +412,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Openshift IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -398,7 +425,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to setup Github IDP",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -411,7 +438,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to authenticate client in keycloak api",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -431,7 +458,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to create and add keycloak authentication flow",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -455,7 +482,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name:               "Failed to sync openshift idp client secret",
-			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeClient:         fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso, infrastructureAws),
 			FakeOauthClient:    fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:         basicConfigMock(),
 			Installation:       &installation,
@@ -491,18 +518,31 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
-			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
+			FakeClient: func() k8sclient.Client {
+				client := moqclient.NewSigsClientMoqWithScheme(scheme, infrastructureAws)
+				client.CreateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("failed to create keycloak custom resource")
-				},
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
-					return k8serr.NewNotFound(schema.GroupResource{}, "keycloak")
-				},
-			},
+				}
+				return client
+			}(),
 			FakeConfig:            basicConfigMock(),
 			Installation:          &installation,
 			ExpectError:           true,
 			ExpectedError:         "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			ProductDeclaration:    localProductDeclaration,
+		},
+		{
+			Name:                  "Test unsuccessful determining platform type",
+			FakeClient:            fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret, kcr, credentialRhsso),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &installation,
+			ExpectError:           true,
+			ExpectedError:         `failed to create/update keycloak custom resource: failed to retrieve cluster infrastructure: infrastructures.config.openshift.io "cluster" not found`,
 			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
@@ -747,6 +787,17 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	infrastructureAws := &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: configv1.AWSPlatformType,
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -766,7 +817,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient: func() k8sclient.Client {
-				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules)
+				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules, infrastructureAws)
 				mockClient.PatchFunc = func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
 					return nil
 				}

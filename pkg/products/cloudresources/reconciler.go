@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	configv1 "github.com/openshift/api/config/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	corev1 "k8s.io/api/core/v1"
@@ -28,8 +29,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/rds"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	croStrat "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
 	croProviders "github.com/integr8ly/cloud-resource-operator/pkg/providers"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
+	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -80,10 +83,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		} else {
 			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
 		}
-	}
-
-	if config.GetStrategiesConfigMapName() == "" {
-		config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
 	}
 
 	if err := configManager.WriteConfig(config); err != nil {
@@ -154,6 +153,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if uninstall {
 		return phase, nil
+	}
+
+	if r.Config.GetStrategiesConfigMapName() == "" {
+		err := r.setPlatformStrategyName(ctx, client)
+		if err != nil {
+			phase := integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, installation, phase, "Failed to determine strategy name from platform", err)
+			return phase, err
+		}
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
@@ -325,39 +333,41 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	if strings.ToLower(installation.Spec.UseClusterStorage) == "false" {
-		croStrategyConfig := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      r.Config.GetStrategiesConfigMapName(),
-				Namespace: installation.Namespace,
-			},
-		}
-		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, croStrategyConfig, func() error {
-			forceBucketDeletion := true
-			skipFinalSnapshot := true
-			finalSnapshotIdentifier := ""
-
-			resourcesConfig := map[string]interface{}{
-				"blobstorage": croAWS.S3DeleteStrat{
-					ForceBucketDeletion: &forceBucketDeletion,
-				},
-				"postgres": rds.DeleteDBClusterInput{
-					SkipFinalSnapshot: &skipFinalSnapshot,
-				},
-				"redis": elasticache.DeleteCacheClusterInput{
-					FinalSnapshotIdentifier: &finalSnapshotIdentifier,
+		if r.Config.GetStrategiesConfigMapName() == croAWS.DefaultConfigMapName {
+			croStrategyConfig := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      r.Config.GetStrategiesConfigMapName(),
+					Namespace: installation.Namespace,
 				},
 			}
-			for resource, deleteStrategy := range resourcesConfig {
-				err := overrideStrategyConfig(resource, croStrategyConfig, deleteStrategy)
-				if err != nil {
-					return err
+			_, err := controllerutil.CreateOrUpdate(ctx, serverClient, croStrategyConfig, func() error {
+				forceBucketDeletion := true
+				skipFinalSnapshot := true
+				finalSnapshotIdentifier := ""
+
+				resourcesConfig := map[string]interface{}{
+					"blobstorage": croAWS.S3DeleteStrat{
+						ForceBucketDeletion: &forceBucketDeletion,
+					},
+					"postgres": rds.DeleteDBClusterInput{
+						SkipFinalSnapshot: &skipFinalSnapshot,
+					},
+					"redis": elasticache.DeleteCacheClusterInput{
+						FinalSnapshotIdentifier: &finalSnapshotIdentifier,
+					},
 				}
-			}
+				for resource, deleteStrategy := range resourcesConfig {
+					err := overrideStrategyConfig(resource, croStrategyConfig, deleteStrategy)
+					if err != nil {
+						return err
+					}
+				}
 
-			return nil
-		})
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
+				return nil
+			})
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
 		}
 	}
 
@@ -500,46 +510,48 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 }
 
 func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Client, resourceType croProviders.ResourceType, updates []string) (integreatlyv1alpha1.StatusPhase, error) {
-	cfgMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.Config.GetStrategiesConfigMapName(),
-			Namespace: r.installation.Namespace,
-		},
-	}
-
-	op, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
-
-		var rawStrategy map[string]*croAWS.StrategyConfig
-		if err := json.Unmarshal([]byte(cfgMap.Data[string(resourceType)]), &rawStrategy); err != nil {
-			return err
+	if r.Config.GetStrategiesConfigMapName() == croAWS.DefaultConfigMapName {
+		cfgMap := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      r.Config.GetStrategiesConfigMapName(),
+				Namespace: r.installation.Namespace,
+			},
 		}
 
-		var updateConfig []string
-		if err := json.Unmarshal(rawStrategy[croUtil.TierProduction].ServiceUpdates, &updateConfig); err != nil {
-			return err
-		}
+		op, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
 
-		updateConfig = updates
-		updatesMarshalled, err := json.Marshal(updateConfig)
+			var rawStrategy map[string]*croAWS.StrategyConfig
+			if err := json.Unmarshal([]byte(cfgMap.Data[string(resourceType)]), &rawStrategy); err != nil {
+				return err
+			}
+
+			var updateConfig []string
+			if err := json.Unmarshal(rawStrategy[croUtil.TierProduction].ServiceUpdates, &updateConfig); err != nil {
+				return err
+			}
+
+			updateConfig = updates
+			updatesMarshalled, err := json.Marshal(updateConfig)
+			if err != nil {
+				return err
+			}
+
+			rawStrategy[croUtil.TierProduction].ServiceUpdates = updatesMarshalled
+
+			marshalledStrategy, err := json.Marshal(rawStrategy)
+			if err != nil {
+				return err
+			}
+			cfgMap.Data[string(resourceType)] = string(marshalledStrategy)
+
+			return nil
+		})
 		if err != nil {
-			return err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-
-		rawStrategy[croUtil.TierProduction].ServiceUpdates = updatesMarshalled
-
-		marshalledStrategy, err := json.Marshal(rawStrategy)
-		if err != nil {
-			return err
+		if op == controllerutil.OperationResultUpdated {
+			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
-		cfgMap.Data[string(resourceType)] = string(marshalledStrategy)
-
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if op == controllerutil.OperationResultUpdated {
-		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -630,16 +642,28 @@ func (r *Reconciler) checkStsCredentialsPresent(client k8sclient.Client, operato
 // this function was part of the rhmiconfig controller, which has sense been removed.
 func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling cloud resource maintenance strategies")
-
-	timeConfig := &croUtil.StrategyTimeConfig{
-		BackupStartTime:      "03:01",
-		MaintenanceStartTime: "Thu 02:00",
-	}
+	timeConfig := croStrat.NewStrategyTimeConfig(3, 01, time.Thursday, 2, 00)
 
 	err := croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("faliure to reconcile aws strategy map: %v", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to reconcile strategy map: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) setPlatformStrategyName(ctx context.Context, client k8sclient.Client) error {
+	platformType, err := resources.GetPlatformType(ctx, client)
+	if err != nil {
+		return err
+	}
+	switch platformType {
+	case configv1.AWSPlatformType:
+		r.Config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
+	case configv1.GCPPlatformType:
+		r.Config.SetStrategiesConfigMapName(croGCP.DefaultConfigMapName)
+	default:
+		return fmt.Errorf("unsupported platform type %s", platformType)
+	}
+	return nil
 }

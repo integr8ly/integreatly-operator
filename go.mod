@@ -244,4 +244,4 @@ replace github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-o
 exclude github.com/kubernetes-incubator/external-storage v0.20.4-openstorage-rc2
 
 // Required until the branch merged mgdapi-3425-gcp
-replace github.com/integr8ly/cloud-resource-operator => github.com/integr8ly/cloud-resource-operator v0.41.1-0.20221214092311-15f86a12e586
+replace github.com/integr8ly/cloud-resource-operator => github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8

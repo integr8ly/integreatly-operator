@@ -307,8 +307,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.installation.Spec.PriorityClassName,
 	)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile 3scale-operator csv deployments priority class name"), err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale-operator csv deployments priority class name", err)
 		return phase, err
+	}
+
+	platformType, err := resources.GetPlatformType(ctx, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "failed to determine platform type", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	if r.installation.GetDeletionTimestamp() == nil {
@@ -321,7 +327,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Wait for RHSSO postgres to be completed
 		phase, err = resources.WaitForRHSSOPostgresToBeComplete(serverClient, installation.Name, r.ConfigManager.GetOperatorNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Waiting for RHSSO postgres to be completed"), err)
+			events.HandleError(r.recorder, installation, phase, "Waiting for RHSSO postgres to be completed", err)
 			return phase, err
 		}
 
@@ -330,15 +336,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
 			return phase, err
 		}
-
-		phase, err = r.reconcileBlobStorage(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
-			return phase, err
+		if platformType != configv1.GCPPlatformType {
+			phase, err = r.reconcileBlobStorage(ctx, serverClient)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
+				return phase, err
+			}
 		}
 	}
 
-	phase, err = r.reconcileComponents(ctx, serverClient, productConfig)
+	phase, err = r.reconcileComponents(ctx, serverClient, productConfig, platformType)
 	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -668,9 +675,9 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig quota.ProductConfig, platformType configv1.PlatformType) (integreatlyv1alpha1.StatusPhase, error) {
 
-	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
+	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient, platformType)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -1040,21 +1047,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sc
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
-	// get blob storage cr
-	blobStorage := &crov1.BlobStorage{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
-	}
-
-	// get blob storage connection secret
-	blobStorageSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
-	}
-
+func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client, platformType configv1.PlatformType) (*threescalev1.SystemFileStorageSpec, error) {
 	// create s3 credentials secret
 	credSec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1064,21 +1057,30 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
-	isSTS, err := sts.IsClusterSTS(ctx, serverClient, r.log)
-	if err != nil {
-		return nil, fmt.Errorf("error checking STS mode: %w", err)
-	}
-
-	if isSTS {
-		err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
-	} else {
-		var infra *configv1.Infrastructure
-		infra, err = resources.GetClusterInfrastructure(ctx, serverClient)
+	var err error
+	var isSTS bool
+	switch platformType {
+	case configv1.AWSPlatformType:
+		blobStorage := &crov1.BlobStorage{}
+		// get blob storage cr
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve cluster infrastructure: %w", err)
+			return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
 		}
-		switch infra.Status.PlatformStatus.Type {
-		case configv1.AWSPlatformType:
+
+		// get blob storage connection secret
+		blobStorageSec := &corev1.Secret{}
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
+		}
+		isSTS, err = sts.IsClusterSTS(ctx, serverClient, r.log)
+		if err != nil {
+			return nil, fmt.Errorf("error checking STS mode: %w", err)
+		}
+		if isSTS {
+			err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
+		} else {
 			_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 				// Map known key names from CRO, and append any additional values that may be used for Minio
 				for key, value := range blobStorageSec.Data {
@@ -1097,11 +1099,11 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 				}
 				return nil
 			})
-		case configv1.GCPPlatformType:
-			err = r.createMCGS3Secret(ctx, serverClient, credSec)
-		default:
-			err = fmt.Errorf("unsupported cluster type: %s", infra.Status.PlatformStatus.Type)
 		}
+	case configv1.GCPPlatformType:
+		err = r.createMCGS3Secret(ctx, serverClient, credSec)
+	default:
+		err = fmt.Errorf("unsupported cluster type: %s", platformType)
 	}
 
 	if err != nil {

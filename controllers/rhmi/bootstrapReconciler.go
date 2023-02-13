@@ -5,12 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
-	v1 "github.com/openshift/api/config/v1"
 	"math/big"
 	"os"
 	"strings"
+
+	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -19,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -36,7 +36,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
-	res "github.com/integr8ly/integreatly-operator/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -81,7 +80,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	observabilityConfig, err := r.ConfigManager.ReadObservability()
 	if err != nil {
-		return rhmiv1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	uninstall := false
@@ -170,14 +169,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	observabilityConfig, err = r.ConfigManager.ReadObservability()
 	if err != nil {
-		return rhmiv1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	ns := observability.GetDefaultNamespace(r.installation.Spec.NamespacePrefix)
 	if observabilityConfig.GetNamespace() == "" {
 		observabilityConfig.SetNamespace(ns)
 		err := r.ConfigManager.WriteConfig(observabilityConfig)
 		if err != nil {
-			return rhmiv1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 	phase, err = r.ReconcileNamespace(ctx, observabilityConfig.GetNamespace(), installation, serverClient, log)
@@ -246,7 +245,7 @@ func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8
 		},
 	}
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, priorityClass, func() error {
-		if integreatlyv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(r.installation.Spec.Type)) {
+		if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 			priorityClass.Value = 0
 		} else {
 			priorityClass.Value = 1000000000
@@ -274,16 +273,26 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			cloudConfig.Data = map[string]string{}
 		}
 
-		if res.Contains(cloudConfig.Finalizers, previousDeletionFinalizer) {
-			res.Replace(cloudConfig.Finalizers, previousDeletionFinalizer, deletionFinalizer)
+		if resources.Contains(cloudConfig.Finalizers, previousDeletionFinalizer) {
+			resources.Replace(cloudConfig.Finalizers, previousDeletionFinalizer, deletionFinalizer)
 		}
 
 		if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
 			cloudConfig.Data["managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 		} else {
-			cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
-			cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			platformType, err := resources.GetPlatformType(ctx, serverClient)
+			if err != nil {
+				return errors.Wrap(err, "failed to retrieve platform type")
+			}
+			switch platformType {
+			case configv1.AWSPlatformType:
+				cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+				cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			case configv1.GCPPlatformType:
+				cloudConfig.Data["managed-api"] = `{"blobstorage":"gcp", "smtpcredentials":"gcp", "redis":"gcp", "postgres":"gcp"}`
+				cloudConfig.Data["multitenant-managed-api"] = `{"blobstorage":"gcp", "smtpcredentials":"gcp", "redis":"gcp", "postgres":"gcp"}`
+			}
 		}
 		cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 		return nil
@@ -653,7 +662,7 @@ func (r *Reconciler) generateSecret(length int) string {
 	return string(buf)
 }
 
-func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace string,
+func (r *Reconciler) processQuota(installation *integreatlyv1alpha1.RHMI, namespace string,
 	installationQuota *quota.Quota, serverClient k8sclient.Client) error {
 	isQuotaUpdated := false
 
@@ -690,7 +699,7 @@ func (r *Reconciler) processQuota(installation *rhmiv1alpha1.RHMI, namespace str
 	return nil
 }
 
-func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	smtp, err := cs.GetCustomAddonValues(serverClient, r.installation.Namespace)
 	if err != nil {
@@ -707,7 +716,7 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 		}
 
 		if r.installation.Status.CustomSmtp == nil {
-			r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
+			r.installation.Status.CustomSmtp = &integreatlyv1alpha1.CustomSmtpStatus{}
 		}
 		r.installation.Status.CustomSmtp.Enabled = true
 		r.installation.Status.CustomSmtp.Error = ""
@@ -719,7 +728,7 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 
 		errorString := cs.ParameterErrors(smtp)
 		if r.installation.Status.CustomSmtp == nil {
-			r.installation.Status.CustomSmtp = &rhmiv1alpha1.CustomSmtpStatus{}
+			r.installation.Status.CustomSmtp = &integreatlyv1alpha1.CustomSmtpStatus{}
 		}
 		r.installation.Status.CustomSmtp.Enabled = false
 		r.installation.Status.CustomSmtp.Error = fmt.Sprintf("Custom SMTP partially configured, missing fields: %s", errorString)
@@ -737,9 +746,9 @@ func (r *Reconciler) reconcileCustomSMTP(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sclient.Client) (rhmiv1alpha1.StatusPhase, error) {
+func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	cr := &v1.Infrastructure{
+	cr := &configv1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
@@ -762,7 +771,7 @@ func (r *Reconciler) retrieveAPIServerURL(ctx context.Context, serverClient k8sc
 	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("no Status.apiServerURL found in infrastricture CR")
 }
 
-func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {
+func getSecretQuotaParam(installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, namespace string) (string, error) {
 	// Check for normal addon quota parameter
 	quotaParam, found, err := addon.GetStringParameter(context.TODO(), serverClient, namespace, addon.QuotaParamName)
 	if err != nil {
@@ -787,10 +796,10 @@ func getSecretQuotaParam(installation *rhmiv1alpha1.RHMI, serverClient k8sclient
 		}
 
 		if !found {
-			log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", rhmiv1alpha1.EnvKeyQuota))
-			quotaValue, exists := os.LookupEnv(rhmiv1alpha1.EnvKeyQuota)
+			log.Info(fmt.Sprintf("no secret param found after one minute so falling back to env var '%s' for sku value", integreatlyv1alpha1.EnvKeyQuota))
+			quotaValue, exists := os.LookupEnv(integreatlyv1alpha1.EnvKeyQuota)
 			if !exists || quotaValue == "" {
-				return "", fmt.Errorf("no quota value provided by add on parameter '%s' or by env var '%s'", addon.QuotaParamName, rhmiv1alpha1.EnvKeyQuota)
+				return "", fmt.Errorf("no quota value provided by add on parameter '%s' or by env var '%s'", addon.QuotaParamName, integreatlyv1alpha1.EnvKeyQuota)
 			}
 			return quotaValue, nil
 		}

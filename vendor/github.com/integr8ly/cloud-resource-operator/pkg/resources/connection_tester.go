@@ -1,4 +1,4 @@
-package aws
+package resources
 
 import (
 	"fmt"
@@ -35,4 +35,12 @@ func (m *ConnectionTestManager) TCPConnection(host string, port int) bool {
 	}
 
 	return true
+}
+
+func BuildMockConnectionTester() *ConnectionTesterMock {
+	mockTester := &ConnectionTesterMock{}
+	mockTester.TCPConnectionFunc = func(host string, port int) bool {
+		return true
+	}
+	return mockTester
 }

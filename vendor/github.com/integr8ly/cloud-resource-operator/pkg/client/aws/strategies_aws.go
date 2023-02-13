@@ -1,40 +1,57 @@
 /*
 AWS Strategy Setup
 
-A utility to abstract the various strategy map ConfigMaps from the service using CRO
+# A utility to abstract the various strategy map ConfigMaps from the service using CRO
 
 Problem Statement:
- - We require an AWS strategy map ConfigMaps to be in place to provide configuration used to provision AWS cloud resources
+  - We require an AWS strategy map ConfigMaps to be in place to provide configuration used to provision AWS cloud resources
 
-This utility provides the abstraction necessary, provisioning an AWS strategy map
+# This utility provides the abstraction necessary, provisioning an AWS strategy map
 
 We accept start times for maintenance and backup times as a level of abstraction
 Building the correct maintenance and backup times necessary for AWS
 Maintenance Window format ddd:hh:mm-ddd:hh:mm
 Backup/Snapshot Window hh:mm-hh:mm
 */
-package client
+package aws
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/rds"
+	stratType "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	errorUtil "github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
-	"time"
 )
 
+const defaultAwsStratValue = `{"development": { "region": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "createStrategy": {}, "deleteStrategy": {} }}`
+
+type StrategyProvider struct {
+	Client    k8sclient.Client
+	Tier      string
+	Namespace string
+}
+
+func NewAWSStrategyProvider(client k8sclient.Client, tier string, namespace string) *StrategyProvider {
+	return &StrategyProvider{
+		Client:    client,
+		Tier:      tier,
+		Namespace: namespace,
+	}
+}
+
 // reconciles aws strategy map, adding maintenance and backup window fields
-func reconcileAWSStrategyMap(ctx context.Context, client client.Client, timeConfig *StrategyTimeConfig, tier, namespace string) error {
+func (p *StrategyProvider) ReconcileStrategyMap(ctx context.Context, client k8sclient.Client, timeConfig *stratType.StrategyTimeConfig) error {
 	// build backup and maintenance windows
 	backupWindow, maintenanceWindow, err := buildAWSWindows(timeConfig)
 	if err != nil {
@@ -42,10 +59,10 @@ func reconcileAWSStrategyMap(ctx context.Context, client client.Client, timeConf
 	}
 
 	// create or update aws strategies config map
-	awsStratConfig := &v1.ConfigMap{
+	awsStratConfig := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      croAWS.DefaultConfigMapName,
-			Namespace: namespace,
+			Namespace: p.Namespace,
 		},
 	}
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, awsStratConfig, func() error {
@@ -57,26 +74,26 @@ func reconcileAWSStrategyMap(ctx context.Context, client client.Client, timeConf
 
 		// check to ensure postgres and redis key is included in config data
 		// build default postgres and redis key, contains a `development` and `production` tier
-		if _, ok := awsStratConfig.Data[postgresStratKey]; !ok {
-			awsStratConfig.Data[postgresStratKey] = buildDefaultAWSStratValue()
+		if _, ok := awsStratConfig.Data[stratType.PostgresStratKey]; !ok {
+			awsStratConfig.Data[stratType.PostgresStratKey] = defaultAwsStratValue
 		}
-		if _, ok := awsStratConfig.Data[redisStratKey]; !ok {
-			awsStratConfig.Data[redisStratKey] = buildDefaultAWSStratValue()
+		if _, ok := awsStratConfig.Data[stratType.RedisStratKey]; !ok {
+			awsStratConfig.Data[stratType.RedisStratKey] = defaultAwsStratValue
 		}
 
 		// marshal strategies, updating existing strategies with new values
-		postgresStrategy, err := reconcilePostgresStrategy(awsStratConfig.Data[postgresStratKey], tier, backupWindow, maintenanceWindow)
+		postgresStrategy, err := p.reconcilePostgresStrategy(awsStratConfig.Data[stratType.PostgresStratKey], backupWindow, maintenanceWindow)
 		if err != nil {
 			return errorUtil.Wrapf(err, "failed to reconcile postgres strategy")
 		}
-		redisStrategy, err := reconcileRedisStrategy(awsStratConfig.Data[redisStratKey], tier, backupWindow, maintenanceWindow)
+		redisStrategy, err := p.reconcileRedisStrategy(awsStratConfig.Data[stratType.RedisStratKey], backupWindow, maintenanceWindow)
 		if err != nil {
 			return errorUtil.Wrapf(err, "failed to reconcile redis strategy")
 		}
 
 		// setting postgres and redis values to be updated strategies
-		awsStratConfig.Data[postgresStratKey] = postgresStrategy
-		awsStratConfig.Data[redisStratKey] = redisStrategy
+		awsStratConfig.Data[stratType.PostgresStratKey] = postgresStrategy
+		awsStratConfig.Data[stratType.RedisStratKey] = redisStrategy
 
 		return nil
 	}); err != nil {
@@ -89,7 +106,7 @@ func reconcileAWSStrategyMap(ctx context.Context, client client.Client, timeConf
 // unmarshalls raw strategy to create db instance input
 // checks found values from current config map vs expected values
 // marshalls create db instance input back to raw strategy
-func reconcilePostgresStrategy(config, tier, backupWindow, maintenanceWindow string) (string, error) {
+func (p *StrategyProvider) reconcilePostgresStrategy(config, backupWindow, maintenanceWindow string) (string, error) {
 	// unmarshall config data to type of cro aws strategy config
 	var rawStrategy map[string]*croAWS.StrategyConfig
 	if err := json.Unmarshal([]byte(config), &rawStrategy); err != nil {
@@ -98,7 +115,7 @@ func reconcilePostgresStrategy(config, tier, backupWindow, maintenanceWindow str
 
 	// unmarshall the create strategy from the raw strategy tier to type create db instance input
 	rdsCreateConfig := &rds.CreateDBInstanceInput{}
-	if err := json.Unmarshal(rawStrategy[tier].CreateStrategy, rdsCreateConfig); err != nil {
+	if err := json.Unmarshal(rawStrategy[p.Tier].CreateStrategy, rdsCreateConfig); err != nil {
 		return "", errorUtil.Wrapf(err, "failed to unmarshal aws rds cluster config")
 	}
 
@@ -119,7 +136,7 @@ func reconcilePostgresStrategy(config, tier, backupWindow, maintenanceWindow str
 	}
 
 	// set the createstrategy on our expected tier to the marshalled create db instance input struct
-	rawStrategy[tier].CreateStrategy = rdsMarshalledConfig
+	rawStrategy[p.Tier].CreateStrategy = rdsMarshalledConfig
 
 	// marshall the entire strategy back to json
 	marshalledStrategy, err := json.Marshal(rawStrategy)
@@ -135,17 +152,17 @@ func reconcilePostgresStrategy(config, tier, backupWindow, maintenanceWindow str
 // unmarshalls raw strategy to create db instance input
 // checks found values from current config map vs expected values
 // marshalls create db instance input back to raw strategy
-func reconcileRedisStrategy(config, tier, backupTimeStart, maintenanceTimeStart string) (string, error) {
+func (p *StrategyProvider) reconcileRedisStrategy(config, backupTimeStart, maintenanceTimeStart string) (string, error) {
 	// unmarshall config data to type of cro aws strategy config
 	var rawStrategy map[string]*croAWS.StrategyConfig
 	if err := json.Unmarshal([]byte(config), &rawStrategy); err != nil {
-		return "", errorUtil.Wrapf(err, "failed to unmarshal strategy mapping for postgres resource")
+		return "", errorUtil.Wrapf(err, "failed to unmarshal strategy mapping for redis resource")
 	}
 
 	// unmarshall the create strategy from the raw strategy tier to type create db instance input
 	elasticacheCreateConfig := &elasticache.CreateReplicationGroupInput{}
-	if err := json.Unmarshal(rawStrategy[tier].CreateStrategy, elasticacheCreateConfig); err != nil {
-		return "", errorUtil.Wrapf(err, "failed to unmarshal aws rds cluster config")
+	if err := json.Unmarshal(rawStrategy[p.Tier].CreateStrategy, elasticacheCreateConfig); err != nil {
+		return "", errorUtil.Wrapf(err, "failed to unmarshal aws redis cluster config")
 	}
 
 	// check create db instance input against expected values
@@ -159,13 +176,13 @@ func reconcileRedisStrategy(config, tier, backupTimeStart, maintenanceTimeStart 
 	}
 
 	// marshall the create db instance input struct to json
-	rdsMarshalledConfig, err := json.Marshal(elasticacheCreateConfig)
+	redisMarshalledConfig, err := json.Marshal(elasticacheCreateConfig)
 	if err != nil {
-		return "", errorUtil.Wrapf(err, "failed to marshal aws rds cluster config")
+		return "", errorUtil.Wrapf(err, "failed to marshal aws redis cluster config")
 	}
 
 	// set the createstrategy on our expected tier to the marshalled create db instance input struct
-	rawStrategy[tier].CreateStrategy = rdsMarshalledConfig
+	rawStrategy[p.Tier].CreateStrategy = redisMarshalledConfig
 
 	// marshall the entire strategy back to json
 	marshalledStrategy, err := json.Marshal(rawStrategy)
@@ -177,89 +194,43 @@ func reconcileRedisStrategy(config, tier, backupTimeStart, maintenanceTimeStart 
 	return string(marshalledStrategy), nil
 }
 
-// builder function to provide default data for aws strategy config map
-func buildDefaultAWSConfigMap() map[string]string {
-	return map[string]string{
-		blobstorageStratKey: buildDefaultAWSStratValue(),
-		redisStratKey:       buildDefaultAWSStratValue(),
-		postgresStratKey:    buildDefaultAWSStratValue(),
-	}
-}
-
-// builder function to provide default value used per tier in aws strategy config map
-func buildDefaultAWSStratValue() string {
-	return "{\"development\": { \"region\": \"\", \"createStrategy\": {}, \"deleteStrategy\": {} }, \"production\": { \"region\": \"\", \"createStrategy\": {}, \"deleteStrategy\": {} }}"
-}
-
 // build aws maintenance and backup windows
-func buildAWSWindows(timeConfig *StrategyTimeConfig) (string, string, error) {
-	// ensure backup applyOn format is correct
-	parsedBackupTime, err := time.Parse("15:04", timeConfig.BackupStartTime)
-	if err != nil {
-		return "", "", errorUtil.Wrapf(err, "failed to parse backup ApplyOn value")
-	}
-
-	// correct format is assumed by the time this function is called
-	maintenanceWindowSegments := strings.Split(timeConfig.MaintenanceStartTime, " ")
-	parsedMaintenanceTime, err := time.Parse("15:04", maintenanceWindowSegments[1])
-	if err != nil {
-		return "", "", errorUtil.Wrapf(err, "failed to parse maintenance ApplyFrom value")
-	}
-
-	// ensure ddd is correct and overlaps to the following day if block starts after 23 hours
-	// set window day from value from segmented string
-	maintenanceWindowDayFrom := strings.ToLower(maintenanceWindowSegments[0][:3])
-	// map of valid day with time.weekday int value
-	var validMaintenanceDays = map[string]int{
-		"sun": 0,
-		"mon": 1,
-		"tue": 2,
-		"wed": 3,
-		"thu": 4,
-		"fri": 5,
-		"sat": 6,
-	}
-
-	// get current maintenance dayTo value from maintenance dayFrom value
-	var maintenanceTimeTo int
-	for day, value := range validMaintenanceDays {
-		if maintenanceWindowDayFrom == day {
-			maintenanceTimeTo = value
-		}
-	}
-
+func buildAWSWindows(timeConfig *stratType.StrategyTimeConfig) (string, string, error) {
 	// if the current maintenance time value over laps into the following day
 	// set current maintenance dayTo value to the following day
-	if parsedMaintenanceTime.Hour() == 23 {
-		maintenanceTimeTo = 0
-		if maintenanceWindowDayFrom != "sat" {
-			maintenanceTimeTo = validMaintenanceDays[maintenanceWindowDayFrom] + 1
+	maintenanceWindowDayFrom := strings.ToLower(timeConfig.MaintenanceStartTime.Day.String()[:3])
+
+	maintenanceDayTo := timeConfig.MaintenanceStartTime.Day
+	if timeConfig.MaintenanceStartTime.Time.Hour() == 23 {
+		maintenanceDayTo = time.Sunday
+		if timeConfig.MaintenanceStartTime.Day != time.Saturday {
+			maintenanceDayTo = timeConfig.MaintenanceStartTime.Day + 1
 		}
 	}
 
-	// convert maintenance dayTo value to time.Weekday format to convert int back to string
-	maintenanceWindowDayTo := time.Weekday(maintenanceTimeTo).String()
+	// convert maintenance dayTo value from time.Weekday to string
+	maintenanceWindowDayTo := maintenanceDayTo.String()
 	// convert time.Weekday string to first 3 chars and to lower case, as is expected for AWS format
 	maintenanceWindowDayTo = strings.ToLower(maintenanceWindowDayTo[:3])
 
 	// set maintenance time plus one hour
-	parsedMaintenanceTimePlusOneHour := parsedMaintenanceTime.Add(time.Hour)
+	parsedMaintenanceTimePlusOneHour := timeConfig.MaintenanceStartTime.Time.Add(time.Hour)
 
 	// add one hour to applyOn format
-	parsedBackupTimePlusOneHour := parsedBackupTime.Add(time.Hour)
+	parsedBackupTimePlusOneHour := timeConfig.BackupStartTime.Time.Add(time.Hour)
 
 	// build expected aws maintenance format ddd:hh:mm-ddd:hh:mm
-	awsMaintenanceString := fmt.Sprintf("%s:%02d:%02d-%s:%02d:%02d", maintenanceWindowDayFrom, parsedMaintenanceTime.Hour(), parsedMaintenanceTime.Minute(), maintenanceWindowDayTo, parsedMaintenanceTimePlusOneHour.Hour(), parsedMaintenanceTimePlusOneHour.Minute())
+	awsMaintenanceString := fmt.Sprintf("%s:%02d:%02d-%s:%02d:%02d", maintenanceWindowDayFrom, timeConfig.MaintenanceStartTime.Time.Hour(), timeConfig.MaintenanceStartTime.Time.Minute(), maintenanceWindowDayTo, parsedMaintenanceTimePlusOneHour.Hour(), parsedMaintenanceTimePlusOneHour.Minute())
 	// build expected aws backup format hh:mm-hh:mm
-	awsBackupString := fmt.Sprintf("%02d:%02d-%02d:%02d", parsedBackupTime.Hour(), parsedBackupTime.Minute(), parsedBackupTimePlusOneHour.Hour(), parsedBackupTimePlusOneHour.Minute())
+	awsBackupString := fmt.Sprintf("%02d:%02d-%02d:%02d", timeConfig.BackupStartTime.Time.Hour(), timeConfig.BackupStartTime.Time.Minute(), parsedBackupTimePlusOneHour.Hour(), parsedBackupTimePlusOneHour.Minute())
 
 	// ensure backup and maintenance time ranges do not overlap
 	// we expect RHOAM operator to validate the ranges, as a sanity check we preform an extra validation here
 	// this is to avoid an obscure error message from AWS when we apply the times
 	// http://baodad.blogspot.com/2014/06/date-range-overlap.html
 	// (StartA <= EndB)  and  (EndA >= StartB)
-	if timeBlockOverlaps(parsedBackupTime, parsedBackupTimePlusOneHour, parsedMaintenanceTime, parsedMaintenanceTimePlusOneHour) {
-		return "", "", errors.New(fmt.Sprintf("backup and maintenance windows can not overlap, we require a minumum of 1 hour windows, current backup window : %s, current maintenance window : %s ", awsBackupString, awsMaintenanceString))
+	if timeBlockOverlaps(timeConfig.BackupStartTime.Time, parsedBackupTimePlusOneHour, timeConfig.MaintenanceStartTime.Time, parsedMaintenanceTimePlusOneHour) {
+		return "", "", fmt.Errorf("backup and maintenance windows can not overlap, we require a minumum of 1 hour windows, current backup window : %s, current maintenance window : %s ", awsBackupString, awsMaintenanceString)
 	}
 
 	return awsBackupString, awsMaintenanceString, nil

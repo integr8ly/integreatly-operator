@@ -3,6 +3,7 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+
 	"github.com/Masterminds/semver"
 	grafanav1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -18,6 +19,7 @@ import (
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	appsv1 "github.com/openshift/api/apps/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -764,7 +766,7 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-//ReconcileCSVEnvVars will take a keycloak-operator CSV and a map of env vars to update or create
+// ReconcileCSVEnvVars will take a keycloak-operator CSV and a map of env vars to update or create
 func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion, envVars map[string]string) (*olmv1alpha1.ClusterServiceVersion, bool, error) {
 	updated := false
 	for deploymentIndex, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
@@ -831,4 +833,37 @@ func (r *Reconciler) ReconcilePodDisruptionBudget(ctx context.Context, apiClient
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// create experimental keycloak spec for GCP
+func (r *Reconciler) ConfigureExperimentalSpec(ctx context.Context, serverClient k8sclient.Client) (*keycloak.ExperimentalSpec, error) {
+	platformType, err := resources.GetPlatformType(ctx, serverClient)
+	if err != nil {
+		return nil, err
+	}
+	if platformType == configv1.GCPPlatformType {
+		pgresSelector := &corev1.SecretKeySelector{
+			Key: resources.RHSSODatabaseSecretKeyExtHost,
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: resources.RHSSODatabaseSecretName,
+			},
+		}
+		return &keycloak.ExperimentalSpec{
+			Env: []corev1.EnvVar{
+				{
+					Name: resources.RHSSODatabaseAddressKey,
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: pgresSelector,
+					},
+				},
+				{
+					Name: resources.RHSSOPostgresServiceHost,
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: pgresSelector,
+					},
+				},
+			},
+		}, nil
+	}
+	return nil, nil
 }
