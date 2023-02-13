@@ -21,6 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const defaultGcpStratValue = `{"development": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }}`
+
 type StrategyProvider struct {
 	Client    k8sclient.Client
 	Tier      string
@@ -53,10 +55,10 @@ func (p *StrategyProvider) ReconcileStrategyMap(ctx context.Context, client k8sc
 		// check to ensure postgres and redis key is included in config data
 		// build default postgres and redis key, contains a `development` and `production` tier
 		if _, ok := gcpStratConfig.Data[stratType.PostgresStratKey]; !ok {
-			gcpStratConfig.Data[stratType.PostgresStratKey] = buildDefaultGCPStratValue()
+			gcpStratConfig.Data[stratType.PostgresStratKey] = defaultGcpStratValue
 		}
 		if _, ok := gcpStratConfig.Data[stratType.RedisStratKey]; !ok {
-			gcpStratConfig.Data[stratType.RedisStratKey] = buildDefaultGCPStratValue()
+			gcpStratConfig.Data[stratType.RedisStratKey] = defaultGcpStratValue
 		}
 
 		// marshal strategies, updating existing strategies with new values
@@ -78,11 +80,6 @@ func (p *StrategyProvider) ReconcileStrategyMap(ctx context.Context, client k8sc
 		return fmt.Errorf("failed to update gcp strategy config map : %v", err)
 	}
 	return nil
-}
-
-// builder function to provide default value used per tier in aws strategy config map
-func buildDefaultGCPStratValue() string {
-	return `{"development": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }}`
 }
 
 func (p *StrategyProvider) reconcilePostgresStrategy(config string, timeConfig *stratType.StrategyTimeConfig) (string, error) {

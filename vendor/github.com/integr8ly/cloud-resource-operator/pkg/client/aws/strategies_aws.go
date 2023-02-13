@@ -34,6 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const defaultAwsStratValue = `{"development": { "region": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "createStrategy": {}, "deleteStrategy": {} }}`
+
 type StrategyProvider struct {
 	Client    k8sclient.Client
 	Tier      string
@@ -73,10 +75,10 @@ func (p *StrategyProvider) ReconcileStrategyMap(ctx context.Context, client k8sc
 		// check to ensure postgres and redis key is included in config data
 		// build default postgres and redis key, contains a `development` and `production` tier
 		if _, ok := awsStratConfig.Data[stratType.PostgresStratKey]; !ok {
-			awsStratConfig.Data[stratType.PostgresStratKey] = buildDefaultAWSStratValue()
+			awsStratConfig.Data[stratType.PostgresStratKey] = defaultAwsStratValue
 		}
 		if _, ok := awsStratConfig.Data[stratType.RedisStratKey]; !ok {
-			awsStratConfig.Data[stratType.RedisStratKey] = buildDefaultAWSStratValue()
+			awsStratConfig.Data[stratType.RedisStratKey] = defaultAwsStratValue
 		}
 
 		// marshal strategies, updating existing strategies with new values
@@ -190,20 +192,6 @@ func (p *StrategyProvider) reconcileRedisStrategy(config, backupTimeStart, maint
 
 	// return json in string format
 	return string(marshalledStrategy), nil
-}
-
-// builder function to provide default data for aws strategy config map
-func buildDefaultAWSConfigMap() map[string]string {
-	return map[string]string{
-		stratType.BlobstorageStratKey: buildDefaultAWSStratValue(),
-		stratType.RedisStratKey:       buildDefaultAWSStratValue(),
-		stratType.PostgresStratKey:    buildDefaultAWSStratValue(),
-	}
-}
-
-// builder function to provide default value used per tier in aws strategy config map
-func buildDefaultAWSStratValue() string {
-	return `{"development": { "region": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "createStrategy": {}, "deleteStrategy": {} }}`
 }
 
 // build aws maintenance and backup windows

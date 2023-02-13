@@ -550,11 +550,6 @@ func (p *PostgresProvider) buildCloudSQLUpdateStrategy(cloudSQLConfig *gcpiface.
 	updateFound := false
 	modifiedInstance := &sqladmin.DatabaseInstance{}
 
-	if cloudSQLConfig.Region != foundInstance.Region {
-		modifiedInstance.Region = cloudSQLConfig.Region
-		updateFound = true
-	}
-
 	if cloudSQLConfig.Settings != nil && foundInstance.Settings != nil {
 		modifiedInstance.Settings = &sqladmin.Settings{
 			ForceSendFields: []string{},

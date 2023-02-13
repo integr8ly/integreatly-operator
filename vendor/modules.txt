@@ -803,7 +803,7 @@ github.com/headzoo/surf/util
 # github.com/imdario/mergo v0.3.13
 ## explicit; go 1.13
 github.com/imdario/mergo
-# github.com/integr8ly/cloud-resource-operator v0.42.0 => github.com/adam-cattermole/cloud-resource-operator v0.32.2-0.20230207120436-9a56334f0579
+# github.com/integr8ly/cloud-resource-operator v0.42.0 => github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8
 ## explicit; go 1.18
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types
@@ -1862,4 +1862,4 @@ sigs.k8s.io/yaml
 # k8s.io/client-go => k8s.io/client-go v0.24.3
 # github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0
 # github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-openstorage-rc3
-# github.com/integr8ly/cloud-resource-operator => github.com/adam-cattermole/cloud-resource-operator v0.32.2-0.20230207120436-9a56334f0579
+# github.com/integr8ly/cloud-resource-operator => github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8

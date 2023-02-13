@@ -148,8 +148,6 @@ github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:H
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
-github.com/adam-cattermole/cloud-resource-operator v0.32.2-0.20230207120436-9a56334f0579 h1:yQhI0IrCzihSlMh6b2khNFvZxyBVDrJ9u5zgfyEDgF0=
-github.com/adam-cattermole/cloud-resource-operator v0.32.2-0.20230207120436-9a56334f0579/go.mod h1:Ku0Ac+l9J5Yxf93pYNaRgV64kVsWGmELJSDl2T+qLKc=
 github.com/adrg/xdg v0.4.0 h1:RzRqFcjH4nE5C6oTAxhBtoE2IRyjBSa62SCbyPidvls=
 github.com/adrg/xdg v0.4.0/go.mod h1:N6ag73EX4wyxeaoeHctc1mas01KZgsj5tYiAIwqJE/E=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
@@ -906,6 +904,8 @@ github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
+github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8 h1:uBE2xOAklrRmGNcoa4r8hz0ZGhNpLP2tE/bLq4d0fdU=
+github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8/go.mod h1:Ku0Ac+l9J5Yxf93pYNaRgV64kVsWGmELJSDl2T+qLKc=
 github.com/integr8ly/keycloak-client v0.1.11 h1:JzeOWNrjxR6a7vy8qVqdG0b+O00xv6adAZ/6YhNtSgY=
 github.com/integr8ly/keycloak-client v0.1.11/go.mod h1:YIrJBWtG049Sktw+f5Twp/jVwF9kS/1mJ2GqQMMbihk=
 github.com/jackc/fake v0.0.0-20150926172116-812a484cc733/go.mod h1:WrMFNQdiFJ80sQsxDoMokWK1W5TQtxBFNpzWTD84ibQ=
