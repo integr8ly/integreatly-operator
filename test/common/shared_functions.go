@@ -432,6 +432,18 @@ func GetGCPTestCases(installType string) []TestCase {
 	return testCases
 }
 
+func GetAWSSpecificTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range AWS_SPECIFIC_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
 func writeObjToYAMLFile(obj interface{}, out string) error {
 	data, err := yaml.Marshal(obj)
 	if err != nil {

@@ -1,14 +1,16 @@
 package functional
 
 import (
-	redis "cloud.google.com/go/redis/apiv1"
 	"context"
 	"fmt"
+
+	redis "cloud.google.com/go/redis/apiv1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+
 	"github.com/integr8ly/integreatly-operator/test/common"
-	"google.golang.org/api/iterator"
-	//redispb "cloud.google.com/go/redis/apiv1/redispb"
-	redispb "google.golang.org/genproto/googleapis/cloud/redis/v1"
+	"google.golang.org/api/option"
+
+	"cloud.google.com/go/redis/apiv1/redispb"
 )
 
 const (
@@ -17,9 +19,12 @@ const (
 )
 
 func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *common.TestingContext) {
-
 	ctx := context.Background()
-	c, err := redis.NewCloudRedisClient(ctx)
+	serviceAccountJson, err := getGCPCredentials(ctx, testingContext.Client)
+	if err != nil {
+		t.Fatal("failed to retrieve gcp credentials %v", err)
+	}
+	c, err := redis.NewCloudRedisClient(ctx, option.WithCredentialsJSON(serviceAccountJson))
 	if err != nil {
 		t.Fatal("error create new cloud redis client %w", err)
 	}
@@ -34,24 +39,6 @@ func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *co
 		t.Fatal("error get Default Region %w", err)
 	}
 
-	req := &redispb.ListInstancesRequest{
-		// TODO: Fill request struct fields.
-		// See https://pkg.go.dev/cloud.google.com/go/redis/apiv1/redispb#ListInstancesRequest.
-	}
-	var redisInstanceList []string
-	it := c.ListInstances(ctx, req)
-	for {
-		resp, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			t.Fatal("error get Redis instance %w", err)
-		}
-		_ = resp
-		fmt.Printf("%v\n", resp.Name)
-		redisInstanceList = append(redisInstanceList, resp.Name)
-	}
 	goContext := context.TODO()
 	rhmi, err := common.GetRHMI(testingContext.Client, true)
 	if err != nil {
@@ -59,12 +46,12 @@ func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *co
 	}
 
 	// build an array of redis resources to check and test error array
-	redisInstanceIDs, testErrors := GetRedisInstancesIDs(goContext, testingContext.Client, rhmi)
+	redisInstanceData, testErrors := GetRedisInstanceData(goContext, testingContext.Client, rhmi)
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro redis exists failed with the following errors : %s", testErrors)
 	}
-	for _, redisId := range redisInstanceIDs {
-		if !verifyRedisInstances(redisId, redisInstanceIDs) {
+	for redisId, redisVersion := range redisInstanceData {
+		if !verifyRedisInstances(redisId, redisInstanceData) {
 			t.Fatal("Redis Instance %s defined in CR, but missing in Google Cloud", redisId)
 		}
 		req := &redispb.GetInstanceRequest{
@@ -73,17 +60,12 @@ func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *co
 		}
 		resp, err := c.GetInstance(ctx, req)
 		if err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("error get Redis Instance %s, error: %v", redisId, err))
+			testErrors = append(testErrors, fmt.Errorf("error getting Redis Instance %s, error: %v", redisId, err))
 			continue
 		}
-		if resp.State != redispb.Instance_READY {
-			testErrors = append(testErrors, fmt.Sprintf("Redis Instance %s is not Ready. State: %s", redisId, resp.State.String()))
+		if !verifyRedisInstanceConfig(resp, redisVersion) {
+			t.Fatal("failed as resource is not as expected")
 		}
-		//if resp.ReplicaCount > 1 {
-		//	//check that replicas in different zones
-		//	//resp.get TODO
-		//}
-
 	}
 	if len(testErrors) != 0 {
 		t.Fatalf("test Redis instances exists failed with the following errors : %s", testErrors)
@@ -91,11 +73,18 @@ func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *co
 
 }
 
-func verifyRedisInstances(redisInstanceName string, databaseInstanceList []string) bool {
-	for _, v := range databaseInstanceList {
-		if v == redisInstanceName {
+func verifyRedisInstances(redisInstanceName string, databaseInstanceList map[string]string) bool {
+	for k, _ := range databaseInstanceList {
+		if k == redisInstanceName {
 			return true
 		}
 	}
 	return false
+}
+
+func verifyRedisInstanceConfig(instance *redispb.Instance, redisVersion string) bool {
+	return labelsContain(instance.Labels, managedLabelKey, managedLabelValue) &&
+		instance.RedisVersion == redisVersion && instance.State == redispb.Instance_READY &&
+		instance.Tier == redispb.Instance_STANDARD_HA && instance.MaintenancePolicy != nil
+
 }
