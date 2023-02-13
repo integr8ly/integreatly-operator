@@ -69,19 +69,36 @@ var _ = Describe("integreatly", func() {
 			},
 		}
 
+		testingContext, err := common.NewTestingContext(restConfig)
+		platform, err := resources.GetPlatformType(context.TODO(), testingContext.Client)
+		if err != nil {
+			t.Fatal("failed to determine platform type", err)
+		}
+		var functionalTests common.Tests
+		switch platform {
+		case v1.AWSPlatformType:
+			functionalTests = common.Tests{
+				Type:      fmt.Sprintf("%s Functional", installType),
+				TestCases: FUNCTIONAL_TESTS_AWS,
+			}
+			tests = append(tests, common.Tests{
+				Type:      "AWS Specific Tests",
+				TestCases: common.GetAWSSpecificTestCases(installType),
+			})
+		case v1.GCPPlatformType:
+			functionalTests = common.Tests{
+				Type:      fmt.Sprintf("%s Functional", installType),
+				TestCases: FUNCTIONAL_TESTS_GCP,
+			}
+			tests = append(tests, common.Tests{
+				Type:      "GCP Tests",
+				TestCases: common.GetGCPTestCases(installType),
+			})
+		}
 		// Run functional (AWS or GCP) tests only in case of cloud provider storage type installation (useClusterStorage: false)
 		// or if overriden by BYPASS_STORAGE_TYPE_CHECK=true env var
 		if shouldRunFunctionalTests() {
-			tests = append(tests,
-				common.Tests{
-					Type:      fmt.Sprintf("%s Functional", installType),
-					TestCases: FUNCTIONAL_TESTS_AWS,
-				},
-				common.Tests{
-					Type:      fmt.Sprintf("%s Functional", installType),
-					TestCases: FUNCTIONAL_TESTS_GCP,
-				},
-			)
+			tests = append(tests, functionalTests)
 		}
 
 		if os.Getenv("MULTIAZ") == "true" {
@@ -106,18 +123,6 @@ var _ = Describe("integreatly", func() {
 			tests = append(tests, common.Tests{
 				Type:      "Destructive Tests",
 				TestCases: common.DESTRUCTIVE_TESTS,
-			})
-		}
-
-		testingContext, err := common.NewTestingContext(restConfig)
-		platform, err := resources.GetPlatformType(context.TODO(), testingContext.Client)
-		if err != nil {
-			t.Fatal("failed to determine platform type", err)
-		}
-		if platform == v1.GCPPlatformType {
-			tests = append(tests, common.Tests{
-				Type:      "GCP Tests",
-				TestCases: common.GetGCPTestCases(installType),
 			})
 		}
 

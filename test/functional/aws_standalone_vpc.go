@@ -25,7 +25,6 @@ import (
 )
 
 var (
-	resourceType         = "_network"
 	tier                 = "production"
 	awsAllowedCidrRanges = []string{
 		"10.255.255.255/8",
@@ -146,7 +145,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	// get the create strategy for _network in the aws strategy configmap
 	// if this doesn't exist, skip the test completely since we're dealing
 	// with legacy cro networking
-	strat, err := getStrategyForResource(strategyMap, resourceType, tier)
+	strat, err := getStrategyForResource(strategyMap, networkResourceType, tier)
 	if err != nil {
 		t.Skip("_network key does not exist in aws strategy configmap, skipping standalone vpc network test")
 	}

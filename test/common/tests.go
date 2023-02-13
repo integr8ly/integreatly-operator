@@ -46,7 +46,6 @@ var (
 				{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 				{"A10 - Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 				{"A11 - Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
-				{"A12 - Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
 				{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 				{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
@@ -167,6 +166,15 @@ var (
 				{"N01 - Verify that Noobaa can be created via product CR", TestNoobaaViaCR},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+	}
+
+	AWS_SPECIFIC_TESTS = []TestSuite{
+		{
+			[]TestCase{
+				{"A12 - Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 	}
 )

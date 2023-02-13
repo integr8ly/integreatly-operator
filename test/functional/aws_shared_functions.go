@@ -14,15 +14,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	stsSvc "github.com/aws/aws-sdk-go/service/sts"
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	"github.com/integr8ly/integreatly-operator/test/common"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,38 +32,6 @@ const (
 	awsClusterTypeKey       = "red-hat-clustertype"
 	awsClusterTypeRosaValue = "rosa"
 )
-
-/*
-Each resource provisioned contains an annotation with the resource ID
-This function iterates over a list of expected resource CR's
-Returns a list of resource ID's, these ID's can be used when testing AWS resources
-*/
-func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
-	var foundErrors []string
-	var foundResourceIDs []string
-
-	expectedPostgres := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
-
-	for _, r := range expectedPostgres {
-		// get rds cr
-		postgres := &crov1.Postgres{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, postgres); err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s postgres cr : %v", r, err))
-		}
-		// ensure phase is completed
-		if postgres.Status.Phase != croTypes.PhaseComplete {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s postgres not ready with phase: %s, message: %s", r, postgres.Status.Phase, postgres.Status.Message))
-		}
-		// return resource id
-		resourceID, err := getCROAnnotation(postgres)
-		if err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\n%s postgres cr does not contain a resource id annotation: %v", r, err))
-		}
-		// populate the array
-		foundResourceIDs = append(foundResourceIDs, resourceID)
-	}
-	return foundResourceIDs, foundErrors
-}
 
 // CreateAWSSession creates a session to be used in getting an api instance for aws
 func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, bool, error) {

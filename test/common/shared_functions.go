@@ -403,6 +403,18 @@ func GetGCPTestCases(installType string) []TestCase {
 	return testCases
 }
 
+func GetAWSSpecificTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range AWS_SPECIFIC_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
 //func GetClusterScopedTestCases(installType string) []TestCase {
 //	testCases := []TestCase{}
 //	for _, testSuite := range THREESCALE_CLUSTER_SCOPED_TESTS {

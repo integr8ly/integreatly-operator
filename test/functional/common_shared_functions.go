@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -14,8 +16,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	networkResourceType = "_network"
 )
 
 type strategyMap struct {
@@ -54,31 +59,49 @@ Each resource provisioned contains an annotation with the resource ID
 This function iterates over a list of expected resource CR's
 Returns a list of resource ID's, these ID's can be used when testing AWS or GCP resources
 */
-func GetRedisInstancesIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
-	var foundErrors []string
-	var foundResourceIDs []string
-
-	expectedRedis := getExpectedRedis(rhmi.Spec.Type, rhmi.Name)
-
-	for _, r := range expectedRedis {
-		// get elasticache cr
+func GetRedisInstanceData(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) (map[string]string, []error) {
+	var foundErrors []error
+	var instanceData map[string]string
+	for _, redisName := range getExpectedRedis(rhmi.Spec.Type, rhmi.Name) {
 		redis := &crov1.Redis{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, redis); err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s redis cr : %v", r, err))
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: redisName}, redis); err != nil {
+			foundErrors = append(foundErrors, fmt.Errorf("failed to find %s redis cr: %w", redisName, err))
 		}
-		// ensure phase is completed
 		if redis.Status.Phase != croTypes.PhaseComplete {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s redis not ready with phase: %s, message: %s", r, redis.Status.Phase, redis.Status.Message))
+			foundErrors = append(foundErrors, fmt.Errorf("found redis %q with phase %q but expected %q; message: %s", redisName, redis.Status.Phase, croTypes.PhaseComplete, redis.Status.Message))
 		}
-		// return resource id
 		resourceID, err := getCROAnnotation(redis)
 		if err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\n%s redis cr does not contain a resource id annotation: %v", r, err))
+			foundErrors = append(foundErrors, fmt.Errorf("redis cr %q does not contain a resource id annotation: %w", redisName, err))
 		}
-		// populate the array
-		foundResourceIDs = append(foundResourceIDs, resourceID)
+		instanceData[resourceID] = redis.Status.Version
 	}
-	return foundResourceIDs, foundErrors
+	return instanceData, foundErrors
+}
+
+/*
+Each resource provisioned contains an annotation with the resource ID
+This function iterates over a list of expected resource CR's
+Returns a list of resource ID's, these ID's can be used when testing postgres resources
+*/
+func GetPostgresInstanceData(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) (map[string]string, []error) {
+	var foundErrors []error
+	var instanceData map[string]string
+	for _, pgName := range getExpectedPostgres(rhmi.Spec.Type, rhmi.Name) {
+		postgres := &crov1.Postgres{}
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: pgName}, postgres); err != nil {
+			foundErrors = append(foundErrors, fmt.Errorf("failed to find %s postgres cr: %w", pgName, err))
+		}
+		if postgres.Status.Phase != croTypes.PhaseComplete {
+			foundErrors = append(foundErrors, fmt.Errorf("found postgres %q with phase %q but expected %q; message: %s", pgName, postgres.Status.Phase, croTypes.PhaseComplete, postgres.Status.Message))
+		}
+		resourceID, err := getCROAnnotation(postgres)
+		if err != nil {
+			foundErrors = append(foundErrors, fmt.Errorf("postgres cr %q does not contain a resource id annotation: %w", pgName, err))
+		}
+		instanceData[resourceID] = postgres.Status.Version
+	}
+	return instanceData, foundErrors
 }
 
 // return resource identifier annotation from cr

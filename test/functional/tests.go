@@ -12,7 +12,7 @@ var (
 	FUNCTIONAL_TESTS_GCP = []common.TestCase{
 		{Description: "GCP01 - Verify GCP Postgres SQL instances exist", Test: TestGCPPostgresSQLInstanceExist},
 		{Description: "GCP02 - Verify GCP Memorystore Redis instances exist", Test: TestGCPMemorystoreRedisInstanceExist},
-		{Description: "GCP03 - Verify GCP VPC exist", Test: TestGCPVPCExists},
+		{Description: "GCP03 - Verify GCP Network State", Test: TestGCPNetworkState},
 		//{Description: "GCP04 - Verify GCP Cloud Storage Blob Storage Resources exist", Test: TestGCPCloudStorageBlobStorageResourcesExist},
 	}
 	MULTIAZ_TESTS = []common.TestCase{

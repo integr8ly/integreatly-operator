@@ -1,13 +1,15 @@
 package functional
 
 import (
-	"cloud.google.com/go/storage"
 	goctx "context"
 	"fmt"
-	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-	"google.golang.org/api/iterator"
 	"log"
 	"sort"
+
+	"cloud.google.com/go/storage"
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 )
@@ -21,11 +23,15 @@ const (
 
 func TestGCPCloudStorageBlobStorageResourcesExist(t common.TestingTB, testingCtx *common.TestingContext) {
 	ctx := goctx.Background()
+	serviceAccountJson, err := getGCPCredentials(ctx, testingCtx.Client)
+	if err != nil {
+		t.Fatal("failed to retrieve gcp credentials %v", err)
+	}
 	projectID, err := croResources.GetGCPProject(ctx, testingCtx.Client)
 	if err != nil {
 		t.Fatal("error get Default Project ID %w", err)
 	}
-	storageClient, err := storage.NewClient(ctx)
+	storageClient, err := storage.NewClient(ctx, option.WithCredentialsJSON(serviceAccountJson))
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
