@@ -493,10 +493,9 @@ func (r *Reconciler) reconcileAddonManagedApiServiceParameters(ctx context.Conte
 }
 
 func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.RoutingSubdomain != "" {
-		log.Info("routing subdomain already set, exiting retrieveConsoleURLAndSubdomain() early")
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
+	// Before editing, understand the effect changes to the RoutingSubdomain will have on the following SOP:
+	//https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/rhoam/ChangeWildcardDomainRhoam/ChangeWildcardDomainRhoam.md
+
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
@@ -512,7 +511,10 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("customDomain.GetDomain() failure: %w", err)
 	}
 	if ok && domain != "" {
-		r.installation.Spec.RoutingSubdomain = domain
+		if r.installation.Spec.RoutingSubdomain == "" { // DO NOT force reconcile of subdomain route, see SOP
+			log.Info("setting routing domain to custom domain")
+			r.installation.Spec.RoutingSubdomain = domain
+		}
 		if r.installation.Status.CustomDomain == nil {
 			r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{}
 		}
@@ -522,7 +524,10 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 			r.installation.Status.LastError = err.Error()
 		}
 	} else {
-		r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+		if r.installation.Spec.RoutingSubdomain == "" { // DO NOT force reconcile of subdomain route, see SOP
+			log.Info("setting routing domain to cluster default")
+			r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

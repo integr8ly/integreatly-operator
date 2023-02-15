@@ -617,8 +617,32 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:          context.TODO(),
-				serverClient: func() k8sclient.Client { return nil },
+				ctx: context.TODO(),
+				serverClient: func() k8sclient.Client {
+					return moqclient.NewSigsClientMoqWithScheme(scheme,
+						&routev1.Route{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "console",
+								Namespace: "openshift-console",
+							},
+							Status: routev1.RouteStatus{
+								Ingress: []routev1.RouteIngress{
+									{
+										Host: "host",
+									},
+								},
+							},
+						},
+						&corev1.Secret{
+							ObjectMeta: v1.ObjectMeta{
+								Name:      "addon-managed-api-service-parameters",
+								Namespace: "test",
+							},
+							Data: map[string][]byte{
+								"custom-domain_domain": []byte("apps.example.com"),
+							},
+						})
+				},
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
