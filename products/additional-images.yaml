@@ -31,8 +31,9 @@ observability-operator:
     url: quay.io/rhoas/grafana-operator-index:v3.10.8
   - name: observability-grafana-operator
     url: quay.io/rhoas/grafana-operator:v3.10.8
-  - name: observability-grafana
-    url: docker.io/grafana/grafana:7.3.10
+  # Re-visit when OO bumps the image to use alternative source. Docker.io not supported atm.
+  # - name: observability-grafana
+  #   url: docker.io/grafana/grafana:7.3.10
   - name: observability-grafana-plugins-init
     url: quay.io/grafana-operator/grafana_plugins_init:0.1.0
   - name: observability-observability-operator
