@@ -27,7 +27,6 @@ require (
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/onsi/gomega v1.20.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
-	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/api v0.17.1
 	github.com/operator-framework/operator-lifecycle-manager v0.21.1
 	github.com/operator-framework/operator-registry v1.26.2

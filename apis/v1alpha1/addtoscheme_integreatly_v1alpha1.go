@@ -27,7 +27,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
-	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -63,7 +62,6 @@ func init() {
 		rbacv1.SchemeBuilder.AddToScheme,
 		usersv1.AddToScheme,
 		confv1.AddToScheme,
-		samplesv1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
 		consolev1.AddToScheme,
