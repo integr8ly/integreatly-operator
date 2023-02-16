@@ -3724,14 +3724,16 @@ func (r *Reconciler) reconcileTenantOutgoingEmailAddress(ctx context.Context, se
 		return fmt.Errorf("failed to get 3scale route list during portaClient creation, error: %v", err)
 	}
 	for _, route := range routes.Items {
-		if strings.Contains(route.Spec.Host, "master.apps") {
+		routeLabels := route.GetLabels()
+		value, exists := routeLabels["zync.3scale.net/route-to"]
+		if exists && value == "system-master" {
 			admRoute = route
 			found = true
 			break
 		}
 	}
 	if !found {
-		return fmt.Errorf("failed to get 3scale route during portaClient creation, error: %v", err)
+		return fmt.Errorf("failed to get 3scale route during portaClient creation")
 	}
 
 	adminPortal, err := portaClient.NewAdminPortal("https", admRoute.Spec.Host, 443)
