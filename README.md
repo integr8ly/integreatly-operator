@@ -89,13 +89,12 @@ If you have a cluster which meets the requirements, this step can be skipped.
 Please see the table below for other configuration options.
 
 ```shell script
-INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make deploy/integreatly-rhmi-cr.yml
+INSTALLATION_TYPE=managed-api USE_CLUSTER_STORAGE=<true/false> make deploy/integreatly-rhmi-cr.yml
 ```
 
 | Variable            | Options                                    |     Type     | Default       | Details                                                                                              |
 |---------------------|--------------------------------------------|:------------:|---------------|------------------------------------------------------------------------------------------------------|
 | INSTALLATION_TYPE   | `managed-api` or `multitenant-managed-api` | **Required** | `managed-api` | Manages installation type. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
-| IN_PROW             | `true` or `false`                          |   Optional   | `false`       | If `true`, reduces the number of pods created. Use for small clusters                                |
 | USE_CLUSTER_STORAGE | `true` or `false`                          |   Optional   | `true`        | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift.          |
 | LOCAL               | `true` or `false`                          |   Optional   | `true`        | If `true`, uses local-rhoam-operator as default namespace.                                           |
 

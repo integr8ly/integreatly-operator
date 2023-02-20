@@ -12,7 +12,6 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 CREDENTIALS_MODE=$(shell oc get cloudcredential cluster -o json | jq -r ".spec.credentialsMode")
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-IN_PROW ?= "false"
 # DEV_QUOTA value is the default QUOTA when install locally and is per 100,000
 # acceptable values are
 # if 10 then 1M
@@ -21,7 +20,7 @@ IN_PROW ?= "false"
 # if 200 then 20M
 # if 500 then 50M
 # if 1 then 100k
-DEV_QUOTA ?= "1"
+DEV_QUOTA ?= "0"
 CUSTOM_DOMAIN ?= ''
 SMTP_USER  ?= ''
 SMTP_ADDRESS ?= ''
@@ -222,7 +221,6 @@ test/e2e/rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
-test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e/multitenant-rhoam/prow
@@ -238,7 +236,6 @@ test/e2e/multitenant-rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
-test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
 .PHONY: test/e2e
@@ -464,10 +461,7 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > config/samples/integreatly-rhmi-cr.yml
-	# Workaround until in_prow annotation can be removed from prow
-	yq e -i '.metadata.annotations.in_prow="IN_PROW"' config/samples/integreatly-rhmi-cr.yml
 
-	$(SED_INLINE) "s/IN_PROW/'$(IN_PROW)'/g" config/samples/integreatly-rhmi-cr.yml
 	@-oc create -f config/samples/integreatly-rhmi-cr.yml
 
 .PHONY: prepare-patch-release

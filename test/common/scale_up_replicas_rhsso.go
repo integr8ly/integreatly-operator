@@ -21,13 +21,8 @@ var (
 )
 
 func TestReplicasInRHSSO(t TestingTB, ctx *TestingContext) {
-	inst, err := GetRHMI(ctx.Client, true)
-	if err != nil {
-		t.Fatalf("failed to get RHMI instance %v", err)
-	}
-
 	rhssoConfig := config.NewRHSSO(map[string]string{})
-	numberOfRhssoReplicas := rhssoConfig.GetReplicasConfig(inst)
+	numberOfRhssoReplicas := rhssoConfig.GetReplicasConfig()
 	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
 
 }
@@ -38,7 +33,7 @@ func TestReplicasInUserSSO(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 
-	userRhssoConfig := config.NewRHSSO(map[string]string{})
+	userRhssoConfig := config.NewRHSSOUser(map[string]string{})
 	numberOfUserRhssoReplicas := userRhssoConfig.GetReplicasConfig(inst)
 	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfUserRhssoReplicas)
 }

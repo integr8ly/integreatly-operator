@@ -11,10 +11,8 @@ import (
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -336,12 +334,9 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	var rhssoExpectedReplicas int32 = 2
-	var rhssoUserExpectedReplicas int32 = 3
-	if resources.RunningInProw(rhmi) {
-		rhssoExpectedReplicas = 1
-		rhssoUserExpectedReplicas = 1
-	}
+	rhssoExpectedReplicas := config.NewRHSSO(map[string]string{}).GetReplicasConfig()
+	rhssoUserExpectedReplicas := config.NewRHSSOUser(map[string]string{}).GetReplicasConfig(rhmi)
+
 	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
 		keycloakCR := &v1alpha1.Keycloak{
 			ObjectMeta: metav1.ObjectMeta{
@@ -356,7 +351,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 			t.Fatalf("Error getting Keycloak CR: %v", err)
 		}
 
-		rhssoUserExpectedReplicas = int32(keycloakCR.Spec.Instances)
+		rhssoUserExpectedReplicas = keycloakCR.Spec.Instances
 	}
 	statefulSets := []Namespace{
 		{
@@ -369,7 +364,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		{
 			Name: NamespacePrefix + "rhsso",
 			Products: []Product{
-				{Name: "keycloak", ExpectedReplicas: rhssoExpectedReplicas},
+				{Name: "keycloak", ExpectedReplicas: int32(rhssoExpectedReplicas)},
 			},
 		},
 	}
@@ -379,7 +374,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 			{
 				Name: NamespacePrefix + "user-sso",
 				Products: []Product{
-					{Name: "keycloak", ExpectedReplicas: rhssoUserExpectedReplicas},
+					{Name: "keycloak", ExpectedReplicas: int32(rhssoUserExpectedReplicas)},
 				},
 			},
 		}...)
