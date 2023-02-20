@@ -3,20 +3,13 @@ package resources
 import (
 	goctx "context"
 	"fmt"
+
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 )
-
-func RunningInProw(inst *integreatlyv1alpha1.RHMI) bool {
-	if v, ok := inst.Annotations["in_prow"]; !ok || v == "false" {
-		return false
-	}
-	return true
-}
 
 func GetSMTPSecret(kubeClient kubernetes.Interface, operatorNamespace string, secretName string) (map[string][]byte, error) {
 	res, err := kubeClient.CoreV1().Secrets(operatorNamespace).Get(goctx.TODO(), secretName, metav1.GetOptions{})

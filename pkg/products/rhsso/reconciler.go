@@ -3,12 +3,13 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strconv"
 	"strings"
 	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -333,8 +334,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 		}
 
-		//OSD has more resources than PROW, so adding an exception
-		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
+		numberOfReplicas := r.Config.GetReplicasConfig()
 
 		if kc.Spec.Instances < numberOfReplicas {
 			kc.Spec.Instances = numberOfReplicas

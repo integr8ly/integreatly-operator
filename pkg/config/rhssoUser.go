@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 )
 
 type RHSSOUser struct {
@@ -51,8 +51,22 @@ func (r *RHSSOUser) Validate() error {
 }
 
 func (r *RHSSOUser) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) int {
-	if testResources.RunningInProw(inst) {
-		return 1
+	switch inst.Status.Quota {
+	case quota.OneHundredThousandQuotaName:
+		return 2
+	case quota.OneMillionQuotaName:
+		return 2
+	case quota.FiveMillionQuotaName:
+		return 3
+	case quota.TenMillionQuotaName:
+		return 3
+	case quota.TwentyMillionQuotaName:
+		return 3
+	case quota.FiftyMillionQuotaName:
+		return 3
+	case quota.OneHundredMillionQuotaName:
+		return 3
+	default:
+		return 2
 	}
-	return 3
 }
