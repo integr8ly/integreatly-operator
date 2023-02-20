@@ -115,8 +115,15 @@ func TestIntegreatlyAlertsFiring(t TestingTB, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
 	if err := getFiringAlerts(t, ctx); err != nil {
 		podLogs(t, ctx)
-		t.Skipf("Skipping due to known issue : %v, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1404", err.Error())
-		//t.Fatal(err.Error())
+		isInProw, e := isInProw(ctx)
+		if e != nil {
+			t.Logf("error getting in_prow annotation: %s", e)
+		}
+		if isInProw {
+			t.Skipf("Skipping due to known issue in Prow, UIBBT alests fire there: %v, reported in Jira: https://issues.redhat.com/browse/MGDAPI-5193", err.Error())
+		} else {
+			t.Fatal(err.Error())
+		}
 	}
 
 }
@@ -216,12 +223,21 @@ func getPodNamespaces(installType string) []string {
 
 // TestIntegreatlyAlertsFiring reports any firing or pending alerts
 func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
+
+	isInProw, err := isInProw(ctx)
+	if err != nil {
+		t.Logf("error getting in_prow annotation: %s", err)
+	}
+	if isInProw {
+		t.Skip("Skipping due to UIBBT alerts firing in Prow, see https://issues.redhat.com/browse/MGDAPI-5193")
+	}
+
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
-	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
+	err = wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		if newErr := getFiringOrPendingAlerts(t, ctx); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {
@@ -235,8 +251,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t TestingTB, ctx *TestingContext) {
 	)
 	if err != nil {
 		podLogs(t, ctx)
-		t.Skipf("Skipping due to known issue %v, reported in Jira: https://issues.redhat.com/browse/MGDAPI-1404", lastError.Error())
-		//t.Fatal(lastError.Error())
+		t.Fatal(lastError.Error())
 	}
 }
 
