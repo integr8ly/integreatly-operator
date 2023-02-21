@@ -11,7 +11,7 @@ limitador:
     url: "quay.io/3scale/limitador:v0.5.1"
 grafana-operator:
   - name: observability-origin-oauth-proxy
-    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:24802df1766a74114169d3d151036e3eaf725124bc52ab86c8f24469b2781ca7"
+    url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:20507ebcaa06a2f027c7f7eb37a549b548f1d47b0335efa2be17813472acbdae"
 observability-operator:
   - name: observability-prometheus-operator-index
     url: quay.io/integreatly/custom-prometheus-index:1.0.1
