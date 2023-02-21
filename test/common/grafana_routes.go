@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"strings"
 	"time"
 
@@ -22,11 +21,6 @@ import (
 )
 
 func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
-	if os.Getenv("SKIP_FLAKES") == "true" {
-		// https://issues.redhat.com/browse/MGDAPI-555
-		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
-		t.SkipNow()
-	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, CustomerGrafanaNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
