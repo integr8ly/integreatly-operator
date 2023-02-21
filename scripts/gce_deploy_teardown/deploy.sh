@@ -42,11 +42,12 @@ $GCLOUD compute instances create $VM_NAME --zone=$VM_ZONE --subnet=$WORKER_SUBNE
 
 draw_horizontal_line
 echo "Adding SSH key to vm instance $VM_NAME..."
-$GCLOUD compute instances add-metadata $VM_NAME --zone=$VM_ZONE --metadata="ssh-keys=vmuser:$PUBLIC_SSH_KEY"
+$GCLOUD compute instances add-metadata $VM_NAME --zone=$VM_ZONE --metadata=ssh-keys="vmuser:$PUBLIC_SSH_KEY"
 
 draw_horizontal_line
-echo "Creating firewall rule to allow $FULL_ACCESS_IP access to all ports for ingress connections on vm instance $VM_NAME..."
-$GCLOUD compute firewall-rules create $VM_NAME-firewall-rule --direction=INGRESS --network=$VPC_NETWORK --action=ALLOW --rules=all --source-ranges=$FULL_ACCESS_IP/32,127.0.0.1/32 --target-tags=$VM_NAME
+JENKINS_IP=$(curl ifconfig.me)
+echo "Creating firewall rule to allow $JENKINS_IP, $FULL_ACCESS_IP, 127.0.0.1 access to all ports for ingress connections on vm instance $VM_NAME..."
+$GCLOUD compute firewall-rules create $VM_NAME-firewall-rule --direction=INGRESS --network=$VPC_NETWORK --action=ALLOW --rules=all --source-ranges=$JENKINS_IP,$FULL_ACCESS_IP,127.0.0.1 --target-tags=$VM_NAME
 
 draw_horizontal_line
 echo "Information about the newly created vm instance $VM_NAME:"
