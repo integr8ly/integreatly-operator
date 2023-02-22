@@ -80,10 +80,12 @@ products:
     installFrom: index
     index: quay.io/rhoas/observability-operator-index:v4.1.2
   rhsso:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-rhsso
+    channel: stable
+    installFrom: index
+    package: rhsso-operator
+    index: quay.io/integreatly/rhsso-index:v7.6.1-10
   rhssouser:
-    channel: rhmi
-    installFrom: local
-    manifestsDir: integreatly-rhsso
+    channel: stable
+    installFrom: index
+    package: rhsso-operator
+    index: quay.io/integreatly/rhsso-index:v7.6.1-10

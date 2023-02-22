@@ -3,12 +3,13 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strconv"
 	"strings"
 	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -191,7 +192,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		serverClient,
-		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-001"),
+		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-005"),
 		r.Config.GetOperatorNamespace(),
 		installation.Spec.PriorityClassName,
 	)

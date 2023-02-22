@@ -3,8 +3,9 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -221,7 +222,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		serverClient,
-		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-001"),
+		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-005"),
 		r.Config.GetOperatorNamespace(),
 		installation.Spec.PriorityClassName,
 	)

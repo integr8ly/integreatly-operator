@@ -32,7 +32,7 @@ products:
     quayScan: true
   - name: rhsso-operator
     version: 18.0.x
-    url: "git@gitlab.cee.redhat.com:keycloak/keycloak-operator-prod.git"
+    url: "https://gitlab.cee.redhat.com/keycloak/keycloak-operator-prod"
     installType: "rhoam"
     manifestsDir: "integreatly-rhsso"
     quayScan: true

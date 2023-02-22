@@ -38,6 +38,3 @@ observability-operator:
     url: quay.io/grafana-operator/grafana_plugins_init:0.1.0
   - name: observability-observability-operator
     url: quay.io/rhoas/observability-operator-index:v4.1.2
-rhsso-operator:
-  - name: rhsso-operator
-    url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"
