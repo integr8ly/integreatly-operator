@@ -93,7 +93,6 @@ type Reconciler struct {
 	Config *config.RHSSOUser
 	Log    l.Logger
 	*rhssocommon.Reconciler
-	isUpgrade bool
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
@@ -112,7 +111,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Config:     config,
 		Log:        logger,
 		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, apiUrl, keycloakClientFactory, *productDeclaration),
-		isUpgrade:  rhssocommon.IsUpgrade(config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSOUser),
 	}, nil
 }
 
@@ -192,12 +190,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = resources.ReconcileLimitRange(ctx, serverClient, productNamespace, resources.DefaultLimitRangeParams)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile LimitRange for Namespace %s", productNamespace), err)
-		return phase, err
-	}
-
-	phase, err = r.SetRollingStrategyForUpgrade(r.isUpgrade, ctx, serverClient, r.Config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSOUser, keycloakName)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to set rolling strategy for upgrade", err)
 		return phase, err
 	}
 
@@ -359,14 +351,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 
-		// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps (SetRollingStrategyForUpgrade)
-		// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
-		// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
-		if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSOUser) {
-			//Set keycloak Update Strategy to Rolling as default
-			r.Log.Info("Setting keycloak migration strategy to rolling")
-			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
-		}
+		// Always use rolling strategy
+		// Recreate strategy might need to be used for minor or major version bumps
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 
 		err = productConfig.Configure(kc)
 		if err != nil {
