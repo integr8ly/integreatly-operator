@@ -14,7 +14,7 @@ grafana-operator:
     url: "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:24802df1766a74114169d3d151036e3eaf725124bc52ab86c8f24469b2781ca7"
 observability-operator:
   - name: observability-prometheus-operator-index
-    url: quay.io/integreatly/custom-prometheus-index:1.0.0
+    url: quay.io/integreatly/custom-prometheus-index:1.0.1
   - name: observability-prometheus-operator
     url: quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b
   - name: observability-prometheus-alertmanager
@@ -37,7 +37,7 @@ observability-operator:
   - name: observability-grafana-plugins-init
     url: quay.io/grafana-operator/grafana_plugins_init:0.1.0
   - name: observability-observability-operator
-    url: quay.io/rhoas/observability-operator-index:v4.1.0
+    url: quay.io/rhoas/observability-operator-index:v4.1.2
 rhsso-operator:
   - name: rhsso-operator
     url: "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:f9553fa6b99e1869f8628f825e003270bc953d6cf4d724a913f2414ec729e580"
