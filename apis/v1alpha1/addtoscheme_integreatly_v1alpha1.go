@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	observabilityoperator "github.com/redhat-developer/observability-operator/v3/api/v1"
+	observabilityoperator "github.com/redhat-developer/observability-operator/v4/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"

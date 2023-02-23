@@ -20,7 +20,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
+	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
