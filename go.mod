@@ -58,7 +58,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/prometheus/common v0.37.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	k8s.io/metrics v0.20.6
 )
 
