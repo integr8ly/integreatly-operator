@@ -37,9 +37,9 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/redhat-developer/observability-operator/v3 v3.0.16
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/net v0.0.0-20221004154528-8021a29435af
+	golang.org/x/net v0.7.0
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
-	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
+	golang.org/x/term v0.5.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.24.3
@@ -58,7 +58,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 	github.com/prometheus/common v0.37.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.7.0
 	k8s.io/metrics v0.20.6
 )
 
@@ -180,7 +180,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20220920022843-2ce7c2934d45 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
