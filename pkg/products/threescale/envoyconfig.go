@@ -275,6 +275,7 @@ virtualHosts:
 		prefix: /
 		route:
 		cluster: apicast-ratelimit
+		timeout: 75s
 		rateLimits:
 		- actions:
 			- genericKey:
@@ -297,6 +298,9 @@ func getAPICastVirtualHosts(installation *integreatlyv1alpha1.RHMI, clusterName 
 					Route: &envoyroutev3.RouteAction{
 						ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 							Cluster: clusterName,
+						},
+						Timeout: &duration.Duration{
+							Seconds: 75,
 						},
 						RateLimits: getRateLimitsPerInstallType(installation),
 					},
@@ -328,6 +332,7 @@ virtual_hosts:
 			prefix: "/"
 		route:
 			cluster: backend-listener-ratelimit
+			timeout: 75s
 			rate_limits:
 **/
 func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHost {
@@ -347,6 +352,9 @@ func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHo
 						Route: &envoyroutev3.RouteAction{
 							ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 								Cluster: clusterName,
+							},
+							Timeout: &duration.Duration{
+								Seconds: 75,
 							},
 							RateLimits: []*envoyroutev3.RateLimit{&tsRatelimitDescriptor},
 						},
