@@ -43,7 +43,7 @@ products:
     manifestsDir: "integreatly-keycloak-client"
     quayScan: false
   - name: observability-operator
-    version: v4.1.0
+    version: v4.1.2
     url: "https://github.com/redhat-developer/observability-operator"
     installType: "rhoam"
     manifestsDir: "integreatly-observability-operator"

@@ -46,8 +46,6 @@ var (
 	InstallStage                 StageName = "installation"
 	CloudResourcesStage          StageName = "cloud-resources"
 	MonitoringStage              StageName = "monitoring"
-	ObservabilityStage           StageName = "observability"
-	AuthenticationStage          StageName = "authentication"
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	UninstallProductsStage       StageName = "uninstall - products"
@@ -76,7 +74,7 @@ var (
 	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "4.1.0"
+	VersionObservability  ProductVersion = "4.1.2"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -92,7 +90,7 @@ var (
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "4.1.0"
+	OperatorVersionObservability  OperatorVersion = "4.1.2"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

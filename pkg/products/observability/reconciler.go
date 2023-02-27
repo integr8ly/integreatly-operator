@@ -3,6 +3,8 @@ package observability
 import (
 	"context"
 	"fmt"
+	"regexp"
+
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
@@ -20,7 +22,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	observability "github.com/redhat-developer/observability-operator/v3/api/v1"
+	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
 	v1 "k8s.io/api/core/v1"
 	flowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	rbac "k8s.io/api/rbac/v1"
@@ -29,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
-	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
