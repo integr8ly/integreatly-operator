@@ -3,24 +3,38 @@
 set -ex
 
 echo "Getting VPC Details"
-VPC=`aws ec2 describe-vpcs --region ${CLUSTER_REGION} --filters "Name=tag:Name,Values=${clusterName}*" --query "Vpcs[0].VpcId" --output text`
+if [[ ${PRIVATE_LINK_ENABLED} ]]; then
+  echo "PRIVATE_LINK_ENABLED, search VPC by stack name"
+  VPC=`aws ec2 describe-vpcs --region ${CLUSTER_REGION} --filters "Name=tag:aws:cloudformation:stack-name, Values=${CLOUDFORM_STACK_NAME}" --query "Vpcs[0].VpcId" --output text`
+else
+  echo "search VPC by ClusterName: ${clusterName}"
+  VPC=`aws ec2 describe-vpcs --region ${CLUSTER_REGION} --filters "Name=tag:Name,Values=${clusterName}*" --query "Vpcs[0].VpcId" --output text`
+fi
+
 if [[ $VPC =~ "vpc-" ]]; then
   echo "VPC "${VPC}" is available"
 else
-  echo "VPC not found for ${clusterName}"
+  echo "VPC not found"
   exit 1  
 fi
 
 echo "Getting subnet details"
-SUBNET=`aws ec2 describe-subnets --region ${CLUSTER_REGION} --filters "Name=vpc-id,Values=$VPC" "Name=tag:Name,Values=*public*" --query Subnets[0].SubnetId --output text`
-if [[ $SUBNET =~ "subnet-" ]]; then
-  echo "SUBNET "${SUBNET}" is available"
-else 
-  echo "Public subnet not found for VPC: ${VPC}, clusterName: ${clusterName}"
-  exit 1 
+if [[ ${PRIVATE_LINK_ENABLED} ]]; then
+  echo "Get Private subnet"
+  SUBNET=`aws ec2 describe-subnets --region ${CLUSTER_REGION} --filters "Name=vpc-id,Values=$VPC" --query Subnets[0].SubnetId --output text`
+else
+ echo "Get Public subnet"
+ SUBNET=`aws ec2 describe-subnets --region ${CLUSTER_REGION} --filters "Name=vpc-id,Values=$VPC" "Name=tag:Name,Values=*public*" --query Subnets[0].SubnetId --output text`
 fi
 
-echo "Getting image"
+if [[ $SUBNET =~ "subnet-" ]]; then
+ echo "SUBNET "${SUBNET}" is available"
+else
+ echo "Subnet not found for VPC: ${VPC}"
+ exit 1
+fi
+
+echo "Getting image: ${IMAGE}"
 AMI=`aws ec2 describe-images --filters "Name=name,Values=${IMAGE}" --region ${CLUSTER_REGION} --output text --query 'Images[0].ImageId'`
 if [[ $AMI =~ "ami-" ]]; then
   echo "AMI "${AMI}" is available"
