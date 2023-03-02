@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
-	"time"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -68,32 +69,30 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("no product declaration found for cloud resources")
 	}
 
-	config, err := configManager.ReadCloudResources()
+	productConfig, err := configManager.ReadCloudResources()
 	if err != nil {
 		return nil, fmt.Errorf("could not read cloud resources config: %w", err)
 	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-	}
-	if config.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
-		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
-		}
+
+	productConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+
+	if installation.Spec.OperatorsInProductNamespace {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace())
+	} else {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace() + "-operator")
 	}
 
-	if config.GetStrategiesConfigMapName() == "" {
-		config.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
+	if productConfig.GetStrategiesConfigMapName() == "" {
+		productConfig.SetStrategiesConfigMapName(croAWS.DefaultConfigMapName)
 	}
 
-	if err := configManager.WriteConfig(config); err != nil {
+	if err := configManager.WriteConfig(productConfig); err != nil {
 		return nil, fmt.Errorf("error writing cloudresources config : %w", err)
 	}
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        config,
+		Config:        productConfig,
 		installation:  installation,
 		mpm:           mpm,
 		log:           logger,

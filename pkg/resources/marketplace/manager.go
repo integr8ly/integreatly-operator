@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -43,19 +44,25 @@ type Target struct {
 }
 
 func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
-	sub := &coreosv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: t.Namespace,
-			Name:      t.SubscriptionName,
-		},
-	}
-
 	res, err := catalogSourceReconciler.Reconcile(ctx, t.SubscriptionName)
 	if res.Requeue {
 		return fmt.Errorf("Requeue")
 	}
 	if err != nil {
 		return err
+	}
+
+	// catalog source is ready to create the other stuff
+	if err := m.reconcileOperatorGroup(ctx, serverClient, t, operatorGroupNamespaces); err != nil {
+		return err
+	}
+
+	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
+	sub := &coreosv1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      t.SubscriptionName,
+		},
 	}
 
 	mutateSub := func() error {
@@ -68,24 +75,6 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		}
 		return nil
 	}
-	//catalog source is ready create the other stuff
-	og := &v1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: t.Namespace,
-			Name:      OperatorGroupName,
-			Labels:    map[string]string{"integreatly": t.SubscriptionName},
-		},
-		Spec: v1.OperatorGroupSpec{
-			TargetNamespaces: operatorGroupNamespaces,
-		},
-	}
-	err = serverClient.Create(ctx, og)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		log.Error("error creating operator group", err)
-		return err
-	}
-
-	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, sub, mutateSub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		log.Error("error creating sub", err)
@@ -94,6 +83,30 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 
 	return nil
 
+}
+
+func (m *Manager) reconcileOperatorGroup(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string) error {
+	og := &v1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      OperatorGroupName,
+			Labels:    map[string]string{"integreatly": t.SubscriptionName},
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, og, func() error {
+		og.Spec = v1.OperatorGroupSpec{
+			TargetNamespaces: operatorGroupNamespaces,
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Error("error creating or updating operator group", err)
+		return err
+	}
+
+	return nil
 }
 
 func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {

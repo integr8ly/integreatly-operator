@@ -71,27 +71,25 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
-	config, err := configManager.ReadMarin3r()
+	productConfig, err := configManager.ReadMarin3r()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
 	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(ns)
-		if err := configManager.WriteConfig(config); err != nil {
-			return nil, fmt.Errorf("error writing marin3r config : %w", err)
-		}
+
+	productConfig.SetNamespace(ns)
+	if installation.Spec.OperatorsInProductNamespace {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace())
+	} else {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace() + "-operator")
 	}
-	if config.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
-		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
-		}
+
+	if err := configManager.WriteConfig(productConfig); err != nil {
+		return nil, fmt.Errorf("error writing marin3r config : %w", err)
 	}
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        config,
+		Config:        productConfig,
 		installation:  installation,
 		mpm:           mpm,
 		log:           logger,

@@ -100,15 +100,15 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("no product declaration found for user SSO")
 	}
 
-	config, err := configManager.ReadRHSSOUser()
+	productConfig, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
 	}
 
-	rhssocommon.SetNameSpaces(installation, config.RHSSOCommon, defaultNamespace)
+	rhssocommon.SetNameSpaces(installation, productConfig.RHSSOCommon, defaultNamespace)
 
 	return &Reconciler{
-		Config:     config,
+		Config:     productConfig,
 		Log:        logger,
 		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, apiUrl, keycloakClientFactory, *productDeclaration),
 	}, nil
