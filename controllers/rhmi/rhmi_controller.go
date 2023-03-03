@@ -145,7 +145,8 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // We are using ProjectRequests API to create namespaces where we automatically become admins
 // +kubebuilder:rbac:groups="";project.openshift.io,resources=projectrequests,verbs=create
 
-// +kubebuilder:rbac:groups=project.openshift.io,resources=projects,verbs=delete
+// // TODO - Remove get permission when released - https://issues.redhat.com/browse/MGDAPI-5308
+// +kubebuilder:rbac:groups=project.openshift.io,resources=projects,verbs=get;delete
 
 // Preflight check for existing installations of products
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;get;watch
@@ -221,6 +222,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // LimitRanges are used to assign default CPU/Memory requests and limits for containers that don't specify values for compute resources
 // +kubebuilder:rbac:groups="",resources=limitranges,verbs=get;create;update;delete
+
+// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
+// For cleaning up cluster logging
+// +kubebuilder:rbac:groups="logging.openshift.io",resources=clusterloggings;clusterlogforwarders,verbs=delete
 
 // Role permissions
 

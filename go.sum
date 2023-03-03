@@ -133,6 +133,7 @@ github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d h1:UrqY+r/O
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
+github.com/ViaQ/logerr/v2 v2.1.0 h1:8WwzuNa1x+a6tRUl+6sFel83A/QxlFBUaFW2FyG2zzY=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/adrg/xdg v0.4.0 h1:RzRqFcjH4nE5C6oTAxhBtoE2IRyjBSa62SCbyPidvls=
 github.com/adrg/xdg v0.4.0/go.mod h1:N6ag73EX4wyxeaoeHctc1mas01KZgsj5tYiAIwqJE/E=
@@ -1112,8 +1113,12 @@ github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 h1:ZHRIMCFIJN1
 github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142/go.mod h1:fjS8r9mqDVsPb5td3NehsNOAWa4uiFkYEfVZioQ2gH0=
 github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 h1:3kDYx398rJc69wl8NJtDbr/5tZ+jJzK8KMRXkNBCz+E=
 github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277/go.mod h1:7Bp09Db6Cc3jEB20jn0vPhl5iMdfpsvGIODAJC4QgoY=
+github.com/openshift/cluster-logging-operator v0.0.0-20221118094835-2d8faae5596f h1:ifK8Ck+9z/a/Xx6Fz2rOn1MsKrXP45FgZrvXrhK4fv8=
+github.com/openshift/cluster-logging-operator v0.0.0-20221118094835-2d8faae5596f/go.mod h1:9GOjiKuAJVA9lUyu4FvTZ/aRg2IlHD/V46QBjva5s/w=
 github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6 h1:pUF6LaGubNEJFOn+C7/bRXmKx74WJFPARjVwBJvyU6s=
 github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6/go.mod h1:EI/nkpdkEKAZl5WA6frFOtzNobW0QEtzbcq0PypwvWg=
+github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 h1:/CbENmI9HuJHd8N/h3eaUkqhHoQjj1BdwIGOF+X3wnM=
+github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298/go.mod h1:6dxhWPY3Wr/0b0eGrFpV7gcyeS+ne48Mo9OQ9dxrLNI=
 github.com/openshift/library-go v0.0.0-20200911100307-610c6e9e90b8/go.mod h1:NI6xOQGuTnLXeHW8Z2glKSFhF7X+YxlAlqlBMaK0zEM=
 github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go.mod h1:Ngi6UdF0k5OKD5t5wlmGhe/EDKPoUM3BXZSSfIuJbis=
 github.com/opentracing/basictracer-go v1.0.0/go.mod h1:QfBfYuafItcjQuMwinw9GhYKwFXS9KnPs5lxoYwgW74=
