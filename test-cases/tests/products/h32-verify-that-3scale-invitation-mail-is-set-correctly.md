@@ -6,6 +6,7 @@ products:
     targets:
       - 1.26.0
       - 1.29.0
+      - 1.32.0
 estimate: 10m
 ---
 
