@@ -21,3 +21,5 @@ bundles:
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.1-9
     - name: rhsso-operator.v7.6.1-10
       image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.1-10
+    - name: rhsso-operator.v7.6.2-3
+      image: registry.redhat.io/rh-sso-7/sso7-rhel8-operator-bundle:7.6.2-3
