@@ -7,20 +7,58 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 const (
-	developerAccountListResourceEndpoint = "/admin/api/accounts.json"
-	developerAccountResourceEndpoint     = "/admin/api/accounts/%d.json"
-	signupResourceEndpoint               = "/admin/api/signup.json"
+	developerAccountListResourceEndpoint     = "/admin/api/accounts.json"
+	developerAccountResourceEndpoint         = "/admin/api/accounts/%d.json"
+	signupResourceEndpoint                   = "/admin/api/signup.json"
+	DEVELOPERACCOUNTS_PER_PAGE           int = 500
 )
 
 func (c *ThreeScaleClient) ListDeveloperAccounts() (*DeveloperAccountList, error) {
+	// Keep asking until the results length is lower than "per_page" param
+	currentPage := 1
+	list := &DeveloperAccountList{}
+
+	allResultsPerPage := false
+	for next := true; next; next = allResultsPerPage {
+		tmpList, err := c.ListDeveloperAccountsPerPage(currentPage, DEVELOPERACCOUNTS_PER_PAGE)
+		if err != nil {
+			return nil, err
+		}
+
+		list.Items = append(list.Items, tmpList.Items...)
+
+		allResultsPerPage = len(tmpList.Items) == DEVELOPERACCOUNTS_PER_PAGE
+		currentPage += 1
+	}
+
+	return list, nil
+}
+
+// ListDeveloperAccountsPerPage List existing developer accounts for a given page
+// paginationValues[0] = Page in the paginated list. Defaults to 1 for the API, as the client will not send the page param.
+// paginationValues[1] = Number of results per page. Default and max is 500 for the aPI, as the client will not send the per_page param.
+func (c *ThreeScaleClient) ListDeveloperAccountsPerPage(paginationValues ...int) (*DeveloperAccountList, error) {
+	queryValues := url.Values{}
+
+	if len(paginationValues) > 0 {
+		queryValues.Add("page", strconv.Itoa(paginationValues[0]))
+	}
+
+	if len(paginationValues) > 1 {
+		queryValues.Add("per_page", strconv.Itoa(paginationValues[1]))
+	}
+
 	req, err := c.buildGetReq(developerAccountListResourceEndpoint)
 	if err != nil {
 		return nil, err
 	}
+
+	req.URL.RawQuery = queryValues.Encode()
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

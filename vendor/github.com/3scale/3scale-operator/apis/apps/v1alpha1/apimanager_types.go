@@ -263,6 +263,8 @@ type ApicastProductionSpec struct {
 	// ServiceCacheSize specifies the number of services that APICast can store in the internal cache
 	// +optional
 	ServiceCacheSize *int32 `json:"serviceCacheSize,omitempty"` // APICAST_SERVICE_CACHE_SIZE
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type ApicastStagingSpec struct {
@@ -321,6 +323,8 @@ type ApicastStagingSpec struct {
 	// ServiceCacheSize specifies the number of services that APICast can store in the internal cache
 	// +optional
 	ServiceCacheSize *int32 `json:"serviceCacheSize,omitempty"` // APICAST_SERVICE_CACHE_SIZE
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type BackendSpec struct {
@@ -336,6 +340,8 @@ type BackendSpec struct {
 	RedisTolerations []v1.Toleration `json:"redisTolerations,omitempty"`
 	// +optional
 	RedisResources *v1.ResourceRequirements `json:"redisResources,omitempty"`
+	// +optional
+	RedisPriorityClassName *string `json:"redisPriorityClassName,omitempty"`
 	// +optional
 	ListenerSpec *BackendListenerSpec `json:"listenerSpec,omitempty"`
 	// +optional
@@ -358,6 +364,8 @@ type BackendListenerSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type BackendWorkerSpec struct {
@@ -369,6 +377,8 @@ type BackendWorkerSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type BackendCronSpec struct {
@@ -380,6 +390,8 @@ type BackendCronSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type SystemSpec struct {
@@ -395,6 +407,8 @@ type SystemSpec struct {
 	MemcachedTolerations []v1.Toleration `json:"memcachedTolerations,omitempty"`
 	// +optional
 	MemcachedResources *v1.ResourceRequirements `json:"memcachedResources,omitempty"`
+	// +optional
+	MemcachedPriorityClassName *string `json:"memcachedPriorityClassName,omitempty"`
 
 	// +optional
 	RedisImage *string `json:"redisImage,omitempty"`
@@ -407,6 +421,8 @@ type SystemSpec struct {
 	RedisTolerations []v1.Toleration `json:"redisTolerations,omitempty"`
 	// +optional
 	RedisResources *v1.ResourceRequirements `json:"redisResources,omitempty"`
+	// +optional
+	RedisPriorityClassName *string `json:"redisPriorityClassName,omitempty"`
 
 	// TODO should this field be optional? We have different approaches in Kubernetes.
 	// For example, in v1.Volume it is optional and there's an implied behaviour
@@ -427,8 +443,13 @@ type SystemSpec struct {
 	AppSpec *SystemAppSpec `json:"appSpec,omitempty"`
 	// +optional
 	SidekiqSpec *SystemSidekiqSpec `json:"sidekiqSpec,omitempty"`
+
 	// +optional
+	// Deprecated
 	SphinxSpec *SystemSphinxSpec `json:"sphinxSpec,omitempty"`
+
+	// +optional
+	SearchdSpec *SystemSearchdSpec `json:"searchdSpec,omitempty"`
 }
 
 type SystemAppSpec struct {
@@ -444,6 +465,8 @@ type SystemAppSpec struct {
 	ProviderContainerResources *v1.ResourceRequirements `json:"providerContainerResources,omitempty"`
 	// +optional
 	DeveloperContainerResources *v1.ResourceRequirements `json:"developerContainerResources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type SystemSidekiqSpec struct {
@@ -455,6 +478,23 @@ type SystemSidekiqSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
+}
+
+type SystemSearchdSpec struct {
+	// +optional
+	Image *string `json:"image,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PVC *PVCGenericSpec `json:"persistentVolumeClaim,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type SystemSphinxSpec struct {
@@ -464,12 +504,14 @@ type SystemSphinxSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type SystemFileStorageSpec struct {
 	// Union type. Only one of the fields can be set.
 	// +optional
-	PVC *SystemPVCSpec `json:"persistentVolumeClaim,omitempty"`
+	PVC *PVCGenericSpec `json:"persistentVolumeClaim,omitempty"`
 	// +optional
 	// Deprecated
 	DeprecatedS3 *DeprecatedSystemS3Spec `json:"amazonSimpleStorageService,omitempty"`
@@ -482,7 +524,7 @@ type SystemRedisPersistentVolumeClaimSpec struct {
 	StorageClassName *string `json:"storageClassName,omitempty"`
 }
 
-type SystemPVCSpec struct {
+type PVCGenericSpec struct {
 	// +optional
 	StorageClassName *string `json:"storageClassName,omitempty"`
 	// Resources represents the minimum resources the volume should have.
@@ -532,13 +574,15 @@ type SystemMySQLSpec struct {
 	Image *string `json:"image,omitempty"`
 
 	// +optional
-	PersistentVolumeClaimSpec *SystemMySQLPVCSpec `json:"persistentVolumeClaim,omitempty"`
+	PersistentVolumeClaimSpec *PVCGenericSpec `json:"persistentVolumeClaim,omitempty"`
 	// +optional
 	Affinity *v1.Affinity `json:"affinity,omitempty"`
 	// +optional
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type SystemPostgreSQLSpec struct {
@@ -546,37 +590,15 @@ type SystemPostgreSQLSpec struct {
 	Image *string `json:"image,omitempty"`
 
 	// +optional
-	PersistentVolumeClaimSpec *SystemPostgreSQLPVCSpec `json:"persistentVolumeClaim,omitempty"`
+	PersistentVolumeClaimSpec *PVCGenericSpec `json:"persistentVolumeClaim,omitempty"`
 	// +optional
 	Affinity *v1.Affinity `json:"affinity,omitempty"`
 	// +optional
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
-}
-
-type SystemMySQLPVCSpec struct {
 	// +optional
-	StorageClassName *string `json:"storageClassName,omitempty"`
-	// Resources represents the minimum resources the volume should have.
-	// Ignored when VolumeName field is set
-	// +optional
-	Resources *PersistentVolumeClaimResources `json:"resources,omitempty"`
-	// VolumeName is the binding reference to the PersistentVolume backing this claim.
-	// +optional
-	VolumeName *string `json:"volumeName,omitempty"`
-}
-
-type SystemPostgreSQLPVCSpec struct {
-	// +optional
-	StorageClassName *string `json:"storageClassName,omitempty"`
-	// Resources represents the minimum resources the volume should have.
-	// Ignored when VolumeName field is set
-	// +optional
-	Resources *PersistentVolumeClaimResources `json:"resources,omitempty"`
-	// VolumeName is the binding reference to the PersistentVolume backing this claim.
-	// +optional
-	VolumeName *string `json:"volumeName,omitempty"`
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type ZyncSpec struct {
@@ -597,6 +619,9 @@ type ZyncSpec struct {
 
 	// +optional
 	QueSpec *ZyncQueSpec `json:"queSpec,omitempty"`
+
+	// +optional
+	DatabasePriorityClassName *string `json:"databasePriorityClassName,omitempty"`
 }
 
 type ZyncAppSpec struct {
@@ -608,6 +633,8 @@ type ZyncAppSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type ZyncQueSpec struct {
@@ -619,6 +646,8 @@ type ZyncQueSpec struct {
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// +optional
 	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 type HighAvailabilitySpec struct {
@@ -874,8 +903,8 @@ func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
 		changed = true
 	}
 
-	if spec.System.SphinxSpec == nil {
-		spec.System.SphinxSpec = &SystemSphinxSpec{}
+	if spec.System.SearchdSpec == nil {
+		spec.System.SearchdSpec = &SystemSearchdSpec{}
 		changed = true
 	}
 
