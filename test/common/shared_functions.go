@@ -275,6 +275,20 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 	return false, nil
 }
 
+func isInProw(ctx *TestingContext) (bool, error) {
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		return false, fmt.Errorf("error getting RHMI CR: %v", err)
+	}
+
+	annotationMap := rhmi.GetObjectMeta().GetAnnotations()
+	isInProw, ok := annotationMap["in_prow"]
+	if ok && isInProw == "true" {
+		return true, nil
+	}
+	return false, nil
+}
+
 // Common function to perform CRUDL and verifying their expected permissions
 func verifyCRUDLPermissions(t TestingTB, openshiftClient *resources.OpenshiftClient, expectedPermission ExpectedPermissions) {
 	// Perform LIST Request
