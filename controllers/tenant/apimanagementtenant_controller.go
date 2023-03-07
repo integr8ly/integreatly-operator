@@ -136,9 +136,11 @@ func (r *TenantReconciler) getAPIManagementTenant(crName string, crNamespace str
 	return tenant, nil
 }
 
+// The purpose of this method is to verify if particular APIManagementTenant is created or in progress of creation. If yes then skip, if no then proceed with checking if there is ANOTHER APIManagementTenant already created or in progress of creation
+
 func (r *TenantReconciler) verifyAPIManagementTenant(tenant *v1alpha1.APIManagementTenant) (bool, string, error) {
 	// Skip verification if the tenant is already reconciled
-	if tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountReady {
+	if tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountReady && tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountRequested && tenant.Status.ProvisioningStatus != v1alpha1.UserAnnotated {
 		// Fails if APIManagementTenant isn't from a namespace ending in -dev or -stage
 		if !strings.HasSuffix(tenant.Namespace, "-dev") && !strings.HasSuffix(tenant.Namespace, "-stage") {
 			return false, "tenant not created in a namespace ending in {USERNAME}-dev or {USERNAME}-stage", nil
@@ -166,9 +168,10 @@ func (r *TenantReconciler) verifyAPIManagementTenant(tenant *v1alpha1.APIManagem
 				return false, "an error occurred while trying to check if another reconciled APIManagementTenant CR already exists", err
 			}
 			for _, t := range tenants.Items {
-				if t.Status.ProvisioningStatus == v1alpha1.ThreeScaleAccountReady {
-					return false, "a reconciled APIManagementTenant CR already exists", nil
+				if t.Status.ProvisioningStatus == v1alpha1.ThreeScaleAccountReady || t.Status.ProvisioningStatus == v1alpha1.ThreeScaleAccountRequested || t.Status.ProvisioningStatus == v1alpha1.UserAnnotated {
+					return false, "can't create more than 1 APIManagementTenant CR in -dev or -stage namespace", nil
 				}
+
 			}
 		}
 	}
