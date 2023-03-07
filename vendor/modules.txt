@@ -909,9 +909,6 @@ github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1/fake
 # github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277
 ## explicit; go 1.16
 github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
-# github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
-## explicit; go 1.12
-github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
 # github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
 ## explicit; go 1.17
 github.com/openshift/custom-domains-operator/api/v1alpha1
