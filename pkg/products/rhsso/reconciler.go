@@ -3,12 +3,13 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 	"strconv"
 	"strings"
 	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -63,7 +64,6 @@ type Reconciler struct {
 	Config *config.RHSSO
 	Log    l.Logger
 	*rhssocommon.Reconciler
-	isUpgrade bool
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
@@ -82,7 +82,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Config:     config,
 		Log:        logger,
 		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, APIURL, keycloakClientFactory, *productDeclaration),
-		isUpgrade:  rhssocommon.IsUpgrade(config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSO),
 	}, nil
 }
 
@@ -170,12 +169,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.SetRollingStrategyForUpgrade(r.isUpgrade, ctx, serverClient, r.Config.RHSSOCommon, integreatlyv1alpha1.VersionRHSSO, keycloakName)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to set rolling strategy for upgrade", err)
-		return phase, err
-	}
-
 	phase, err = r.CheckGrafanaDashboardCRD(ctx, r.Oauthv1Client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to retrieve grafana dashboard crd", err)
@@ -191,7 +184,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		serverClient,
-		fmt.Sprintf("rhsso-operator.%s", "7.6.1-opr-001"),
+		fmt.Sprintf("rhsso-operator.%s", "7.6.2-opr-001"),
 		r.Config.GetOperatorNamespace(),
 		installation.Spec.PriorityClassName,
 	)
@@ -324,14 +317,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			}
 		}
 
-		// On an upgrade, migration could have changed to recreate strategy for major and minor version bumps
-		// Keep the current migration strategy until operator upgrades are complete. Once complete use rolling strategy.
-		// On patch upgrades, the rolling strategy will be kept and used throughout the upgrade
-		if !r.isUpgrade && r.IsOperatorInstallComplete(kc, integreatlyv1alpha1.OperatorVersionRHSSO) {
-			//Set keycloak Update Strategy to Rolling as default
-			r.Log.Info("Setting keycloak migration strategy to rolling")
-			kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
-		}
+		// Always use rolling strategy
+		// Recreate strategy might need to be used for minor or major version bumps
+		kc.Spec.Migration.MigrationStrategy = keycloak.StrategyRolling
 
 		//OSD has more resources than PROW, so adding an exception
 		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
