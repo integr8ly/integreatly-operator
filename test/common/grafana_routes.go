@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,31 +21,31 @@ import (
 )
 
 func TestCustomerGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, CustomerGrafanaNamespace)
+	grafanaRouteHostname, err := getGrafanaRoute(ctx.Client, CustomerGrafanaNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
 
-	testRoute(t, ctx, grafanaRootHostname)
+	testRoute(t, ctx, grafanaRouteHostname)
 }
 
 func TestGrafanaExternalRouteAccessible(t TestingTB, ctx *TestingContext) {
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
+	grafanaRouteHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
 
-	testRoute(t, ctx, grafanaRootHostname)
+	testRoute(t, ctx, grafanaRouteHostname)
 }
 
-func testRoute(t TestingTB, ctx *TestingContext, grafanaRootHostname string) {
+func testRoute(t TestingTB, ctx *TestingContext, grafanaRouteHostname string) {
 	// create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
 		t.Fatal("failed to create testing http client", err)
 	}
 
-	grafanaMetricsEndpoint := fmt.Sprintf("%s/metrics", grafanaRootHostname)
+	grafanaMetricsEndpoint := fmt.Sprintf("%s/metrics", grafanaRouteHostname)
 
 	req, err := http.NewRequest("GET", grafanaMetricsEndpoint, nil)
 	if err != nil {
@@ -63,6 +63,15 @@ func testRoute(t TestingTB, ctx *TestingContext, grafanaRootHostname string) {
 }
 
 func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	if resources.RunningInProw(rhmi) {
+		t.Skip("403 Forbidden is returned when accessing Grafana Dashboard in Prow")
+	}
+
 	const (
 		serviceAccountName = "test"
 		bindingName        = "test"
@@ -75,10 +84,9 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 			Name:      serviceAccountName,
 		},
 	}
-	err := ctx.Client.Create(goctx.TODO(), serviceAccount)
+	err = ctx.Client.Create(goctx.TODO(), serviceAccount)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to create serviceAccount", err)
+		t.Fatal("failed to create serviceAccount", err)
 	}
 	defer func(Client k8sclient.Client, ctx goctx.Context, obj client.Object) {
 		if err := Client.Delete(ctx, obj); err != nil {
@@ -105,8 +113,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	}
 	err = ctx.Client.Create(goctx.TODO(), binding)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to create clusterRoleBinding", err)
+		t.Fatal("failed to create clusterRoleBinding", err)
 	}
 	defer func(Client k8sclient.Client, ctx goctx.Context, obj client.Object) {
 		if err := Client.Delete(ctx, obj); err != nil {
@@ -114,94 +121,72 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		}
 	}(ctx.Client, goctx.TODO(), binding)
 
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
+	grafanaRouteHostname, err := getGrafanaRoute(ctx.Client, ObservabilityProductNamespace)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to get grafana route", err)
+		t.Fatal("failed to get grafana route", err)
 	}
 
 	token := ""
-	if err := wait.PollImmediate(time.Second, time.Second*10, func() (bool, error) {
-		// Poll the Service Account
-		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
-			Name:      serviceAccountName,
-			Namespace: ObservabilityProductNamespace,
-		}, serviceAccount); err != nil {
-			if errors.IsNotFound(err) {
-				return false, nil
-			}
-
+	if err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (bool, error) {
+		// Get the secrets in Observability ns
+		secrets := &corev1.SecretList{}
+		opts := []k8sclient.ListOption{
+			k8sclient.InNamespace(ObservabilityProductNamespace),
+		}
+		if err := ctx.Client.List(goctx.TODO(), secrets, opts...); err != nil {
 			return false, err
 		}
 
-		// Iterate through the SA secrets to find the token
-		var saSecret *corev1.ObjectReference = nil
-		for i := range serviceAccount.Secrets {
-			secret := serviceAccount.Secrets[i]
-			if strings.HasPrefix(secret.Name, fmt.Sprintf("%s-token", serviceAccountName)) {
-				saSecret = &secret
+		// Find the service account secret containing the token
+		var saSecret *corev1.Secret
+		for i := range secrets.Items {
+			if strings.HasPrefix(secrets.Items[i].Name, fmt.Sprintf("%s-token", serviceAccountName)) {
+				saSecret = &secrets.Items[i]
 				break
 			}
 		}
 
-		// The token secret hasn't been created yet
 		if saSecret == nil {
 			return false, nil
 		}
 
-		// Get the secret
-		secret := &corev1.Secret{}
-		if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{
-			Name:      saSecret.Name,
-			Namespace: ObservabilityProductNamespace,
-		}, secret); err != nil {
-			return false, err
-		}
-
 		// Assign the token and finish polling
-		token = string(secret.Data["token"])
+		token = string(saSecret.Data["token"])
 		return true, nil
 	}); err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("unexpected error while waiting for SA token", err)
+		t.Fatal("unexpected error while waiting for SA token", err)
 	}
 
 	//create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to create testing http client", err)
+		t.Fatal("failed to create testing http client", err)
 	}
 	//get dashboards for grafana from the external route
-	grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRootHostname)
+	grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRouteHostname)
 	req, err := http.NewRequest("GET", grafanaDashboardsURL, nil)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to create request for grafana", err)
+		t.Fatal("failed to create request for grafana", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	dashboardResp, err := httpClient.Do(req)
 	if err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to perform test request to grafana", err)
+		t.Fatal("failed to perform test request to grafana", err)
 	}
 	defer dashboardResp.Body.Close()
 	//there is an existing dashboard check, so confirm a valid response structure
 	if dashboardResp.StatusCode != http.StatusOK {
 		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
 		t.Logf("dumpResp: %q", dumpResp)
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
+		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
 	}
 
 	var dashboards []interface{}
 	if err := json.NewDecoder(dashboardResp.Body).Decode(&dashboards); err != nil {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("failed to decode grafana dashboards response", err)
+		t.Fatal("failed to decode grafana dashboards response", err)
 	}
 	if len(dashboards) == 0 {
-		t.Skipf("Flaky test reported in https://issues.redhat.com/browse/MGDAPI-2548 failed on: %s", err)
-		// t.Fatal("no grafana dashboards returned from grafana api")
+		t.Fatal("no grafana dashboards returned from grafana api")
 	}
 }
 
@@ -216,9 +201,9 @@ func getGrafanaRoute(c client.Client, namespace string) (string, error) {
 		return "", fmt.Errorf("failed to get grafana route: %w", err)
 	}
 	//evaluate the grafana route hostname
-	grafanaRootHostname := grafanaRoute.Spec.Host
+	grafanaRouteHostname := grafanaRoute.Spec.Host
 	if grafanaRoute.Spec.TLS != nil {
-		grafanaRootHostname = fmt.Sprintf("https://%s", grafanaRootHostname)
+		grafanaRouteHostname = fmt.Sprintf("https://%s", grafanaRouteHostname)
 	}
-	return grafanaRootHostname, nil
+	return grafanaRouteHostname, nil
 }
