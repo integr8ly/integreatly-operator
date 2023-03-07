@@ -83,7 +83,7 @@ cd test/scripts/backup-restore
 NS_PREFIX=redhat-rhoam ./j07-verify-rhsso-backup-and-restore.sh | tee test-output.txt
 ```
 
-4. **STS** - Reach out to SRE/QE for the `ManagedOpenShift-Support-Role` credentials in order to run the backup and restore script
+4. **STS** - Reach out to QE for the `osdCcsAdmin` credentials in order to run the backup and restore script
 
 ```sh
 cd test/scripts/backup-restore

@@ -14,6 +14,7 @@ products:
       - 1.23.0
       - 1.26.0
       - 1.29.0
+      - 1.32.0
 estimate: 1h
 tags:
   - destructive
@@ -29,7 +30,8 @@ This test case should prove that it is possible for SRE to disable/enable rate l
 
 ## Prerequisites
 
-- access to `cloud-services-qe-reporting@redhat.com` mailing list
+- access to `cloud-services-qe-reporting@redhat.com` mailing list (optional)
+  - you can monitor the alerts directly in the Observability Prometheus instance instead. Open it before starting with the SOP and check continuously
 - [workload webapp](https://github.com/integr8ly/workload-web-app) should be running on the cluster https://github.com/integr8ly/workload-web-app/
 
 ## Steps
@@ -58,5 +60,5 @@ open "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-o
 ```
 
 9. Validate that the requests made by workload-web-app are displaying in the graphs
-10. Search for alerts in `cloud-services-qe-reporting@redhat.com` mailing list
+10. Search for alerts in `cloud-services-qe-reporting@redhat.com` mailing list (if not checked via Prometheus directly)
     > Make sure no critical alert is firing (you might see some alerts with severity "warning")

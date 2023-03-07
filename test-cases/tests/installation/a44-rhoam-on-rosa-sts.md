@@ -6,7 +6,10 @@ products:
     targets:
       - 1.27.0
       - 1.30.0
+      - 1.31.0
 estimate: 2h
+tags:
+  - automated
 ---
 
 # A44 - RHOAM on ROSA STS
