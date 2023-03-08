@@ -18,6 +18,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/test/utils"
+	projectv1 "github.com/openshift/api/project/v1"
+	clusterloggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
@@ -955,6 +957,117 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("deleteObservabilityCR() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
+func TestReconciler_cleanupClusterLogging(t *testing.T) {
+	const clusterLoggingNs = "openshift-logging"
+
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Reconciler    *resources.Reconciler
+		ConfigManager config.ConfigReadWriter
+		Config        *config.Observability
+		installation  *v1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           l.Logger
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test no error on non OSD clusters",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme),
+			},
+		},
+		{
+			name: "test no error when not installed on OSD clusters",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: utils.NewTestClient(scheme,
+					&projectv1.Project{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: clusterLoggingNs,
+						},
+					},
+				),
+			},
+		},
+		{
+			name: "test no error when cluster logging installed on OSD clusters",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: utils.NewTestClient(scheme,
+					&projectv1.Project{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: clusterLoggingNs,
+						},
+					},
+					&operatorsv1alpha1.Subscription{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cluster-logging",
+							Namespace: clusterLoggingNs,
+							Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+						},
+						Status: operatorsv1alpha1.SubscriptionStatus{
+							InstalledCSV: "installedCSV",
+						},
+					},
+					&operatorsv1alpha1.ClusterServiceVersion{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "installedCSV",
+							Namespace: clusterLoggingNs,
+						},
+					},
+					&clusterloggingv1.ClusterLogging{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "instance",
+							Namespace: clusterLoggingNs,
+							Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+						},
+					},
+					&clusterloggingv1.ClusterLogForwarder{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "instance",
+							Namespace: clusterLoggingNs,
+						},
+					},
+				),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Reconciler:    tt.fields.Reconciler,
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+			}
+			if err := r.cleanupClusterLogging(tt.args.ctx, tt.args.serverClient); (err != nil) != tt.wantErr {
+				t.Errorf("cleanupClusterLogging() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

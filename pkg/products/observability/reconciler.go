@@ -20,6 +20,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
+	projectv1 "github.com/openshift/api/project/v1"
+	clusterloggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
@@ -210,6 +213,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
 		return phase, err
+	}
+
+	// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
+	if err := r.cleanupClusterLogging(ctx, client); err != nil {
+		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Failed to cleanup cluster logging", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, client, r.installation, r.Config.GetNamespace(), r.Config.GetAlertManagerRouteName())
@@ -494,6 +503,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		oo.Spec.SelfContained.GrafanaResourceRequirement = r.Config.GetGrafanaResourceRequirements()
 		oo.Spec.SelfContained.PrometheusResourceRequirement = r.Config.GetPrometheusResourceRequirements()
 		oo.Spec.SelfContained.PrometheusOperatorResourceRequirement = r.Config.GetPrometheusOperatorResourceRequirements()
+		oo.Spec.SelfContained.DisableLogging = &disabled
 		oo.Spec.ResyncPeriod = "1h"
 
 		return nil
@@ -1127,4 +1137,89 @@ func (r *Reconciler) reconcileClusterRoleBinding(ctx context.Context, serverClie
 		r.log.Infof("Operation result", l.Fields{"roleBinding": bindingName, "result": opRes})
 	}
 	return err
+}
+
+// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
+func (r *Reconciler) cleanupClusterLogging(ctx context.Context, serverClient k8sclient.Client) (err error) {
+	const clusterLoggingNs = "openshift-logging"
+
+	// if openshift-namespace is not present skip logging operator uninstallation
+	// Namespace is only present on OSD clusters, OCP clusters will not have this namespace
+	namespace := &projectv1.Project{}
+	selector := k8sclient.ObjectKey{
+		Name: clusterLoggingNs,
+	}
+
+	if err := serverClient.Get(ctx, selector, namespace); err != nil {
+		if !k8serr.IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+
+	subList := &v1alpha1.SubscriptionList{}
+	opts := &k8sclient.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{"app.kubernetes.io/managed-by": "observability-operator"}),
+		Namespace:     clusterLoggingNs,
+	}
+
+	if err := serverClient.List(ctx, subList, opts); err != nil {
+		return err
+	}
+
+	// Operator installed
+	if len(subList.Items) != 0 {
+		installedCsv := subList.Items[0].Status.InstalledCSV
+
+		// Delete subscription
+		subscription := &v1alpha1.Subscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cluster-logging",
+				Namespace: clusterLoggingNs,
+				Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+			},
+		}
+
+		if err := serverClient.Delete(ctx, subscription); err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
+
+		// Delete csv to uninstall
+		csv := &v1alpha1.ClusterServiceVersion{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      installedCsv,
+				Namespace: clusterLoggingNs,
+			},
+		}
+		if err := serverClient.Delete(ctx, csv); err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Delete ClusterLogging
+	clusterLoggingCR := &clusterloggingv1.ClusterLogging{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "instance",
+			Namespace: clusterLoggingNs,
+			Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+		},
+	}
+
+	if err := serverClient.Delete(ctx, clusterLoggingCR); err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	// Delete ClusterLogForwarder
+	clusterLogForwarder := &clusterloggingv1.ClusterLogForwarder{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "instance",
+			Namespace: clusterLoggingNs,
+		},
+	}
+
+	if err := serverClient.Delete(ctx, clusterLogForwarder); err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	return nil
 }

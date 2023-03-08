@@ -27,11 +27,11 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	clusterloggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -49,28 +49,30 @@ func init() {
 		AddToSchemes,
 		operatorsv1.AddToScheme,
 		operatorsv1alpha1.AddToScheme,
-		authv1.AddToScheme,
+		authv1.Install,
 		keycloak.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
-		routev1.AddToScheme,
-		appsv1.AddToScheme,
-		imagev1.AddToScheme,
-		oauthv1.AddToScheme,
-		templatev1.AddToScheme,
+		routev1.Install,
+		appsv1.Install,
+		imagev1.Install,
+		oauthv1.Install,
+		templatev1.Install,
 		rbacv1.SchemeBuilder.AddToScheme,
-		usersv1.AddToScheme,
-		confv1.AddToScheme,
+		usersv1.Install,
+		confv1.Install,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
-		projectv1.AddToScheme,
-		consolev1.AddToScheme,
+		projectv1.Install,
+		consolev1.Install,
 		envoyconfigv1.SchemeBuilder.AddToScheme,
 		discoveryservicev1.SchemeBuilder.AddToScheme,
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
 		observabilityoperator.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
-		cloudcredentialv1.AddToScheme,
+		cloudcredentialv1.Install,
+		// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
+		clusterloggingv1.AddToScheme,
 	)
 }
