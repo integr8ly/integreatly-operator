@@ -82,35 +82,27 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {
 
 	ns := GetDefaultNamespace(installation.Spec.NamespacePrefix)
-	config, err := configManager.ReadObservability()
+	productConfig, err := configManager.ReadObservability()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve observability config: %w", err)
 	}
 
-	config.SetNamespacePrefix(installation.Spec.NamespacePrefix)
+	productConfig.SetNamespacePrefix(installation.Spec.NamespacePrefix)
+	productConfig.SetNamespace(ns)
 
-	if config.GetNamespace() == "" {
-		config.SetNamespace(ns)
-		err := configManager.WriteConfig(config)
-		if err != nil {
-			return nil, err
-		}
+	if installation.Spec.OperatorsInProductNamespace {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace())
+	} else {
+		productConfig.SetOperatorNamespace(productConfig.GetNamespace() + "-operator")
 	}
-	if config.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
-		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
-		}
-		err := configManager.WriteConfig(config)
-		if err != nil {
-			return nil, err
-		}
+
+	if err := configManager.WriteConfig(productConfig); err != nil {
+		return nil, err
 	}
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        config,
+		Config:        productConfig,
 		installation:  installation,
 		mpm:           mpm,
 		log:           logger,

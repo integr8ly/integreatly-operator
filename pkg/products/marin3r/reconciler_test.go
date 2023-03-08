@@ -89,6 +89,9 @@ func getBasicConfig() *config.ConfigReadWriterMock {
 				"HOST":      "threescale.openshift-cluster.com",
 			}), nil
 		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
 	}
 }
 

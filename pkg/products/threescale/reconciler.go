@@ -5,15 +5,16 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	portaClient "github.com/3scale/3scale-porta-go-client/client"
-	"github.com/integr8ly/integreatly-operator/pkg/addon"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	portaClient "github.com/3scale/3scale-porta-go-client/client"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	envoyextentionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/golang/protobuf/ptypes/any"
@@ -133,20 +134,18 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
 	}
-	if threescaleConfig.GetNamespace() == "" {
-		threescaleConfig.SetNamespace(ns)
-		if err := configManager.WriteConfig(threescaleConfig); err != nil {
-			return nil, fmt.Errorf("error writing threescale config : %w", err)
-		}
-	}
-	if threescaleConfig.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace())
-		} else {
-			threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace() + "-operator")
-		}
+
+	threescaleConfig.SetNamespace(ns)
+	if installation.Spec.OperatorsInProductNamespace {
+		threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace())
+	} else {
+		threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace() + "-operator")
 	}
 	threescaleConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
+
+	if err := configManager.WriteConfig(threescaleConfig); err != nil {
+		return nil, fmt.Errorf("error writing threescale config : %w", err)
+	}
 
 	return &Reconciler{
 		ConfigManager: configManager,
