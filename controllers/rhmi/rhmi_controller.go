@@ -489,7 +489,13 @@ func (r *RHMIReconciler) Reconcile(_ context.Context, request ctrl.Request) (ctr
 	// Entered on every reconcile where all stages reported complete
 	if !installInProgress {
 		installation.Status.Stage = "complete"
-		retryRequeue.RequeueAfter = 5 * time.Minute
+
+		if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installation.Spec.Type)) {
+			retryRequeue.RequeueAfter = 30 * time.Second
+		} else {
+			retryRequeue.RequeueAfter = 5 * time.Minute
+		}
+
 		if installation.Spec.RebalancePods {
 			r.reconcilePodDistribution(installation)
 		}
