@@ -19,8 +19,8 @@
 Resolution Legend:
 
 - Passed => Done
-- Failure => Rejected
-- Blocked => Deferred
+- Failure => Can't Do
+- Blocked => Test Pending
 - Skipped => Won't Do
 
 #### Passed
