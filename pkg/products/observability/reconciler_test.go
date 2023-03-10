@@ -24,6 +24,7 @@ import (
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1048,6 +1049,16 @@ func TestReconciler_cleanupClusterLogging(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "instance",
 							Namespace: clusterLoggingNs,
+						},
+					},
+					&apiextensionv1.CustomResourceDefinition{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "clusterloggings.logging.openshift.io",
+						},
+					},
+					&apiextensionv1.CustomResourceDefinition{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "clusterlogforwarders.logging.openshift.io",
 						},
 					},
 				),

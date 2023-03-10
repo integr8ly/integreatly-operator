@@ -15,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -29,6 +30,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	flowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	rbac "k8s.io/api/rbac/v1"
+	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1196,29 +1198,57 @@ func (r *Reconciler) cleanupClusterLogging(ctx context.Context, serverClient k8s
 		}
 	}
 
-	// Delete ClusterLogging
-	clusterLoggingCR := &clusterloggingv1.ClusterLogging{
+	// Check if CRD is installed
+	clusterLoggingCRD := &apiextensionv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "instance",
-			Namespace: clusterLoggingNs,
-			Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+			Name: "clusterloggings.logging.openshift.io",
 		},
 	}
 
-	if err := serverClient.Delete(ctx, clusterLoggingCR); err != nil && !k8serr.IsNotFound(err) {
+	exist, err := k8s.Exists(ctx, serverClient, clusterLoggingCRD)
+	if err != nil {
 		return err
 	}
 
-	// Delete ClusterLogForwarder
-	clusterLogForwarder := &clusterloggingv1.ClusterLogForwarder{
+	if exist {
+		// Delete ClusterLogging if crd exists
+		clusterLoggingCR := &clusterloggingv1.ClusterLogging{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance",
+				Namespace: clusterLoggingNs,
+				Labels:    map[string]string{"app.kubernetes.io/managed-by": "observability-operator"},
+			},
+		}
+
+		if err := serverClient.Delete(ctx, clusterLoggingCR); err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Check if CRD is installed
+	clusterLogForwarderCRD := &apiextensionv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "instance",
-			Namespace: clusterLoggingNs,
+			Name: "clusterlogforwarders.logging.openshift.io",
 		},
 	}
 
-	if err := serverClient.Delete(ctx, clusterLogForwarder); err != nil && !k8serr.IsNotFound(err) {
+	exist, err = k8s.Exists(ctx, serverClient, clusterLogForwarderCRD)
+	if err != nil {
 		return err
+	}
+
+	if exist {
+		// Delete ClusterLogForwarder if CRD exists
+		clusterLogForwarder := &clusterloggingv1.ClusterLogForwarder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "instance",
+				Namespace: clusterLoggingNs,
+			},
+		}
+
+		if err := serverClient.Delete(ctx, clusterLogForwarder); err != nil && !k8serr.IsNotFound(err) {
+			return err
+		}
 	}
 
 	return nil
