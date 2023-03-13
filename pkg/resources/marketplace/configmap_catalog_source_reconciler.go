@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -26,7 +25,7 @@ type ConfigMapCatalogSourceReconciler struct {
 
 var _ CatalogSourceReconciler = &ConfigMapCatalogSourceReconciler{}
 
-func NewConfigMapCatalogSourceReconciler(manifestsProductDirectory string, client client.Client, namespace string, catalogSourceName string) *ConfigMapCatalogSourceReconciler {
+func NewConfigMapCatalogSourceReconciler(manifestsProductDirectory string, client k8sclient.Client, namespace string, catalogSourceName string) *ConfigMapCatalogSourceReconciler {
 	return &ConfigMapCatalogSourceReconciler{
 		ManifestsProductDirectory: manifestsProductDirectory,
 		Client:                    client,
@@ -115,6 +114,9 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileCatalogSource(ctx context.Co
 		ConfigMap:   configMapName,
 		DisplayName: r.CatalogSourceName(),
 		Publisher:   Publisher,
+		GrpcPodConfig: &operatorsv1alpha1.GrpcPodConfig{
+			SecurityContextConfig: operatorsv1alpha1.Restricted,
+		},
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, r.Client, catalogSource, func() error {
