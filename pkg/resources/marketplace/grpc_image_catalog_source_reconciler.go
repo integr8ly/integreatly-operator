@@ -7,7 +7,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -23,7 +22,7 @@ type GRPCImageCatalogSourceReconciler struct {
 
 var _ CatalogSourceReconciler = &GRPCImageCatalogSourceReconciler{}
 
-func NewGRPCImageCatalogSourceReconciler(image string, client client.Client, namespace string, catalogSourceName string, log l.Logger) *GRPCImageCatalogSourceReconciler {
+func NewGRPCImageCatalogSourceReconciler(image string, client k8sclient.Client, namespace string, catalogSourceName string, log l.Logger) *GRPCImageCatalogSourceReconciler {
 	return &GRPCImageCatalogSourceReconciler{
 		Image:     image,
 		Client:    client,
@@ -48,6 +47,9 @@ func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context, subNam
 		Image:       r.Image,
 		DisplayName: r.CatalogSourceName(),
 		Publisher:   Publisher,
+		GrpcPodConfig: &operatorsv1alpha1.GrpcPodConfig{
+			SecurityContextConfig: operatorsv1alpha1.Restricted,
+		},
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, r.Client, catalogSource, func() error {
