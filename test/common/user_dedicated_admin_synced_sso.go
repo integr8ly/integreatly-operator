@@ -73,11 +73,11 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 		t.Fatalf("%v", err)
 	}
 	tokenOptions := keycloakTokenOptions{
-		ClientID:  pointer.StringPtr(clientIDAdminCLI),
-		GrantType: pointer.StringPtr(grantTypePassword),
+		ClientID:  pointer.String(clientIDAdminCLI),
+		GrantType: pointer.String(grantTypePassword),
 		RealmName: realmNameMaster,
-		Username:  pointer.StringPtr(credentialsKeycloak[0]),
-		Password:  pointer.StringPtr(credentialsKeycloak[1]),
+		Username:  pointer.String(credentialsKeycloak[0]),
+		Password:  pointer.String(credentialsKeycloak[1]),
 	}
 	timeBeforeTokenReq := time.Now()
 	tokens, err = getKeycloakToken(tc.HttpClient, hostKeycloakUserSSO, tokenOptions)
@@ -88,11 +88,11 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 
 	// Create a testing user in Keycloak (user-sso)
 	keycloakUserToCreate := keycloakUser{
-		EmailVerified: pointer.BoolPtr(true),
-		Enabled:       pointer.BoolPtr(true),
-		FirstName:     pointer.StringPtr("Test User"),
-		LastName:      pointer.StringPtr("99"),
-		UserName:      pointer.StringPtr(testUserName),
+		EmailVerified: pointer.Bool(true),
+		Enabled:       pointer.Bool(true),
+		FirstName:     pointer.String("Test User"),
+		LastName:      pointer.String("99"),
+		UserName:      pointer.String(testUserName),
 	}
 	if err := createKeycloakUser(tc.HttpClient, hostKeycloakUserSSO, realmNameMaster, tokens.AccessToken, keycloakUserToCreate); err != nil {
 		t.Fatalf("%v", err)
@@ -116,7 +116,7 @@ func TestDedicatedAdminUsersSyncedSSO(t TestingTB, tc *TestingContext) {
 	}
 	userOptions := keycloakUserOptions{
 		RealmName: realmNameMaster,
-		Username:  pointer.StringPtr(testUserName),
+		Username:  pointer.String(testUserName),
 	}
 	keycloakUsers, err := getKeycloakUsers(tc.HttpClient, hostKeycloakUserSSO, tokens.AccessToken, userOptions)
 	if err != nil {
@@ -183,7 +183,7 @@ func pollKeycloakUserGroups(httpClient *http.Client, host, userID string) error 
 			tokenExpiryTime = timeBeforeTokenReq.Add(time.Duration(tokens.ExpiresIn) * time.Second)
 		}
 		groupOptions := keycloakUserGroupOptions{
-			BriefRepresentation: pointer.BoolPtr(true),
+			BriefRepresentation: pointer.Bool(true),
 			RealmName:           realmNameMaster,
 			UserID:              userID,
 		}
@@ -478,10 +478,10 @@ func removeIndex(slice []string, s int) []string {
 
 func refreshKeycloakToken(client *http.Client, host, refreshToken string) (*keycloakOpenIDTokenResponse, error) {
 	tokenOptions := keycloakTokenOptions{
-		ClientID:     pointer.StringPtr(clientIDAdminCLI),
-		GrantType:    pointer.StringPtr(grantTypeRefreshToken),
+		ClientID:     pointer.String(clientIDAdminCLI),
+		GrantType:    pointer.String(grantTypeRefreshToken),
 		RealmName:    realmNameMaster,
-		RefreshToken: pointer.StringPtr(refreshToken),
+		RefreshToken: pointer.String(refreshToken),
 	}
 	return getKeycloakToken(client, host, tokenOptions)
 }
