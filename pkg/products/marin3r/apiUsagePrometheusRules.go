@@ -1,7 +1,6 @@
 package marin3r
 
 import (
-	"errors"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"regexp"
@@ -171,7 +170,7 @@ func (r *Reconciler) getRateLimitInSeconds(rateLimitUnit string, rateLimitReques
 	} else if rateLimitUnit == "day" {
 		return float64(rateLimitRequestsPerUnit) / (60 * 60 * 24), nil
 	} else {
-		err := errors.New(fmt.Sprintf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit))
+		err := fmt.Errorf("unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit)
 		r.log.Error("", err)
 		return 0, err
 	}

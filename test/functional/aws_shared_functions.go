@@ -239,7 +239,7 @@ func getAWSCredentials(ctx context.Context, client client.Client) (string, strin
 func getCROAnnotation(instance metav1.Object) (string, error) {
 	annotations := instance.GetAnnotations()
 	if annotations == nil {
-		return "", errors.New(fmt.Sprintf("annotations for %s can not be nil", instance.GetName()))
+		return "", fmt.Errorf("annotations for %s can not be nil", instance.GetName())
 	}
 
 	for k, v := range annotations {
@@ -247,7 +247,7 @@ func getCROAnnotation(instance metav1.Object) (string, error) {
 			return v, nil
 		}
 	}
-	return "", errors.New(fmt.Sprintf("no resource identifier found for resource %s", instance.GetName()))
+	return "", fmt.Errorf("no resource identifier found for resource %s", instance.GetName())
 }
 
 func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {

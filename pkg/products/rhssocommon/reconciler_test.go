@@ -606,7 +606,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		}
 
 		if !found {
-			return fmt.Errorf("Group %s not found", groupID)
+			return fmt.Errorf("group %s not found", groupID)
 		}
 
 		return nil
@@ -627,7 +627,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		}
 
 		if group == nil {
-			return fmt.Errorf("Referenced group not found")
+			return fmt.Errorf("referenced group not found")
 		}
 
 		context.DefaultGroups = append(context.DefaultGroups, group)
@@ -642,7 +642,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		groupClientRoles, ok := context.ClientRoles[groupID]
 
 		if !ok {
-			return "", fmt.Errorf("Referenced group not found")
+			return "", fmt.Errorf("referenced group not found")
 		}
 
 		context.ClientRoles[groupID] = append(groupClientRoles, role)
@@ -653,7 +653,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		groupRoles, ok := context.ClientRoles[groupID]
 
 		if !ok {
-			return nil, fmt.Errorf("Referenced group not found")
+			return nil, fmt.Errorf("referenced group not found")
 		}
 
 		return groupRoles, nil
@@ -663,7 +663,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		_, ok := context.ClientRoles[groupID]
 
 		if !ok {
-			return nil, fmt.Errorf("Referenced group not found")
+			return nil, fmt.Errorf("referenced group not found")
 		}
 
 		return availableGroupClientRoles, nil
@@ -705,7 +705,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		groupRoles, ok := context.RealmRoles[groupID]
 
 		if !ok {
-			return nil, fmt.Errorf("Referenced group not found")
+			return nil, fmt.Errorf("referenced group not found")
 		}
 
 		return groupRoles, nil
@@ -715,7 +715,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		_, ok := context.RealmRoles[groupID]
 
 		if !ok {
-			return nil, fmt.Errorf("Referenced group not found")
+			return nil, fmt.Errorf("referenced group not found")
 		}
 
 		return availableGroupRealmRoles, nil
@@ -725,7 +725,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		groupRealmRoles, ok := context.RealmRoles[groupID]
 
 		if !ok {
-			return "", fmt.Errorf("Referenced group not found")
+			return "", fmt.Errorf("referenced group not found")
 		}
 
 		context.RealmRoles[groupID] = append(groupRealmRoles, role)
@@ -751,7 +751,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
 
 		if !ok {
-			return nil, errors.New("Authentication flow not found")
+			return nil, errors.New("authentication flow not found")
 		}
 
 		return executions, nil
@@ -777,7 +777,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
 
 		if !ok {
-			return fmt.Errorf("Authentication flow %s not found", flowAlias)
+			return fmt.Errorf("authentication flow %s not found", flowAlias)
 		}
 
 		for i, currentExecution := range executions {
@@ -989,11 +989,11 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			validate: func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error {
 				for _, e := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env {
 					if e.Name != "PHILS_COOL_ENV_VAR" || e.Value != "yesboi" {
-						return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", e))
+						return fmt.Errorf("expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", e)
 					}
 				}
 				if !updated {
-					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+					return fmt.Errorf("expected updated to be true, but got: %v", updated)
 				}
 				return nil
 			},
@@ -1046,18 +1046,18 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 				for _, e := range envs {
 					if e.Name == "PHILS_COOL_ENV_VAR" {
 						if e.Value != "yesboi" {
-							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+							return fmt.Errorf("expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs)
 						}
 					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
 						if e.Value != "yeaaah" {
-							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+							return fmt.Errorf("expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs)
 						}
 					} else {
-						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+						return fmt.Errorf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs)
 					}
 				}
 				if !updated {
-					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+					return fmt.Errorf("expected updated to be true, but got: %v", updated)
 				}
 				return nil
 			},
@@ -1114,18 +1114,18 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 				for _, e := range envs {
 					if e.Name == "PHILS_COOL_ENV_VAR" {
 						if e.Value != "yesboi" {
-							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+							return fmt.Errorf("expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs)
 						}
 					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
 						if e.Value != "yeaaah" {
-							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+							return fmt.Errorf("expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs)
 						}
 					} else {
-						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+						return fmt.Errorf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs)
 					}
 				}
 				if !updated {
-					return errors.New(fmt.Sprintf("Expected updated to be true, but got: %v", updated))
+					return fmt.Errorf("expected updated to be true, but got: %v", updated)
 				}
 				return nil
 			},
@@ -1182,18 +1182,18 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 				for _, e := range envs {
 					if e.Name == "PHILS_COOL_ENV_VAR" {
 						if e.Value != "yesboi" {
-							return errors.New(fmt.Sprintf("Expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs))
+							return fmt.Errorf("expected env var {PHILS_COOL_ENV_VAR: yesboi}, got %+v", envs)
 						}
 					} else if e.Name == "PAULS_AMAZEBALLS_ENV_VAR" {
 						if e.Value != "yeaaah" {
-							return errors.New(fmt.Sprintf("Expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs))
+							return fmt.Errorf("expected env var {PAULS_AMAZEBALLS_ENV_VAR: yeaaah}, got %+v", envs)
 						}
 					} else {
-						return errors.New(fmt.Sprintf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs))
+						return fmt.Errorf("unexpected env var (should only have PHILS_COOL_ENV_VAR and PAULS_AMAZEBALLS_ENV_VAR): %+v", envs)
 					}
 				}
 				if updated {
-					return errors.New(fmt.Sprintf("Expected updated to be false, but got: %v", updated))
+					return fmt.Errorf("expected updated to be false, but got: %v", updated)
 				}
 				return nil
 			},

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"github.com/3scale/3scale-porta-go-client/client"
 	"io/ioutil"
@@ -194,7 +193,7 @@ func (tsc *threeScaleClient) SetFromEmailAddress(emailAddress string, accessToke
 
 	if err == nil && res.StatusCode != 200 {
 
-		err = errors.New(fmt.Sprintf("StatusCode %v calling SetFromEmailAddress", res.StatusCode))
+		err = fmt.Errorf("statusCode %v calling SetFromEmailAddress", res.StatusCode)
 	}
 
 	return res, err
