@@ -33,15 +33,15 @@ If the test succeeds, resolve this task with `Done`.
 #### Failed
 
 If the test fails, [report the bug](#report-a-bug), write a **comment** with the reason why it failed,
-and resolve this task with `Rejected`.
+and resolve this task with `Can't Do`.
 
 #### Blocked
 
 All tests that can't be executed or will not be executed in this round and should be executed in the next
-round. They should be marked as `Deferred`.
+round. They should be marked as `Test Pending`.
 
 Ideally, the task should be flagged as blocked before start testing, therefore the tester should never
-use the `Deferred` resolution.
+use the `Test Pending` resolution.
 
 #### Skipped
 
@@ -68,7 +68,7 @@ To provide all need information you should also compile these fields:
 - `Component`
 
 After reporting the bug, link the reported bug as a blocker to this task,
-and resolve this task with `Rejected`.
+and resolve this task with `Can't Do`.
 
 ### Update the Test Case
 
