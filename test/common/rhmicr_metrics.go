@@ -51,23 +51,25 @@ func TestRHMICRMetrics(t TestingTB, ctx *TestingContext) {
 	}
 
 	// check if rhmi_info metric labels matches with rhmi installation CR
-	stringRHMIInfo := rhoamInfoMetricPresent.FindString(output)
-	infoLabels := parsePrometheusMetricToMap(stringRHMIInfo, "rhoam_spec")
-
-	doInfoLabelsMatch := true
-	if infoLabels["use_cluster_storage"] != rhmi.Spec.UseClusterStorage ||
-		infoLabels["master_url"] != rhmi.Spec.MasterURL ||
-		infoLabels["installation_type"] != rhmi.Spec.Type ||
-		infoLabels["operator_name"] != rhmi.GetName() ||
-		infoLabels["namespace"] != rhmi.GetNamespace() ||
-		infoLabels["namespace_prefix"] != rhmi.Spec.NamespacePrefix ||
-		infoLabels["operators_in_product_namespace"] != fmt.Sprintf("%t", rhmi.Spec.OperatorsInProductNamespace) ||
-		infoLabels["routing_subdomain"] != rhmi.Spec.RoutingSubdomain ||
-		infoLabels["self_signed_certs"] != fmt.Sprintf("%t", rhmi.Spec.SelfSignedCerts) {
-		doInfoLabelsMatch = false
+	doInfoLabelsMatch := false
+	matches := rhoamInfoMetricPresent.FindAllString(output, -1)
+	for _, match := range matches {
+		infoLabels := parsePrometheusMetricToMap(match, "rhoam_spec")
+		if infoLabels["use_cluster_storage"] == rhmi.Spec.UseClusterStorage &&
+			infoLabels["master_url"] == rhmi.Spec.MasterURL &&
+			infoLabels["installation_type"] == rhmi.Spec.Type &&
+			infoLabels["operator_name"] == rhmi.GetName() &&
+			infoLabels["namespace"] == rhmi.GetNamespace() &&
+			infoLabels["namespace_prefix"] == rhmi.Spec.NamespacePrefix &&
+			infoLabels["operators_in_product_namespace"] == fmt.Sprintf("%t", rhmi.Spec.OperatorsInProductNamespace) &&
+			infoLabels["routing_subdomain"] == rhmi.Spec.RoutingSubdomain &&
+			infoLabels["self_signed_certs"] == fmt.Sprintf("%t", rhmi.Spec.SelfSignedCerts) {
+			doInfoLabelsMatch = true
+			break
+		}
 	}
 	if !doInfoLabelsMatch {
-		t.Fatalf("rhmi_info metric labels do not match with rhmi CR. Labels:\n%v", infoLabels)
+		t.Fatalf("rhmi_info metric labels do not match with rhmi CR. Labels:\n%v", matches)
 	}
 }
 

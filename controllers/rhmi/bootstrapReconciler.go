@@ -504,6 +504,7 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve CR route: %w", err)
 	}
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
+	routerDefault := strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
 	ok, domain, err := customDomain.GetDomain(ctx, serverClient, r.installation)
 	// Only fail when unable to get custom domain parameter from the addon secret to allow for installation of monitoring stack
 	if err != nil && !ok {
@@ -523,12 +524,24 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 			r.installation.Status.CustomDomain.Error = err.Error()
 			r.installation.Status.LastError = err.Error()
 		}
+
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	} else {
 		if r.installation.Spec.RoutingSubdomain == "" { // DO NOT force reconcile of subdomain route, see SOP
 			log.Info("setting routing domain to cluster default")
-			r.installation.Spec.RoutingSubdomain = strings.TrimPrefix(consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname, "router-default.")
+			r.installation.Spec.RoutingSubdomain = routerDefault
 		}
 	}
+
+	if r.installation.Spec.RoutingSubdomain != routerDefault && r.installation.Status.CustomDomain == nil {
+		r.installation.Status.CustomDomain = &integreatlyv1alpha1.CustomDomainStatus{Enabled: true}
+	}
+
+	if r.installation.Spec.RoutingSubdomain == routerDefault && r.installation.Status.CustomDomain != nil {
+		r.installation.Status.CustomDomain = nil
+		metrics.SetCustomDomain(false, 0)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
