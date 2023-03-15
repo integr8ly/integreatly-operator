@@ -1564,6 +1564,7 @@ services-rhoam:master/github.com/Azure/go-autorest-v10.8.1+incompatible
 services-rhoam:master/github.com/Azure/go-autorest-v14.2.0+incompatible
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.10.0
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.11.18
+services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.11.19
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.0
 services-rhoam:master/github.com/Azure/go-autorest/autorest-v0.9.3
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.5.0
@@ -1572,6 +1573,7 @@ services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.8.1
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.8.2
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.8.3
 services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.9.13
+services-rhoam:master/github.com/Azure/go-autorest/autorest/adal-v0.9.14
 services-rhoam:master/github.com/Azure/go-autorest/autorest/azure/auth-v0.4.2
 services-rhoam:master/github.com/Azure/go-autorest/autorest/azure/cli-v0.3.1
 services-rhoam:master/github.com/Azure/go-autorest/autorest/date-v0.1.0
@@ -1625,6 +1627,8 @@ services-rhoam:master/github.com/RHsyseng/operator-utils-v1.4.9
 services-rhoam:master/github.com/Shopify/logrus-bugsnag-v0.0.0-20171204204709-577dee27f20d
 services-rhoam:master/github.com/Shopify/sarama-v1.19.0
 services-rhoam:master/github.com/Shopify/toxiproxy-v2.1.4+incompatible
+services-rhoam:master/github.com/ViaQ/logerr/v2-v2.0.0
+services-rhoam:master/github.com/ViaQ/logerr/v2-v2.1.0
 services-rhoam:master/github.com/VividCortex/gohistogram-v1.0.0
 services-rhoam:master/github.com/adrg/xdg-v0.4.0
 services-rhoam:master/github.com/afex/hystrix-go-v0.0.0-20180502004556-fa1af6a1f4f5
@@ -1667,6 +1671,9 @@ services-rhoam:master/github.com/aws/aws-sdk-go-v1.34.28
 services-rhoam:master/github.com/aws/aws-sdk-go-v1.37.14
 services-rhoam:master/github.com/aws/aws-sdk-go-v1.44.45
 services-rhoam:master/github.com/aws/aws-sdk-go-v2-v0.18.0
+services-rhoam:master/github.com/aws/aws-sdk-go-v2-v1.9.0
+services-rhoam:master/github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs-v1.7.0
+services-rhoam:master/github.com/aws/smithy-go-v1.8.0
 services-rhoam:master/github.com/benbjohnson/clock-v1.0.3
 services-rhoam:master/github.com/benbjohnson/clock-v1.1.0
 services-rhoam:master/github.com/beorn7/perks-v0.0.0-20160804104726-4c0e84591b9a
@@ -1781,6 +1788,7 @@ services-rhoam:master/github.com/coreos/go-systemd/v22-v22.3.2
 services-rhoam:master/github.com/coreos/pkg-v0.0.0-20160727233714-3ac0863d7acf
 services-rhoam:master/github.com/coreos/pkg-v0.0.0-20180108230652-97fdf19511ea
 services-rhoam:master/github.com/coreos/pkg-v0.0.0-20180928190104-399ea9e2e55f
+services-rhoam:master/github.com/coreos/prometheus-operator-v0.38.1-0.20200424145508-7e176fda06cc
 services-rhoam:master/github.com/cpuguy83/go-md2man-v1.0.10
 services-rhoam:master/github.com/cpuguy83/go-md2man/v2-v2.0.0
 services-rhoam:master/github.com/cpuguy83/go-md2man/v2-v2.0.0-20190314233015-f79a8a8ca69d
@@ -2311,6 +2319,7 @@ services-rhoam:master/github.com/imdario/mergo-v0.3.7
 services-rhoam:master/github.com/imdario/mergo-v0.3.9
 services-rhoam:master/github.com/inconshreveable/mousetrap-v1.0.0
 services-rhoam:master/github.com/influxdata/influxdb1-client-v0.0.0-20191209144304-8bf82d3c094d
+services-rhoam:master/github.com/inhies/go-bytesize-v0.0.0-20151001220322-5990f52c6ad6
 services-rhoam:master/github.com/integr8ly/cloud-resource-operator-v0.44.0
 services-rhoam:master/github.com/integr8ly/keycloak-client-v0.1.11
 services-rhoam:master/github.com/jackc/fake-v0.0.0-20150926172116-812a484cc733
@@ -2496,6 +2505,7 @@ services-rhoam:master/github.com/onsi/gomega-v1.10.1
 services-rhoam:master/github.com/onsi/gomega-v1.10.2
 services-rhoam:master/github.com/onsi/gomega-v1.10.3
 services-rhoam:master/github.com/onsi/gomega-v1.15.0
+services-rhoam:master/github.com/onsi/gomega-v1.17.0
 services-rhoam:master/github.com/onsi/gomega-v1.18.1
 services-rhoam:master/github.com/onsi/gomega-v1.19.0
 services-rhoam:master/github.com/onsi/gomega-v1.20.1
@@ -2525,6 +2535,7 @@ services-rhoam:master/github.com/openshift/api-v0.0.0-20200205133042-34f0ec8dab8
 services-rhoam:master/github.com/openshift/api-v0.0.0-20200827090112-c05698d102cf
 services-rhoam:master/github.com/openshift/api-v0.0.0-20201103184615-27004eede929
 services-rhoam:master/github.com/openshift/api-v0.0.0-20210521075222-e273a339932a
+services-rhoam:master/github.com/openshift/api-v0.0.0-20220124143425-d74727069f6f
 services-rhoam:master/github.com/openshift/api-v0.0.0-20220715133027-dab5b363ebd1
 services-rhoam:master/github.com/openshift/api-v3.9.0+incompatible
 services-rhoam:master/github.com/openshift/api-v3.9.1-0.20190424152011-77b8897ec79a+incompatible
@@ -2574,6 +2585,7 @@ services-rhoam:master/github.com/otiai10/mint-v1.3.1
 services-rhoam:master/github.com/pact-foundation/pact-go-v1.0.4
 services-rhoam:master/github.com/pascaldekloe/goe-v0.0.0-20180627143212-57f6aae5913c
 services-rhoam:master/github.com/patrickmn/go-cache-v2.1.0+incompatible
+services-rhoam:master/github.com/pavel-v-chernykh/keystore-go/v4-v4.1.0
 services-rhoam:master/github.com/pborman/uuid-v1.2.0
 services-rhoam:master/github.com/pelletier/go-toml-v1.2.0
 services-rhoam:master/github.com/pelletier/go-toml-v1.4.0
@@ -2600,6 +2612,7 @@ services-rhoam:master/github.com/posener/complete-v1.1.1
 services-rhoam:master/github.com/pquerna/cachecontrol-v0.0.0-20171018203845-0dec1b30a021
 services-rhoam:master/github.com/prometheus-operator/prometheus-operator-v0.58.0
 services-rhoam:master/github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring-v0.50.0
+services-rhoam:master/github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring-v0.55.1
 services-rhoam:master/github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring-v0.58.0
 services-rhoam:master/github.com/prometheus/alertmanager-v0.22.0
 services-rhoam:master/github.com/prometheus/client_golang-v0.0.0-20180209125602-c332b6f63c06
@@ -2858,6 +2871,7 @@ services-rhoam:master/go.uber.org/atomic-v1.4.0
 services-rhoam:master/go.uber.org/atomic-v1.5.0
 services-rhoam:master/go.uber.org/atomic-v1.6.0
 services-rhoam:master/go.uber.org/atomic-v1.7.0
+services-rhoam:master/go.uber.org/atomic-v1.8.0
 services-rhoam:master/go.uber.org/atomic-v1.9.0
 services-rhoam:master/go.uber.org/goleak-v1.1.10
 services-rhoam:master/go.uber.org/goleak-v1.1.11
@@ -3030,6 +3044,7 @@ services-rhoam:master/golang.org/x/net-v0.0.0-20210813160813-60bc85c4be6d
 services-rhoam:master/golang.org/x/net-v0.0.0-20210825183410-e898025ed96a
 services-rhoam:master/golang.org/x/net-v0.0.0-20211015210444-4f30a5c0130f
 services-rhoam:master/golang.org/x/net-v0.0.0-20211112202133-69e39bad7dc2
+services-rhoam:master/golang.org/x/net-v0.0.0-20211209124913-491a49abca63
 services-rhoam:master/golang.org/x/net-v0.0.0-20220127200216-cd36cc0744dd
 services-rhoam:master/golang.org/x/net-v0.0.0-20220225172249-27dd8689420f
 services-rhoam:master/golang.org/x/net-v0.0.0-20220407224826-aac1ed45d8e3
@@ -3190,6 +3205,7 @@ services-rhoam:master/golang.org/x/sys-v0.0.0-20211216021012-1d35b9e2eb4e
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220114195835-da31bd327af9
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220209214540-3681064d5158
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220319134239-a9b59b0215f8
+services-rhoam:master/golang.org/x/sys-v0.0.0-20220330033206-e17cdc41300f
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220412211240-33da011f77ad
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220422013727-9388b58f7150
 services-rhoam:master/golang.org/x/sys-v0.0.0-20220520151302-bc2c85ada10a
@@ -4361,6 +4377,7 @@ services-rhoam:master/k8s.io/api-v0.21.1
 services-rhoam:master/k8s.io/api-v0.22.0
 services-rhoam:master/k8s.io/api-v0.22.1
 services-rhoam:master/k8s.io/api-v0.23.0
+services-rhoam:master/k8s.io/api-v0.23.5
 services-rhoam:master/k8s.io/api-v0.24.0
 services-rhoam:master/k8s.io/api-v0.24.2
 services-rhoam:master/k8s.io/api-v0.24.3
@@ -4398,6 +4415,7 @@ services-rhoam:master/k8s.io/apimachinery-v0.21.1
 services-rhoam:master/k8s.io/apimachinery-v0.22.0
 services-rhoam:master/k8s.io/apimachinery-v0.22.1
 services-rhoam:master/k8s.io/apimachinery-v0.23.0
+services-rhoam:master/k8s.io/apimachinery-v0.23.5
 services-rhoam:master/k8s.io/apimachinery-v0.24.0
 services-rhoam:master/k8s.io/apimachinery-v0.24.2
 services-rhoam:master/k8s.io/apimachinery-v0.24.3
@@ -4437,6 +4455,7 @@ services-rhoam:master/k8s.io/client-go-v0.21.1
 services-rhoam:master/k8s.io/client-go-v0.22.0
 services-rhoam:master/k8s.io/client-go-v0.22.1
 services-rhoam:master/k8s.io/client-go-v0.23.0
+services-rhoam:master/k8s.io/client-go-v0.23.5
 services-rhoam:master/k8s.io/client-go-v0.24.0
 services-rhoam:master/k8s.io/client-go-v0.24.2
 services-rhoam:master/k8s.io/client-go-v0.24.3
@@ -4535,6 +4554,7 @@ services-rhoam:master/k8s.io/utils-v0.0.0-20210111153108-fddb29f9d009
 services-rhoam:master/k8s.io/utils-v0.0.0-20210707171843-4b05e18ac7d9
 services-rhoam:master/k8s.io/utils-v0.0.0-20210802155522-efc7438f0176
 services-rhoam:master/k8s.io/utils-v0.0.0-20210930125809-cb0fa318a74b
+services-rhoam:master/k8s.io/utils-v0.0.0-20211116205334-6203023598ed
 services-rhoam:master/k8s.io/utils-v0.0.0-20220210201930-3a6ce19ff2f9
 services-rhoam:master/k8s.io/utils-v0.0.0-20220713171938-56c0de1e6f5e
 services-rhoam:master/k8s.io/utils-v0.0.0-20220922133306-665eaaec4324
@@ -8560,27 +8580,7 @@ services-rhoam:master/sigs.k8s.io/yaml-v1.3.0
 services-rhoam:master/sourcegraph.com/sourcegraph/appdash-v0.0.0-20190731080439-ebfcffb1b5c0
 services-rhoam:master/vbom.ml/util-v0.0.0-20160121211510-db5cfe13f5cc
 services-rhoam:master/vbom.ml/util-v0.0.0-20180919145318-efcd4e0f9787
-runtime-v0.10.0
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.11.0
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.12.1
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.12.2
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.12.3
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.6.1
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.6.2
-services-rhoam:master/sigs.k8s.io/controller-runtime-v0.8.3
-services-rhoam:master/sigs.k8s.io/controller-tools-v0.2.1
-services-rhoam:master/sigs.k8s.io/controller-tools-v0.2.4
-services-rhoam:master/sigs.k8s.io/controller-tools-v0.2.8
-services-rhoam:master/sigs.k8s.io/json-v0.0.0-20211020170558-c049b76a60c6
-services-rhoam:master/sigs.k8s.io/json-v0.0.0-20211208200746-9f7c6b3444d2
-services-rhoam:master/sigs.k8s.io/json-v0.0.0-20220713155537-f223a00ba0e2
-services-rhoam:master/sigs.k8s.io/kind-v0.11.1
-services-rhoam:master/sigs.k8s.io/kube-storage-version-migrator-v0.0.3
-services-rhoam:master/sigs.k8s.io/kustomize-v2.0.3+incompatible
-services-rhoam:master/sigs.k8s.io/structured-merge-diff-v0.0.0-20190525122527-15d366b2352e
-services-rhoam:master/sigs.k8s.io/structured-merge-diff-v0.0.0-20190817042607-6149e4549fca
-services-rhoam:master/sigs.k8s.io/structured-merge-diff-v1.0.1-0.20191108220359-b1b620dd3f06
-services-rhoam:master/sigs.k8s.io/structured-merge-diff-v1.0.2
+e-diff-v1.0.2
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v3-v3.0.0
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v3-v3.0.0-20200116222232-67a7b8c61874
 services-rhoam:master/sigs.k8s.io/structured-merge-diff/v4-v4.0.1
