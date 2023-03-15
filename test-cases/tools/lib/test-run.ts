@@ -18,9 +18,9 @@ function resolutionToResult(resolution: Resolution): Result {
     switch (resolution.name) {
         case "Done":
             return "Passed";
-        case "Rejected":
+        case "Can't Do":
             return "Failed";
-        case "Deferred":
+        case "Test Pending":
             return "Blocked";
         case "Won't Do":
             return "Skipped";

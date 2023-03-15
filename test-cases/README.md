@@ -179,8 +179,8 @@ JIRA_TOKEN=<jiraPersonalAccessToken> ./tools.sh jira --epic EPICKEY-01 --previou
 >
 > Resolution -> Priority:
 >
-> - Rejected -> Blocker
-> - Deferred -> Critical
+> - Can't Do -> Blocker
+> - Test Pending -> Critical
 > - [New Test] -> Major
 > - Won't Do -> Minor
 > - Done -> Optional
