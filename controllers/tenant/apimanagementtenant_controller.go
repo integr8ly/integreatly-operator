@@ -59,10 +59,10 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 
 	tenant, err := r.getAPIManagementTenant(request.Name, request.Namespace)
 	if err != nil {
-		log.Error("getAPIManagementTenant failed ", err)
 		if k8serr.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		log.Error("failed to get APIManagementTenant", err)
 		return ctrl.Result{}, err
 	}
 
@@ -90,20 +90,21 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 	err = r.addAnnotationToUser(tenant)
 	if err != nil {
 		if err1 := r.updateLastError(tenant, err.Error()); err1 != nil {
-			return ctrl.Result{}, err1
+			return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, err1
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, err
 	}
 
 	wasTenantUrlReconciled, err := r.reconcileTenantUrl(tenant)
 	if err == nil && !wasTenantUrlReconciled {
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
 	}
 	if err != nil {
+		log.Error("error reconciling tenant URL", err)
 		if err1 := r.updateLastError(tenant, err.Error()); err1 != nil {
-			return ctrl.Result{}, err1
+			return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, err1
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: 15 * time.Second}, err
 	}
 
 	// Clear out LastError since reconcile finished successfully.
@@ -111,6 +112,7 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 		return ctrl.Result{}, err1
 	}
 
+	log.Info(fmt.Sprintf("TenantReconciler finished: %s", request))
 	return ctrl.Result{}, nil
 }
 
@@ -131,16 +133,17 @@ func (r *TenantReconciler) getAPIManagementTenant(crName string, crNamespace str
 	key := k8sclient.ObjectKeyFromObject(tenant)
 	err := r.Get(context.TODO(), key, tenant)
 	if err != nil {
-		return tenant, fmt.Errorf("error getting tenant %s: %v", crName, err)
+		return nil, fmt.Errorf("error getting tenant %s: %v", crName, err)
 	}
 	return tenant, nil
 }
 
-// The purpose of this method is to verify if particular APIManagementTenant is created or in progress of creation. If yes then skip, if no then proceed with checking if there is ANOTHER APIManagementTenant already created or in progress of creation
-
+// The purpose of this method is to verify an APIManagementTenant CR is valid and should be reconciled
 func (r *TenantReconciler) verifyAPIManagementTenant(tenant *v1alpha1.APIManagementTenant) (bool, string, error) {
-	// Skip verification if the tenant is already reconciled
+	// Skip verification if the tenant has already been verified
 	if tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountReady && tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountRequested && tenant.Status.ProvisioningStatus != v1alpha1.UserAnnotated {
+		log.Info(fmt.Sprintf("TenantReconciler verifyAPIManagementTenant: %v", tenant))
+
 		// Fails if APIManagementTenant isn't from a namespace ending in -dev or -stage
 		if !strings.HasSuffix(tenant.Namespace, "-dev") && !strings.HasSuffix(tenant.Namespace, "-stage") {
 			return false, "tenant not created in a namespace ending in {USERNAME}-dev or {USERNAME}-stage", nil
@@ -182,6 +185,8 @@ func (r *TenantReconciler) verifyAPIManagementTenant(tenant *v1alpha1.APIManagem
 func (r *TenantReconciler) addAnnotationToUser(tenant *v1alpha1.APIManagementTenant) error {
 	// Only add the annotation to the User if its APIManagementTenant's ProvisioningStatus hasn't been set to a value yet.
 	if tenant.Status.ProvisioningStatus == "" {
+		log.Info(fmt.Sprintf("TenantReconciler addAnnotationToUser: %v", tenant))
+
 		user, err := r.getUserByTenantNamespace(tenant.Namespace)
 		if err != nil {
 			return fmt.Errorf("error getting user for tenant %s: %v", tenant.Name, err)
@@ -210,6 +215,8 @@ func (r *TenantReconciler) addAnnotationToUser(tenant *v1alpha1.APIManagementTen
 func (r *TenantReconciler) reconcileTenantUrl(tenant *v1alpha1.APIManagementTenant) (bool, error) {
 	tenantUrlReconciled := true
 	if tenant.Status.ProvisioningStatus != v1alpha1.ThreeScaleAccountReady {
+		log.Info(fmt.Sprintf("TenantReconciler reconcileTenantUrl: %v", tenant))
+
 		tenantUrlReconciled = false // Reset value because tenant hasn't been reconciled yet
 		selector, err := labels.Parse("zync.3scale.net/route-to=system-provider")
 		if err != nil {

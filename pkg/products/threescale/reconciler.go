@@ -1728,7 +1728,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 	// looping through the accounts to reconcile default config back
 	for index, account := range allAccounts {
-		r.log.Infof("Checking 3scale account", l.Fields{"tenantAccountName": account.Name})
+		r.log.Infof("Checking 3scale account", l.Fields{"tenantAccountName": account.OrgName})
 
 		state, created := tenantsCreated.Data[account.OrgName]
 		if created && state == "true" {
@@ -1736,7 +1736,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 		}
 
 		if account.State == "approved" {
-			r.log.Infof("3scale account is approved", l.Fields{"tenantAccountName": account.Name})
+			r.log.Infof("3scale account is approved", l.Fields{"tenantAccountName": account.OrgName})
 			breakout := false
 			for _, user := range account.Users.User {
 				if user.State == "pending" {
@@ -1770,7 +1770,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				r.log.Infof("Tenant account does not have access token created",
 					l.Fields{
 						"tenantAccountId":    account.Id,
-						"tenantAccountName":  account.Name,
+						"tenantAccountName":  account.OrgName,
 						"tenantAccountState": account.State,
 					},
 					//TODO: delete account?
@@ -1788,7 +1788,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			r.log.Infof("Adding authentication provider to tenant account",
 				l.Fields{
 					"tenantAccountId":    account.Id,
-					"tenantAccountName":  account.Name,
+					"tenantAccountName":  account.OrgName,
 					"tenantAccountState": account.State,
 				},
 			)
@@ -1799,7 +1799,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				r.log.Errorf("Error adding authentication provider to tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
-						"tenantAccountName":  account.Name,
+						"tenantAccountName":  account.OrgName,
 						"tenantAccountState": account.State,
 					},
 					err,
@@ -1813,7 +1813,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				r.log.Errorf("Failed to get KeycloakUser for tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
-						"tenantAccountName":  account.Name,
+						"tenantAccountName":  account.OrgName,
 						"tenantAccountState": account.State,
 					},
 					err,
@@ -1827,7 +1827,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				r.log.Errorf("Failed to get KeycloakClient for tenant account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
-						"tenantAccountName":  account.Name,
+						"tenantAccountName":  account.OrgName,
 						"tenantAccountState": account.State,
 					},
 					err,
@@ -1835,13 +1835,13 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				continue
 			}
 
-			r.log.Infof("Checking Keycloak state", l.Fields{"tenantAccountName": account.Name})
+			r.log.Infof("Checking Keycloak state...", l.Fields{"tenantAccountName": account.OrgName, "kcUser.Status.Phase": kcUser.Status.Phase, "kcClient.Status.Ready": kcClient.Status.Ready})
 
 			// Only add the ssoReady annotation if the tenant account's corresponding KeycloakUser and KeycloakClient CR's are ready.
 			// If not, continue to next account.
 			if kcUser.Status.Phase == keycloak.UserPhaseReconciled && kcClient.Status.Ready == true {
 
-				r.log.Infof("Adding SSO on 3scale account ", l.Fields{"tenantAccountName": account.Name})
+				r.log.Infof("Adding SSO on 3scale account ", l.Fields{"tenantAccountName": account.OrgName})
 
 				// Add ssoReady annotation to the user CR associated with the tenantAccount's OrgName
 				// This is required by the apimanagementtenant_controller so it can finish reconciling the APIManagementTenant CR
@@ -1856,7 +1856,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					continue
 				}
 
-				r.log.Infof("Reconciling Dashboard link for ", l.Fields{"tenantAccountName": account.Name})
+				r.log.Infof("Reconciling Dashboard link for ", l.Fields{"tenantAccountName": account.OrgName})
 
 				// Only add the dashboard link when account fully ready
 				err = r.reconcileDashboardLink(ctx, serverClient, account.OrgName, account.AdminBaseURL)
@@ -1864,20 +1864,20 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 					r.log.Errorf("Error reconciling console link for the tenant account",
 						l.Fields{
 							"tenantAccountId":   account.Id,
-							"tenantAccountName": account.Name,
+							"tenantAccountName": account.OrgName,
 						},
 						err,
 					)
 					continue
 				}
 
-				r.log.Infof("Setting account created in config map to true", l.Fields{"tenantAccountName": account.Name})
+				r.log.Infof("Setting account created in config map to true", l.Fields{"tenantAccountName": account.OrgName})
 				if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, tenantsCreated, func() error {
 					tenantsCreated.Data[account.OrgName] = "true"
 					tenantsCreated.ObjectMeta.ResourceVersion = ""
 					return nil
 				}); err != nil {
-					r.log.Errorf("Error setting account created in config map to true", l.Fields{"tenantAccountName": account.Name}, err)
+					r.log.Errorf("Error setting account created in config map to true", l.Fields{"tenantAccountName": account.OrgName}, err)
 					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating tenant created CM: %w", err)
 				}
 			}
@@ -1885,7 +1885,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			r.log.Infof("Deleting broke account for recreation",
 				l.Fields{
 					"tenantAccountId":    account.Id,
-					"tenantAccountName":  account.Name,
+					"tenantAccountName":  account.OrgName,
 					"tenantAccountState": account.State,
 				},
 			)
@@ -1895,7 +1895,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 				r.log.Errorf("Error deleting broken account",
 					l.Fields{
 						"tenantAccountId":    account.Id,
-						"tenantAccountName":  account.Name,
+						"tenantAccountName":  account.OrgName,
 						"tenantAccountState": account.State,
 					},
 					err,
@@ -1931,7 +1931,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		// create account
+		// Create 3scale account
 		newSignupAccount, err := r.tsClient.CreateTenant(*accessToken, account, pw, emailAddrs[idx])
 		if err != nil {
 			r.log.Errorf("Error creating tenant account",
@@ -2062,7 +2062,7 @@ func getAccountsCreatedCM(ctx context.Context, serverClient k8sclient.Client, na
 
 func (r *Reconciler) removeTenantAccountPassword(ctx context.Context, serverClient k8sclient.Client, account AccountDetail) error {
 
-	r.log.Infof("Remove Tenant Account Password", l.Fields{"tenant": account.Name})
+	r.log.Infof("Remove Tenant Account Password", l.Fields{"tenant": account.OrgName})
 
 	tenantAccountSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

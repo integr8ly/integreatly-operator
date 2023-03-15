@@ -432,11 +432,19 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// Create / update the synchronized users
 	for _, user := range users {
-		or, err = r.createOrUpdateKeycloakUser(ctx, user, serverClient)
+		or, conflictFound, err := r.createOrUpdateKeycloakUser(ctx, user, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
 		}
 		r.Log.Infof("Operation result", l.Fields{"keycloakuser": user.UserName, "result": or})
+
+		if conflictFound && integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+			r.Log.Infof("Conflict error found", l.Fields{"keycloak-user": user.UserName})
+			err := authenticated.DeleteUser(user.UserName, keycloakRealmName)
+			if err != nil {
+				r.Log.Error(fmt.Sprintf("failed to delete keycloak-user %s using the keycloak authenticated client", user.UserName), err)
+			}
+		}
 	}
 
 	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
@@ -706,7 +714,8 @@ func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) b
 	return false
 }
 
-func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
+func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, serverClient k8sclient.Client) (controllerutil.OperationResult, bool, error) {
+	conflictFound := false
 	kcUser := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      userHelper.GetValidGeneratedUserName(user),
@@ -714,14 +723,19 @@ func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keyclo
 		},
 	}
 
-	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
 		kcUser.Labels = GetInstanceLabels()
 		kcUser.Spec.User = user
+		if strings.Contains(kcUser.Status.Message, "409 Conflict") && kcUser.Status.Phase != "reconciled" {
+			conflictFound = true
+		}
 		return nil
 	})
+
+	return op, conflictFound, err
 }
 
 func (r *Reconciler) exportDashboard(ctx context.Context, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
