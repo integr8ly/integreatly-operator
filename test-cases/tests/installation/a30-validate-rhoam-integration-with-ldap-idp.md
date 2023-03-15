@@ -10,6 +10,7 @@ products:
     targets:
       - 1.27.0
       - 1.30.0
+      - 1.33.0
 ---
 
 # A30 - Validate RHOAM integration with LDAP IDP

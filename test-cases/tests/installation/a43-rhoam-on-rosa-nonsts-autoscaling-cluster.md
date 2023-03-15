@@ -6,7 +6,10 @@ products:
     targets:
       - 1.27.0
       - 1.30.0
+      - 1.33.0
 estimate: 4h
+tags:
+  - automated
 ---
 
 # A43 - RHOAM on ROSA non-STS Autoscaling Cluster

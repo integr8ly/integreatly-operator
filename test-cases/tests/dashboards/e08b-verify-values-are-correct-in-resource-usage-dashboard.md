@@ -20,6 +20,7 @@ products:
       - 1.24.0
       - 1.27.0
       - 1.30.0
+      - 1.33.0
 ---
 
 # E08B - Verify values are correct in Resource usage dashboard

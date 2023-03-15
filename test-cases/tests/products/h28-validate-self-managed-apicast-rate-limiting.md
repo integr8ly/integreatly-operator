@@ -12,6 +12,7 @@ products:
       - 1.26.0
       - 1.29.0
       - 1.30.0
+      - 1.33.0
 estimate: 30m
 tags:
   - destructive
@@ -25,7 +26,9 @@ This test case should prove that the rate limiting works as expected if Self Man
 
 ## Prerequisites
 
-Self Managed Apicast to be deployed on the RHOAM cluster. See [H24 test case](./h24-verify-selfmanaged-apicast-and-custom-policy.md) on how to do it.
+Self Managed Apicast to be deployed on the RHOAM cluster. See [H24 test case](./h24-verify-selfmanaged-apicast-and-custom-policy.md) on how to do it (in short, run H24 test case locally with SKIP_CLEANUP=true).
+
+In order to use production (managed) APIcast (optional for this test case) use the default "API" Product and promote to both Stage and Production. In order to use production self-managed APIcast you need to update the route in 3scale Admin Portal (H24 test only uses staging APIcast), promote it to Production and create the route in self-managed APIcast namespace (simplest way is to get the yaml for existing staging APIcast's route and change the '.spec.host' there).
 
 Workload web app not deployed on the cluster
 
@@ -49,6 +52,8 @@ Note: to check the rate limit counter use Rate Limiting Grafana Dashboard or fol
 ```
 sum(increase(authorized_calls[5m])) + sum(increase(limited_calls[5m]))
 ```
+
+    > Note that limited_calls returns an empty result until there is at least one rate limeted request
 
 Other approach might be to check backend-listeners logs. For each request there should be similar log entry to:
 
