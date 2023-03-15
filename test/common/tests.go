@@ -92,7 +92,7 @@ var (
 				{"H30 - Verify that product can be created via product CR", Test3scaleProductViaCR},
 				{"H31 - Verify that tenant can be created via tenant CR", Test3scaleTenantViaCr},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},
 	}
 

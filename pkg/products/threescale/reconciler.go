@@ -2877,7 +2877,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, _ *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, rhmi *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	target := marketplace.Target{
 		SubscriptionName: constants.ThreeScaleSubscriptionName,
 		Namespace:        operatorNamespace,
@@ -2892,7 +2892,17 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type)) {
+		return r.Reconciler.ReconcileSubscription(
+			ctx,
+			target,
+			[]string{productNamespace},
+			r.preUpgradeBackupExecutor(),
+			serverClient,
+			catalogSourceReconciler,
+			r.log,
+		)
+	}
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,
