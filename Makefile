@@ -549,7 +549,7 @@ commits/check:
 
 .PHONY: gosec
 gosec:
-	gosec -exclude=G402 ./...
+	gosec ./...
 
 
 

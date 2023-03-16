@@ -233,7 +233,7 @@ func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScale
 	if err != nil {
 		return nil, fmt.Errorf("could not create admin portal %v", err)
 	}
-
+	// #nosec G402
 	insecureClient := &http.Client{
 		Timeout: time.Second * 10,
 		Transport: &http.Transport{
