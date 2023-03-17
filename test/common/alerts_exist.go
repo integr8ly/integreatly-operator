@@ -63,7 +63,7 @@ func managedApiSpecificRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "rhssouser-general.yaml",
+			File: ObservabilityNamespacePrefix + "rhssouser-general",
 			Rules: []string{
 				"KeycloakInstanceNotAvailable",
 			},

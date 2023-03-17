@@ -74,7 +74,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 			// check that metrics is being correctly scrapped by target
 			correctlyScrapping := false
 			for _, target := range targetsResult.Active {
-				if target.DiscoveredLabels["job"] == fmt.Sprintf("%s%s", ns, targetName) && target.Health == prometheusv1.HealthGood && target.ScrapeURL != "" {
+				if target.DiscoveredLabels["job"] == fmt.Sprintf("serviceMonitor/%s%s", ns, targetName) && target.Health == prometheusv1.HealthGood && target.ScrapeURL != "" {
 					correctlyScrapping = true
 					break
 				}
