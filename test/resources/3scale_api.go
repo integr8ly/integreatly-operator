@@ -70,7 +70,7 @@ func requestCRSFToken(c *http.Client, formUrl string) (string, error) {
 
 	selector := doc.Find("meta[name='csrf-token']")
 	if selector.Length() == 0 {
-		return "", errors.New(fmt.Sprintf("no csrf token found in: %v", doc.Text()))
+		return "", fmt.Errorf("no csrf token found in: %v", doc.Text())
 	}
 
 	// Get the csrf token from the form to use it in the post
@@ -117,7 +117,7 @@ func (r *ThreeScaleAPIClientImpl) Ping() error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	return nil
@@ -153,7 +153,7 @@ func (r *ThreeScaleAPIClientImpl) DeleteProduct(id string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	return nil
@@ -193,7 +193,7 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return "", fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	// Parse the html to get a link back to the created service
@@ -250,7 +250,7 @@ func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string) (string, error
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return "", fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	return "Completed", nil
@@ -293,7 +293,7 @@ func (r *ThreeScaleAPIClientImpl) SetUserAsAdmin(username string, email string, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	return nil
@@ -314,7 +314,7 @@ func (r *ThreeScaleAPIClientImpl) GetUserId(username string) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+		return "", fmt.Errorf("expected 200 but got %v", resp.StatusCode)
 	}
 
 	doc, err := ParseHtmlResponse(resp)

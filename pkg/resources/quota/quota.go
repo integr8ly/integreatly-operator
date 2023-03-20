@@ -2,7 +2,6 @@ package quota
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -110,7 +109,7 @@ func GetQuota(quotaParam string, QuotaConfig *corev1.ConfigMap, retQuota *Quota)
 	// if the quota receiver is empty at this point we haven't found a quota which matches the config
 	// return in progress
 	if quotaReceiver.Name == "" {
-		return errors.New(fmt.Sprintf("wasn't able to find a quota in the quota config which matches the '%s' quota parameter", quotaParam))
+		return fmt.Errorf("wasn't able to find a quota in the quota config which matches the '%s' quota parameter", quotaParam)
 	}
 
 	retQuota.name = quotaReceiver.Name
@@ -219,7 +218,7 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 		p.mutateResourcesRequirement(t.Spec.Backend.WorkerSpec.Resources, BackendWorkerName)
 
 	default:
-		return errors.New(fmt.Sprintf("quota configuration can only be applied to Deployments, StatefulSets, Deployment Configs, ApiManager, Keycloak found %s", reflect.TypeOf(obj)))
+		return fmt.Errorf("quota configuration can only be applied to Deployments, StatefulSets, Deployment Configs, ApiManager, Keycloak found %s", reflect.TypeOf(obj))
 	}
 
 	return nil
