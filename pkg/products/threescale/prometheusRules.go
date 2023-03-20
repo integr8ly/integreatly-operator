@@ -345,7 +345,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 							"message": "one or more critical metrics have been missing for 10+ minutes",
 						},
 						Expr:   missingMetricsExpr,
-						For:    "15m",
+						For:    "30m",
 						Labels: map[string]string{"severity": "critical"},
 					},
 				},
