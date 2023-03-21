@@ -2,7 +2,9 @@ package common
 
 import (
 	goctx "context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -34,8 +36,21 @@ const (
 
 // Tests that a user in group dedicated-admins can create an integration
 func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
+	// poll to make sure the project is deleted from H30 and H29 before attempting to create again
+	project := &projectv1.Project{}
+	err := wait.Poll(tenantCreatedLoopTimeout, tenantCreatedTimeout, func() (done bool, err error) {
+		err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: projectNamespace, Namespace: projectNamespace}, project)
+		if err != nil {
+			return true, nil
+		}
+		return false, err
+
+	})
+	if err != nil {
+		t.Logf("failed to check project %v", err)
+	}
 	// make project
-	project, err := makeProject(ctx)
+	project, err = makeProject(ctx)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
@@ -218,8 +233,15 @@ func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScale
 	if err != nil {
 		return nil, fmt.Errorf("could not create admin portal %v", err)
 	}
+	// #nosec G402
+	insecureClient := &http.Client{
+		Timeout: time.Second * 10,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // gosec G402 override exclued
+		},
+	}
 
-	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, nil)
+	threescaleClient := portaClient.NewThreeScale(adminPortal, *accessToken, insecureClient)
 
 	return threescaleClient, nil
 }

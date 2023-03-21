@@ -3,7 +3,6 @@ package marketplace
 import (
 	"context"
 	"fmt"
-
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
