@@ -64,7 +64,7 @@ type ObservatoriumIndex struct {
 }
 
 func (in *ObservatoriumIndex) IsValid() bool {
-	return in.Gateway != "" && in.Tenant != ""
+	return in.Gateway != ""
 }
 
 type RemoteWriteIndex struct {
