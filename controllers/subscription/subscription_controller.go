@@ -278,7 +278,7 @@ func (r *SubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *SubscriptionReconciler) allowDatabaseUpdates(ctx context.Context, installation *integreatlyv1alpha1.RHMI, isServiceAffecting bool) error {
-	if installation.Status.ToVersion != "" && isServiceAffecting {
+	if installation.Status.Version != "" && installation.Status.ToVersion != "" && isServiceAffecting {
 		log.Info("Service affecting and upgrading, setting maintenanceWindow to true")
 		postgresInstances := &crov1alpha1.PostgresList{}
 		if err := r.Client.List(ctx, postgresInstances); err != nil {
