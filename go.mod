@@ -23,7 +23,7 @@ require (
 	github.com/grafana-operator/grafana-operator/v4 v4.7.1
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/cloud-resource-operator v0.41.1-0.20230210133849-31170b9189a8
+	github.com/integr8ly/cloud-resource-operator v1.0.0
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/gomega v1.20.1
@@ -234,12 +234,3 @@ replace k8s.io/client-go => k8s.io/client-go v0.24.3
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
 replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0
-
-// Required by mcg-operator until they update support for sched-ops
-replace github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-openstorage-rc3
-
-// tag does not exist but referenced by above package
-exclude github.com/kubernetes-incubator/external-storage v0.20.4-openstorage-rc2
-
-// Required until the branch merged mgdapi-3425-gcp
-replace github.com/integr8ly/cloud-resource-operator => github.com/integr8ly/cloud-resource-operator v0.44.1-0.20230321155556-4a31dcdcf27d
