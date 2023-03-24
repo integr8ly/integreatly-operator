@@ -92,6 +92,7 @@ type SelfContained struct {
 	GrafanaVersion                        string                   `json:"grafanaVersion,omitempty"`
 	GrafanaInitImage                      string                   `json:"grafanaInitImage,omitempty"`
 	DisableLogging                        *bool                    `json:"disableLogging,omitempty"`
+	OriginOauthProxyImage                 string                   `json:"originOauthProxyImage,omitempty"`
 }
 
 // ObservabilitySpec defines the desired state of Observability
