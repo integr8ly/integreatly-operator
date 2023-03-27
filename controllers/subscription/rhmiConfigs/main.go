@@ -3,15 +3,16 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/client-go/tools/record"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
+func IsUpgradeAvailable(subscription *operatorsv1alpha1.Subscription) bool {
 	if subscription == nil {
 		return false
 	}
@@ -19,8 +20,8 @@ func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
 	return subscription.Status.CurrentCSV != subscription.Status.InstalledCSV
 }
 
-func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscription, client k8sclient.Client) (*olmv1alpha1.InstallPlan, error) {
-	latestInstallPlan := &olmv1alpha1.InstallPlan{}
+func GetLatestInstallPlan(ctx context.Context, subscription *operatorsv1alpha1.Subscription, client k8sclient.Client) (*operatorsv1alpha1.InstallPlan, error) {
+	latestInstallPlan := &operatorsv1alpha1.InstallPlan{}
 	// Get the latest installPlan associated with the currentCSV (newest known to OLM)
 	if subscription.Status.InstallPlanRef == nil {
 		return nil, fmt.Errorf("installplan not found in the subscription status reference")
@@ -35,7 +36,7 @@ func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscri
 	return latestInstallPlan, nil
 }
 
-func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
+func IsUpgradeServiceAffecting(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
 	// Always default to the release being service affecting and requiring manual upgrade approval
 	serviceAffectingUpgrade := true
 	if csv == nil {
@@ -48,9 +49,9 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *operatorsv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
 
-	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
+	if installPlan.Status.Phase == operatorsv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
 

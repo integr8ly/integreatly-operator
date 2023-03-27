@@ -99,7 +99,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 	})
 }
 
-//openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
+// openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
 func OpenshiftClientSubmitForm(browser *browser.Browser, username, password string, idp string, l SimpleLogger) error {
 	//oauth proxy-specific constants
 	const (

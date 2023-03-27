@@ -24,7 +24,7 @@ import (
 	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
@@ -1065,7 +1065,7 @@ func TestReconciler_ensureDeploymentConfigsReady(t *testing.T) {
 			name: "Test - Unable to get deployment config - PhaseFailed",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+				serverClient: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return fmt.Errorf("fetch error")
 				}},
 				productNamespace: defaultInstallationNamespace,
@@ -1295,7 +1295,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("get error")
 					},
 				},
@@ -1318,7 +1318,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
@@ -1349,7 +1349,7 @@ func TestReconciler_reconcileOpenshiftUsers(t *testing.T) {
 			},
 			args: args{
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 					ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
@@ -1573,7 +1573,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 				accessToken: &accessToken,
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("get error")
 					},
 				},
@@ -1607,7 +1607,7 @@ func TestReconciler_updateKeycloakUsersAttributeWith3ScaleUserId(t *testing.T) {
 				},
 				accessToken: &accessToken,
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return nil
 					},
 					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {

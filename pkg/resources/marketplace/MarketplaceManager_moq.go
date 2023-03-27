@@ -5,7 +5,7 @@ package marketplace
 
 import (
 	"context"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
@@ -16,28 +16,28 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 
 // MarketplaceInterfaceMock is a mock implementation of MarketplaceInterface.
 //
-// 	func TestSomethingThatUsesMarketplaceInterface(t *testing.T) {
+//	func TestSomethingThatUsesMarketplaceInterface(t *testing.T) {
 //
-// 		// make and configure a mocked MarketplaceInterface
-// 		mockedMarketplaceInterface := &MarketplaceInterfaceMock{
-// 			GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
-// 				panic("mock out the GetSubscriptionInstallPlan method")
-// 			},
-// 			InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
-// 				panic("mock out the InstallOperator method")
-// 			},
-// 		}
+//		// make and configure a mocked MarketplaceInterface
+//		mockedMarketplaceInterface := &MarketplaceInterfaceMock{
+//			GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
+//				panic("mock out the GetSubscriptionInstallPlan method")
+//			},
+//			InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
+//				panic("mock out the InstallOperator method")
+//			},
+//		}
 //
-// 		// use mockedMarketplaceInterface in code that requires MarketplaceInterface
-// 		// and then make assertions.
+//		// use mockedMarketplaceInterface in code that requires MarketplaceInterface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type MarketplaceInterfaceMock struct {
 	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
-	GetSubscriptionInstallPlanFunc func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
+	GetSubscriptionInstallPlanFunc func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error)
 
 	// InstallOperatorFunc mocks the InstallOperator method.
-	InstallOperatorFunc func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
+	InstallOperatorFunc func(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -63,7 +63,7 @@ type MarketplaceInterfaceMock struct {
 			// OperatorGroupNamespaces is the operatorGroupNamespaces argument value.
 			OperatorGroupNamespaces []string
 			// ApprovalStrategy is the approvalStrategy argument value.
-			ApprovalStrategy coreosv1alpha1.Approval
+			ApprovalStrategy operatorsv1alpha1.Approval
 			// CatalogSourceReconciler is the catalogSourceReconciler argument value.
 			CatalogSourceReconciler CatalogSourceReconciler
 		}
@@ -73,7 +73,7 @@ type MarketplaceInterfaceMock struct {
 }
 
 // GetSubscriptionInstallPlan calls GetSubscriptionInstallPlanFunc.
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
 	if mock.GetSubscriptionInstallPlanFunc == nil {
 		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlanFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlan was just called")
 	}
@@ -96,7 +96,8 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(ctx context.Con
 
 // GetSubscriptionInstallPlanCalls gets all the calls that were made to GetSubscriptionInstallPlan.
 // Check the length with:
-//     len(mockedMarketplaceInterface.GetSubscriptionInstallPlanCalls())
+//
+//	len(mockedMarketplaceInterface.GetSubscriptionInstallPlanCalls())
 func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlanCalls() []struct {
 	Ctx          context.Context
 	ServerClient k8sclient.Client
@@ -116,7 +117,7 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlanCalls() []struct
 }
 
 // InstallOperator calls InstallOperatorFunc.
-func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
+func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 	if mock.InstallOperatorFunc == nil {
 		panic("MarketplaceInterfaceMock.InstallOperatorFunc: method is nil but MarketplaceInterface.InstallOperator was just called")
 	}
@@ -125,7 +126,7 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 		ServerClient            k8sclient.Client
 		T                       Target
 		OperatorGroupNamespaces []string
-		ApprovalStrategy        coreosv1alpha1.Approval
+		ApprovalStrategy        operatorsv1alpha1.Approval
 		CatalogSourceReconciler CatalogSourceReconciler
 	}{
 		Ctx:                     ctx,
@@ -143,13 +144,14 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 
 // InstallOperatorCalls gets all the calls that were made to InstallOperator.
 // Check the length with:
-//     len(mockedMarketplaceInterface.InstallOperatorCalls())
+//
+//	len(mockedMarketplaceInterface.InstallOperatorCalls())
 func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 	Ctx                     context.Context
 	ServerClient            k8sclient.Client
 	T                       Target
 	OperatorGroupNamespaces []string
-	ApprovalStrategy        coreosv1alpha1.Approval
+	ApprovalStrategy        operatorsv1alpha1.Approval
 	CatalogSourceReconciler CatalogSourceReconciler
 } {
 	var calls []struct {
@@ -157,7 +159,7 @@ func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 		ServerClient            k8sclient.Client
 		T                       Target
 		OperatorGroupNamespaces []string
-		ApprovalStrategy        coreosv1alpha1.Approval
+		ApprovalStrategy        operatorsv1alpha1.Approval
 		CatalogSourceReconciler CatalogSourceReconciler
 	}
 	mock.lockInstallOperator.RLock()

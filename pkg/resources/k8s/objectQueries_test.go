@@ -63,7 +63,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 						return fmt.Errorf("generic error")
 					},
 				},
@@ -85,7 +85,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 						return k8serr.NewNotFound(schema.GroupResource{}, "generic")
 					},
 				},
@@ -107,7 +107,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 						return nil
 					},
 				},
@@ -129,7 +129,7 @@ func TestPatchIfExists(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 						return nil
 					},
 					PatchFunc: func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {

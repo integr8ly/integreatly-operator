@@ -23,7 +23,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	v12 "github.com/openshift/api/config/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	corev1 "k8s.io/api/core/v1"
@@ -63,25 +63,25 @@ var ComponentDockerSecret = &corev1.Secret{
 	},
 }
 
-var subscription3scale = &coreosv1alpha1.Subscription{
+var subscription3scale = &operatorsv1alpha1.Subscription{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "rhmi-3scale",
 		Namespace: "3scale",
 	},
-	Status: coreosv1alpha1.SubscriptionStatus{
+	Status: operatorsv1alpha1.SubscriptionStatus{
 		InstalledCSV: "rhmi-3scale",
-		Install: &coreosv1alpha1.InstallPlanReference{
+		Install: &operatorsv1alpha1.InstallPlanReference{
 			Name: "installplan-for-3scale",
 		},
 	},
 }
 
-var installPlanFor3ScaleSubscription = &coreosv1alpha1.InstallPlan{
+var installPlanFor3ScaleSubscription = &operatorsv1alpha1.InstallPlan{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "installplan-for-3scale",
 	},
-	Status: coreosv1alpha1.InstallPlanStatus{
-		Phase: coreosv1alpha1.InstallPlanPhaseComplete,
+	Status: operatorsv1alpha1.InstallPlanStatus{
+		Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 	},
 }
 

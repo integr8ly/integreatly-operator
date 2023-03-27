@@ -3,9 +3,10 @@ package marketplace
 import (
 	"context"
 	"fmt"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,8 +24,8 @@ var log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "marketplace"})
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
-	GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
+	InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
+	GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error)
 }
 
 type Manager struct{}
@@ -42,7 +43,7 @@ type Target struct {
 	Channel string
 }
 
-func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
+func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 	res, err := catalogSourceReconciler.Reconcile(ctx, t.SubscriptionName)
 	if res.Requeue {
 		return fmt.Errorf("Requeue")
@@ -57,7 +58,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	log.Infof("Creating subscription in ns if it doesn't already exist", l.Fields{"ns": t.Namespace})
-	sub := &coreosv1alpha1.Subscription{
+	sub := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
 			Name:      t.SubscriptionName,
@@ -65,7 +66,7 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	mutateSub := func() error {
-		sub.Spec = &coreosv1alpha1.SubscriptionSpec{
+		sub.Spec = &operatorsv1alpha1.SubscriptionSpec{
 			InstallPlanApproval:    approvalStrategy,
 			Channel:                t.Channel,
 			Package:                t.Package,
@@ -108,8 +109,8 @@ func (m *Manager) reconcileOperatorGroup(ctx context.Context, serverClient k8scl
 	return nil
 }
 
-func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
-	sub := &coreosv1alpha1.Subscription{
+func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*operatorsv1alpha1.Subscription, error) {
+	sub := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      subName,
@@ -124,7 +125,7 @@ func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Cl
 	return sub, nil
 }
 
-func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*operatorsv1alpha1.InstallPlan, *operatorsv1alpha1.Subscription, error) {
 	log.Infof("Get", l.Fields{"Subscription Name": subName, "ns": ns})
 
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
@@ -132,12 +133,12 @@ func (m *Manager) GetSubscriptionInstallPlan(ctx context.Context, serverClient k
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
 	if sub.Status.Install == nil || sub.Status.InstallPlanRef == nil {
-		err = k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
+		err = k8serr.NewNotFound(operatorsv1alpha1.Resource("installplan"), "")
 		log.Error("Error getting install plan ref on subscription, %v", err)
 		return nil, sub, err
 	}
 
-	ip := &coreosv1alpha1.InstallPlan{}
+	ip := &operatorsv1alpha1.InstallPlan{}
 	if err := serverClient.Get(ctx, k8sclient.ObjectKey{
 		Name:      sub.Status.InstallPlanRef.Name,
 		Namespace: sub.Status.InstallPlanRef.Namespace,

@@ -1,6 +1,6 @@
 package monitoringcommon
 
-//GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
+// GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
 func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product string) string {
 	return `{
 	"annotations": {
@@ -4249,7 +4249,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string, product st
 }`
 }
 
-//GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON configured with given namespace prefix
+// GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON configured with given namespace prefix
 func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string, product string) string {
 	return `{
   "annotations": {

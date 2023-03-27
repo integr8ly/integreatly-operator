@@ -17,25 +17,25 @@ var _ Interface = &InterfaceMock{}
 
 // InterfaceMock is a mock implementation of Interface.
 //
-// 	func TestSomethingThatUsesInterface(t *testing.T) {
+//	func TestSomethingThatUsesInterface(t *testing.T) {
 //
-// 		// make and configure a mocked Interface
-// 		mockedInterface := &InterfaceMock{
-// 			GetPreflightObjectFunc: func(ns string) k8sclient.Object {
-// 				panic("mock out the GetPreflightObject method")
-// 			},
-// 			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
-// 				panic("mock out the Reconcile method")
-// 			},
-// 			VerifyVersionFunc: func(installation *integreatlyv1alpha1.RHMI) bool {
-// 				panic("mock out the VerifyVersion method")
-// 			},
-// 		}
+//		// make and configure a mocked Interface
+//		mockedInterface := &InterfaceMock{
+//			GetPreflightObjectFunc: func(ns string) k8sclient.Object {
+//				panic("mock out the GetPreflightObject method")
+//			},
+//			ReconcileFunc: func(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
+//				panic("mock out the Reconcile method")
+//			},
+//			VerifyVersionFunc: func(installation *integreatlyv1alpha1.RHMI) bool {
+//				panic("mock out the VerifyVersion method")
+//			},
+//		}
 //
-// 		// use mockedInterface in code that requires Interface
-// 		// and then make assertions.
+//		// use mockedInterface in code that requires Interface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type InterfaceMock struct {
 	// GetPreflightObjectFunc mocks the GetPreflightObject method.
 	GetPreflightObjectFunc func(ns string) k8sclient.Object
@@ -97,7 +97,8 @@ func (mock *InterfaceMock) GetPreflightObject(ns string) k8sclient.Object {
 
 // GetPreflightObjectCalls gets all the calls that were made to GetPreflightObject.
 // Check the length with:
-//     len(mockedInterface.GetPreflightObjectCalls())
+//
+//	len(mockedInterface.GetPreflightObjectCalls())
 func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 	Ns string
 } {
@@ -138,7 +139,8 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integrea
 
 // ReconcileCalls gets all the calls that were made to Reconcile.
 // Check the length with:
-//     len(mockedInterface.ReconcileCalls())
+//
+//	len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx           context.Context
 	Installation  *integreatlyv1alpha1.RHMI
@@ -179,7 +181,8 @@ func (mock *InterfaceMock) VerifyVersion(installation *integreatlyv1alpha1.RHMI)
 
 // VerifyVersionCalls gets all the calls that were made to VerifyVersion.
 // Check the length with:
-//     len(mockedInterface.VerifyVersionCalls())
+//
+//	len(mockedInterface.VerifyVersionCalls())
 func (mock *InterfaceMock) VerifyVersionCalls() []struct {
 	Installation *integreatlyv1alpha1.RHMI
 } {

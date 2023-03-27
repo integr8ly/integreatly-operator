@@ -55,7 +55,7 @@ var (
 	deletionConfigMap = deletionRHOAM
 )
 
-//  patchStringValue specifies a patch operation for a string.
+// patchStringValue specifies a patch operation for a string.
 type patchStringValue struct {
 	Op    string `json:"op"`
 	Path  string `json:"path"`

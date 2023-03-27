@@ -7,7 +7,7 @@ import (
 
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -428,7 +428,7 @@ func getValidInits(namespace string, secretType SecretType, subscriptionType str
 		return []runtime.Object{getSecretByType(namespace, secretType, subscriptionType)}
 	} else {
 		subs := []runtime.Object{
-			&v1alpha1.Subscription{
+			&operatorsv1alpha1.Subscription{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      subscriptionType,
 					Namespace: namespace,
@@ -436,7 +436,7 @@ func getValidInits(namespace string, secretType SecretType, subscriptionType str
 			},
 		}
 		if subscriptionType == multipleSubscriptions {
-			subs = append(subs, &v1alpha1.Subscription{
+			subs = append(subs, &operatorsv1alpha1.Subscription{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "boop",
 					Namespace: namespace,

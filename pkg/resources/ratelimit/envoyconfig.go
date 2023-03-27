@@ -89,14 +89,18 @@ func NewEnvoyConfig(name, namespace, nodeID string) *EnvoyConfig {
 	}
 }
 
-/**
-  envoyAPI: v3
-  envoyResources:
-	clusters:
-	listeners:
-	nodeID:
-	serialization: yaml
-**/
+/*
+*
+
+	  envoyAPI: v3
+	  envoyResources:
+		clusters:
+		listeners:
+		nodeID:
+		serialization: yaml
+
+*
+*/
 func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.Client, clusterResources []*envoyclusterv3.Cluster, listenerResources []*envoylistenerv3.Listener, runtimes *envoy_runtime.Runtime, installation *integreatlyv1alpha1.RHMI) error {
 	envoyconfig := &marin3rv1alpha1.EnvoyConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -179,23 +183,26 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 	return nil
 }
 
-/**
+/*
+*
 Creates envoy config cluster resource
-- name: clusterName
-	value: |
-		connectTimeout: 2s
-		loadAssignment:
-		clusterName: clusterName
-		endpoints:
-		- lbEndpoints:
-			- endpoint:
-				address:
-				socketAddress:
-					address: containerAddress
-					portValue: containerPort
-		name: apicast-ratelimit
-		type: STRICT_DNS
-**/
+  - name: clusterName
+    value: |
+    connectTimeout: 2s
+    loadAssignment:
+    clusterName: clusterName
+    endpoints:
+  - lbEndpoints:
+  - endpoint:
+    address:
+    socketAddress:
+    address: containerAddress
+    portValue: containerPort
+    name: apicast-ratelimit
+    type: STRICT_DNS
+
+*
+*/
 func CreateClusterResource(containerAddress, clusterName string, containerPort int) *envoyclusterv3.Cluster {
 
 	// Setting up cluster endpoints
@@ -233,16 +240,17 @@ func CreateClusterResource(containerAddress, clusterName string, containerPort i
 	return &cluster
 }
 
-/**
+/*
+*
   - name: listenerName
     value: |
-      address:
-        socketAddress:
-          address: listenerAddress
-          portValue: listenerPort
-      filterChains:
-      - filters: &filters
-	name: http
+    address:
+    socketAddress:
+    address: listenerAddress
+    portValue: listenerPort
+    filterChains:
+  - filters: &filters
+    name: http
 */
 func CreateListenerResource(listenerName, listenerAddress string, listenerPort int, filters []*envoylistenerv3.Filter) *envoylistenerv3.Listener {
 	envoyListener := envoylistenerv3.Listener{
@@ -266,14 +274,18 @@ func CreateListenerResource(listenerName, listenerAddress string, listenerPort i
 	return &envoyListener
 }
 
-/**
-    runtimes:
-      - name: runtime
-        value: >-
-          {"name":
-          "runtime","layer":{"envoy.reloadable_features.sanitize_http_header_referer":
-          "false"}}
-**/
+/*
+*
+
+	runtimes:
+	  - name: runtime
+	    value: >-
+	      {"name":
+	      "runtime","layer":{"envoy.reloadable_features.sanitize_http_header_referer":
+	      "false"}}
+
+*
+*/
 func CreateRuntimesResource() *envoy_runtime.Runtime {
 	layer, _ := structpb.NewStruct(map[string]interface{}{
 		"envoy.reloadable_features.sanitize_http_header_referer": false,

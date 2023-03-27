@@ -10,26 +10,26 @@ import (
 	"io/ioutil"
 	"strings"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/registry"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CSVLocator interface {
-	GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error)
+	GetCSV(ctx context.Context, client k8sclient.Client, installPlan *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error)
 }
 
 type EmbeddedCSVLocator struct{}
 
 var _ CSVLocator = &EmbeddedCSVLocator{}
 
-func (l *EmbeddedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
-	csv := &olmv1alpha1.ClusterServiceVersion{}
+func (l *EmbeddedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 
 	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
 	for _, installPlanResources := range installPlan.Status.Plan {
-		if installPlanResources.Resource.Kind == olmv1alpha1.ClusterServiceVersionKind {
+		if installPlanResources.Resource.Kind == operatorsv1alpha1.ClusterServiceVersionKind {
 			err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &csv)
 			if err != nil {
 				return csv, fmt.Errorf("failed to unmarshal json: %w", err)
@@ -53,12 +53,12 @@ type unpackedBundleReference struct {
 	Replaces               string `json:"replaces"`
 }
 
-func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
-	csv := &olmv1alpha1.ClusterServiceVersion{}
+func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 
 	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
 	for _, installPlanResources := range installPlan.Status.Plan {
-		if installPlanResources.Resource.Kind != olmv1alpha1.ClusterServiceVersionKind {
+		if installPlanResources.Resource.Kind != operatorsv1alpha1.ClusterServiceVersionKind {
 			continue
 		}
 
@@ -126,8 +126,8 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 	return csv, nil
 }
 
-func getCSVfromCM(csvStr *string, resourceStr string) (*olmv1alpha1.ClusterServiceVersion, error) {
-	csv := &olmv1alpha1.ClusterServiceVersion{}
+func getCSVfromCM(csvStr *string, resourceStr string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 
 	// Decode the manifest
 	reader := strings.NewReader(resourceStr)
@@ -137,7 +137,7 @@ func getCSVfromCM(csvStr *string, resourceStr string) (*olmv1alpha1.ClusterServi
 	}
 
 	// If the kind is not CSV, skip it
-	if resource.GetKind() != olmv1alpha1.ClusterServiceVersionKind {
+	if resource.GetKind() != operatorsv1alpha1.ClusterServiceVersionKind {
 		return nil, nil
 	}
 
@@ -155,7 +155,7 @@ func getCSVfromCM(csvStr *string, resourceStr string) (*olmv1alpha1.ClusterServi
 }
 
 type CachedCSVLocator struct {
-	cache map[string]*olmv1alpha1.ClusterServiceVersion
+	cache map[string]*operatorsv1alpha1.ClusterServiceVersion
 
 	locator CSVLocator
 }
@@ -164,12 +164,12 @@ var _ CSVLocator = &CachedCSVLocator{}
 
 func NewCachedCSVLocator(innerLocator CSVLocator) *CachedCSVLocator {
 	return &CachedCSVLocator{
-		cache:   map[string]*olmv1alpha1.ClusterServiceVersion{},
+		cache:   map[string]*operatorsv1alpha1.ClusterServiceVersion{},
 		locator: innerLocator,
 	}
 }
 
-func (l *CachedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
+func (l *CachedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	key := fmt.Sprintf("%s/%s", installPlan.Namespace, installPlan.Name)
 
 	if found, ok := l.cache[key]; ok {
@@ -189,10 +189,10 @@ func (l *CachedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, 
 }
 
 type ConditionalCSVLocator struct {
-	Condition func(installPlan *olmv1alpha1.InstallPlan) CSVLocator
+	Condition func(installPlan *operatorsv1alpha1.InstallPlan) CSVLocator
 }
 
-func NewConditionalCSVLocator(condition func(installPlan *olmv1alpha1.InstallPlan) CSVLocator) *ConditionalCSVLocator {
+func NewConditionalCSVLocator(condition func(installPlan *operatorsv1alpha1.InstallPlan) CSVLocator) *ConditionalCSVLocator {
 	return &ConditionalCSVLocator{
 		Condition: condition,
 	}
@@ -200,7 +200,7 @@ func NewConditionalCSVLocator(condition func(installPlan *olmv1alpha1.InstallPla
 
 var _ CSVLocator = &ConditionalCSVLocator{}
 
-func (l *ConditionalCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
+func (l *ConditionalCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	locator := l.Condition(installPlan)
 	if locator == nil {
 		return nil, fmt.Errorf("no csvlocator found for installplan %s", installPlan.Name)
@@ -209,8 +209,8 @@ func (l *ConditionalCSVLocator) GetCSV(ctx context.Context, client k8sclient.Cli
 	return locator.GetCSV(ctx, client, installPlan)
 }
 
-func SwitchLocators(conditions ...func(*olmv1alpha1.InstallPlan) CSVLocator) func(*olmv1alpha1.InstallPlan) CSVLocator {
-	return func(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
+func SwitchLocators(conditions ...func(*operatorsv1alpha1.InstallPlan) CSVLocator) func(*operatorsv1alpha1.InstallPlan) CSVLocator {
+	return func(installPlan *operatorsv1alpha1.InstallPlan) CSVLocator {
 		for _, condition := range conditions {
 			if locator := condition(installPlan); locator != nil {
 				return locator
@@ -221,9 +221,9 @@ func SwitchLocators(conditions ...func(*olmv1alpha1.InstallPlan) CSVLocator) fun
 	}
 }
 
-func ForReference(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
+func ForReference(installPlan *operatorsv1alpha1.InstallPlan) CSVLocator {
 	for _, installPlanResources := range installPlan.Status.Plan {
-		if installPlanResources.Resource.Kind != olmv1alpha1.ClusterServiceVersionKind {
+		if installPlanResources.Resource.Kind != operatorsv1alpha1.ClusterServiceVersionKind {
 			continue
 		}
 
@@ -240,12 +240,12 @@ func ForReference(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
 	return nil
 }
 
-func ForEmbedded(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
-	csv := &olmv1alpha1.ClusterServiceVersion{}
+func ForEmbedded(installPlan *operatorsv1alpha1.InstallPlan) CSVLocator {
+	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 
 	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
 	for _, installPlanResources := range installPlan.Status.Plan {
-		if installPlanResources.Resource.Kind == olmv1alpha1.ClusterServiceVersionKind {
+		if installPlanResources.Resource.Kind == operatorsv1alpha1.ClusterServiceVersionKind {
 			err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &csv)
 			if err != nil || csv.Name == "" || csv.Namespace == "" {
 				return nil

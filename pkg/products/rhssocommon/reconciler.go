@@ -24,7 +24,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
@@ -715,7 +715,7 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 }
 
 // ReconcileCSVEnvVars will take a keycloak-operator CSV and a map of env vars to update or create
-func (r *Reconciler) ReconcileCSVEnvVars(csv *olmv1alpha1.ClusterServiceVersion, envVars map[string]string) (*olmv1alpha1.ClusterServiceVersion, bool, error) {
+func (r *Reconciler) ReconcileCSVEnvVars(csv *operatorsv1alpha1.ClusterServiceVersion, envVars map[string]string) (*operatorsv1alpha1.ClusterServiceVersion, bool, error) {
 	updated := false
 	for deploymentIndex, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
 		if deployment.Name != "rhsso-operator" {

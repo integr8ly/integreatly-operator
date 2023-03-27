@@ -66,9 +66,9 @@ func GetCustomAddonValues(serverClient k8sclient.Client, namespace string) (*Cus
 	return customSmtp, nil
 }
 
-//ParameterValidation If any field is populated then we consider this an attempt to use custom smtp and mark it as valid.
-//In which case, if the mandatory fields are not all populated we mark it as partial in order to report back to the
-//customer which fields need rectification.
+// ParameterValidation If any field is populated then we consider this an attempt to use custom smtp and mark it as valid.
+// In which case, if the mandatory fields are not all populated we mark it as partial in order to report back to the
+// customer which fields need rectification.
 func ParameterValidation(smtp *CustomSmtp) ValidationResponse {
 
 	valid, partial := false, false

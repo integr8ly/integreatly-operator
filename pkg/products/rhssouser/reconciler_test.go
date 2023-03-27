@@ -24,7 +24,7 @@ import (
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	crotypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -40,7 +40,6 @@ import (
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
@@ -558,9 +557,9 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 			Namespace: defaultNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-			InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+			InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+				StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+					DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 						{
 							Name: "rhsso-operator",
 							Spec: appsv1.DeploymentSpec{
@@ -939,9 +938,9 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 			Namespace: defaultNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-			InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+			InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+				StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+					DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 						{
 							Name: "rhsso-operator",
 							Spec: appsv1.DeploymentSpec{
