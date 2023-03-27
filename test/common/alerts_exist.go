@@ -885,18 +885,14 @@ func getExpectedCloudPlatformRules(ctx *TestingContext, installType, installatio
 		return nil, fmt.Errorf("error getting isClusterStorage: %w", err)
 	}
 	expectedRules := getExpectedRules(installType, installationName)
-	switch platformType {
-	case string(configv1.GCPPlatformType):
+	if !useClusterStorage {
+		expectedRules = append(expectedRules, commonExpectedCloudPlatformRules(installationName)...)
+		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
+			expectedRules = append(expectedRules, managedApiCommonExpectedRules(installationName)...)
+		}
+	}
+	if platformType == string(configv1.GCPPlatformType) {
 		expectedRules = append(expectedRules, mcgExpectedRules()...)
-		if !useClusterStorage {
-			expectedRules = append(expectedRules, commonExpectedCloudPlatformRules(installationName)...)
-		}
-	case string(configv1.AWSPlatformType):
-		if !useClusterStorage {
-			expectedRules = append(expectedRules, commonExpectedCloudPlatformRules(installationName)...)
-		}
-	default:
-		return nil, fmt.Errorf("invalid platform type %q", platformType)
 	}
 	return expectedRules, nil
 }

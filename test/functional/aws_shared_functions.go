@@ -97,29 +97,6 @@ func getAWSCredentials(ctx context.Context, client client.Client) (string, strin
 	return awsAccessKeyID, awsSecretAccessKey, nil
 }
 
-// getVpcCidrBlock returns a cidr block using a key/value tag pairing
-func getVpcCidrBlock(session *ec2.EC2, clusterTagName, clusterTagValue string) (string, error) {
-	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String(clusterTagName),
-				Values: []*string{aws.String(clusterTagValue)},
-			},
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("could not find vpc: %v", err)
-	}
-
-	// only one vpc is expected
-	vpcs := describeVpcs.Vpcs
-	if len(vpcs) != 1 {
-		return "", fmt.Errorf("expected 1 vpc but found %d", len(vpcs))
-	}
-
-	return aws.StringValue(vpcs[0].CidrBlock), nil
-}
-
 func elasticacheTagsContains(tags []*elasticache.Tag, key, value string) bool {
 	for _, tag := range tags {
 		if *tag.Key == key && *tag.Value == value {

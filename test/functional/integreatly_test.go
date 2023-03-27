@@ -75,6 +75,9 @@ var _ = Describe("integreatly", func() {
 		}
 
 		testingContext, err := common.NewTestingContext(restConfig)
+		if err != nil {
+			t.Fatal("failed to create testing context")
+		}
 		platform, err := resources.GetPlatformType(context.TODO(), testingContext.Client)
 		if err != nil {
 			t.Fatal("failed to determine platform type", err)
