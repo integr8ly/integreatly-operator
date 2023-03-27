@@ -3,7 +3,6 @@ package functional
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 
@@ -61,7 +60,7 @@ Returns a list of resource ID's, these ID's can be used when testing AWS or GCP 
 */
 func GetRedisInstanceData(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) (map[string]string, []error) {
 	var foundErrors []error
-	var instanceData map[string]string
+	instanceData := make(map[string]string)
 	for _, redisName := range getExpectedRedis(rhmi.Spec.Type, rhmi.Name) {
 		redis := &crov1.Redis{}
 		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: redisName}, redis); err != nil {
@@ -86,7 +85,7 @@ Returns a list of resource ID's, these ID's can be used when testing postgres re
 */
 func GetPostgresInstanceData(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) (map[string]string, []error) {
 	var foundErrors []error
-	var instanceData map[string]string
+	instanceData := make(map[string]string)
 	for _, pgName := range getExpectedPostgres(rhmi.Spec.Type, rhmi.Name) {
 		postgres := &crov1.Postgres{}
 		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: pgName}, postgres); err != nil {
@@ -108,15 +107,15 @@ func GetPostgresInstanceData(ctx context.Context, client client.Client, rhmi *in
 func getCROAnnotation(instance metav1.Object) (string, error) {
 	annotations := instance.GetAnnotations()
 	if annotations == nil {
-		return "", errors.New(fmt.Sprintf("annotations for %s can not be nil", instance.GetName()))
+		return "", fmt.Errorf("annotations for %s can not be nil", instance.GetName())
 	}
 
 	for k, v := range annotations {
-		if "resourceIdentifier" == k {
+		if k == "resourceIdentifier" {
 			return v, nil
 		}
 	}
-	return "", errors.New(fmt.Sprintf("no resource identifier found for resource %s", instance.GetName()))
+	return "", fmt.Errorf("no resource identifier found for resource %s", instance.GetName())
 }
 
 func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {

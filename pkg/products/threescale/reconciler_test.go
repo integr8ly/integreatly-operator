@@ -824,7 +824,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -895,7 +895,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
