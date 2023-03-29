@@ -8,14 +8,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"io"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
+	v1 "github.com/openshift/api/project/v1"
+
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,7 +32,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"golang.org/x/net/publicsuffix"
 
-	goctx "context"
+	configv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,7 +61,7 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 	if err := extscheme.AddToScheme(scheme.Scheme); err != nil {
 		return nil, fmt.Errorf("failed to add api extensions scheme to runtime scheme: (%v)", err)
 	}
-	if err := routev1.AddToScheme(scheme.Scheme); err != nil {
+	if err := configv1.Install(scheme.Scheme); err != nil {
 		return nil, fmt.Errorf("failed to add route scheme to runtime scheme: (%v)", err)
 	}
 	if err := rhmiv1alpha1.AddToScheme(scheme.Scheme); err != nil {
@@ -159,11 +163,11 @@ func getConsoleRoute(client k8sclient.Client) (*string, error) {
 
 func GetInstallType(config *rest.Config) (string, error) {
 
-	context, err := NewTestingContext(config)
+	testingContext, err := NewTestingContext(config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi, err := GetRHMI(context.Client, true)
+	rhmi, err := GetRHMI(testingContext.Client, true)
 
 	if err != nil {
 		return "", err
@@ -220,11 +224,11 @@ func ExecToPodArgs(client kubernetes.Interface, config *rest.Config, command []s
 		Namespace(namespace).
 		SubResource("exec").
 		Param("container", container)
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
+	newScheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(newScheme); err != nil {
 		return "", fmt.Errorf("error adding to scheme: %v", err)
 	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
+	parameterCodec := runtime.NewParameterCodec(newScheme)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   command,
@@ -381,7 +385,7 @@ func GetIDPBasedTestCases(installType string) []TestCase {
 }
 
 func GetAllTestCases(installType string) []TestCase {
-	testCases := []TestCase{}
+	var testCases []TestCase
 	for _, testSuite := range ALL_TESTS {
 		for _, tsInstallType := range testSuite.InstallType {
 			if string(tsInstallType) == installType {
@@ -393,7 +397,7 @@ func GetAllTestCases(installType string) []TestCase {
 }
 
 func GetScalabilityTestCases(installType string) []TestCase {
-	testCases := []TestCase{}
+	var testCases []TestCase
 	for _, testSuite := range SCALABILITY_TESTS {
 		for _, tsInstallType := range testSuite.InstallType {
 			if string(tsInstallType) == installType {
@@ -407,6 +411,30 @@ func GetScalabilityTestCases(installType string) []TestCase {
 func GetClusterScopedTestCases(installType string) []TestCase {
 	testCases := []TestCase{}
 	for _, testSuite := range THREESCALE_CLUSTER_SCOPED_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
+func GetGCPTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range GCP_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
+func GetAWSSpecificTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range AWS_SPECIFIC_TESTS {
 		for _, tsInstallType := range testSuite.InstallType {
 			if string(tsInstallType) == installType {
 				testCases = append(testCases, testSuite.TestCases...)
@@ -451,7 +479,7 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 }
 
 func IsClusterScoped(restConfig *rest.Config) (bool, error) {
-	context, err := NewTestingContext(restConfig)
+	ctx, err := NewTestingContext(restConfig)
 	if err != nil {
 		return false, err
 	}
@@ -462,7 +490,7 @@ func IsClusterScoped(restConfig *rest.Config) (bool, error) {
 		},
 	}
 
-	err = context.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
+	err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
 	if err != nil {
 		return false, err
 	}
@@ -474,4 +502,76 @@ func IsClusterScoped(restConfig *rest.Config) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func GetPlatformType(ctx *TestingContext) string {
+	infra, err := cluster.GetClusterInfrastructure(context.TODO(), ctx.Client)
+	if err != nil || infra.Status.PlatformStatus == nil {
+		fmt.Println("can't retrieve cluster infrastructure")
+		return ""
+	}
+	return string(infra.Status.PlatformStatus.Type)
+}
+
+func getRoutes(ctx *TestingContext, routeName string, namespace string) (routev1.Route, error) {
+	routes := &routev1.RouteList{}
+
+	routeFound := routev1.Route{}
+	err := ctx.Client.List(context.TODO(), routes, &k8sclient.ListOptions{
+		Namespace: namespace,
+	})
+
+	if err != nil {
+		return routeFound, fmt.Errorf("failed to get 3scale routes with error: %v", err)
+	}
+
+	for _, route := range routes.Items {
+		if strings.Contains(route.Spec.Host, routeName) {
+			routeFound = route
+		}
+	}
+
+	return routeFound, nil
+}
+
+func getToken(ctx *TestingContext, namespace, tokenType, objectMetaName string) (*string, error) {
+	token := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: objectMetaName,
+		},
+	}
+	err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
+	if err != nil {
+		return nil, err
+	}
+	accessToken := string(token.Data[tokenType])
+	return &accessToken, nil
+}
+
+func makeProject(ctx *TestingContext, namespace string) (*v1.Project, error) {
+	project := &v1.Project{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	if err := ctx.Client.Create(context.TODO(), project); err != nil {
+		return project, fmt.Errorf("failed to create testing namespace with error: %v", err)
+	}
+
+	return project, nil
+}
+
+func createSecret(ctx *TestingContext, datamap map[string][]byte, secretName string, namespace string) (*corev1.Secret, error) {
+	secretRef := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Data: datamap,
+	}
+	if err := ctx.Client.Create(context.TODO(), secretRef); err != nil {
+		return secretRef, fmt.Errorf("failed to create secret with error: %v", err)
+	}
+
+	return secretRef, nil
 }

@@ -68,7 +68,7 @@ type RedisProvider struct {
 	CredentialManager CredentialManager
 	ConfigManager     ConfigManager
 	CacheSvc          elasticacheiface.ElastiCacheAPI
-	TCPPinger         ConnectionTester
+	TCPPinger         resources.ConnectionTester
 }
 
 func NewAWSRedisProvider(client client.Client, logger *logrus.Entry) (*RedisProvider, error) {
@@ -81,7 +81,7 @@ func NewAWSRedisProvider(client client.Client, logger *logrus.Entry) (*RedisProv
 		Logger:            logger.WithFields(logrus.Fields{"provider": redisProviderName}),
 		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-		TCPPinger:         NewConnectionTestManager(),
+		TCPPinger:         resources.NewConnectionTestManager(),
 	}, nil
 }
 
@@ -491,7 +491,7 @@ func getMetricName(redisName string) string {
 
 func buildCacheSnapshotNotFoundLabels(clusterID string, arn string, snapshotName *string, cacheClusterID *string, cacheArn string) map[string]string {
 	labels := map[string]string{}
-	labels["clusterID"] = clusterID
+	labels[resources.LabelClusterIDKey] = clusterID
 	labels["arn"] = arn
 	labels["cacheClusterId"] = resources.SafeStringDereference(cacheClusterID)
 	labels["snapshotName"] = resources.SafeStringDereference(snapshotName)
@@ -537,7 +537,7 @@ func (p *RedisProvider) DeleteRedis(ctx context.Context, r *v1alpha1.Redis) (cro
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	isLastResource, err := p.isLastResource(ctx)
+	isLastResource, err := resources.IsLastResource(ctx, p.Client)
 	if err != nil {
 		errMsg := "failed to check if this cr is the last cr of type postgres and redis"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -702,29 +702,12 @@ func (p *RedisProvider) getElasticacheConfig(ctx context.Context, r *v1alpha1.Re
 }
 
 func (p *RedisProvider) getDefaultElasticacheTags(ctx context.Context, cr *v1alpha1.Redis) ([]*elasticache.Tag, string, error) {
-	tags, clusterID, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	tags, clusterID, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default redis tags"
 		return nil, "", errorUtil.Wrapf(err, msg)
 	}
-	return genericToElasticacheTags(tags), clusterID, nil
-}
-
-func (p *RedisProvider) isLastResource(ctx context.Context) (bool, error) {
-	listOptions := client.ListOptions{
-		Namespace: "",
-	}
-	var postgresList = &v1alpha1.PostgresList{}
-	if err := p.Client.List(ctx, postgresList, &listOptions); err != nil {
-		msg := "failed to retrieve postgres cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	var redisList = &v1alpha1.RedisList{}
-	if err := p.Client.List(ctx, redisList, &listOptions); err != nil {
-		msg := "failed to retrieve redis cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	return len(postgresList.Items) == 0 && len(redisList.Items) == 1, nil
+	return genericListToElasticacheTagList(tags), clusterID, nil
 }
 
 // buildElasticacheUpdateStrategy compare the current elasticache state to the proposed elasticache state from the
@@ -736,7 +719,7 @@ func (p *RedisProvider) isLastResource(ctx context.Context) (bool, error) {
 func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig *elasticache.CreateReplicationGroupInput, foundConfig *elasticache.ReplicationGroup, replicationGroupClusters []elasticache.CacheCluster, logger *logrus.Entry, r *v1alpha1.Redis) (*elasticache.ModifyReplicationGroupInput, error) {
 	// setup logger.
 	actionLogger := resources.NewActionLogger(logger, "buildElasticacheUpdateStrategy")
-	actionLogger.Infof("verifying that %s configuration is as expected", *foundConfig.ReplicationGroupId)
+	actionLogger.Infof("verifying that %s configuration is as expected", resources.SafeStringDereference(foundConfig.ReplicationGroupId))
 
 	// indicates whether an update should be attempted or not.
 	updateFound := false
@@ -746,60 +729,64 @@ func buildElasticacheUpdateStrategy(ec2Client ec2iface.EC2API, elasticacheConfig
 	modifyInput.ReplicationGroupId = foundConfig.ReplicationGroupId
 
 	// check to see if the cache node type requires a modification.
-	if elasticacheConfig.CacheNodeType != nil && *elasticacheConfig.CacheNodeType != *foundConfig.CacheNodeType {
-		// we need to determine if the proposed cache node type is supported in the availability zones that the instance is
-		// deployed into.
-		//
-		// get the availability zones that support the proposed instance type.
-		describeInstanceTypeOfferingOutput, err := ec2Client.DescribeInstanceTypeOfferings(&ec2.DescribeInstanceTypeOfferingsInput{
-			Filters: []*ec2.Filter{
-				{
-					Name:   aws.String("instance-type"),
-					Values: aws.StringSlice([]string{strings.Replace(*elasticacheConfig.CacheNodeType, "cache.", "", 1)}),
+	if foundConfig.CacheNodeType != nil {
+		if elasticacheConfig.CacheNodeType != nil && *elasticacheConfig.CacheNodeType != *foundConfig.CacheNodeType {
+			// we need to determine if the proposed cache node type is supported in the availability zones that the instance is
+			// deployed into.
+			//
+			// get the availability zones that support the proposed instance type.
+			describeInstanceTypeOfferingOutput, err := ec2Client.DescribeInstanceTypeOfferings(&ec2.DescribeInstanceTypeOfferingsInput{
+				Filters: []*ec2.Filter{
+					{
+						Name:   aws.String("instance-type"),
+						Values: aws.StringSlice([]string{strings.Replace(*elasticacheConfig.CacheNodeType, "cache.", "", 1)}),
+					},
 				},
-			},
-			LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
-		})
-		if err != nil {
-			return nil, errorUtil.Wrapf(err, "failed to get instance type offerings for type %s", aws.StringValue(foundConfig.CacheNodeType))
-		}
-
-		// normalise returned instance type offerings to a list of availability zones, to make comparison easier.
-		var supportedAvailabilityZones []string
-		for _, instanceTypeOffering := range describeInstanceTypeOfferingOutput.InstanceTypeOfferings {
-			supportedAvailabilityZones = append(supportedAvailabilityZones, aws.StringValue(instanceTypeOffering.Location))
-		}
-
-		// get the availability zones of the instance.
-		var usedAvailabilityZones []string
-		for _, replicationGroupCluster := range replicationGroupClusters {
-			usedAvailabilityZones = append(usedAvailabilityZones, aws.StringValue(replicationGroupCluster.PreferredAvailabilityZone))
-		}
-
-		// ensure the availability zones of the instance support the instance type.
-		instanceTypeSupported := true
-		for _, usedAvailabilityZone := range usedAvailabilityZones {
-			if !resources.Contains(supportedAvailabilityZones, usedAvailabilityZone) {
-				instanceTypeSupported = false
-				break
+				LocationType: aws.String(ec2.LocationTypeAvailabilityZone),
+			})
+			if err != nil {
+				return nil, errorUtil.Wrapf(err, "failed to get instance type offerings for type %s", aws.StringValue(foundConfig.CacheNodeType))
 			}
-		}
 
-		// the instance type is supported, go ahead with the modification.
-		if instanceTypeSupported {
-			modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
-			modifyInput.ApplyImmediately = aws.Bool(r.Spec.ApplyImmediately)
-			updateFound = true
-		} else {
-			// the instance type isn't supported, log and skip.
-			actionLogger.Infof("cache node type %s is not supported, skipping cache node type modification", *elasticacheConfig.CacheNodeType)
+			// normalise returned instance type offerings to a list of availability zones, to make comparison easier.
+			var supportedAvailabilityZones []string
+			for _, instanceTypeOffering := range describeInstanceTypeOfferingOutput.InstanceTypeOfferings {
+				supportedAvailabilityZones = append(supportedAvailabilityZones, aws.StringValue(instanceTypeOffering.Location))
+			}
+
+			// get the availability zones of the instance.
+			var usedAvailabilityZones []string
+			for _, replicationGroupCluster := range replicationGroupClusters {
+				usedAvailabilityZones = append(usedAvailabilityZones, aws.StringValue(replicationGroupCluster.PreferredAvailabilityZone))
+			}
+
+			// ensure the availability zones of the instance support the instance type.
+			instanceTypeSupported := true
+			for _, usedAvailabilityZone := range usedAvailabilityZones {
+				if !resources.Contains(supportedAvailabilityZones, usedAvailabilityZone) {
+					instanceTypeSupported = false
+					break
+				}
+			}
+
+			// the instance type is supported, go ahead with the modification.
+			if instanceTypeSupported {
+				modifyInput.CacheNodeType = elasticacheConfig.CacheNodeType
+				modifyInput.ApplyImmediately = aws.Bool(r.Spec.ApplyImmediately)
+				updateFound = true
+			} else {
+				// the instance type isn't supported, log and skip.
+				actionLogger.Infof("cache node type %s is not supported, skipping cache node type modification", *elasticacheConfig.CacheNodeType)
+			}
 		}
 	}
 
 	// check if the amount of time snapshots should be kept for requires an update.
-	if *elasticacheConfig.SnapshotRetentionLimit != *foundConfig.SnapshotRetentionLimit {
-		modifyInput.SnapshotRetentionLimit = elasticacheConfig.SnapshotRetentionLimit
-		updateFound = true
+	if foundConfig.SnapshotRetentionLimit != nil {
+		if *elasticacheConfig.SnapshotRetentionLimit != *foundConfig.SnapshotRetentionLimit {
+			modifyInput.SnapshotRetentionLimit = elasticacheConfig.SnapshotRetentionLimit
+			updateFound = true
+		}
 	}
 
 	// elasticache replication groups consist of a group of cache clusters. some information can only be retrieved from
@@ -868,7 +855,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 	if elasticacheConfig.TransitEncryptionEnabled == nil {
 		elasticacheConfig.TransitEncryptionEnabled = aws.Bool(defaultInTransitEncryption)
 	}
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve elasticache config")
 	}
@@ -876,7 +863,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.ReplicationGroupId = aws.String(cacheName)
 	}
 
-	subGroup, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subGroup, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to build subnet group name")
 	}
@@ -884,7 +871,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 		elasticacheConfig.CacheSubnetGroupName = aws.String(subGroup)
 	}
 	// build security group name
-	secName, err := BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	secName, err := resources.BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -904,7 +891,7 @@ func (p *RedisProvider) buildElasticacheCreateStrategy(ctx context.Context, r *v
 
 // buildElasticacheDeleteConfig checks redis config, if none exists sets values to defaults
 func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1alpha1.Redis, elasticacheCreateConfig *elasticache.CreateReplicationGroupInput, elasticacheDeleteConfig *elasticache.DeleteReplicationGroupInput) error {
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve elasticache config")
 	}
@@ -917,7 +904,7 @@ func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1al
 	if elasticacheDeleteConfig.RetainPrimaryCluster == nil {
 		elasticacheDeleteConfig.RetainPrimaryCluster = aws.Bool(false)
 	}
-	snapshotIdentifier, err := buildTimestampedInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
+	snapshotIdentifier, err := resources.BuildTimestampedInfraNameFromObject(ctx, p.Client, r.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve rds config")
 	}
@@ -931,7 +918,7 @@ func (p *RedisProvider) buildElasticacheDeleteConfig(ctx context.Context, r v1al
 func (p *RedisProvider) configureElasticacheVpc(ctx context.Context, cacheSvc elasticacheiface.ElastiCacheAPI, ec2Svc ec2iface.EC2API) error {
 	logrus.Info("configuring cluster vpc for redis resource")
 	// get subnet group id
-	sgName, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	sgName, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -974,35 +961,6 @@ func (p *RedisProvider) configureElasticacheVpc(ctx context.Context, cacheSvc el
 	return nil
 }
 
-// returns generic labels to be added to every metric
-func buildRedisGenericMetricLabels(r *v1alpha1.Redis, clusterID, cacheName string) map[string]string {
-	labels := map[string]string{}
-	labels["clusterID"] = clusterID
-	labels["resourceID"] = r.Name
-	labels["namespace"] = r.Namespace
-	labels["instanceID"] = cacheName
-	labels["productName"] = r.Labels["productName"]
-	labels["strategy"] = redisProviderName
-	return labels
-}
-
-// adds extra information to labels around resource
-func buildRedisInfoMetricLabels(r *v1alpha1.Redis, group *elasticache.ReplicationGroup, clusterID, cacheName string) map[string]string {
-	labels := buildRedisGenericMetricLabels(r, clusterID, cacheName)
-	if group != nil {
-		labels["status"] = *group.Status
-		return labels
-	}
-	labels["status"] = "nil"
-	return labels
-}
-
-func buildRedisStatusMetricsLabels(r *v1alpha1.Redis, clusterID, cacheName string, phase croType.StatusPhase) map[string]string {
-	labels := buildRedisGenericMetricLabels(r, clusterID, cacheName)
-	labels["statusPhase"] = string(phase)
-	return labels
-}
-
 // used to expose an available and information metrics during reconcile
 func (p *RedisProvider) exposeRedisMetrics(ctx context.Context, cr *v1alpha1.Redis, instance *elasticache.ReplicationGroup) {
 	// build cache name
@@ -1019,10 +977,14 @@ func (p *RedisProvider) exposeRedisMetrics(ctx context.Context, cr *v1alpha1.Red
 	}
 
 	// build metric labels
-	infoLabels := buildRedisInfoMetricLabels(cr, instance, clusterID, cacheName)
+	var status string
+	if instance != nil {
+		status = resources.SafeStringDereference(instance.Status)
+	}
+	infoLabels := resources.BuildInfoMetricLabels(cr.ObjectMeta, status, clusterID, cacheName, redisProviderName)
 
 	// build generic metrics
-	genericLabels := buildRedisGenericMetricLabels(cr, clusterID, cacheName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, cacheName, redisProviderName)
 
 	// set status gauge
 	resources.SetMetricCurrentTime(resources.DefaultRedisInfoMetricName, infoLabels)
@@ -1033,7 +995,7 @@ func (p *RedisProvider) exposeRedisMetrics(ctx context.Context, cr *v1alpha1.Red
 	// the value of the metric should be 0.0 when the resource is not in that phase
 	// this follows the approach that pod status
 	for _, phase := range []croType.StatusPhase{croType.PhaseFailed, croType.PhaseDeleteInProgress, croType.PhasePaused, croType.PhaseComplete, croType.PhaseInProgress} {
-		labelsFailed := buildRedisStatusMetricsLabels(cr, clusterID, cacheName, phase)
+		labelsFailed := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, cacheName, redisProviderName, phase)
 		resources.SetMetric(resources.DefaultRedisStatusMetricName, labelsFailed, resources.Btof64(cr.Status.Phase == phase))
 	}
 
@@ -1067,7 +1029,7 @@ func (p *RedisProvider) setRedisDeletionTimestampMetric(ctx context.Context, cr 
 			return
 		}
 
-		labels := buildRedisStatusMetricsLabels(cr, clusterID, cacheName, cr.Status.Phase)
+		labels := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, cacheName, redisProviderName, cr.Status.Phase)
 		resources.SetMetric(resources.DefaultRedisDeletionMetricName, labels, float64(cr.DeletionTimestamp.Unix()))
 	}
 }
@@ -1104,7 +1066,7 @@ func (p *RedisProvider) setRedisServiceMaintenanceMetric(ctx context.Context, ca
 	logrus.Infof("there are elasticache service update actions %d available : %s", len(output.UpdateActions), output.UpdateActions)
 	for _, updateAction := range output.UpdateActions {
 		metricLabels := map[string]string{}
-		metricLabels["clusterID"] = clusterID
+		metricLabels[resources.LabelClusterIDKey] = clusterID
 
 		metricLabels["ReplicationGroupId"] = resources.SafeStringDereference(updateAction.ReplicationGroupId)
 		metricLabels["CacheClusterId"] = resources.SafeStringDereference(updateAction.CacheClusterId)
@@ -1143,7 +1105,7 @@ func (p *RedisProvider) createElasticacheConnectionMetric(ctx context.Context, c
 	}
 
 	// build generic labels to be added to metric
-	genericLabels := buildRedisGenericMetricLabels(cr, clusterID, cacheName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, cacheName, redisProviderName)
 
 	// check if the node group is available
 	if cache == nil || cache.NodeGroups == nil {
@@ -1164,7 +1126,7 @@ func (p *RedisProvider) createElasticacheConnectionMetric(ctx context.Context, c
 }
 
 func (p *RedisProvider) buildCacheName(ctx context.Context, rd *v1alpha1.Redis) (string, error) {
-	cacheName, err := BuildInfraNameFromObject(ctx, p.Client, rd.ObjectMeta, defaultAwsIdentifierLength)
+	cacheName, err := resources.BuildInfraNameFromObject(ctx, p.Client, rd.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return "", errorUtil.Errorf("error occurred building cache name: %v", err)
 	}

@@ -20,6 +20,12 @@ package client
 
 import (
 	"context"
+
+	"github.com/integr8ly/cloud-resource-operator/pkg/client/aws"
+	"github.com/integr8ly/cloud-resource-operator/pkg/client/gcp"
+	stratType "github.com/integr8ly/cloud-resource-operator/pkg/client/types"
+	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	configv1 "github.com/openshift/api/config/v1"
 	errorUtil "github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -28,23 +34,28 @@ const (
 	// exported tiers to be used by RHOAM operator
 	TierProduction  = "production"
 	TierDevelopment = "development"
-
-	postgresStratKey    = "postgres"
-	redisStratKey       = "redis"
-	blobstorageStratKey = "blobstorage"
 )
-
-type StrategyTimeConfig struct {
-	BackupStartTime      string
-	MaintenanceStartTime string
-}
 
 // ReconcileStrategyMaps to be used to reconcile strategy maps expected in RHOAM installs
 // A single function which can check the infrastructure and provision the correct strategy config map
-func ReconcileStrategyMaps(ctx context.Context, client client.Client, timeConfig *StrategyTimeConfig, tier, namespace string) error {
-	// reconciles aws specific strategy map
-	if err := reconcileAWSStrategyMap(ctx, client, timeConfig, tier, namespace); err != nil {
-		return errorUtil.Wrapf(err, "failed to reconcile aws strategy map")
+func ReconcileStrategyMaps(ctx context.Context, client client.Client, timeConfig *stratType.StrategyTimeConfig, tier, namespace string) error {
+	platformType, err := resources.GetPlatformType(ctx, client)
+	if err != nil {
+		return err
+	}
+	var strategyProvider stratType.StrategyProvider
+	switch platformType {
+	case configv1.AWSPlatformType:
+		// reconciles aws specific strategy map
+		strategyProvider = aws.NewAWSStrategyProvider(client, tier, namespace)
+	case configv1.GCPPlatformType:
+		// reconciles gcp specific strategy map
+		strategyProvider = gcp.NewGCPStrategyProvider(client, tier, namespace)
+	default:
+		return errorUtil.New("Unsupported platform type")
+	}
+	if err := strategyProvider.ReconcileStrategyMap(ctx, client, timeConfig); err != nil {
+		return errorUtil.Wrapf(err, "failed to reconcile %s strategy map", platformType)
 	}
 	return nil
 }

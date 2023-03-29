@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	configv1 "github.com/openshift/api/config/v1"
+
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"golang.org/x/text/cases"
@@ -478,8 +480,32 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 	}
 }
 
-// common aws rules applicable to all install types
-func commonExpectedAWSRules(installationName string) []alertsTestRule {
+func mcgExpectedRules() []alertsTestRule {
+	return []alertsTestRule{
+		{
+			File: ObservabilityNamespacePrefix + "mcg-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHOAMMCGOperatorMetricsServiceEndpointDown",
+				"RHOAMMCGOperatorRhmiRegistryCsServiceEndpointDown",
+			},
+		},
+		{
+			File: ObservabilityNamespacePrefix + "mcg-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"NooBaaCorePod",
+				"NooBaaDBPod",
+				"NooBaaDefaultBackingStorePod",
+				"NooBaaEndpointPod",
+				"NooBaaS3Endpoint",
+				"NooBaaBucketCapacityOver85Percent",
+				"NooBaaBucketCapacityOver95Percent",
+			},
+		},
+	}
+}
+
+// common AWS and GCP rules applicable to all install types
+func commonExpectedCloudPlatformRules(installationName string) []alertsTestRule {
 	titledName := caser.String(installationName)
 
 	return []alertsTestRule{
@@ -666,7 +692,7 @@ func commonExpectedAWSRules(installationName string) []alertsTestRule {
 	}
 }
 
-func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
+func managedApiCommonExpectedRules(installationName string) []alertsTestRule {
 	titledName := caser.String(installationName)
 
 	return []alertsTestRule{
@@ -735,25 +761,17 @@ func managedApiAwsExpectedRules(installationName string) []alertsTestRule {
 }
 
 func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
-	isClusterStorage, err := isClusterStorage(ctx)
-	if err != nil {
-		t.Fatal("error getting isClusterStorage:", err)
-	}
+	platformType := GetPlatformType(ctx)
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	expectedAWSRules := getExpectedAWSRules(rhmi.Spec.Type, rhmi.Name)
-	expectedRules := getExpectedRules(rhmi.Spec.Type, rhmi.Name)
 
-	// add external database alerts to list of expected rules if
-	// cluster storage is not being used
-	if !isClusterStorage {
-		for _, rule := range expectedAWSRules {
-			expectedRules = append(expectedRules, rule)
-		}
+	expectedRules, err := getExpectedCloudPlatformRules(ctx, rhmi.Spec.Type, rhmi.Name, platformType)
+	if err != nil {
+		t.Fatalf("failed to get expected cloud platform rules: %s", err)
 	}
 
 	// exec into the prometheus pod
@@ -861,12 +879,22 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getExpectedAWSRules(installType string, installationName string) []alertsTestRule {
-	if rhmiv1alpha1.IsRHOAMMultitenant(rhmiv1alpha1.InstallationType(installType)) {
-		return commonExpectedAWSRules(installationName)
-	} else {
-		return append(commonExpectedAWSRules(installationName), managedApiAwsExpectedRules(installationName)...)
+func getExpectedCloudPlatformRules(ctx *TestingContext, installType, installationName, platformType string) ([]alertsTestRule, error) {
+	useClusterStorage, err := isClusterStorage(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting isClusterStorage: %w", err)
 	}
+	expectedRules := getExpectedRules(installType, installationName)
+	if !useClusterStorage {
+		expectedRules = append(expectedRules, commonExpectedCloudPlatformRules(installationName)...)
+		if rhmiv1alpha1.IsRHOAMSingletenant(rhmiv1alpha1.InstallationType(installType)) {
+			expectedRules = append(expectedRules, managedApiCommonExpectedRules(installationName)...)
+		}
+	}
+	if platformType == string(configv1.GCPPlatformType) {
+		expectedRules = append(expectedRules, mcgExpectedRules()...)
+	}
+	return expectedRules, nil
 }
 
 func getExpectedRules(installType string, installationName string) []alertsTestRule {

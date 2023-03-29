@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
@@ -59,10 +60,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -83,6 +87,8 @@ const (
 	rhssoIntegrationName         = "rhsso"
 
 	s3CredentialsSecretName        = "s3-credentials"
+	s3BucketRegion                 = "global"
+	s3PathStyle                    = "true"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
@@ -343,6 +349,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	platformType, err := cluster.GetPlatformType(ctx, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "failed to determine platform type", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -362,15 +374,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
 			return phase, err
 		}
-
-		phase, err = r.reconcileBlobStorage(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
-			return phase, err
+		if platformType != configv1.GCPPlatformType {
+			phase, err = r.reconcileBlobStorage(ctx, serverClient)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				events.HandleError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
+				return phase, err
+			}
 		}
 	}
 
-	phase, err = r.reconcileComponents(ctx, serverClient, productConfig)
+	phase, err = r.reconcileComponents(ctx, serverClient, productConfig, platformType)
 	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -386,7 +399,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, fmt.Errorf("%s: %v", errorMessage, err)
 	}
 
-	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress[0].Hostname)
+	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress)
 	if err != nil {
 		errorMessage := "failed to retrieve ingress router ips"
 		r.log.Error(errorMessage, err)
@@ -718,9 +731,9 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig quota.ProductConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, productConfig quota.ProductConfig, platformType configv1.PlatformType) (integreatlyv1alpha1.StatusPhase, error) {
 
-	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
+	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient, platformType)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -1097,21 +1110,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sc
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
-	// get blob storage cr
-	blobStorage := &crov1.BlobStorage{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
-	}
-
-	// get blob storage connection secret
-	blobStorageSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
-	}
-
+func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client, platformType configv1.PlatformType) (*threescalev1.SystemFileStorageSpec, error) {
 	// create s3 credentials secret
 	credSec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1121,32 +1120,53 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
-	isSTS, err := sts.IsClusterSTS(ctx, serverClient, r.log)
-	if err != nil {
-		return nil, fmt.Errorf("error checking STS mode: %w", err)
-	}
+	var err error
+	var isSTS bool
+	switch platformType {
+	case configv1.AWSPlatformType:
+		blobStorage := &crov1.BlobStorage{}
+		// get blob storage cr
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
+		}
 
-	if isSTS {
-		err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
-	} else {
-		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
-			// Map known key names from CRO, and append any additional values that may be used for Minio
-			for key, value := range blobStorageSec.Data {
-				switch key {
-				case "credentialKeyID":
-					credSec.Data[threescaleAmp.AwsAccessKeyID] = blobStorageSec.Data["credentialKeyID"]
-				case "credentialSecretKey":
-					credSec.Data[threescaleAmp.AwsSecretAccessKey] = blobStorageSec.Data["credentialSecretKey"]
-				case "bucketName":
-					credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
-				case "bucketRegion":
-					credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
-				default:
-					credSec.Data[key] = value
+		// get blob storage connection secret
+		blobStorageSec := &corev1.Secret{}
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
+		}
+		isSTS, err = sts.IsClusterSTS(ctx, serverClient, r.log)
+		if err != nil {
+			return nil, fmt.Errorf("error checking STS mode: %w", err)
+		}
+		if isSTS {
+			err = r.createStsS3Secret(ctx, serverClient, credSec, blobStorageSec)
+		} else {
+			_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
+				// Map known key names from CRO, and append any additional values that may be used for Minio
+				for key, value := range blobStorageSec.Data {
+					switch key {
+					case "credentialKeyID":
+						credSec.Data[threescaleAmp.AwsAccessKeyID] = blobStorageSec.Data["credentialKeyID"]
+					case "credentialSecretKey":
+						credSec.Data[threescaleAmp.AwsSecretAccessKey] = blobStorageSec.Data["credentialSecretKey"]
+					case "bucketName":
+						credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
+					case "bucketRegion":
+						credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
+					default:
+						credSec.Data[key] = value
+					}
 				}
-			}
-			return nil
-		})
+				return nil
+			})
+		}
+	case configv1.GCPPlatformType:
+		err = r.createMCGS3Secret(ctx, serverClient, credSec)
+	default:
+		err = fmt.Errorf("unsupported cluster type: %s", platformType)
 	}
 
 	if err != nil {
@@ -1195,6 +1215,52 @@ func (r *Reconciler) createStsS3Secret(ctx context.Context, serverClient k8sclie
 	})
 
 	return err
+}
+
+func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclient.Client, credSec *corev1.Secret) error {
+	mcgNamespace := r.installation.Spec.NamespacePrefix + mcg.DefaultInstallationNamespace + "-operator"
+	// Retrieve object bucket claim
+	objbc := &noobaav1.ObjectBucketClaim{}
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.ThreescaleBucketClaim, Namespace: mcgNamespace}, objbc)
+	if err != nil {
+		return fmt.Errorf("failed to get object bucket claim: %w", err)
+	}
+
+	//Retrieve secret with credentials
+	bucketSecret := &corev1.Secret{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.ThreescaleBucketClaim, Namespace: mcgNamespace}, bucketSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get bucket claim secret: %w", err)
+	}
+
+	// Retrieve s3 route
+	s3Route := &routev1.Route{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: mcg.S3RouteName, Namespace: mcgNamespace}, s3Route)
+	if err != nil {
+		return fmt.Errorf("failed to get s3 route: %w", err)
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
+		// Set required fields for MCG
+		for key := range bucketSecret.Data {
+			switch key {
+			case threescaleAmp.AwsAccessKeyID:
+				credSec.Data[threescaleAmp.AwsAccessKeyID] = bucketSecret.Data[threescaleAmp.AwsAccessKeyID]
+			case threescaleAmp.AwsSecretAccessKey:
+				credSec.Data[threescaleAmp.AwsSecretAccessKey] = bucketSecret.Data[threescaleAmp.AwsSecretAccessKey]
+			}
+		}
+		credSec.Data[threescaleAmp.AwsBucket] = []byte(objbc.Spec.BucketName)
+		credSec.Data[threescaleAmp.AwsHostname] = []byte(s3Route.Spec.Host)
+		credSec.Data[threescaleAmp.AwsRegion] = []byte(s3BucketRegion)
+		credSec.Data[threescaleAmp.AwsPathStyle] = []byte(s3PathStyle)
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create or update mcg blob storage aws credentials secret: %w", err)
+	}
+	return nil
 }
 
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance

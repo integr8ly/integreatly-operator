@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//provider name and default create options
+// provider name and default create options
 const (
 	blobstorageProviderName               = "aws-s3"
 	defaultAwsBucketNameLength            = 40
@@ -109,7 +109,7 @@ func (p *BlobStorageProvider) GetReconcileTime(bs *v1alpha1.BlobStorage) time.Du
 	return resources.GetForcedReconcileTimeOrDefault(defaultReconcileTime)
 }
 
-//S3DeleteStrat custom s3 delete strat
+// S3DeleteStrat custom s3 delete strat
 type S3DeleteStrat struct {
 	_ struct{} `type:"structure"`
 
@@ -334,7 +334,7 @@ func (p *BlobStorageProvider) removeCredsAndFinalizer(ctx context.Context, bs *v
 }
 
 func (p *BlobStorageProvider) getDefaultS3Tags(ctx context.Context, cr *v1alpha1.BlobStorage) ([]*s3.Tag, error) {
-	tags, _, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	tags, _, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default s3 tags"
 		return nil, errorUtil.Wrapf(err, msg)
@@ -370,7 +370,7 @@ func emptyBucket(s3svc s3iface.S3API, bucketCfg *s3.CreateBucketInput) error {
 
 	// Traverse iterator deleting each object
 	if err := s3manager.NewBatchDeleteWithClient(s3svc).Delete(aws.BackgroundContext(), iter); err != nil {
-		errMsg := fmt.Sprintf("unable to delete objects from bucket")
+		errMsg := "unable to delete objects from bucket"
 		return errorUtil.Wrapf(err, errMsg)
 	}
 
@@ -506,7 +506,7 @@ func (p *BlobStorageProvider) buildS3BucketConfig(ctx context.Context, bs *v1alp
 
 	// cluster infra info
 	p.Logger.Info("getting cluster id from infrastructure for bucket naming")
-	bucketName, err := BuildInfraNameFromObject(ctx, p.Client, bs.ObjectMeta, defaultAwsBucketNameLength)
+	bucketName, err := resources.BuildInfraNameFromObject(ctx, p.Client, bs.ObjectMeta, defaultAwsBucketNameLength)
 	if err != nil {
 		return nil, nil, nil, errorUtil.Wrapf(err, fmt.Sprintf("failed to retrieve aws s3 bucket config for blob storage instance %s", bs.Name))
 	}
@@ -557,19 +557,19 @@ func buildEndUserCredentialsNameFromBucket(b string) string {
 
 func buildBlobStorageStatusMetricLabels(cr *v1alpha1.BlobStorage, clusterID, bucketName string, phase croType.StatusPhase) map[string]string {
 	labels := map[string]string{}
-	labels["clusterID"] = clusterID
-	labels["resourceID"] = cr.Name
-	labels["namespace"] = cr.Namespace
-	labels["instanceID"] = bucketName
-	labels["productName"] = cr.Labels["productName"]
-	labels["strategy"] = blobstorageProviderName
-	labels["statusPhase"] = string(phase)
+	labels[resources.LabelClusterIDKey] = clusterID
+	labels[resources.LabelResourceIDKey] = cr.Name
+	labels[resources.LabelNamespaceKey] = cr.Namespace
+	labels[resources.LabelInstanceIDKey] = bucketName
+	labels[resources.LabelProductNameKey] = cr.Labels["productName"]
+	labels[resources.LabelStrategyKey] = blobstorageProviderName
+	labels[resources.LabelStatusPhaseKey] = string(phase)
 	return labels
 }
 
 func (p *BlobStorageProvider) exposeBlobStorageMetrics(ctx context.Context, cr *v1alpha1.BlobStorage) {
 	// build instance name
-	bucketName, err := BuildInfraNameFromObject(ctx, p.Client, cr.ObjectMeta, defaultAwsBucketNameLength)
+	bucketName, err := resources.BuildInfraNameFromObject(ctx, p.Client, cr.ObjectMeta, defaultAwsBucketNameLength)
 	if err != nil {
 		logrus.Errorf("error occurred while building instance name during blob storage metrics: %v", err)
 	}

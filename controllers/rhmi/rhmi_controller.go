@@ -40,6 +40,7 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	"github.com/prometheus/alertmanager/api/v2/models"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
@@ -258,8 +259,11 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=apps.openshift.io,resources=deploymentconfigs/instantiate,verbs=create
 
-func (r *RHMIReconciler) Reconcile(_ context.Context, request ctrl.Request) (ctrl.Result, error) {
+// +kubebuilder:rbac:groups=noobaa.io,resources=noobaas;backingstores;bucketclasses,verbs=get;create;update;list
+// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbucketclaims,verbs=get;create;update;list;watch
+// +kubebuilder:rbac:groups=objectbucket.io,resources=objectbuckets,verbs=list
 
+func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	reconcileDelayedMetric := metrics.InstallationControllerReconcileDelayed
 	reconcileDelayedMetric.Set(0) // reset on every reconcile to prevent alert from firing continuously
 	timer := time.AfterFunc(time.Minute*12, func() {
@@ -337,7 +341,7 @@ func (r *RHMIReconciler) Reconcile(_ context.Context, request ctrl.Request) (ctr
 		}
 	}
 
-	installType, err := TypeFactory(installation.Spec.Type)
+	installType, err := TypeFactory(ctx, installation.Spec.Type, r.Client)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -388,12 +392,12 @@ func (r *RHMIReconciler) Reconcile(_ context.Context, request ctrl.Request) (ctr
 		return r.handleUninstall(installation, installType, request)
 	}
 
-	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	clusterVersionCR, err := cluster.GetClusterVersionCR(context.TODO(), r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error getting cluster version information: %w", err)
 	}
 
-	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	externalClusterId, err := cluster.GetExternalClusterId(clusterVersionCR)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error getting external cluster ID: %w", err)
 	}
@@ -1504,27 +1508,27 @@ func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.
 
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 
-	clusterVersionCR, err := resources.GetClusterVersionCR(context.TODO(), r.Client)
+	clusterVersionCR, err := cluster.GetClusterVersionCR(context.TODO(), r.Client)
 	if err != nil {
 		return fmt.Errorf("error getting cluster version information: %w", err)
 	}
 
-	externalClusterId, err := resources.GetExternalClusterId(clusterVersionCR)
+	externalClusterId, err := cluster.GetExternalClusterId(clusterVersionCR)
 	if err != nil {
 		return fmt.Errorf("error getting external cluster ID: %w", err)
 	}
 
-	openshiftVersion, err := resources.GetClusterVersion(clusterVersionCR)
+	openshiftVersion, err := cluster.GetClusterVersion(clusterVersionCR)
 	if err != nil {
 		return fmt.Errorf("error getting openshift version: %w", err)
 	}
 
-	infra, err := resources.GetClusterInfrastructure(context.TODO(), r.Client)
+	infra, err := cluster.GetClusterInfrastructure(context.TODO(), r.Client)
 	if err != nil {
 		return fmt.Errorf("error getting cluster infrastructure information: %w", err)
 	}
 
-	clusterType, err := resources.GetClusterType(infra)
+	clusterType, err := cluster.GetClusterType(infra)
 	if err != nil {
 		if clusterType == "" {
 			metrics.SetRHOAMCluster("Unknown", string(externalClusterId), openshiftVersion, 1)

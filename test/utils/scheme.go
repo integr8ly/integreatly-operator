@@ -8,6 +8,8 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
+	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -28,8 +30,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -65,6 +67,9 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		envoyconfigv1.AddToScheme,
 		observabilityv1.AddToScheme,
 		crov1.AddToScheme,
+		noobaav1.SchemeBuilder.AddToScheme,
+		obv1.SchemeBuilder.AddToScheme,
+		storagev1.AddToScheme,
 		// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
 		clusterloggingv1.AddToScheme,
 	)

@@ -23,16 +23,18 @@ import (
 
 /* #nosec G101 -- This is a false positive */
 const (
-	databaseSecretName         = "keycloak-db-secret"
-	databaseSecretKeyDatabase  = "POSTGRES_DATABASE"
-	databaseSecretKeyExtPort   = "POSTGRES_EXTERNAL_PORT"
-	databaseSecretKeyExtHost   = "POSTGRES_EXTERNAL_ADDRESS"
-	databaseSecretKeyPassword  = "POSTGRES_PASSWORD"
-	databaseSecretKeyUsername  = "POSTGRES_USERNAME"
-	databaseSecretKeySuperuser = "POSTGRES_SUPERUSER"
+	RHSSODatabaseSecretName       = "keycloak-db-secret"
+	RHSSODatabaseSecretKeyExtHost = "POSTGRES_EXTERNAL_ADDRESS"
+	RHSSODatabaseAddressKey       = "DB_ADDR"
+	RHSSOPostgresServiceHost      = "KEYCLOAK_POSTGRESQL_SERVICE_HOST"
+	databaseSecretKeyDatabase     = "POSTGRES_DATABASE"
+	databaseSecretKeyExtPort      = "POSTGRES_EXTERNAL_PORT"
+	databaseSecretKeyPassword     = "POSTGRES_PASSWORD"
+	databaseSecretKeyUsername     = "POSTGRES_USERNAME"
+	databaseSecretKeySuperuser    = "POSTGRES_SUPERUSER"
 )
 
-//ReconcileRHSSOPostgresCredentials Provisions postgres and creates external database secret based on Installation CR, secret will be nil while the postgres instance is provisioning
+// ReconcileRHSSOPostgresCredentials Provisions postgres and creates external database secret based on Installation CR, secret will be nil while the postgres instance is provisioning
 func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, name, ns, nsPostfix string) (*crov1.Postgres, error) {
 	postgresNS := installation.Namespace
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, nsPostfix, installation.Spec.Type, croUtil.TierProduction, name, postgresNS, name, postgresNS, constants.PostgresApplyImmediately, func(cr metav1.Object) error {
@@ -54,7 +56,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 	/* #nosec G101 -- This is a false positive */
 	keycloakSec := &corev1.Secret{
 		ObjectMeta: controllerruntime.ObjectMeta{
-			Name:      databaseSecretName,
+			Name:      RHSSODatabaseSecretName,
 			Namespace: ns,
 		},
 	}
@@ -67,7 +69,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		/* #nosec G101 -- This is a false positive */
 		keycloakSec.Data[databaseSecretKeyDatabase] = postgresSec.Data["database"]
 		keycloakSec.Data[databaseSecretKeyExtPort] = postgresSec.Data["port"]
-		keycloakSec.Data[databaseSecretKeyExtHost] = postgresSec.Data["host"]
+		keycloakSec.Data[RHSSODatabaseSecretKeyExtHost] = postgresSec.Data["host"]
 		keycloakSec.Data[databaseSecretKeyPassword] = postgresSec.Data["password"]
 		keycloakSec.Data[databaseSecretKeyUsername] = postgresSec.Data["username"]
 		keycloakSec.Data[databaseSecretKeySuperuser] = []byte("false")

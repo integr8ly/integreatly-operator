@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +55,9 @@ func ValidateResourceRequirements(t TestingTB, ctx *TestingContext) {
 }
 
 func verifyPodRequests(t TestingTB, ctx *TestingContext) {
+	if GetPlatformType(ctx) == string(configv1.GCPPlatformType) {
+		namespaceToVerify = append(namespaceToVerify, McgOperatorNamespace)
+	}
 	for _, ns := range namespaceToVerify {
 		pods := &corev1.PodList{}
 		listOpts := []k8sclient.ListOption{

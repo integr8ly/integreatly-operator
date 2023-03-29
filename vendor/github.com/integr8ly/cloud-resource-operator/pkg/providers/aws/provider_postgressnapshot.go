@@ -101,7 +101,7 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 	logger := resources.NewActionLogger(p.logger, "createPostgresSnapshot")
 
 	// generate snapshot name
-	snapshotName, err := BuildTimestampedInfraNameFromObjectCreation(ctx, p.client, snapshot.ObjectMeta, defaultAwsIdentifierLength)
+	snapshotName, err := resources.BuildTimestampedInfraNameFromObjectCreation(ctx, p.client, snapshot.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		errMsg := "failed to generate snapshot name"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -116,7 +116,7 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 	}
 
 	// get instance name
-	instanceName, err := BuildInfraNameFromObject(ctx, p.client, postgres.ObjectMeta, defaultAwsIdentifierLength)
+	instanceName, err := resources.BuildInfraNameFromObject(ctx, p.client, postgres.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		errMsg := "failed to get cluster name"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -143,7 +143,7 @@ func (p *PostgresSnapshotProvider) createPostgresSnapshot(ctx context.Context, s
 			return nil, croType.StatusMessage(errMsg), errorUtil.New(errMsg)
 		}
 		logger.Info("creating rds snapshot")
-		tags, _, err := getDefaultResourceTags(ctx, p.client, postgres.Spec.Type, snapshotName, postgres.ObjectMeta.Labels["productName"])
+		tags, _, err := resources.GetDefaultResourceTags(ctx, p.client, postgres.Spec.Type, snapshotName, postgres.ObjectMeta.Labels["productName"])
 		if err != nil {
 			msg := "failed to get default postgres tags"
 			return nil, "", errorUtil.Wrapf(err, msg)

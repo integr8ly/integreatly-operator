@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	"github.com/pkg/errors"
@@ -66,4 +67,24 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 		return errors.Wrapf(err, "failed to reconcile smtp credential set instance secret %s", sec.Name)
 	}
 	return nil
+}
+
+func IsLastResource(ctx context.Context, c client.Client) (bool, error) {
+	listOptions := client.ListOptions{
+		Namespace: "",
+	}
+	var postgresList = &v1alpha1.PostgresList{}
+	if err := c.List(ctx, postgresList, &listOptions); err != nil {
+		msg := "failed to retrieve postgres cr(s)"
+		return false, errors.Wrap(err, msg)
+	}
+	if len(postgresList.Items) > 1 {
+		return false, nil
+	}
+	var redisList = &v1alpha1.RedisList{}
+	if err := c.List(ctx, redisList, &listOptions); err != nil {
+		msg := "failed to retrieve redis cr(s)"
+		return false, errors.Wrap(err, msg)
+	}
+	return (len(postgresList.Items) + len(redisList.Items)) == 1, nil
 }

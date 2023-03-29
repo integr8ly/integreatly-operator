@@ -17,19 +17,19 @@ var _ DeploymentDetails = &DeploymentDetailsMock{}
 
 // DeploymentDetailsMock is a mock implementation of DeploymentDetails.
 //
-// 	func TestSomethingThatUsesDeploymentDetails(t *testing.T) {
+//	func TestSomethingThatUsesDeploymentDetails(t *testing.T) {
 //
-// 		// make and configure a mocked DeploymentDetails
-// 		mockedDeploymentDetails := &DeploymentDetailsMock{
-// 			DataFunc: func() map[string][]byte {
-// 				panic("mock out the Data method")
-// 			},
-// 		}
+//		// make and configure a mocked DeploymentDetails
+//		mockedDeploymentDetails := &DeploymentDetailsMock{
+//			DataFunc: func() map[string][]byte {
+//				panic("mock out the Data method")
+//			},
+//		}
 //
-// 		// use mockedDeploymentDetails in code that requires DeploymentDetails
-// 		// and then make assertions.
+//		// use mockedDeploymentDetails in code that requires DeploymentDetails
+//		// and then make assertions.
 //
-// 	}
+//	}
 type DeploymentDetailsMock struct {
 	// DataFunc mocks the Data method.
 	DataFunc func() map[string][]byte
@@ -58,7 +58,8 @@ func (mock *DeploymentDetailsMock) Data() map[string][]byte {
 
 // DataCalls gets all the calls that were made to Data.
 // Check the length with:
-//     len(mockedDeploymentDetails.DataCalls())
+//
+//	len(mockedDeploymentDetails.DataCalls())
 func (mock *DeploymentDetailsMock) DataCalls() []struct {
 } {
 	var calls []struct {
@@ -75,31 +76,31 @@ var _ BlobStorageProvider = &BlobStorageProviderMock{}
 
 // BlobStorageProviderMock is a mock implementation of BlobStorageProvider.
 //
-// 	func TestSomethingThatUsesBlobStorageProvider(t *testing.T) {
+//	func TestSomethingThatUsesBlobStorageProvider(t *testing.T) {
 //
-// 		// make and configure a mocked BlobStorageProvider
-// 		mockedBlobStorageProvider := &BlobStorageProviderMock{
-// 			CreateStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error) {
-// 				panic("mock out the CreateStorage method")
-// 			},
-// 			DeleteStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (croType.StatusMessage, error) {
-// 				panic("mock out the DeleteStorage method")
-// 			},
-// 			GetNameFunc: func() string {
-// 				panic("mock out the GetName method")
-// 			},
-// 			GetReconcileTimeFunc: func(bs *v1alpha1.BlobStorage) time.Duration {
-// 				panic("mock out the GetReconcileTime method")
-// 			},
-// 			SupportsStrategyFunc: func(s string) bool {
-// 				panic("mock out the SupportsStrategy method")
-// 			},
-// 		}
+//		// make and configure a mocked BlobStorageProvider
+//		mockedBlobStorageProvider := &BlobStorageProviderMock{
+//			CreateStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error) {
+//				panic("mock out the CreateStorage method")
+//			},
+//			DeleteStorageFunc: func(ctx context.Context, bs *v1alpha1.BlobStorage) (croType.StatusMessage, error) {
+//				panic("mock out the DeleteStorage method")
+//			},
+//			GetNameFunc: func() string {
+//				panic("mock out the GetName method")
+//			},
+//			GetReconcileTimeFunc: func(bs *v1alpha1.BlobStorage) time.Duration {
+//				panic("mock out the GetReconcileTime method")
+//			},
+//			SupportsStrategyFunc: func(s string) bool {
+//				panic("mock out the SupportsStrategy method")
+//			},
+//		}
 //
-// 		// use mockedBlobStorageProvider in code that requires BlobStorageProvider
-// 		// and then make assertions.
+//		// use mockedBlobStorageProvider in code that requires BlobStorageProvider
+//		// and then make assertions.
 //
-// 	}
+//	}
 type BlobStorageProviderMock struct {
 	// CreateStorageFunc mocks the CreateStorage method.
 	CreateStorageFunc func(ctx context.Context, bs *v1alpha1.BlobStorage) (*BlobStorageInstance, croType.StatusMessage, error)
@@ -173,7 +174,8 @@ func (mock *BlobStorageProviderMock) CreateStorage(ctx context.Context, bs *v1al
 
 // CreateStorageCalls gets all the calls that were made to CreateStorage.
 // Check the length with:
-//     len(mockedBlobStorageProvider.CreateStorageCalls())
+//
+//	len(mockedBlobStorageProvider.CreateStorageCalls())
 func (mock *BlobStorageProviderMock) CreateStorageCalls() []struct {
 	Ctx context.Context
 	Bs  *v1alpha1.BlobStorage
@@ -208,7 +210,8 @@ func (mock *BlobStorageProviderMock) DeleteStorage(ctx context.Context, bs *v1al
 
 // DeleteStorageCalls gets all the calls that were made to DeleteStorage.
 // Check the length with:
-//     len(mockedBlobStorageProvider.DeleteStorageCalls())
+//
+//	len(mockedBlobStorageProvider.DeleteStorageCalls())
 func (mock *BlobStorageProviderMock) DeleteStorageCalls() []struct {
 	Ctx context.Context
 	Bs  *v1alpha1.BlobStorage
@@ -238,7 +241,8 @@ func (mock *BlobStorageProviderMock) GetName() string {
 
 // GetNameCalls gets all the calls that were made to GetName.
 // Check the length with:
-//     len(mockedBlobStorageProvider.GetNameCalls())
+//
+//	len(mockedBlobStorageProvider.GetNameCalls())
 func (mock *BlobStorageProviderMock) GetNameCalls() []struct {
 } {
 	var calls []struct {
@@ -267,7 +271,8 @@ func (mock *BlobStorageProviderMock) GetReconcileTime(bs *v1alpha1.BlobStorage) 
 
 // GetReconcileTimeCalls gets all the calls that were made to GetReconcileTime.
 // Check the length with:
-//     len(mockedBlobStorageProvider.GetReconcileTimeCalls())
+//
+//	len(mockedBlobStorageProvider.GetReconcileTimeCalls())
 func (mock *BlobStorageProviderMock) GetReconcileTimeCalls() []struct {
 	Bs *v1alpha1.BlobStorage
 } {
@@ -298,7 +303,8 @@ func (mock *BlobStorageProviderMock) SupportsStrategy(s string) bool {
 
 // SupportsStrategyCalls gets all the calls that were made to SupportsStrategy.
 // Check the length with:
-//     len(mockedBlobStorageProvider.SupportsStrategyCalls())
+//
+//	len(mockedBlobStorageProvider.SupportsStrategyCalls())
 func (mock *BlobStorageProviderMock) SupportsStrategyCalls() []struct {
 	S string
 } {

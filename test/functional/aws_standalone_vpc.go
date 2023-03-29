@@ -15,11 +15,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	configv1 "github.com/openshift/api/config/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/aws/aws-sdk-go/service/rds"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -28,10 +25,8 @@ import (
 )
 
 var (
-	resourceType      = "_network"
-	tier              = "production"
-	strategyMapName   = croAWS.DefaultConfigMapName
-	allowedCidrRanges = []string{
+	tier                 = "production"
+	awsAllowedCidrRanges = []string{
 		"10.255.255.255/8",
 		"172.31.255.255/12",
 	}
@@ -43,10 +38,6 @@ const (
 	clusterOwnedTagValue        = "owned"
 	clusterSharedTagValue       = "shared"
 )
-
-type strategyMap struct {
-	CreateStrategy json.RawMessage `json:"createStrategy"`
-}
 
 // a custom error for reporting errors for each
 // network component
@@ -146,7 +137,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	strategyMap := &v1.ConfigMap{}
 	err = testingCtx.Client.Get(ctx, types.NamespacedName{
 		Namespace: common.RHOAMOperatorNamespace,
-		Name:      strategyMapName,
+		Name:      croAWS.DefaultConfigMapName,
 	}, strategyMap)
 	if err != nil {
 		t.Fatal("could not get aws strategy map", err)
@@ -155,7 +146,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	// get the create strategy for _network in the aws strategy configmap
 	// if this doesn't exist, skip the test completely since we're dealing
 	// with legacy cro networking
-	strat, err := getStrategyForResource(strategyMap, resourceType, tier)
+	strat, err := getStrategyForResource(strategyMap, networkResourceType, tier)
 	if err != nil {
 		t.Skip("_network key does not exist in aws strategy configmap, skipping standalone vpc network test")
 	}
@@ -166,12 +157,12 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 		t.Fatal("could not get cluster id", err)
 	}
 
-	clusterVpc, err := getClusterVpc(ec2Sess, clusterTag)
+	clusterVpc, err := getAwsClusterVpc(ec2Sess, clusterTag)
 	if err != nil {
 		t.Fatal("failure fetching cluster vpc", err)
 	}
 
-	clusterSubnets, err := getClusterSubnets(ec2Sess, clusterTag)
+	clusterSubnets, err := getAwsClusterSubnets(ec2Sess, clusterTag)
 	if err != nil {
 		t.Fatal("failure fetching cluster subnets", err)
 	}
@@ -205,7 +196,7 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	// if the cidr strategy map is empty then attempt to retrieve the standaloneCidr cidr block from the vpc
 	if expectedCidr == "" {
 		standaloneCidr := *standaloneVpc.CidrBlock
-		if err = verifyCidrBlockIsInAllowedRange(standaloneCidr); err != nil {
+		if err = verifyCidrBlockIsInAllowedRange(standaloneCidr, awsAllowedCidrRanges); err != nil {
 			t.Fatalf("cidr block %s is not within the allowed range %s", standaloneCidr, err)
 		}
 		if err = checkForOverlappingCidrBlocks(standaloneCidr, *clusterVpc.CidrBlock); err != nil {
@@ -542,15 +533,6 @@ func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, pee
 	return newErr
 }
 
-func getClusterID(ctx context.Context, client client.Client) (string, error) {
-	infra := &configv1.Infrastructure{}
-	err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, infra)
-	if err != nil {
-		return "", fmt.Errorf("failed to get aws region: %w", err)
-	}
-	return infra.Status.InfrastructureName, nil
-}
-
 func getCidrBlockFromStrategyMap(strat *strategyMap) (string, error) {
 	vpcCreateConfig := &ec2.CreateVpcInput{}
 	if err := json.Unmarshal(strat.CreateStrategy, vpcCreateConfig); err != nil {
@@ -569,40 +551,4 @@ func contains(strs []*string, str *string) bool {
 		}
 	}
 	return false
-}
-
-func checkForOverlappingCidrBlocks(vpcCidrBlock, clusterCIDRBlock string) error {
-	_, vpcCidr, err := net.ParseCIDR(vpcCidrBlock)
-	if err != nil {
-		return fmt.Errorf("error parsing vpc cidr block: %s", vpcCidr)
-	}
-
-	_, clusterCidr, err := net.ParseCIDR(clusterCIDRBlock)
-	if err != nil {
-		return fmt.Errorf("error parsing cluster cidr block: %s", clusterCidr)
-	}
-
-	if vpcCidr.Contains(clusterCidr.IP) || clusterCidr.Contains(vpcCidr.IP) {
-		return fmt.Errorf("vpc cidr block (%s) overlaps with the cluster cidr block: (%s)", vpcCidr, clusterCidr)
-	}
-
-	return nil
-}
-
-func verifyCidrBlockIsInAllowedRange(cidrBlock string) error {
-	_, cidr, err := net.ParseCIDR(cidrBlock)
-	if err != nil {
-		return fmt.Errorf("error parsing cidr %s", cidrBlock)
-	}
-
-	for _, allowedCidrRange := range allowedCidrRanges {
-		_, cidrRangeNet, err := net.ParseCIDR(allowedCidrRange)
-		if err != nil {
-			return fmt.Errorf("error parsing cidr %s", cidrBlock)
-		}
-		if cidrRangeNet.Contains(cidr.IP) {
-			return nil
-		}
-	}
-	return fmt.Errorf("%s is not in the expected cidr range", cidrBlock)
 }

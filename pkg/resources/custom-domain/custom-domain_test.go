@@ -441,7 +441,7 @@ func TestGetIngressRouterService(t *testing.T) {
 
 func TestGetIngressRouterIPs(t *testing.T) {
 	type args struct {
-		hostname string
+		loadBalancerIngress []corev1.LoadBalancerIngress
 	}
 	tests := []struct {
 		name    string
@@ -452,15 +452,31 @@ func TestGetIngressRouterIPs(t *testing.T) {
 		{
 			name: "failed to perform ip lookup for hostname",
 			args: args{
-				hostname: "hostname",
+				loadBalancerIngress: []corev1.LoadBalancerIngress{
+					{
+						Hostname: "hostname",
+					},
+				},
 			},
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "valid ip address in load balancer",
+			args: args{
+				loadBalancerIngress: []corev1.LoadBalancerIngress{
+					{
+						IP: "0.0.0.0",
+					},
+				},
+			},
+			want:    []net.IP{net.ParseIP("0.0.0.0")},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetIngressRouterIPs(tt.args.hostname)
+			got, err := GetIngressRouterIPs(tt.args.loadBalancerIngress)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetIngressRouterIPs() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -1,12 +1,16 @@
 package resources
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	errorUtil "github.com/pkg/errors"
 )
@@ -20,7 +24,7 @@ const (
 	MetricsWatchDuration = 5 * time.Minute
 )
 
-//GetForcedReconcileTimeOrDefault returns envar for reconcile time else returns default time
+// GetForcedReconcileTimeOrDefault returns envar for reconcile time else returns default time
 func GetForcedReconcileTimeOrDefault(defaultTo time.Duration) time.Duration {
 	recTime, exist := os.LookupEnv(EnvForceReconcileTimeout)
 	if exist {
@@ -33,7 +37,7 @@ func GetForcedReconcileTimeOrDefault(defaultTo time.Duration) time.Duration {
 	return defaultTo
 }
 
-//GetMetricReconcileTimeOrDefault returns envar for reconcile time else returns default time
+// GetMetricReconcileTimeOrDefault returns envar for reconcile time else returns default time
 func GetMetricReconcileTimeOrDefault(defaultTo time.Duration) time.Duration {
 	recTime, exist := os.LookupEnv(EnvMetricsReconcileTimeout)
 	if exist {
@@ -61,4 +65,39 @@ func GetOrganizationTag() string {
 		organizationTag = DefaultTagKeyPrefix
 	}
 	return organizationTag
+}
+
+// BuildInfraName builds and returns an id used for infra resources
+func BuildInfraName(ctx context.Context, c client.Client, postfix string, n int) (string, error) {
+	// get cluster id
+	clusterID, err := GetClusterID(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrap(err, "error getting clusterID")
+	}
+	return ShortenString(fmt.Sprintf("%s-%s", clusterID, postfix), n), nil
+}
+
+func BuildInfraNameFromObject(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
+	clusterID, err := GetClusterID(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrap(err, "failed to retrieve cluster identifier")
+	}
+	return ShortenString(fmt.Sprintf("%s-%s-%s", clusterID, om.Namespace, om.Name), n), nil
+}
+
+func BuildTimestampedInfraNameFromObject(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
+	clusterID, err := GetClusterID(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrap(err, "failed to retrieve timestamped cluster identifier")
+	}
+	curTime := time.Now().Unix()
+	return ShortenString(fmt.Sprintf("%s-%s-%s-%d", clusterID, om.Namespace, om.Name, curTime), n), nil
+}
+
+func BuildTimestampedInfraNameFromObjectCreation(ctx context.Context, c client.Client, om controllerruntime.ObjectMeta, n int) (string, error) {
+	clusterID, err := GetClusterID(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrap(err, "failed to retrieve timestamped cluster identifier")
+	}
+	return ShortenString(fmt.Sprintf("%s-%s-%s-%s", clusterID, om.Namespace, om.Name, om.GetObjectMeta().GetCreationTimestamp()), n), nil
 }

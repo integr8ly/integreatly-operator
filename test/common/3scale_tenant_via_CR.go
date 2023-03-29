@@ -5,13 +5,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/capabilities/v1alpha1"
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	projectv1 "github.com/openshift/api/project/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -50,21 +48,21 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 		t.Logf("failed to check project %v", err)
 	}
 	// make project
-	project, err = makeProject(ctx)
+	project, err = makeProject(ctx, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create project %v", err)
 	}
 
 	//make secret
-	secret, err := genSecret(ctx, map[string][]byte{
+	secret, err := createSecret(ctx, map[string][]byte{
 		"admin_password": []byte("admin"),
-	})
+	}, projectAdminSecret, projectNamespace)
 	if err != nil {
 		t.Fatalf("failed to create secret %v", err)
 	}
 
 	//get system url
-	route, err := getRoutes(ctx, masterRoute)
+	route, err := getRoutes(ctx, masterRoute, ThreeScaleProductNamespace)
 	if err != nil {
 		t.Fatalf("failed to get route %v", err)
 	}
@@ -158,74 +156,11 @@ func getTenantState(threescaleClient *portaClient.ThreeScaleClient, tenantID int
 }
 
 func getMasterToken(ctx *TestingContext, namespace string) (*string, error) {
-	return getToken(ctx, namespace, "MASTER_ACCESS_TOKEN")
+	return getToken(ctx, namespace, "MASTER_ACCESS_TOKEN", "system-seed")
 }
 
 func getAdminToken(ctx *TestingContext, namespace string) (*string, error) {
-	return getToken(ctx, namespace, "ADMIN_ACCESS_TOKEN")
-}
-
-func getToken(ctx *TestingContext, namespace, tokenType string) (*string, error) {
-	token := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "system-seed",
-		},
-	}
-	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
-	if err != nil {
-		return nil, err
-	}
-	accessToken := string(token.Data[tokenType])
-	return &accessToken, nil
-}
-
-func makeProject(ctx *TestingContext) (*projectv1.Project, error) {
-	project := &projectv1.Project{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: projectNamespace,
-		},
-	}
-	if err := ctx.Client.Create(goctx.TODO(), project); err != nil {
-		return project, fmt.Errorf("failed to create testing namespace with error: %v", err)
-	}
-
-	return project, nil
-}
-
-func getRoutes(ctx *TestingContext, routeName string) (routev1.Route, error) {
-	routes := &routev1.RouteList{}
-
-	routeFound := routev1.Route{}
-	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
-		Namespace: ThreeScaleProductNamespace,
-	})
-
-	if err != nil {
-		return routeFound, fmt.Errorf("failed to get 3scale routes with error: %v", err)
-	}
-
-	for _, route := range routes.Items {
-		if strings.Contains(route.Spec.Host, routeName) {
-			routeFound = route
-		}
-	}
-
-	return routeFound, nil
-}
-
-func genSecret(ctx *TestingContext, datamap map[string][]byte) (*corev1.Secret, error) {
-	secretRef := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      projectAdminSecret,
-			Namespace: projectNamespace,
-		},
-		Data: datamap,
-	}
-	if err := ctx.Client.Create(goctx.TODO(), secretRef); err != nil {
-		return secretRef, fmt.Errorf("failed to create secret with error: %v", err)
-	}
-
-	return secretRef, nil
+	return getToken(ctx, namespace, "ADMIN_ACCESS_TOKEN", "system-seed")
 }
 
 func setupPortaClient(accessToken *string, host string) (*portaClient.ThreeScaleClient, error) {

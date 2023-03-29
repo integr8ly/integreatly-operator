@@ -2,7 +2,6 @@ package functional
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -15,20 +14,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	stsSvc "github.com/aws/aws-sdk-go/service/sts"
-	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
-	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"github.com/integr8ly/integreatly-operator/test/common"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -41,135 +32,6 @@ const (
 	awsClusterTypeKey       = "red-hat-clustertype"
 	awsClusterTypeRosaValue = "rosa"
 )
-
-func getExpectedPostgres(installType string, installationName string) []string {
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		// expected postgres resources provisioned per product
-		return []string{
-			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
-		}
-	} else {
-		// expected postgres resources provisioned per product
-		return []string{
-			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
-			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		}
-	}
-}
-
-func getExpectedRedis(installType string, installationName string) []string {
-	// expected redis resources provisioned per product
-	commonRedis := []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
-	}
-	return commonRedis
-}
-
-func getExpectedBlobStorage(installType string, installationName string) []string {
-
-	// 3scale blob storage
-	threescaleBlobStorage := []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
-	}
-
-	return threescaleBlobStorage
-}
-
-/*
-Each resource provisioned contains an annotation with the resource ID
-This function iterates over a list of expected resource CR's
-Returns a list of resource ID's, these ID's can be used when testing AWS resources
-*/
-func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
-	var foundErrors []string
-	var foundResourceIDs []string
-
-	expectedRedis := getExpectedRedis(rhmi.Spec.Type, rhmi.Name)
-
-	for _, r := range expectedRedis {
-		// get elasticache cr
-		redis := &crov1.Redis{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, redis); err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s redis cr : %v", r, err))
-		}
-		// ensure phase is completed
-		if redis.Status.Phase != croTypes.PhaseComplete {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s redis not ready with phase: %s, message: %s", r, redis.Status.Phase, redis.Status.Message))
-		}
-		// return resource id
-		resourceID, err := getCROAnnotation(redis)
-		if err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\n%s redis cr does not contain a resource id annotation: %v", r, err))
-		}
-		// populate the array
-		foundResourceIDs = append(foundResourceIDs, resourceID)
-	}
-	return foundResourceIDs, foundErrors
-}
-
-/*
-Each resource provisioned contains an annotation with the resource ID
-This function iterates over a list of expected resource CR's
-Returns a list of resource ID's, these ID's can be used when testing AWS resources
-*/
-func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
-	var foundErrors []string
-	var foundResourceIDs []string
-
-	expectedPostgres := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
-
-	for _, r := range expectedPostgres {
-		// get rds cr
-		postgres := &crov1.Postgres{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, postgres); err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s postgres cr : %v", r, err))
-		}
-		// ensure phase is completed
-		if postgres.Status.Phase != croTypes.PhaseComplete {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s postgres not ready with phase: %s, message: %s", r, postgres.Status.Phase, postgres.Status.Message))
-		}
-		// return resource id
-		resourceID, err := getCROAnnotation(postgres)
-		if err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\n%s postgres cr does not contain a resource id annotation: %v", r, err))
-		}
-		// populate the array
-		foundResourceIDs = append(foundResourceIDs, resourceID)
-	}
-	return foundResourceIDs, foundErrors
-}
-
-func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
-	var foundErrors []string
-	var foundResourceIDs []string
-
-	expectedBlobStorage := getExpectedBlobStorage(rhmi.Spec.Type, rhmi.Name)
-
-	for _, r := range expectedBlobStorage {
-		// get rds cr
-		blobStorage := &crov1.BlobStorage{}
-		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHOAMOperatorNamespace, Name: r}, blobStorage); err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s blobStorage cr : %v", r, err))
-		}
-		// ensure phase is completed
-		if blobStorage.Status.Phase != croTypes.PhaseComplete {
-			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s blobStorage not ready with phase: %s, message: %s", r, blobStorage.Status.Phase, blobStorage.Status.Message))
-		}
-		// return resource id
-		resourceID, err := getCROAnnotation(blobStorage)
-		if err != nil {
-			foundErrors = append(foundErrors, fmt.Sprintf("\n%s blobStorage cr does not contain a resource id annotation: %v", r, err))
-		}
-		// populate the array
-		foundResourceIDs = append(foundResourceIDs, resourceID)
-	}
-
-	return foundResourceIDs, foundErrors
-}
 
 // CreateAWSSession creates a session to be used in getting an api instance for aws
 func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, bool, error) {
@@ -235,51 +97,6 @@ func getAWSCredentials(ctx context.Context, client client.Client) (string, strin
 	return awsAccessKeyID, awsSecretAccessKey, nil
 }
 
-// return resource identifier annotation from cr
-func getCROAnnotation(instance metav1.Object) (string, error) {
-	annotations := instance.GetAnnotations()
-	if annotations == nil {
-		return "", fmt.Errorf("annotations for %s can not be nil", instance.GetName())
-	}
-
-	for k, v := range annotations {
-		if "resourceIdentifier" == k {
-			return v, nil
-		}
-	}
-	return "", fmt.Errorf("no resource identifier found for resource %s", instance.GetName())
-}
-
-func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {
-	rawStrategyMapping := configMap.Data[resourceType]
-	if rawStrategyMapping == "" {
-		return nil, fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
-	}
-	var strategyMapping map[string]*strategyMap
-	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
-	}
-	if strategyMapping[tier] == nil {
-		return nil, fmt.Errorf("no strategy found for deployment type: %s and deployment tier: %s", resourceType, tier)
-	}
-	return strategyMapping[tier], nil
-}
-
-// GetClustersAvailableZones returns a map containing zone names that are currently available
-func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
-	zones := make(map[string]bool)
-	for _, node := range nodes.Items {
-		if isNodeWorkerAndReady(node) {
-			for labelName, labelValue := range node.Labels {
-				if labelName == "topology.kubernetes.io/zone" {
-					zones[labelValue] = true
-				}
-			}
-		}
-	}
-	return zones
-}
-
 func elasticacheTagsContains(tags []*elasticache.Tag, key, value string) bool {
 	for _, tag := range tags {
 		if *tag.Key == key && *tag.Value == value {
@@ -327,7 +144,7 @@ func describeSubnets(ec2svc *ec2.EC2, input *ec2.DescribeSubnetsInput) ([]*ec2.S
 	return describeSubnetsOutput.Subnets, nil
 }
 
-func getClusterSubnets(ec2svc *ec2.EC2, clusterID string) ([]*ec2.Subnet, error) {
+func getAwsClusterSubnets(ec2svc *ec2.EC2, clusterID string) ([]*ec2.Subnet, error) {
 	subnets, err := describeSubnets(ec2svc, &ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			{
@@ -371,8 +188,8 @@ func describeVpcs(ec2svc *ec2.EC2, input *ec2.DescribeVpcsInput) ([]*ec2.Vpc, er
 	return describeVpcsOutput.Vpcs, nil
 }
 
-func getClusterVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
-	clusterSubnets, err := getClusterSubnets(ec2svc, clusterID)
+func getAwsClusterVpc(ec2svc *ec2.EC2, clusterID string) (*ec2.Vpc, error) {
+	clusterSubnets, err := getAwsClusterSubnets(ec2svc, clusterID)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch cluster vpc: %w", err)
 	}

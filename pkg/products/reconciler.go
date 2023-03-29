@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
+	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
@@ -169,6 +170,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductObservability:
 		reconciler, err = observability.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
+	case integreatlyv1alpha1.ProductMCG:
+		reconciler, err = mcg.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

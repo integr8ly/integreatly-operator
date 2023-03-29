@@ -352,7 +352,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/croaws cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins
 	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
 		echo "manual mode (sts)"; \
 		$(MAKE) cluster/prepare/sts; \

@@ -14,19 +14,19 @@ var _ PodCommander = &PodCommanderMock{}
 
 // PodCommanderMock is a mock implementation of PodCommander.
 //
-// 	func TestSomethingThatUsesPodCommander(t *testing.T) {
+//	func TestSomethingThatUsesPodCommander(t *testing.T) {
 //
-// 		// make and configure a mocked PodCommander
-// 		mockedPodCommander := &PodCommanderMock{
-// 			ExecIntoPodFunc: func(dpl *appsv1.Deployment, cmd string) error {
-// 				panic("mock out the ExecIntoPod method")
-// 			},
-// 		}
+//		// make and configure a mocked PodCommander
+//		mockedPodCommander := &PodCommanderMock{
+//			ExecIntoPodFunc: func(dpl *appsv1.Deployment, cmd string) error {
+//				panic("mock out the ExecIntoPod method")
+//			},
+//		}
 //
-// 		// use mockedPodCommander in code that requires PodCommander
-// 		// and then make assertions.
+//		// use mockedPodCommander in code that requires PodCommander
+//		// and then make assertions.
 //
-// 	}
+//	}
 type PodCommanderMock struct {
 	// ExecIntoPodFunc mocks the ExecIntoPod method.
 	ExecIntoPodFunc func(dpl *appsv1.Deployment, cmd string) error
@@ -64,7 +64,8 @@ func (mock *PodCommanderMock) ExecIntoPod(dpl *appsv1.Deployment, cmd string) er
 
 // ExecIntoPodCalls gets all the calls that were made to ExecIntoPod.
 // Check the length with:
-//     len(mockedPodCommander.ExecIntoPodCalls())
+//
+//	len(mockedPodCommander.ExecIntoPodCalls())
 func (mock *PodCommanderMock) ExecIntoPodCalls() []struct {
 	Dpl *appsv1.Deployment
 	Cmd string

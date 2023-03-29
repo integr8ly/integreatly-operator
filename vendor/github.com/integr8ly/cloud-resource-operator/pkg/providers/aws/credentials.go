@@ -159,7 +159,7 @@ func NewCredentialManager(client client.Client) (CredentialManager, error) {
 	if secret != nil && secret.Data != nil {
 		return NewSTSCredentialManager(client, ns), nil
 	}
-	return nil, errorUtil.New("could not instantiate credential manager")
+	return nil, errorUtil.New("could not instantiate aws credential manager")
 }
 
 var _ CredentialManager = (*CredentialMinterCredentialManager)(nil)

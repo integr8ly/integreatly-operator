@@ -14,19 +14,19 @@ var _ ConfigManager = &ConfigManagerMock{}
 
 // ConfigManagerMock is a mock implementation of ConfigManager.
 //
-// 	func TestSomethingThatUsesConfigManager(t *testing.T) {
+//	func TestSomethingThatUsesConfigManager(t *testing.T) {
 //
-// 		// make and configure a mocked ConfigManager
-// 		mockedConfigManager := &ConfigManagerMock{
-// 			GetStrategyMappingForDeploymentTypeFunc: func(ctx context.Context, t string) (*DeploymentStrategyMapping, error) {
-// 				panic("mock out the GetStrategyMappingForDeploymentType method")
-// 			},
-// 		}
+//		// make and configure a mocked ConfigManager
+//		mockedConfigManager := &ConfigManagerMock{
+//			GetStrategyMappingForDeploymentTypeFunc: func(ctx context.Context, t string) (*DeploymentStrategyMapping, error) {
+//				panic("mock out the GetStrategyMappingForDeploymentType method")
+//			},
+//		}
 //
-// 		// use mockedConfigManager in code that requires ConfigManager
-// 		// and then make assertions.
+//		// use mockedConfigManager in code that requires ConfigManager
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ConfigManagerMock struct {
 	// GetStrategyMappingForDeploymentTypeFunc mocks the GetStrategyMappingForDeploymentType method.
 	GetStrategyMappingForDeploymentTypeFunc func(ctx context.Context, t string) (*DeploymentStrategyMapping, error)
@@ -64,7 +64,8 @@ func (mock *ConfigManagerMock) GetStrategyMappingForDeploymentType(ctx context.C
 
 // GetStrategyMappingForDeploymentTypeCalls gets all the calls that were made to GetStrategyMappingForDeploymentType.
 // Check the length with:
-//     len(mockedConfigManager.GetStrategyMappingForDeploymentTypeCalls())
+//
+//	len(mockedConfigManager.GetStrategyMappingForDeploymentTypeCalls())
 func (mock *ConfigManagerMock) GetStrategyMappingForDeploymentTypeCalls() []struct {
 	Ctx context.Context
 	T   string

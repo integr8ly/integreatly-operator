@@ -4,13 +4,12 @@
 // alerts, to ensure and monitor performance of postgres (rds) instances
 //
 // this providers does
-//   * scrape metric data from cloudwatch
-//   * build a generic cloud metric data type from cloudwatch data
-//   * return generic cloud metric data to metric controller to be exposed
+//   - scrape metric data from cloudwatch
+//   - build a generic cloud metric data type from cloudwatch data
+//   - return generic cloud metric data to metric controller to be exposed
 //
 // this provider does not
-//   * expose the metrics, this is controller at a higher level (controller)
-//
+//   - expose the metrics, this is controller at a higher level (controller)
 package aws
 
 import (
@@ -100,7 +99,7 @@ func (p PostgresMetricsProvider) ScrapePostgresMetrics(ctx context.Context, post
 // scrapeRDSCloudWatchMetricData fetches cloud watch metrics for rds
 // and parses it to a GenericCloudMetric in order to return to the controller
 func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Context, cloudWatchApi cloudwatchiface.CloudWatchAPI, postgres *v1alpha1.Postgres, metricTypes []providers.CloudProviderMetricType) ([]*providers.GenericCloudMetric, error) {
-	resourceID, err := BuildInfraNameFromObject(ctx, p.Client, postgres.ObjectMeta, defaultAwsIdentifierLength)
+	resourceID, err := resources.BuildInfraNameFromObject(ctx, p.Client, postgres.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return nil, errorUtil.Errorf("error occurred building instance name: %v", err)
 	}
@@ -145,12 +144,12 @@ func (p *PostgresMetricsProvider) scrapeRDSCloudWatchMetricData(ctx context.Cont
 			metrics = append(metrics, &providers.GenericCloudMetric{
 				Name: *metricData.Id,
 				Labels: map[string]string{
-					"clusterID":   clusterID,
-					"resourceID":  postgres.Name,
-					"namespace":   postgres.Namespace,
-					"instanceID":  resourceID,
-					"productName": postgres.Labels["productName"],
-					"strategy":    postgresProviderName,
+					resources.LabelClusterIDKey:   clusterID,
+					resources.LabelResourceIDKey:  postgres.Name,
+					resources.LabelNamespaceKey:   postgres.Namespace,
+					resources.LabelInstanceIDKey:  resourceID,
+					resources.LabelProductNameKey: postgres.Labels["productName"],
+					resources.LabelStrategyKey:    postgresProviderName,
 				},
 				Value: *value,
 			})
@@ -166,7 +165,7 @@ func buildRDSMetricDataQuery(metricTypes []providers.CloudProviderMetricType, re
 		metricDataQueries = append(metricDataQueries, &cloudwatch.MetricDataQuery{
 			// id needs to be unique, and is built from the metric name and type
 			// the metric name is converted from camel case to snake case to allow it to be easily reused when exposing the metric
-			Id: aws.String(metricType.PromethuesMetricName),
+			Id: aws.String(metricType.PrometheusMetricName),
 			MetricStat: &cloudwatch.MetricStat{
 				Metric: &cloudwatch.Metric{
 					MetricName: aws.String(metricType.ProviderMetricName),

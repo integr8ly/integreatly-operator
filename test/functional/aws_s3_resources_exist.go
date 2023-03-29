@@ -14,14 +14,6 @@ const (
 	resourceNameTag          = "integreatly.org/resource-name"
 )
 
-func getExpectedBackupBucketResourceName(installationName string) string {
-	return fmt.Sprintf("backups-blobstorage-%s", installationName)
-}
-
-func getExpectedThreeScaleBucketResourceName(installationName string) string {
-	return fmt.Sprintf("threescale-blobstorage-%s", installationName)
-}
-
 func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
@@ -30,7 +22,7 @@ func TestAWSs3BlobStorageResourcesExist(t common.TestingTB, ctx *common.TestingC
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	s3ResourceIDs, testErrors := GetS3BlobStorageResourceIDs(goContext, ctx.Client, rhmi)
+	s3ResourceIDs, testErrors := GetCloudObjectStorageBlobStorageResourceIDs(goContext, ctx.Client, rhmi)
 
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro blob storage exists failed with the following errors : %s", testErrors)

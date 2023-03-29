@@ -267,6 +267,17 @@ rules:
   - list
   - update
 - apiGroups:
+  - noobaa.io
+  resources:
+  - backingstores
+  - bucketclasses
+  - noobaas
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
   - oauth.openshift.io
   resources:
   - oauthclients
@@ -275,6 +286,22 @@ rules:
   - delete
   - get
   - update
+- apiGroups:
+  - objectbucket.io
+  resources:
+  - objectbucketclaims
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - objectbucket.io
+  resources:
+  - objectbuckets
+  verbs:
+  - list
 - apiGroups:
   - observability.redhat.com
   resources:

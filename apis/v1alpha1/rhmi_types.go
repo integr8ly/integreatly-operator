@@ -62,17 +62,19 @@ var (
 	ProductMonitoringSpec ProductName = "monitoring-spec"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
+	ProductMCG            ProductName = "mcg"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionMonitoring     ProductVersion = "1.8.0"
 	Version3Scale         ProductVersion = "2.13.0"
-	VersionCloudResources ProductVersion = "0.44.0"
+	VersionCloudResources ProductVersion = "1.0.1"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.11.0"
+	VersionMCG            ProductVersion = "4.11.4"
 	VersionGrafana        ProductVersion = "4.2.0"
 	VersionObservability  ProductVersion = "4.2.0"
 
@@ -85,12 +87,13 @@ var (
 	OperatorVersionRHSSO      OperatorVersion = "7.6.2-3"
 	OperatorVersionRHSSOUser  OperatorVersion = "7.6.2-3"
 
-	OperatorVersionCloudResources OperatorVersion = "0.44.0"
+	OperatorVersionCloudResources OperatorVersion = "1.0.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.3-mas"
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
 	OperatorVersionObservability  OperatorVersion = "4.2.0"
+	OperatorVersionMCG            OperatorVersion = "4.11.4"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

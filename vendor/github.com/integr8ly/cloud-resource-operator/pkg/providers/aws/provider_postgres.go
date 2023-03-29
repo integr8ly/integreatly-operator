@@ -91,7 +91,7 @@ type PostgresProvider struct {
 	Logger            *logrus.Entry
 	CredentialManager CredentialManager
 	ConfigManager     ConfigManager
-	TCPPinger         ConnectionTester
+	TCPPinger         resources.ConnectionTester
 }
 
 func NewAWSPostgresProvider(client client.Client, logger *logrus.Entry) (*PostgresProvider, error) {
@@ -104,7 +104,7 @@ func NewAWSPostgresProvider(client client.Client, logger *logrus.Entry) (*Postgr
 		Logger:            logger.WithFields(logrus.Fields{"provider": postgresProviderName}),
 		CredentialManager: cm,
 		ConfigManager:     NewDefaultConfigMapConfigManager(client),
-		TCPPinger:         NewConnectionTestManager(),
+		TCPPinger:         resources.NewConnectionTestManager(),
 	}, nil
 }
 
@@ -529,7 +529,7 @@ func (p *PostgresProvider) DeletePostgres(ctx context.Context, r *v1alpha1.Postg
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
 
-	isLastResource, err := p.isLastResource(ctx)
+	isLastResource, err := resources.IsLastResource(ctx, p.Client)
 	if err != nil {
 		errMsg := "failed to check if this cr is the last cr of type postgres and redis"
 		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
@@ -727,25 +727,8 @@ func (p *PostgresProvider) getRDSConfig(ctx context.Context, r *v1alpha1.Postgre
 	return rdsCreateConfig, rdsDeleteConfig, rdsServiceUpdates, stratCfg, nil
 }
 
-func (p *PostgresProvider) isLastResource(ctx context.Context) (bool, error) {
-	listOptions := client.ListOptions{
-		Namespace: "",
-	}
-	var postgresList = &v1alpha1.PostgresList{}
-	if err := p.Client.List(ctx, postgresList, &listOptions); err != nil {
-		msg := "failed to retrieve postgres cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	var redisList = &v1alpha1.RedisList{}
-	if err := p.Client.List(ctx, redisList, &listOptions); err != nil {
-		msg := "failed to retrieve redis cr(s)"
-		return false, errorUtil.Wrap(err, msg)
-	}
-	return len(postgresList.Items) == 1 && len(redisList.Items) == 0, nil
-}
-
 func (p *PostgresProvider) getDefaultRdsTags(ctx context.Context, cr *v1alpha1.Postgres) ([]*rds.Tag, error) {
-	tags, _, err := getDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
+	tags, _, err := resources.GetDefaultResourceTags(ctx, p.Client, cr.Spec.Type, cr.Name, cr.ObjectMeta.Labels["productName"])
 	if err != nil {
 		msg := "Failed to get default RDS tags"
 		return nil, errorUtil.Wrapf(err, msg)
@@ -918,7 +901,7 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 		rdsCreateConfig.AvailabilityZone = nil
 	}
 	rdsCreateConfig.Engine = aws.String(defaultAwsEngine)
-	subGroup, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	subGroup, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to build subnet group name")
 	}
@@ -927,7 +910,7 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 	}
 
 	// build security group name
-	secName, err := BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
+	secName, err := resources.BuildInfraName(ctx, p.Client, defaultSecurityGroupPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -950,7 +933,7 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 
 // verify postgres delete config
 func (p *PostgresProvider) buildRDSDeleteConfig(ctx context.Context, pg *v1alpha1.Postgres, rdsCreateConfig *rds.CreateDBInstanceInput, rdsDeleteConfig *rds.DeleteDBInstanceInput) error {
-	instanceIdentifier, err := BuildInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
+	instanceIdentifier, err := resources.BuildInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrapf(err, "failed to retrieve rds config")
 	}
@@ -966,7 +949,7 @@ func (p *PostgresProvider) buildRDSDeleteConfig(ctx context.Context, pg *v1alpha
 	if rdsDeleteConfig.SkipFinalSnapshot == nil {
 		rdsDeleteConfig.SkipFinalSnapshot = aws.Bool(defaultAwsSkipFinalSnapshot)
 	}
-	snapshotIdentifier, err := buildTimestampedInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
+	snapshotIdentifier, err := resources.BuildTimestampedInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "failed to retrieve timestamped rds config")
 	}
@@ -999,7 +982,7 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 	logger := p.Logger.WithField("action", "configureRDSVpc")
 	logger.Info("ensuring vpc is as expected for resource")
 	// get subnet group id
-	sgID, err := BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
+	sgID, err := resources.BuildInfraName(ctx, p.Client, defaultSubnetPostfix, defaultAwsIdentifierLength)
 	if err != nil {
 		return errorUtil.Wrap(err, "error building subnet group name")
 	}
@@ -1056,33 +1039,6 @@ func (p *PostgresProvider) configureRDSVpc(ctx context.Context, rdsSvc rdsiface.
 	return nil
 }
 
-func buildPostgresInfoMetricLabels(cr *v1alpha1.Postgres, instance *rds.DBInstance, clusterID, instanceName string) map[string]string {
-	labels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-	if instance != nil {
-		labels["status"] = *instance.DBInstanceStatus
-		return labels
-	}
-	labels["status"] = "nil"
-	return labels
-}
-
-func buildPostgresGenericMetricLabels(cr *v1alpha1.Postgres, clusterID, instanceName string) map[string]string {
-	labels := map[string]string{}
-	labels["clusterID"] = clusterID
-	labels["resourceID"] = cr.Name
-	labels["namespace"] = cr.Namespace
-	labels["instanceID"] = instanceName
-	labels["productName"] = cr.Labels["productName"]
-	labels["strategy"] = postgresProviderName
-	return labels
-}
-
-func buildPostgresStatusMetricsLabels(cr *v1alpha1.Postgres, clusterID, instanceName string, phase croType.StatusPhase) map[string]string {
-	labels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-	labels["statusPhase"] = string(phase)
-	return labels
-}
-
 func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alpha1.Postgres, instance *rds.DBInstance, ec2Svc ec2iface.EC2API) {
 	// build instance name
 	instanceName, err := p.buildInstanceName(ctx, cr)
@@ -1099,11 +1055,12 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 	}
 
 	// build metric labels
-	infoLabels := buildPostgresInfoMetricLabels(cr, instance, clusterID, instanceName)
-	// build available mertic labels
-	genericLabels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
-
-	// set status gauge
+	var status string
+	if instance != nil {
+		status = resources.SafeStringDereference(instance.DBInstanceStatus)
+	}
+	infoLabels := resources.BuildInfoMetricLabels(cr.ObjectMeta, status, clusterID, instanceName, postgresProviderName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName)
 	resources.SetMetricCurrentTime(resources.DefaultPostgresInfoMetricName, infoLabels)
 
 	// set generic status metrics
@@ -1112,7 +1069,7 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 	// the value of the metric should be 0.0 when the resource is not in that phase
 	// this follows the approach that pod status
 	for _, phase := range []croType.StatusPhase{croType.PhaseFailed, croType.PhaseDeleteInProgress, croType.PhasePaused, croType.PhaseComplete, croType.PhaseInProgress} {
-		labelsFailed := buildPostgresStatusMetricsLabels(cr, clusterID, instanceName, phase)
+		labelsFailed := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName, phase)
 		resources.SetMetric(resources.DefaultPostgresStatusMetricName, labelsFailed, resources.Btof64(cr.Status.Phase == phase))
 	}
 
@@ -1132,7 +1089,7 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 	// we should follow the approach AWS take to auto scaling, and alert when free storage space is less than 10%
 	if instance != nil && instance.AllocatedStorage != nil {
 		// convert allocated storage to bytes and expose as a metric
-		resources.SetMetric(resources.DefaultPostgresAllocatedStorageMetricName, genericLabels, float64(*instance.AllocatedStorage*resources.BytesInGibiBytes))
+		resources.SetMetric(resources.PostgresAllocatedStorageMetricName, genericLabels, float64(*instance.AllocatedStorage*resources.BytesInGibiBytes))
 	}
 
 	if instance != nil {
@@ -1151,7 +1108,7 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 		instanceTypes := result.InstanceTypes
 		if len(instanceTypes) > 0 {
 			MemorySize := instanceTypes[0].MemoryInfo.SizeInMiB
-			resources.SetMetric(resources.DefaultPostgresMaxMemoryMetricName, genericLabels, float64(*MemorySize))
+			resources.SetMetric(resources.PostgresMaxMemoryMetricName, genericLabels, float64(*MemorySize))
 		}
 	}
 }
@@ -1164,18 +1121,17 @@ func (p *PostgresProvider) setPostgresDeletionTimestampMetric(ctx context.Contex
 		// build instance name
 		instanceName, err := p.buildInstanceName(ctx, cr)
 		if err != nil {
-			logrus.Errorf("error occurred while building instance name during postgres metrics: %v", err)
+			p.Logger.Errorf("error occurred while building instance name during postgres metrics: %v", err)
 		}
 
 		// get Cluster Id
-		logrus.Info("setting postgres information metric")
+		p.Logger.Info("setting postgres information metric")
 		clusterID, err := resources.GetClusterID(ctx, p.Client)
 		if err != nil {
-			logrus.Errorf("failed to get cluster id while exposing information metric for %v", instanceName)
+			p.Logger.Errorf("failed to get cluster id while exposing information metric for %v", instanceName)
 			return
 		}
-
-		labels := buildPostgresStatusMetricsLabels(cr, clusterID, instanceName, cr.Status.Phase)
+		labels := resources.BuildStatusMetricsLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName, cr.Status.Phase)
 		resources.SetMetric(resources.DefaultPostgresDeletionMetricName, labels, float64(cr.DeletionTimestamp.Unix()))
 	}
 }
@@ -1205,7 +1161,7 @@ func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Conte
 	for _, su := range output.PendingMaintenanceActions {
 		metricLabels := map[string]string{}
 
-		metricLabels["clusterID"] = clusterID
+		metricLabels[resources.LabelClusterIDKey] = clusterID
 		metricLabels["ResourceIdentifier"] = *su.ResourceIdentifier
 
 		for _, pma := range su.PendingMaintenanceActionDetails {
@@ -1251,8 +1207,7 @@ func (p *PostgresProvider) createRDSConnectionMetric(ctx context.Context, cr *v1
 
 	}
 
-	// build generic labels to be added to metric
-	genericLabels := buildPostgresGenericMetricLabels(cr, clusterID, instanceName)
+	genericLabels := resources.BuildGenericMetricLabels(cr.ObjectMeta, clusterID, instanceName, postgresProviderName)
 
 	// check if the instance is available
 	if instance == nil {
@@ -1281,7 +1236,7 @@ func (p *PostgresProvider) createRDSConnectionMetric(ctx context.Context, cr *v1
 
 // returns the name of the instance from build infra
 func (p *PostgresProvider) buildInstanceName(ctx context.Context, pg *v1alpha1.Postgres) (string, error) {
-	instanceName, err := BuildInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
+	instanceName, err := resources.BuildInfraNameFromObject(ctx, p.Client, pg.ObjectMeta, defaultAwsIdentifierLength)
 	if err != nil {
 		return "", errorUtil.Errorf("error occurred building instance name: %v", err)
 	}
