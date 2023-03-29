@@ -224,10 +224,6 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // LimitRanges are used to assign default CPU/Memory requests and limits for containers that don't specify values for compute resources
 // +kubebuilder:rbac:groups="",resources=limitranges,verbs=get;create;update;delete
 
-// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
-// For cleaning up cluster logging
-// +kubebuilder:rbac:groups="logging.openshift.io",resources=clusterloggings;clusterlogforwarders,verbs=delete
-
 // Role permissions
 
 // +kubebuilder:rbac:groups="",resources=pods;events;configmaps;secrets,verbs=list;get;watch;create;update;patch,namespace=integreatly-operator

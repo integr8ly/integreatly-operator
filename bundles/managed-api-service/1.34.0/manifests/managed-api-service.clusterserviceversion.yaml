@@ -51,19 +51,19 @@ metadata:
     support: RHOAM
     containerImages: |-
       {
-        "3scale-operator.v2.13.0": {
-          "3scale-operator.v0.11.2-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:fb084230644710b980a13e4e4ea26ac1f25706f96e169e2014bf9c54a31a1be0",
-          "3scale-rhel7-operator-fb084230644710b980a13e4e4ea26ac1f25706f96e169e2014bf9c54a31a1be0-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:fb084230644710b980a13e4e4ea26ac1f25706f96e169e2014bf9c54a31a1be0",
-          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:fb084230644710b980a13e4e4ea26ac1f25706f96e169e2014bf9c54a31a1be0",
+        "3scale-operator.3scale-2.13.1-GA": {
+          "3scale-operator.v0.11.3-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
+          "3scale-rhel7-operator-9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
           "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:064a33fa841f355acead1ee9463f72726658ab8cfcd114a0f07447a9f86cbf93",
           "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:879f7e812544331a6561ab469be3515e09c8ffd4390695c0b394ebf2fd83681e",
-          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:22cac33733f109a61a2c8fec1ceebd167b59458c525f34e4abeda1c6ee513613",
+          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:f28b12ca4e654fccd1da7a3ba02d8010a6bd5a119b741ab65568934e01e8ab8d",
           "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:68d5f3890639da124b2eb75b65d23f6b17e6fa3bc1f85671bdcede384d327c14",
-          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:c5ba4209cba4fbc9b018a79dac3e856cc4e0b837d350f7e3366504619aa71e71",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:626e3e0653bff291012b88d9b7928ffc468e3c11eb95ea41f2829c99654c2c89",
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1f798022545e74a9465f16b7e499b97c45e1ada01ccc887f5d7d643f0fb1ebd4"
         },
-        "cloud-resource-operator.v0.44.0": {
-          "cloud-resources.v0.44.0": "quay.io/integreatly/cloud-resource-operator:v0.44.0"
+        "cloud-resource-operator.v1.0.1": {
+          "cloud-resources.v1.0.1": "quay.io/integreatly/cloud-resource-operator:v1.0.1"
         },
         "grafana-operator.v4.2.0": {
           "grafana-operator.v4.2.0": "quay.io/grafana-operator/grafana-operator:v4.2.0",
@@ -408,13 +408,6 @@ spec:
                 - patch
                 - update
             - apiGroups:
-                - logging.openshift.io
-              resources:
-                - clusterlogforwarders
-                - clusterloggings
-              verbs:
-                - delete
-            - apiGroups:
                 - managed.openshift.io
               resources:
                 - customdomains
@@ -445,6 +438,17 @@ spec:
                 - list
                 - update
             - apiGroups:
+                - noobaa.io
+              resources:
+                - backingstores
+                - bucketclasses
+                - noobaas
+              verbs:
+                - create
+                - get
+                - list
+                - update
+            - apiGroups:
                 - oauth.openshift.io
               resources:
                 - oauthclients
@@ -453,6 +457,22 @@ spec:
                 - delete
                 - get
                 - update
+            - apiGroups:
+                - objectbucket.io
+              resources:
+                - objectbucketclaims
+              verbs:
+                - create
+                - get
+                - list
+                - update
+                - watch
+            - apiGroups:
+                - objectbucket.io
+              resources:
+                - objectbuckets
+              verbs:
+                - list
             - apiGroups:
                 - observability.redhat.com
               resources:

@@ -18,7 +18,6 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
-	clusterloggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -70,8 +69,6 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		noobaav1.SchemeBuilder.AddToScheme,
 		obv1.SchemeBuilder.AddToScheme,
 		storagev1.AddToScheme,
-		// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
-		clusterloggingv1.AddToScheme,
 	)
 
 	if err := schemeBuilder.AddToScheme(scheme); err != nil {
