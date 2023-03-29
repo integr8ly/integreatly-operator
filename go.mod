@@ -27,7 +27,6 @@ require (
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/onsi/gomega v1.20.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
-	github.com/openshift/cluster-logging-operator v0.0.0-20221118094835-2d8faae5596f
 	github.com/operator-framework/api v0.17.1
 	github.com/operator-framework/operator-lifecycle-manager v0.21.1
 	github.com/operator-framework/operator-registry v1.26.2
@@ -152,7 +151,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
-	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
 	github.com/operator-framework/operator-lib v0.11.0 // indirect
 	github.com/otiai10/copy v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

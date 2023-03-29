@@ -27,7 +27,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
-	clusterloggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -72,7 +71,5 @@ func init() {
 		observabilityoperator.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
 		cloudcredentialv1.Install,
-		// TODO - Remove when released - https://issues.redhat.com/browse/MGDAPI-5308
-		clusterloggingv1.AddToScheme,
 	)
 }
