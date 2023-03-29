@@ -2,9 +2,10 @@ package common
 
 import (
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"net/http"
 	"strings"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -35,7 +36,6 @@ var (
 	Marin3rProductNamespace        = NamespacePrefix + "marin3r"
 	CustomerGrafanaNamespace       = NamespacePrefix + "customer-monitoring-operator"
 	McgOperatorNamespace           = NamespacePrefix + "mcg-operator"
-	GCPCloudProvider               = "gcp"
 )
 
 type TestingContext struct {

@@ -2,7 +2,7 @@ package common
 
 import (
 	"bytes"
-	goctx "context"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -152,7 +152,7 @@ func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
 
 func getConsoleRoute(client k8sclient.Client) (*string, error) {
 	route := &routev1.Route{}
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: OpenShiftConsoleRoute, Namespace: OpenShiftConsoleNamespace}, route); err != nil {
+	if err := client.Get(context.TODO(), types.NamespacedName{Name: OpenShiftConsoleRoute, Namespace: OpenShiftConsoleNamespace}, route); err != nil {
 		return nil, err
 	}
 	if len(route.Status.Ingress) > 0 {
@@ -181,7 +181,7 @@ func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, er
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(RHOAMOperatorNamespace),
 	}
-	err := client.List(goctx.TODO(), installationList, listOpts...)
+	err := client.List(context.TODO(), installationList, listOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +479,7 @@ func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Conf
 }
 
 func IsClusterScoped(restConfig *rest.Config) (bool, error) {
-	context, err := NewTestingContext(restConfig)
+	ctx, err := NewTestingContext(restConfig)
 	if err != nil {
 		return false, err
 	}
@@ -490,7 +490,7 @@ func IsClusterScoped(restConfig *rest.Config) (bool, error) {
 		},
 	}
 
-	err = context.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
+	err = ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-registry-og", Namespace: ThreeScaleOperatorNamespace}, threeScaleOperatorGroup)
 	if err != nil {
 		return false, err
 	}
@@ -505,7 +505,7 @@ func IsClusterScoped(restConfig *rest.Config) (bool, error) {
 }
 
 func GetPlatformType(ctx *TestingContext) string {
-	infra, err := cluster.GetClusterInfrastructure(goctx.TODO(), ctx.Client)
+	infra, err := cluster.GetClusterInfrastructure(context.TODO(), ctx.Client)
 	if err != nil || infra.Status.PlatformStatus == nil {
 		fmt.Println("can't retrieve cluster infrastructure")
 		return ""
@@ -517,7 +517,7 @@ func getRoutes(ctx *TestingContext, routeName string, namespace string) (routev1
 	routes := &routev1.RouteList{}
 
 	routeFound := routev1.Route{}
-	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
+	err := ctx.Client.List(context.TODO(), routes, &k8sclient.ListOptions{
 		Namespace: namespace,
 	})
 
@@ -540,7 +540,7 @@ func getToken(ctx *TestingContext, namespace, tokenType, objectMetaName string) 
 			Name: objectMetaName,
 		},
 	}
-	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
+	err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: token.Name, Namespace: namespace}, token)
 	if err != nil {
 		return nil, err
 	}
@@ -554,14 +554,14 @@ func makeProject(ctx *TestingContext, namespace string) (*v1.Project, error) {
 			Name: namespace,
 		},
 	}
-	if err := ctx.Client.Create(goctx.TODO(), project); err != nil {
+	if err := ctx.Client.Create(context.TODO(), project); err != nil {
 		return project, fmt.Errorf("failed to create testing namespace with error: %v", err)
 	}
 
 	return project, nil
 }
 
-func genSecret(ctx *TestingContext, datamap map[string][]byte, secretName string, namespace string) (*corev1.Secret, error) {
+func createSecret(ctx *TestingContext, datamap map[string][]byte, secretName string, namespace string) (*corev1.Secret, error) {
 	secretRef := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -569,7 +569,7 @@ func genSecret(ctx *TestingContext, datamap map[string][]byte, secretName string
 		},
 		Data: datamap,
 	}
-	if err := ctx.Client.Create(goctx.TODO(), secretRef); err != nil {
+	if err := ctx.Client.Create(context.TODO(), secretRef); err != nil {
 		return secretRef, fmt.Errorf("failed to create secret with error: %v", err)
 	}
 

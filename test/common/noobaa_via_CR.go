@@ -3,15 +3,15 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	//"github.com/integr8ly/integreatly-operator/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
+	"strings"
+	"time"
+
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 const (
@@ -45,7 +45,7 @@ func TestNoobaaViaCR(t TestingTB, ctx *TestingContext) {
 	adminURL := fmt.Sprintf("https://%v", route.Spec.Host)
 
 	//create secret to be used when creating product
-	secret, err := genSecret(ctx, map[string][]byte{
+	secret, err := createSecret(ctx, map[string][]byte{
 		"adminURL": []byte(adminURL),
 		"token":    []byte(*accessToken),
 	}, noobaaAdminSecret, mcgTestNamespace)

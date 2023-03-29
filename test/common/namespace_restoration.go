@@ -114,7 +114,7 @@ func TestNamespaceRestoration(t TestingTB, ctx *TestingContext) {
 		t.Fatal(err)
 	}
 
-	for _, stage := range getStagesForInstallType(rhmi.Spec.Type, ctx) {
+	for _, stage := range getStagesForInstallType(ctx, rhmi.Spec.Type) {
 
 		// Delete all the namespaces defined in product stage
 		for _, nameSpace := range stage.namespaces {
@@ -324,7 +324,7 @@ func removeEnvoyConfigRevisionFinalizers(ctx *TestingContext, nameSpace string) 
 	return err
 }
 
-func getStagesForInstallType(installType string, ctx *TestingContext) []StageDeletion {
+func getStagesForInstallType(ctx *TestingContext, installType string) []StageDeletion {
 	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		managedApiStages = append(managedApiStages, []StageDeletion{
 			{

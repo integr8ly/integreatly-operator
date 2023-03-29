@@ -54,7 +54,7 @@ func Test3scaleTenantViaCr(t TestingTB, ctx *TestingContext) {
 	}
 
 	//make secret
-	secret, err := genSecret(ctx, map[string][]byte{
+	secret, err := createSecret(ctx, map[string][]byte{
 		"admin_password": []byte("admin"),
 	}, projectAdminSecret, projectNamespace)
 	if err != nil {

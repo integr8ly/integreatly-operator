@@ -40,7 +40,7 @@ func Test3scaleBackendViaCR(t TestingTB, ctx *TestingContext) {
 	adminURL := fmt.Sprintf("https://%v", route.Spec.Host)
 
 	// create secret to be used when creating backend
-	secret, err := genSecret(ctx, map[string][]byte{
+	secret, err := createSecret(ctx, map[string][]byte{
 		"adminURL": []byte(adminURL),
 		"token":    []byte(*accessToken),
 	}, projectAdminSecret, projectNamespace)

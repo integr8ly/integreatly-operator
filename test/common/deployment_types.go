@@ -142,7 +142,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 	return deployment[deploymentName]
 }
 
-func getClusterStorageDeployments(installationName string, installType string, ctx *TestingContext) []Namespace {
+func getClusterStorageDeployments(ctx *TestingContext, installationName string, installType string) []Namespace {
 
 	managedApiClusterStorageDeployments := []Namespace{
 		{
@@ -184,7 +184,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	deployments := getDeployments(rhmi, t, ctx)
-	clusterStorageDeployments := getClusterStorageDeployments(rhmi.Name, rhmi.Spec.Type, ctx)
+	clusterStorageDeployments := getClusterStorageDeployments(ctx, rhmi.Name, rhmi.Spec.Type)
 
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {

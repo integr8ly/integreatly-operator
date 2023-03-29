@@ -52,7 +52,7 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
-	pvcNamespaces := getPvcNamespaces(rhmi.Spec.Type, ctx)
+	pvcNamespaces := getPvcNamespaces(ctx, rhmi.Spec.Type)
 
 	for _, pvcNamespace := range pvcNamespaces {
 		err := ctx.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: pvcNamespace.Namespace})
@@ -71,7 +71,7 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getPvcNamespaces(installType string, ctx *TestingContext) []PersistentVolumeClaim {
+func getPvcNamespaces(ctx *TestingContext, installType string) []PersistentVolumeClaim {
 	return commonPvcNamespaces(ctx)
 }
 
