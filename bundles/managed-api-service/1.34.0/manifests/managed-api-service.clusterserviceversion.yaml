@@ -62,7 +62,7 @@ metadata:
           "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:626e3e0653bff291012b88d9b7928ffc468e3c11eb95ea41f2829c99654c2c89",
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1f798022545e74a9465f16b7e499b97c45e1ada01ccc887f5d7d643f0fb1ebd4"
         },
-        "cloud-resource-operator.v0.44.0": {
+        "cloud-resource-operator.v1.0.1": {
           "cloud-resources.v1.0.1": "quay.io/integreatly/cloud-resource-operator:v1.0.1"
         },
         "grafana-operator.v4.2.0": {
