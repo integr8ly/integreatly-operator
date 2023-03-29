@@ -804,7 +804,7 @@ github.com/headzoo/surf/util
 # github.com/imdario/mergo v0.3.13
 ## explicit; go 1.13
 github.com/imdario/mergo
-# github.com/integr8ly/cloud-resource-operator v1.0.0
+# github.com/integr8ly/cloud-resource-operator v1.0.1
 ## explicit; go 1.18
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types

@@ -23,7 +23,7 @@ require (
 	github.com/grafana-operator/grafana-operator/v4 v4.7.1
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/cloud-resource-operator v1.0.0
+	github.com/integr8ly/cloud-resource-operator v1.0.1
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/gomega v1.20.1
