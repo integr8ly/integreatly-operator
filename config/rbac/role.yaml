@@ -230,13 +230,6 @@ rules:
   - patch
   - update
 - apiGroups:
-  - logging.openshift.io
-  resources:
-  - clusterlogforwarders
-  - clusterloggings
-  verbs:
-  - delete
-- apiGroups:
   - managed.openshift.io
   resources:
   - customdomains
