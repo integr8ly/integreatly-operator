@@ -76,7 +76,7 @@ var (
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionMCG            ProductVersion = "4.11.4"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "4.2.0"
+	VersionObservability  ProductVersion = "4.2.1"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -92,7 +92,7 @@ var (
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "4.2.0"
+	OperatorVersionObservability  OperatorVersion = "4.2.1"
 	OperatorVersionMCG            OperatorVersion = "4.11.4"
 
 	// Event reasons to be used when emitting events
