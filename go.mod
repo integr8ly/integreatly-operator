@@ -35,7 +35,7 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.58.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.13.0
-	github.com/redhat-developer/observability-operator/v4 v4.2.0
+	github.com/redhat-developer/observability-operator/v4 v4.2.1
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.8.0
 	golang.org/x/sync v0.1.0
@@ -229,7 +229,5 @@ replace k8s.io/client-go => k8s.io/client-go v0.25.0
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
 replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0
-
-replace github.com/redhat-developer/observability-operator/v4 => github.com/adam-cattermole/observability-operator/v4 v4.0.0-20230310104641-b78f59cc9dd2
 
 replace github.com/3scale/3scale-operator => github.com/adam-cattermole/3scale-operator v0.0.0-20230313152853-ac378ab97196

@@ -37,4 +37,4 @@ observability-operator:
   - name: observability-grafana-plugins-init
     url: quay.io/grafana-operator/grafana_plugins_init:0.1.0
   - name: observability-observability-operator
-    url: quay.io/rhoas/observability-operator-index:v4.2.0
+    url: quay.io/rhoas/observability-operator-index:v4.2.1
