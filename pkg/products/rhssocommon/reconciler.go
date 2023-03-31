@@ -47,6 +47,10 @@ var (
 	keycloakPDBName = "keycloak"
 )
 
+const (
+	KeycloakMetricsExtension = "https://github.com/integr8ly/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi.jar"
+)
+
 type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface

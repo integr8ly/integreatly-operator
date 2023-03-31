@@ -340,7 +340,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi-2.5.3.jar",
+			rhssocommon.KeycloakMetricsExtension,
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()
