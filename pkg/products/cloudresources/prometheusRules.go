@@ -81,7 +81,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 								croResources.DefaultRedisAvailMetricName,
 								croResources.DefaultRedisConnectionMetricName,
 								croResources.DefaultRedisStatusMetricName,
-								croResources.DefaultPostgresAllocatedStorageMetricName,
+								croResources.PostgresAllocatedStorageMetricName,
 							),
 						),
 						For:    "5m",
