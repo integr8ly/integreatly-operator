@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +51,10 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
+	MaintenanceDay               = "maintenance-day"
+	MaintenanceHour              = "maintenance-hour"
+	DefaultMaintenanceDay        = time.Thursday
+	DefaultMaintenanceHour       = 2
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001"}
@@ -212,7 +217,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileCloudResourceStrategies(client)
+	maintenanceDay, _, err := addon.GetStringParameter(ctx, client, operatorNamespace, MaintenanceDay)
+	if err != nil {
+		return phase, err
+	}
+
+	maintenanceHour, _, err := addon.GetStringParameter(ctx, client, operatorNamespace, MaintenanceHour)
+	if err != nil {
+		return phase, err
+	}
+
+	phase, err = r.reconcileCloudResourceStrategies(client, maintenanceDay, maintenanceHour)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
 		return phase, err
@@ -662,9 +677,32 @@ func (r *Reconciler) checkStsCredentialsPresent(client k8sclient.Client, operato
 // as we support different cloud providers this CRO Reconcile Function will ensure the correct infrastructure strategies are provisioned
 //
 // this function was part of the rhmiconfig controller, which has sense been removed.
-func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client, maintenanceDay, maintenanceHour string) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling cloud resource maintenance strategies")
-	timeConfig := croStrat.NewStrategyTimeConfig(3, 01, time.Thursday, 2, 00)
+
+	var day time.Weekday
+	if maintenanceDay != "" {
+		parsedDay, err := strconv.ParseInt(maintenanceDay, 0, 64)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		day = time.Weekday(parsedDay)
+	} else {
+		day = DefaultMaintenanceDay
+	}
+
+	var hour int
+	if maintenanceHour != "" {
+		parsedHour, err := strconv.ParseInt(maintenanceHour, 0, 64)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		hour = int(parsedHour)
+	} else {
+		hour = DefaultMaintenanceHour
+	}
+
+	timeConfig := croStrat.NewStrategyTimeConfig(3, 01, day, hour, 00)
 
 	err := croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
 	if err != nil {

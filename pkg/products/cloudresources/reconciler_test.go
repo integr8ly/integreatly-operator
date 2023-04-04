@@ -415,3 +415,215 @@ func TestReconciler_setPlatformStrategyName(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_reconcileCloudResourceStrategies(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		client          client.Client
+		maintenanceDay  string
+		maintenanceHour string
+		ctx             context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "success when params are entered in UI",
+			fields: fields{
+				Config: nil,
+				ConfigManager: &config.ConfigReadWriterMock{
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				installation: nil,
+				mpm:          nil,
+				log:          getLogger(),
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				recorder: nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.GCPPlatformType,
+						},
+					},
+				}),
+				maintenanceDay:  "2",
+				maintenanceHour: "5",
+				ctx:             context.TODO(),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "success when params are not entered in UI, use defaults",
+			fields: fields{
+				Config: nil,
+				ConfigManager: &config.ConfigReadWriterMock{
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				installation: nil,
+				mpm:          nil,
+				log:          getLogger(),
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				recorder: nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.GCPPlatformType,
+						},
+					},
+				}),
+				maintenanceDay:  "",
+				maintenanceHour: "",
+				ctx:             context.TODO(),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "error when incorrect values entered for maintenanceDay",
+			fields: fields{
+				Config: nil,
+				ConfigManager: &config.ConfigReadWriterMock{
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				installation: nil,
+				mpm:          nil,
+				log:          getLogger(),
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				recorder: nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.GCPPlatformType,
+						},
+					},
+				}),
+				maintenanceDay:  "Monday",
+				maintenanceHour: "2",
+				ctx:             context.TODO(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "error when incorrect values entered for maintenanceHour",
+			fields: fields{
+				Config: nil,
+				ConfigManager: &config.ConfigReadWriterMock{
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				installation: nil,
+				mpm:          nil,
+				log:          getLogger(),
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				recorder: nil,
+			},
+			args: args{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster",
+					},
+					Status: configv1.InfrastructureStatus{
+						PlatformStatus: &configv1.PlatformStatus{
+							Type: configv1.GCPPlatformType,
+						},
+					},
+				}),
+				maintenanceDay:  "4",
+				maintenanceHour: "Two",
+				ctx:             context.TODO(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "failure reconciling strategy map",
+			fields: fields{
+				Config: nil,
+				ConfigManager: &config.ConfigReadWriterMock{
+					GetOperatorNamespaceFunc: func() string {
+						return "redhat-rhoam-operator"
+					},
+				},
+				installation: nil,
+				mpm:          nil,
+				log:          getLogger(),
+				Reconciler: resources.NewReconciler(&marketplace.MarketplaceInterfaceMock{}).
+					WithProductDeclaration(marketplace.ProductDeclaration{}),
+				recorder: nil,
+			},
+			args: args{
+				client:          moqclient.NewSigsClientMoqWithScheme(scheme, &configv1.Infrastructure{}),
+				maintenanceDay:  "4",
+				maintenanceHour: "2",
+				ctx:             context.TODO(),
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.reconcileCloudResourceStrategies(tt.args.client, tt.args.maintenanceDay, tt.args.maintenanceHour)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileCloudResourceStrategies() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileCloudResourceStrategies() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
