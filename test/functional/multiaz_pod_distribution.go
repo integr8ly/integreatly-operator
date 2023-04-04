@@ -63,7 +63,7 @@ func TestMultiAZPodDistribution(t common.TestingTB, ctx *common.TestingContext) 
 			// Get a pod's AZ it is currently running in
 			podsAz := getPodZoneName(pod, nodes)
 			// Update the pod distribution for the pods' owner
-			if _, ok := distributionPerOwner[podOwnerName]; ok == false {
+			if _, ok := distributionPerOwner[podOwnerName]; !ok {
 				distributionPerOwner[podOwnerName] = &podDistribution{
 					zones:     map[string]int{podsAz: 1},
 					podsTotal: 1,

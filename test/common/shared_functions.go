@@ -185,10 +185,10 @@ func GetRHMI(client k8sclient.Client, failNotExist bool) (*rhmiv1alpha1.RHMI, er
 	if err != nil {
 		return nil, err
 	}
-	if len(installationList.Items) == 0 && failNotExist == true {
+	if len(installationList.Items) == 0 && failNotExist {
 		return nil, fmt.Errorf("rhmi CRs does not exist: %v namespace: '%v', list: %v", err, RHOAMOperatorNamespace, installationList)
 	}
-	if len(installationList.Items) == 0 && failNotExist == false {
+	if len(installationList.Items) == 0 && !failNotExist {
 		return nil, nil
 	}
 	if len(installationList.Items) != 1 {

@@ -73,7 +73,7 @@ func TestNetworkPolicyAccessNSToSVC(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error checking pod status: %v", err)
 	}
 
-	if podReady == false {
+	if !podReady {
 		t.Fatalf("pod %s failed to become ready", podCR.GetName())
 	}
 
