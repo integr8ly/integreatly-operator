@@ -217,12 +217,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	maintenanceDay, _, err := addon.GetStringParameter(ctx, client, operatorNamespace, MaintenanceDay)
+	maintenanceDay, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceDay)
 	if err != nil {
 		return phase, err
 	}
 
-	maintenanceHour, _, err := addon.GetStringParameter(ctx, client, operatorNamespace, MaintenanceHour)
+	maintenanceHour, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceHour)
 	if err != nil {
 		return phase, err
 	}
