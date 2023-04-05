@@ -217,17 +217,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	maintenanceDay, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceDay)
-	if err != nil {
-		return phase, err
-	}
-
-	maintenanceHour, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceHour)
-	if err != nil {
-		return phase, err
-	}
-
-	phase, err = r.reconcileCloudResourceStrategies(client, maintenanceDay, maintenanceHour)
+	phase, err = r.reconcileCloudResourceStrategies(ctx, client)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Cloud Resource strategies", err)
 		return phase, err
@@ -677,25 +667,35 @@ func (r *Reconciler) checkStsCredentialsPresent(client k8sclient.Client, operato
 // as we support different cloud providers this CRO Reconcile Function will ensure the correct infrastructure strategies are provisioned
 //
 // this function was part of the rhmiconfig controller, which has sense been removed.
-func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client, maintenanceDay, maintenanceHour string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCloudResourceStrategies(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("reconciling cloud resource maintenance strategies")
+
+	maintenanceDay, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceDay)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to get maintenance day parameter: %v", err)
+	}
 
 	var day time.Weekday
 	if maintenanceDay != "" {
 		parsedDay, err := strconv.ParseInt(maintenanceDay, 0, 64)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to parse maintenance day parameter: %v", err)
 		}
 		day = time.Weekday(parsedDay)
 	} else {
 		day = DefaultMaintenanceDay
 	}
 
+	maintenanceHour, _, err := addon.GetStringParameter(ctx, client, r.ConfigManager.GetOperatorNamespace(), MaintenanceHour)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to get maintenance hour parameter: %v", err)
+	}
+
 	var hour int
 	if maintenanceHour != "" {
 		parsedHour, err := strconv.ParseInt(maintenanceHour, 0, 64)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to parse maintenance hour parameter: %v", err)
 		}
 		hour = int(parsedHour)
 	} else {
@@ -704,7 +704,7 @@ func (r *Reconciler) reconcileCloudResourceStrategies(client k8sclient.Client, m
 
 	timeConfig := croStrat.NewStrategyTimeConfig(3, 01, day, hour, 00)
 
-	err := croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
+	err = croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to reconcile strategy map: %v", err)
 	}
