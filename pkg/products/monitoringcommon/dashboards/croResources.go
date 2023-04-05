@@ -397,7 +397,7 @@ const MonitoringGrafanaDBCROResourcesJSON = `{
           "pluginVersion": "7.1.1",
           "targets": [
             {
-              "expr": "cro_postgres_max_memory*1048576",
+              "expr": "cro_postgres_max_memory",
               "format": "table",
               "instant": true,
               "interval": "",
