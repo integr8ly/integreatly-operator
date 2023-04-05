@@ -91,7 +91,7 @@ func mapAlertsConfiguration(logger l.Logger, namespace, rateLimitUnit string, ra
 			// Get the complete expression by ANDing the lower and the upper if the
 			// upper limit is set, if not, assign the lower one
 			expr := *lowerExpr
-			upperMessage := "*"
+			upperMessage := "100%"
 			if upperExpr != nil {
 				expr = fmt.Sprintf("%s and %s", expr, *upperExpr)
 				upperMessage = *alertConfig.Threshold.MaxRate
