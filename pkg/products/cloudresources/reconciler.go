@@ -704,7 +704,7 @@ func (r *Reconciler) reconcileCloudResourceStrategies(ctx context.Context, clien
 
 	timeConfig := croStrat.NewStrategyTimeConfig(3, 01, day, hour, 00)
 
-	err = croUtil.ReconcileStrategyMaps(context.TODO(), client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
+	err = croUtil.ReconcileStrategyMaps(ctx, client, timeConfig, croUtil.TierProduction, r.ConfigManager.GetOperatorNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failure to reconcile strategy map: %v", err)
 	}
