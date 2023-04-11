@@ -188,7 +188,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 			return false, nil
 		}
 
-		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == true {
+		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled {
 			t.Log("CR conditions met")
 			return true, nil
 		}
@@ -298,7 +298,7 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 			return false, nil
 		}
 
-		if inst.Status.CustomSmtp != nil && inst.Status.CustomSmtp.Enabled == false {
+		if inst.Status.CustomSmtp != nil && !inst.Status.CustomSmtp.Enabled {
 			t.Log("CR conditions met")
 			return true, nil
 		}
@@ -452,7 +452,7 @@ func checkEmail(ctx *TestingContext, t TestingTB, email string) error {
 		}
 
 	}
-	if receivedEmail == false {
+	if !receivedEmail {
 		return err
 	}
 	return nil

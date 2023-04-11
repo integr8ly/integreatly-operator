@@ -207,7 +207,7 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 	}
 
 	href, _ := selector.Attr("href")
-	if strings.Contains(href, "/") == false {
+	if !strings.Contains(href, "/") {
 
 	}
 

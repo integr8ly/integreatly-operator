@@ -12,7 +12,7 @@ import (
 )
 
 func upgradeApproval(ctx context.Context, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, ip *v1alpha1.InstallPlan, log l.Logger) error {
-	if ip.Spec.Approved == false && len(ip.Spec.ClusterServiceVersionNames) > 0 {
+	if !ip.Spec.Approved && len(ip.Spec.ClusterServiceVersionNames) > 0 {
 		log.Infof("Approving", l.Fields{"installPlan": ip.Name, "csv's": ip.Spec.ClusterServiceVersionNames[0]})
 		ip.Spec.Approved = true
 

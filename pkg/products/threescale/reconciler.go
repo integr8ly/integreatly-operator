@@ -1905,7 +1905,7 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 
 			// Only add the ssoReady annotation if the tenant account's corresponding KeycloakUser and KeycloakClient CR's are ready.
 			// If not, continue to next account.
-			if kcUser.Status.Phase == keycloak.UserPhaseReconciled && kcClient.Status.Ready == true {
+			if kcUser.Status.Phase == keycloak.UserPhaseReconciled && kcClient.Status.Ready {
 
 				r.log.Infof("Adding SSO on 3scale account ", l.Fields{"tenantAccountName": account.OrgName})
 
@@ -3118,7 +3118,7 @@ func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverC
 						}
 					}
 
-					if foundEnv == false {
+					if !foundEnv {
 						r.log.Infof("adding env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
 
 						deploymentConfig.Spec.Template.Spec.Containers[i].Env = append(
