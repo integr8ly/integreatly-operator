@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
 	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
@@ -126,9 +127,14 @@ func verifyGcpAddressRange(ctx context.Context, client k8sclient.Client, project
 	if address.GetStatus() != computepb.Address_RESERVED.String() {
 		return nil, fmt.Errorf("address range status expected RESERVED, but found %s", address.GetStatus())
 	}
+
 	if expectedCidr != "" {
-		if cidr, err := strconv.ParseInt(expectedCidr, 10, 32); err != nil && address.GetPrefixLength() != int32(cidr) {
-			return nil, fmt.Errorf("address range cidr %d, does not match expected %s", address.GetPrefixLength(), expectedCidr)
+		cidr, err := strconv.ParseInt(expectedCidr[strings.IndexRune(expectedCidr, '/')+1:], 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing prefix length from CIDR block '%s'", expectedCidr)
+		}
+		if address.GetPrefixLength() != int32(cidr) {
+			return nil, fmt.Errorf("address range cidr %d, does not match expected %d", address.GetPrefixLength(), cidr)
 		}
 	}
 	return address, nil
