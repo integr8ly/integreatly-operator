@@ -28,6 +28,8 @@ SMTP_ADDRESS ?= ''
 SMTP_PASS ?= ''
 SMTP_PORT ?= ''
 SMTP_FROM ?= ''
+MAINTENANCE_DAY ?= ''
+MAINTENANCE_HOUR ?= ''
 CRO_ROLE_ARN ?= 'arn:aws:iam::123456789012:role/example'
 THREESCALE_ROLE_ARN ?= 'arn:aws:iam::123456789012:role/example'
 
@@ -394,7 +396,7 @@ cluster/prepare/dms:
 .PHONY: cluster/prepare/addon-params
 cluster/prepare/addon-params:
 	@-oc process -n $(NAMESPACE) QUOTA=$(DEV_QUOTA) DOMAIN=$(CUSTOM_DOMAIN) \
- 		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) -f config/secrets/addon-params-secret.yaml | oc apply -f -
+ 		USERNAME=$(SMTP_USER) HOST=$(SMTP_ADDRESS) PASSWORD=$(SMTP_PASS) PORT=$(SMTP_PORT) FROM=$(SMTP_FROM) DAY=$(MAINTENANCE_DAY) HOUR=$(MAINTENANCE_HOUR) -f config/secrets/addon-params-secret.yaml | oc apply -f -
 
 .PHONY: cluster/prepare/sts
 cluster/prepare/sts:
