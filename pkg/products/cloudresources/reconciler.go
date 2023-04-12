@@ -588,15 +588,27 @@ func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Cli
 // parameter. If the value has already been set, or if the secret is not found,
 // it does nothing
 func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Client) error {
-	cidrValue, ok, err := addon.GetStringParameter(ctx, client, r.installation.Namespace, "cidr-range")
+	cidrValueID := ""
+	platformType, err := cluster.GetPlatformType(ctx, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to retrieve platform type %v", err)
+	}
+	switch platformType {
+	case configv1.AWSPlatformType:
+		cidrValueID = "cidr-range"
+	case configv1.GCPPlatformType:
+		cidrValueID = "cidr-range-gcp"
+	default:
+		return fmt.Errorf("unsupported platform type %s", platformType)
 	}
 
+	cidrValue, ok, err := addon.GetStringParameter(ctx, client, r.installation.Namespace, cidrValueID)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve cidr range value %v", err)
+	}
 	if !ok || cidrValue == "" && r.installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1*time.Minute))) {
 		cidrValue = ""
 	}
-
 	cfgMap := &corev1.ConfigMap{}
 
 	if err := client.Get(ctx, k8sclient.ObjectKey{
