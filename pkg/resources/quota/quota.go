@@ -202,17 +202,14 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 		checkDeploymentConfigReplicas(t)
 		p.mutateReplicas(&t.Spec.Replicas, name)
 		p.mutatePodTemplate(t.Spec.Template, name)
-		break
 	case *appsv12.Deployment:
 		checkDeploymentReplicas(t)
 		p.mutateReplicas(t.Spec.Replicas, name)
 		p.mutatePodTemplate(&t.Spec.Template, name)
-		break
 	case *appsv12.StatefulSet:
 		checkStatefulSetReplicas(t)
 		p.mutateReplicas(t.Spec.Replicas, name)
 		p.mutatePodTemplate(&t.Spec.Template, name)
-		break
 	case *keycloak.Keycloak:
 		configReplicas := p.resourceConfigs[name].Replicas
 		if p.quota.isUpdated || t.Spec.Instances < int(configReplicas) {
@@ -225,7 +222,6 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 		checkResourceBlock(&t.Spec.KeycloakDeploymentSpec.Resources)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Requests, resources.Requests)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Limits, resources.Limits)
-		break
 	case *threescalev1.APIManager:
 		checkApiManager(t)
 
