@@ -194,10 +194,8 @@ func intervalToMinutes(interval string) (uint32, error) {
 	switch strings.ToLower(intervalUnit) {
 	case "m":
 		multiplier = 1
-		break
 	case "h":
 		multiplier = 60
-		break
 	default:
 		return 0, fmt.Errorf("invalid value for interval unit %s, must be m or h", intervalUnit)
 	}
