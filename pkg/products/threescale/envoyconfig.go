@@ -6,7 +6,6 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyratelimitconfigv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	reverseBridge "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_http1_reverse_bridge/v3"
 	lua "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
 	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
@@ -21,7 +20,7 @@ import (
 
 const (
 	ApicastContainerAddress  = "127.0.0.1"
-	ApicastContainerPort     = 8080
+	ApicastContainerPort     = 8444
 	ApicastClusterName       = "apicast-ratelimit"
 	ApicastNodeID            = "apicast-ratelimit"
 	ApicastEnvoyProxyAddress = "0.0.0.0"
@@ -154,22 +153,6 @@ func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: ratelimitSerial},
 	}
 
-	grpcReverseBridgeSerial, err := anypb.New(
-		&reverseBridge.FilterConfig{
-			ContentType:        "application/grpc",
-			WithholdGrpcFrames: false,
-		},
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert grpc reverse bridge filter for Apicast ratelimit envoy configuration")
-	}
-
-	var tsHTTPGrpcReverseBridgeFilter = hcm.HttpFilter{
-		Name:       "envoy.filters.http.grpc_http1_reverse_bridge",
-		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: grpcReverseBridgeSerial},
-	}
-
 	routerSerial, err := anypb.New(
 		&router.Router{},
 	)
@@ -185,7 +168,6 @@ func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 
 	httpFilters := []*hcm.HttpFilter{
 		&tsHTTPRateLimitFilter,
-		&tsHTTPGrpcReverseBridgeFilter,
 		&routerFiler,
 	}
 
