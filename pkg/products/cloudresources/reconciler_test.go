@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	routev1 "github.com/openshift/api/route/v1"
+
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
@@ -411,6 +413,107 @@ func TestReconciler_setPlatformStrategyName(t *testing.T) {
 			}
 			if r.Config.GetStrategiesConfigMapName() != tt.want {
 				t.Errorf("setPlatformStrategyName() got = %v, want %v", r.Config.GetStrategiesConfigMapName(), tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileCIDRValue(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx    context.Context
+		client client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "success reconciling cidr value - gcp",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme, &routev1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "console",
+						Namespace: "openshift-console",
+					},
+					Status: routev1.RouteStatus{
+						Ingress: []routev1.RouteIngress{
+							{
+								Host: "host",
+							},
+						},
+					},
+				},
+					&configv1.Infrastructure{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "cluster",
+						},
+						Status: configv1.InfrastructureStatus{
+							PlatformStatus: &configv1.PlatformStatus{
+								Type: configv1.GCPPlatformType,
+							},
+						},
+					},
+
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "addon-managed-api-service-parameters",
+							Namespace: "test",
+						},
+						Data: map[string][]byte{
+							"cidr-range-gcp": []byte("10.1.0.0/22"),
+						},
+					},
+				),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			if err := r.reconcileCIDRValue(tt.args.ctx, tt.args.client); (err != nil) != tt.wantErr {
+				t.Errorf("reconcileCIDRValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
