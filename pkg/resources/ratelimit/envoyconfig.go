@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	transport_sockets "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoyextentionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoy_runtime "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	marin3rv1alpha1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -30,6 +31,7 @@ const (
 	RateLimitClusterName     = "ratelimit"
 	RateLimitDomain          = "apicast-ratelimit"
 	RateLimitDescriptorValue = "slowpath"
+	TransportSocketName      = "envoy.transport_sockets.tls"
 )
 
 func DeleteEnvoyConfigsInNamespaces(ctx context.Context, client k8sclient.Client, namespaces ...string) (integreatlyv1alpha1.StatusPhase, error) {
@@ -285,6 +287,48 @@ func CreateRuntimesResource() *envoy_runtime.Runtime {
 	}
 
 	return envoyRuntime
+}
+
+/**
+    explicitHttpConfig:
+        http2ProtocolOptions: {}
+**/
+func CreateTypedExtensionProtocol() (*anypb.Any, error) {
+	serial, err := anypb.New(&envoyextentionv3.HttpProtocolOptions{
+		UpstreamProtocolOptions: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoyextentionv3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return serial, nil
+}
+
+/**
+    "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+    common_tls_context:
+            validation_context:
+                trust_chain_verification: ACCEPT_UNTRUSTED
+**/
+func CreateApicastTransportSocketConfig() (*anypb.Any, error) {
+	serial, err := anypb.New(&transport_sockets.UpstreamTlsContext{
+		CommonTlsContext: &transport_sockets.CommonTlsContext{
+			ValidationContextType: &transport_sockets.CommonTlsContext_ValidationContext{
+				ValidationContext: &transport_sockets.CertificateValidationContext{
+					TrustChainVerification: transport_sockets.CertificateValidationContext_ACCEPT_UNTRUSTED,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return serial, nil
 }
 
 func ResourcesToJSON(pb proto.Message) ([]byte, error) {

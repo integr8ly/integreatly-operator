@@ -8,6 +8,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	lua "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
 	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
+	router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -19,7 +20,7 @@ import (
 
 const (
 	ApicastContainerAddress  = "127.0.0.1"
-	ApicastContainerPort     = 8080
+	ApicastContainerPort     = 8444
 	ApicastClusterName       = "apicast-ratelimit"
 	ApicastNodeID            = "apicast-ratelimit"
 	ApicastEnvoyProxyAddress = "0.0.0.0"
@@ -106,6 +107,7 @@ var multiTenantRatelimitDescriptor = envoyroutev3.RateLimit{
 /**
  httpFilters:
 	- &tsHTTPRateLimitFilter
+	- name: envoy.filters.http.grpc_http1_reverse_bridge
 	- name: envoy.filters.http.router
 **/
 func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
@@ -122,7 +124,7 @@ func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 		       stage: 0
 		     name: envoy.envoy.filters.http.ratelimit
 	*/
-	serial, err := anypb.New(
+	ratelimitSerial, err := anypb.New(
 		&envoyratelimitv3.RateLimit{
 			Domain: ratelimit.RateLimitDomain,
 			Stage:  0,
@@ -148,14 +150,25 @@ func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 
 	var tsHTTPRateLimitFilter = hcm.HttpFilter{
 		Name:       "envoy.filters.http.ratelimit",
-		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: serial},
+		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: ratelimitSerial},
+	}
+
+	routerSerial, err := anypb.New(
+		&router.Router{},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert router filter for Apicast ratelimit envoy configuration")
+	}
+
+	var routerFiler = hcm.HttpFilter{
+		Name:       "envoy.filters.http.router",
+		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: routerSerial},
 	}
 
 	httpFilters := []*hcm.HttpFilter{
 		&tsHTTPRateLimitFilter,
-		{
-			Name: "envoy.filters.http.router",
-		},
+		&routerFiler,
 	}
 
 	return httpFilters, nil
@@ -377,6 +390,8 @@ func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHo
                name: local_route
 			   virtualHosts: virtualHosts
 			statPrefix: ingress_http
+			httpProtocolOptions:
+				enableTrailers: true
 **/
 func getListenerResourceFilters(virtualHosts []*envoyroutev3.VirtualHost, httpFilters []*hcm.HttpFilter) ([]*envoylistenerv3.Filter, error) {
 	manager := &hcm.HttpConnectionManager{
@@ -387,6 +402,9 @@ func getListenerResourceFilters(virtualHosts []*envoyroutev3.VirtualHost, httpFi
 				Name:         "local_route",
 				VirtualHosts: virtualHosts,
 			},
+		},
+		HttpProtocolOptions: &envoycorev3.Http1ProtocolOptions{
+			EnableTrailers: true,
 		},
 		HttpFilters: httpFilters,
 	}

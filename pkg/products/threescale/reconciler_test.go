@@ -25,6 +25,7 @@ import (
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
@@ -52,7 +53,6 @@ import (
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
 	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -2160,7 +2160,34 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 							Name:      apiManagerName,
 							Namespace: "test",
 						},
-					}),
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-staging",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+				),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -2182,7 +2209,34 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 							Namespace:   "test",
 							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "true"},
 						},
-					}),
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-staging",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+				),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
 			wantErr: false,
@@ -2204,9 +2258,94 @@ func TestReconcileRatelimitPortAnnotation(t *testing.T) {
 							Namespace:   "test",
 							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "false"},
 						},
-					}),
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-staging",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: "test",
+						},
+						Spec: corev1.ServiceSpec{
+							Ports: []corev1.ServicePort{
+								{
+									Name: "httpsproxy",
+								},
+							},
+						},
+					},
+				),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "No httpsproxy status completed",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				installation: getTestInstallation("managed"),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: utils.NewTestClient(scheme,
+					&threescalev1.APIManager{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        apiManagerName,
+							Namespace:   "test",
+							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "false"},
+						},
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-staging",
+							Namespace: "test",
+						},
+					},
+					&corev1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "apicast-production",
+							Namespace: "test",
+						},
+					},
+				),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "No services - awaiting components",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				installation: getTestInstallation("managed"),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: utils.NewTestClient(scheme,
+					&threescalev1.APIManager{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        apiManagerName,
+							Namespace:   "test",
+							Annotations: map[string]string{"apps.3scale.net/disable-apicast-service-reconciler": "false"},
+						},
+					},
+				),
+			},
+			want:    integreatlyv1alpha1.PhaseAwaitingComponents,
 			wantErr: false,
 		},
 	}
