@@ -643,11 +643,7 @@ func (r *RateLimitServiceReconciler) differentLimitSettings(redisLimits []limita
 	sortByNamespaceAndMaxValue(redisLimits)
 	sortByNamespaceAndMaxValue(currentLimits)
 
-	if !reflect.DeepEqual(redisLimits, currentLimits) {
-		return true
-	}
-
-	return false
+	return !reflect.DeepEqual(redisLimits, currentLimits)
 }
 
 func sortByNamespaceAndMaxValue(elems []limitadorLimit) {
