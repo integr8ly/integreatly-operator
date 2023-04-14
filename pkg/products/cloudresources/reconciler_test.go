@@ -4,14 +4,11 @@ import (
 	"context"
 	"testing"
 
-	routev1 "github.com/openshift/api/route/v1"
-
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -50,7 +47,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    v1alpha1.StatusPhase
+		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
 		{
@@ -125,7 +122,7 @@ func TestReconciler_removeSnapshots(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    v1alpha1.StatusPhase
+		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
 		{
@@ -443,7 +440,129 @@ func TestReconciler_reconcileCIDRValue(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "success reconciling cidr value - aws",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
+						},
+					),
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      croAWS.DefaultConfigMapName,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							"_network": `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "","createStrategy": {}, "deleteStrategy": {} }}`,
+						},
+					},
+				),
+			},
+			wantErr: false,
+		},
+		{
 			name: "success reconciling cidr value - gcp",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croGCP.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.GCPPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyGcp: []byte("10.1.0.0/22"),
+						},
+					),
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      croGCP.DefaultConfigMapName,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							"_network": `{"development": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }}`,
+						},
+					},
+				),
+			},
+			wantErr: false,
+		},
+		{
+			name: "error determining platform type",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error unsupported platform type",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AzurePlatformType),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error retrieving cidr range value",
 			fields: fields{
 				Config:        nil,
 				ConfigManager: nil,
@@ -463,42 +582,88 @@ func TestReconciler_reconcileCIDRValue(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				client: moqclient.NewSigsClientMoqWithScheme(scheme, &routev1.Route{
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error retrieving strategy config map",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "console",
-						Namespace: "openshift-console",
+						Name:      "managed-api",
+						Namespace: "test",
 					},
-					Status: routev1.RouteStatus{
-						Ingress: []routev1.RouteIngress{
-							{
-								Host: "host",
-							},
-						},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
 					},
 				},
-					&configv1.Infrastructure{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "cluster",
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
 						},
-						Status: configv1.InfrastructureStatus{
-							PlatformStatus: &configv1.PlatformStatus{
-								Type: configv1.GCPPlatformType,
-							},
-						},
+					),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error decoding strategy config",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
 					},
-
-					&corev1.Secret{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
+						},
+					),
+					&corev1.ConfigMap{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "addon-managed-api-service-parameters",
+							Name:      croAWS.DefaultConfigMapName,
 							Namespace: "test",
 						},
-						Data: map[string][]byte{
-							"cidr-range-gcp": []byte("10.1.0.0/22"),
+						Data: map[string]string{
+							"_network": "invalid json",
 						},
 					},
 				),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

@@ -55,6 +55,8 @@ const (
 	MaintenanceHour              = "maintenance-hour"
 	DefaultMaintenanceDay        = time.Thursday
 	DefaultMaintenanceHour       = 2
+	cidrRangeKeyAws              = "cidr-range"
+	cidrRangeKeyGcp              = "cidr-range-gcp"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001"}
@@ -518,7 +520,7 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
 	}
 
-	for tier, _ := range strategyConfig {
+	for tier := range strategyConfig {
 		deleteStrategyJSON, err := json.Marshal(deleteStrategy)
 		if err != nil {
 			return err
@@ -595,9 +597,9 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 	}
 	switch platformType {
 	case configv1.AWSPlatformType:
-		cidrValueID = "cidr-range"
+		cidrValueID = cidrRangeKeyAws
 	case configv1.GCPPlatformType:
-		cidrValueID = "cidr-range-gcp"
+		cidrValueID = cidrRangeKeyGcp
 	default:
 		return fmt.Errorf("unsupported platform type %s", platformType)
 	}
@@ -648,7 +650,7 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		network[croUtil.TierProduction].CreateStrategy.CidrBlock = ""
 	}
 
-	for key, _ := range network {
+	for key := range network {
 		network[key].CreateStrategy.CidrBlock = cidrValue
 	}
 

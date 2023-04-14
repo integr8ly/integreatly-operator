@@ -44,5 +44,8 @@ func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtim
 		StatusFunc: func() k8sclient.StatusWriter {
 			return sigsClient.Status()
 		},
+		PatchFunc: func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
+			return sigsClient.Patch(ctx, obj, patch, opts...)
+		},
 	}
 }
