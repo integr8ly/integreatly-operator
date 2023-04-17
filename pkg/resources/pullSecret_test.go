@@ -65,7 +65,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 				s := &corev1.Secret{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: testDestinationSecretName, Namespace: testDestinationNameSpace}, s)
 
-				if bytes.Compare(s.Data["test"], defPullSecret.Data["test"]) != 0 {
+				if !bytes.Equal(s.Data["test"], defPullSecret.Data["test"]) {
 					t.Fatalf("expected data %v, but got %v", defPullSecret.Data["test"], s.Data["test"])
 				}
 			},

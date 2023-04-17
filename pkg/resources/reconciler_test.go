@@ -368,7 +368,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
+				if !bytes.Equal(s.Data["test"], customPullSecret.Data["test"]) {
 					return fmt.Errorf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"])
 				}
 				return nil
