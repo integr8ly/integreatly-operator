@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -48,7 +47,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    v1alpha1.StatusPhase
+		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
 		{
@@ -123,7 +122,7 @@ func TestReconciler_removeSnapshots(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    v1alpha1.StatusPhase
+		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
 		{
@@ -411,6 +410,275 @@ func TestReconciler_setPlatformStrategyName(t *testing.T) {
 			}
 			if r.Config.GetStrategiesConfigMapName() != tt.want {
 				t.Errorf("setPlatformStrategyName() got = %v, want %v", r.Config.GetStrategiesConfigMapName(), tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileCIDRValue(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type fields struct {
+		Config        *config.CloudResources
+		ConfigManager config.ConfigReadWriter
+		installation  *integreatlyv1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           logger.Logger
+		Reconciler    *resources.Reconciler
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx    context.Context
+		client client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "success reconciling cidr value - aws",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
+						},
+					),
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      croAWS.DefaultConfigMapName,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							"_network": `{"development": { "region": "", "_network": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "_network": "","createStrategy": {}, "deleteStrategy": {} }}`,
+						},
+					},
+				),
+			},
+			wantErr: false,
+		},
+		{
+			name: "success reconciling cidr value - gcp",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croGCP.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.GCPPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyGcp: []byte("10.1.0.0/22"),
+						},
+					),
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      croGCP.DefaultConfigMapName,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							"_network": `{"development": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }, "production": { "region": "", "projectID": "", "createStrategy": {}, "deleteStrategy": {} }}`,
+						},
+					},
+				),
+			},
+			wantErr: false,
+		},
+		{
+			name: "error determining platform type",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error unsupported platform type",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation:  nil,
+				mpm:           nil,
+				log:           logger.Logger{},
+				Reconciler:    nil,
+				recorder:      nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AzurePlatformType),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error retrieving cidr range value",
+			fields: fields{
+				Config:        nil,
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error retrieving strategy config map",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
+						},
+					),
+				),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error decoding strategy config",
+			fields: fields{
+				Config: config.NewCloudResources(config.ProductConfig{
+					"STRATEGIES_CONFIG_MAP_NAME": croAWS.DefaultConfigMapName,
+				}),
+				ConfigManager: nil,
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-api",
+						Namespace: "test",
+					},
+					Spec: integreatlyv1alpha1.RHMISpec{
+						Type: "managed-api",
+					},
+				},
+				mpm:        nil,
+				log:        logger.Logger{},
+				Reconciler: nil,
+				recorder:   nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: moqclient.NewSigsClientMoqWithScheme(scheme,
+					clusterInfrastructure(configv1.AWSPlatformType),
+					addonParamsSecret("test",
+						map[string][]byte{
+							cidrRangeKeyAws: []byte("10.1.0.0/26"),
+						},
+					),
+					&corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      croAWS.DefaultConfigMapName,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							"_network": "invalid json",
+						},
+					},
+				),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Config:        tt.fields.Config,
+				ConfigManager: tt.fields.ConfigManager,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				Reconciler:    tt.fields.Reconciler,
+				recorder:      tt.fields.recorder,
+			}
+			if err := r.reconcileCIDRValue(tt.args.ctx, tt.args.client); (err != nil) != tt.wantErr {
+				t.Errorf("reconcileCIDRValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -55,6 +55,8 @@ const (
 	MaintenanceHour              = "maintenance-hour"
 	DefaultMaintenanceDay        = time.Thursday
 	DefaultMaintenanceHour       = 2
+	cidrRangeKeyAws              = "cidr-range"
+	cidrRangeKeyGcp              = "cidr-range-gcp"
 )
 
 var redisServiceUpdatesToInstall = []string{"elasticache-20210615-002", "elasticache-redis-6-2-6-update-20230109", "elasticache-20230315-001"}
@@ -518,7 +520,7 @@ func overrideStrategyConfig(resourceType string, croStrategyConfig *corev1.Confi
 		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
 	}
 
-	for tier, _ := range strategyConfig {
+	for tier := range strategyConfig {
 		deleteStrategyJSON, err := json.Marshal(deleteStrategy)
 		if err != nil {
 			return err
@@ -588,15 +590,27 @@ func (r *Reconciler) addServiceUpdates(ctx context.Context, client k8sclient.Cli
 // parameter. If the value has already been set, or if the secret is not found,
 // it does nothing
 func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Client) error {
-	cidrValue, ok, err := addon.GetStringParameter(ctx, client, r.installation.Namespace, "cidr-range")
+	cidrValueID := ""
+	platformType, err := cluster.GetPlatformType(ctx, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to retrieve platform type %v", err)
+	}
+	switch platformType {
+	case configv1.AWSPlatformType:
+		cidrValueID = cidrRangeKeyAws
+	case configv1.GCPPlatformType:
+		cidrValueID = cidrRangeKeyGcp
+	default:
+		return fmt.Errorf("unsupported platform type %s", platformType)
 	}
 
+	cidrValue, ok, err := addon.GetStringParameter(ctx, client, r.installation.Namespace, cidrValueID)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve cidr range value %v", err)
+	}
 	if !ok || cidrValue == "" && r.installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1*time.Minute))) {
 		cidrValue = ""
 	}
-
 	cfgMap := &corev1.ConfigMap{}
 
 	if err := client.Get(ctx, k8sclient.ObjectKey{
@@ -636,7 +650,7 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		network[croUtil.TierProduction].CreateStrategy.CidrBlock = ""
 	}
 
-	for key, _ := range network {
+	for key := range network {
 		network[key].CreateStrategy.CidrBlock = cidrValue
 	}
 
