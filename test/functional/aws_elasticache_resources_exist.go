@@ -88,8 +88,5 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 
 // helper method for verifying nodes are in different availability zones
 func verifyMultiAZ(member []*elasticache.NodeGroupMember) bool {
-	if member[0].PreferredAvailabilityZone == member[1].PreferredAvailabilityZone {
-		return false
-	}
-	return true
+	return member[0].PreferredAvailabilityZone != member[1].PreferredAvailabilityZone
 }
