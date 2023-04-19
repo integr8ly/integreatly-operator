@@ -5,6 +5,6 @@
 <!-- describe a summary of the change, add any additional motivation and context as needed -->
 
 # Verification steps
-<!-- describe verification steps with sufficient level of detail -->
-<!-- take into consideration upgrade scenario, RHMI 2.x, etc. -->
+<!-- Add thorough verification steps with sufficient level of detail for those without context to verify the change-->
+<!-- AND Add thorough upgrade verification steps OR include a reason as to why it is not required -->
 <!-- OR state "Not applicable" or "N/A" if your type of change doesn't require verification -->
