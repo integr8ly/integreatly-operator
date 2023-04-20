@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -26,8 +27,6 @@ import (
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-
-	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"

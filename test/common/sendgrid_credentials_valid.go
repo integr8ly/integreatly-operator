@@ -4,14 +4,14 @@ import (
 	"crypto/tls"
 	"net/smtp"
 
-	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 )
 
 func TestSendgridCredentialsAreValid(t TestingTB, ctx *TestingContext) {
 
 	// Get SMTP secret from rhmi-operator namespace
 	kc := ctx.KubeClient
-	smtpSecret, err := resources.GetSMTPSecret(kc, RHOAMOperatorNamespace, SMTPSecretName)
+	smtpSecret, err := utils.GetSMTPSecret(kc, RHOAMOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		t.Fatal("Failed to get an SMTP secret", err)
 	}

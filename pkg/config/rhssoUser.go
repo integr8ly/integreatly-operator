@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/utils"
 )
 
 type RHSSOUser struct {
@@ -51,7 +51,7 @@ func (r *RHSSOUser) Validate() error {
 }
 
 func (r *RHSSOUser) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) int {
-	if testResources.RunningInProw(inst) {
+	if utils.RunningInProw(inst) {
 		return 1
 	}
 	return 3

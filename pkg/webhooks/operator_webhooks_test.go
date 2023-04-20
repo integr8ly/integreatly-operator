@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"

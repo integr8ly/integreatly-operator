@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	"golang.org/x/net/context"
@@ -13,11 +14,9 @@ import (
 	k8sError "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -354,7 +353,7 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 
 	var rhssoExpectedReplicas int32 = 2
 	var rhssoUserExpectedReplicas int32 = 3
-	if resources.RunningInProw(rhmi) {
+	if utils.RunningInProw(rhmi) {
 		rhssoExpectedReplicas = 1
 		rhssoUserExpectedReplicas = 1
 	}

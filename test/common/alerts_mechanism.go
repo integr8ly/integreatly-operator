@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/test/utils"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,7 +125,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("secret key is undefined in pager duty secret")
 	}
 
-	smtp, err := resources.GetSMTPSecret(kubeClient, RHOAMOperatorNamespace, SMTPSecretName)
+	smtp, err := utils.GetSMTPSecret(kubeClient, RHOAMOperatorNamespace, SMTPSecretName)
 	if err != nil {
 		return err
 	}
