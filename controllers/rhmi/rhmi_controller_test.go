@@ -89,8 +89,11 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 				productsInstallationLoader: tt.fields.productsInstallationLoader,
 			}
 
-			configManager, _ := config.NewManager(context.TODO(), tt.fields.Client, resourceName, resourceName, tt.args.installation)
-
+			configManager, err := config.NewManager(context.TODO(), tt.fields.Client, resourceName, resourceName, tt.args.installation)
+			if err != nil {
+				t.Errorf("failed to create manager with error: %v", err)
+				return
+			}
 			got, err := r.getAlertingNamespace(tt.args.installation, configManager)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getAlertingNamespace() error = %v, wantErr %v", err, tt.wantErr)

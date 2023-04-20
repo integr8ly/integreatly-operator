@@ -33,7 +33,11 @@ func TestSSOconfig(t TestingTB, ctx *TestingContext) {
 
 	// get Keycloak pods
 	keycloakPods := &v1.PodList{}
-	selector, _ := labels.Parse("component=keycloak")
+	selector, err := labels.Parse("component=keycloak")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	keycloakListOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(RHSSOUserProductNamespace),
 		k8sclient.MatchingLabelsSelector{

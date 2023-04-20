@@ -767,7 +767,10 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		Kind:    "PrometheusRule",
 		Version: "v1",
 	})
-	ls, _ := labels.Parse("integreatly=yes")
+	ls, err := labels.Parse("integreatly=yes")
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	if err := r.Client.List(context.TODO(), alerts, &k8sclient.ListOptions{
 		LabelSelector: ls,
 	}); err != nil {
@@ -982,7 +985,11 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
 		installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
 		installation.Status.PreflightMessage = "Spec.useClusterStorage must be set to either 'true' or 'false' to continue"
-		_ = r.Status().Update(context.TODO(), installation)
+		err := r.Status().Update(context.TODO(), installation)
+		if err != nil {
+			log.Infof("error updating status", l.Fields{"error": err.Error()})
+			return result, err
+		}
 		log.Warning("preflight checks failed on useClusterStorage value")
 		return result, nil
 	}
@@ -1005,7 +1012,11 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 
 			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = preflightMessage
-			_ = r.Status().Update(context.TODO(), installation)
+			err = r.Status().Update(context.TODO(), installation)
+			if err != nil {
+				log.Infof("error updating status", l.Fields{"error": err.Error()})
+				return ctrl.Result{}, err
+			}
 
 			return ctrl.Result{}, err
 		}
@@ -1062,7 +1073,11 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 
 			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = preflightMessage
-			_ = r.Status().Update(context.TODO(), installation)
+			err = r.Status().Update(context.TODO(), installation)
+			if err != nil {
+				log.Infof("error updating status", l.Fields{"error": err.Error()})
+				return result, err
+			}
 
 			return result, nil
 		}
@@ -1089,7 +1104,11 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(nsProducts, ", ") + ", in namespace: " + ns.GetName()
 			log.Info("found conflicting packages: " + strings.Join(nsProducts, ", ") + ", in namespace: " + ns.GetName())
-			_ = r.Status().Update(context.TODO(), installation)
+			err = r.Status().Update(context.TODO(), installation)
+			if err != nil {
+				log.Infof("error updating status", l.Fields{"error": err.Error()})
+				return result, err
+			}
 			return result, err
 		}
 	}
@@ -1122,9 +1141,12 @@ func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installa
 		return foundProducts, nil
 	}
 	// new client to avoid caching issues
-	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{
+	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{
 		Scheme: r.mgr.GetScheme(),
 	})
+	if err != nil {
+		return foundProducts, err
+	}
 	for _, stage := range installationType.InstallStages {
 		for _, product := range stage.Products {
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, log, r.productsInstallationLoader)

@@ -851,6 +851,10 @@ func assertStatusCode(expected int, res *http.Response) error {
 		return nil
 	}
 
-	body, _ := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
 	return fmt.Errorf("unexpected status code: %d. Body: %s", res.StatusCode, string(body))
 }

@@ -141,7 +141,12 @@ func (awr AdmissionWebhookRegister) RegisterToBuilder(bldr *builder.WebhookBuild
 
 // RegisterToServer regsiters the webhook to the path of `awr`
 func (awr AdmissionWebhookRegister) RegisterToServer(scheme *runtime.Scheme, srv *webhook.Server) {
-	_ = awr.Hook.InjectScheme(scheme)
+	err := awr.Hook.InjectScheme(scheme)
+	if err != nil {
+		fmt.Printf("failed to inject scheme into the webhook with error: %v", err)
+		return
+	}
+
 	srv.Register(awr.Path, awr.Hook)
 }
 

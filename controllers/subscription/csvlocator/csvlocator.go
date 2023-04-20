@@ -109,7 +109,11 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 				if err != nil {
 					return nil, err
 				}
-				result, _ := ioutil.ReadAll(reader)
+
+				result, err := ioutil.ReadAll(reader)
+				if err != nil {
+					return nil, err
+				}
 
 				csvCandidate, err := getCSVfromCM(&csvStr, string(result))
 				if csvCandidate == nil {

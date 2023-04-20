@@ -250,7 +250,10 @@ func getKeycloakToken(httpClient *http.Client, host string, options keycloakToke
 	}
 	defer getKeycloakOpenIDTokenRes.Body.Close()
 	if getKeycloakOpenIDTokenRes.StatusCode != http.StatusOK {
-		dumpRes, _ := httputil.DumpResponse(getKeycloakOpenIDTokenRes, true)
+		dumpRes, err := httputil.DumpResponse(getKeycloakOpenIDTokenRes, true)
+		if err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf("dump response: %q", dumpRes)
 	}
 	getKeycloakAccessTokenResBody, err := ioutil.ReadAll(getKeycloakOpenIDTokenRes.Body)
@@ -334,7 +337,10 @@ func getKeycloakUsers(httpClient *http.Client, host, token string, options keycl
 		case http.StatusUnauthorized:
 			return nil, fmt.Errorf("unauthorized to retrieve Keycloak users")
 		default:
-			dumpRes, _ := httputil.DumpResponse(getKeycloakUsersRes, true)
+			dumpRes, err := httputil.DumpResponse(getKeycloakUsersRes, true)
+			if err != nil {
+				return nil, err
+			}
 			return nil, fmt.Errorf("dump response: %q", dumpRes)
 		}
 	}
@@ -375,7 +381,10 @@ func createKeycloakUser(httpClient *http.Client, host, realmName, token string, 
 		case http.StatusUnauthorized:
 			return fmt.Errorf("unauthorized to create a Keycloak user")
 		default:
-			dumpRes, _ := httputil.DumpResponse(createKeycloakUserRes, true)
+			dumpRes, err := httputil.DumpResponse(createKeycloakUserRes, true)
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("dump response: %q", dumpRes)
 		}
 	}
@@ -413,7 +422,10 @@ func getKeycloakUserGroups(httpClient *http.Client, host, token string, options 
 		case http.StatusUnauthorized:
 			return nil, fmt.Errorf("unauthorized to retrieve Keycloak user groups")
 		default:
-			dumpRes, _ := httputil.DumpResponse(getKeycloakUserGroupsRes, true)
+			dumpRes, err := httputil.DumpResponse(getKeycloakUserGroupsRes, true)
+			if err != nil {
+				return nil, err
+			}
 			return nil, fmt.Errorf("dump response: %q", dumpRes)
 		}
 	}

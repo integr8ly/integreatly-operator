@@ -3,6 +3,7 @@ package resources
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math/big"
 	mathrand "math/rand"
@@ -42,25 +43,41 @@ func GenerateRandomPassword(passwordLength, minSpecialChar, minNum, minUpperCase
 
 	//Set special character
 	for i := 0; i < minSpecialChar; i++ {
-		random, _ := rand.Int(rand.Reader, big.NewInt(int64(len(specialCharSet))))
+		random, err := rand.Int(rand.Reader, big.NewInt(int64(len(specialCharSet))))
+		if err != nil {
+			fmt.Printf("failed to generate password while setting special character with error: %v", err)
+			return ""
+		}
 		password.WriteString(string(specialCharSet[random.Int64()]))
 	}
 
 	//Set numeric
 	for i := 0; i < minNum; i++ {
-		random, _ := rand.Int(rand.Reader, big.NewInt(int64(len(numberSet))))
+		random, err := rand.Int(rand.Reader, big.NewInt(int64(len(numberSet))))
+		if err != nil {
+			fmt.Printf("failed to generate password while setting numeric with error: %v", err)
+			return ""
+		}
 		password.WriteString(string(numberSet[random.Int64()]))
 	}
 
 	//Set uppercase
 	for i := 0; i < minUpperCase; i++ {
-		random, _ := rand.Int(rand.Reader, big.NewInt(int64(len(upperCharSet))))
+		random, err := rand.Int(rand.Reader, big.NewInt(int64(len(upperCharSet))))
+		if err != nil {
+			fmt.Printf("failed to generate password while setting uppercase with error: %v", err)
+			return ""
+		}
 		password.WriteString(string(upperCharSet[random.Int64()]))
 	}
 
 	remainingLength := passwordLength - minSpecialChar - minNum - minUpperCase
 	for i := 0; i < remainingLength; i++ {
-		random, _ := rand.Int(rand.Reader, big.NewInt(int64(len(allCharSet))))
+		random, err := rand.Int(rand.Reader, big.NewInt(int64(len(allCharSet))))
+		if err != nil {
+			fmt.Printf("failed to generate password with error: %v", err)
+			return ""
+		}
 		password.WriteString(string(allCharSet[random.Int64()]))
 	}
 	inRune := []rune(password.String())

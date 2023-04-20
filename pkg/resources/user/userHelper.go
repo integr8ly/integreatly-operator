@@ -62,7 +62,11 @@ func AppendUpdateProfileActionForUserWithoutEmail(keycloakUser *keycloak.Keycloa
 
 func GetValidGeneratedUserName(keycloakUser keycloak.KeycloakAPIUser) string {
 	// Regex for only alphanumeric values
-	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+	if err != nil {
+		fmt.Printf("failed to compile regex for alphanumeric values with error %v", err)
+		return ""
+	}
 
 	// Replace all non-alphanumeric values with the replacement character
 	processedString := reg.ReplaceAllString(strings.ToLower(keycloakUser.UserName), invalidCharacterReplacement)
@@ -282,7 +286,11 @@ func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
 
 func SanitiseTenantUserName(username string) string {
 	// Regex for only alphanumeric values
-	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+	if err != nil {
+		fmt.Printf("failed to compile regex for alphanumeric values with error %v", err)
+		return ""
+	}
 
 	// Replace all non-alphanumeric values with the replacement character
 	processedString := reg.ReplaceAllString(strings.ToLower(username), invalidCharacterReplacement)

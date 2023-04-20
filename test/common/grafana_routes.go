@@ -176,7 +176,10 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 	defer dashboardResp.Body.Close()
 	//there is an existing dashboard check, so confirm a valid response structure
 	if dashboardResp.StatusCode != http.StatusOK {
-		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
+		dumpResp, err := httputil.DumpResponse(dashboardResp, true)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("dumpResp: %q", dumpResp)
 		// To unskip: https://issues.redhat.com/browse/MGDAPI-5378
 		//t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)

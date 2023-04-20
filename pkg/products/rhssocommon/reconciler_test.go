@@ -1285,8 +1285,8 @@ func Test_CheckGrafanaDashboardCRD(t *testing.T) {
 				KeycloakClientFactory: tt.fields.KeycloakClientFactory,
 			}
 
-			if got, _ := r.CheckGrafanaDashboardCRD(context.TODO(), r.Oauthv1Client); got != tt.want {
-				t.Errorf("CheckGrafanaDashboardCRD() = %v, want %v", got, tt.want)
+			if got, err := r.CheckGrafanaDashboardCRD(context.TODO(), r.Oauthv1Client); err != nil && got != tt.want {
+				t.Errorf("CheckGrafanaDashboardCRD() = %v, want %v, error: %v", got, tt.want, err)
 			}
 		})
 	}

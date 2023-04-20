@@ -79,7 +79,11 @@ func getMockAlertManagerSecret() map[string][]byte {
 		"DeadMansSnitchURL":     "DeadMansSnitchURL",
 		"Subject":               "Subject",
 	})
-	configSecretData, _ := templateUtil.LoadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
+	configSecretData, err := templateUtil.LoadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
+	if err != nil {
+		fmt.Printf("error loading template for mock alertmanager secret %v", err)
+		return nil
+	}
 
 	return map[string][]byte{
 		"alertmanager.yaml": configSecretData,

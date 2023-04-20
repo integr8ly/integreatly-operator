@@ -55,7 +55,10 @@ func GetAddonParametersSecret(ctx context.Context, client k8sclient.Client, name
 		parametersSecretName = subscriptions.Items[0].Name + "-parameters"
 
 		// catch olm and sandbox installations
-		hasAddonPrefix, _ := regexp.MatchString("^addon-*", parametersSecretName)
+		hasAddonPrefix, err := regexp.MatchString("^addon-*", parametersSecretName)
+		if err != nil {
+			return nil, err
+		}
 		if !hasAddonPrefix {
 			parametersSecretName = "addon-" + parametersSecretName
 		}

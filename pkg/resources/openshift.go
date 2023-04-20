@@ -74,8 +74,17 @@ func setIntegreatlyLabel(u *unstructured.Unstructured) {
 
 func init() {
 	codecsScheme := runtime.NewScheme()
-	_ = scheme.AddToScheme(codecsScheme)
-	_ = v1alpha1.AddToSchemes.AddToScheme(codecsScheme)
+	err := scheme.AddToScheme(codecsScheme)
+	if err != nil {
+		fmt.Printf("failed adding to scheme with error: %v", err)
+		return
+	}
+
+	err = v1alpha1.AddToSchemes.AddToScheme(codecsScheme)
+	if err != nil {
+		fmt.Printf("failed adding to scheme with error: %v", err)
+		return
+	}
 
 	codecs = serializer.NewCodecFactory(codecsScheme)
 }

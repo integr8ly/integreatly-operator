@@ -804,7 +804,10 @@ func (r *Reconciler) getBlackboxExporterServiceAccountToken(ctx context.Context,
 	// Get secret containing bearer token from the blackbox-exporter ServiceAccount
 	secretName := ""
 	for _, secret := range sa.Secrets {
-		if res, _ := regexp.MatchString(fmt.Sprintf("%s-token", blackboxExporterPrefix), secret.Name); res {
+		if res, err := regexp.MatchString(fmt.Sprintf("%s-token", blackboxExporterPrefix), secret.Name); err != nil {
+			r.log.Error("Failed to get secret containing bearer token from blackbox-exporter ServiceAccount", err)
+			return ""
+		} else if res {
 			secretName = secret.Name
 		}
 	}

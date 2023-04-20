@@ -321,7 +321,11 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 		Value: string(dataValue),
 	}}
 
-	payloadBytes, _ := json.Marshal(payload)
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
 	_, err = clientset.
 		CoreV1().
 		ConfigMaps(request.NamespacedName.Name).

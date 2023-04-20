@@ -47,7 +47,11 @@ func (e *EnqueueIntegreatlyOwner) Generic(evt event.GenericEvent, q workqueue.Ra
 }
 
 func (e *EnqueueIntegreatlyOwner) getIntegreatlyOwner(object metav1.Object) (reconcile.Request, error) {
-	typeObj, _ := meta.TypeAccessor(object)
+	typeObj, err := meta.TypeAccessor(object)
+	if err != nil {
+		return reconcile.Request{}, err
+	}
+
 	ant := object.GetAnnotations()
 	if ns, ok := ant[IntegreatlyOwnerNamespace]; ok {
 		if name, ok := ant[IntegreatlyOwnerName]; ok {

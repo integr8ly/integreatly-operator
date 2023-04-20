@@ -947,7 +947,11 @@ func validateTestUser(ctx *TestingContext, rhmi *integreatlyv1alpha1.RHMI, usern
 	}
 
 	// CreateOrUpdate KeycloakUser for validated username
-	userNumber, _ := strconv.Atoi(strings.TrimPrefix(usernameToCheck, "test-user"))
+	userNumber, err := strconv.Atoi(strings.TrimPrefix(usernameToCheck, "test-user"))
+	if err != nil {
+		return "", "", err
+	}
+
 	testUsers := []TestUser{
 		{
 			UserName:  usernameToCheck,
@@ -985,7 +989,11 @@ func is3scaleLoginFailed(t TestingTB, tsHost string, client *http.Client) error 
 	browser.SetTransport(client.Transport)
 	browser.SetAttribute(brow.FollowRedirects, true)
 
-	_ = browser.Open(tsLoginURL)
+	err = browser.Open(tsLoginURL)
+	if err != nil {
+		return err
+	}
+
 	statusCode := browser.StatusCode()
 
 	if statusCode != 404 {

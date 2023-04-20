@@ -275,15 +275,27 @@ func ReadAndFormatManifestYamlFile(path string) (string, error) {
 
 // Gets the version number from the package yaml string
 func GetCurrentCSVFromManifest(packageYaml string) (string, error) {
-	r, _ := regexp.Compile(`[a-zA-Z]\.[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)($|\n)`)
+	r, err := regexp.Compile(`[a-zA-Z]\.[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)($|\n)`)
+	if err != nil {
+		return "", err
+	}
 	matches := r.FindStringSubmatch(packageYaml)
 	if len(matches) < 5 {
 		return "", errors.New("invalid csv version from manifest package")
 	}
 
-	major, _ := strconv.Atoi(matches[1])
-	minor, _ := strconv.Atoi(matches[2])
-	patch, _ := strconv.Atoi(matches[4])
+	major, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return "", err
+	}
+	minor, err := strconv.Atoi(matches[2])
+	if err != nil {
+		return "", err
+	}
+	patch, err := strconv.Atoi(matches[4])
+	if err != nil {
+		return "", err
+	}
 
 	return fmt.Sprintf("%d.%d.%d", major, minor, patch), nil
 }

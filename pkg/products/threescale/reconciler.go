@@ -1636,7 +1636,11 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, _ *integreatly
 	}
 
 	for _, kcUser := range added {
-		user, _ := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
+		user, err := r.tsClient.GetUser(strings.ToLower(kcUser.UserName), *accessToken)
+		if err != nil {
+			r.log.Error("Failed to get user", err)
+		}
+
 		// recheck the user is new.
 		// 3scale user may being update during the update phase
 		if user == nil {
@@ -3295,10 +3299,13 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 	}
 
 	// apicast listener
-	apiCastFilters, _ := getListenerResourceFilters(
+	apiCastFilters, err := getListenerResourceFilters(
 		getAPICastVirtualHosts(installation, ApicastClusterName),
 		apicastHTTPFilters,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	apiCastListenerResource := ratelimit.CreateListenerResource(
 		ApicastListenerName,
@@ -3325,12 +3332,18 @@ func (r *Reconciler) reconcileRatelimitingTo3scaleComponents(ctx context.Context
 		BackendContainerPort,
 	)
 
-	backendHTTPFilters, _ := getBackendListenerHTTPFilters()
+	backendHTTPFilters, err := getBackendListenerHTTPFilters()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	// backend listener listener
-	backendFilters, _ := getListenerResourceFilters(
+	backendFilters, err := getListenerResourceFilters(
 		getBackendListenerVitualHosts(BackendClusterName),
 		backendHTTPFilters,
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	backendListenerResource := ratelimit.CreateListenerResource(
 		BackendListenerName,
 		BackendEnvoyProxyAddress,
