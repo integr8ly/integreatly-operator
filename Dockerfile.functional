@@ -3,20 +3,30 @@ FROM registry.ci.openshift.org/openshift/release:golang-1.18 AS builder
 ENV PKG=/go/src/github.com/integr8ly/integreatly-operator/
 WORKDIR ${PKG}
 
-# compile test binary
+# Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
+COPY go.work go.work
 COPY vendor ./vendor
-COPY make ./make
+COPY test ./test
+
+# cache deps before building and copying source so that we don't need to re-download as much
+# and so that source changes don't invalidate our downloaded layer
+RUN go mod download
+
+# Copy the go source
 COPY apis/ apis/
 COPY controllers/ controllers/
 COPY pkg ./pkg
-COPY test ./test
-COPY Makefile ./
-COPY manifests/ ./manifests
-COPY products ./products
+COPY manifests ./manifests
 COPY version ./version
+COPY utils ./utils
 
+# copy make
+COPY make ./make
+COPY Makefile ./
+
+# compile test binary
 RUN make test/compile/functional
 
 FROM registry.access.redhat.com/ubi8/ubi:latest

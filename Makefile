@@ -503,6 +503,10 @@ vendor/check/prow:
 vendor/fix:
 	go mod tidy
 	go mod vendor
+	cd test
+	go mod tidy
+	go mod vendor
+	cd ../
 
 .PHONY: manifest/prodsec
 manifest/prodsec:
