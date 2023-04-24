@@ -55,7 +55,7 @@ rosa login --env=staging
 rosa install addon managed-api-service --cluster a45 --addon-resource-required true --rosa-cli-required true --billing-model standard --region us-east-1`
 ```
 
-This might fail with "Failed to verify operator role for cluster". Wait a minute and try again. When asked for other params, use empty or default values. Make sure to say YES for ROSA CLI required.
+This might fail with "Failed to verify operator role for cluster", see [SDA-7568](https://issues.redhat.com/browse/SDA-7568) for details. Wait a minute and try again. When asked for other params, use empty or default values. Make sure to say YES for ROSA CLI required.
 
 4. Patch the useClusterStorage
 

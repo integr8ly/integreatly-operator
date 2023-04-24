@@ -11,6 +11,7 @@ products:
       - 1.25.0
       - 1.28.0
       - 1.31.0
+      - 1.35.0
 estimate: 1h
 ---
 
@@ -18,11 +19,13 @@ estimate: 1h
 
 ## Description
 
-Note: Creation of self-managed APIcast has been automated. However, the "custom policy" part is not yet automated so every third release run the H24 test without cleanup and proceed with the stepr below for setting up the custom policy. Before running the H24 test take a look [here at apicastOperatorVersion](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/selfmanaged_apicast.go#L48) and compare with current version. It can be seen by navigating to Operator Hub in OSD and searching for "Red Hat Integration - 3scale APIcast gateway - Managed Application Services". After clicking on the tile check the "Latest version" there. If there is not a match then update it in the code (please create a PR and/or ping the QE coordinator also). Execute the following to actually run the test to get your self-managed APIcast ready:
+Note: Creation of self-managed APIcast has been automated. However, the "custom policy" part is not yet automated so every third release run the H24 test without cleanup and proceed with the stepr below for setting up the custom policy. Before running the H24 test take a look [here at apicastOperatorVersion](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/selfmanaged_apicast.go#L48) and compare with current version. It can be seen by navigating to Operator Hub in OSD and searching for "Red Hat Integration - 3scale APIcast gateway". After clicking on the tile check the "Latest version" there. If there is not a match then update it in the code (please create a PR and/or ping the QE coordinator also). Execute the following to actually run the test to get your self-managed APIcast ready:
 
 ```
 LOCAL=false SKIP_CLEANUP=true TEST=H24 INSTALLATION_TYPE=managed-api make test/e2e/single
 ```
+
+Note: if this fails with some issue related to the version change just revert the changes and run with what was there originally. Check what the version actually is in CSV once the APIcast operator is installed. It should contain `-mas`.
 
 Note: the templates for custom policies are no longer supported so the [RHOAM guide](https://access.redhat.com/documentation/en-us/red_hat_openshift_api_management/1/topic/a702e803-bbc8-47af-91a4-e73befd3da00) needs to be updated. Until that happens see the [official 3scale guide](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.12/html/installing_3scale/installing-apicast#injecting-custom-policies-with-the-apicast-operator) for more information instead.
 
