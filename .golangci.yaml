@@ -22,5 +22,5 @@ presets:
   - unused
 
 run:
-  modules-download-mode: vendor
+  modules-download-mode: readonly
   timeout: 5m
