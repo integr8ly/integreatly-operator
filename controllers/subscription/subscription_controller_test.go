@@ -365,7 +365,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 		ExpectedUpdatesAllowed bool
 	}{
 		{
-			Name: "updates allowed when toVersion is not empty and upgrade is service affecting",
+			Name: "updates allowed when Version is not empty, toVersion is not empty and upgrade is service affecting",
 			RHMI: integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testrhmi",
@@ -373,6 +373,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					ToVersion: "9.9.9",
+					Version:   "8.8.8",
 				},
 			},
 			Fields: fields{
@@ -395,11 +396,14 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 			ExpectedUpdatesAllowed: true,
 		},
 		{
-			Name: "updates not allowed when toVersion is empty and upgrade is service affecting",
+			Name: "updates not allowed when Version is not empty, toVersion is empty and upgrade is service affecting",
 			RHMI: integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testrhmi",
 					Namespace: "testns",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Version: "8.8.8",
 				},
 			},
 			Fields: fields{
@@ -422,7 +426,68 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 			ExpectedUpdatesAllowed: false,
 		},
 		{
-			Name: "updates not allowed when toVersion is not empty and upgrade is not service affecting",
+			Name: "updates not allowed when Version is not empty, toVersion is not empty and upgrade is not service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					ToVersion: "9.9.9",
+					Version:   "8.8.8",
+				},
+			},
+			Fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     false,
+			ExpectedUpdatesAllowed: false,
+		},
+		{
+			Name: "updates not allowed when Version is not empty, toVersion is empty and upgrade is not service affecting",
+			RHMI: integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrhmi",
+					Namespace: "testns",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Version: "8.8.8",
+				},
+			},
+			Fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&crov1alpha1.Postgres{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testpg",
+							Namespace: "testns",
+						},
+					},
+					&crov1alpha1.Redis{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "testredis",
+							Namespace: "testns",
+						},
+					},
+				),
+			},
+			IsServiceAffecting:     false,
+			ExpectedUpdatesAllowed: false,
+		},
+		{
+			Name: "updates not allowed when Version is empty, toVersion is not empty and upgrade is service affecting",
 			RHMI: integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testrhmi",
@@ -448,34 +513,7 @@ func TestAllowDatabaseUpdates(t *testing.T) {
 					},
 				),
 			},
-			IsServiceAffecting:     false,
-			ExpectedUpdatesAllowed: false,
-		},
-		{
-			Name: "updates not allowed when toVersion is empty and upgrade is not service affecting",
-			RHMI: integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testrhmi",
-					Namespace: "testns",
-				},
-			},
-			Fields: fields{
-				Client: utils.NewTestClient(scheme,
-					&crov1alpha1.Postgres{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testpg",
-							Namespace: "testns",
-						},
-					},
-					&crov1alpha1.Redis{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testredis",
-							Namespace: "testns",
-						},
-					},
-				),
-			},
-			IsServiceAffecting:     false,
+			IsServiceAffecting:     true,
 			ExpectedUpdatesAllowed: false,
 		},
 	}
