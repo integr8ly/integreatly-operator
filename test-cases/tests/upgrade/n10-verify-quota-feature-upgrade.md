@@ -13,9 +13,8 @@ products:
       - 1.26.0
       - 1.29.0
       - 1.32.0
-estimate: 1h
-tags:
-  - destructive
+      - 1.35.0
+estimate: 15m
 ---
 
 # N10 - Verify quota feature upgrade
@@ -62,7 +61,7 @@ echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=json
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 
-5. Update the quota for a cluster in OCM to e.g. `5 million` (1 = 100k, so in this case we assign 50 to the variable) and wait for an operator to finish quota configuration
+5. Update the quota for a cluster in OCM to e.g. `5 million` (1 = 100k, so in this case we assign 50 to the QUOTA_VALUE variable) and wait for an operator to finish quota configuration
 
 5.1 Login to OCM with provided token
 
@@ -85,7 +84,7 @@ CLUSTER_ID=$(ocm get clusters --parameter search="name like '%$CLUSTER_NAME%'" |
 5.4 Set quota value
 
 ```bash
-QUOTA_VALUE=<QUOTA_VALUE>
+QUOTA_VALUE=50 # use a different value (e.g. 10) if already on 5 million
 ```
 
 5.5 Update quota
