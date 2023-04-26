@@ -2640,6 +2640,20 @@ func TestReconciler_getTenantAccountPassword(t *testing.T) {
 			want:    "test-password",
 			wantErr: false,
 		},
+		{
+			name: "failure getting tenantAccountPasswords secret",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+						return fmt.Errorf("get error")
+					},
+				},
+				shouldCheckPwd: false,
+			},
+			want:    "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4370,6 +4384,25 @@ func TestReconciler_getKeycloakUserFromAccount(t *testing.T) {
 			want:    testKCUser,
 			wantErr: false,
 		},
+		{
+			name: "Failure getting list of KeycloakUsers",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, testKCUser)
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+						return fmt.Errorf("test error")
+					}
+					return mockClient
+				}(),
+				accountName: testKCUserAccountName,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4464,6 +4497,25 @@ func TestReconciler_getKeycloakClientFromAccount(t *testing.T) {
 			want:    testKCClient,
 			wantErr: false,
 		},
+		{
+			name: "Failure getting list of KeycloakClients",
+			fields: fields{
+				installation: getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi),
+				log:          getLogger(),
+			},
+			args: args{
+				client: func() k8sclient.Client {
+					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, testKCClient)
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+						return fmt.Errorf("test error")
+					}
+					return mockClient
+				}(),
+				accountName: testKCUserAccountName,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4487,6 +4539,174 @@ func TestReconciler_getKeycloakClientFromAccount(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getKeycloakClientFromAccount() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileDashboardLink(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+		podExecutor   resources.PodExecutorInterface
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+		username     string
+		tenantLink   string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Success reconciling console link",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{}),
+				log:    getLogger(),
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme),
+				username:     "username",
+				tenantLink:   "tenantlink",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Failure reconciling console link",
+			fields: fields{
+				Config: config.NewThreeScale(config.ProductConfig{}),
+				log:    getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+						return fmt.Errorf("get error")
+					},
+				},
+				username:   "username",
+				tenantLink: "tenantlink",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+				podExecutor:   tt.fields.podExecutor,
+			}
+			if err := r.reconcileDashboardLink(tt.args.ctx, tt.args.serverClient, tt.args.username, tt.args.tenantLink); (err != nil) != tt.wantErr {
+				t.Errorf("reconcileDashboardLink() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestReconciler_deleteConsoleLink(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *integreatlyv1alpha1.RHMI
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+		log           l.Logger
+		podExecutor   resources.PodExecutorInterface
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient k8sclient.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Success deleting console link - PhaseCompleted",
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Failure deleting console link - PhaseFailed",
+			args: args{
+				ctx: context.TODO(),
+				serverClient: &moqclient.SigsClientInterfaceMock{DeleteFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.DeleteOption) error {
+					return fmt.Errorf("some error")
+				}},
+			},
+			want:    integreatlyv1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+				log:           tt.fields.log,
+				podExecutor:   tt.fields.podExecutor,
+			}
+			got, err := r.deleteConsoleLink(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("deleteConsoleLink() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("deleteConsoleLink() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -48,6 +48,29 @@ func TestGetContainerCPUMetric(t *testing.T) {
 			ExpectedMetric: "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate",
 			ExpectedError:  false,
 		},
+		{
+			Name: "Test GetContainerCPUMetric for OpenShift > 4.9",
+			FakeClient: utils.NewTestClient(scheme,
+				&configv1.ClusterVersionList{
+					Items: []configv1.ClusterVersion{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "version",
+							},
+							Status: configv1.ClusterVersionStatus{
+								History: []configv1.UpdateHistory{
+									{
+										Version: "4.9",
+									},
+								},
+							},
+						},
+					},
+				},
+			),
+			ExpectedMetric: "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate",
+			ExpectedError:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
