@@ -184,7 +184,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		serverClient,
-		fmt.Sprintf("rhsso-operator.%s", "7.6.2-opr-001"),
+		fmt.Sprintf("rhsso-operator.%s", "7.6.2-opr-002"),
 		r.Config.GetOperatorNamespace(),
 		installation.Spec.PriorityClassName,
 	)
