@@ -24,6 +24,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8spointer "k8s.io/utils/pointer"
@@ -247,6 +248,24 @@ func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient
 				},
 			},
 			Type: noobaav1.StoreTypePVPool,
+		}
+		noobaa.Spec.Endpoints = &noobaav1.EndpointsSpec{
+			MinCount: 1,
+			MaxCount: 2,
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("200m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
+			},
+		}
+
+		noobaa.Spec.CoreResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("800Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("400m"), corev1.ResourceMemory: k8sresource.MustParse("900Mi")},
+		}
+
+		noobaa.Spec.DBResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("250m"), corev1.ResourceMemory: k8sresource.MustParse("250Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("300m"), corev1.ResourceMemory: k8sresource.MustParse("300Mi")},
 		}
 		owner.AddIntegreatlyOwnerAnnotations(noobaa, r.installation)
 		return nil
