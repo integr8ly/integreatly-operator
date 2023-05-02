@@ -207,5 +207,5 @@ replace github.com/operator-framework/operator-lib => github.com/operator-framew
 // Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
 replace k8s.io/client-go => k8s.io/client-go v0.25.0
 
-// Required to import parent module - cannot import remotely as parent module was import
+// Required to import parent module - cannot import remotely as parent module was importing test directoy
 replace github.com/integr8ly/integreatly-operator => ../

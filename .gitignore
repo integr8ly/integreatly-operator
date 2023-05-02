@@ -115,3 +115,6 @@ test-cases/package-lock.json
 
 # Exeption in vendor folder
 !vendor/**/.DS_Store
+
+# Ingore vendor directory for test module
+test/vendor

@@ -493,6 +493,7 @@ gen/push/csv: release/prepare push/csv
 vendor/check: vendor/fix
 	git diff --exit-code vendor/
 	git diff --exit-code go.sum
+	git diff --exit-code test/go.sum
 
 .PHONY: vendor/check/prow
 vendor/check/prow:
@@ -503,10 +504,9 @@ vendor/check/prow:
 vendor/fix:
 	go mod tidy
 	go mod vendor
-	cd test
-	go mod tidy
-	go mod vendor
-	cd ../
+	# Vendor test module
+	# entire command needs to be inline as cd runs in a subshell and would not run in the directory if not inline
+	cd test; go mod tidy; go mod vendor
 
 .PHONY: manifest/prodsec
 manifest/prodsec:
