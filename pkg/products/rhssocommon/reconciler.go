@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	grafanav1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
@@ -435,7 +436,17 @@ func ContainsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 func (r *Reconciler) ReconcileCloudResources(dbPRefix string, defaultNamespace string, ssoType string, config *config.RHSSOCommon, ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Log.Info("Reconciling Keycloak external database instance")
 	postgresName := fmt.Sprintf("%s%s", dbPRefix, installation.Name)
-	postgres, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, config.GetNamespace(), defaultNamespace)
+	// if we are on GCP set snaphshot frequency and retention
+	platformType, err := cluster.GetPlatformType(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to determine platform type: %w", err)
+	}
+	var snapshotFrequency, snapshotRetention croType.Duration
+	if platformType == configv1.GCPPlatformType {
+		snapshotFrequency = constants.GcpSnapshotFrequency
+		snapshotRetention = constants.GcpSnapshotRetention
+	}
+	postgres, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, config.GetNamespace(), defaultNamespace, snapshotFrequency, snapshotRetention)
 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning %s: %w", ssoType, err)

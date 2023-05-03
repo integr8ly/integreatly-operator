@@ -44,6 +44,7 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -111,6 +112,27 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 		Type: corev1.SecretTypeOpaque,
 	}
 
+	awsInfrastructure := &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: configv1.AWSPlatformType,
+			},
+		},
+	}
+	gcpInfrastructure := &configv1.Infrastructure{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+		Status: configv1.InfrastructureStatus{
+			PlatformStatus: &configv1.PlatformStatus{
+				Type: configv1.GCPPlatformType,
+			},
+		},
+	}
+
 	tests := []struct {
 		name         string
 		installation *integreatlyv1alpha1.RHMI
@@ -137,15 +159,23 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			fakeClient: func() k8sclient.Client {
 				pendingCroPostgres := croPostgres.DeepCopy()
 				pendingCroPostgres.Status.Phase = croTypes.PhaseInProgress
-				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgresSecret, pendingCroPostgres)
+				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgresSecret, pendingCroPostgres, awsInfrastructure)
 			},
 			want: integreatlyv1alpha1.PhaseAwaitingCloudResources,
 		},
 		{
-			name:         "defined secret causes state completed",
+			name:         "defined secret causes state completed on AWS",
 			installation: installation,
 			fakeClient: func() k8sclient.Client {
-				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
+				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret, awsInfrastructure)
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			name:         "defined secret causes state completed on GCP",
+			installation: installation,
+			fakeClient: func() k8sclient.Client {
+				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret, gcpInfrastructure)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},

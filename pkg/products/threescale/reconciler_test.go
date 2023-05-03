@@ -2471,6 +2471,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 		ctx          context.Context
 		serverClient k8sclient.Client
 		activeQuota  string
+		platformType configv1.PlatformType
 	}
 	tests := []struct {
 		name                 string
@@ -2481,7 +2482,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 		verificationFunction func(k8sclient.Client) bool
 	}{
 		{
-			name: "test initial install no MESSAGE_BUS keys",
+			name: "test initial install no MESSAGE_BUS keys on AWS",
 			fields: fields{
 				ConfigManager: nil,
 				Config: config.NewThreeScale(config.ProductConfig{
@@ -2497,6 +2498,30 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			args: args{
 				ctx:          context.TODO(),
 				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec),
+				platformType: configv1.AWSPlatformType,
+			},
+			want:                 integreatlyv1alpha1.PhaseCompleted,
+			wantErr:              false,
+			verificationFunction: verifyMessageBusDoesNotExist,
+		},
+		{
+			name: "test initial install no MESSAGE_BUS keys on GCP",
+			fields: fields{
+				ConfigManager: nil,
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				mpm:           nil,
+				installation:  getTestInstallation("managed"),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec),
+				platformType: configv1.GCPPlatformType,
 			},
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
@@ -2519,6 +2544,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 			args: args{
 				ctx:          context.TODO(),
 				serverClient: utils.NewTestClient(scheme, postgres, backendRedis, systemRedis, credSec, redisSecret),
+				platformType: configv1.AWSPlatformType,
 			},
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			wantErr:              false,
@@ -2538,7 +2564,7 @@ func TestReconciler_reconcileExternalDatasources(t *testing.T) {
 				oauthv1Client: tt.fields.oauthv1Client,
 				Reconciler:    tt.fields.Reconciler,
 			}
-			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient, tt.args.activeQuota)
+			got, err := r.reconcileExternalDatasources(tt.args.ctx, tt.args.serverClient, tt.args.activeQuota, tt.args.platformType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("reconcileExternalDatasources() error = %v, wantErr %v", err, tt.wantErr)
 				return

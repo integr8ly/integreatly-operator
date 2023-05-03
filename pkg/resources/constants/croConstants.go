@@ -9,4 +9,6 @@ const (
 	RHSSOUserProstgresPrefix     = "rhssouser-postgres-"
 	ThreeScaleBlobStoragePrefix  = "threescale-blobstorage-"
 	PostgresApplyImmediately     = true
+	GcpSnapshotFrequency         = "4h"
+	GcpSnapshotRetention         = "1d"
 )
