@@ -35,8 +35,8 @@ const (
 	DefaultInstallationNamespace  = "mcg"
 	noobaaName                    = "noobaa"
 	noobaaDefaultBucketClass      = noobaaName + "-default-bucket-class"
-	pvpoolStorageSize             = "25Gi"
-	dbStorageSize                 = "16Gi"
+	pvpoolStorageSize             = "16Gi"
+	dbStorageSize                 = "1Gi"
 	defaultStorageClassAnnotation = "storageclass.kubernetes.io/is-default-class"
 	threescaleBucket              = "3scale-operator-bucket"
 	ThreescaleBucketClaim         = threescaleBucket + "-claim"
@@ -247,6 +247,24 @@ func (r *Reconciler) ReconcileNoobaa(ctx context.Context, serverClient k8sclient
 				},
 			},
 			Type: noobaav1.StoreTypePVPool,
+		}
+		noobaa.Spec.Endpoints = &noobaav1.EndpointsSpec{
+			MinCount: 1,
+			MaxCount: 2,
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m"), corev1.ResourceMemory: resource.MustParse("250Mi")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("300m"), corev1.ResourceMemory: resource.MustParse("300Mi")},
+			},
+		}
+
+		noobaa.Spec.CoreResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("300m"), corev1.ResourceMemory: resource.MustParse("800Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("400m"), corev1.ResourceMemory: resource.MustParse("900Mi")},
+		}
+
+		noobaa.Spec.DBResources = &corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("250m"), corev1.ResourceMemory: resource.MustParse("250Mi")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("300m"), corev1.ResourceMemory: resource.MustParse("300Mi")},
 		}
 		owner.AddIntegreatlyOwnerAnnotations(noobaa, r.installation)
 		return nil
