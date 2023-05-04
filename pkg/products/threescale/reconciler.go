@@ -1719,6 +1719,9 @@ func (r *Reconciler) updateKeycloakUsersAttributeWith3ScaleUserId(ctx context.Co
 				Namespace: rhssoConfig.GetNamespace(),
 			},
 		}
+		if kcUser.Name == "" {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get valid generated username")
+		}
 
 		_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 			user.Attributes[userCreated3ScaleName] = []string{"true"}
@@ -1987,7 +1990,10 @@ func (r *Reconciler) reconcile3scaleMultiTenancy(ctx context.Context, serverClie
 	r.log.Info("creating new MT accounts in 3scale")
 
 	// creating new MT accounts in 3scale
-	accountsToBeCreated, emailAddrs := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
+	accountsToBeCreated, emailAddrs, err := getMTAccountsToBeCreated(mtUserIdentities, allAccounts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	r.log.Infof("Retrieving tenant accounts to be created",
 		l.Fields{
 			"accountsToBeCreated": accountsToBeCreated,
@@ -2195,6 +2201,9 @@ func (r *Reconciler) getTenantAccountPassword(ctx context.Context, serverClient 
 		} else {
 			pw = string(tenantAccountSecret.Data[account.Name])
 		}
+		if pw == "" {
+			return fmt.Errorf("failed to generate password")
+		}
 		return nil
 	}); err != nil {
 		return "", fmt.Errorf("error occurred while creating or updating tenant Account Secret: %w", err)
@@ -2322,7 +2331,7 @@ func (r *Reconciler) addAuthProviderToMTAccount(ctx context.Context, serverClien
 	return nil
 }
 
-func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string) {
+func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) (accountsToBeCreated []AccountDetail, emailAddrs []string, err error) {
 	accountsToBeCreated = []AccountDetail{}
 	email := ""
 	for _, identity := range usersIdentity {
@@ -2340,12 +2349,15 @@ func getMTAccountsToBeCreated(usersIdentity []userHelper.MultiTenantUser, accoun
 			if identity.Email != "" {
 				email = identity.Email
 			} else {
-				email = userHelper.SetUserNameAsEmail(identity.TenantName)
+				email, err = userHelper.SetUserNameAsEmail(identity.TenantName)
+				if err != nil {
+					return nil, nil, err
+				}
 			}
 			emailAddrs = append(emailAddrs, email)
 		}
 	}
-	return accountsToBeCreated, emailAddrs
+	return accountsToBeCreated, emailAddrs, nil
 }
 
 func getMTAccountsToBeDeleted(usersIdentity []userHelper.MultiTenantUser, accounts []AccountDetail) []AccountDetail {
@@ -2673,6 +2685,10 @@ func (r *Reconciler) getUserDiff(ctx context.Context, serverClient k8sclient.Cli
 					Name:      userHelper.GetValidGeneratedUserName(kuUser),
 					Namespace: rhssoConfig.GetNamespace(),
 				},
+			}
+			if genKcUser.Name == "" {
+				r.log.Warning("failed to get valid generated username")
+				return added, deleted, updated
 			}
 			objectKey := k8sclient.ObjectKeyFromObject(genKcUser)
 			err = serverClient.Get(ctx, objectKey, genKcUser)

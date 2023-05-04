@@ -398,7 +398,12 @@ func TestSetUserNameAsEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SetUserNameAsEmail(tt.args.userName); got != tt.want {
+			got, err := SetUserNameAsEmail(tt.args.userName)
+			if err != nil {
+				t.Fatalf("Failed test with: %v", err)
+			}
+
+			if got != tt.want {
 				t.Errorf("SetUserNameAsEmail() = %v, want %v", got, tt.want)
 			}
 		})

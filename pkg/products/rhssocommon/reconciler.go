@@ -547,6 +547,9 @@ func DeleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []k
 				Namespace: ns,
 			},
 		}
+		if kcUser.Name == "" {
+			return nil, fmt.Errorf("failed to get valid generated username")
+		}
 		err := serverClient.Delete(ctx, kcUser)
 		if err != nil {
 			return nil, fmt.Errorf("failed to delete keycloak user: %w", err)

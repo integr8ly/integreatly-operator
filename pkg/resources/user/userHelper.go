@@ -239,10 +239,18 @@ func GetMultiTenantUsers(ctx context.Context, serverClient k8sclient.Client) (us
 	for i := range usersList.Items {
 		user := usersList.Items[i]
 		if hasTenantAnnotation(&user) {
+			tenantName, err := SanitiseTenantUserName(user.Name)
+			if err != nil {
+				return nil, err
+			}
+			email := getUserEmail(&user, identities)
+			if email == "" {
+				return nil, err
+			}
 			users = append(users, MultiTenantUser{
 				Username:   user.Name,
-				TenantName: SanitiseTenantUserName(user.Name),
-				Email:      getUserEmail(&user, identities),
+				TenantName: tenantName,
+				Email:      email,
 				UID:        string(user.UID),
 			})
 		}
@@ -263,6 +271,7 @@ func hasTenantAnnotation(user *usersv1.User) bool {
 
 func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
 	var email = ""
+	var err error
 	identityForUserFound := false
 
 	for _, identity := range identities.Items {
@@ -271,41 +280,50 @@ func getUserEmail(user *usersv1.User, identities *usersv1.IdentityList) string {
 			if identity.Extra["email"] != "" {
 				email = identity.Extra["email"]
 			} else {
-				email = SetUserNameAsEmail(identity.User.Name)
+				email, err = SetUserNameAsEmail(identity.User.Name)
+				if err != nil {
+					return ""
+				}
 			}
 			break
 		}
 	}
 
 	if !identityForUserFound {
-		email = SetUserNameAsEmail(user.Name)
+		email, err = SetUserNameAsEmail(user.Name)
+		if err != nil {
+			return ""
+		}
 	}
 
 	return email
 }
 
-func SanitiseTenantUserName(username string) string {
+func SanitiseTenantUserName(username string) (string, error) {
 	// Regex for only alphanumeric values
 	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
 	if err != nil {
-		fmt.Printf("failed to compile regex for alphanumeric values with error %v", err)
-		return ""
+		return "", fmt.Errorf("failed to compile regex for alphanumeric values with error %v", err)
 	}
 
 	// Replace all non-alphanumeric values with the replacement character
 	processedString := reg.ReplaceAllString(strings.ToLower(username), invalidCharacterReplacement)
 
 	// Remove occurrence of replacement character at end of string
-	return strings.TrimSuffix(processedString, invalidCharacterReplacement)
+	return strings.TrimSuffix(processedString, invalidCharacterReplacement), nil
 }
 
-func SetUserNameAsEmail(userName string) string {
+func SetUserNameAsEmail(userName string) (string, error) {
 	// If username is a valid email address
 	_, err := mail.ParseAddress(userName)
 	if err == nil {
-		return userName
+		return userName, nil
+	}
+	sanitisedUserName, err := SanitiseTenantUserName(userName)
+	if err != nil {
+		return "", err
 	}
 
 	// Otherwise sanitise and append default domain
-	return fmt.Sprintf("%s%s", SanitiseTenantUserName(userName), defaultEmailDomain)
+	return fmt.Sprintf("%s%s", sanitisedUserName, defaultEmailDomain), nil
 }
