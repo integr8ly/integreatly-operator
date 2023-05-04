@@ -192,7 +192,7 @@
           ]
         },
         "list": {
-          "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`. NOTE: the `name` binding allows API services to override the binding to use different resource name schemes, such as `users/*/operations`. To override the binding, API services can add a binding such as `\"/v1/{name=users/*}/operations\"` to their service configuration. For backwards compatibility, the default name includes the operations collection id, however overriding users must ensure the name binding is the parent resource, without the operations collection id.",
+          "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
           "flatPath": "v1/operations",
           "httpMethod": "GET",
           "id": "servicenetworking.operations.list",
@@ -865,7 +865,7 @@
       }
     }
   },
-  "revision": "20230116",
+  "revision": "20230315",
   "rootUrl": "https://servicenetworking.googleapis.com/",
   "schemas": {
     "AddDnsRecordSetMetadata": {
@@ -908,7 +908,7 @@
           "type": "string"
         },
         "dnsSuffix": {
-          "description": "Required. The DNS name suffix for the zones e.g. `example.com`.",
+          "description": "Required. The DNS name suffix for the zones e.g. `example.com.`. Cloud DNS requires that a DNS suffix ends with a trailing dot.",
           "type": "string"
         },
         "name": {
@@ -1098,11 +1098,13 @@
           "description": "The source syntax of the service.",
           "enum": [
             "SYNTAX_PROTO2",
-            "SYNTAX_PROTO3"
+            "SYNTAX_PROTO3",
+            "SYNTAX_EDITIONS"
           ],
           "enumDescriptions": [
             "Syntax `proto2`.",
-            "Syntax `proto3`."
+            "Syntax `proto3`.",
+            "Syntax `editions`."
           ],
           "type": "string"
         },
@@ -1254,6 +1256,13 @@
           "format": "double",
           "type": "number"
         },
+        "overridesByRequestProtocol": {
+          "additionalProperties": {
+            "$ref": "BackendRule"
+          },
+          "description": "The map between request protocol and the backend address.",
+          "type": "object"
+        },
         "pathTranslation": {
           "enum": [
             "PATH_TRANSLATION_UNSPECIFIED",
@@ -1381,7 +1390,7 @@
           "description": "Settings for Ruby client libraries."
         },
         "version": {
-          "description": "Version of the API to apply these settings to.",
+          "description": "Version of the API to apply these settings to. This is the full protobuf package for the API, ending in the version element. Examples: \"google.cloud.speech.v1\" and \"google.spanner.admin.database.v1\".",
           "type": "string"
         }
       },
@@ -1725,7 +1734,7 @@
           "type": "array"
         },
         "domain": {
-          "description": "Required. The DNS or domain name of the record set, e.g. `test.example.com`.",
+          "description": "Required. The DNS or domain name of the record set, e.g. `test.example.com`. Cloud DNS requires that a DNS suffix ends with a trailing dot.",
           "type": "string"
         },
         "ttl": {
@@ -1745,7 +1754,7 @@
       "id": "DnsZone",
       "properties": {
         "dnsSuffix": {
-          "description": "The DNS name suffix of this zone e.g. `example.com.`.",
+          "description": "The DNS name suffix of this zone e.g. `example.com.`. Cloud DNS requires that a DNS suffix ends with a trailing dot.",
           "type": "string"
         },
         "name": {
@@ -1869,6 +1878,10 @@
       "description": "Enum type definition.",
       "id": "Enum",
       "properties": {
+        "edition": {
+          "description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS.",
+          "type": "string"
+        },
         "enumvalue": {
           "description": "Enum value definitions.",
           "items": {
@@ -1895,11 +1908,13 @@
           "description": "The source syntax.",
           "enum": [
             "SYNTAX_PROTO2",
-            "SYNTAX_PROTO3"
+            "SYNTAX_PROTO3",
+            "SYNTAX_EDITIONS"
           ],
           "enumDescriptions": [
             "Syntax `proto2`.",
-            "Syntax `proto3`."
+            "Syntax `proto3`.",
+            "Syntax `editions`."
           ],
           "type": "string"
         }
@@ -2430,11 +2445,13 @@
           "description": "The source syntax of this method.",
           "enum": [
             "SYNTAX_PROTO2",
-            "SYNTAX_PROTO3"
+            "SYNTAX_PROTO3",
+            "SYNTAX_EDITIONS"
           ],
           "enumDescriptions": [
             "Syntax `proto2`.",
-            "Syntax `proto3`."
+            "Syntax `proto3`.",
+            "Syntax `editions`."
           ],
           "type": "string"
         }
@@ -2943,6 +2960,10 @@
             "Photos Org.",
             "Street View Org."
           ],
+          "type": "string"
+        },
+        "protoReferenceDocumentationUri": {
+          "description": "Optional link to proto reference documentation. Example: https://cloud.google.com/pubsub/lite/docs/reference/rpc",
           "type": "string"
         }
       },
@@ -3517,6 +3538,10 @@
       "description": "A protocol buffer message type.",
       "id": "Type",
       "properties": {
+        "edition": {
+          "description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS.",
+          "type": "string"
+        },
         "fields": {
           "description": "The list of fields.",
           "items": {
@@ -3550,11 +3575,13 @@
           "description": "The source syntax.",
           "enum": [
             "SYNTAX_PROTO2",
-            "SYNTAX_PROTO3"
+            "SYNTAX_PROTO3",
+            "SYNTAX_EDITIONS"
           ],
           "enumDescriptions": [
             "Syntax `proto2`.",
-            "Syntax `proto3`."
+            "Syntax `proto3`.",
+            "Syntax `editions`."
           ],
           "type": "string"
         }

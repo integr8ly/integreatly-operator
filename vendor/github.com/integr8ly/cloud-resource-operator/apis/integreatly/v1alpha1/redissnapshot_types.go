@@ -23,11 +23,10 @@ import (
 
 // RedisSnapshotSpec defines the desired state of RedisSnapshot
 type RedisSnapshotSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of RedisSnapshot. Edit RedisSnapshot_types.go to remove/update
+	// ResourceName is the identification given to a resource by a cloud provider
 	ResourceName string `json:"resourceName"`
+	// SkipDelete informs the reconciler to not delete the snapshot from the cloud provider
+	SkipDelete bool `json:"skipDelete,omitempty"`
 }
 
 // +kubebuilder:object:root=true

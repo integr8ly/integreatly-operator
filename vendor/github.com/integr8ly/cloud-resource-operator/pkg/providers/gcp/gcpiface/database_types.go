@@ -246,7 +246,7 @@ type Settings struct {
 	// MaintenanceWindow: The maintenance window for this instance. This
 	// specifies when the instance can be restarted for maintenance
 	// purposes.
-	MaintenanceWindow *sqladmin.MaintenanceWindow `json:"maintenanceWindow,omitempty"`
+	MaintenanceWindow *MaintenanceWindow `json:"maintenanceWindow,omitempty"`
 
 	// PasswordValidationPolicy: The local user password validation policy
 	// of the instance.
@@ -300,6 +300,32 @@ type Settings struct {
 	// UserLabels: User-provided labels, represented as a dictionary where
 	// each label is a single key value pair.
 	UserLabels map[string]string `json:"userLabels,omitempty"`
+}
+
+type MaintenanceWindow struct {
+	// Day: day of week (1-7), starting on Monday.
+	Day *int64 `json:"day,omitempty"`
+
+	// Hour: hour of day - 0 to 23.
+	Hour *int64 `json:"hour,omitempty"`
+
+	// Kind: This is always `sql#maintenanceWindow`.
+	Kind string `json:"kind,omitempty"`
+
+	// UpdateTrack: Maintenance timing setting: `canary` (Earlier) or
+	// `stable` (Later). Learn more
+	// (https://cloud.google.com/sql/docs/mysql/instance-settings#maintenance-timing-2ndgen).
+	//
+	// Possible values:
+	//   "SQL_UPDATE_TRACK_UNSPECIFIED" - This is an unknown maintenance
+	// timing preference.
+	//   "canary" - For instance update that requires a restart, this update
+	// track indicates your instance prefer to restart for new version early
+	// in maintenance window.
+	//   "stable" - For instance update that requires a restart, this update
+	// track indicates your instance prefer to let Cloud SQL choose the
+	// timing of restart (within its Maintenance window, if applicable).
+	UpdateTrack string `json:"updateTrack,omitempty"`
 }
 
 type DatabaseInstanceFailoverReplica struct {
@@ -587,7 +613,19 @@ func (dbi *DatabaseInstance) MapToGcpDatabaseInstance() *sqladmin.DatabaseInstan
 			gcpInstanceConfig.Settings.LocationPreference = dbi.Settings.LocationPreference
 		}
 		if dbi.Settings.MaintenanceWindow != nil {
-			gcpInstanceConfig.Settings.MaintenanceWindow = dbi.Settings.MaintenanceWindow
+			gcpInstanceConfig.Settings.MaintenanceWindow = &sqladmin.MaintenanceWindow{}
+			if dbi.Settings.MaintenanceWindow.Day != nil {
+				gcpInstanceConfig.Settings.MaintenanceWindow.Day = *dbi.Settings.MaintenanceWindow.Day
+			}
+			if dbi.Settings.MaintenanceWindow.Hour != nil {
+				gcpInstanceConfig.Settings.MaintenanceWindow.Hour = *dbi.Settings.MaintenanceWindow.Hour
+				if *dbi.Settings.MaintenanceWindow.Hour == 0 {
+					gcpInstanceConfig.Settings.MaintenanceWindow.ForceSendFields = []string{"Hour"}
+				}
+			}
+			if dbi.Settings.MaintenanceWindow.UpdateTrack != "" {
+				gcpInstanceConfig.Settings.MaintenanceWindow.UpdateTrack = dbi.Settings.MaintenanceWindow.UpdateTrack
+			}
 		}
 		if dbi.Settings.PasswordValidationPolicy != nil {
 			gcpInstanceConfig.Settings.PasswordValidationPolicy = dbi.Settings.PasswordValidationPolicy

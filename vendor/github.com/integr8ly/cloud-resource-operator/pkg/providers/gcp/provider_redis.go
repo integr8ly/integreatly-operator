@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,15 +107,13 @@ func (p *RedisProvider) createRedisInstance(ctx context.Context, networkManager 
 		errMsg := "failed to reconcile network provider config"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
-	address, err := networkManager.CreateNetworkIpRange(ctx, ipRangeCidr)
-	if err != nil {
-		statusMessage := "failed to create network service"
-		return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
+	address, msg, err := networkManager.CreateNetworkIpRange(ctx, ipRangeCidr)
+	if err != nil || msg != "" {
+		return nil, msg, err
 	}
-	_, err = networkManager.CreateNetworkService(ctx)
-	if err != nil {
-		statusMessage := "failed to create network service"
-		return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
+	_, msg, err = networkManager.CreateNetworkService(ctx)
+	if err != nil || msg != "" {
+		return nil, msg, err
 	}
 	createInstanceRequest, err := p.buildCreateInstanceRequest(ctx, r, strategyConfig, address)
 	if err != nil {
@@ -162,35 +161,22 @@ func (p *RedisProvider) createRedisInstance(ctx context.Context, networkManager 
 		statusMessage := fmt.Sprintf("gcp redis instance %s is not ready yet, current state is %s", createInstanceRequest.Instance.Name, foundInstance.State.String())
 		return nil, croType.StatusMessage(statusMessage), nil
 	}
-	maintenanceWindowEnabled, err := resources.VerifyRedisMaintenanceWindow(ctx, p.Client, r.Namespace, r.Name)
-	if err != nil {
-		statusMessage := "failed to verify if redis updates are allowed"
-		return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
-	}
-	if maintenanceWindowEnabled {
-		if updateInstanceRequest := p.buildUpdateInstanceRequest(createInstanceRequest.Instance, foundInstance); updateInstanceRequest != nil {
-			_, err = redisClient.UpdateInstance(ctx, updateInstanceRequest)
-			if err != nil {
-				statusMessage := fmt.Sprintf("failed to update gcp redis instance %s", createInstanceRequest.Instance.Name)
-				return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
-			}
-		}
-		if upgradeInstanceRequest := p.buildUpgradeInstanceRequest(createInstanceRequest.Instance, foundInstance); upgradeInstanceRequest != nil {
-			_, err = redisClient.UpgradeInstance(ctx, upgradeInstanceRequest)
-			if err != nil {
-				statusMessage := fmt.Sprintf("failed to upgrade gcp redis instance %s", createInstanceRequest.Instance.Name)
-				return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
-			}
-		}
-		_, err = controllerutil.CreateOrUpdate(ctx, p.Client, r, func() error {
-			r.Spec.MaintenanceWindow = false
-			return nil
-		})
+
+	if updateInstanceRequest := p.buildUpdateInstanceRequest(createInstanceRequest.Instance, foundInstance); updateInstanceRequest != nil {
+		_, err = redisClient.UpdateInstance(ctx, updateInstanceRequest)
 		if err != nil {
-			statusMessage := "failed to set redis maintenance window to false"
+			statusMessage := fmt.Sprintf("failed to update gcp redis instance %s", createInstanceRequest.Instance.Name)
 			return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
 		}
 	}
+	if upgradeInstanceRequest := p.buildUpgradeInstanceRequest(createInstanceRequest.Instance, foundInstance); upgradeInstanceRequest != nil {
+		_, err = redisClient.UpgradeInstance(ctx, upgradeInstanceRequest)
+		if err != nil {
+			statusMessage := fmt.Sprintf("failed to upgrade gcp redis instance %s", createInstanceRequest.Instance.Name)
+			return nil, croType.StatusMessage(statusMessage), errorUtil.Wrap(err, statusMessage)
+		}
+	}
+
 	rdd := &providers.RedisDeploymentDetails{
 		URI:  foundInstance.Host,
 		Port: int64(foundInstance.Port),
@@ -393,6 +379,14 @@ func (p *RedisProvider) buildCreateInstanceRequest(ctx context.Context, r *v1alp
 		RedisVersion:      redisVersion,
 		Labels:            tags,
 	}
+	// Override if node size is defined in the CR spec
+	if r.Spec.Size != "" {
+		size, err := strconv.ParseInt(r.Spec.Size, 10, 64)
+		if err != nil {
+			return nil, errorUtil.Wrap(err, "failed to parse redis spec size")
+		}
+		defaultInstance.MemorySizeGb = int32(size)
+	}
 	if createInstanceRequest.Instance == nil {
 		createInstanceRequest.Instance = defaultInstance
 		return createInstanceRequest, nil
@@ -427,6 +421,7 @@ func (p *RedisProvider) buildCreateInstanceRequest(ctx context.Context, r *v1alp
 	if createInstanceRequest.Instance.RedisVersion == "" {
 		createInstanceRequest.Instance.RedisVersion = defaultInstance.RedisVersion
 	}
+
 	return createInstanceRequest, nil
 }
 
@@ -485,6 +480,13 @@ func isMaintenancePolicyOutdated(a *redispb.MaintenancePolicy, b *redispb.Mainte
 	}
 	if (a == nil && b != nil) || (a != nil && b == nil) {
 		return true
+	}
+	// remove output-only duration field from comparison
+	for i := range a.WeeklyMaintenanceWindow {
+		a.WeeklyMaintenanceWindow[i].Duration = nil
+	}
+	for i := range b.WeeklyMaintenanceWindow {
+		b.WeeklyMaintenanceWindow[i].Duration = nil
 	}
 	return !reflect.DeepEqual(a.WeeklyMaintenanceWindow, b.WeeklyMaintenanceWindow)
 }

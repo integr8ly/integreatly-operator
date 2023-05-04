@@ -55,7 +55,7 @@ func ReconcileBlobStorage(ctx context.Context, client client.Client, productName
 }
 
 // ReconcilePostgres creates or updates a postgres custom resource
-func ReconcilePostgres(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs string, applyImmediately bool, modifyFunc modifyResourceFunc) (*v1alpha1.Postgres, error) {
+func ReconcilePostgres(ctx context.Context, client client.Client, productName, deploymentType, tier, name, ns, secretName, secretNs string, applyImmediately bool, snapshotFrequency, snapshotRetention croType.Duration, modifyFunc modifyResourceFunc) (*v1alpha1.Postgres, error) {
 	pg := &v1alpha1.Postgres{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -82,6 +82,8 @@ func ReconcilePostgres(ctx context.Context, client client.Client, productName, d
 			Namespace: secretNs,
 		}
 		pg.Spec.ApplyImmediately = applyImmediately
+		pg.Spec.SnapshotFrequency = snapshotFrequency
+		pg.Spec.SnapshotRetention = snapshotRetention
 
 		return nil
 	})

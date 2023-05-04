@@ -1105,10 +1105,18 @@ func (p *PostgresProvider) exposePostgresMetrics(ctx context.Context, cr *v1alph
 			logrus.Errorf("error occurred while describing instance types %v", err)
 			return
 		}
-		instanceTypes := result.InstanceTypes
-		if len(instanceTypes) > 0 {
-			MemorySize := instanceTypes[0].MemoryInfo.SizeInMiB
-			resources.SetMetric(resources.PostgresMaxMemoryMetricName, genericLabels, float64(*MemorySize))
+		p.setPostgresMaxMemoryMetric(result, genericLabels)
+	}
+}
+
+// setPostgresMaxMemoryMetric sets the postgresMaxMemory metric
+// // Convert MiB to bytes to use bytes as the standard for all providers
+func (p *PostgresProvider) setPostgresMaxMemoryMetric(response *ec2.DescribeInstanceTypesOutput, genericLabels map[string]string) {
+	if response != nil && len(response.InstanceTypes) > 0 {
+		instanceType := response.InstanceTypes[0]
+		if instanceType != nil && instanceType.MemoryInfo != nil && instanceType.MemoryInfo.SizeInMiB != nil {
+			memorySize := float64(*instanceType.MemoryInfo.SizeInMiB) * (1024 * 1024)
+			resources.SetMetric(resources.PostgresMaxMemoryMetricName, genericLabels, memorySize)
 		}
 	}
 }

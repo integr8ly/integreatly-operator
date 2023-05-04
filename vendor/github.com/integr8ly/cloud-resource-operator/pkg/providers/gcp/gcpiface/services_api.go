@@ -31,7 +31,7 @@ func NewServicesAPI(ctx context.Context, opt option.ClientOption) (ServicesAPI, 
 	}, nil
 }
 
-func (c *servicesClient) ConnectionsList(clusterVpc *computepb.Network, projectID string, parent string) (*servicenetworking.ListConnectionsResponse, error) {
+func (c *servicesClient) ConnectionsList(clusterVpc *computepb.Network, projectID, parent string) (*servicenetworking.ListConnectionsResponse, error) {
 	call := c.servicenetworkingService.Services.Connections.List(parent)
 	call.Network(fmt.Sprintf("projects/%s/global/networks/%s", projectID, clusterVpc.GetName()))
 	return call.Do()
@@ -51,7 +51,6 @@ func (c *servicesClient) ConnectionsDelete(name string, deleteconnectionrequest 
 	).Do()
 }
 
-// Mock Client code below
 type MockServicesClient struct {
 	ServicesAPI
 	ConnectionsListFn    func(*computepb.Network, string, string) (*servicenetworking.ListConnectionsResponse, error)
@@ -64,6 +63,11 @@ type MockServicesClient struct {
 
 func GetMockServicesClient(modifyFn func(servicesClient *MockServicesClient)) *MockServicesClient {
 	mock := &MockServicesClient{
+		ConnectionsListFn: func(n *computepb.Network, projectID, parent string) (*servicenetworking.ListConnectionsResponse, error) {
+			return &servicenetworking.ListConnectionsResponse{
+				Connections: []*servicenetworking.Connection{},
+			}, nil
+		},
 		Done: true,
 	}
 	if modifyFn != nil {
@@ -72,17 +76,12 @@ func GetMockServicesClient(modifyFn func(servicesClient *MockServicesClient)) *M
 	return mock
 }
 
-func (m *MockServicesClient) ConnectionsList(clusterVpc *computepb.Network, projectID string, parent string) (*servicenetworking.ListConnectionsResponse, error) {
+func (m *MockServicesClient) ConnectionsList(clusterVpc *computepb.Network, projectID, parent string) (*servicenetworking.ListConnectionsResponse, error) {
 	m.call++
-	if m.ConnectionsListFn != nil && m.call == 1 {
-		return m.ConnectionsListFn(clusterVpc, projectID, parent)
-	}
 	if m.ConnectionsListFnTwo != nil && m.call > 1 {
 		return m.ConnectionsListFnTwo(clusterVpc, projectID, parent)
 	}
-	return &servicenetworking.ListConnectionsResponse{
-		Connections: []*servicenetworking.Connection{},
-	}, nil
+	return m.ConnectionsListFn(clusterVpc, projectID, parent)
 }
 
 func (m *MockServicesClient) ConnectionsCreate(parent string, connection *servicenetworking.Connection) (*servicenetworking.Operation, error) {

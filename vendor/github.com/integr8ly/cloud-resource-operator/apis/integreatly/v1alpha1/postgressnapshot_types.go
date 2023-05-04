@@ -23,10 +23,10 @@ import (
 
 // PostgresSnapshotSpec defines the desired state of PostgresSnapshot
 type PostgresSnapshotSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	// ResourceName is the identification given to a resource by a cloud provider
 	ResourceName string `json:"resourceName"`
+	// SkipDelete informs the reconciler to not delete the snapshot from the cloud provider
+	SkipDelete bool `json:"skipDelete,omitempty"`
 }
 
 // +kubebuilder:object:root=true
