@@ -3,15 +3,16 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"time"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func upgradeApproval(ctx context.Context, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, ip *v1alpha1.InstallPlan, log l.Logger) error {
+func upgradeApproval(ctx context.Context, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, ip *operatorsv1alpha1.InstallPlan, log l.Logger) error {
 	if !ip.Spec.Approved && len(ip.Spec.ClusterServiceVersionNames) > 0 {
 		log.Infof("Approving", l.Fields{"installPlan": ip.Name, "csv's": ip.Spec.ClusterServiceVersionNames[0]})
 		ip.Spec.Approved = true

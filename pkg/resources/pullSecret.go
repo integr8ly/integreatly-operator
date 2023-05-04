@@ -22,7 +22,7 @@ func CopyPullSecretToNameSpace(context context.Context, secretSpec *integreatlyv
 	return CopySecret(context, client, secretSpec.Name, secretSpec.Namespace, destName, destNamespace)
 }
 
-//CopySecret will copy or update the destination secret from the source secret
+// CopySecret will copy or update the destination secret from the source secret
 func CopySecret(ctx context.Context, client k8sclient.Client, srcName, srcNamespace, destName, destNamespace string) error {
 	srcSecret := corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: srcName, Namespace: srcNamespace}, &srcSecret)

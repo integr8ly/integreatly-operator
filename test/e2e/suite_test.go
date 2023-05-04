@@ -27,7 +27,7 @@ import (
 	threescaleBv1 "github.com/3scale/3scale-operator/apis/capabilities/v1beta1"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -91,7 +91,7 @@ var _ = BeforeSuite(func() {
 		err = threescaleBv1.SchemeBuilder.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = operatorsv1.AddToScheme(scheme.Scheme)
+		err = operatorsv1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, err := common.NewTestingContext(cfg)

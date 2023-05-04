@@ -22,7 +22,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -40,7 +39,7 @@ import (
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -145,7 +144,7 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 			installation: &integreatlyv1alpha1.RHMI{},
 			fakeClient: func() k8sclient.Client {
 				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("test error")
 				}
 				return mockClient
@@ -992,11 +991,11 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 	}
 	scenarios := []struct {
 		name     string
-		CSV      *olmv1alpha1.ClusterServiceVersion
+		CSV      *operatorsv1alpha1.ClusterServiceVersion
 		EnvVars  map[string]string
 		fields   fields
 		args     args
-		validate func(csv *olmv1alpha1.ClusterServiceVersion, updated bool, err error) error
+		validate func(csv *operatorsv1alpha1.ClusterServiceVersion, updated bool, err error) error
 	}{
 		{
 			name: "new env var is created",
@@ -1010,9 +1009,9 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			},
 			CSV: &operatorsv1alpha1.ClusterServiceVersion{
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+					InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+						StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 								{
 									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
@@ -1059,9 +1058,9 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			},
 			CSV: &operatorsv1alpha1.ClusterServiceVersion{
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+					InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+						StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 								{
 									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
@@ -1123,9 +1122,9 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			},
 			CSV: &operatorsv1alpha1.ClusterServiceVersion{
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+					InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+						StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 								{
 									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{
@@ -1191,9 +1190,9 @@ func TestReconciler_ReconcileCSVEnvVars(t *testing.T) {
 			},
 			CSV: &operatorsv1alpha1.ClusterServiceVersion{
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-					InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-						StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-							DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+					InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+						StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+							DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 								{
 									Name: "rhsso-operator",
 									Spec: appsv1.DeploymentSpec{

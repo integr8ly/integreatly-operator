@@ -17,7 +17,7 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -45,7 +45,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
-				catalogSource := &coreosv1alpha1.CatalogSource{}
+				catalogSource := &operatorsv1alpha1.CatalogSource{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
 				if err != nil {
 					t.Fatalf("Expected catalog source to be created but wasn't: %v", err)
@@ -58,12 +58,12 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		},
 		{
 			Name: "Test catalog source updated successfully",
-			FakeClient: utils.NewTestClient(scheme, &coreosv1alpha1.CatalogSource{
+			FakeClient: utils.NewTestClient(scheme, &operatorsv1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cs-" + testNameSpace,
 					Namespace: testNameSpace,
 				},
-				Spec: coreosv1alpha1.CatalogSourceSpec{
+				Spec: operatorsv1alpha1.CatalogSourceSpec{
 					ConfigMap: "randomConfigMap",
 				},
 			}),
@@ -74,7 +74,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
-				catalogSource := &coreosv1alpha1.CatalogSource{}
+				catalogSource := &operatorsv1alpha1.CatalogSource{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
 
 				if err != nil {
@@ -89,7 +89,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("General error")
 				},
 			},
@@ -104,7 +104,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
@@ -122,7 +122,7 @@ func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 		{
 			Name: "Test catalog source updating error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
@@ -201,7 +201,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("General error")
 				},
 			},
@@ -214,7 +214,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
@@ -230,7 +230,7 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 		{
 			Name: "Test registry config map updating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {

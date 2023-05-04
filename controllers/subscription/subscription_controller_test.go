@@ -9,8 +9,7 @@ import (
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -31,8 +30,8 @@ const (
 
 func TestSubscriptionReconciler(t *testing.T) {
 
-	csv := &v1alpha1.ClusterServiceVersion{
-		Spec: v1alpha1.ClusterServiceVersionSpec{
+	csv := &operatorsv1alpha1.ClusterServiceVersion{
+		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 			Replaces: "123",
 		},
 	}
@@ -41,16 +40,16 @@ func TestSubscriptionReconciler(t *testing.T) {
 		panic(err)
 	}
 
-	installPlan := &olmv1alpha1.InstallPlan{
+	installPlan := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultInstallPlanName,
 			Namespace: operatorNamespace,
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: string(csvStringfied),
 					},
 				},
@@ -68,7 +67,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 	scenarios := []struct {
 		Name                string
 		Request             reconcile.Request
-		APISubscription     *v1alpha1.Subscription
+		APISubscription     *operatorsv1alpha1.Subscription
 		catalogsourceClient catalogsourceClient.CatalogSourceClientInterface
 		Verify              func(client k8sclient.Client, res reconcile.Result, err error, t *testing.T)
 	}{
@@ -80,15 +79,15 @@ func TestSubscriptionReconciler(t *testing.T) {
 					Name:      IntegreatlyPackage,
 				},
 			},
-			APISubscription: &v1alpha1.Subscription{
+			APISubscription: &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: operatorNamespace,
 					Name:      IntegreatlyPackage,
 				},
-				Spec: &v1alpha1.SubscriptionSpec{
-					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+				Spec: &operatorsv1alpha1.SubscriptionSpec{
+					InstallPlanApproval: operatorsv1alpha1.ApprovalAutomatic,
 				},
-				Status: v1alpha1.SubscriptionStatus{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
@@ -99,12 +98,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
-				sub := &v1alpha1.Subscription{}
+				sub := &operatorsv1alpha1.Subscription{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
 				if err != nil {
 					t.Fatalf("unexpected error getting subscription: %s", err.Error())
 				}
-				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalManual {
+				if sub.Spec.InstallPlanApproval != operatorsv1alpha1.ApprovalManual {
 					t.Fatalf("expected Manual but got %s", sub.Spec.InstallPlanApproval)
 				}
 			},
@@ -118,15 +117,15 @@ func TestSubscriptionReconciler(t *testing.T) {
 					Name:      IntegreatlyPackage,
 				},
 			},
-			APISubscription: &v1alpha1.Subscription{
+			APISubscription: &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "other-ns",
 					Name:      IntegreatlyPackage,
 				},
-				Spec: &v1alpha1.SubscriptionSpec{
-					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+				Spec: &operatorsv1alpha1.SubscriptionSpec{
+					InstallPlanApproval: operatorsv1alpha1.ApprovalAutomatic,
 				},
-				Status: v1alpha1.SubscriptionStatus{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
@@ -137,12 +136,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
-				sub := &v1alpha1.Subscription{}
+				sub := &operatorsv1alpha1.Subscription{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: "other-ns"}, sub)
 				if err != nil {
 					t.Fatalf("unexpected error getting subscription : %s", err.Error())
 				}
-				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
+				if sub.Spec.InstallPlanApproval != operatorsv1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
 			},
@@ -156,15 +155,15 @@ func TestSubscriptionReconciler(t *testing.T) {
 					Name:      "other-package",
 				},
 			},
-			APISubscription: &v1alpha1.Subscription{
+			APISubscription: &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: operatorNamespace,
 					Name:      "other-package",
 				},
-				Spec: &v1alpha1.SubscriptionSpec{
-					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+				Spec: &operatorsv1alpha1.SubscriptionSpec{
+					InstallPlanApproval: operatorsv1alpha1.ApprovalAutomatic,
 				},
-				Status: v1alpha1.SubscriptionStatus{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
@@ -175,12 +174,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
-				sub := &v1alpha1.Subscription{}
+				sub := &operatorsv1alpha1.Subscription{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: "other-package", Namespace: operatorNamespace}, sub)
 				if err != nil {
 					t.Fatalf("unexpected error getting subscription: %s", err.Error())
 				}
-				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
+				if sub.Spec.InstallPlanApproval != operatorsv1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
 			},
@@ -194,7 +193,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					Name:      IntegreatlyPackage,
 				},
 			},
-			APISubscription: &v1alpha1.Subscription{},
+			APISubscription: &operatorsv1alpha1.Subscription{},
 			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -210,15 +209,15 @@ func TestSubscriptionReconciler(t *testing.T) {
 					Name:      IntegreatlyPackage,
 				},
 			},
-			APISubscription: &v1alpha1.Subscription{
+			APISubscription: &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: operatorNamespace,
 					Name:      IntegreatlyPackage,
 				},
-				Spec: &olmv1alpha1.SubscriptionSpec{
-					InstallPlanApproval: olmv1alpha1.ApprovalManual,
+				Spec: &operatorsv1alpha1.SubscriptionSpec{
+					InstallPlanApproval: operatorsv1alpha1.ApprovalManual,
 				},
-				Status: v1alpha1.SubscriptionStatus{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					InstallPlanRef: &corev1.ObjectReference{
 						Name:      installPlan.Name,
 						Namespace: installPlan.Namespace,
@@ -232,7 +231,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 
-				sub := &v1alpha1.Subscription{}
+				sub := &operatorsv1alpha1.Subscription{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
 				if err != nil {
 					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
@@ -337,9 +336,9 @@ func TestShouldReconcileSubscription(t *testing.T) {
 
 func getCatalogSourceClient(replaces string) catalogsourceClient.CatalogSourceClientInterface {
 	return &catalogsourceClient.CatalogSourceClientInterfaceMock{
-		GetLatestCSVFunc: func(catalogSourceKey types.NamespacedName, packageName, channelName string) (*v1alpha1.ClusterServiceVersion, error) {
-			return &v1alpha1.ClusterServiceVersion{
-				Spec: v1alpha1.ClusterServiceVersionSpec{
+		GetLatestCSVFunc: func(catalogSourceKey types.NamespacedName, packageName, channelName string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+			return &operatorsv1alpha1.ClusterServiceVersion{
+				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 					Replaces: replaces,
 				},
 			}, nil
@@ -526,8 +525,8 @@ func allowUpdatesValueIsCorrect(client k8sclient.Client, postgresName, redisName
 }
 
 func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
-	defaultCSV := &v1alpha1.ClusterServiceVersion{
-		Spec: v1alpha1.ClusterServiceVersionSpec{
+	defaultCSV := &operatorsv1alpha1.ClusterServiceVersion{
+		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 			Replaces: "1.2.3",
 		},
 	}
@@ -536,16 +535,16 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 		panic(err)
 	}
 
-	defaultInstallPlan := &olmv1alpha1.InstallPlan{
+	defaultInstallPlan := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultInstallPlanName,
 			Namespace: operatorNamespace,
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: string(defaultCSVStringfied),
 					},
 				},
@@ -560,15 +559,15 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 		},
 	}
 
-	defaultSubscription := &v1alpha1.Subscription{
+	defaultSubscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: operatorNamespace,
 			Name:      IntegreatlyPackage,
 		},
-		Spec: &v1alpha1.SubscriptionSpec{
-			InstallPlanApproval: v1alpha1.ApprovalAutomatic,
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
+			InstallPlanApproval: operatorsv1alpha1.ApprovalAutomatic,
 		},
-		Status: v1alpha1.SubscriptionStatus{
+		Status: operatorsv1alpha1.SubscriptionStatus{
 			InstallPlanRef: &corev1.ObjectReference{
 				Name:      defaultInstallPlan.Name,
 				Namespace: defaultInstallPlan.Namespace,
@@ -584,12 +583,12 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 	}
 
 	type fields struct {
-		csv         *v1alpha1.ClusterServiceVersion
-		installPlan *olmv1alpha1.InstallPlan
+		csv         *operatorsv1alpha1.ClusterServiceVersion
+		installPlan *operatorsv1alpha1.InstallPlan
 	}
 
 	type args struct {
-		rhmiSubscription *v1alpha1.Subscription
+		rhmiSubscription *operatorsv1alpha1.Subscription
 		installation     *integreatlyv1alpha1.RHMI
 	}
 	tests := []struct {
@@ -607,19 +606,19 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 			},
 			fields: fields{
 				csv: defaultCSV,
-				installPlan: &olmv1alpha1.InstallPlan{
+				installPlan: &operatorsv1alpha1.InstallPlan{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      defaultInstallPlanName,
 						Namespace: operatorNamespace,
 					},
-					Spec: olmv1alpha1.InstallPlanSpec{
+					Spec: operatorsv1alpha1.InstallPlanSpec{
 						Approved: true,
 					},
-					Status: olmv1alpha1.InstallPlanStatus{
-						Plan: []*olmv1alpha1.Step{
+					Status: operatorsv1alpha1.InstallPlanStatus{
+						Plan: []*operatorsv1alpha1.Step{
 							{
-								Resource: olmv1alpha1.StepResource{
-									Kind:     olmv1alpha1.ClusterServiceVersionKind,
+								Resource: operatorsv1alpha1.StepResource{
+									Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 									Manifest: string(defaultCSVStringfied),
 								},
 							},
@@ -641,19 +640,19 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 			},
 			fields: fields{
 				csv: defaultCSV,
-				installPlan: &olmv1alpha1.InstallPlan{
+				installPlan: &operatorsv1alpha1.InstallPlan{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      defaultInstallPlanName,
 						Namespace: operatorNamespace,
 					},
-					Spec: olmv1alpha1.InstallPlanSpec{
+					Spec: operatorsv1alpha1.InstallPlanSpec{
 						Approved: false,
 					},
-					Status: olmv1alpha1.InstallPlanStatus{
-						Plan: []*olmv1alpha1.Step{
+					Status: operatorsv1alpha1.InstallPlanStatus{
+						Plan: []*operatorsv1alpha1.Step{
 							{
-								Resource: olmv1alpha1.StepResource{
-									Kind:     olmv1alpha1.ClusterServiceVersionKind,
+								Resource: operatorsv1alpha1.StepResource{
+									Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 									Manifest: string(defaultCSVStringfied),
 								},
 							},
@@ -675,17 +674,17 @@ func TestSubscriptionReconciler_HandleUpgrades(t *testing.T) {
 			},
 
 			fields: fields{
-				csv: &olmv1alpha1.ClusterServiceVersion{},
-				installPlan: &olmv1alpha1.InstallPlan{
+				csv: &operatorsv1alpha1.ClusterServiceVersion{},
+				installPlan: &operatorsv1alpha1.InstallPlan{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      defaultInstallPlanName,
 						Namespace: operatorNamespace,
 					},
-					Status: olmv1alpha1.InstallPlanStatus{
-						Plan: []*olmv1alpha1.Step{
+					Status: operatorsv1alpha1.InstallPlanStatus{
+						Plan: []*operatorsv1alpha1.Step{
 							{
-								Resource: olmv1alpha1.StepResource{
-									Kind: olmv1alpha1.ClusterServiceVersionKind,
+								Resource: operatorsv1alpha1.StepResource{
+									Kind: operatorsv1alpha1.ClusterServiceVersionKind,
 								},
 							},
 						},

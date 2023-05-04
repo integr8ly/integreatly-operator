@@ -6,7 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,8 +106,8 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 						Name:      "addon-test-parameters",
 						Namespace: defaultOperatorNamespace,
 					},
-				}, &olmv1alpha1.SubscriptionList{
-					Items: []olmv1alpha1.Subscription{
+				}, &operatorsv1alpha1.SubscriptionList{
+					Items: []operatorsv1alpha1.Subscription{
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name:      "test",
@@ -130,8 +130,8 @@ func TestCreateAddonManagedApiServiceParametersExists(t *testing.T) {
 						Name:      "addon-testfailed-parameters",
 						Namespace: defaultOperatorNamespace,
 					},
-				}, &olmv1alpha1.SubscriptionList{
-					Items: []olmv1alpha1.Subscription{
+				}, &operatorsv1alpha1.SubscriptionList{
+					Items: []operatorsv1alpha1.Subscription{
 						{
 							ObjectMeta: v1.ObjectMeta{
 								Name:      "test",

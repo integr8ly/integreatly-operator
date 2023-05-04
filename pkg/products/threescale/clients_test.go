@@ -3,10 +3,11 @@ package threescale
 import (
 	"context"
 	"fmt"
-	portaClient "github.com/3scale/3scale-porta-go-client/client"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"math/rand"
 	"net/http"
+
+	portaClient "github.com/3scale/3scale-porta-go-client/client"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -51,7 +52,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
 	}
 
-	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 		switch obj := obj.(type) {
 		case *corev1.Secret:
 			if key.Name == "alertmanager-application-monitoring" {

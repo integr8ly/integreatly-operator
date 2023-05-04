@@ -13,22 +13,22 @@ var _ PodExecutorInterface = &PodExecutorInterfaceMock{}
 
 // PodExecutorInterfaceMock is a mock implementation of PodExecutorInterface.
 //
-// 	func TestSomethingThatUsesPodExecutorInterface(t *testing.T) {
+//	func TestSomethingThatUsesPodExecutorInterface(t *testing.T) {
 //
-// 		// make and configure a mocked PodExecutorInterface
-// 		mockedPodExecutorInterface := &PodExecutorInterfaceMock{
-// 			ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-// 				panic("mock out the ExecuteRemoteCommand method")
-// 			},
-// 			ExecuteRemoteContainerCommandFunc: func(ns string, podName string, container string, command []string) (string, string, error) {
-// 				panic("mock out the ExecuteRemoteContainerCommand method")
-// 			},
-// 		}
+//		// make and configure a mocked PodExecutorInterface
+//		mockedPodExecutorInterface := &PodExecutorInterfaceMock{
+//			ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
+//				panic("mock out the ExecuteRemoteCommand method")
+//			},
+//			ExecuteRemoteContainerCommandFunc: func(ns string, podName string, container string, command []string) (string, string, error) {
+//				panic("mock out the ExecuteRemoteContainerCommand method")
+//			},
+//		}
 //
-// 		// use mockedPodExecutorInterface in code that requires PodExecutorInterface
-// 		// and then make assertions.
+//		// use mockedPodExecutorInterface in code that requires PodExecutorInterface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type PodExecutorInterfaceMock struct {
 	// ExecuteRemoteCommandFunc mocks the ExecuteRemoteCommand method.
 	ExecuteRemoteCommandFunc func(ns string, podName string, command []string) (string, string, error)
@@ -85,7 +85,8 @@ func (mock *PodExecutorInterfaceMock) ExecuteRemoteCommand(ns string, podName st
 
 // ExecuteRemoteCommandCalls gets all the calls that were made to ExecuteRemoteCommand.
 // Check the length with:
-//     len(mockedPodExecutorInterface.ExecuteRemoteCommandCalls())
+//
+//	len(mockedPodExecutorInterface.ExecuteRemoteCommandCalls())
 func (mock *PodExecutorInterfaceMock) ExecuteRemoteCommandCalls() []struct {
 	Ns      string
 	PodName string
@@ -126,7 +127,8 @@ func (mock *PodExecutorInterfaceMock) ExecuteRemoteContainerCommand(ns string, p
 
 // ExecuteRemoteContainerCommandCalls gets all the calls that were made to ExecuteRemoteContainerCommand.
 // Check the length with:
-//     len(mockedPodExecutorInterface.ExecuteRemoteContainerCommandCalls())
+//
+//	len(mockedPodExecutorInterface.ExecuteRemoteContainerCommandCalls())
 func (mock *PodExecutorInterfaceMock) ExecuteRemoteContainerCommandCalls() []struct {
 	Ns        string
 	PodName   string

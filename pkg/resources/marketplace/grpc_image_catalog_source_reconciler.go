@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,15 +36,15 @@ func NewGRPCImageCatalogSourceReconciler(image string, client client.Client, nam
 func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context, subName string) (reconcile.Result, error) {
 	r.Log.Infof("Reconciling registry catalog source for namespace", l.Fields{"ns": r.Namespace})
 
-	catalogSource := &coreosv1alpha1.CatalogSource{
+	catalogSource := &operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.CatalogSourceName(),
 			Namespace: r.Namespace,
 		},
 	}
 
-	catalogSourceSpec := coreosv1alpha1.CatalogSourceSpec{
-		SourceType:  coreosv1alpha1.SourceTypeGrpc,
+	catalogSourceSpec := operatorsv1alpha1.CatalogSourceSpec{
+		SourceType:  operatorsv1alpha1.SourceTypeGrpc,
 		Image:       r.Image,
 		DisplayName: r.CatalogSourceName(),
 		Publisher:   Publisher,

@@ -19,7 +19,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
@@ -36,8 +36,6 @@ import (
 
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
@@ -738,9 +736,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Namespace: defaultOperandNamespace + "-operator",
 		},
 		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-			InstallStrategy: olmv1alpha1.NamedInstallStrategy{
-				StrategySpec: olmv1alpha1.StrategyDetailsDeployment{
-					DeploymentSpecs: []olmv1alpha1.StrategyDeploymentSpec{
+			InstallStrategy: operatorsv1alpha1.NamedInstallStrategy{
+				StrategySpec: operatorsv1alpha1.StrategyDetailsDeployment{
+					DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 						{
 							Name: "rhsso-operator",
 							Spec: appsv1.DeploymentSpec{

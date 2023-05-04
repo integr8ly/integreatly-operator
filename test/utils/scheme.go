@@ -19,8 +19,8 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
-	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observabilityv1 "github.com/redhat-developer/observability-operator/v4/api/v1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -44,8 +44,8 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		threescaleAppsv1.AddToScheme,
 		keycloakv1alpha1.AddToScheme,
 		integreatlyv1alpha1.AddToScheme,
-		olmv1alpha1.AddToScheme,
-		olmv1.AddToScheme,
+		operatorsv1.AddToScheme,
+		operatorsv1alpha1.AddToScheme,
 		usersv1.Install,
 		oauthv1.Install,
 		routev1.Install,

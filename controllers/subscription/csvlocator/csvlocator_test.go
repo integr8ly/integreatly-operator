@@ -10,7 +10,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/test/utils"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,25 +21,25 @@ type testScenario struct {
 	Name string
 
 	Locator     CSVLocator
-	InstallPlan *olmv1alpha1.InstallPlan
+	InstallPlan *operatorsv1alpha1.InstallPlan
 
 	InitObjs  []runtime.Object
-	Assertion func(t *testing.T, err error, csv *olmv1alpha1.ClusterServiceVersion)
+	Assertion func(t *testing.T, err error, csv *operatorsv1alpha1.ClusterServiceVersion)
 }
 
 func embeddedScenario(t *testing.T) *testScenario {
 	csvString := `{"metadata":{"name":"test-csv","namespace":"test","creationTimestamp":null},"spec":{"install":{"strategy":""},"version":"1.0.0","customresourcedefinitions":{},"apiservicedefinitions":{},"displayName":"","provider":{}},"status":{"lastUpdateTime":null,"lastTransitionTime":null,"certsLastUpdated":null,"certsRotateAt":null}}`
 
-	installPlan := &olmv1alpha1.InstallPlan{
+	installPlan := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip",
 			Namespace: "test",
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: csvString,
 					},
 				},
@@ -97,16 +97,16 @@ status:
 		t.Fatalf("failed to marshal config map reference: %v", err)
 	}
 
-	installPlan := &olmv1alpha1.InstallPlan{
+	installPlan := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip",
 			Namespace: "test",
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: string(configMapRefJSON),
 					},
 				},
@@ -184,16 +184,16 @@ status:
 		t.Fatalf("failed to marshal config map reference: %v", err)
 	}
 
-	installPlan := &olmv1alpha1.InstallPlan{
+	installPlan := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip",
 			Namespace: "test",
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: string(configMapRefJSON),
 					},
 				},
@@ -237,7 +237,7 @@ func TestGetCSV(t *testing.T) {
 
 func TestCachedCSVLocator(t *testing.T) {
 	mockLocator := &mockCSVLocator{
-		CSV: &olmv1alpha1.ClusterServiceVersion{
+		CSV: &operatorsv1alpha1.ClusterServiceVersion{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "test-csv",
 				Namespace: "test",
@@ -246,7 +246,7 @@ func TestCachedCSVLocator(t *testing.T) {
 		Counter: 0,
 	}
 
-	ip1 := &olmv1alpha1.InstallPlan{
+	ip1 := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip-1",
 			Namespace: "test",
@@ -324,16 +324,16 @@ status:
 		t.Fatalf("failed to marshal config map reference: %v", err)
 	}
 
-	installPlan1 := &olmv1alpha1.InstallPlan{
+	installPlan1 := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip",
 			Namespace: "test",
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: csv1,
 					},
 				},
@@ -341,16 +341,16 @@ status:
 		},
 	}
 
-	installPlan2 := &olmv1alpha1.InstallPlan{
+	installPlan2 := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-ip",
 			Namespace: "test",
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
-						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+					Resource: operatorsv1alpha1.StepResource{
+						Kind:     operatorsv1alpha1.ClusterServiceVersionKind,
 						Manifest: string(configMapRefJSON),
 					},
 				},
@@ -389,7 +389,7 @@ status:
 	}
 }
 
-func assertCorrectCSV(t *testing.T, err error, csv *olmv1alpha1.ClusterServiceVersion) {
+func assertCorrectCSV(t *testing.T, err error, csv *operatorsv1alpha1.ClusterServiceVersion) {
 	if err != nil {
 		t.Fatalf("no error expected, got %v", err)
 	}
@@ -410,11 +410,11 @@ func assertCorrectCSV(t *testing.T, err error, csv *olmv1alpha1.ClusterServiceVe
 }
 
 type mockCSVLocator struct {
-	CSV     *olmv1alpha1.ClusterServiceVersion
+	CSV     *operatorsv1alpha1.ClusterServiceVersion
 	Counter int
 }
 
-func (m *mockCSVLocator) GetCSV(_ context.Context, _ k8sclient.Client, _ *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
+func (m *mockCSVLocator) GetCSV(_ context.Context, _ k8sclient.Client, _ *operatorsv1alpha1.InstallPlan) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	m.Counter++
 	return m.CSV, nil
 }

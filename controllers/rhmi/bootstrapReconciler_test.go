@@ -478,7 +478,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return errors.New("generic error")
 					}
 					return mockClient
@@ -504,7 +504,7 @@ func TestReconciler_retrieveConsoleURLAndSubdomain(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return k8serr.NewNotFound(schema.GroupResource{}, "generic")
 					}
 					return mockClient
@@ -938,7 +938,7 @@ func TestReconciler_checkCloudResourcesConfig(t *testing.T) {
 			args: args{
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("generic error")
 					}
 					return mockClient

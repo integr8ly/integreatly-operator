@@ -13,6 +13,15 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
+	"math/big"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	appsv1alpha1 "github.com/3scale/apicast-operator/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
@@ -23,9 +32,7 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"io/ioutil"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,15 +40,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"math/big"
-	"net/http"
-	"net/url"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -364,7 +364,7 @@ func installThreeScaleApicastGatewayOperator(client k8sclient.Client) error {
 			log.Info("Error get install plan for subscription " + subscription.Name + ", waiting")
 			return false, nil
 		}
-		if latestInstallPlan.Status.Phase != olmv1alpha1.InstallPlanPhaseComplete {
+		if latestInstallPlan.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete {
 			log.Info("Install plan phase is " + string(latestInstallPlan.Status.Phase) + ", waiting for Complete")
 			return false, nil
 		}

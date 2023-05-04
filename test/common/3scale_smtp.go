@@ -54,7 +54,7 @@ var (
 	original3scaleUsername       = ""
 )
 
-//Test3ScaleSMTPConfig to confirm 3scale can send an email
+// Test3ScaleSMTPConfig to confirm 3scale can send an email
 func Test3ScaleSMTPConfig(t TestingTB, ctx *TestingContext) {
 	inst, err := GetRHMI(ctx.Client, true)
 	if err != nil {

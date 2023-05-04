@@ -16,31 +16,31 @@ var _ ProductConfig = &ProductConfigMock{}
 
 // ProductConfigMock is a mock implementation of ProductConfig.
 //
-// 	func TestSomethingThatUsesProductConfig(t *testing.T) {
+//	func TestSomethingThatUsesProductConfig(t *testing.T) {
 //
-// 		// make and configure a mocked ProductConfig
-// 		mockedProductConfig := &ProductConfigMock{
-// 			ConfigureFunc: func(obj metav1.Object) error {
-// 				panic("mock out the Configure method")
-// 			},
-// 			GetActiveQuotaFunc: func() string {
-// 				panic("mock out the GetActiveQuota method")
-// 			},
-// 			GetRateLimitConfigFunc: func() marin3rconfig.RateLimitConfig {
-// 				panic("mock out the GetRateLimitConfig method")
-// 			},
-// 			GetReplicasFunc: func(ddcssName string) int32 {
-// 				panic("mock out the GetReplicas method")
-// 			},
-// 			GetResourceConfigFunc: func(ddcssName string) (corev1.ResourceRequirements, bool) {
-// 				panic("mock out the GetResourceConfig method")
-// 			},
-// 		}
+//		// make and configure a mocked ProductConfig
+//		mockedProductConfig := &ProductConfigMock{
+//			ConfigureFunc: func(obj metav1.Object) error {
+//				panic("mock out the Configure method")
+//			},
+//			GetActiveQuotaFunc: func() string {
+//				panic("mock out the GetActiveQuota method")
+//			},
+//			GetRateLimitConfigFunc: func() marin3rconfig.RateLimitConfig {
+//				panic("mock out the GetRateLimitConfig method")
+//			},
+//			GetReplicasFunc: func(ddcssName string) int32 {
+//				panic("mock out the GetReplicas method")
+//			},
+//			GetResourceConfigFunc: func(ddcssName string) (corev1.ResourceRequirements, bool) {
+//				panic("mock out the GetResourceConfig method")
+//			},
+//		}
 //
-// 		// use mockedProductConfig in code that requires ProductConfig
-// 		// and then make assertions.
+//		// use mockedProductConfig in code that requires ProductConfig
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ProductConfigMock struct {
 	// ConfigureFunc mocks the Configure method.
 	ConfigureFunc func(obj metav1.Object) error
@@ -106,7 +106,8 @@ func (mock *ProductConfigMock) Configure(obj metav1.Object) error {
 
 // ConfigureCalls gets all the calls that were made to Configure.
 // Check the length with:
-//     len(mockedProductConfig.ConfigureCalls())
+//
+//	len(mockedProductConfig.ConfigureCalls())
 func (mock *ProductConfigMock) ConfigureCalls() []struct {
 	Obj metav1.Object
 } {
@@ -134,7 +135,8 @@ func (mock *ProductConfigMock) GetActiveQuota() string {
 
 // GetActiveQuotaCalls gets all the calls that were made to GetActiveQuota.
 // Check the length with:
-//     len(mockedProductConfig.GetActiveQuotaCalls())
+//
+//	len(mockedProductConfig.GetActiveQuotaCalls())
 func (mock *ProductConfigMock) GetActiveQuotaCalls() []struct {
 } {
 	var calls []struct {
@@ -160,7 +162,8 @@ func (mock *ProductConfigMock) GetRateLimitConfig() marin3rconfig.RateLimitConfi
 
 // GetRateLimitConfigCalls gets all the calls that were made to GetRateLimitConfig.
 // Check the length with:
-//     len(mockedProductConfig.GetRateLimitConfigCalls())
+//
+//	len(mockedProductConfig.GetRateLimitConfigCalls())
 func (mock *ProductConfigMock) GetRateLimitConfigCalls() []struct {
 } {
 	var calls []struct {
@@ -189,7 +192,8 @@ func (mock *ProductConfigMock) GetReplicas(ddcssName string) int32 {
 
 // GetReplicasCalls gets all the calls that were made to GetReplicas.
 // Check the length with:
-//     len(mockedProductConfig.GetReplicasCalls())
+//
+//	len(mockedProductConfig.GetReplicasCalls())
 func (mock *ProductConfigMock) GetReplicasCalls() []struct {
 	DdcssName string
 } {
@@ -220,7 +224,8 @@ func (mock *ProductConfigMock) GetResourceConfig(ddcssName string) (corev1.Resou
 
 // GetResourceConfigCalls gets all the calls that were made to GetResourceConfig.
 // Check the length with:
-//     len(mockedProductConfig.GetResourceConfigCalls())
+//
+//	len(mockedProductConfig.GetResourceConfigCalls())
 func (mock *ProductConfigMock) GetResourceConfigCalls() []struct {
 	DdcssName string
 } {
