@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.107.0
+# cloud.google.com/go v0.110.0
 ## explicit; go 1.19
 cloud.google.com/go
 cloud.google.com/go/internal
@@ -13,11 +13,11 @@ cloud.google.com/go/compute/internal
 # cloud.google.com/go/compute/metadata v0.2.3
 ## explicit; go 1.19
 cloud.google.com/go/compute/metadata
-# cloud.google.com/go/iam v0.8.0
+# cloud.google.com/go/iam v0.13.0
 ## explicit; go 1.19
 cloud.google.com/go/iam
 cloud.google.com/go/iam/apiv1/iampb
-# cloud.google.com/go/longrunning v0.3.0
+# cloud.google.com/go/longrunning v0.4.1
 ## explicit; go 1.19
 cloud.google.com/go/longrunning
 cloud.google.com/go/longrunning/autogen
@@ -32,8 +32,8 @@ cloud.google.com/go/monitoring/internal
 cloud.google.com/go/redis/apiv1
 cloud.google.com/go/redis/apiv1/redispb
 cloud.google.com/go/redis/internal
-# cloud.google.com/go/storage v1.27.0
-## explicit; go 1.17
+# cloud.google.com/go/storage v1.30.1
+## explicit; go 1.19
 cloud.google.com/go/storage
 cloud.google.com/go/storage/internal
 cloud.google.com/go/storage/internal/apiv2
@@ -713,7 +713,6 @@ github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
@@ -762,7 +761,7 @@ github.com/google/uuid
 ## explicit; go 1.19
 github.com/googleapis/enterprise-certificate-proxy/client
 github.com/googleapis/enterprise-certificate-proxy/client/util
-# github.com/googleapis/gax-go/v2 v2.7.0
+# github.com/googleapis/gax-go/v2 v2.7.1
 ## explicit; go 1.19
 github.com/googleapis/gax-go/v2
 github.com/googleapis/gax-go/v2/apierror
@@ -804,7 +803,7 @@ github.com/headzoo/surf/util
 # github.com/imdario/mergo v0.3.13
 ## explicit; go 1.13
 github.com/imdario/mergo
-# github.com/integr8ly/cloud-resource-operator v1.0.1
+# github.com/integr8ly/cloud-resource-operator v1.1.0
 ## explicit; go 1.18
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types
@@ -1079,6 +1078,9 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tidwall/pretty v1.0.1
 ## explicit
+# github.com/xhit/go-str2duration/v2 v2.1.0
+## explicit; go 1.13
+github.com/xhit/go-str2duration/v2
 # go.etcd.io/bbolt v1.3.6
 ## explicit; go 1.12
 go.etcd.io/bbolt
@@ -1193,10 +1195,10 @@ go.uber.org/zap/zapcore
 ## explicit; go 1.17
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/sha3
-# golang.org/x/mod v0.7.0
+# golang.org/x/mod v0.8.0
 ## explicit; go 1.17
 golang.org/x/mod/semver
-# golang.org/x/net v0.7.0
+# golang.org/x/net v0.8.0
 ## explicit; go 1.17
 golang.org/x/net/bpf
 golang.org/x/net/context
@@ -1217,7 +1219,7 @@ golang.org/x/net/ipv6
 golang.org/x/net/proxy
 golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.5.0
+# golang.org/x/oauth2 v0.6.0
 ## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/authhandler
@@ -1231,7 +1233,7 @@ golang.org/x/oauth2/jwt
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.5.0
+# golang.org/x/sys v0.6.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -1239,10 +1241,10 @@ golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.5.0
+# golang.org/x/term v0.6.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.7.0
+# golang.org/x/text v0.8.0
 ## explicit; go 1.17
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -1277,12 +1279,13 @@ golang.org/x/xerrors/internal
 # gomodules.xyz/jsonpatch/v2 v2.2.0
 ## explicit; go 1.12
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/api v0.110.0
+# google.golang.org/api v0.114.0
 ## explicit; go 1.19
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
 google.golang.org/api/iamcredentials/v1
 google.golang.org/api/internal
+google.golang.org/api/internal/cert
 google.golang.org/api/internal/gensupport
 google.golang.org/api/internal/impersonate
 google.golang.org/api/internal/third_party/uritemplates
@@ -1293,11 +1296,9 @@ google.golang.org/api/servicenetworking/v1
 google.golang.org/api/sqladmin/v1beta4
 google.golang.org/api/storage/v1
 google.golang.org/api/transport
-google.golang.org/api/transport/cert
 google.golang.org/api/transport/grpc
 google.golang.org/api/transport/http
 google.golang.org/api/transport/http/internal/propagation
-google.golang.org/api/transport/internal/dca
 # google.golang.org/appengine v1.6.7
 ## explicit; go 1.11
 google.golang.org/appengine
@@ -1312,7 +1313,7 @@ google.golang.org/appengine/internal/socket
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/socket
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20230209215440-0dfe4f8abfcc
+# google.golang.org/genproto v0.0.0-20230320184635-7606e756e683
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -1323,7 +1324,6 @@ google.golang.org/genproto/googleapis/api/label
 google.golang.org/genproto/googleapis/api/metric
 google.golang.org/genproto/googleapis/api/monitoredres
 google.golang.org/genproto/googleapis/cloud/extendedops
-google.golang.org/genproto/googleapis/iam/v1
 google.golang.org/genproto/googleapis/longrunning
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
@@ -1397,7 +1397,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.28.1
+# google.golang.org/protobuf v1.29.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext

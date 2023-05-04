@@ -6,6 +6,7 @@ package gcp
 import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"context"
+	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	"google.golang.org/api/servicenetworking/v1"
 	"net"
 	"sync"
@@ -24,10 +25,10 @@ var _ NetworkManager = &NetworkManagerMock{}
 //			ComponentsExistFunc: func(contextMoqParam context.Context) (bool, error) {
 //				panic("mock out the ComponentsExist method")
 //			},
-//			CreateNetworkIpRangeFunc: func(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, error) {
+//			CreateNetworkIpRangeFunc: func(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, croType.StatusMessage, error) {
 //				panic("mock out the CreateNetworkIpRange method")
 //			},
-//			CreateNetworkServiceFunc: func(contextMoqParam context.Context) (*servicenetworking.Connection, error) {
+//			CreateNetworkServiceFunc: func(contextMoqParam context.Context) (*servicenetworking.Connection, croType.StatusMessage, error) {
 //				panic("mock out the CreateNetworkService method")
 //			},
 //			DeleteNetworkIpRangeFunc: func(contextMoqParam context.Context) error {
@@ -53,10 +54,10 @@ type NetworkManagerMock struct {
 	ComponentsExistFunc func(contextMoqParam context.Context) (bool, error)
 
 	// CreateNetworkIpRangeFunc mocks the CreateNetworkIpRange method.
-	CreateNetworkIpRangeFunc func(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, error)
+	CreateNetworkIpRangeFunc func(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, croType.StatusMessage, error)
 
 	// CreateNetworkServiceFunc mocks the CreateNetworkService method.
-	CreateNetworkServiceFunc func(contextMoqParam context.Context) (*servicenetworking.Connection, error)
+	CreateNetworkServiceFunc func(contextMoqParam context.Context) (*servicenetworking.Connection, croType.StatusMessage, error)
 
 	// DeleteNetworkIpRangeFunc mocks the DeleteNetworkIpRange method.
 	DeleteNetworkIpRangeFunc func(contextMoqParam context.Context) error
@@ -156,7 +157,7 @@ func (mock *NetworkManagerMock) ComponentsExistCalls() []struct {
 }
 
 // CreateNetworkIpRange calls CreateNetworkIpRangeFunc.
-func (mock *NetworkManagerMock) CreateNetworkIpRange(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, error) {
+func (mock *NetworkManagerMock) CreateNetworkIpRange(contextMoqParam context.Context, iPNet *net.IPNet) (*computepb.Address, croType.StatusMessage, error) {
 	if mock.CreateNetworkIpRangeFunc == nil {
 		panic("NetworkManagerMock.CreateNetworkIpRangeFunc: method is nil but NetworkManager.CreateNetworkIpRange was just called")
 	}
@@ -192,7 +193,7 @@ func (mock *NetworkManagerMock) CreateNetworkIpRangeCalls() []struct {
 }
 
 // CreateNetworkService calls CreateNetworkServiceFunc.
-func (mock *NetworkManagerMock) CreateNetworkService(contextMoqParam context.Context) (*servicenetworking.Connection, error) {
+func (mock *NetworkManagerMock) CreateNetworkService(contextMoqParam context.Context) (*servicenetworking.Connection, croType.StatusMessage, error) {
 	if mock.CreateNetworkServiceFunc == nil {
 		panic("NetworkManagerMock.CreateNetworkServiceFunc: method is nil but NetworkManager.CreateNetworkService was just called")
 	}

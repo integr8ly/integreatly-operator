@@ -44,7 +44,13 @@ type MockSubnetsClient struct {
 }
 
 func GetMockSubnetsClient(modifyFn func(subnetClient *MockSubnetsClient)) *MockSubnetsClient {
-	mock := &MockSubnetsClient{}
+	mock := &MockSubnetsClient{
+		GetFn: func(req *computepb.GetSubnetworkRequest) (*computepb.Subnetwork, error) {
+			return nil, &googleapi.Error{
+				Code: http.StatusNotFound,
+			}
+		},
+	}
 	if modifyFn != nil {
 		modifyFn(mock)
 	}
@@ -53,13 +59,8 @@ func GetMockSubnetsClient(modifyFn func(subnetClient *MockSubnetsClient)) *MockS
 
 func (m *MockSubnetsClient) Get(ctx context.Context, req *computepb.GetSubnetworkRequest, opts ...gax.CallOption) (*computepb.Subnetwork, error) {
 	m.call++
-	if m.GetFn != nil && m.call == 1 {
-		return m.GetFn(req)
-	}
 	if m.GetFnTwo != nil && m.call > 1 {
 		return m.GetFnTwo(req)
 	}
-	return nil, &googleapi.Error{
-		Code: http.StatusNotFound,
-	}
+	return m.GetFn(req)
 }

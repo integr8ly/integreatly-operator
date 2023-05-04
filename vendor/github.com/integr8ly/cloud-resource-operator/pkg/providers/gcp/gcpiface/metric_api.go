@@ -80,11 +80,8 @@ func GetMockMetricClient(modifyFn func(metricClient *MockMetricClient)) *MockMet
 
 func (m *MockMetricClient) ListTimeSeries(ctx context.Context, req *monitoringpb.ListTimeSeriesRequest, opts ...gax.CallOption) ([]*monitoringpb.TimeSeries, error) {
 	m.call++
-	if m.ListTimeSeriesFn != nil && m.call == 1 {
-		return m.ListTimeSeriesFn(ctx, req, opts...)
-	}
 	if m.ListTimeSeriesFnTwo != nil && m.call > 1 {
 		return m.ListTimeSeriesFnTwo(ctx, req, opts...)
 	}
-	return []*monitoringpb.TimeSeries{}, nil
+	return m.ListTimeSeriesFn(ctx, req, opts...)
 }

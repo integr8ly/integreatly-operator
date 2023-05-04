@@ -53,7 +53,6 @@ func (c *addressClient) Delete(ctx context.Context, req *computepb.DeleteGlobalA
 	return op.Wait(ctx)
 }
 
-// Mock Client code below
 type MockAddressClient struct {
 	AddressAPI
 	GetFn    func(*computepb.GetGlobalAddressRequest) (*computepb.Address, error)
@@ -64,7 +63,14 @@ type MockAddressClient struct {
 }
 
 func GetMockAddressClient(modifyFn func(addressClient *MockAddressClient)) *MockAddressClient {
-	mock := &MockAddressClient{}
+	mock := &MockAddressClient{
+		InsertFn: func(req *computepb.InsertGlobalAddressRequest) error {
+			return nil
+		},
+		DeleteFn: func(req *computepb.DeleteGlobalAddressRequest) error {
+			return nil
+		},
+	}
 	if modifyFn != nil {
 		modifyFn(mock)
 	}
@@ -85,15 +91,9 @@ func (m *MockAddressClient) Get(ctx context.Context, req *computepb.GetGlobalAdd
 }
 
 func (m *MockAddressClient) Insert(ctx context.Context, req *computepb.InsertGlobalAddressRequest, opts ...gax.CallOption) error {
-	if m.InsertFn != nil {
-		return m.InsertFn(req)
-	}
-	return nil
+	return m.InsertFn(req)
 }
 
 func (m *MockAddressClient) Delete(ctx context.Context, req *computepb.DeleteGlobalAddressRequest, opts ...gax.CallOption) error {
-	if m.DeleteFn != nil {
-		return m.DeleteFn(req)
-	}
-	return nil
+	return m.DeleteFn(req)
 }

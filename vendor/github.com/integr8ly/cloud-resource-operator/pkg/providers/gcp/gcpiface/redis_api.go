@@ -98,36 +98,21 @@ func GetMockRedisClient(modifyFn func(redisClient *MockRedisClient)) *MockRedisC
 }
 
 func (m *MockRedisClient) DeleteInstance(ctx context.Context, req *redispb.DeleteInstanceRequest, opts ...gax.CallOption) (*redis.DeleteInstanceOperation, error) {
-	if m.DeleteInstanceFn != nil {
-		return m.DeleteInstanceFn(ctx, req, opts...)
-	}
-	return &redis.DeleteInstanceOperation{}, nil
+	return m.DeleteInstanceFn(ctx, req, opts...)
 }
 
 func (m *MockRedisClient) CreateInstance(ctx context.Context, req *redispb.CreateInstanceRequest, opts ...gax.CallOption) (*redis.CreateInstanceOperation, error) {
-	if m.CreateInstanceFn != nil {
-		return m.CreateInstanceFn(ctx, req, opts...)
-	}
-	return &redis.CreateInstanceOperation{}, nil
+	return m.CreateInstanceFn(ctx, req, opts...)
 }
 
 func (m *MockRedisClient) GetInstance(ctx context.Context, req *redispb.GetInstanceRequest, opts ...gax.CallOption) (*redispb.Instance, error) {
-	if m.GetInstanceFn != nil {
-		return m.GetInstanceFn(ctx, req, opts...)
-	}
-	return &redispb.Instance{}, nil
+	return m.GetInstanceFn(ctx, req, opts...)
 }
 
 func (m *MockRedisClient) UpdateInstance(ctx context.Context, req *redispb.UpdateInstanceRequest, opts ...gax.CallOption) (*redis.UpdateInstanceOperation, error) {
-	if m.UpdateInstanceFn != nil {
-		return m.UpdateInstanceFn(ctx, req, opts...)
-	}
-	return &redis.UpdateInstanceOperation{}, nil
+	return m.UpdateInstanceFn(ctx, req, opts...)
 }
 
 func (m *MockRedisClient) UpgradeInstance(ctx context.Context, req *redispb.UpgradeInstanceRequest, opts ...gax.CallOption) (*redis.UpgradeInstanceOperation, error) {
-	if m.UpgradeInstanceFn != nil {
-		return m.UpgradeInstanceFn(ctx, req, opts...)
-	}
-	return &redis.UpgradeInstanceOperation{}, nil
+	return m.UpgradeInstanceFn(ctx, req, opts...)
 }

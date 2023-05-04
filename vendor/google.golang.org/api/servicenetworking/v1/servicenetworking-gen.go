@@ -323,7 +323,8 @@ type AddDnsZoneRequest struct {
 	ConsumerNetwork string `json:"consumerNetwork,omitempty"`
 
 	// DnsSuffix: Required. The DNS name suffix for the zones e.g.
-	// `example.com`.
+	// `example.com.`. Cloud DNS requires that a DNS suffix ends with a
+	// trailing dot.
 	DnsSuffix string `json:"dnsSuffix,omitempty"`
 
 	// Name: Required. The name for both the private zone in the shared
@@ -644,6 +645,7 @@ type Api struct {
 	// Possible values:
 	//   "SYNTAX_PROTO2" - Syntax `proto2`.
 	//   "SYNTAX_PROTO3" - Syntax `proto3`.
+	//   "SYNTAX_EDITIONS" - Syntax `editions`.
 	Syntax string `json:"syntax,omitempty"`
 
 	// Version: A version string for this interface. If specified, must have
@@ -969,6 +971,10 @@ type BackendRule struct {
 	// of a long running operation. The default is no deadline.
 	OperationDeadline float64 `json:"operationDeadline,omitempty"`
 
+	// OverridesByRequestProtocol: The map between request protocol and the
+	// backend address.
+	OverridesByRequestProtocol map[string]BackendRule `json:"overridesByRequestProtocol,omitempty"`
+
 	// Possible values:
 	//   "PATH_TRANSLATION_UNSPECIFIED"
 	//   "CONSTANT_ADDRESS" - Use the backend address as-is, with no
@@ -1211,7 +1217,10 @@ type ClientLibrarySettings struct {
 	// RubySettings: Settings for Ruby client libraries.
 	RubySettings *RubySettings `json:"rubySettings,omitempty"`
 
-	// Version: Version of the API to apply these settings to.
+	// Version: Version of the API to apply these settings to. This is the
+	// full protobuf package for the API, ending in the version element.
+	// Examples: "google.cloud.speech.v1" and
+	// "google.spanner.admin.database.v1".
 	Version string `json:"version,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "CppSettings") to
@@ -1830,7 +1839,8 @@ type DnsRecordSet struct {
 	Data []string `json:"data,omitempty"`
 
 	// Domain: Required. The DNS or domain name of the record set, e.g.
-	// `test.example.com`.
+	// `test.example.com`. Cloud DNS requires that a DNS suffix ends with a
+	// trailing dot.
 	Domain string `json:"domain,omitempty"`
 
 	// Ttl: Required. The period of time for which this RecordSet can be
@@ -1866,6 +1876,7 @@ func (s *DnsRecordSet) MarshalJSON() ([]byte, error) {
 // DnsZone: Represents a DNS zone resource.
 type DnsZone struct {
 	// DnsSuffix: The DNS name suffix of this zone e.g. `example.com.`.
+	// Cloud DNS requires that a DNS suffix ends with a trailing dot.
 	DnsSuffix string `json:"dnsSuffix,omitempty"`
 
 	// Name: User assigned name for this resource. Must be unique within the
@@ -2169,6 +2180,10 @@ func (s *Endpoint) MarshalJSON() ([]byte, error) {
 
 // Enum: Enum type definition.
 type Enum struct {
+	// Edition: The source edition string, only valid when syntax is
+	// SYNTAX_EDITIONS.
+	Edition string `json:"edition,omitempty"`
+
 	// Enumvalue: Enum value definitions.
 	Enumvalue []*EnumValue `json:"enumvalue,omitempty"`
 
@@ -2186,9 +2201,10 @@ type Enum struct {
 	// Possible values:
 	//   "SYNTAX_PROTO2" - Syntax `proto2`.
 	//   "SYNTAX_PROTO3" - Syntax `proto3`.
+	//   "SYNTAX_EDITIONS" - Syntax `editions`.
 	Syntax string `json:"syntax,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Enumvalue") to
+	// ForceSendFields is a list of field names (e.g. "Edition") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
@@ -2196,7 +2212,7 @@ type Enum struct {
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Enumvalue") to include in
+	// NullFields is a list of field names (e.g. "Edition") to include in
 	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
@@ -3207,6 +3223,7 @@ type Method struct {
 	// Possible values:
 	//   "SYNTAX_PROTO2" - Syntax `proto2`.
 	//   "SYNTAX_PROTO3" - Syntax `proto3`.
+	//   "SYNTAX_EDITIONS" - Syntax `editions`.
 	Syntax string `json:"syntax,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Name") to
@@ -4234,6 +4251,11 @@ type Publishing struct {
 	//   "STREET_VIEW" - Street View Org.
 	Organization string `json:"organization,omitempty"`
 
+	// ProtoReferenceDocumentationUri: Optional link to proto reference
+	// documentation. Example:
+	// https://cloud.google.com/pubsub/lite/docs/reference/rpc
+	ProtoReferenceDocumentationUri string `json:"protoReferenceDocumentationUri,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "ApiShortName") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
@@ -5243,6 +5265,10 @@ func (s *SystemParameters) MarshalJSON() ([]byte, error) {
 
 // Type: A protocol buffer message type.
 type Type struct {
+	// Edition: The source edition string, only valid when syntax is
+	// SYNTAX_EDITIONS.
+	Edition string `json:"edition,omitempty"`
+
 	// Fields: The list of fields.
 	Fields []*Field `json:"fields,omitempty"`
 
@@ -5264,9 +5290,10 @@ type Type struct {
 	// Possible values:
 	//   "SYNTAX_PROTO2" - Syntax `proto2`.
 	//   "SYNTAX_PROTO3" - Syntax `proto3`.
+	//   "SYNTAX_EDITIONS" - Syntax `editions`.
 	Syntax string `json:"syntax,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Fields") to
+	// ForceSendFields is a list of field names (e.g. "Edition") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
@@ -5274,8 +5301,8 @@ type Type struct {
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Fields") to include in API
-	// requests with the JSON null value. By default, fields with empty
+	// NullFields is a list of field names (e.g. "Edition") to include in
+	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
@@ -6054,14 +6081,7 @@ type OperationsListCall struct {
 
 // List: Lists operations that match the specified filter in the
 // request. If the server doesn't support this method, it returns
-// `UNIMPLEMENTED`. NOTE: the `name` binding allows API services to
-// override the binding to use different resource name schemes, such as
-// `users/*/operations`. To override the binding, API services can add a
-// binding such as "/v1/{name=users/*}/operations" to their service
-// configuration. For backwards compatibility, the default name includes
-// the operations collection id, however overriding users must ensure
-// the name binding is the parent resource, without the operations
-// collection id.
+// `UNIMPLEMENTED`.
 //
 // - name: The name of the operation's parent resource.
 func (r *OperationsService) List(name string) *OperationsListCall {
@@ -6190,7 +6210,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`. NOTE: the `name` binding allows API services to override the binding to use different resource name schemes, such as `users/*/operations`. To override the binding, API services can add a binding such as `\"/v1/{name=users/*}/operations\"` to their service configuration. For backwards compatibility, the default name includes the operations collection id, however overriding users must ensure the name binding is the parent resource, without the operations collection id.",
+	//   "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
 	//   "flatPath": "v1/operations",
 	//   "httpMethod": "GET",
 	//   "id": "servicenetworking.operations.list",

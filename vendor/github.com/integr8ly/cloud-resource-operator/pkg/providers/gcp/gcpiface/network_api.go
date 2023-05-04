@@ -57,7 +57,6 @@ func (c *networksClient) RemovePeering(ctx context.Context, req *computepb.Remov
 	return op.Wait(ctx)
 }
 
-// Mock Client code below
 type MockNetworksClient struct {
 	NetworksAPI
 	ListFn          func(*computepb.ListNetworksRequest) ([]*computepb.Network, error)
@@ -65,7 +64,14 @@ type MockNetworksClient struct {
 }
 
 func GetMockNetworksClient(modifyFn func(networksClient *MockNetworksClient)) *MockNetworksClient {
-	mock := &MockNetworksClient{}
+	mock := &MockNetworksClient{
+		ListFn: func(req *computepb.ListNetworksRequest) ([]*computepb.Network, error) {
+			return []*computepb.Network{}, nil
+		},
+		RemovePeeringFn: func(req *computepb.RemovePeeringNetworkRequest) error {
+			return nil
+		},
+	}
 	if modifyFn != nil {
 		modifyFn(mock)
 	}
@@ -73,15 +79,9 @@ func GetMockNetworksClient(modifyFn func(networksClient *MockNetworksClient)) *M
 }
 
 func (m *MockNetworksClient) List(ctx context.Context, req *computepb.ListNetworksRequest, opts ...gax.CallOption) ([]*computepb.Network, error) {
-	if m.ListFn != nil {
-		return m.ListFn(req)
-	}
-	return []*computepb.Network{}, nil
+	return m.ListFn(req)
 }
 
 func (m *MockNetworksClient) RemovePeering(ctx context.Context, req *computepb.RemovePeeringNetworkRequest, opts ...gax.CallOption) error {
-	if m.RemovePeeringFn != nil {
-		return m.RemovePeeringFn(req)
-	}
-	return nil
+	return m.RemovePeeringFn(req)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +22,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	errorUtil "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	str2duration "github.com/xhit/go-str2duration/v2"
 	"google.golang.org/api/option"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 	v1 "k8s.io/api/core/v1"
@@ -104,12 +107,6 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 		return nil, croType.StatusMessage(errMsg), fmt.Errorf("%s: %w", errMsg, err)
 	}
 
-	maintenanceWindowEnabled, err := resources.VerifyPostgresMaintenanceWindow(ctx, p.Client, pg.Namespace, pg.Name)
-	if err != nil {
-		errMsg := "failed to verify if postgres updates are allowed"
-		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
-	}
-
 	sqlClient, err := gcpiface.NewSQLAdminService(ctx, option.WithCredentialsJSON(creds.ServiceAccountJson), p.Logger)
 	if err != nil {
 		errMsg := "could not initialise new SQL Admin Service"
@@ -127,21 +124,31 @@ func (p *PostgresProvider) ReconcilePostgres(ctx context.Context, pg *v1alpha1.P
 		errMsg := "failed to reconcile network provider config"
 		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 	}
-	address, err := networkManager.CreateNetworkIpRange(ctx, ipRangeCidr)
-	if err != nil {
-		msg := "failed to create network service"
-		return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+	address, msg, err := networkManager.CreateNetworkIpRange(ctx, ipRangeCidr)
+	if err != nil || msg != "" {
+		return nil, msg, err
 	}
-	_, err = networkManager.CreateNetworkService(ctx)
-	if err != nil {
-		msg := "failed to create network service"
-		return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+	_, msg, err = networkManager.CreateNetworkService(ctx)
+	if err != nil || msg != "" {
+		return nil, msg, err
 	}
 
-	return p.reconcileCloudSQLInstance(ctx, pg, sqlClient, strategyConfig, address, maintenanceWindowEnabled)
+	instance, statusMessage, err := p.reconcileCloudSQLInstance(ctx, pg, sqlClient, strategyConfig, address)
+	if err != nil || instance == nil {
+		return nil, statusMessage, err
+	}
+	if pg.Spec.SnapshotFrequency != "" && pg.Spec.SnapshotRetention != "" {
+		statusMessage, err = p.reconcileCloudSqlInstanceSnapshots(ctx, pg)
+		if err != nil {
+			return nil, statusMessage, err
+		}
+	} else if pg.Spec.SnapshotFrequency != "" || pg.Spec.SnapshotRetention != "" {
+		p.Logger.Warn("postgres instance has only one snapshot field present, skipping snapshotting")
+	}
+	return instance, statusMessage, err
 }
 
-func (p *PostgresProvider) reconcileCloudSQLInstance(ctx context.Context, pg *v1alpha1.Postgres, sqladminService gcpiface.SQLAdminService, strategyConfig *StrategyConfig, address *computepb.Address, maintenanceWindowEnabled bool) (*providers.PostgresInstance, croType.StatusMessage, error) {
+func (p *PostgresProvider) reconcileCloudSQLInstance(ctx context.Context, pg *v1alpha1.Postgres, sqladminService gcpiface.SQLAdminService, strategyConfig *StrategyConfig, address *computepb.Address) (*providers.PostgresInstance, croType.StatusMessage, error) {
 	logger := p.Logger.WithField("action", "reconcileCloudSQLInstance")
 	logger.Infof("reconciling cloudSQL instance")
 
@@ -205,27 +212,18 @@ func (p *PostgresProvider) reconcileCloudSQLInstance(ctx context.Context, pg *v1
 		return nil, croType.StatusMessage(msg), nil
 	}
 
-	if maintenanceWindowEnabled {
-		logger.Infof("building cloudSQL update config for: %s", foundInstance.Name)
-		modifiedInstance, err := p.buildCloudSQLUpdateStrategy(gcpInstanceConfig, foundInstance)
-		if err != nil {
-			msg := "error building update config for cloudsql instance"
-			return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
-		}
-		if modifiedInstance != nil {
-			logger.Infof("modifying cloudSQL instance: %s", foundInstance.Name)
-			_, err := sqladminService.ModifyInstance(ctx, strategyConfig.ProjectID, foundInstance.Name, modifiedInstance)
-			if err != nil && !resources.IsConflictError(err) {
-				msg := fmt.Sprintf("failed to modify cloudsql instance: %s", foundInstance.Name)
-				return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
-			}
-		}
-		_, err = controllerutil.CreateOrUpdate(ctx, p.Client, pg, func() error {
-			pg.Spec.MaintenanceWindow = false
-			return nil
-		})
-		if err != nil {
-			msg := "failed to set postgres maintenance window to false"
+	logger.Infof("building cloudSQL update config for: %s", foundInstance.Name)
+	modifiedInstance, err := p.buildCloudSQLUpdateStrategy(gcpInstanceConfig, foundInstance)
+	if err != nil {
+		msg := "error building update config for cloudsql instance"
+		return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
+	}
+
+	if modifiedInstance != nil {
+		logger.Infof("modifying cloudSQL instance: %s", foundInstance.Name)
+		_, err := sqladminService.ModifyInstance(ctx, strategyConfig.ProjectID, foundInstance.Name, modifiedInstance)
+		if err != nil && !resources.IsConflictError(err) {
+			msg := fmt.Sprintf("failed to modify cloudsql instance: %s", foundInstance.Name)
 			return nil, croType.StatusMessage(msg), errorUtil.Wrap(err, msg)
 		}
 	}
@@ -567,6 +565,12 @@ func (p *PostgresProvider) buildCloudSQLUpdateStrategy(cloudSQLConfig *gcpiface.
 			modifiedInstance.Settings.DataDiskSizeGb = cloudSQLConfig.Settings.DataDiskSizeGb
 			updateFound = true
 		}
+
+		userLabelsMatch := reflect.DeepEqual(cloudSQLConfig.Settings.UserLabels, foundInstance.Settings.UserLabels)
+		if !userLabelsMatch {
+			modifiedInstance.Settings.UserLabels = cloudSQLConfig.Settings.UserLabels
+			updateFound = true
+		}
 	}
 
 	if cloudSQLConfig.Settings.BackupConfiguration != nil && foundInstance.Settings.BackupConfiguration != nil {
@@ -602,12 +606,25 @@ func (p *PostgresProvider) buildCloudSQLUpdateStrategy(cloudSQLConfig *gcpiface.
 		modifiedInstance.Settings.IpConfiguration = &sqladmin.IpConfiguration{
 			ForceSendFields: []string{},
 		}
-		if cloudSQLConfig.Settings.IpConfiguration != nil && foundInstance.Settings.IpConfiguration != nil {
-			if cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled != nil && *cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled != foundInstance.Settings.IpConfiguration.Ipv4Enabled {
-				modifiedInstance.Settings.IpConfiguration.Ipv4Enabled = *cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled
-				modifiedInstance.Settings.IpConfiguration.ForceSendFields = append(modifiedInstance.Settings.IpConfiguration.ForceSendFields, "Ipv4Enabled")
-				updateFound = true
-			}
+		if cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled != nil && *cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled != foundInstance.Settings.IpConfiguration.Ipv4Enabled {
+			modifiedInstance.Settings.IpConfiguration.Ipv4Enabled = *cloudSQLConfig.Settings.IpConfiguration.Ipv4Enabled
+			modifiedInstance.Settings.IpConfiguration.ForceSendFields = append(modifiedInstance.Settings.IpConfiguration.ForceSendFields, "Ipv4Enabled")
+			updateFound = true
+		}
+	}
+
+	if cloudSQLConfig.Settings.MaintenanceWindow != nil && foundInstance.Settings.MaintenanceWindow != nil {
+		modifiedInstance.Settings.MaintenanceWindow = &sqladmin.MaintenanceWindow{
+			ForceSendFields: []string{},
+		}
+		if cloudSQLConfig.Settings.MaintenanceWindow.Day != nil && *cloudSQLConfig.Settings.MaintenanceWindow.Day != foundInstance.Settings.MaintenanceWindow.Day {
+			modifiedInstance.Settings.MaintenanceWindow.Day = *cloudSQLConfig.Settings.MaintenanceWindow.Day
+			updateFound = true
+		}
+		if cloudSQLConfig.Settings.MaintenanceWindow.Hour != nil && *cloudSQLConfig.Settings.MaintenanceWindow.Hour != foundInstance.Settings.MaintenanceWindow.Hour {
+			modifiedInstance.Settings.MaintenanceWindow.Hour = *cloudSQLConfig.Settings.MaintenanceWindow.Hour
+			modifiedInstance.Settings.MaintenanceWindow.ForceSendFields = append(modifiedInstance.Settings.MaintenanceWindow.ForceSendFields, "Hour")
+			updateFound = true
 		}
 	}
 
@@ -692,4 +709,83 @@ func buildDefaultCloudSQLSecret(p *v1alpha1.Postgres) (*v1.Secret, error) {
 		},
 		Type: v1.SecretTypeOpaque,
 	}, nil
+}
+
+func (p *PostgresProvider) reconcileCloudSqlInstanceSnapshots(ctx context.Context, pg *v1alpha1.Postgres) (croType.StatusMessage, error) {
+	snapshotRetention, err := str2duration.ParseDuration(string(pg.Spec.SnapshotRetention))
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to parse %q into go duration", pg.Spec.SnapshotRetention)
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	snapshots, err := getAllSnapshotsForInstance(ctx, p.Client, pg.Name, pg.Namespace)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to fetch all snapshots associated with postgres instance %s", pg.Name)
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	if len(snapshots) == 0 {
+		err := p.createSnapshot(ctx, pg)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to create postgres snapshot for %s", pg.Name)
+			return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+		msg := fmt.Sprintf("created postgres snapshot CR for instance %s", pg.Name)
+		return croType.StatusMessage(msg), nil
+	}
+	latestSnapshot, err := getLatestPostgresSnapshot(ctx, p.Client, pg.Name, pg.Namespace)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to determine latest snapshot id for instance %s", pg.Name)
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	if latestSnapshot == nil {
+		msg := fmt.Sprintf("latest snapshot creation in progress for instance %s", pg.Name)
+		return croType.StatusMessage(msg), nil
+	}
+	for i := range snapshots {
+		if snapshots[i].Name == latestSnapshot.Name {
+			continue
+		}
+		retainUntil := snapshots[i].CreationTimestamp.Add(snapshotRetention)
+		if time.Now().After(retainUntil) {
+			p.Logger.Infof("deleting snapshot %s because its retention has expired", snapshots[i].Name)
+			err := p.Client.Delete(ctx, snapshots[i])
+			if err != nil {
+				errMsg := fmt.Sprintf("failed to delete postgres snapshot %s", snapshots[i].Name)
+				return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+			}
+		}
+	}
+	snapshotFrequency, err := str2duration.ParseDuration(string(pg.Spec.SnapshotFrequency))
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to parse %q into go duration", pg.Spec.SnapshotFrequency)
+		return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	sort.Slice(snapshots, func(i, j int) bool {
+		return snapshots[i].GetCreationTimestamp().After(snapshots[j].GetCreationTimestamp().Time)
+	})
+	nextSnapshotTime := snapshots[0].CreationTimestamp.Add(snapshotFrequency)
+	if time.Now().After(nextSnapshotTime) {
+		err = p.createSnapshot(ctx, pg)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to create postgres snapshot for %s", pg.Name)
+			return croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
+	}
+	msg := fmt.Sprintf("successfully reconciled postgres instance %s snapshots", pg.Name)
+	p.Logger.Info(msg)
+	return croType.StatusMessage(msg), nil
+}
+
+func (p *PostgresProvider) createSnapshot(ctx context.Context, pg *v1alpha1.Postgres) error {
+	instanceName := annotations.Get(pg, ResourceIdentifierAnnotation)
+	p.Logger.Infof("creating new snapshot for postgres instance %s", instanceName)
+	snapshot := &v1alpha1.PostgresSnapshot{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: pg.Name,
+			Namespace:    pg.Namespace,
+		},
+		Spec: v1alpha1.PostgresSnapshotSpec{
+			ResourceName: pg.Name,
+		},
+	}
+	return p.Client.Create(ctx, snapshot)
 }
