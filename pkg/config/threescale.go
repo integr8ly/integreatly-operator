@@ -7,6 +7,7 @@ import (
 	threescalev1alpha1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -161,9 +162,15 @@ func setDefaultNumberOfReplicas(defaultNumberOfReplicas int64, threeScaleCompone
 	}
 }
 
-func (t *ThreeScale) GetBackendRedisNodeSize(activeQuota string) string {
+func (t *ThreeScale) GetBackendRedisNodeSize(activeQuota string, platformType configv1.PlatformType) string {
 	if activeQuota == quota.OneHundredMillionQuotaName {
-		return "cache.m5.large"
+		switch platformType {
+		case configv1.AWSPlatformType:
+			return "cache.m5.large"
+		case configv1.GCPPlatformType:
+			// size in GB on GCP
+			return "11"
+		}
 	}
 
 	return ""
