@@ -17,7 +17,9 @@ COPY manifests/ ./manifests
 COPY products ./products
 COPY version ./version
 
-RUN make test/compile/functional
+RUN curl -Ls https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.12.14/openshift-client-linux.tar.gz | tar -zx && \
+    mv oc /usr/local/bin && \
+    make test/compile/functional
 
 FROM quay.io/openshift/origin-cli
 # Install chrome for tests
