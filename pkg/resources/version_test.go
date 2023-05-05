@@ -295,8 +295,16 @@ func TestComparisons(t *testing.T) {
 	}
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			v1, _ := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V1))
-			v2, _ := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V2))
+			v1, err := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V1))
+			if err != nil {
+				t.Fatalf("expected error %v", err)
+			}
+
+			v2, err := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V2))
+			if err != nil {
+				t.Fatalf("expected error %v", err)
+			}
+
 			scenario.Verifier(v1, v2, t)
 		})
 	}

@@ -218,7 +218,11 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 	endTime = startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
 
 	threescalePods := &v1.PodList{}
-	selector, _ := labels.Parse("deploymentConfig=backend-listener")
+	selector, err := labels.Parse("deploymentConfig=backend-listener")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	threescaleListOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(ThreeScaleProductNamespace),
 		k8sclient.MatchingLabelsSelector{
@@ -226,7 +230,11 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		},
 	}
 	keycloakPods := &v1.PodList{}
-	selector, _ = labels.Parse("component=keycloak")
+	selector, err = labels.Parse("component=keycloak")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	keycloakListOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(RHSSOUserProductNamespace),
 		k8sclient.MatchingLabelsSelector{
@@ -234,7 +242,11 @@ func TestQuotaValues(t TestingTB, ctx *TestingContext) {
 		},
 	}
 	ratelimitPods := &v1.PodList{}
-	selector, _ = labels.Parse("app=ratelimit")
+	selector, err = labels.Parse("app=ratelimit")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ratelimitListOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(Marin3rProductNamespace),
 		k8sclient.MatchingLabelsSelector{

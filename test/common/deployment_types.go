@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	"fmt"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
@@ -463,8 +464,13 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 
 func GetListOptions(namespace string, podLabels ...string) []k8sclient.ListOption {
 	selector := labels.NewSelector()
+	var err error
 	for _, label := range podLabels {
-		selector, _ = labels.Parse(label)
+		selector, err = labels.Parse(label)
+		if err != nil {
+			fmt.Printf("failed to get pods with error %v", err)
+			return nil
+		}
 	}
 	return []k8sclient.ListOption{
 		k8sclient.InNamespace(namespace),

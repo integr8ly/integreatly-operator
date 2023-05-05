@@ -959,3 +959,108 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_reconcileBlackboxExporter(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Reconciler    *resources.Reconciler
+		ConfigManager config.ConfigReadWriter
+		Config        *config.Observability
+		installation  *v1alpha1.RHMI
+		mpm           marketplace.MarketplaceInterface
+		log           l.Logger
+		extraParams   map[string]string
+		recorder      record.EventRecorder
+	}
+	type args struct {
+		ctx    context.Context
+		client k8sclient.Client
+		cfg    *config.Observability
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    v1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "Successful reconciling Blackbox Exporter - Phase Completed",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx:    context.TODO(),
+				client: utils.NewTestClient(scheme),
+				cfg:    &config.Observability{},
+			},
+			want:    v1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+		{
+			name: "Failure creating blackbox-exporter ServiceAccount - Phase Failed",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: func() k8sclient.Client {
+					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
+					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+						return fmt.Errorf("generic error")
+					}
+					return fakeClient
+				}(),
+				cfg: &config.Observability{},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+		{
+			name: "Failure creating ClusterRole - Phase Failed",
+			fields: fields{
+				log: getLogger(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				client: &clientMock.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+						return nil
+					},
+					UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
+						return genericError
+					},
+				},
+				cfg: &config.Observability{},
+			},
+			want:    v1alpha1.PhaseFailed,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				Reconciler:    tt.fields.Reconciler,
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				installation:  tt.fields.installation,
+				mpm:           tt.fields.mpm,
+				log:           tt.fields.log,
+				extraParams:   tt.fields.extraParams,
+				recorder:      tt.fields.recorder,
+			}
+			got, err := r.reconcileBlackboxExporter(tt.args.ctx, tt.args.client, tt.args.cfg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileBlackboxExporter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileBlackboxExporter() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

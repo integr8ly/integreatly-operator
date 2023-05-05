@@ -16,15 +16,29 @@ type Version struct {
 }
 
 func NewVersion(version integreatlyv1alpha1.OperatorVersion) (*Version, error) {
-	r, _ := regexp.Compile(`^[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)$`)
+	r, err := regexp.Compile(`^[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)$`)
+	if err != nil {
+		return nil, err
+	}
+
 	matches := r.FindStringSubmatch(string(version))
 	if len(matches) < 5 {
 		return nil, errors.New("invalid version")
 	}
 
-	major, _ := strconv.Atoi(matches[1])
-	minor, _ := strconv.Atoi(matches[2])
-	patch, _ := strconv.Atoi(matches[4])
+	major, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return nil, err
+	}
+	minor, err := strconv.Atoi(matches[2])
+	if err != nil {
+		return nil, err
+	}
+	patch, err := strconv.Atoi(matches[4])
+	if err != nil {
+		return nil, err
+	}
+
 	return &Version{
 		Major: major,
 		Minor: minor,

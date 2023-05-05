@@ -277,9 +277,13 @@ func CreateListenerResource(listenerName, listenerAddress string, listenerPort i
           "false"}}
 **/
 func CreateRuntimesResource() *envoy_runtime.Runtime {
-	layer, _ := structpb.NewStruct(map[string]interface{}{
+	layer, err := structpb.NewStruct(map[string]interface{}{
 		"envoy.reloadable_features.sanitize_http_header_referer": false,
 	})
+	if err != nil {
+		fmt.Printf("failed to create runtimes resource with error %v", err)
+		return nil
+	}
 
 	envoyRuntime := &envoy_runtime.Runtime{
 		Name:  "runtime",

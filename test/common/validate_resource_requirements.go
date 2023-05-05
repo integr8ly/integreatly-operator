@@ -112,7 +112,11 @@ func verifyQuotaConfig(t TestingTB, ctx *TestingContext) {
 				}
 
 				clientPods := &corev1.PodList{}
-				selector, _ := labels.Parse(label)
+				selector, err := labels.Parse(label)
+				if err != nil {
+					t.Fatal(err)
+				}
+
 				listOpts := []k8sclient.ListOption{
 					k8sclient.InNamespace(pods["namespace"]),
 					k8sclient.MatchingLabelsSelector{

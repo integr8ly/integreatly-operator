@@ -609,6 +609,9 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, 
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
+	if kcUser.Name == "" {
+		return "", fmt.Errorf("failed to get valid generated username")
+	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{

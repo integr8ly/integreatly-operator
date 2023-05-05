@@ -683,7 +683,10 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 		email := userHelper.GetEmailFromIdentity(osUser, identitiesList)
 
 		if email == "" {
-			email = userHelper.SetUserNameAsEmail(osUser.Name)
+			email, err = userHelper.SetUserNameAsEmail(osUser.Name)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		newKeycloakUser := keycloak.KeycloakAPIUser{
@@ -731,6 +734,10 @@ func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keyclo
 			Name:      userHelper.GetValidGeneratedUserName(user),
 			Namespace: r.Config.GetNamespace(),
 		},
+	}
+
+	if kcUser.Name == "" {
+		return "", false, fmt.Errorf("failed to get valid generated username")
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {

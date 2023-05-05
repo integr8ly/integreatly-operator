@@ -461,9 +461,16 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 }
 
 func WaitForRHMIStageToComplete(t ginkgo.GinkgoTInterface, restConfig *rest.Config) error {
-	testingContext, _ := NewTestingContext(restConfig)
-	err := wait.Poll(time.Second*1, time.Minute*10, func() (done bool, err error) {
-		rhmi, _ := GetRHMI(testingContext.Client, true)
+	testingContext, err := NewTestingContext(restConfig)
+	if err != nil {
+		return err
+	}
+
+	err = wait.Poll(time.Second*1, time.Minute*10, func() (done bool, err error) {
+		rhmi, err := GetRHMI(testingContext.Client, true)
+		if err != nil {
+			return false, err
+		}
 		if rhmi.Status.Stage == "complete" {
 			return true, nil
 		}

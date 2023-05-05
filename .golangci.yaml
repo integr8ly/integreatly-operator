@@ -11,6 +11,8 @@ linters-settings:
     checks: ["all", -S1005, -S1031, -S1011, -S1025, -S1034, -S1001]
   staticcheck:
     checks: ["all", -SA4006, -SA9003, -SA5011, -SA4001, -SA4010, SA1019, -SA1030, -SA6000, -SA4009, -SA4022, -SA5001]
+  errcheck:
+    check-blank: true
 
 presets:
   - bugs

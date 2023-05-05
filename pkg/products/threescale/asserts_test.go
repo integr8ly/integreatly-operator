@@ -106,11 +106,20 @@ func (t ThreeScaleTestScenario) assertInstallationSuccessful() error {
 
 	if v1alpha1.IsRHOAMSingletenant(v1alpha1.InstallationType(t.args.installation.Spec.Type)) {
 		// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
-		test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
+		test1User, err := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
+		if err != nil {
+			return err
+		}
+
 		if test1User.UserDetails.Role != adminRole {
 			return fmt.Errorf("%s should be an admin user in 3scale", test1User.UserDetails.Username)
 		}
-		test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
+
+		test2User, err := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
+		if err != nil {
+			return err
+		}
+
 		if test2User.UserDetails.Role != memberRole {
 			return fmt.Errorf("%s should be a member user in 3scale", test2User.UserDetails.Username)
 		}

@@ -929,6 +929,25 @@ func TestReconciler_CleanupKeycloakResources(t *testing.T) {
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
 		},
+		{
+			name: "Test uninstallation: installations deletion timestamp is nil - phase completed",
+			fields: fields{
+				ConfigManager:         basicConfigMock(),
+				Log:                   getLogger(),
+				KeycloakClientFactory: getMoqKeycloakClientFactory(),
+			},
+			args: args{
+				ctx: context.TODO(),
+				inst: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						DeletionTimestamp: nil,
+					},
+				},
+				serverClient: moqclient.NewSigsClientMoqWithScheme(scheme),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1315,8 +1334,8 @@ func Test_CheckGrafanaDashboardCRD(t *testing.T) {
 				KeycloakClientFactory: tt.fields.KeycloakClientFactory,
 			}
 
-			if got, _ := r.CheckGrafanaDashboardCRD(context.TODO(), r.Oauthv1Client); got != tt.want {
-				t.Errorf("CheckGrafanaDashboardCRD() = %v, want %v", got, tt.want)
+			if got, err := r.CheckGrafanaDashboardCRD(context.TODO(), r.Oauthv1Client); err != nil && got != tt.want {
+				t.Errorf("CheckGrafanaDashboardCRD() = %v, want %v, error: %v", got, tt.want, err)
 			}
 		})
 	}

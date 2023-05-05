@@ -558,7 +558,10 @@ func resetSecret(ctx *TestingContext, t TestingTB, isCreated bool) (string, erro
 func patch3ScaleSecret(ctx *TestingContext, t TestingTB) (string, error) {
 	t.Log("Patching 3Scale secret")
 	// Update secret with our test smtp details
-	serviceIP, _ := getServiceIP(ctx)
+	serviceIP, err := getServiceIP(ctx)
+	if err != nil {
+		return "", err
+	}
 	secret, err := get3scaleSecret(ctx)
 	if err != nil {
 		return "", err

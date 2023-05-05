@@ -145,7 +145,9 @@ status:
     certsLastUpdated: null
     certsRotateAt: null
     lastTransitionTime: null
-    lastUpdateTime: null`
+    lastUpdateTime: null
+
+`
 
 	// compress and encode data
 	var b bytes.Buffer
