@@ -10,11 +10,10 @@ Feel free to consult the [Epic Brief](https://docs.google.com/document/d/1HEk2D8
 3. Deploy RHOAM to the cluster using a CatalogSource [installation](https://github.com/integr8ly/integreatly-operator/blob/master/docs/installation_guides/olm_installation.md)
 
 ## Create the MonitoringStack CR
-1. Apply this YAML [file](./obo_crs.yaml) to the cluster to create the MonitoringStack CR, `alertmanager-rhoam` Secret, `rhoam-prometheus-additional-scrape-configs` Secret, and the required RBAC:
+1. Apply this YAML [file](./obo_crs.yaml) to the cluster to create the MonitoringStack CR, `alertmanager-rhoam` Secret, `openshift-monitoring-federation` ServiceMonitor, and the required RBAC:
     ```bash
     oc apply -f docs/observability/obo_crs.yaml
     ```
-    **Note:** The `rhoam-prometheus-additional-scrape-configs` Secret will occasionally get overwritten by OBO which will remove the metrics federation entry for the Prometheus targets. At this time, the only way around this is to manually re-patch the secret. We are coordinating with the OBO team to provide a more stable solution and this guide will be updated when that work is complete.
 
 ## Access the Prometheus UI
 1. OBO currently doesn't support the Prometheus UI, however it can still be accessed by setting up port forwarding on your local machine:
