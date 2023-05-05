@@ -84,10 +84,10 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
    If you haven't run the performance test suite before, see the comments in [MGDAPI-238](https://issues.redhat.com/browse/MGDAPI-238). And [Austin's doc](https://docs.google.com/document/d/1NJBUsieRkBLnN2PMAF5cpaH7uXq9mZCx1JQaT9Ruytk/edit?usp=sharing) in particular.
 
-7. In a terminal window #2, run the following script [alerts-during-perf-testing.sh](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh) to continuously check alerts during the AZ downtime. The script creates two files which can be uploaded to the jira when the test completes.
+7. In a terminal window #2, run the following script [alerts-check.sh](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-check.sh) to continuously check alerts during the AZ downtime. The script creates two files which can be uploaded to the jira when the test completes.
 
-   - `alerts-firing-during-perf-testing-report.csv`
-   - `alerts-pending-during-perf-testing-report.csv`
+   - `<timestamp>-alerts-firing-report.csv`
+   - `<timestamp>-alerts-pending-report.csv`
 
 8. In a terminal window #3, create and run a curl script to monitor the customer-like application
 
