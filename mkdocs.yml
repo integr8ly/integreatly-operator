@@ -31,5 +31,7 @@ nav:
       - Local and OLM: uninstallation/local_and_olm.md
       - Addon flow: uninstallation/addon_flow.md
       - ROSA: uninstallation/rosa.md
+    - Load Testing:
+      - Using Locust: load_testing/locust.md
 
 
