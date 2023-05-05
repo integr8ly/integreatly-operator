@@ -3,8 +3,9 @@ package resources
 import (
 	"context"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/test/utils"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/utils"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,6 +16,7 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -143,7 +145,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ReconcileRHSSOPostgresCredentials(context.TODO(), tt.installation, tt.fakeClient(), tt.postgresName, defaultOperatorNamespace, defaultRHSSONamespace)
+			got, err := ReconcileRHSSOPostgresCredentials(context.TODO(), tt.installation, tt.fakeClient(), tt.postgresName, defaultOperatorNamespace, defaultRHSSONamespace, constants.GcpSnapshotFrequency, constants.GcpSnapshotRetention)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReconcileRHSSOPostgresCredentials() error = %v, wantErr %v", err, tt.wantErr)
 				return

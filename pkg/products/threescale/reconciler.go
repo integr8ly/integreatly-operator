@@ -370,7 +370,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		phase, err = r.reconcileExternalDatasources(ctx, serverClient, productConfig.GetActiveQuota())
+		phase, err = r.reconcileExternalDatasources(ctx, serverClient, productConfig.GetActiveQuota(), platformType)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
 			return phase, err
@@ -1269,7 +1269,7 @@ func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclie
 
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance
 // which are used when 3scale HighAvailability mode is enabled
-func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client, activeQuota string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client, activeQuota string, platformType configv1.PlatformType) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling external datastores")
 	ns := r.installation.Namespace
 
@@ -1280,6 +1280,13 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// If there is a quota change, the quota on the installation spec would not be set to the active quota yet
 	quotaChange := r.installation.Status.Quota != activeQuota
+
+	// if we are on GCP set snaphshot frequency and retention
+	var snapshotFrequency, snapshotRetention types.Duration
+	if platformType == configv1.GCPPlatformType {
+		snapshotFrequency = constants.GcpSnapshotFrequency
+		snapshotRetention = constants.GcpSnapshotRetention
+	}
 
 	r.log.Infof("Backend redis config", map[string]interface{}{"quotaChange": quotaChange, "activeQuota": activeQuota})
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, r.Config.GetBackendRedisNodeSize(activeQuota), quotaChange, quotaChange, func(cr metav1.Object) error {
@@ -1306,7 +1313,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a postgres instance
 	r.log.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, constants.PostgresApplyImmediately, "", "", func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, constants.PostgresApplyImmediately, snapshotFrequency, snapshotRetention, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
