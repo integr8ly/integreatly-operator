@@ -4737,3 +4737,34 @@ func TestReconciler_deleteConsoleLink(t *testing.T) {
 		})
 	}
 }
+
+func TestIsQuotaChanged(t *testing.T) {
+	tests := []struct {
+		name        string
+		newQuota    string
+		activeQuota string
+		expected    bool
+	}{
+		{
+			name:        "fresh installation",
+			newQuota:    "",
+			activeQuota: "",
+			expected:    false,
+		},
+		{
+			name:        "Changing quotas during install",
+			newQuota:    quota.OneMillionQuotaName,
+			activeQuota: quota.OneHundredThousandQuotaName,
+			expected:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isQuotaChanged(tt.newQuota, tt.activeQuota)
+			if got != tt.expected {
+				t.Errorf("isQuotaChanged() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
