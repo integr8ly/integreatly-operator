@@ -18,7 +18,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	v1 "github.com/openshift/api/project/v1"
 
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/onsi/ginkgo/v2"

@@ -10,7 +10,7 @@ func (mer *MultiErr) Error() string {
 	return "product reconcilation errors : " + strings.Join(mer.Errors, ":  ")
 }
 
-//Add an error to the collection
+// Add an error to the collection
 func (mer *MultiErr) Add(err error) {
 	if mer.Errors == nil {
 		mer.Errors = []string{}

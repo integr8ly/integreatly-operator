@@ -9,7 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	"github.com/integr8ly/integreatly-operator/version"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +26,7 @@ func setupRecorder() record.EventRecorder {
 func TestIsUpgradeAvailable(t *testing.T) {
 	scenarios := []struct {
 		Name                           string
-		RhoamSubscription              *olmv1alpha1.Subscription
+		RhoamSubscription              *operatorsv1alpha1.Subscription
 		ExpectedUpgradeAvailableResult bool
 	}{
 		{
@@ -36,8 +36,8 @@ func TestIsUpgradeAvailable(t *testing.T) {
 		},
 		{
 			Name: "Test same RHOAM CSV version in subscription",
-			RhoamSubscription: &olmv1alpha1.Subscription{
-				Status: olmv1alpha1.SubscriptionStatus{
+			RhoamSubscription: &operatorsv1alpha1.Subscription{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					CurrentCSV:   "1.0.0",
 					InstalledCSV: "1.0.0",
 				},
@@ -46,8 +46,8 @@ func TestIsUpgradeAvailable(t *testing.T) {
 		},
 		{
 			Name: "Test new RHOAM CSV version in subscription",
-			RhoamSubscription: &olmv1alpha1.Subscription{
-				Status: olmv1alpha1.SubscriptionStatus{
+			RhoamSubscription: &operatorsv1alpha1.Subscription{
+				Status: operatorsv1alpha1.SubscriptionStatus{
 					CurrentCSV:   "1.0.1",
 					InstalledCSV: "1.0.0",
 				},
@@ -69,7 +69,7 @@ func TestIsUpgradeAvailable(t *testing.T) {
 func TestIsUpgradeServiceAffecting(t *testing.T) {
 	scenarios := []struct {
 		Name                           string
-		RhoamCSV                       *olmv1alpha1.ClusterServiceVersion
+		RhoamCSV                       *operatorsv1alpha1.ClusterServiceVersion
 		ExpectedServiceAffectingResult bool
 	}{
 		{
@@ -79,7 +79,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 		},
 		{
 			Name: "Test CSV with no service_affecting annotation",
-			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{},
 				},
@@ -88,7 +88,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 		},
 		{
 			Name: "Test CSV with service_affecting annotation true",
-			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						"serviceAffecting": "true",
@@ -99,7 +99,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 		},
 		{
 			Name: "Test CSV with service_affecting annotation false",
-			RhoamCSV: &olmv1alpha1.ClusterServiceVersion{
+			RhoamCSV: &operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						"serviceAffecting": "false",
@@ -126,18 +126,18 @@ func TestApproveUpgrade(t *testing.T) {
 		Namespace: defaultNamespace,
 	}
 
-	installPlanReadyForApproval := &olmv1alpha1.InstallPlan{
+	installPlanReadyForApproval := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: installPlanObjectMeta,
-		Spec: olmv1alpha1.InstallPlanSpec{
+		Spec: operatorsv1alpha1.InstallPlanSpec{
 			Approved: false,
 			ClusterServiceVersionNames: []string{
 				"RHOAM-v1.0.0",
 			},
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Plan: []*olmv1alpha1.Step{
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Plan: []*operatorsv1alpha1.Step{
 				{
-					Resource: olmv1alpha1.StepResource{
+					Resource: operatorsv1alpha1.StepResource{
 						Kind:     "ClusterServiceVersion",
 						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.GetVersion()),
 					},
@@ -153,13 +153,13 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 	}
 
-	installPlanAlreadyUpgrading := &olmv1alpha1.InstallPlan{
+	installPlanAlreadyUpgrading := &operatorsv1alpha1.InstallPlan{
 		ObjectMeta: installPlanObjectMeta,
-		Spec: olmv1alpha1.InstallPlanSpec{
+		Spec: operatorsv1alpha1.InstallPlanSpec{
 			Approved: false,
 		},
-		Status: olmv1alpha1.InstallPlanStatus{
-			Phase: olmv1alpha1.InstallPlanPhaseInstalling,
+		Status: operatorsv1alpha1.InstallPlanStatus{
+			Phase: operatorsv1alpha1.InstallPlanPhaseInstalling,
 		},
 	}
 
@@ -173,9 +173,9 @@ func TestApproveUpgrade(t *testing.T) {
 		FakeClient      k8sclient.Client
 		Context         context.Context
 		EventRecorder   record.EventRecorder
-		RhmiInstallPlan *olmv1alpha1.InstallPlan
+		RhmiInstallPlan *operatorsv1alpha1.InstallPlan
 		RHMI            *integreatlyv1alpha1.RHMI
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error)
+		Verify          func(rhmiInstallPlan *operatorsv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
@@ -184,7 +184,7 @@ func TestApproveUpgrade(t *testing.T) {
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
 			RHMI:            rhoamMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			Verify: func(updatedRhmiInstallPlan *operatorsv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -202,7 +202,7 @@ func TestApproveUpgrade(t *testing.T) {
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
 			RHMI:            rhoamMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
+			Verify: func(updatedRhmiInstallPlan *operatorsv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -221,7 +221,7 @@ func TestApproveUpgrade(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
+			retrievedInstallPlan := &operatorsv1alpha1.InstallPlan{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
 			if err != nil {
 				t.Fatal(err)

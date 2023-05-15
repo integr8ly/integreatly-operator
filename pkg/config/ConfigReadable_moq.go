@@ -15,37 +15,37 @@ var _ ConfigReadable = &ConfigReadableMock{}
 
 // ConfigReadableMock is a mock implementation of ConfigReadable.
 //
-// 	func TestSomethingThatUsesConfigReadable(t *testing.T) {
+//	func TestSomethingThatUsesConfigReadable(t *testing.T) {
 //
-// 		// make and configure a mocked ConfigReadable
-// 		mockedConfigReadable := &ConfigReadableMock{
-// 			GetHostFunc: func() string {
-// 				panic("mock out the GetHost method")
-// 			},
-// 			GetNamespaceFunc: func() string {
-// 				panic("mock out the GetNamespace method")
-// 			},
-// 			GetOperatorVersionFunc: func() integreatlyv1alpha1.OperatorVersion {
-// 				panic("mock out the GetOperatorVersion method")
-// 			},
-// 			GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
-// 				panic("mock out the GetProductName method")
-// 			},
-// 			GetProductVersionFunc: func() integreatlyv1alpha1.ProductVersion {
-// 				panic("mock out the GetProductVersion method")
-// 			},
-// 			GetWatchableCRDsFunc: func() []runtime.Object {
-// 				panic("mock out the GetWatchableCRDs method")
-// 			},
-// 			ReadFunc: func() ProductConfig {
-// 				panic("mock out the Read method")
-// 			},
-// 		}
+//		// make and configure a mocked ConfigReadable
+//		mockedConfigReadable := &ConfigReadableMock{
+//			GetHostFunc: func() string {
+//				panic("mock out the GetHost method")
+//			},
+//			GetNamespaceFunc: func() string {
+//				panic("mock out the GetNamespace method")
+//			},
+//			GetOperatorVersionFunc: func() integreatlyv1alpha1.OperatorVersion {
+//				panic("mock out the GetOperatorVersion method")
+//			},
+//			GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
+//				panic("mock out the GetProductName method")
+//			},
+//			GetProductVersionFunc: func() integreatlyv1alpha1.ProductVersion {
+//				panic("mock out the GetProductVersion method")
+//			},
+//			GetWatchableCRDsFunc: func() []runtime.Object {
+//				panic("mock out the GetWatchableCRDs method")
+//			},
+//			ReadFunc: func() ProductConfig {
+//				panic("mock out the Read method")
+//			},
+//		}
 //
-// 		// use mockedConfigReadable in code that requires ConfigReadable
-// 		// and then make assertions.
+//		// use mockedConfigReadable in code that requires ConfigReadable
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ConfigReadableMock struct {
 	// GetHostFunc mocks the GetHost method.
 	GetHostFunc func() string
@@ -116,7 +116,8 @@ func (mock *ConfigReadableMock) GetHost() string {
 
 // GetHostCalls gets all the calls that were made to GetHost.
 // Check the length with:
-//     len(mockedConfigReadable.GetHostCalls())
+//
+//	len(mockedConfigReadable.GetHostCalls())
 func (mock *ConfigReadableMock) GetHostCalls() []struct {
 } {
 	var calls []struct {
@@ -142,7 +143,8 @@ func (mock *ConfigReadableMock) GetNamespace() string {
 
 // GetNamespaceCalls gets all the calls that were made to GetNamespace.
 // Check the length with:
-//     len(mockedConfigReadable.GetNamespaceCalls())
+//
+//	len(mockedConfigReadable.GetNamespaceCalls())
 func (mock *ConfigReadableMock) GetNamespaceCalls() []struct {
 } {
 	var calls []struct {
@@ -168,7 +170,8 @@ func (mock *ConfigReadableMock) GetOperatorVersion() integreatlyv1alpha1.Operato
 
 // GetOperatorVersionCalls gets all the calls that were made to GetOperatorVersion.
 // Check the length with:
-//     len(mockedConfigReadable.GetOperatorVersionCalls())
+//
+//	len(mockedConfigReadable.GetOperatorVersionCalls())
 func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
 } {
 	var calls []struct {
@@ -194,7 +197,8 @@ func (mock *ConfigReadableMock) GetProductName() integreatlyv1alpha1.ProductName
 
 // GetProductNameCalls gets all the calls that were made to GetProductName.
 // Check the length with:
-//     len(mockedConfigReadable.GetProductNameCalls())
+//
+//	len(mockedConfigReadable.GetProductNameCalls())
 func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 } {
 	var calls []struct {
@@ -220,7 +224,8 @@ func (mock *ConfigReadableMock) GetProductVersion() integreatlyv1alpha1.ProductV
 
 // GetProductVersionCalls gets all the calls that were made to GetProductVersion.
 // Check the length with:
-//     len(mockedConfigReadable.GetProductVersionCalls())
+//
+//	len(mockedConfigReadable.GetProductVersionCalls())
 func (mock *ConfigReadableMock) GetProductVersionCalls() []struct {
 } {
 	var calls []struct {
@@ -246,7 +251,8 @@ func (mock *ConfigReadableMock) GetWatchableCRDs() []runtime.Object {
 
 // GetWatchableCRDsCalls gets all the calls that were made to GetWatchableCRDs.
 // Check the length with:
-//     len(mockedConfigReadable.GetWatchableCRDsCalls())
+//
+//	len(mockedConfigReadable.GetWatchableCRDsCalls())
 func (mock *ConfigReadableMock) GetWatchableCRDsCalls() []struct {
 } {
 	var calls []struct {
@@ -272,7 +278,8 @@ func (mock *ConfigReadableMock) Read() ProductConfig {
 
 // ReadCalls gets all the calls that were made to Read.
 // Check the length with:
-//     len(mockedConfigReadable.ReadCalls())
+//
+//	len(mockedConfigReadable.ReadCalls())
 func (mock *ConfigReadableMock) ReadCalls() []struct {
 } {
 	var calls []struct {

@@ -15,118 +15,118 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 
 // ThreeScaleInterfaceMock is a mock implementation of ThreeScaleInterface.
 //
-// 	func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
+//	func TestSomethingThatUsesThreeScaleInterface(t *testing.T) {
 //
-// 		// make and configure a mocked ThreeScaleInterface
-// 		mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
-// 			ActivateUserFunc: func(accessToken string, accountId int, userId int) error {
-// 				panic("mock out the ActivateUser method")
-// 			},
-// 			AddAuthProviderToAccountFunc: func(accessToken string, account AccountDetail, authProviderDetail AuthProviderDetails) error {
-// 				panic("mock out the AddAuthProviderToAccount method")
-// 			},
-// 			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the AddAuthenticationProvider method")
-// 			},
-// 			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the AddUser method")
-// 			},
-// 			CreateAccountFunc: func(accessToken string, orgName string, username string) (string, error) {
-// 				panic("mock out the CreateAccount method")
-// 			},
-// 			CreateApplicationFunc: func(accessToken string, accountID string, planID string, name string, description string) (string, error) {
-// 				panic("mock out the CreateApplication method")
-// 			},
-// 			CreateApplicationPlanFunc: func(accessToken string, serviceID string, name string) (string, error) {
-// 				panic("mock out the CreateApplicationPlan method")
-// 			},
-// 			CreateBackendFunc: func(accessToken string, name string, privateEndpoint string) (int, error) {
-// 				panic("mock out the CreateBackend method")
-// 			},
-// 			CreateBackendMappingRuleFunc: func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
-// 				panic("mock out the CreateBackendMappingRule method")
-// 			},
-// 			CreateBackendUsageFunc: func(accessToken string, serviceID string, backendID int, path string) error {
-// 				panic("mock out the CreateBackendUsage method")
-// 			},
-// 			CreateMetricFunc: func(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
-// 				panic("mock out the CreateMetric method")
-// 			},
-// 			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
-// 				panic("mock out the CreateService method")
-// 			},
-// 			CreateTenantFunc: func(accessToken string, account AccountDetail, password string, email string) (*SignUpAccount, error) {
-// 				panic("mock out the CreateTenant method")
-// 			},
-// 			DeleteAccountFunc: func(accessToken string, accountID string) error {
-// 				panic("mock out the DeleteAccount method")
-// 			},
-// 			DeleteBackendFunc: func(accessToken string, backendID int) error {
-// 				panic("mock out the DeleteBackend method")
-// 			},
-// 			DeleteServiceFunc: func(accessToken string, serviceID string) error {
-// 				panic("mock out the DeleteService method")
-// 			},
-// 			DeleteTenantFunc: func(accessToken string, id int) error {
-// 				panic("mock out the DeleteTenant method")
-// 			},
-// 			DeleteTenantsFunc: func(accessToken string, accounts []AccountDetail) error {
-// 				panic("mock out the DeleteTenants method")
-// 			},
-// 			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the DeleteUser method")
-// 			},
-// 			DeployProxyFunc: func(accessToken string, serviceID string) error {
-// 				panic("mock out the DeployProxy method")
-// 			},
-// 			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
-// 				panic("mock out the GetAuthenticationProviderByName method")
-// 			},
-// 			GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
-// 				panic("mock out the GetAuthenticationProviders method")
-// 			},
-// 			GetTenantAccountFunc: func(accessToken string, id int) (*SignUpAccount, error) {
-// 				panic("mock out the GetTenantAccount method")
-// 			},
-// 			GetUserFunc: func(username string, accessToken string) (*User, error) {
-// 				panic("mock out the GetUser method")
-// 			},
-// 			GetUsersFunc: func(accessToken string) (*Users, error) {
-// 				panic("mock out the GetUsers method")
-// 			},
-// 			IsAuthProviderAddedFunc: func(accessToken string, authProviderName string, account AccountDetail) (bool, error) {
-// 				panic("mock out the IsAuthProviderAdded method")
-// 			},
-// 			ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
-// 				panic("mock out the ListTenantAccounts method")
-// 			},
-// 			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
-// 				panic("mock out the PromoteProxy method")
-// 			},
-// 			SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetFromEmailAddress method")
-// 			},
-// 			SetNamespaceFunc: func(ns string)  {
-// 				panic("mock out the SetNamespace method")
-// 			},
-// 			SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetUserAsAdmin method")
-// 			},
-// 			SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
-// 				panic("mock out the SetUserAsMember method")
-// 			},
-// 			UpdateTenantFunc: func(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error {
-// 				panic("mock out the UpdateTenant method")
-// 			},
-// 			UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
-// 				panic("mock out the UpdateUser method")
-// 			},
-// 		}
+//		// make and configure a mocked ThreeScaleInterface
+//		mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
+//			ActivateUserFunc: func(accessToken string, accountId int, userId int) error {
+//				panic("mock out the ActivateUser method")
+//			},
+//			AddAuthProviderToAccountFunc: func(accessToken string, account AccountDetail, authProviderDetail AuthProviderDetails) error {
+//				panic("mock out the AddAuthProviderToAccount method")
+//			},
+//			AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
+//				panic("mock out the AddAuthenticationProvider method")
+//			},
+//			AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
+//				panic("mock out the AddUser method")
+//			},
+//			CreateAccountFunc: func(accessToken string, orgName string, username string) (string, error) {
+//				panic("mock out the CreateAccount method")
+//			},
+//			CreateApplicationFunc: func(accessToken string, accountID string, planID string, name string, description string) (string, error) {
+//				panic("mock out the CreateApplication method")
+//			},
+//			CreateApplicationPlanFunc: func(accessToken string, serviceID string, name string) (string, error) {
+//				panic("mock out the CreateApplicationPlan method")
+//			},
+//			CreateBackendFunc: func(accessToken string, name string, privateEndpoint string) (int, error) {
+//				panic("mock out the CreateBackend method")
+//			},
+//			CreateBackendMappingRuleFunc: func(accessToken string, backendID int, metricID int, httpMethod string, pattern string, delta int) error {
+//				panic("mock out the CreateBackendMappingRule method")
+//			},
+//			CreateBackendUsageFunc: func(accessToken string, serviceID string, backendID int, path string) error {
+//				panic("mock out the CreateBackendUsage method")
+//			},
+//			CreateMetricFunc: func(accessToken string, backendID int, friendlyName string, unit string) (int, error) {
+//				panic("mock out the CreateMetric method")
+//			},
+//			CreateServiceFunc: func(accessToken string, name string, systemName string) (string, error) {
+//				panic("mock out the CreateService method")
+//			},
+//			CreateTenantFunc: func(accessToken string, account AccountDetail, password string, email string) (*SignUpAccount, error) {
+//				panic("mock out the CreateTenant method")
+//			},
+//			DeleteAccountFunc: func(accessToken string, accountID string) error {
+//				panic("mock out the DeleteAccount method")
+//			},
+//			DeleteBackendFunc: func(accessToken string, backendID int) error {
+//				panic("mock out the DeleteBackend method")
+//			},
+//			DeleteServiceFunc: func(accessToken string, serviceID string) error {
+//				panic("mock out the DeleteService method")
+//			},
+//			DeleteTenantFunc: func(accessToken string, id int) error {
+//				panic("mock out the DeleteTenant method")
+//			},
+//			DeleteTenantsFunc: func(accessToken string, accounts []AccountDetail) error {
+//				panic("mock out the DeleteTenants method")
+//			},
+//			DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
+//				panic("mock out the DeleteUser method")
+//			},
+//			DeployProxyFunc: func(accessToken string, serviceID string) error {
+//				panic("mock out the DeployProxy method")
+//			},
+//			GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
+//				panic("mock out the GetAuthenticationProviderByName method")
+//			},
+//			GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
+//				panic("mock out the GetAuthenticationProviders method")
+//			},
+//			GetTenantAccountFunc: func(accessToken string, id int) (*SignUpAccount, error) {
+//				panic("mock out the GetTenantAccount method")
+//			},
+//			GetUserFunc: func(username string, accessToken string) (*User, error) {
+//				panic("mock out the GetUser method")
+//			},
+//			GetUsersFunc: func(accessToken string) (*Users, error) {
+//				panic("mock out the GetUsers method")
+//			},
+//			IsAuthProviderAddedFunc: func(accessToken string, authProviderName string, account AccountDetail) (bool, error) {
+//				panic("mock out the IsAuthProviderAdded method")
+//			},
+//			ListTenantAccountsFunc: func(accessToken string, page int, filterFn func(ac AccountDetail) bool) ([]AccountDetail, error) {
+//				panic("mock out the ListTenantAccounts method")
+//			},
+//			PromoteProxyFunc: func(accessToken string, serviceID string, env string, to string) (string, error) {
+//				panic("mock out the PromoteProxy method")
+//			},
+//			SetFromEmailAddressFunc: func(emailAddress string, accessToken string) (*http.Response, error) {
+//				panic("mock out the SetFromEmailAddress method")
+//			},
+//			SetNamespaceFunc: func(ns string)  {
+//				panic("mock out the SetNamespace method")
+//			},
+//			SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
+//				panic("mock out the SetUserAsAdmin method")
+//			},
+//			SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
+//				panic("mock out the SetUserAsMember method")
+//			},
+//			UpdateTenantFunc: func(id int64, params portaClient.Params, portaClientMoqParam *portaClient.ThreeScaleClient) error {
+//				panic("mock out the UpdateTenant method")
+//			},
+//			UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
+//				panic("mock out the UpdateUser method")
+//			},
+//		}
 //
-// 		// use mockedThreeScaleInterface in code that requires ThreeScaleInterface
-// 		// and then make assertions.
+//		// use mockedThreeScaleInterface in code that requires ThreeScaleInterface
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ThreeScaleInterfaceMock struct {
 	// ActivateUserFunc mocks the ActivateUser method.
 	ActivateUserFunc func(accessToken string, accountId int, userId int) error
@@ -579,7 +579,8 @@ func (mock *ThreeScaleInterfaceMock) ActivateUser(accessToken string, accountId 
 
 // ActivateUserCalls gets all the calls that were made to ActivateUser.
 // Check the length with:
-//     len(mockedThreeScaleInterface.ActivateUserCalls())
+//
+//	len(mockedThreeScaleInterface.ActivateUserCalls())
 func (mock *ThreeScaleInterfaceMock) ActivateUserCalls() []struct {
 	AccessToken string
 	AccountId   int
@@ -618,7 +619,8 @@ func (mock *ThreeScaleInterfaceMock) AddAuthProviderToAccount(accessToken string
 
 // AddAuthProviderToAccountCalls gets all the calls that were made to AddAuthProviderToAccount.
 // Check the length with:
-//     len(mockedThreeScaleInterface.AddAuthProviderToAccountCalls())
+//
+//	len(mockedThreeScaleInterface.AddAuthProviderToAccountCalls())
 func (mock *ThreeScaleInterfaceMock) AddAuthProviderToAccountCalls() []struct {
 	AccessToken        string
 	Account            AccountDetail
@@ -655,7 +657,8 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]s
 
 // AddAuthenticationProviderCalls gets all the calls that were made to AddAuthenticationProvider.
 // Check the length with:
-//     len(mockedThreeScaleInterface.AddAuthenticationProviderCalls())
+//
+//	len(mockedThreeScaleInterface.AddAuthenticationProviderCalls())
 func (mock *ThreeScaleInterfaceMock) AddAuthenticationProviderCalls() []struct {
 	Data        map[string]string
 	AccessToken string
@@ -694,7 +697,8 @@ func (mock *ThreeScaleInterfaceMock) AddUser(username string, email string, pass
 
 // AddUserCalls gets all the calls that were made to AddUser.
 // Check the length with:
-//     len(mockedThreeScaleInterface.AddUserCalls())
+//
+//	len(mockedThreeScaleInterface.AddUserCalls())
 func (mock *ThreeScaleInterfaceMock) AddUserCalls() []struct {
 	Username    string
 	Email       string
@@ -735,7 +739,8 @@ func (mock *ThreeScaleInterfaceMock) CreateAccount(accessToken string, orgName s
 
 // CreateAccountCalls gets all the calls that were made to CreateAccount.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateAccountCalls())
+//
+//	len(mockedThreeScaleInterface.CreateAccountCalls())
 func (mock *ThreeScaleInterfaceMock) CreateAccountCalls() []struct {
 	AccessToken string
 	OrgName     string
@@ -778,7 +783,8 @@ func (mock *ThreeScaleInterfaceMock) CreateApplication(accessToken string, accou
 
 // CreateApplicationCalls gets all the calls that were made to CreateApplication.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateApplicationCalls())
+//
+//	len(mockedThreeScaleInterface.CreateApplicationCalls())
 func (mock *ThreeScaleInterfaceMock) CreateApplicationCalls() []struct {
 	AccessToken string
 	AccountID   string
@@ -821,7 +827,8 @@ func (mock *ThreeScaleInterfaceMock) CreateApplicationPlan(accessToken string, s
 
 // CreateApplicationPlanCalls gets all the calls that were made to CreateApplicationPlan.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateApplicationPlanCalls())
+//
+//	len(mockedThreeScaleInterface.CreateApplicationPlanCalls())
 func (mock *ThreeScaleInterfaceMock) CreateApplicationPlanCalls() []struct {
 	AccessToken string
 	ServiceID   string
@@ -860,7 +867,8 @@ func (mock *ThreeScaleInterfaceMock) CreateBackend(accessToken string, name stri
 
 // CreateBackendCalls gets all the calls that were made to CreateBackend.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateBackendCalls())
+//
+//	len(mockedThreeScaleInterface.CreateBackendCalls())
 func (mock *ThreeScaleInterfaceMock) CreateBackendCalls() []struct {
 	AccessToken     string
 	Name            string
@@ -905,7 +913,8 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRule(accessToken string
 
 // CreateBackendMappingRuleCalls gets all the calls that were made to CreateBackendMappingRule.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateBackendMappingRuleCalls())
+//
+//	len(mockedThreeScaleInterface.CreateBackendMappingRuleCalls())
 func (mock *ThreeScaleInterfaceMock) CreateBackendMappingRuleCalls() []struct {
 	AccessToken string
 	BackendID   int
@@ -952,7 +961,8 @@ func (mock *ThreeScaleInterfaceMock) CreateBackendUsage(accessToken string, serv
 
 // CreateBackendUsageCalls gets all the calls that were made to CreateBackendUsage.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateBackendUsageCalls())
+//
+//	len(mockedThreeScaleInterface.CreateBackendUsageCalls())
 func (mock *ThreeScaleInterfaceMock) CreateBackendUsageCalls() []struct {
 	AccessToken string
 	ServiceID   string
@@ -995,7 +1005,8 @@ func (mock *ThreeScaleInterfaceMock) CreateMetric(accessToken string, backendID 
 
 // CreateMetricCalls gets all the calls that were made to CreateMetric.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateMetricCalls())
+//
+//	len(mockedThreeScaleInterface.CreateMetricCalls())
 func (mock *ThreeScaleInterfaceMock) CreateMetricCalls() []struct {
 	AccessToken  string
 	BackendID    int
@@ -1036,7 +1047,8 @@ func (mock *ThreeScaleInterfaceMock) CreateService(accessToken string, name stri
 
 // CreateServiceCalls gets all the calls that were made to CreateService.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateServiceCalls())
+//
+//	len(mockedThreeScaleInterface.CreateServiceCalls())
 func (mock *ThreeScaleInterfaceMock) CreateServiceCalls() []struct {
 	AccessToken string
 	Name        string
@@ -1077,7 +1089,8 @@ func (mock *ThreeScaleInterfaceMock) CreateTenant(accessToken string, account Ac
 
 // CreateTenantCalls gets all the calls that were made to CreateTenant.
 // Check the length with:
-//     len(mockedThreeScaleInterface.CreateTenantCalls())
+//
+//	len(mockedThreeScaleInterface.CreateTenantCalls())
 func (mock *ThreeScaleInterfaceMock) CreateTenantCalls() []struct {
 	AccessToken string
 	Account     AccountDetail
@@ -1116,7 +1129,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteAccount(accessToken string, accountID
 
 // DeleteAccountCalls gets all the calls that were made to DeleteAccount.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteAccountCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteAccountCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteAccountCalls() []struct {
 	AccessToken string
 	AccountID   string
@@ -1151,7 +1165,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteBackend(accessToken string, backendID
 
 // DeleteBackendCalls gets all the calls that were made to DeleteBackend.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteBackendCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteBackendCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteBackendCalls() []struct {
 	AccessToken string
 	BackendID   int
@@ -1186,7 +1201,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteService(accessToken string, serviceID
 
 // DeleteServiceCalls gets all the calls that were made to DeleteService.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteServiceCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteServiceCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteServiceCalls() []struct {
 	AccessToken string
 	ServiceID   string
@@ -1221,7 +1237,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteTenant(accessToken string, id int) er
 
 // DeleteTenantCalls gets all the calls that were made to DeleteTenant.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteTenantCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteTenantCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteTenantCalls() []struct {
 	AccessToken string
 	ID          int
@@ -1256,7 +1273,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteTenants(accessToken string, accounts 
 
 // DeleteTenantsCalls gets all the calls that were made to DeleteTenants.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteTenantsCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteTenantsCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteTenantsCalls() []struct {
 	AccessToken string
 	Accounts    []AccountDetail
@@ -1291,7 +1309,8 @@ func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) 
 
 // DeleteUserCalls gets all the calls that were made to DeleteUser.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeleteUserCalls())
+//
+//	len(mockedThreeScaleInterface.DeleteUserCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
 	UserID      int
 	AccessToken string
@@ -1326,7 +1345,8 @@ func (mock *ThreeScaleInterfaceMock) DeployProxy(accessToken string, serviceID s
 
 // DeployProxyCalls gets all the calls that were made to DeployProxy.
 // Check the length with:
-//     len(mockedThreeScaleInterface.DeployProxyCalls())
+//
+//	len(mockedThreeScaleInterface.DeployProxyCalls())
 func (mock *ThreeScaleInterfaceMock) DeployProxyCalls() []struct {
 	AccessToken string
 	ServiceID   string
@@ -1361,7 +1381,8 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string
 
 // GetAuthenticationProviderByNameCalls gets all the calls that were made to GetAuthenticationProviderByName.
 // Check the length with:
-//     len(mockedThreeScaleInterface.GetAuthenticationProviderByNameCalls())
+//
+//	len(mockedThreeScaleInterface.GetAuthenticationProviderByNameCalls())
 func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []struct {
 	Name        string
 	AccessToken string
@@ -1394,7 +1415,8 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken stri
 
 // GetAuthenticationProvidersCalls gets all the calls that were made to GetAuthenticationProviders.
 // Check the length with:
-//     len(mockedThreeScaleInterface.GetAuthenticationProvidersCalls())
+//
+//	len(mockedThreeScaleInterface.GetAuthenticationProvidersCalls())
 func (mock *ThreeScaleInterfaceMock) GetAuthenticationProvidersCalls() []struct {
 	AccessToken string
 } {
@@ -1427,7 +1449,8 @@ func (mock *ThreeScaleInterfaceMock) GetTenantAccount(accessToken string, id int
 
 // GetTenantAccountCalls gets all the calls that were made to GetTenantAccount.
 // Check the length with:
-//     len(mockedThreeScaleInterface.GetTenantAccountCalls())
+//
+//	len(mockedThreeScaleInterface.GetTenantAccountCalls())
 func (mock *ThreeScaleInterfaceMock) GetTenantAccountCalls() []struct {
 	AccessToken string
 	ID          int
@@ -1462,7 +1485,8 @@ func (mock *ThreeScaleInterfaceMock) GetUser(username string, accessToken string
 
 // GetUserCalls gets all the calls that were made to GetUser.
 // Check the length with:
-//     len(mockedThreeScaleInterface.GetUserCalls())
+//
+//	len(mockedThreeScaleInterface.GetUserCalls())
 func (mock *ThreeScaleInterfaceMock) GetUserCalls() []struct {
 	Username    string
 	AccessToken string
@@ -1495,7 +1519,8 @@ func (mock *ThreeScaleInterfaceMock) GetUsers(accessToken string) (*Users, error
 
 // GetUsersCalls gets all the calls that were made to GetUsers.
 // Check the length with:
-//     len(mockedThreeScaleInterface.GetUsersCalls())
+//
+//	len(mockedThreeScaleInterface.GetUsersCalls())
 func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	AccessToken string
 } {
@@ -1530,7 +1555,8 @@ func (mock *ThreeScaleInterfaceMock) IsAuthProviderAdded(accessToken string, aut
 
 // IsAuthProviderAddedCalls gets all the calls that were made to IsAuthProviderAdded.
 // Check the length with:
-//     len(mockedThreeScaleInterface.IsAuthProviderAddedCalls())
+//
+//	len(mockedThreeScaleInterface.IsAuthProviderAddedCalls())
 func (mock *ThreeScaleInterfaceMock) IsAuthProviderAddedCalls() []struct {
 	AccessToken      string
 	AuthProviderName string
@@ -1569,7 +1595,8 @@ func (mock *ThreeScaleInterfaceMock) ListTenantAccounts(accessToken string, page
 
 // ListTenantAccountsCalls gets all the calls that were made to ListTenantAccounts.
 // Check the length with:
-//     len(mockedThreeScaleInterface.ListTenantAccountsCalls())
+//
+//	len(mockedThreeScaleInterface.ListTenantAccountsCalls())
 func (mock *ThreeScaleInterfaceMock) ListTenantAccountsCalls() []struct {
 	AccessToken string
 	Page        int
@@ -1610,7 +1637,8 @@ func (mock *ThreeScaleInterfaceMock) PromoteProxy(accessToken string, serviceID 
 
 // PromoteProxyCalls gets all the calls that were made to PromoteProxy.
 // Check the length with:
-//     len(mockedThreeScaleInterface.PromoteProxyCalls())
+//
+//	len(mockedThreeScaleInterface.PromoteProxyCalls())
 func (mock *ThreeScaleInterfaceMock) PromoteProxyCalls() []struct {
 	AccessToken string
 	ServiceID   string
@@ -1649,7 +1677,8 @@ func (mock *ThreeScaleInterfaceMock) SetFromEmailAddress(emailAddress string, ac
 
 // SetFromEmailAddressCalls gets all the calls that were made to SetFromEmailAddress.
 // Check the length with:
-//     len(mockedThreeScaleInterface.SetFromEmailAddressCalls())
+//
+//	len(mockedThreeScaleInterface.SetFromEmailAddressCalls())
 func (mock *ThreeScaleInterfaceMock) SetFromEmailAddressCalls() []struct {
 	EmailAddress string
 	AccessToken  string
@@ -1682,7 +1711,8 @@ func (mock *ThreeScaleInterfaceMock) SetNamespace(ns string) {
 
 // SetNamespaceCalls gets all the calls that were made to SetNamespace.
 // Check the length with:
-//     len(mockedThreeScaleInterface.SetNamespaceCalls())
+//
+//	len(mockedThreeScaleInterface.SetNamespaceCalls())
 func (mock *ThreeScaleInterfaceMock) SetNamespaceCalls() []struct {
 	Ns string
 } {
@@ -1715,7 +1745,8 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdmin(userID int, accessToken stri
 
 // SetUserAsAdminCalls gets all the calls that were made to SetUserAsAdmin.
 // Check the length with:
-//     len(mockedThreeScaleInterface.SetUserAsAdminCalls())
+//
+//	len(mockedThreeScaleInterface.SetUserAsAdminCalls())
 func (mock *ThreeScaleInterfaceMock) SetUserAsAdminCalls() []struct {
 	UserID      int
 	AccessToken string
@@ -1750,7 +1781,8 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMember(userID int, accessToken str
 
 // SetUserAsMemberCalls gets all the calls that were made to SetUserAsMember.
 // Check the length with:
-//     len(mockedThreeScaleInterface.SetUserAsMemberCalls())
+//
+//	len(mockedThreeScaleInterface.SetUserAsMemberCalls())
 func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
 	UserID      int
 	AccessToken string
@@ -1787,7 +1819,8 @@ func (mock *ThreeScaleInterfaceMock) UpdateTenant(id int64, params portaClient.P
 
 // UpdateTenantCalls gets all the calls that were made to UpdateTenant.
 // Check the length with:
-//     len(mockedThreeScaleInterface.UpdateTenantCalls())
+//
+//	len(mockedThreeScaleInterface.UpdateTenantCalls())
 func (mock *ThreeScaleInterfaceMock) UpdateTenantCalls() []struct {
 	ID                  int64
 	Params              portaClient.Params
@@ -1828,7 +1861,8 @@ func (mock *ThreeScaleInterfaceMock) UpdateUser(userID int, username string, ema
 
 // UpdateUserCalls gets all the calls that were made to UpdateUser.
 // Check the length with:
-//     len(mockedThreeScaleInterface.UpdateUserCalls())
+//
+//	len(mockedThreeScaleInterface.UpdateUserCalls())
 func (mock *ThreeScaleInterfaceMock) UpdateUserCalls() []struct {
 	UserID      int
 	Username    string

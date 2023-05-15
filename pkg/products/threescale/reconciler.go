@@ -14,7 +14,7 @@ import (
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/golang/protobuf/ptypes/any"

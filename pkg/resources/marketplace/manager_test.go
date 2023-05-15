@@ -7,10 +7,10 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestManager_reconcileOperatorGroup(t *testing.T) {
@@ -21,7 +21,7 @@ func TestManager_reconcileOperatorGroup(t *testing.T) {
 
 	type args struct {
 		ctx                     context.Context
-		serverClient            client.Client
+		serverClient            k8sclient.Client
 		t                       Target
 		operatorGroupNamespaces []string
 	}
@@ -46,13 +46,13 @@ func TestManager_reconcileOperatorGroup(t *testing.T) {
 			name: "test operator group is updated",
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, &v1.OperatorGroup{
+				serverClient: utils.NewTestClient(scheme, &operatorsv1.OperatorGroup{
 					TypeMeta: metav1.TypeMeta{},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      OperatorGroupName,
 						Namespace: "ns",
 					},
-					Spec: v1.OperatorGroupSpec{
+					Spec: operatorsv1.OperatorGroupSpec{
 						TargetNamespaces: []string{"ns"},
 					},
 				}),
@@ -68,7 +68,7 @@ func TestManager_reconcileOperatorGroup(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				serverClient: &moqclient.SigsClientInterfaceMock{
-					GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("error")
 					},
 				},

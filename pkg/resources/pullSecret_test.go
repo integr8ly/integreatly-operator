@@ -209,7 +209,7 @@ func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
@@ -283,7 +283,7 @@ func TestReconcileSecretToProductNamespace(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {

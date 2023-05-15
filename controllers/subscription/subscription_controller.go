@@ -17,13 +17,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/controllers/subscription/rhmiConfigs"
 
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	pkgerr "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -132,7 +131,7 @@ func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Req
 
 		// We need to get the latest InstallPlan to get the CSV in order to set the subscription's Config.Resources
 		// The Config.Resources field needs to be explicitly set because otherwise r.Update will silently set the Config to {} if it's not already set
-		latestInstallPlan := &olmv1alpha1.InstallPlan{}
+		latestInstallPlan := &operatorsv1alpha1.InstallPlan{}
 		err := wait.Poll(time.Second*5, time.Minute*3, func() (done bool, err error) {
 			if subscription.Status.InstallPlanRef == nil {
 				log.Info("InstallPlanRef from Subscription is nil, trying again...")
@@ -158,7 +157,10 @@ func (r *SubscriptionReconciler) Reconcile(ctx context.Context, request ctrl.Req
 		if len(deploymentSpecs) > 0 {
 			containers := deploymentSpecs[0].Spec.Template.Spec.Containers
 			if len(containers) > 0 {
-				subscription.Spec.Config.Resources = containers[0].Resources
+				if subscription.Spec.Config == nil {
+					subscription.Spec.Config = &operatorsv1alpha1.SubscriptionConfig{}
+				}
+				subscription.Spec.Config.Resources = &containers[0].Resources
 			}
 		}
 
@@ -200,7 +202,7 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 	}
 
 	log.Infof("Verifying the fields in the Subscription", l.Fields{"StartingCSV": rhmiSubscription.Spec.StartingCSV, "InstallPlanRef": rhmiSubscription.Status.InstallPlanRef})
-	latestInstallPlan := &olmv1alpha1.InstallPlan{}
+	latestInstallPlan := &operatorsv1alpha1.InstallPlan{}
 	err := wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		// gets the subscription with the recreated installplan
 		err = r.Client.Get(ctx, k8sclient.ObjectKey{Name: rhmiSubscription.Name, Namespace: rhmiSubscription.Namespace}, rhmiSubscription)

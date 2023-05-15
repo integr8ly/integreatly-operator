@@ -24,7 +24,7 @@ func NewRHSSOCommon(config ProductConfig) *RHSSOCommon {
 	return &RHSSOCommon{Config: config}
 }
 
-//GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
+// GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
 func (r *RHSSOCommon) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
 		&keycloak.Keycloak{

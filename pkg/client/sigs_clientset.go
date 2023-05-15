@@ -26,8 +26,8 @@ func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtim
 		GetSigsClientFunc: func() k8sclient.Client {
 			return sigsClient
 		},
-		GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object) error {
-			return sigsClient.Get(ctx, key, obj)
+		GetFunc: func(ctx context.Context, key k8sclient.ObjectKey, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
+			return sigsClient.Get(ctx, key, obj, opts...)
 		},
 		CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 			return sigsClient.Create(ctx, obj)

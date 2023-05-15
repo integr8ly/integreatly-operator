@@ -7,11 +7,10 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -26,7 +25,7 @@ type ConfigMapCatalogSourceReconciler struct {
 
 var _ CatalogSourceReconciler = &ConfigMapCatalogSourceReconciler{}
 
-func NewConfigMapCatalogSourceReconciler(manifestsProductDirectory string, client client.Client, namespace string, catalogSourceName string) *ConfigMapCatalogSourceReconciler {
+func NewConfigMapCatalogSourceReconciler(manifestsProductDirectory string, client k8sclient.Client, namespace string, catalogSourceName string) *ConfigMapCatalogSourceReconciler {
 	return &ConfigMapCatalogSourceReconciler{
 		ManifestsProductDirectory: manifestsProductDirectory,
 		Client:                    client,
@@ -103,18 +102,21 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx contex
 func (r *ConfigMapCatalogSourceReconciler) reconcileCatalogSource(ctx context.Context, configMapName string) (reconcile.Result, error) {
 	log.Infof("Reconciling registry catalog source", l.Fields{"ns": r.Namespace})
 
-	catalogSource := &coreosv1alpha1.CatalogSource{
+	catalogSource := &operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.CatalogSourceName(),
 			Namespace: r.Namespace,
 		},
 	}
 
-	catalogSourceSpec := coreosv1alpha1.CatalogSourceSpec{
-		SourceType:  coreosv1alpha1.SourceTypeConfigmap,
+	catalogSourceSpec := operatorsv1alpha1.CatalogSourceSpec{
+		SourceType:  operatorsv1alpha1.SourceTypeConfigmap,
 		ConfigMap:   configMapName,
 		DisplayName: r.CatalogSourceName(),
 		Publisher:   Publisher,
+		GrpcPodConfig: &operatorsv1alpha1.GrpcPodConfig{
+			SecurityContextConfig: operatorsv1alpha1.Restricted,
+		},
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, r.Client, catalogSource, func() error {

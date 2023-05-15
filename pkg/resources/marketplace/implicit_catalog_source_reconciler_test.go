@@ -8,8 +8,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/test/utils"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -23,8 +22,8 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 	}
 }
 
-func getSubscription() *olmv1alpha1.Subscription {
-	return &olmv1alpha1.Subscription{
+func getSubscription() *operatorsv1alpha1.Subscription {
+	return &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "managed-api-sub",
 			Namespace: "redhat-rhoam-operator",
@@ -32,7 +31,7 @@ func getSubscription() *olmv1alpha1.Subscription {
 				"operators.coreos.com/managed-api-service.redhat-rhoam-operator": "operators.coreos.com/managed-api-service.redhat-rhoam-operator",
 			},
 		},
-		Spec: &olmv1alpha1.SubscriptionSpec{
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
 			CatalogSource:          "redhat-rhoam-cs",
 			CatalogSourceNamespace: "redhat-rhoam-operator",
 		},

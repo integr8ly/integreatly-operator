@@ -17,7 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/utils"
 	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -358,7 +358,7 @@ func TestReconciler_ReconcileNoobaa(t *testing.T) {
 			args: args{
 				client: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, storageClass, noobaa)
-					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return errors.New("test error")
 					}
 					return mockClient
@@ -495,7 +495,7 @@ func TestReconciler_ReconcileObjectBucketClaim(t *testing.T) {
 			args: args{
 				client: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, obc)
-					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return errors.New("test error")
 					}
 					return mockClient
@@ -648,7 +648,7 @@ func TestReconciler_cleanupResources(t *testing.T) {
 			args: args{
 				client: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme)
-					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object) error {
+					mockClient.GetFunc = func(ctx context.Context, key k8sTypes.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 						return fmt.Errorf("test error")
 					}
 					return mockClient

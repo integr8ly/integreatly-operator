@@ -37,7 +37,7 @@ func TestIsClusterSTS(t *testing.T) {
 			name: "failed to get cluster cloud credential",
 			args: args{
 				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object) error {
+				client: &moqclient.SigsClientInterfaceMock{GetFunc: func(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 					return fmt.Errorf("get error")
 				}},
 				log: logger.NewLogger(),

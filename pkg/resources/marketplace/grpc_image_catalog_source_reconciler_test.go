@@ -17,7 +17,7 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
@@ -44,7 +44,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
-				catalogSource := &coreosv1alpha1.CatalogSource{}
+				catalogSource := &operatorsv1alpha1.CatalogSource{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
 				if err != nil {
 					t.Fatalf("Expected catalog source to be created but wasn't: %v", err)
@@ -52,8 +52,8 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 				if catalogSource.Spec.Image != desiredGRPCImage {
 					t.Fatalf("CatalogSource Image field not reconciled: desired '%s', existing '%s'", desiredGRPCImage, catalogSource.Spec.Image)
 				}
-				if catalogSource.Spec.SourceType != coreosv1alpha1.SourceTypeGrpc {
-					t.Fatalf("CatalogSoure type is not of type '%s'", coreosv1alpha1.SourceTypeGrpc)
+				if catalogSource.Spec.SourceType != operatorsv1alpha1.SourceTypeGrpc {
+					t.Fatalf("CatalogSoure type is not of type '%s'", operatorsv1alpha1.SourceTypeGrpc)
 				}
 				if catalogSource.Spec.Address != "" {
 					t.Fatalf("CatalogSoure type 'address' attribute set")
@@ -65,12 +65,12 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 		},
 		{
 			Name: "Test catalog source updated successfully",
-			FakeClient: utils.NewTestClient(scheme, &coreosv1alpha1.CatalogSource{
+			FakeClient: utils.NewTestClient(scheme, &operatorsv1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cs-" + testNameSpace,
 					Namespace: testNameSpace,
 				},
-				Spec: coreosv1alpha1.CatalogSourceSpec{
+				Spec: operatorsv1alpha1.CatalogSourceSpec{
 					Image: "randomGRPCImage",
 				},
 			}),
@@ -81,7 +81,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
-				catalogSource := &coreosv1alpha1.CatalogSource{}
+				catalogSource := &operatorsv1alpha1.CatalogSource{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
 
 				if err != nil {
@@ -96,7 +96,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 		{
 			Name: "Test catalog source retrieving resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return errors.New("General error")
 				},
 			},
@@ -111,7 +111,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 		{
 			Name: "Test catalog source creating resource error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
 				CreateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
@@ -129,7 +129,7 @@ func TestGRPCImageCatalogSourceReconcilerReconcile(t *testing.T) {
 		{
 			Name: "Test catalog source updating error",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object) error {
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
 					return nil
 				},
 				UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
