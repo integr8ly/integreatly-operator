@@ -205,9 +205,6 @@ require (
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
 
-// Required for the marin3r which uses an older version of the operator-lib library - https://issues.redhat.com/browse/MGDAPI-4893
-replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
-
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4895
 replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
 

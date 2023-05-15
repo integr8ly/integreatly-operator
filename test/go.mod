@@ -201,9 +201,6 @@ require (
 
 // Please ensure all replaces are tracked.
 
-// Required for the marin3r which uses an older version of the operator-lib library - https://issues.redhat.com/browse/MGDAPI-4893
-replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.1.0
-
 // Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
 replace k8s.io/client-go => k8s.io/client-go v0.25.0
 
