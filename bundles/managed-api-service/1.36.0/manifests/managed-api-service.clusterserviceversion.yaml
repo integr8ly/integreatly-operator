@@ -52,15 +52,15 @@ metadata:
     containerImages: |-
       {
         "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.11.3-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
-          "3scale-rhel7-operator-9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
-          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9fe417b08f87110d31415b363203453af5ad922d49602e8f9dabd70b16a2f889",
+          "3scale-operator.v0.11.5-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
+          "3scale-rhel7-operator-9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
           "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:064a33fa841f355acead1ee9463f72726658ab8cfcd114a0f07447a9f86cbf93",
-          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:879f7e812544331a6561ab469be3515e09c8ffd4390695c0b394ebf2fd83681e",
-          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:f28b12ca4e654fccd1da7a3ba02d8010a6bd5a119b741ab65568934e01e8ab8d",
-          "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:68d5f3890639da124b2eb75b65d23f6b17e6fa3bc1f85671bdcede384d327c14",
-          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:626e3e0653bff291012b88d9b7928ffc468e3c11eb95ea41f2829c99654c2c89",
-          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:1f798022545e74a9465f16b7e499b97c45e1ada01ccc887f5d7d643f0fb1ebd4"
+          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:c17b0c561562ee1024bb9f0b8ea06b567b13e51f11c29004d60096f85bae6148",
+          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:0380dae3973578f19e47ab3e7938d6d74ef785ad4634139da236013f53428a53",
+          "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:189a71aa5b7d017ef3772fcb590ff8cc078cd81d8674da85659676beba14a261",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:a7b8f11c35d5efc3d60a1ba4e1f7f664b54104890edcdc664990bfe4648732ac",
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:70075a897fac365f60a059f4947a9b2c157b2450bff505c70f1f65284f821e1e"
         },
         "cloud-resource-operator.v1.1.0": {
           "cloud-resources.v1.1.0": "quay.io/integreatly/cloud-resource-operator:v1.1.0"
@@ -81,8 +81,8 @@ metadata:
           "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:1dfef1cdafcb10535c259d8866ceaca0a4264f348f9f9f87e3d1f892c722e2a4",
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:1dfef1cdafcb10535c259d8866ceaca0a4264f348f9f9f87e3d1f892c722e2a4"
         },
-        "observability-operator.v4.2.0": {
-          "observability-operator.v4.2.0": "quay.io/rhoas/observability-operator:v4.2.0",
+        "observability-operator.v4.2.1": {
+          "observability-operator.v4.2.1": "quay.io/rhoas/observability-operator:v4.2.1",
           "observability-prometheus-operator-index": "quay.io/integreatly/custom-prometheus-index:2.0.0",
           "observability-prometheus-operator": "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b",
           "observability-prometheus-alertmanager": "quay.io/prometheus/alertmanager:v0.22.2",
@@ -93,7 +93,7 @@ metadata:
           "observability-grafana-operator-index": "quay.io/rhoas/grafana-operator-index:v3.10.8",
           "observability-grafana-operator": "quay.io/rhoas/grafana-operator:v3.10.8",
           "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.1.0",
-          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v4.2.0"
+          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v4.2.1"
         },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.2-3"
