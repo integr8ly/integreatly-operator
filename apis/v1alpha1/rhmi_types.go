@@ -88,7 +88,7 @@ var (
 	OperatorVersionRHSSOUser  OperatorVersion = "7.6.2-4"
 
 	OperatorVersionCloudResources OperatorVersion = "1.1.0"
-	OperatorVersion3Scale         OperatorVersion = "0.11.3-mas"
+	OperatorVersion3Scale         OperatorVersion = "0.11.5-mas"
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"

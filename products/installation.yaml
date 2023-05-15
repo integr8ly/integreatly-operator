@@ -60,7 +60,7 @@ products:
         channel: threescale-mas
         installFrom: index
         package: 3scale-operator
-        index: quay.io/integreatly/3scale-index:v0.11.3-mas
+        index: quay.io/integreatly/3scale-index:v0.11.5-mas
     cloud-resources:
         channel: rhmi
         installFrom: index
@@ -74,6 +74,11 @@ products:
         channel: rhmi
         installFrom: local
         manifestsDir: integreatly-marin3r
+    mcg:
+        channel: stable-4.11
+        installFrom: index
+        package: mcg-operator
+        index: quay.io/integreatly/mcg-index:v4.11.4
     observability:
         channel: alpha
         installFrom: index
@@ -89,8 +94,3 @@ products:
         installFrom: index
         package: rhsso-operator
         index: quay.io/integreatly/rhsso-index:v7.6.2-4
-    mcg:
-        channel: stable-4.11
-        installFrom: index
-        package: mcg-operator
-        index: quay.io/integreatly/mcg-index:v4.11.4
