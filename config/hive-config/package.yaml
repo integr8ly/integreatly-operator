@@ -1,0 +1,19 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: quota-secret
+objects:
+  - apiVersion: package-operator.run/v1alpha1
+    kind: Package
+    metadata:
+      name: rhoam-config
+      namespace: ${NAMESPACE}
+    spec:
+      image: ${CONFIG_IMAGE}
+      config:
+        addonsv1:
+          targetNamespace: ${NAMESPACE}
+parameters:
+  - name: NAMESPACE
+  - name: CONFIG_IMAGE
+
