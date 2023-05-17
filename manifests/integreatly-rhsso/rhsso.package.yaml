@@ -1,5 +1,5 @@
 channels:
-- currentCSV: rhsso-operator.v7.6.2-4
+- currentCSV: rhsso-operator.v7.6.3-1
   name: stable
 defaultChannel: stable
 packageName: rhsso-operator

@@ -83,12 +83,12 @@ products:
     channel: stable
     installFrom: index
     package: rhsso-operator
-    index: quay.io/integreatly/rhsso-index:v7.6.2-4
+    index: quay.io/integreatly/rhsso-index:v7.6.3-1
   rhssouser:
     channel: stable
     installFrom: index
     package: rhsso-operator
-    index: quay.io/integreatly/rhsso-index:v7.6.2-4
+    index: quay.io/integreatly/rhsso-index:v7.6.3-1
   mcg:
     channel: stable-4.11
     installFrom: index

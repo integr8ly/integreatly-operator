@@ -84,8 +84,8 @@ var (
 
 	// Operator image tags
 	OperatorVersionMonitoring OperatorVersion = "1.8.0"
-	OperatorVersionRHSSO      OperatorVersion = "7.6.2-4"
-	OperatorVersionRHSSOUser  OperatorVersion = "7.6.2-4"
+	OperatorVersionRHSSO      OperatorVersion = "7.6.3-1"
+	OperatorVersionRHSSOUser  OperatorVersion = "7.6.3-1"
 
 	OperatorVersionCloudResources OperatorVersion = "1.1.0"
 	OperatorVersion3Scale         OperatorVersion = "0.11.5-mas"
