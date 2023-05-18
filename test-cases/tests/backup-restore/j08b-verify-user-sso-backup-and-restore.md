@@ -96,4 +96,4 @@ AWS_ACCESS_KEY_ID=<aws_access_key_id> AWS_SECRET_ACCESS_KEY=<aws_secret_access_k
 6. Verify in the `test-output.txt` log that the test finished successfully.
 
 **Note**
-Sometimes there could be a difference between the DB dump files, caused by a changed order of lines in these files. That is not considered to be an issue. More details: https://issues.redhat.com/browse/MGDAPI-2380
+Sometimes there could be a difference between the DB dump files, caused by a changed order of lines in these files. That is not considered to be an issue. See [MGDAPI-2380](https://issues.redhat.com/browse/MGDAPI-2380) for more details. Acceptable difference also is for 'salt' and 'value' values in 'secret_data' column and a value in 'created_date' column in public.credentials table.
