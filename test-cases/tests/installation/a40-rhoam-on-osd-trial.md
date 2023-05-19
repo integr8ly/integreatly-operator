@@ -45,6 +45,7 @@ CLUSTER_ID=$(ocm get clusters --parameter search="name like '$CLUSTER_NAME'" | j
 8. Upgrade your trial cluster "using quota"
 
 ```bash
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID | jq '.product.id' # expected output: osdtrial
 ocm patch /api/clusters_mgmt/v1/clusters/$CLUSTER_ID --body=<<EOF
 {
    "billing_model":"standard",
@@ -58,13 +59,13 @@ EOF
 9. Your OSD cluster should now have the `red-hat-clustertype:OSD`.
 
 ```bash
-ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID | jq '.aws.tags'
+ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID | jq '.product.id' # expected output: osd
 ```
 
 10. Set Quota value
 
 ```bash
-QUOTA_VALUE=<QUOTA_VALUE>
+QUOTA_VALUE=1
 ```
 
 11. Change Quota value
