@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"

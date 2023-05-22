@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"gopkg.in/yaml.v2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"

@@ -38,4 +38,4 @@ scorecard/build:
 
 .PHONY: scorecard/compile
 scorecard/compile:
-	go build -o scorecard-test-kuttl test/scorecard/main.go
+	go build -mod=readonly -o scorecard-test-kuttl test/scorecard/main.go

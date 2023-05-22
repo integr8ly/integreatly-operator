@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

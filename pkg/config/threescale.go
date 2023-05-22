@@ -6,7 +6,7 @@ import (
 	threescaleapps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -118,7 +118,7 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 		"zyncQue":         3,
 	}
 
-	if resources.RunningInProw(inst) {
+	if utils.RunningInProw(inst) {
 		setDefaultNumberOfReplicas(1, threeScaleComponents)
 	}
 

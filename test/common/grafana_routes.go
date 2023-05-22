@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/utils"
 	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -68,7 +68,7 @@ func TestGrafanaExternalRouteDashboardExist(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	if resources.RunningInProw(rhmi) {
+	if utils.RunningInProw(rhmi) {
 		t.Skip("403 Forbidden is returned when accessing Grafana Dashboard in Prow")
 	}
 

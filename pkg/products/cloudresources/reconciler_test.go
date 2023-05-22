@@ -7,7 +7,7 @@ import (
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	croGCP "github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"

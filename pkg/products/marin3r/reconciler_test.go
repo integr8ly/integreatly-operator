@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"k8s.io/client-go/tools/record"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"

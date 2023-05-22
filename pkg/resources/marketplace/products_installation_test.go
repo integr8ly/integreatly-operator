@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

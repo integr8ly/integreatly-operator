@@ -1,4 +1,3 @@
-//go:build !windows
 // +build !windows
 
 // Copyright 2015 go-swagger maintainers
@@ -35,7 +34,7 @@ func absPath(in string) string {
 }
 
 func repairURI(in string) (*url.URL, string) {
-	u, _ := parseURL("")
+	u, _ := url.Parse("")
 	debugLog("repaired URI: original: %q, repaired: %q", in, "")
 	return u, ""
 }

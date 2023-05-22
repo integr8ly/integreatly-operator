@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	clientMock "github.com/integr8ly/integreatly-operator/pkg/client"
-	"github.com/integr8ly/integreatly-operator/test/utils"
+	"github.com/integr8ly/integreatly-operator/utils"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
