@@ -293,7 +293,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.5.3/keycloak-metrics-spi-2.5.3.jar",
+			rhssocommon.KeycloakMetricsExtension,
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.2/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
