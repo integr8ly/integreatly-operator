@@ -56,7 +56,7 @@ func TestReconcileAlerts(t *testing.T) {
 						integreatlyv1alpha1.PhaseCompleted, phase)
 				}
 
-				rule := &monitoringv1.PrometheusRule{}
+				rule := &monv1.PrometheusRule{}
 				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
 					Name:      "test-alert",
 					Namespace: "testing-namespaces-test",
@@ -112,7 +112,7 @@ func TestReconcileAlerts(t *testing.T) {
 				}
 
 				// Assert that the existing rule is unmodified
-				existingRule := &monitoringv1.PrometheusRule{}
+				existingRule := &monv1.PrometheusRule{}
 				objectKey := k8sclient.ObjectKeyFromObject(existingRules)
 				if err := client.Get(context.TODO(), objectKey, existingRule); err != nil {
 					return fmt.Errorf("unexpected error retrieving existing rule: %v", err)
