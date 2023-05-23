@@ -6,11 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/util/retry"
 
@@ -26,6 +24,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	routev1 "github.com/openshift/api/route/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -625,12 +624,7 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 }
 
 func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-grafana", "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err := resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-grafana", "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{r.Config.GetHost()},
 		Labels: map[string]string{
 			"service": "grafana-ui",
