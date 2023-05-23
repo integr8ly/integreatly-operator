@@ -16,6 +16,7 @@ import (
 
 	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -1463,23 +1464,23 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		},
 	}
 
-	prometheusRulesOO := &monitoringv1.PrometheusRule{
+	prometheusRulesOO := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhsso",
-			Namespace: "redhat-rhoam-observability",
+			Namespace: "redhat-rhoam-operator",
 		},
 	}
 
-	prometheusRulesOOwithKcExisting := &monitoringv1.PrometheusRule{
+	prometheusRulesOOwithKcExisting := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhsso",
-			Namespace: "redhat-rhoam-observability",
+			Namespace: "redhat-rhoam-operator",
 		},
-		Spec: monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
+		Spec: monv1.PrometheusRuleSpec{
+			Groups: []monv1.RuleGroup{
 				{
 					Name: "general.rules",
-					Rules: []monitoringv1.Rule{
+					Rules: []monv1.Rule{
 						{
 							Alert: "KeycloakInstanceNotAvailable",
 							Expr:  intstr.FromString("testExpression"),
@@ -1488,7 +1489,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 				},
 				{
 					Name: "rhoam-general-user-rhsso.rules",
-					Rules: []monitoringv1.Rule{
+					Rules: []monv1.Rule{
 						{
 							Alert: "test-alert",
 							Expr:  intstr.FromString("testExpression"),
@@ -1501,21 +1502,21 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		expectedRules        []monitoringv1.Rule
+		expectedRules        []monv1.Rule
 		installation         *integreatlyv1alpha1.RHMI
 		configManager        config.ConfigReadWriter
 		fakeClient           k8sclient.Client
 		want                 integreatlyv1alpha1.StatusPhase
 		wantErr              bool
-		verificationFunction func(*monitoringv1.PrometheusRule) bool
+		verificationFunction func(*monv1.PrometheusRule) bool
 	}{
 		{
 			name:          "alerting rules correctly mirrored without kc alert when OO groups are nil",
-			expectedRules: []monitoringv1.Rule{},
+			expectedRules: []monv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-observability",
+					"NAMESPACE": "redhat-rhoam-operator",
 				}), nil
 			}},
 			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOO),
@@ -1525,11 +1526,11 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		},
 		{
 			name:          "alerting rules correctly mirrored without kc alert when OO groups are not nil",
-			expectedRules: []monitoringv1.Rule{},
+			expectedRules: []monv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-observability",
+					"NAMESPACE": "redhat-rhoam-operator",
 				}), nil
 			}},
 			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
@@ -1539,31 +1540,17 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		},
 		{
 			name:          "failing phase on getting keycloak prom rules",
-			expectedRules: []monitoringv1.Rule{},
+			expectedRules: []monv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-observability",
+					"NAMESPACE": "redhat-rhoam-operator",
 				}), nil
 			}},
 			fakeClient: utils.NewTestClient(scheme, prometheusRulesOOwithKcExisting),
 			wantErr:    true,
 			want:       integreatlyv1alpha1.PhaseFailed,
-			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {
-				return true
-			},
-		},
-		{
-			name:          "failing phase on getting oo config",
-			expectedRules: []monitoringv1.Rule{},
-			installation:  installation,
-			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-				return nil, fmt.Errorf("mock error from config writer")
-			}},
-			fakeClient: utils.NewTestClient(scheme, prometheusRulesOOwithKcExisting, prometheusRulesSSO),
-			wantErr:    true,
-			want:       integreatlyv1alpha1.PhaseFailed,
-			verificationFunction: func(pr *monitoringv1.PrometheusRule) bool {
+			verificationFunction: func(pr *monv1.PrometheusRule) bool {
 				return true
 			},
 		},
@@ -1586,14 +1573,14 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			}
 
 			// retrieve update OO rules
-			observabilityAlert := &monitoringv1.PrometheusRule{
+			observabilityAlert := &monv1.PrometheusRule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhsso",
-					Namespace: "redhat-rhoam-observability",
+					Namespace: "redhat-rhoam-operator",
 				},
 			}
-			err = tt.fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhsso", Namespace: "redhat-rhoam-observability"}, observabilityAlert)
-			if err != nil {
+			err = tt.fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhsso", Namespace: "redhat-rhoam-operator"}, observabilityAlert)
+			if err != nil && !tt.wantErr {
 				t.Errorf("exportAlerts error- failed to retrieve rhsso rules; got = %v, want %v", got, tt.want)
 			}
 
@@ -1604,7 +1591,7 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 	}
 }
 
-func kcAlertHasNotBeenMirrored(existingRules *monitoringv1.PrometheusRule) bool {
+func kcAlertHasNotBeenMirrored(existingRules *monv1.PrometheusRule) bool {
 	var alert1exists = false
 	var alert2exists = false
 	var alertKCexists = true

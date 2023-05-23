@@ -27,7 +27,6 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -644,7 +643,7 @@ func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8scl
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", monitoringv1.ProbeTargetStaticConfig{
 		Targets: []string{url},
 		Labels: map[string]string{
 			"service": service,
