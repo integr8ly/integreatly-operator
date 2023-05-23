@@ -5,20 +5,13 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, namespace string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil, err
-	}
-
-	namespace := observabilityConfig.GetNamespace()
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Log:          logger,
@@ -28,7 +21,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) (re
 				AlertName: "mcg-operator-ksm-endpoint-alerts",
 				GroupName: "mcg-operator-endpoint.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMMCGOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
@@ -55,7 +48,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) (re
 				AlertName: "mcg-ksm-endpoint-alerts",
 				GroupName: "general.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "NooBaaCorePod",
 						Annotations: map[string]string{

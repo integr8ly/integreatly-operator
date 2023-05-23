@@ -4,21 +4,13 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, namespace string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil
-	}
-
-	namespace := observabilityConfig.GetNamespace()
-	operatorNamespace := observabilityConfig.GetNamespace()
 	alertNamePrefix := "marin3r-"
 	operatorAlertNamePrefix := "marin3r-operator-"
 
@@ -31,7 +23,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: "marin3r-endpoint.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "Marin3rDiscoveryServiceEndpointDown",
 						Annotations: map[string]string{
@@ -57,8 +49,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 			{
 				AlertName: operatorAlertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: "marin3r-operator-endpoint.rules",
-				Namespace: operatorNamespace,
-				Rules: []monitoringv1.Rule{
+				Namespace: namespace,
+				Rules: []monv1.Rule{
 					{
 						Alert: "Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
@@ -74,8 +66,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 			{
 				AlertName: operatorAlertNamePrefix + "ksm-marin3r-alerts",
 				GroupName: "general.rules",
-				Namespace: operatorNamespace,
-				Rules: []monitoringv1.Rule{
+				Namespace: namespace,
+				Rules: []monv1.Rule{
 					{
 						Alert: "Marin3rOperatorPod",
 						Annotations: map[string]string{
@@ -92,7 +84,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string) res
 				AlertName: alertNamePrefix + "ksm-marin3r-alerts",
 				GroupName: "general.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "Marin3rWebhookPod",
 						Annotations: map[string]string{
