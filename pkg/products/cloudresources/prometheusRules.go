@@ -10,21 +10,13 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.Client, logger l.Logger, installType string, ns string) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.Client, logger l.Logger, installType string, namespace string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
-
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil, nil
-	}
-
-	namespace := observabilityConfig.GetNamespace()
 
 	alertsReconciler := &resources.AlertReconcilerImpl{
 		ProductName:  "Cloud Resources Operator",
@@ -35,7 +27,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 				AlertName: "cro-ksm-endpoint-alerts",
 				Namespace: namespace,
 				GroupName: "cloud-resources-operator-endpoint.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMCloudResourceOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
@@ -70,7 +62,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 				AlertName: "cloud-resource-operator-metrics-missing",
 				Namespace: namespace,
 				GroupName: "cloud-resource-operator.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: fmt.Sprintf("%sCloudResourceOperatorMetricsMissing", strings.ToUpper(installationName)),
 						Expr: intstr.FromString(
@@ -96,7 +88,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 		},
 	}
 
-	return addElasticCacheSnapshotNotFoundAlert(ctx, client, logger, installationName, *alertsReconciler, ns)
+	return addElasticCacheSnapshotNotFoundAlert(ctx, client, logger, installationName, *alertsReconciler, namespace)
 }
 
 func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.Client, logger l.Logger, installationName string, alertsReconciler resources.AlertReconcilerImpl, ns string) (resources.AlertReconciler, error) {
@@ -118,15 +110,19 @@ func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.
 	// sanitise
 	metricsCheck = sanitize(metricsCheck)
 
-	alertsReconciler.Alerts[0].Rules = append(alertsReconciler.Alerts[0].Rules, monitoringv1.Rule{
-		Alert: "RHOAMCloudResourceOperatorElasticCacheSnapshotsNotFound",
-		Annotations: map[string]string{
-			"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-			"message": "Elastic Cache snapshot not found or not available for tagging.",
-		},
-		Expr:   intstr.FromString(metricsCheck),
-		Labels: map[string]string{"severity": "warning", "product": installationName},
-	})
+	alertListType := alertsReconciler.Alerts[0].Rules
+	if alertListType, ok := alertListType.([]monv1.Rule); ok {
+		alertListType = append(alertListType, monv1.Rule{
+			Alert: "RHOAMCloudResourceOperatorElasticCacheSnapshotsNotFound",
+			Annotations: map[string]string{
+				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+				"message": "Elastic Cache snapshot not found or not available for tagging.",
+			},
+			Expr:   intstr.FromString(metricsCheck),
+			Labels: map[string]string{"severity": "warning", "product": installationName},
+		})
+		alertsReconciler.Alerts[0].Rules = alertListType
+	}
 
 	return &alertsReconciler, nil
 }

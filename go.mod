@@ -36,6 +36,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.42.0
 	github.com/redhat-developer/observability-operator/v4 v4.2.1
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.9.0
@@ -125,7 +126,6 @@ require (
 	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect

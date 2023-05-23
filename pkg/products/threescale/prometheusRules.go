@@ -11,12 +11,12 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx context.Context, serverClient k8sclient.Client) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx context.Context, serverClient k8sclient.Client, namespace string) (resources.AlertReconciler, error) {
 	installationName := resources.InstallationNames[installType]
 
 	//clusterVersion
@@ -25,13 +25,6 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 		return nil, err
 	}
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil, nil
-	}
-
-	namespace := observabilityConfig.GetNamespace()
 	alertNamePrefix := "3scale-"
 	operatorAlertNamePrefix := "3scale-operator-"
 
@@ -49,7 +42,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: alertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: " 3scale-endpoint.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMThreeScaleApicastProductionServiceEndpointDown",
 						Annotations: map[string]string{
@@ -156,7 +149,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: operatorAlertNamePrefix + "ksm-endpoint-alerts",
 				GroupName: " 3scale-operator-endpoint.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
@@ -183,7 +176,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: alertNamePrefix + "ksm-3scale-user-alerts",
 				GroupName: "general.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "ThreeScaleUserCreationFailed",
 						Annotations: map[string]string{
@@ -206,7 +199,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: alertNamePrefix + "ksm-3scale-alerts",
 				GroupName: "general.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "ThreeScaleApicastStagingPod",
 						Annotations: map[string]string{
@@ -337,7 +330,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
 				Namespace: namespace,
 				GroupName: fmt.Sprintf("%s-general.rules", installationName),
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: fmt.Sprintf("%sThreescaleCriticalMetricsMissing", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
@@ -354,7 +347,7 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 				AlertName: fmt.Sprintf("%s-custom-domain-alert", installationName),
 				Namespace: namespace,
 				GroupName: fmt.Sprintf("%s-custom-domaim.rules", installationName),
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "CustomDomainCRErrorState",
 						Annotations: map[string]string{
@@ -401,8 +394,8 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 	}, nil
 }
 
-func alertThreeScaleContainerHighMemory(installationName string, namespace string) monitoringv1.Rule {
-	return monitoringv1.Rule{
+func alertThreeScaleContainerHighMemory(installationName string, namespace string) monv1.Rule {
+	return monv1.Rule{
 		Alert: "ThreeScaleContainerHighMemory",
 		Annotations: map[string]string{
 			"sop_url": resources.SopUrlAlertsAndTroubleshooting,

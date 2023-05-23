@@ -31,6 +31,7 @@ import (
 	cro1types "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 
 	"github.com/pkg/errors"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -38,19 +39,18 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	alertFor5Mins   prometheusv1.Duration = "5m"
-	alertFor15Mins  prometheusv1.Duration = "15m"
-	alertFor10Mins  prometheusv1.Duration = "10m"
-	alertFor20Mins  prometheusv1.Duration = "20m"
-	alertFor30Mins  prometheusv1.Duration = "30m"
-	alertFor60Mins  prometheusv1.Duration = "60m"
-	alertPercentage prometheusv1.Duration = "90"
+	alertFor5Mins   = "5m"
+	alertFor15Mins  = "15m"
+	alertFor10Mins  = "10m"
+	alertFor20Mins  = "20m"
+	alertFor30Mins  = "30m"
+	alertFor60Mins  = "60m"
+	alertPercentage = "90"
 )
 
 var (
@@ -180,7 +180,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 		"product":  installationName,
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "observability"
+	ruleNs := cr.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
@@ -207,7 +207,7 @@ func CreateAddonManagedApiServiceParametersExists(ctx context.Context, client k8
 		"product":  installationName,
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "observability"
+	ruleNs := cr.Spec.NamespacePrefix + "operator"
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlAddonManagedApiServiceParametersExists, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
@@ -236,7 +236,7 @@ func CreateDeadMansSnitchSecretExists(ctx context.Context, client k8sclient.Clie
 		alertForXMins = alertFor60Mins
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "observability"
+	ruleNs := cr.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, SopUrlDeadMansSnitchSecretExists, alertForXMins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create deadmanssnitch exists rule err: %s", err)
@@ -246,7 +246,7 @@ func CreateDeadMansSnitchSecretExists(ctx context.Context, client k8sclient.Clie
 
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
-func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*monv1.PrometheusRule, error) {
 	installationName := InstallationNames[installType]
 
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -278,7 +278,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -288,7 +288,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 
 // createPostgresConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Postgres instance
-func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*monv1.PrometheusRule, error) {
 	installationName := InstallationNames[installType]
 
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -319,7 +319,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -328,7 +328,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 }
 
 // createPostgresResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Postgres CR state
-func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*monv1.PrometheusRule, error) {
 	installationName := InstallationNames[installType]
 
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -350,7 +350,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -359,7 +359,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 }
 
 // createPostgresResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Postgres CR state
-func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*monv1.PrometheusRule, error) {
 	installationName := InstallationNames[installType]
 
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -381,7 +381,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -390,7 +390,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 }
 
 // createPostgresResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Postgres CRs
-func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*prometheusv1.PrometheusRule, error) {
+func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres, log l.Logger, installType string) (*monv1.PrometheusRule, error) {
 	installationName := InstallationNames[installType]
 
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -411,7 +411,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -453,7 +453,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertExp := intstr.FromString(
 		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[1h:1m], 5 * 3600) <= 0 and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25)))", job))
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -520,7 +520,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// conversion formula is MiB = bytes / (1024^2)
 	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average) < ((cro_postgres_max_memory / 100 ) * 10)")
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -547,7 +547,7 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -556,7 +556,7 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 }
 
 // createRedisResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Redis CR state
-func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*monv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -575,7 +575,7 @@ func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -602,7 +602,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -649,7 +649,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 }
 
 // createRedisResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Redis CR state
-func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*monv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -668,7 +668,7 @@ func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -677,7 +677,7 @@ func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 }
 
 // createRedisResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Redis CRs
-func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*monv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis state alert creation, useClusterStorage is true")
 		return nil, nil
@@ -695,7 +695,7 @@ func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -705,7 +705,7 @@ func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 
 // createRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Redis cache
-func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*monv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -733,7 +733,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -743,7 +743,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 
 // createRedisConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Redis cache
-func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*prometheusv1.PrometheusRule, error) {
+func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis, log l.Logger) (*monv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		log.Info("skipping redis connectivity alert creation, useClusterStorage is true")
 		return nil, nil
@@ -771,7 +771,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -797,7 +797,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_engine_cpu_utilization_average > %s", alertPercentage))
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -822,7 +822,7 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 
 	alertExp := intstr.FromString("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!~'complete|waiting-to-start|in-progress|scheduled|stopping',ServiceUpdateSeverity='critical'}")
 
-	ruleNs := inst.Spec.NamespacePrefix + "observability"
+	ruleNs := inst.Spec.NamespacePrefix + "operator"
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisServiceMaintenanceCritical, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -831,16 +831,16 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
-func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc, sopURL string, alertFor prometheusv1.Duration, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
+func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc, sopURL, alertFor string, alertExp intstr.IntOrString, labels map[string]string) (*monv1.PrometheusRule, error) {
 	alertGroupName := alertName + "Group"
-	groups := []prometheusv1.RuleGroup{
+	groups := []monv1.RuleGroup{
 		{
 			Name: alertGroupName,
-			Rules: []prometheusv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert:  alertName,
 					Expr:   alertExp,
-					For:    alertFor,
+					For:    monv1.Duration(alertFor),
 					Labels: labels,
 					Annotations: map[string]string{
 						"description": desc,
@@ -851,7 +851,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 		},
 	}
 
-	rule := &prometheusv1.PrometheusRule{
+	rule := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ruleName,
 			Namespace: ns,
@@ -859,7 +859,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 				"monitoring-key": "middleware",
 			},
 		},
-		Spec: prometheusv1.PrometheusRuleSpec{
+		Spec: monv1.PrometheusRuleSpec{
 			Groups: groups,
 		},
 	}
@@ -868,14 +868,14 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 		rule.Name = ruleName
 		rule.Namespace = ns
-		rule.Spec.Groups = []prometheusv1.RuleGroup{
+		rule.Spec.Groups = []monv1.RuleGroup{
 			{
 				Name: alertGroupName,
-				Rules: []prometheusv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert:  alertName,
 						Expr:   alertExp,
-						For:    alertFor,
+						For:    monv1.Duration(alertFor),
 						Labels: labels,
 						Annotations: map[string]string{
 							"description": desc,

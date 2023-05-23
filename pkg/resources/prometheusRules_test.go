@@ -8,6 +8,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/utils"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -24,7 +25,7 @@ func TestReconcileAlerts(t *testing.T) {
 	type testScenario struct {
 		Name           string
 		Installation   *integreatlyv1alpha1.RHMI
-		ExistingRules  []*monitoringv1.PrometheusRule
+		ExistingRules  []*monv1.PrometheusRule
 		Alerts         []AlertConfiguration
 		AlertsToRemove []AlertConfiguration
 		Assertion      func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
@@ -37,7 +38,7 @@ func TestReconcileAlerts(t *testing.T) {
 		// Verify that the reconciler creates the alerts when they don't exist
 		{
 			Name:          "Create alerts",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "rhoam",
@@ -80,14 +81,14 @@ func TestReconcileAlerts(t *testing.T) {
 		// is marked for deletion
 		{
 			Name: "Delete alerts",
-			ExistingRules: []*monitoringv1.PrometheusRule{
+			ExistingRules: []*monv1.PrometheusRule{
 				{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "test-alert",
 						Namespace: "testing-namespaces-test",
 					},
-					Spec: monitoringv1.PrometheusRuleSpec{
-						Groups: []monitoringv1.RuleGroup{
+					Spec: monv1.PrometheusRuleSpec{
+						Groups: []monv1.RuleGroup{
 							{
 								Name:  "test-group",
 								Rules: rules,
@@ -126,7 +127,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:          "Alerts marked for removal are deleted as part of reconcile",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "rhoam",
@@ -139,7 +140,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:           "Reconcile continues if alerts marked for deletion are not present",
-			ExistingRules:  []*monitoringv1.PrometheusRule{},
+			ExistingRules:  []*monv1.PrometheusRule{},
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			Alerts:         []AlertConfiguration{},
 			AlertsToRemove: alerts,
@@ -147,7 +148,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:          "Phase failed deleting alerts during reconcile",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Alerts:        []AlertConfiguration{},
 			Client: &client.SigsClientInterfaceMock{
@@ -160,7 +161,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:          "Phase failed deleting alerts due to error from getting alerts",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					DeletionTimestamp: now(),
@@ -177,7 +178,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:          "Phase failed deleting alerts due to error on deletion",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					DeletionTimestamp: now(),
@@ -197,7 +198,7 @@ func TestReconcileAlerts(t *testing.T) {
 		},
 		{
 			Name:          "Phase failed creating alerts during reconcile",
-			ExistingRules: []*monitoringv1.PrometheusRule{},
+			ExistingRules: []*monv1.PrometheusRule{},
 			Installation:  &integreatlyv1alpha1.RHMI{},
 			Client: &client.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
@@ -297,7 +298,7 @@ var (
 			Rules:     rules,
 		},
 	}
-	rules = []monitoringv1.Rule{
+	rules = []monv1.Rule{
 		{
 			Alert: "TestRule",
 			Annotations: map[string]string{
@@ -309,16 +310,16 @@ var (
 		},
 	}
 
-	existingRules = &monitoringv1.PrometheusRule{
+	existingRules = &monv1.PrometheusRule{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "existing-rules",
 			Namespace: "testing-namespaces-other",
 		},
-		Spec: monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
+		Spec: monv1.PrometheusRuleSpec{
+			Groups: []monv1.RuleGroup{
 				{
 					Name: "existing-group",
-					Rules: []monitoringv1.Rule{
+					Rules: []monv1.Rule{
 						{
 							Alert: "ExistingRule",
 							Expr:  intstr.FromString("test existing expr"),

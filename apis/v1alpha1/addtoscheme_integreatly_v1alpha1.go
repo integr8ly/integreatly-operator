@@ -30,6 +30,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
@@ -49,6 +50,7 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(
 		AddToSchemes,
+		monv1.AddToScheme,
 		operatorsv1.AddToScheme,
 		operatorsv1alpha1.AddToScheme,
 		authv1.Install,

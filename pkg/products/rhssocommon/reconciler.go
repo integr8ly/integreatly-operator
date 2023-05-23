@@ -28,6 +28,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -707,27 +708,43 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 		}
 	}
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	observabilityAlert := &monitoringv1.PrometheusRule{
+	alertToMove := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      productName,
-			Namespace: observabilityConfig.GetNamespace(),
+			Namespace: r.Installation.Namespace,
 		},
 	}
-	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
-		observabilityAlert.Labels = ssoAlert.Labels
-		observabilityAlert.Spec = ssoAlert.Spec
+	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, alertToMove, func() error {
+		var destinationRouleGroupArray []monv1.RuleGroup
+		for _, ruleGroup := range ssoAlert.Spec.Groups {
+			var destinationRules []monv1.Rule
+			for _, rule := range ruleGroup.Rules {
+				var destinationRule monv1.Rule
+				destinationRule.Alert = rule.Alert
+				destinationRule.Annotations = rule.Annotations
+				destinationRule.Expr = rule.Expr
+				destinationRule.For = monv1.Duration(rule.For)
+				destinationRule.Record = rule.Record
+				destinationRule.Labels = rule.Labels
+				destinationRules = append(destinationRules, destinationRule)
+			}
+			var destinationRouleGroup monv1.RuleGroup
+			destinationRouleGroup.Name = ruleGroup.Name
+			destinationRouleGroup.PartialResponseStrategy = ruleGroup.PartialResponseStrategy
+			destinationRouleGroup.Rules = destinationRules
+			destinationRouleGroup.Interval = monv1.Duration(ruleGroup.Interval)
+			destinationRouleGroupArray = append(destinationRouleGroupArray, destinationRouleGroup)
+		}
+
+		alertToMove.Labels = ssoAlert.Labels
+		alertToMove.Spec.Groups = destinationRouleGroupArray
 		return nil
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if opRes != controllerutil.OperationResultNone {
-		r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": observabilityAlert.Name, "result": opRes})
+		r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": alertToMove.Name, "result": opRes})
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

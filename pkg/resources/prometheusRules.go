@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,8 +42,8 @@ type AlertConfiguration struct {
 	AlertName string
 	GroupName string
 	Namespace string
-	Interval  monitoringv1.Duration
-	Rules     []monitoringv1.Rule
+	Interval  string
+	Rules     interface{}
 }
 
 func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -82,30 +82,64 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 }
 
 func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclient.Client, monitoringConfig *config.Monitoring, alert AlertConfiguration) (controllerutil.OperationResult, error) {
-	rule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      alert.AlertName,
-			Namespace: alert.Namespace,
-		},
-	}
 
-	return controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
-		rule.ObjectMeta.Labels = map[string]string{
-			"integreatly":                          "yes",
-			monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector(),
-		}
-		rule.Spec = monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
-				{
-					Name:     alert.GroupName,
-					Rules:    alert.Rules,
-					Interval: alert.Interval,
-				},
+	var alertRulesType interface{} = alert.Rules
+
+	switch alertRules := alertRulesType.(type) {
+	case []monv1.Rule:
+		rule := &monv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      alert.AlertName,
+				Namespace: alert.Namespace,
 			},
 		}
 
-		return nil
-	})
+		return controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+			rule.ObjectMeta.Labels = map[string]string{
+				"integreatly":                          "yes",
+				monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector(),
+			}
+			rule.Spec = monv1.PrometheusRuleSpec{
+				Groups: []monv1.RuleGroup{
+					{
+						Name:     alert.GroupName,
+						Rules:    alertRules,
+						Interval: monv1.Duration(alert.Interval),
+					},
+				},
+			}
+
+			return nil
+		})
+	case []monitoringv1.Rule:
+		rule := &monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      alert.AlertName,
+				Namespace: alert.Namespace,
+			},
+		}
+
+		return controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+			rule.ObjectMeta.Labels = map[string]string{
+				"integreatly":                          "yes",
+				monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector(),
+			}
+			rule.Spec = monitoringv1.PrometheusRuleSpec{
+				Groups: []monitoringv1.RuleGroup{
+					{
+						Name:     alert.GroupName,
+						Rules:    alertRules,
+						Interval: monitoringv1.Duration(alert.Interval),
+					},
+				},
+			}
+
+			return nil
+		})
+	default:
+		return controllerutil.OperationResultNone, fmt.Errorf("failed to find alert type")
+	}
+
 }
 
 func (r *AlertReconcilerImpl) deleteAlerts(ctx context.Context, client k8sclient.Client, alerts []AlertConfiguration) error {
