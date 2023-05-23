@@ -18,7 +18,7 @@ import (
 	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -153,57 +153,6 @@ func TestReconciler_ReconcileMCG(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test errors create alerting reconciler",
-			fields: fields{
-				FakeConfig: func() *config.ConfigReadWriterMock {
-					conf := basicConfigMock()
-					conf.ReadObservabilityFunc = func() (*config.Observability, error) {
-						return nil, errors.New("test error")
-					}
-					return conf
-				}(),
-				recorder: setupRecorder(),
-				mpm: &marketplace.MarketplaceInterfaceMock{
-					InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
-						return nil
-					},
-					GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-						return &operatorsv1alpha1.InstallPlan{
-								ObjectMeta: metav1.ObjectMeta{
-									Name: "mcg-install-plan",
-								},
-								Status: operatorsv1alpha1.InstallPlanStatus{
-									Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
-								},
-							}, &operatorsv1alpha1.Subscription{
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      "rhmi-mcg",
-									Namespace: "mcg",
-								},
-								Status: operatorsv1alpha1.SubscriptionStatus{
-									Install: &operatorsv1alpha1.InstallPlanReference{
-										Name: "mcg-install-plan",
-									},
-								},
-							}, nil
-					},
-				},
-			},
-			args: args{
-				installation:  basicInstallation(false),
-				productStatus: &integreatlyv1alpha1.RHMIProductStatus{},
-				productConfig: &quota.ProductConfigMock{
-					ConfigureFunc: func(obj metav1.Object) error {
-						return nil
-					},
-				},
-				client:    moqclient.NewSigsClientMoqWithScheme(scheme, objects...),
-				uninstall: false,
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
 			name: "test errors reconciling alerts",
 			fields: fields{
 				FakeConfig: basicConfigMock(),
@@ -246,7 +195,7 @@ func TestReconciler_ReconcileMCG(t *testing.T) {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, objects...)
 					mockClient.CreateFunc = func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.CreateOption) error {
 						switch obj.(type) {
-						case *monitoringv1.PrometheusRule:
+						case *monv1.PrometheusRule:
 							return errors.New("test error")
 						default:
 							return nil
