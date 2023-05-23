@@ -23,6 +23,7 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observabilityv1 "github.com/redhat-developer/observability-operator/v4/api/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -38,6 +39,7 @@ import (
 func NewTestScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
+		monv1.AddToScheme,
 		policyv1.AddToScheme,
 		corev1.AddToScheme,
 		appsv1.AddToScheme,

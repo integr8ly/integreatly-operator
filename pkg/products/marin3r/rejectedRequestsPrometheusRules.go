@@ -6,7 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -42,7 +42,7 @@ func (r *Reconciler) newRejectedRequestsAlertsReconciler(logger l.Logger, instal
 				AlertName: alertName,
 				GroupName: "rejected-requests.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMApiUsageRejectedRequestsMismatch",
 						Annotations: map[string]string{

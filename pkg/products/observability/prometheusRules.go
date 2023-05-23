@@ -5,22 +5,21 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 )
 
-func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, namespace string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
 	nsPrefix := r.installation.Spec.NamespacePrefix
-	namespace := r.Config.GetNamespace()
 
 	alerts := []resources.AlertConfiguration{
 		{
 			AlertName: "backup-monitoring-alerts",
 			GroupName: "general.rules",
 			Namespace: namespace,
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "JobRunningTimeExceeded",
 					Annotations: map[string]string{
@@ -53,7 +52,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "ksm-alerts",
 			Namespace: namespace,
 			GroupName: "general.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "KubePodCrashLooping",
 					Annotations: map[string]string{
@@ -181,7 +180,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "ksm-endpoint-alerts",
 			Namespace: namespace,
 			GroupName: "middleware-monitoring-operator-endpoint.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "RHOAMMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
 					Annotations: map[string]string{
@@ -258,7 +257,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "install-upgrade-alerts",
 			Namespace: namespace,
 			GroupName: "general.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "RHOAMCSVRequirementsNotMet",
 					Annotations: map[string]string{
@@ -274,7 +273,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "multi-az-pod-distribution",
 			Namespace: namespace,
 			GroupName: "general.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "MultiAZPodDistribution",
 					Annotations: map[string]string{
@@ -291,7 +290,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "test-alerts",
 			Namespace: namespace,
 			GroupName: "test.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "TestFireCriticalAlert",
 					Annotations: map[string]string{
@@ -318,7 +317,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: fmt.Sprintf("%s-rhmi-controller-alerts", installationName),
 			Namespace: namespace,
 			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: fmt.Sprintf("%sIsInReconcilingErrorState", strings.ToUpper(installationName)),
 					Annotations: map[string]string{
@@ -348,7 +347,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			AlertName: "multitenancy-api-management-tenant-alerts",
 			Namespace: namespace,
 			GroupName: "multitenancy-api-management-tenant.rules",
-			Rules: []monitoringv1.Rule{
+			Rules: []monv1.Rule{
 				{
 					Alert: "ApiManagementTenantCRFailed",
 					Annotations: map[string]string{
