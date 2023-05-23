@@ -2,7 +2,7 @@ include ./make/*.mk
 
 ORG ?= integreatly
 
-CONFIG_IMAGE ?= ''
+CONFIG_IMAGE ?= 'quay.io/integreatly/managed-api-service-config:latest'
 
 REG=quay.io
 SHELL=/bin/bash
