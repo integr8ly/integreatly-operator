@@ -19,10 +19,10 @@ import (
 
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -2492,12 +2492,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 }
 
 func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-admin-ui", "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err := resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-admin-ui", "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI()},
 		Labels: map[string]string{
 			"service": "3scale-admin-ui",
@@ -2532,7 +2527,7 @@ func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8scl
 		r.log.Info("Failed to retrieve threescale system-developer Route with 3scale prefix or uibbt label")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
-	phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-developer", "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err = resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-system-developer", "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{"https://" + threescaleRoute.Spec.Host},
 		Labels: map[string]string{
 			"service": "3scale-developer-console-ui",
@@ -2548,7 +2543,7 @@ func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8scl
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
-	phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-master", "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err = resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-system-master", "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{"https://" + threescaleRoute.Spec.Host},
 		Labels: map[string]string{
 			"service": "3scale-system-admin-ui",

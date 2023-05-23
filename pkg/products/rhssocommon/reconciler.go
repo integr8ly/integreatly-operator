@@ -8,7 +8,6 @@ import (
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
@@ -638,12 +637,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
-	}
-
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", monitoringv1.ProbeTargetStaticConfig{
+	phase, err := resources.CreatePrometheusProbe(ctx, client, r.Installation, targetName, "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{url},
 		Labels: map[string]string{
 			"service": service,
