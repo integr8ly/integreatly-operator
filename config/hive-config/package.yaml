@@ -1,7 +1,7 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: quota-secret
+  name: rhoam-config
 objects:
   - apiVersion: package-operator.run/v1alpha1
     kind: Package
