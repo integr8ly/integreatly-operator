@@ -255,7 +255,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log, r.installation.Spec.Type)
+	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log, r.installation.Spec.Type, r.installation.Namespace)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to instantiate rejected requests alert reconciler", err)
 		return integreatlyv1alpha1.PhaseFailed, err
