@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 const (
-	productListResourceEndpoint            = "/admin/api/services.json"
-	productResourceEndpoint                = "/admin/api/services/%d.json"
-	productMethodListResourceEndpoint      = "/admin/api/services/%d/metrics/%d/methods.json"
-	productMethodResourceEndpoint          = "/admin/api/services/%d/metrics/%d/methods/%d.json"
-	productMetricListResourceEndpoint      = "/admin/api/services/%d/metrics.json"
-	productMetricResourceEndpoint          = "/admin/api/services/%d/metrics/%d.json"
-	productMappingRuleListResourceEndpoint = "/admin/api/services/%d/proxy/mapping_rules.json"
-	productMappingRuleResourceEndpoint     = "/admin/api/services/%d/proxy/mapping_rules/%d.json"
-	productProxyResourceEndpoint           = "/admin/api/services/%d/proxy.json"
-	productProxyDeployResourceEndpoint     = "/admin/api/services/%d/proxy/deploy.json"
+	productListResourceEndpoint                = "/admin/api/services.json"
+	productResourceEndpoint                    = "/admin/api/services/%d.json"
+	productMethodListResourceEndpoint          = "/admin/api/services/%d/metrics/%d/methods.json"
+	productMethodResourceEndpoint              = "/admin/api/services/%d/metrics/%d/methods/%d.json"
+	productMetricListResourceEndpoint          = "/admin/api/services/%d/metrics.json"
+	productMetricResourceEndpoint              = "/admin/api/services/%d/metrics/%d.json"
+	productMappingRuleListResourceEndpoint     = "/admin/api/services/%d/proxy/mapping_rules.json"
+	productMappingRuleResourceEndpoint         = "/admin/api/services/%d/proxy/mapping_rules/%d.json"
+	productProxyResourceEndpoint               = "/admin/api/services/%d/proxy.json"
+	productProxyDeployResourceEndpoint         = "/admin/api/services/%d/proxy/deploy.json"
+	PRODUCTS_PER_PAGE                      int = 500
 )
 
 // BackendApi Read 3scale Backend
@@ -109,12 +111,47 @@ func (c *ThreeScaleClient) DeleteProduct(id int64) error {
 	return handleJsonResp(resp, http.StatusOK, nil)
 }
 
-// ListProducts List existing products
 func (c *ThreeScaleClient) ListProducts() (*ProductList, error) {
+	// Keep asking until the results length is lower than "per_page" param
+	currentPage := 1
+	productList := &ProductList{}
+
+	allResultsPerPage := false
+	for next := true; next; next = allResultsPerPage {
+		tmpProductList, err := c.ListProductsPerPage(currentPage, PRODUCTS_PER_PAGE)
+		if err != nil {
+			return nil, err
+		}
+
+		productList.Products = append(productList.Products, tmpProductList.Products...)
+
+		allResultsPerPage = len(tmpProductList.Products) == PRODUCTS_PER_PAGE
+		currentPage += 1
+	}
+
+	return productList, nil
+
+}
+
+// ListProductsPerPage List existing products in a single page
+// paginationValues[0] = Page in the paginated list. Defaults to 1 for the API, as the client will not send the page param.
+// paginationValues[1] = Number of results per page. Default and max is 500 for the aPI, as the client will not send the per_page param.
+func (c *ThreeScaleClient) ListProductsPerPage(paginationValues ...int) (*ProductList, error) {
+	queryValues := url.Values{}
+
+	if len(paginationValues) > 0 {
+		queryValues.Add("page", strconv.Itoa(paginationValues[0]))
+	}
+
+	if len(paginationValues) > 1 {
+		queryValues.Add("per_page", strconv.Itoa(paginationValues[1]))
+	}
+
 	req, err := c.buildGetReq(productListResourceEndpoint)
 	if err != nil {
 		return nil, err
 	}
+	req.URL.RawQuery = queryValues.Encode()
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
