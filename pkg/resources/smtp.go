@@ -52,7 +52,7 @@ func GetExistingSMTPFromAddress(ctx context.Context, client k8sclient.Client, ns
 // GetSMTPFromAddress returns the correct from address depending on how the operator is configured
 // For addon installs returns the address stated in the alertmanger.yaml or the address configured by the custom SMTP feature in ocm
 // For sandbox it returns the default hardcoded value of: test@rhmw.io
-func GetSMTPFromAddress(ctx context.Context, serverClient k8sclient.Client, log logger.Logger, installation *v1alpha1.RHMI, namespace string) (string, error) {
+func GetSMTPFromAddress(ctx context.Context, serverClient k8sclient.Client, log logger.Logger, installation *v1alpha1.RHMI) (string, error) {
 
 	if installation == nil {
 		return "", fmt.Errorf("nil pointer passed for installation")
@@ -73,7 +73,7 @@ func GetSMTPFromAddress(ctx context.Context, serverClient k8sclient.Client, log 
 			return "", err
 		}
 	} else {
-		existingSMTPFromAddress, err = GetExistingSMTPFromAddress(ctx, serverClient, namespace)
+		existingSMTPFromAddress, err = GetExistingSMTPFromAddress(ctx, serverClient, installation.Namespace)
 
 		if err != nil {
 			if !errors.IsNotFound(err) {

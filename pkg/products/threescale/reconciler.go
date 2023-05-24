@@ -1459,12 +1459,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 }
 
 func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -3727,12 +3722,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclie
 }
 
 func (r *Reconciler) reconcileDcEnvarEmailAddress(ctx context.Context, serverClient k8sclient.Client, dcName string, updateFn func(dc *appsv1.DeploymentConfig, value string) bool) (integreatlyv1alpha1.StatusPhase, error) {
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	existingSMTPFromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -3761,12 +3751,7 @@ func (r *Reconciler) reconcileDcEnvarEmailAddress(ctx context.Context, serverCli
 }
 
 func (r *Reconciler) syncInvitationEmail(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	fromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation, observabilityConfig.GetNamespace())
+	fromAddress, err := resources.GetSMTPFromAddress(ctx, serverClient, r.log, r.installation)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
