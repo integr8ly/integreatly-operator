@@ -2,29 +2,17 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: bucketclasses.noobaa.io
+  name: noobaaaccounts.noobaa.io
 spec:
   group: noobaa.io
   names:
-    kind: BucketClass
-    listKind: BucketClassList
-    plural: bucketclasses
-    singular: bucketclass
+    kind: NooBaaAccount
+    listKind: NooBaaAccountList
+    plural: noobaaaccounts
+    singular: noobaaaccount
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Placement
-      jsonPath: .spec.placementPolicy
-      name: Placement
-      type: string
-    - description: NamespacePolicy
-      jsonPath: .spec.namespacePolicy
-      name: NamespacePolicy
-      type: string
-    - description: Quota
-      jsonPath: .spec.quota
-      name: Quota
-      type: string
     - description: Phase
       jsonPath: .status.phase
       name: Phase
@@ -35,7 +23,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: BucketClass is the Schema for the bucketclasses API
+        description: NooBaaAccount is the Schema for the NooBaaAccounts API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -50,104 +38,40 @@ spec:
           metadata:
             type: object
           spec:
-            description: Specification of the desired behavior of the noobaa BucketClass.
+            description: Specification of the desired behavior of the NooBaaAccount.
             properties:
-              namespacePolicy:
-                description: NamespacePolicy specifies the namespace policy for the
-                  bucket class
-                properties:
-                  cache:
-                    description: Cache is a namespace policy configuration of type
-                      Cache
-                    properties:
-                      caching:
-                        description: Caching is the cache specification for the ns
-                          policy
-                        properties:
-                          prefix:
-                            description: Prefix is prefix of the future cached data
-                            type: string
-                          ttl:
-                            description: TTL specifies the cache ttl
-                            type: integer
-                        type: object
-                      hubResource:
-                        description: HubResource is the read and write resource name
-                          to use
-                        type: string
-                    type: object
-                  multi:
-                    description: Multi is a namespace policy configuration of type
-                      Multi
-                    properties:
-                      readResources:
-                        description: ReadResources is an ordered list of read resources
-                          names to use
-                        items:
-                          type: string
-                        type: array
-                      writeResource:
-                        description: WriteResource is the write resource name to use
-                        type: string
-                    type: object
-                  single:
-                    description: Single is a namespace policy configuration of type
-                      Single
-                    properties:
-                      resource:
-                        description: Resource is the read and write resource name
-                          to use
-                        type: string
-                    type: object
-                  type:
-                    description: Type is the namespace policy type
-                    type: string
-                type: object
-              placementPolicy:
-                description: PlacementPolicy specifies the placement policy for the
-                  bucket class
-                properties:
-                  tiers:
-                    description: Tiers is an ordered list of tiers to use. The model
-                      is a waterfall - push to first tier by default, and when no
-                      more space spill "cold" storage to next tier.
-                    items:
-                      description: Tier specifies a storage tier
-                      properties:
-                        backingStores:
-                          description: BackingStores is an unordered list of backing
-                            store names. The meaning of the list depends on the placement.
-                          items:
-                            type: string
-                          type: array
-                        placement:
-                          description: Placement specifies the type of placement for
-                            the tier If empty it should have a single backing store.
-                          enum:
-                          - Spread
-                          - Mirror
-                          type: string
-                      type: object
-                    type: array
-                type: object
-              quota:
-                description: Quota specifies the quota configuration for the bucket
-                  class
-                properties:
-                  maxObjects:
-                    description: limits the max total quantity of objects per bucket
-                    type: string
-                  maxSize:
-                    description: limits the max total size of objects per bucket
-                    type: string
-                type: object
-              replicationPolicy:
-                description: ReplicationPolicy specifies a json of replication rules
-                  for the bucketclass
+              allow_bucket_creation:
+                description: AllowBucketCreate specifies if new buckets can be created
+                  by this account
+                type: boolean
+              default_resource:
+                description: DefaultResource specifies which backingstore this account
+                  will use to create new buckets
                 type: string
+              nsfs_account_config:
+                description: NsfsAccountConfig specifies the configurations on Namespace
+                  FS
+                nullable: true
+                properties:
+                  gid:
+                    type: integer
+                  new_buckets_path:
+                    type: string
+                  nsfs_only:
+                    type: boolean
+                  uid:
+                    type: integer
+                required:
+                - gid
+                - new_buckets_path
+                - nsfs_only
+                - uid
+                type: object
+            required:
+            - allow_bucket_creation
             type: object
           status:
-            description: Most recently observed status of the noobaa BackingStore.
+            description: Most recently observed status of the NooBaaAccount.
             properties:
               conditions:
                 description: Conditions is a list of conditions related to operator
@@ -177,13 +101,9 @@ spec:
                   - type
                   type: object
                 type: array
-              mode:
-                description: Mode is a simple, high-level summary of where the System
-                  is in its lifecycle
-                type: string
               phase:
-                description: Phase is a simple, high-level summary of where the System
-                  is in its lifecycle
+                description: Phase is a simple, high-level summary of where the noobaa
+                  user is in its lifecycle
                 type: string
               relatedObjects:
                 description: RelatedObjects is a list of objects related to this operator.

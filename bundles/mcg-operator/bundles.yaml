@@ -1,11 +1,9 @@
 bundles:
-    - name: mcg-operator.v4.11.0
-      image: quay.io/integreatly/mcg-bundle:v4.11.0
-    - name: mcg-operator.v4.11.1
-      image: quay.io/integreatly/mcg-bundle:v4.11.1
-    - name: mcg-operator.v4.11.2
-      image: quay.io/integreatly/mcg-bundle:v4.11.2
-    - name: mcg-operator.v4.11.3
-      image: quay.io/integreatly/mcg-bundle:v4.11.3
-    - name: mcg-operator.v4.11.4
-      image: quay.io/integreatly/mcg-bundle:v4.11.4
+    - name: mcg-operator.v4.12.0
+      image: quay.io/integreatly/mcg-bundle:v4.12.0
+    - name: mcg-operator.v4.12.1
+      image: quay.io/integreatly/mcg-bundle:v4.12.1
+    - name: mcg-operator.v4.12.2-rhodf
+      image: quay.io/integreatly/mcg-bundle:v4.12.2-rhodf
+    - name: mcg-operator.v4.12.3-rhodf
+      image: quay.io/integreatly/mcg-bundle:v4.12.3-rhodf
