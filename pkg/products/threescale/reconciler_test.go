@@ -3884,24 +3884,15 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:        "Error getting Observability config",
+			name:        "Error getting installation CR",
 			want:        integreatlyv1alpha1.PhaseFailed,
 			wantErr:     true,
-			errContains: "some error",
+			errContains: "nil pointer passed for installation",
 			args: args{
 				ctx:          context.TODO(),
 				serverClient: fake.NewClientBuilder().Build(),
 			},
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					ReadObservabilityFunc: func() (*config.Observability, error) {
-						return &config.Observability{
-							Config: config.ProductConfig{
-								"NAMESPACE": "namespace",
-							},
-						}, fmt.Errorf("some error")
-					}},
-			},
+			fields: fields{},
 		},
 		{
 			name:        "Error getting existing SMTP from Address",
@@ -3922,8 +3913,12 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				}).Build(),
 			},
 			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{},
-				log:          getLogger(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+					},
+				},
+				log: getLogger(),
 				ConfigManager: &config.ConfigReadWriterMock{
 					ReadObservabilityFunc: func() (*config.Observability, error) {
 						return &config.Observability{
