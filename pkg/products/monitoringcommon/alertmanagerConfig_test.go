@@ -14,7 +14,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/utils"
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	v1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,7 +30,6 @@ const (
 	mockAlertFromAddress             = "noreply-alert@devshift.org"
 
 	defaultInstallationNamespace = "mock-namespace"
-	alertManagerRouteName        = "mock-routename"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -60,6 +58,7 @@ func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
 	installation.Spec.AlertingEmailAddress = mockCustomerAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.BusinessUnit = mockBUAlertingEmailAddress
+	installation.Namespace = defaultInstallationNamespace
 	return installation
 }
 
@@ -109,20 +108,17 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	alertmanagerConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      config.AlertManagerConfigSecretName,
-			Namespace: defaultInstallationNamespace,
+			Namespace: config.GetOboNamespace(installation.Namespace),
 		},
 		Data: map[string][]byte{
 			"alertmanager.yaml": []byte("global:\n  smtp_from: noreply-alert@devshift.org"),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
-	alertmanagerRoute := &v1.Route{
+	alertmanagerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      alertManagerRouteName,
+			Name:      alertManagerServiceName,
 			Namespace: defaultInstallationNamespace,
-		},
-		Spec: v1.RouteSpec{
-			Host: "example.com",
 		},
 	}
 
@@ -212,7 +208,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "succeeds when smtp secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, pagerdutySecret, dmsSecret, alertmanagerService, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -220,7 +216,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, alertmanagerService)
 			},
 			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -230,7 +226,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
 				emptyPagerdutySecret.Data = map[string][]byte{}
-				return utils.NewTestClient(scheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, emptyPagerdutySecret, alertmanagerService)
 			},
 			wantErr: "secret key is undefined in pager duty secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -238,7 +234,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "succeeds when dead mans snitch secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, alertmanagerService, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -248,7 +244,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerService, clusterInfra, clusterVersion, clusterRoute)
 			},
 			wantErr: "",
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -261,7 +257,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 			want: integreatlyv1alpha1.PhaseAwaitingComponents,
 		},
 		{
-			name: "fails when alert manager route fails to be retrieved",
+			name: "fails when alert manager service fails to be retrieved",
 			serverClient: func() k8sclient.Client {
 				return &moqclient.SigsClientInterfaceMock{
 					GetFunc: func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
@@ -269,25 +265,25 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 					},
 				}
 			},
-			wantErr: "could not obtain alert manager route: test",
+			wantErr: "failed to fetch alert manager service: test",
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
 			name: "fails cluster infra cannot  be retrieved",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerService)
 			},
 			want: integreatlyv1alpha1.PhaseFailed,
 		},
 		{
 			name: "secret created successfully",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerService, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: config.GetOboNamespace(installation.Namespace)}, configSecret); err != nil {
 					return err
 				}
 				if !bytes.Equal(configSecret.Data[config.AlertManagerConfigSecretFileName], testSecretData) {
@@ -302,12 +298,12 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "secret data is overridden if already exists",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerService, alertmanagerConfigSecret, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: config.GetOboNamespace(installation.Namespace)}, configSecret); err != nil {
 					return err
 				}
 				if !bytes.Equal(configSecret.Data[config.AlertManagerConfigSecretFileName], testSecretData) {
@@ -322,12 +318,12 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 		{
 			name: "alert address env override is successful",
 			serverClient: func() k8sclient.Client {
-				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, clusterInfra, clusterVersion, clusterRoute)
+				return utils.NewTestClient(scheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerService, clusterInfra, clusterVersion, clusterRoute)
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
 				configSecret := &corev1.Secret{}
-				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: config.AlertManagerConfigSecretName, Namespace: config.GetOboNamespace(installation.Namespace)}, configSecret); err != nil {
 					return err
 				}
 
@@ -393,7 +389,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 
 			serverClient := tt.serverClient()
 
-			got, err := ReconcileAlertManagerSecrets(context.TODO(), serverClient, installation, defaultInstallationNamespace, alertManagerRouteName)
+			got, err := ReconcileAlertManagerSecrets(context.TODO(), serverClient, installation)
 			if tt.wantErr != "" && err.Error() != tt.wantErr {
 				t.Errorf("reconcileAlertManagerConfigSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
 				return

@@ -13,7 +13,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	v1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +31,8 @@ const (
 	// For OpenShift console
 	openShiftConsoleRoute     = "console"
 	openShiftConsoleNamespace = "openshift-console"
+
+	alertManagerServiceName = "rhoam-alertmanager"
 )
 
 func getSmtpHost(smtpSecret *corev1.Secret) string {
@@ -66,26 +67,27 @@ func getSmtpPassword(smtpSecret *corev1.Secret) string {
 	return password
 }
 
-func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, productNamespace string, alertManagerRouteName string) (integreatlyv1alpha1.StatusPhase, error) {
+func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	log := l.NewLogger()
 
 	log.Info("reconciling alertmanager configuration secret")
 
-	integreatlyOperatorNs := installation.Namespace
-
-	// handle alert manager route
-	alertmanagerRoute := &v1.Route{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerRouteName, Namespace: productNamespace}, alertmanagerRoute); err != nil {
+	// Attempt to fetch alert manager service
+	alertManagerService := &corev1.Service{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerServiceName, Namespace: installation.Namespace}, alertManagerService); err != nil {
 		if k8serr.IsNotFound(err) {
-			log.Infof("alert manager route not available, cannot create alert manager config secret", l.Fields{"route": alertManagerRouteName})
+			log.Infof("alert manager service not available yet, cannot create alert manager config secret", l.Fields{"service": alertManagerServiceName})
 			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain alert manager route: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch alert manager service: %w", err)
 	}
+
+	// create alertmanager mock route
+	alertmanagerRoute := fmt.Sprintf("noreply2@%s-%s-%s", alertManagerServiceName, installation.Namespace, installation.Spec.RoutingSubdomain)
 
 	// handle smtp credentials
 	smtpSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: installation.Spec.SMTPSecret, Namespace: integreatlyOperatorNs}, smtpSecret); err != nil {
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: installation.Spec.SMTPSecret, Namespace: installation.Namespace}, smtpSecret); err != nil {
 		log.Warningf("Could not obtain smtp credentials secret", l.Fields{"error": err.Error()})
 	}
 
@@ -102,19 +104,19 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	// only set the to address to a real value for managed deployments
-	smtpToSREAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToSREAddress := alertmanagerRoute
 	smtpToSREAddressCRVal := installation.Spec.AlertingEmailAddresses.CSSRE
 	if smtpToSREAddressCRVal != "" {
 		smtpToSREAddress = smtpToSREAddressCRVal
 	}
 
-	smtpToBUAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToBUAddress := alertmanagerRoute
 	smtpToBUAddressCRVal := installation.Spec.AlertingEmailAddresses.BusinessUnit
 	if smtpToBUAddressCRVal != "" {
 		smtpToBUAddress = smtpToBUAddressCRVal
 	}
 
-	smtpToCustomerAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToCustomerAddress := alertmanagerRoute
 	smtpToCustomerAddressCRVal := installation.Spec.AlertingEmailAddress
 	if smtpToCustomerAddressCRVal != "" {
 		smtpToCustomerAddress = prepareEmailAddresses(smtpToCustomerAddressCRVal)
@@ -190,7 +192,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	configSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      config.AlertManagerConfigSecretName,
-			Namespace: productNamespace,
+			Namespace: config.GetOboNamespace(installation.Namespace),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}

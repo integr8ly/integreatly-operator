@@ -24,6 +24,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -197,6 +198,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
 		return phase, errors.Wrap(err, "reconciling custom SMTP has failed ")
+	}
+
+	phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation)
+	r.log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		if err != nil {
+			r.log.Warning("failed to reconcile alert manager config secret " + err.Error())
+		}
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
+		return phase, err
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
