@@ -1279,7 +1279,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	backendRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, r.installation.Name)
 
 	// If there is a quota change, the quota on the installation spec would not be set to the active quota yet
-	quotaChange := r.installation.Status.Quota != activeQuota
+	quotaChange := isQuotaChanged(r.installation.Status.Quota, activeQuota)
 
 	// if we are on GCP set snaphshot frequency and retention
 	var snapshotFrequency, snapshotRetention types.Duration
@@ -1456,6 +1456,15 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func isQuotaChanged(newQuota string, activeQuota string) bool {
+	// During fresh installation, quota is not set until installation completes
+	if newQuota == "" {
+		return false
+	}
+
+	return newQuota != activeQuota
 }
 
 func (r *Reconciler) reconcileOutgoingEmailAddress(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
