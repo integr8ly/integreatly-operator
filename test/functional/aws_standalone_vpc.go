@@ -253,8 +253,13 @@ func TestStandaloneVPCExists(t common.TestingTB, testingCtx *common.TestingConte
 	err = verifyStandaloneRouteTables(standaloneRouteTables, conn)
 	testErrors.standaloneRouteTableError = err.(*networkConfigTestError).standaloneRouteTableError
 
+	// check if cluster Private:
+	isPrivate, err := isClusterPrivate(ec2Sess, clusterVpc)
+	if err != nil {
+		t.Fatal("could not check if cluster is Private", err)
+	}
 	// verify cluster route table
-	err = verifyClusterRouteTables(clusterRouteTables, expectedCidr, conn, availableZones)
+	err = verifyClusterRouteTables(clusterRouteTables, expectedCidr, conn, availableZones, isPrivate)
 	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
 	// if any error was found, fail the test
@@ -500,13 +505,18 @@ func verifyStandaloneRouteTables(routeTables []*ec2.RouteTable, conn *ec2.VpcPee
 }
 
 // verify that the cluster route tables contain a route to the peering connection and the standalone vpc
-func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, peeringConn *ec2.VpcPeeringConnection, availableZones map[string]bool) error {
+func verifyClusterRouteTables(routeTables []*ec2.RouteTable, vpcCidr string, peeringConn *ec2.VpcPeeringConnection,
+	availableZones map[string]bool, privateCluster bool) error {
+
 	newErr := &networkConfigTestError{
 		clusterRouteTablesError: []error{},
 	}
 
-	// 1 private route per AZ + 1 public route
-	expectedRouteTableCount := len(availableZones) + 1
+	// 1 private route per AZ + 1 public route for public cluster
+	expectedRouteTableCount := len(availableZones)
+	if !privateCluster {
+		expectedRouteTableCount += 1
+	}
 	if len(routeTables) != expectedRouteTableCount {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)

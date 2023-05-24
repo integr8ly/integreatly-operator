@@ -284,3 +284,39 @@ func getStandaloneRouteTables(ec2svc *ec2.EC2, vpcId *string) ([]*ec2.RouteTable
 	}
 	return routeTables, nil
 }
+
+func describeInternetGateways(ec2svc *ec2.EC2, input *ec2.DescribeInternetGatewaysInput) ([]*ec2.InternetGateway, error) {
+	describeInternetGatewaysOutput, err := ec2svc.DescribeInternetGateways(input)
+	if err != nil {
+		return nil, fmt.Errorf("could not describe Internet Gateways: %w", err)
+	}
+	internetGateways := describeInternetGatewaysOutput.InternetGateways
+	return internetGateways, nil
+}
+
+func getInternetGateways(ec2svc *ec2.EC2, vpcId *string) ([]*ec2.InternetGateway, error) {
+	internetGateways, err := describeInternetGateways(ec2svc, &ec2.DescribeInternetGatewaysInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("attachment.vpc-id"),
+				Values: []*string{vpcId},
+			},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch Internet Gateways: %w", err)
+	}
+	return internetGateways, nil
+}
+
+// Check if Cluster is Private  - VPC / route tables should not use Internet Gateways
+func isClusterPrivate(ec2svc *ec2.EC2, clusterVpc *ec2.Vpc) (bool, error) {
+	internetGateways, err := getInternetGateways(ec2svc, clusterVpc.VpcId)
+	if err != nil {
+		return false, fmt.Errorf("error check Internet Gateways: %w", err)
+	}
+	if len(internetGateways) > 0 {
+		return false, nil
+	}
+	return true, nil
+}
