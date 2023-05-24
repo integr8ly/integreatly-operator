@@ -277,6 +277,19 @@ rules:
   - list
   - update
 - apiGroups:
+  - monitoring.rhobs
+  resources:
+  - podmonitors
+  - probes
+  - prometheusrules
+  - servicemonitors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+- apiGroups:
   - noobaa.io
   resources:
   - backingstores
@@ -542,6 +555,24 @@ rules:
   - watch
 - apiGroups:
   - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - monitoring.rhobs
+  resources:
+  - prometheusrules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - monitoring.rhobs
   resources:
   - servicemonitors
   verbs:

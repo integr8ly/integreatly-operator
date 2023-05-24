@@ -183,6 +183,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Monitoring resources not covered by namespace "admin" permissions
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
+// +kubebuilder:rbac:groups=monitoring.rhobs,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
 
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings;roles;rolebindings,verbs=*
 
@@ -234,9 +235,13 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;create,namespace=integreatly-operator
 
+// +kubebuilder:rbac:groups=monitoring.rhobs,resources=servicemonitors,verbs=get;create,namespace=integreatly-operator
+
 // +kubebuilder:rbac:groups=apps,resources=deployments;replicasets;statefulsets,verbs=update;get;patch
 
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules,verbs=get;list;create;update;delete;watch,namespace=integreatly-operator
+
+// +kubebuilder:rbac:groups=monitoring.rhobs,resources=prometheusrules,verbs=get;list;create;update;delete;watch,namespace=integreatly-operator
 
 // +kubebuilder:rbac:groups="",resources=pods;services;endpoints,verbs=get;list;watch,namespace=integreatly-operator
 
@@ -758,7 +763,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/656
 	alerts := &unstructured.UnstructuredList{}
 	alerts.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "monitoring.coreos.com",
+		Group:   "monitoring.rhobs",
 		Kind:    "PrometheusRule",
 		Version: "v1",
 	})
