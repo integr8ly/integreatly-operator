@@ -197,9 +197,13 @@ func TestGetSMTPFromAddress(t *testing.T) {
 						"alertmanager.yaml": []byte("global:\n  smtp_from: good@smtp.com"),
 					},
 				}).Build(),
-				log:          logger.NewLogger(),
-				installation: &v1alpha1.RHMI{},
-				namespace:    "testing",
+				log: logger.NewLogger(),
+				installation: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testing",
+					},
+				},
+				namespace: "testing",
 			},
 		},
 		{
@@ -219,9 +223,13 @@ func TestGetSMTPFromAddress(t *testing.T) {
 						"alertmanager.yaml": []byte("|\nglobal: foo"),
 					},
 				}).Build(),
-				log:          logger.NewLogger(),
-				installation: &v1alpha1.RHMI{},
-				namespace:    "testing",
+				log: logger.NewLogger(),
+				installation: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testing",
+					},
+				},
+				namespace: "testing",
 			},
 		},
 		{
@@ -232,15 +240,19 @@ func TestGetSMTPFromAddress(t *testing.T) {
 				ctx:          context.TODO(),
 				serverClient: fakeclient.NewClientBuilder().Build(),
 				log:          logger.NewLogger(),
-				installation: &v1alpha1.RHMI{},
-				namespace:    "",
+				installation: &v1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testing",
+					},
+				},
+				namespace: "",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("ALERT_SMTP_FROM", "envar@smtp.com")
-			got, err := GetSMTPFromAddress(tt.args.ctx, tt.args.serverClient, tt.args.log, tt.args.installation, tt.args.namespace)
+			got, err := GetSMTPFromAddress(tt.args.ctx, tt.args.serverClient, tt.args.log, tt.args.installation)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetSMTPFromAddress() error = %v, wantErr %v", err, tt.wantErr)
 				return
