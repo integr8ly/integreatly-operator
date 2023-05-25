@@ -206,6 +206,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		r.log.Info("reconciling observability-operator changes for multi tenant rhoam")
+		observabilityCsv := newCsvUpdater(ctx, client, r.Config.GetOperatorNamespace(), r.log)
+		err = observabilityCsv.findCsv()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to find observability-operator CSV in namespace %s", observabilityCsv.namespace), err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		err = observabilityCsv.setManagerResources()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, "Failed to set observability-operator manager resources", err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		err = observabilityCsv.updateCSV()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to update observability-operator CSV in namespace %s", observabilityCsv.namespace), err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		r.log.Info("completed observability-operator changes for multi tenant rhoam")
+	}
+
 	phase, err = r.reconcileComponents(ctx, client, productNamespace, r.installation.Spec.NamespacePrefix)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to create components", err)
