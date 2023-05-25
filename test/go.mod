@@ -114,7 +114,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grafana-operator/grafana-operator/v4 v4.7.1 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/hashicorp/go-version v1.5.0 // indirect
@@ -200,6 +200,12 @@ require (
 )
 
 // Please ensure all replaces are tracked.
+
+// Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
+
+// Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4895
+replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
 
 // Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
 replace k8s.io/client-go => k8s.io/client-go v0.25.0

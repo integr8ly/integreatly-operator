@@ -15,4 +15,4 @@ image/osde2e/build/push: image/osde2e/build image/osde2e/push
 
 .PHONY: test/compile/osde2e
 test/compile/osde2e:
-	CGO_ENABLED=0 go test -mod=readonly -v -c -o managed-api-test-harness.test ./test/osde2e
+	cd test && CGO_ENABLED=0 go test -mod=readonly -v -c -o ../managed-api-test-harness.test ./osde2e
