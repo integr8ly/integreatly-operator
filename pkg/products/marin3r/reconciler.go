@@ -180,6 +180,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
+		r.log.Info("reconciling marin3r changes for multi tenant rhoam")
+		marin3rCSV := newCsvUpdater(ctx, client, r.Config.GetOperatorNamespace(), r.log)
+		err = marin3rCSV.findCsv()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to find marin3r CSV in namespace %s", marin3rCSV.namespace), err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		err = marin3rCSV.setManagerResources()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, "Failed to set marin3r manager resources", err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		err = marin3rCSV.updateCSV()
+		if err != nil {
+			events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to update marin3r CSV in namespace %s", marin3rCSV.namespace), err)
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+
+		r.log.Info("completed marin3r changes for multi tenant rhoam")
+	}
+
 	r.log.Info("about to start reconciling the discovery service")
 	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
