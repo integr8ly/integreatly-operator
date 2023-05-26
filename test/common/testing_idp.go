@@ -253,13 +253,11 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	identityProviders := clusterOauth.Spec.IdentityProviders
 	idpAlreadySetUpByScript := false
 	idpIndex := 0
-	if identityProviders != nil {
-		for index, providers := range identityProviders {
-			if providers.Name == TestingIDPRealm {
-				idpAlreadySetUpByScript = true
-				idpIndex = index
-				break
-			}
+	for index, providers := range identityProviders {
+		if providers.Name == TestingIDPRealm {
+			idpAlreadySetUpByScript = true
+			idpIndex = index
+			break
 		}
 	}
 
@@ -677,11 +675,9 @@ func hasIDPCreated(ctx context.Context, client dynclient.Client, t TestingTB) bo
 
 	idpExists := false
 	identityProviders := clusterOauth.Spec.IdentityProviders
-	if identityProviders != nil {
-		for _, providers := range identityProviders {
-			if providers.Name == TestingIDPRealm {
-				idpExists = true
-			}
+	for _, providers := range identityProviders {
+		if providers.Name == TestingIDPRealm {
+			idpExists = true
 		}
 	}
 

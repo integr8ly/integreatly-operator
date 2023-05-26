@@ -271,7 +271,7 @@ func (p QuotaProductConfig) mutateAPIManagerReplicas(replicas *int64, name strin
 }
 
 func (p QuotaProductConfig) mutatePodTemplate(template *corev1.PodTemplateSpec, name string) {
-	for i, _ := range template.Spec.Containers {
+	for i := range template.Spec.Containers {
 		p.mutateResourcesRequirement(&template.Spec.Containers[i].Resources, name)
 	}
 }

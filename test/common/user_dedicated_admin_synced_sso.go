@@ -142,13 +142,12 @@ func pollGeneratedKeycloakUserCR(ctx context.Context, c client.Client) error {
 			generatedKU,
 		)
 		if err != nil {
-			switch err.(type) {
+			switch err := err.(type) {
 			case *errors.StatusError:
-				statusErr := err.(*errors.StatusError)
-				if statusErr.ErrStatus.Code == http.StatusNotFound {
+				if err.ErrStatus.Code == http.StatusNotFound {
 					return false, nil
 				}
-				return true, statusErr
+				return true, err
 			default:
 				return true, err
 			}

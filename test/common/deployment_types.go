@@ -195,9 +195,7 @@ func TestDeploymentExpectedReplicas(t TestingTB, ctx *TestingContext) {
 	// If the cluster is using in cluster storage instead of AWS or GCP resources
 	// These deployments will also need to be checked
 	if isClusterStorage {
-		for _, d := range clusterStorageDeployments {
-			deployments = append(deployments, d)
-		}
+		deployments = append(deployments, clusterStorageDeployments...)
 	}
 
 	for _, namespace := range deployments {
