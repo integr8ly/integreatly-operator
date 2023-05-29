@@ -341,15 +341,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	// gets the products from the install type to expose rhmi status metric
-	stages := make([]rhmiv1alpha1.RHMIStageStatus, 0)
-	for _, stage := range installType.GetInstallStages() {
-		stages = append(stages, rhmiv1alpha1.RHMIStageStatus{
-			Name:     stage.Name,
-			Phase:    "",
-			Products: stage.Products,
-		})
-	}
+
 	metrics.SetStatus(installation)
 
 	configManager, err := config.NewManager(context.TODO(), r.Client, request.NamespacedName.Namespace, installationCfgMap, installation)

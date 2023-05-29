@@ -199,7 +199,6 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 
 	switch t := obj.(type) {
 	case *appsv1.DeploymentConfig:
-		checkDeploymentConfigReplicas(t)
 		p.mutateReplicas(&t.Spec.Replicas, name)
 		p.mutatePodTemplate(t.Spec.Template, name)
 	case *appsv12.Deployment:
@@ -216,9 +215,6 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 			t.Spec.Instances = int(configReplicas)
 		}
 		resources := p.resourceConfigs[KeycloakName].Resources
-		if &t.Spec.KeycloakDeploymentSpec.Resources == nil {
-			t.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{}
-		}
 		checkResourceBlock(&t.Spec.KeycloakDeploymentSpec.Resources)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Requests, resources.Requests)
 		p.mutateResources(t.Spec.KeycloakDeploymentSpec.Resources.Limits, resources.Limits)
@@ -239,13 +235,6 @@ func (p QuotaProductConfig) Configure(obj metav1.Object) error {
 	}
 
 	return nil
-}
-
-func checkDeploymentConfigReplicas(deployment *appsv1.DeploymentConfig) {
-	if &deployment.Spec.Replicas == nil {
-		temp := int32(0)
-		deployment.Spec.Replicas = temp
-	}
 }
 
 func checkDeploymentReplicas(deployment *appsv12.Deployment) {
@@ -320,9 +309,6 @@ func checkResourceBlock(resourceRequirement *corev1.ResourceRequirements) {
 }
 
 func checkApiManager(t *threescalev1.APIManager) {
-	if &t.Spec == nil {
-		t.Spec = threescalev1.APIManagerSpec{}
-	}
 	if t.Spec.Apicast == nil {
 		t.Spec.Apicast = &threescalev1.ApicastSpec{}
 	}

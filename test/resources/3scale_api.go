@@ -208,7 +208,7 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 
 	href, _ := selector.Attr("href")
 	if !strings.Contains(href, "/") {
-
+		return "", fmt.Errorf("invalid href format %v", href)
 	}
 
 	id := strings.Split(href, "/")

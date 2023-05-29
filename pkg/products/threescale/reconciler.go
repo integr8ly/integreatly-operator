@@ -3745,7 +3745,7 @@ func (r *Reconciler) reconcileDcEnvarEmailAddress(ctx context.Context, serverCli
 	updated := updateFn(dc, existingSMTPFromAddress)
 
 	if updated {
-		dc, err = r.appsv1Client.DeploymentConfigs(dc.Namespace).Update(ctx, dc, metav1.UpdateOptions{})
+		_, err = r.appsv1Client.DeploymentConfigs(dc.Namespace).Update(ctx, dc, metav1.UpdateOptions{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}

@@ -64,6 +64,9 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 
 				s := &corev1.Secret{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: testDestinationSecretName, Namespace: testDestinationNameSpace}, s)
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err.Error())
+				}
 
 				if !bytes.Equal(s.Data["test"], defPullSecret.Data["test"]) {
 					t.Fatalf("expected data %v, but got %v", defPullSecret.Data["test"], s.Data["test"])
@@ -137,6 +140,9 @@ func TestCopySecret(t *testing.T) {
 
 				destinationSecret := &corev1.Secret{}
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: destinationSecretName, Namespace: destinationSecretNamespace}, destinationSecret)
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err.Error())
+				}
 
 				if !reflect.DeepEqual(sourceSecret.Data, destinationSecret.Data) {
 					t.Fatalf("expected data %v, but got %v", sourceSecret.Data, destinationSecret.Data)

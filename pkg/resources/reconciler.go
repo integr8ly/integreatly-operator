@@ -127,8 +127,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", namespace, err)
 		}
 
-		//_, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false, true)
-		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false, true)
+		_, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}
