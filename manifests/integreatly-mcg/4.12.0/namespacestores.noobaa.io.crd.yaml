@@ -2,17 +2,21 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: noobaaaccounts.noobaa.io
+  name: namespacestores.noobaa.io
 spec:
   group: noobaa.io
   names:
-    kind: NooBaaAccount
-    listKind: NooBaaAccountList
-    plural: noobaaaccounts
-    singular: noobaaaccount
+    kind: NamespaceStore
+    listKind: NamespaceStoreList
+    plural: namespacestores
+    singular: namespacestore
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - description: Type
+      jsonPath: .spec.type
+      name: Type
+      type: string
     - description: Phase
       jsonPath: .status.phase
       name: Phase
@@ -23,7 +27,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: NooBaaAccount is the Schema for the NooBaaAccounts API
+        description: NamespaceStore is the Schema for the namespacestores API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -38,55 +42,157 @@ spec:
           metadata:
             type: object
           spec:
-            description: Specification of the desired behavior of the NooBaaAccount.
+            description: Specification of the desired behavior of the noobaa NamespaceStore.
             properties:
-              allow_bucket_creation:
-                description: AllowBucketCreate specifies if new buckets can be created
-                  by this account
-                type: boolean
-              allowed_buckets:
-                description: AllowedBuckets specifies which buckets this account can
-                  access
-                properties:
-                  full_permission:
-                    type: boolean
-                  permission_list:
-                    items:
-                      type: string
-                    type: array
-                required:
-                - full_permission
-                - permission_list
-                type: object
-              default_resource:
-                description: DefaultResource specifies which backingstore this account
-                  will use to create new buckets
+              accessMode:
+                description: AccessMode is an enum of supported access modes
                 type: string
-              nsfs_account_config:
-                description: NsfsAccountConfig specifies the configurations on Namespace
-                  FS
-                nullable: true
+              awsS3:
+                description: AWSS3Spec specifies a namespace store of type aws-s3
                 properties:
-                  gid:
-                    type: integer
-                  new_buckets_path:
+                  awsSTSRoleARN:
                     type: string
-                  nsfs_only:
+                  region:
+                    description: Region is the AWS region
+                    type: string
+                  secret:
+                    description: Secret refers to a secret that provides the credentials
+                      The secret should define AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+                    properties:
+                      name:
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                  sslDisabled:
+                    description: SSLDisabled allows to disable SSL and use plain http
                     type: boolean
-                  uid:
-                    type: integer
+                  targetBucket:
+                    description: TargetBucket is the name of the target S3 bucket
+                    type: string
                 required:
-                - gid
-                - new_buckets_path
-                - nsfs_only
-                - uid
+                - targetBucket
                 type: object
+              azureBlob:
+                description: AzureBlob specifies a namespace store of type azure-blob
+                properties:
+                  secret:
+                    description: Secret refers to a secret that provides the credentials
+                      The secret should define AccountName and AccountKey as provided
+                      by Azure Blob.
+                    properties:
+                      name:
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                  targetBlobContainer:
+                    description: TargetBlobContainer is the name of the target Azure
+                      Blob container
+                    type: string
+                required:
+                - secret
+                - targetBlobContainer
+                type: object
+              ibmCos:
+                description: IBMCos specifies a namespace store of type ibm-cos
+                properties:
+                  endpoint:
+                    description: 'Endpoint is the IBM COS compatible endpoint: http(s)://host:port'
+                    type: string
+                  secret:
+                    description: Secret refers to a secret that provides the credentials
+                      The secret should define IBM_COS_ACCESS_KEY_ID and IBM_COS_SECRET_ACCESS_KEY
+                    properties:
+                      name:
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                  signatureVersion:
+                    description: SignatureVersion specifies the client signature version
+                      to use when signing requests.
+                    type: string
+                  targetBucket:
+                    description: TargetBucket is the name of the target IBM COS bucket
+                    type: string
+                required:
+                - endpoint
+                - secret
+                - targetBucket
+                type: object
+              nsfs:
+                description: NSFS specifies a namespace store of type nsfs
+                properties:
+                  fsBackend:
+                    description: FsBackend is the backend type of the file system
+                    enum:
+                    - CEPH_FS
+                    - GPFS
+                    - NFSv4
+                    type: string
+                  pvcName:
+                    description: PvcName is the name of the pvc in which the file
+                      system resides
+                    type: string
+                  subPath:
+                    description: SubPath is a path to a sub directory in the pvc file
+                      system
+                    type: string
+                required:
+                - pvcName
+                type: object
+              s3Compatible:
+                description: S3Compatible specifies a namespace store of type s3-compatible
+                properties:
+                  endpoint:
+                    description: 'Endpoint is the S3 compatible endpoint: http(s)://host:port'
+                    type: string
+                  secret:
+                    description: Secret refers to a secret that provides the credentials
+                      The secret should define AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+                    properties:
+                      name:
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                  signatureVersion:
+                    description: SignatureVersion specifies the client signature version
+                      to use when signing requests.
+                    type: string
+                  targetBucket:
+                    description: TargetBucket is the name of the target S3 bucket
+                    type: string
+                required:
+                - endpoint
+                - secret
+                - targetBucket
+                type: object
+              type:
+                description: Type is an enum of supported types
+                type: string
             required:
-            - allow_bucket_creation
-            - allowed_buckets
+            - type
             type: object
           status:
-            description: Most recently observed status of the NooBaaAccount.
+            description: Most recently observed status of the noobaa NamespaceStore.
             properties:
               conditions:
                 description: Conditions is a list of conditions related to operator
@@ -116,9 +222,20 @@ spec:
                   - type
                   type: object
                 type: array
+              mode:
+                description: Mode specifies the updating mode of a NamespaceStore
+                properties:
+                  modeCode:
+                    description: ModeCode specifies the updated mode of namespacestore
+                    type: string
+                  timeStamp:
+                    description: TimeStamp specifies the update time of namespacestore
+                      new mode
+                    type: string
+                type: object
               phase:
-                description: Phase is a simple, high-level summary of where the noobaa
-                  user is in its lifecycle
+                description: Phase is a simple, high-level summary of where the namespace
+                  store is in its lifecycle
                 type: string
               relatedObjects:
                 description: RelatedObjects is a list of objects related to this operator.
