@@ -20,12 +20,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/3scale-ops/basereconciler/status"
 	defaults "github.com/3scale-ops/marin3r/pkg/envoy/container/defaults"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	"github.com/3scale-ops/marin3r/pkg/util/pointer"
+	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
 )
 
 const (
@@ -175,7 +178,7 @@ func (ed *EnvoyDeployment) AdminAccessLogPath() string {
 
 func (ed *EnvoyDeployment) Replicas() ReplicasSpec {
 	if ed.Spec.Replicas == nil {
-		return ReplicasSpec{Static: pointer.Int32Ptr(DefaultReplicas)}
+		return ReplicasSpec{Static: pointer.New(DefaultReplicas)}
 	}
 	if ed.Spec.Replicas.Static != nil {
 		return ReplicasSpec{Static: ed.Spec.Replicas.Static}
@@ -250,13 +253,13 @@ type DynamicReplicasSpec struct {
 	// If not set, the default metric will be set to 80% average CPU utilization.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
-	Metrics []autoscalingv2beta2.MetricSpec `json:"metrics,omitempty"`
+	Metrics []autoscalingv2.MetricSpec `json:"metrics,omitempty"`
 	// behavior configures the scaling behavior of the target
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
-	Behavior *autoscalingv2beta2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
+	Behavior *autoscalingv2.HorizontalPodAutoscalerBehavior `json:"behavior,omitempty"`
 }
 
 // ProbeSpec specifies configuration for a probe
@@ -386,8 +389,28 @@ func (im *InitManager) GetImage() string {
 	return defaults.InitMgrImage()
 }
 
+// ensure the status implements the AppStatus interface from "github.com/3scale-ops/basereconciler/status"
+var _ status.AppStatus = &EnvoyDeploymentStatus{}
+
 // EnvoyDeploymentStatus defines the observed state of EnvoyDeployment
-type EnvoyDeploymentStatus struct{}
+type EnvoyDeploymentStatus struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	DeploymentName *string `json:"deploymentName,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	*appsv1.DeploymentStatus `json:"deploymentStatus,omitempty"`
+	// internal fields
+	status.UnimplementedStatefulSetStatus `json:"-"`
+}
+
+func (eds *EnvoyDeploymentStatus) GetDeploymentStatus(key types.NamespacedName) *appsv1.DeploymentStatus {
+	return eds.DeploymentStatus
+}
+
+func (eds *EnvoyDeploymentStatus) SetDeploymentStatus(key types.NamespacedName, s *appsv1.DeploymentStatus) {
+	eds.DeploymentStatus = s
+}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -404,6 +427,12 @@ type EnvoyDeployment struct {
 
 	Spec   EnvoyDeploymentSpec   `json:"spec,omitempty"`
 	Status EnvoyDeploymentStatus `json:"status,omitempty"`
+}
+
+var _ status.ObjectWithAppStatus = &EnvoyDeployment{}
+
+func (ed *EnvoyDeployment) GetStatus() status.AppStatus {
+	return &ed.Status
 }
 
 //+kubebuilder:object:root=true

@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/3scale-ops/basereconciler/status"
 	"github.com/3scale-ops/marin3r/pkg/image"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -30,15 +33,6 @@ const (
 	DiscoveryServiceKind string = "DiscoveryService"
 	// DiscoveryServiceListKind is the Kind of the DiscoveryServiceList resources
 	DiscoveryServiceListKind string = "DiscoveryServiceList"
-	// DiscoveryServiceEnabledKey is the label key that the mutating webhook uses
-	// to determine if mutation is enabled for a Pod
-	DiscoveryServiceEnabledKey string = "marin3r.3scale.net/status"
-	// DiscoveryServiceEnabledValue is the label value that the mutating webhook uses
-	// to determine if mutation is enabled for a Pod
-	DiscoveryServiceEnabledValue string = "enabled"
-	// DiscoveryServiceLabelKey is the label key that the mutating webhook uses to determine if
-	// Pod mutation is enabled in a namespace
-	DiscoveryServiceLabelKey string = "marin3r.3scale.net/discovery-service"
 	// DiscoveryServiceCertificateHashLabelKey is the label in the discovery service Deployment that
 	// stores the hash of the current server certificate
 	DiscoveryServiceCertificateHashLabelKey string = "marin3r.3scale.net/server-certificate-hash"
@@ -47,6 +41,8 @@ const (
 
 	// DefaultMetricsPort is the default port where the discovery service metrics server listens
 	DefaultMetricsPort uint32 = 8383
+	// DefaultProbePort is the default port where the probe server listens
+	DefaultProbePort uint32 = 8384
 	// DefaultXdsServerPort is the default port where the discovery service xds server port listens
 	DefaultXdsServerPort uint32 = 18000
 	// DefaultRootCertificateDuration is the default root CA certificate duration
@@ -103,18 +99,38 @@ type DiscoveryServiceSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	MetricsPort *uint32 `json:"metricsPort,omitempty"`
+	// ProbePort is the port where healthz endpoint is served. Defaults to 8384.
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	ProbePort *uint32 `json:"probePort,omitempty"`
 	// ServiceConfig configures the way the DiscoveryService endpoints are exposed
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
 	ServiceConfig *ServiceConfig `json:"serviceConfig,omitempty"`
+	// PriorityClass to assign the discovery service Pod to
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	PodPriorityClass *string `json:"podPriorityClass,omitempty"`
 }
 
 // DiscoveryServiceStatus defines the observed state of DiscoveryService
 type DiscoveryServiceStatus struct {
-	// Conditions represent the latest available observations of an object's state
-	// +operator-sdk:csv:customresourcedefinitions:type=status
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	DeploymentName *string `json:"deploymentName,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +optional
+	*appsv1.DeploymentStatus `json:"deploymentStatus,omitempty"`
+	// internal fields
+	status.UnimplementedStatefulSetStatus `json:"-"`
+}
+
+func (dss *DiscoveryServiceStatus) GetDeploymentStatus(key types.NamespacedName) *appsv1.DeploymentStatus {
+	return dss.DeploymentStatus
+}
+
+func (dss *DiscoveryServiceStatus) SetDeploymentStatus(key types.NamespacedName, s *appsv1.DeploymentStatus) {
+	dss.DeploymentStatus = s
 }
 
 // PKIConfig has configuration for the PKI that marin3r manages for the
@@ -158,6 +174,12 @@ type DiscoveryService struct {
 
 	Spec   DiscoveryServiceSpec   `json:"spec,omitempty"`
 	Status DiscoveryServiceStatus `json:"status,omitempty"`
+}
+
+var _ status.ObjectWithAppStatus = &DiscoveryService{}
+
+func (d *DiscoveryService) GetStatus() status.AppStatus {
+	return &d.Status
 }
 
 // Resources returns the Pod resources for the discovery service pod
@@ -247,6 +269,14 @@ func (d *DiscoveryService) GetMetricsPort() uint32 {
 	return DefaultMetricsPort
 }
 
+// GetProbePort returns the port the healthz server will listen at
+func (d *DiscoveryService) GetProbePort() uint32 {
+	if d.Spec.ProbePort != nil {
+		return *d.Spec.ProbePort
+	}
+	return DefaultProbePort
+}
+
 // GetServiceConfig returns the Service configuration for the discovery service servers
 func (d *DiscoveryService) GetServiceConfig() *ServiceConfig {
 	if d.Spec.ServiceConfig != nil {
@@ -260,6 +290,14 @@ func (d *DiscoveryService) defaultServiceConfig() *ServiceConfig {
 		Name: d.OwnedObjectName(),
 		Type: ClusterIPType,
 	}
+}
+
+// PodPriorityClass returns the pod's priority class
+func (d *DiscoveryService) GetPriorityClass() *string {
+	if d.Spec.PodPriorityClass != nil {
+		return d.Spec.PodPriorityClass
+	}
+	return nil
 }
 
 // OwnedObjectName returns the name of the resources the discoveryservices controller

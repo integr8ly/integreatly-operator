@@ -1047,6 +1047,43 @@ func (m *AccessLogCommon) validate(all bool) error {
 
 	// no validation rules for CustomTags
 
+	if all {
+		switch v := interface{}(m.GetDuration()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AccessLogCommonValidationError{
+					field:  "Duration",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AccessLogCommonValidationError{
+					field:  "Duration",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDuration()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AccessLogCommonValidationError{
+				field:  "Duration",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for UpstreamRequestAttemptCount
+
+	// no validation rules for ConnectionTerminationDetails
+
+	// no validation rules for StreamId
+
+	// no validation rules for IntermediateLogEntry
+
 	if len(errors) > 0 {
 		return AccessLogCommonMultiError(errors)
 	}
@@ -1420,6 +1457,8 @@ func (m *TLSProperties) validate(all bool) error {
 	}
 
 	// no validation rules for TlsSessionId
+
+	// no validation rules for Ja3Fingerprint
 
 	if len(errors) > 0 {
 		return TLSPropertiesMultiError(errors)
@@ -2074,14 +2113,33 @@ func (m *TLSProperties_CertificateProperties_SubjectAltName) validate(all bool) 
 
 	var errors []error
 
-	switch m.San.(type) {
-
+	switch v := m.San.(type) {
 	case *TLSProperties_CertificateProperties_SubjectAltName_Uri:
+		if v == nil {
+			err := TLSProperties_CertificateProperties_SubjectAltNameValidationError{
+				field:  "San",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for Uri
-
 	case *TLSProperties_CertificateProperties_SubjectAltName_Dns:
+		if v == nil {
+			err := TLSProperties_CertificateProperties_SubjectAltNameValidationError{
+				field:  "San",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 		// no validation rules for Dns
-
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {

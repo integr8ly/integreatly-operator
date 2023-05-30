@@ -310,16 +310,7 @@ func (m *VmConfig) validate(all bool) error {
 
 	// no validation rules for VmId
 
-	if utf8.RuneCountInString(m.GetRuntime()) < 1 {
-		err := VmConfigValidationError{
-			field:  "Runtime",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Runtime
 
 	if all {
 		switch v := interface{}(m.GetCode()).(type) {
@@ -679,9 +670,18 @@ func (m *PluginConfig) validate(all bool) error {
 		}
 	}
 
-	switch m.Vm.(type) {
-
+	switch v := m.Vm.(type) {
 	case *PluginConfig_VmConfig:
+		if v == nil {
+			err := PluginConfigValidationError{
+				field:  "Vm",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
 		if all {
 			switch v := interface{}(m.GetVmConfig()).(type) {
@@ -712,6 +712,8 @@ func (m *PluginConfig) validate(all bool) error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {

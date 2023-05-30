@@ -75,7 +75,6 @@ var (
 	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.12.0"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
-
 	VersionGrafana        ProductVersion = "4.2.0"
 	VersionObservability  ProductVersion = "4.2.1"
 

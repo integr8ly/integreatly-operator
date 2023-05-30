@@ -118,7 +118,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/grafana-operator/grafana-operator/v4 v4.7.1 // indirect
+	github.com/grafana-operator/grafana-operator/v4 v4.10.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
