@@ -426,6 +426,8 @@ cluster/prepare/rbac/dedicated-admins:
 cluster/cleanup: kustomize
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
+	@-oc delete namespace $(NAMESPACE_PREFIX)cloud-resources-operator --timeout=60s --wait
+	@-oc delete namespace $(NAMESPACE_PREFIX)3scale --timeout=60s --wait
 	@-$(KUSTOMIZE) build config/rbac-$(INSTALLATION_SHORTHAND) | oc delete -f -
 
 .PHONY: cluster/cleanup/serviceaccount
