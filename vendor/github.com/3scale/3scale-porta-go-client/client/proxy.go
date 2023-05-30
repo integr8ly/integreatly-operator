@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	proxyGetUpdate       = "/admin/api/services/%s/proxy.xml"
-	proxyConfigGet       = "/admin/api/services/%s/proxy/configs/%s/%s.json"
-	proxyConfigList      = "/admin/api/services/%s/proxy/configs/%s.json"
-	proxyConfigLatestGet = "/admin/api/services/%s/proxy/configs/%s/latest.json"
-	proxyConfigPromote   = "/admin/api/services/%s/proxy/configs/%s/%s/promote.json"
+	proxyGetUpdate            = "/admin/api/services/%s/proxy.xml"
+	proxyConfigGet            = "/admin/api/services/%s/proxy/configs/%s/%s.json"
+	proxyConfigList           = "/admin/api/services/%s/proxy/configs/%s.json"
+	proxyConfigLatestGet      = "/admin/api/services/%s/proxy/configs/%s/latest.json"
+	proxyConfigPromote        = "/admin/api/services/%s/proxy/configs/%s/%s/promote.json"
+	accountProxyConfigGet     = "/admin/api/account/proxy_configs/%s.json"
+	PROXYCONFIGS_PER_PAGE int = 500
 )
 
 // ReadProxy - Returns the Proxy for a specific Service.
@@ -158,4 +161,71 @@ func (c *ThreeScaleClient) getProxyConfig(endpoint string) (ProxyConfigElement, 
 
 	err = handleJsonResp(resp, http.StatusOK, &pc)
 	return pc, err
+}
+
+// ListProxyConfig - Returns the Proxy Configs of a Service
+// env parameter should be one of 'sandbox', 'production'
+func (c *ThreeScaleClient) ListAccountProxyConfigs(env string, version, host *string) (*ProxyConfigList, error) {
+	// Keep asking until the results length is lower than "per_page" param
+	currentPage := 1
+	configList := &ProxyConfigList{}
+
+	allResultsPerPage := false
+	for next := true; next; next = allResultsPerPage {
+		pageList, err := c.ListAccountProxyConfigsPerPage(env, version, host, currentPage, PROXYCONFIGS_PER_PAGE)
+		if err != nil {
+			return nil, err
+		}
+
+		configList.ProxyConfigs = append(configList.ProxyConfigs, pageList.ProxyConfigs...)
+
+		allResultsPerPage = len(pageList.ProxyConfigs) == PROXYCONFIGS_PER_PAGE
+		currentPage += 1
+	}
+
+	return configList, nil
+}
+
+// ListAccountProxyConfigsPerPage List existing proxy configs in a single page
+// paginationValues[0] = Page in the paginated list. Defaults to 1 for the API, as the client will not send the page param.
+// paginationValues[1] = Number of results per page. Default and max is 500 for the aPI, as the client will not send the per_page param.
+func (c *ThreeScaleClient) ListAccountProxyConfigsPerPage(env string, version, host *string, paginationValues ...int) (*ProxyConfigList, error) {
+	var pc ProxyConfigList
+
+	endpoint := fmt.Sprintf(accountProxyConfigGet, env)
+	req, err := c.buildGetReq(endpoint)
+	if err != nil {
+		return nil, httpReqError
+	}
+	req.Header.Set("Accept", "application/json")
+
+	values := url.Values{}
+	if version != nil {
+		values.Add("version", *version)
+	}
+	if host != nil {
+		values.Add("host", *host)
+	}
+	if len(paginationValues) > 0 {
+		values.Add("page", strconv.Itoa(paginationValues[0]))
+	}
+
+	if len(paginationValues) > 1 {
+		values.Add("per_page", strconv.Itoa(paginationValues[1]))
+	}
+	req.URL.RawQuery = values.Encode()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	err = handleJsonResp(resp, http.StatusOK, &pc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pc, nil
 }

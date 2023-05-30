@@ -8,7 +8,6 @@ import (
 	croType "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
@@ -27,7 +26,7 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -634,12 +633,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 }
 
 func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
-	}
-
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.Installation, cfg, targetName, "http_2xx", prometheus.ProbeTargetStaticConfig{
+	phase, err := resources.CreatePrometheusProbe(ctx, client, r.Installation, targetName, "http_2xx", monv1.ProbeTargetStaticConfig{
 		Targets: []string{url},
 		Labels: map[string]string{
 			"service": service,
@@ -703,27 +697,43 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 		}
 	}
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	observabilityAlert := &monitoringv1.PrometheusRule{
+	alertToMove := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      productName,
-			Namespace: observabilityConfig.GetNamespace(),
+			Namespace: r.Installation.Namespace,
 		},
 	}
-	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityAlert, func() error {
-		observabilityAlert.Labels = ssoAlert.Labels
-		observabilityAlert.Spec = ssoAlert.Spec
+	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, alertToMove, func() error {
+		var destinationRouleGroupArray []monv1.RuleGroup
+		for _, ruleGroup := range ssoAlert.Spec.Groups {
+			var destinationRules []monv1.Rule
+			for _, rule := range ruleGroup.Rules {
+				var destinationRule monv1.Rule
+				destinationRule.Alert = rule.Alert
+				destinationRule.Annotations = rule.Annotations
+				destinationRule.Expr = rule.Expr
+				destinationRule.For = rule.For
+				destinationRule.Record = rule.Record
+				destinationRule.Labels = rule.Labels
+				destinationRules = append(destinationRules, destinationRule)
+			}
+			var destinationRouleGroup monv1.RuleGroup
+			destinationRouleGroup.Name = ruleGroup.Name
+			destinationRouleGroup.PartialResponseStrategy = ruleGroup.PartialResponseStrategy
+			destinationRouleGroup.Rules = destinationRules
+			destinationRouleGroup.Interval = ruleGroup.Interval
+			destinationRouleGroupArray = append(destinationRouleGroupArray, destinationRouleGroup)
+		}
+
+		alertToMove.Labels = ssoAlert.Labels
+		alertToMove.Spec.Groups = destinationRouleGroupArray
 		return nil
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	if opRes != controllerutil.OperationResultNone {
-		r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": observabilityAlert.Name, "result": opRes})
+		r.Log.Infof("Operation result export PrometheusRule", l.Fields{"PrometheusRule": alertToMove.Name, "result": opRes})
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -3,9 +3,9 @@ module github.com/integr8ly/integreatly-operator
 go 1.18
 
 require (
-	github.com/3scale-ops/marin3r v0.11.0
-	github.com/3scale/3scale-operator v0.10.1-0.20221206164259-31a0ef8b04df
-	github.com/3scale/3scale-porta-go-client v0.7.0
+	github.com/3scale-ops/marin3r v0.11.1
+	github.com/3scale/3scale-operator v0.10.1-0.20230508130827-ede8838d156d
+	github.com/3scale/3scale-porta-go-client v0.9.0
 	github.com/3scale/apicast-operator v0.0.0-20221027105137-6adddcc8c2b4
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.6.1
@@ -36,15 +36,16 @@ require (
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/redhat-developer/observability-operator/v4 v4.2.0
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.59.2-rhobs1
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/net v0.8.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/term v0.6.0
 	google.golang.org/protobuf v1.29.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.24.3
-	k8s.io/apiextensions-apiserver v0.24.3
-	k8s.io/apimachinery v0.24.3
+	k8s.io/api v0.25.0
+	k8s.io/apiextensions-apiserver v0.25.0
+	k8s.io/apimachinery v0.25.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20220803164354-a70c9af30aea // indirect
 	k8s.io/utils v0.0.0-20220922133306-665eaaec4324
@@ -79,7 +80,7 @@ require (
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/antchfx/xpath v1.1.10 // indirect
-	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e // indirect
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
@@ -127,7 +128,7 @@ require (
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/cel-go v0.10.1 // indirect
+	github.com/google/cel-go v0.12.4 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -165,7 +166,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
 	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
-	github.com/operator-framework/operator-lib v0.11.0 // indirect
 	github.com/otiai10/copy v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -205,8 +205,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.24.3 // indirect
-	k8s.io/component-base v0.24.3 // indirect
+	k8s.io/apiserver v0.25.0 // indirect
+	k8s.io/component-base v0.25.0 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-aggregator v0.22.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.33 // indirect
@@ -229,7 +229,7 @@ replace github.com/operator-framework/operator-lifecycle-manager => github.com/o
 replace go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
 
 // Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
-replace k8s.io/client-go => k8s.io/client-go v0.24.3
+replace k8s.io/client-go => k8s.io/client-go v0.25.0
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
 replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0

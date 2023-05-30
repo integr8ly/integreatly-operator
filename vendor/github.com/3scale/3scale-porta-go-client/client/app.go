@@ -242,7 +242,7 @@ func (c *ThreeScaleClient) Application(accountId, id int64) (*Application, error
 }
 
 func (c *ThreeScaleClient) ListAllApplications() (*ApplicationList, error) {
-	endpoint := fmt.Sprintf(listAllApplications)
+	endpoint := listAllApplications
 
 	req, err := c.buildGetJSONReq(endpoint)
 	if err != nil {

@@ -17,7 +17,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
@@ -40,7 +39,6 @@ const (
 
 	configMapNoInit              = "observability-operator-no-init"
 	observabilityName            = "observability-stack"
-	defaultProbeModule           = "http_2xx"
 	OpenshiftMonitoringNamespace = "openshift-monitoring"
 
 	blackboxExporterPrefix                    = "blackbox-exporter"
@@ -240,7 +238,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler(r.log, r.installation.Spec.Type).ReconcileAlerts(ctx, client)
+	phase, err = r.newAlertsReconciler(r.log, r.installation.Spec.Type, r.installation.Namespace).ReconcileAlerts(ctx, client)
 	r.log.Infof("reconcilePrometheusRule", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
@@ -286,55 +284,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Reconciled successfully")
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func CreatePrometheusProbe(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, cfg *config.Observability, name string, module string, targets prometheus.ProbeTargetStaticConfig) (integreatlyv1alpha1.StatusPhase, error) {
-	if cfg.GetNamespace() == "" {
-		// Retry later
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	if len(targets.Targets) == 0 {
-		// Retry later if the URL(s) is not yet known
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// The default policy is to require a 2xx http return code
-	if module == "" {
-		module = defaultProbeModule
-	}
-
-	// Prepare the probe
-	probe := &prometheus.Probe{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: cfg.GetNamespace(),
-		},
-	}
-	owner.AddIntegreatlyOwnerAnnotations(probe, inst)
-	_, err := controllerutil.CreateOrUpdate(ctx, client, probe, func() error {
-		probe.Labels = map[string]string{
-			cfg.GetLabelSelectorKey(): cfg.GetLabelSelector(),
-		}
-		probe.Spec = prometheus.ProbeSpec{
-			JobName: "blackbox",
-			ProberSpec: prometheus.ProberSpec{
-				URL:    "127.0.0.1:9115",
-				Scheme: "http",
-				Path:   "/probe",
-			},
-			Module: module,
-			Targets: prometheus.ProbeTargets{
-				StaticConfig: &targets,
-			},
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
