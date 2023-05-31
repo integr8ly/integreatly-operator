@@ -246,25 +246,25 @@ test/e2e/multitenant-rhoam/prow: test/e2e
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
 test/e2e: cluster/deploy
-	go clean -testcache && go test -v ./test/e2e -timeout=120m -ginkgo.v
+	cd test && go clean -testcache && go test -v ./e2e -timeout=120m -ginkgo.v
 
 .PHONY: test/e2e/single
 test/e2e/single: export WATCH_NAMESPACE := $(NAMESPACE)
 test/e2e/single: 
-	go clean -testcache && go test ./test/functional -ginkgo.focus="$(TEST).*" -test.v -ginkgo.v -ginkgo.progress -timeout=80m
+	cd test && go clean -testcache && go test ./functional -ginkgo.focus="$(TEST).*" -test.v -ginkgo.v -ginkgo.progress -timeout=80m
 
 .PHONY: test/functional
 test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/functional -timeout=120m
+	cd test && go clean -testcache && go test -v ./functional -timeout=120m
 
 .PHONY: test/osde2e
 test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)
 test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test ./test/osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
+	cd test && go clean -testcache && go test ./osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
 
 ############ E2E TEST COMMANDS ############
 
@@ -557,8 +557,10 @@ commits/check:
 
 .PHONY: gosec
 gosec:
-	gosec ./...
-
+	# Module layout causes issues if not using go workspace but is not supported in Cachito for now
+	# https://github.com/securego/gosec/issues/682
+	gosec -exclude-dir test ./...
+	cd test; gosec  ./...
 
 
 ##@ Build Dependencies

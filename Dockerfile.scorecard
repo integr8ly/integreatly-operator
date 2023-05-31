@@ -4,7 +4,6 @@ WORKDIR /workspace
 # Copy the Go Modules manifests and vendor
 COPY go.mod ./go.mod
 COPY go.sum ./go.sum
-COPY go.work ./go.work
 COPY vendor ./vendor
 COPY test ./test
 
