@@ -435,7 +435,7 @@ cluster/prepare/rhoam-config:
 
 .PHONY: cluster/cleanup
 cluster/cleanup: kustomize
-	@-oc delete package rhoam-config -n $(NAMESPACE) --wait
+	@-oc delete clusterpackage rhoam-config --wait
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete namespace $(NAMESPACE_PREFIX)cloud-resources-operator --timeout=60s --wait
