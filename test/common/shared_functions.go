@@ -444,6 +444,18 @@ func GetAWSSpecificTestCases(installType string) []TestCase {
 	return testCases
 }
 
+func GetObservabilityTestCases(installType string) []TestCase {
+	var testCases []TestCase
+	for _, testSuite := range OBSERVABILITY_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
+
 func writeObjToYAMLFile(obj interface{}, out string) error {
 	data, err := yaml.Marshal(obj)
 	if err != nil {

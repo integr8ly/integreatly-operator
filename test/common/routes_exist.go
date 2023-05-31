@@ -50,21 +50,6 @@ var (
 		},
 	}
 
-	observabilityRoutes = []ExpectedRoute{
-		ExpectedRoute{
-			Name:  "alertmanager",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "grafana-route",
-			isTLS: true,
-		},
-		ExpectedRoute{
-			Name:  "prometheus",
-			isTLS: true,
-		},
-	}
-
 	rhssoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
@@ -108,7 +93,6 @@ var (
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale":                       threeScaleRoutes,
-	"observability":                observabilityRoutes,
 	"rhsso":                        rhssoRoutes,
 	"user-sso":                     rhoamUserSsoRoutes,
 	"customer-monitoring-operator": customerGrafanaRoutes,
@@ -116,7 +100,6 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 
 var mtManagedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale":                       threeScaleRoutes,
-	"observability":                observabilityRoutes,
 	"rhsso":                        rhssoRoutes,
 	"customer-monitoring-operator": customerGrafanaRoutes,
 }

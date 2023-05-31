@@ -226,7 +226,7 @@ test/e2e/rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
-test/e2e/rhoam/prow: IN_PROW = "true"
+test/e2e/rhoam/prow: export IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e/multitenant-rhoam/prow
@@ -242,12 +242,12 @@ test/e2e/multitenant-rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
-test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
+test/e2e/multitenant-rhoam/prow: export IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
-test/e2e: cluster/deploy
+test/e2e: cluster/deploy test/prepare/ocp/obo
 	cd test && go clean -testcache && go test -v ./e2e -timeout=120m -ginkgo.v
 
 .PHONY: test/e2e/single
@@ -267,6 +267,15 @@ test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
 	cd test && go clean -testcache && go test ./osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
+
+.PHONY: test/prepare/ocp/obo
+test/prepare/ocp/obo:
+	# We need to apply these CRDs and create the -observability project on OCP clusters in order to install RHOAM with OBO.
+	# The Probes CRD will be removed in MGDAPI-5780 and the PrometheusRules CRDS will be removed when Phase 2 of the OBO migration is complete.
+	@oc apply -f https://raw.githubusercontent.com/rhobs/observability-operator/main/bundle/manifests/monitoring.rhobs_probes.yaml
+	@oc apply -f https://raw.githubusercontent.com/rhobs/observability-operator/main/bundle/manifests/monitoring.rhobs_prometheusrules.yaml
+	@ - oc new-project $(NAMESPACE)-observability
+	@oc label namespace $(NAMESPACE)-observability monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 
 ############ E2E TEST COMMANDS ############
 
@@ -431,7 +440,11 @@ cluster/prepare/rbac/dedicated-admins:
 
 .PHONY: cluster/prepare/rhoam-config
 cluster/prepare/rhoam-config:
+ifeq ($(IN_PROW),true)
+	@echo "Not creating rhoam-config ClusterPackage because IN_PROW is set to true"
+else
 	@-oc process -n $(NAMESPACE) CONFIG_IMAGE=$(CONFIG_IMAGE) NAMESPACE=$(NAMESPACE) -f config/hive-config/package.yaml | oc apply -f -
+endif
 
 .PHONY: cluster/cleanup
 cluster/cleanup: kustomize
