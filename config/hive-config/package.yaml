@@ -4,7 +4,7 @@ metadata:
   name: rhoam-config
 objects:
   - apiVersion: package-operator.run/v1alpha1
-    kind: Package
+    kind: ClusterPackage
     metadata:
       name: rhoam-config
       namespace: ${NAMESPACE}
