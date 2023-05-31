@@ -6,6 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 	. "github.com/onsi/ginkgo/v2"
+	"strings"
 )
 
 var _ = Describe("integreatly", func() {
@@ -41,10 +42,21 @@ var _ = Describe("integreatly", func() {
 				Type:      fmt.Sprintf("%s Threescale Cluster Scoped", installType),
 				TestCases: common.GetClusterScopedTestCases(installType),
 			},
+		}
+
+		observabilityTests := []common.Tests{
+			{
+				Type:      fmt.Sprintf("%s OBSERVABILITY TESTS", installType),
+				TestCases: common.GetObservabilityTestCases(installType),
+			},
 			{
 				Type:      "FAILURE TESTS",
 				TestCases: common.FAILURE_TESTS,
 			},
+		}
+
+		if strings.Trim(os.Getenv("IN_PROW"), "\"") != "true" {
+			tests = append(tests, observabilityTests...)
 		}
 
 		if os.Getenv("DESTRUCTIVE") == "true" {
