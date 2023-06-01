@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -33,7 +34,7 @@ func CreatePrometheusProbe(ctx context.Context, client k8sclient.Client, inst *i
 	probe := &monv1.Probe{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: inst.Namespace,
+			Namespace: config.GetOboNamespace(inst.Namespace),
 		},
 	}
 	owner.AddIntegreatlyOwnerAnnotations(probe, inst)

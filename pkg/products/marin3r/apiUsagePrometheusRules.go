@@ -17,14 +17,14 @@ var (
 	totalRequestsMetric = "authorized_calls"
 )
 
-func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string, namespace string) (resources.AlertReconciler, error) {
 
 	requestsAllowedPerSecond, err := r.getRateLimitInSeconds(r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit)
 	if err != nil {
 		return nil, err
 	}
 
-	alerts, err := mapAlertsConfiguration(r.log, r.installation.Namespace, r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
+	alerts, err := mapAlertsConfiguration(r.log, namespace, r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL, r.installation.Spec.Type)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}

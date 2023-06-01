@@ -1464,17 +1464,17 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		},
 	}
 
-	prometheusRulesOO := &monv1.PrometheusRule{
+	prometheusRulesOBO := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhsso",
-			Namespace: "redhat-rhoam-operator",
+			Namespace: config.GetOboNamespace(installation.Namespace),
 		},
 	}
 
-	prometheusRulesOOwithKcExisting := &monv1.PrometheusRule{
+	prometheusRulesOBOwithKcExisting := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhsso",
-			Namespace: "redhat-rhoam-operator",
+			Namespace: config.GetOboNamespace(installation.Namespace),
 		},
 		Spec: monv1.PrometheusRuleSpec{
 			Groups: []monv1.RuleGroup{
@@ -1511,29 +1511,29 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		verificationFunction func(*monv1.PrometheusRule) bool
 	}{
 		{
-			name:          "alerting rules correctly mirrored without kc alert when OO groups are nil",
+			name:          "alerting rules correctly mirrored without kc alert when OBO groups are nil",
 			expectedRules: []monv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-operator",
+					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
 				}), nil
 			}},
-			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOO),
+			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOBO),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			verificationFunction: kcAlertHasNotBeenMirrored,
 		},
 		{
-			name:          "alerting rules correctly mirrored without kc alert when OO groups are not nil",
+			name:          "alerting rules correctly mirrored without kc alert when OBO groups are not nil",
 			expectedRules: []monv1.Rule{},
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-operator",
+					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
 				}), nil
 			}},
-			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOOwithKcExisting),
+			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOBOwithKcExisting),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			verificationFunction: kcAlertHasNotBeenMirrored,
@@ -1544,10 +1544,10 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			installation:  installation,
 			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": "redhat-rhoam-operator",
+					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
 				}), nil
 			}},
-			fakeClient: utils.NewTestClient(scheme, prometheusRulesOOwithKcExisting),
+			fakeClient: utils.NewTestClient(scheme, prometheusRulesOBOwithKcExisting),
 			wantErr:    true,
 			want:       integreatlyv1alpha1.PhaseFailed,
 			verificationFunction: func(pr *monv1.PrometheusRule) bool {
@@ -1572,14 +1572,14 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 				t.Errorf("exportAlerts error got = %v, want %v", got, tt.want)
 			}
 
-			// retrieve update OO rules
+			// retrieve update OBO rules
 			observabilityAlert := &monv1.PrometheusRule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhsso",
-					Namespace: "redhat-rhoam-operator",
+					Namespace: config.GetOboNamespace(installation.Namespace),
 				},
 			}
-			err = tt.fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhsso", Namespace: "redhat-rhoam-operator"}, observabilityAlert)
+			err = tt.fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhsso", Namespace: config.GetOboNamespace(installation.Namespace)}, observabilityAlert)
 			if err != nil && !tt.wantErr {
 				t.Errorf("exportAlerts error- failed to retrieve rhsso rules; got = %v, want %v", got, tt.want)
 			}

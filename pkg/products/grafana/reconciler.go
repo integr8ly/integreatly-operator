@@ -191,7 +191,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, r.installation.Namespace)
+	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana alerts", err)
 		return phase, err

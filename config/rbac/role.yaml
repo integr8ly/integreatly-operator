@@ -289,6 +289,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - noobaa.io
   resources:
@@ -555,24 +556,6 @@ rules:
   - watch
 - apiGroups:
   - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - create
-  - get
-- apiGroups:
-  - monitoring.rhobs
-  resources:
-  - prometheusrules
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - monitoring.rhobs
   resources:
   - servicemonitors
   verbs:

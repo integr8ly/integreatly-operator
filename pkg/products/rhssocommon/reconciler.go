@@ -704,7 +704,7 @@ func (r *Reconciler) ExportAlerts(ctx context.Context, apiClient k8sclient.Clien
 	alertToMove := &monv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      productName,
-			Namespace: r.Installation.Namespace,
+			Namespace: config.GetOboNamespace(r.Installation.Namespace),
 		},
 	}
 	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, alertToMove, func() error {
