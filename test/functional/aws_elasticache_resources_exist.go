@@ -35,7 +35,7 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 	elasticacheapi := elasticache.New(sess)
 
 	// iterate through returned resource ID's
-	for resourceID, _ := range elasticacheData {
+	for resourceID := range elasticacheData {
 		//get elasticache resources through new elasticacheapi
 		foundElasticacheReplicationGroups, err := elasticacheapi.DescribeReplicationGroups(&elasticache.DescribeReplicationGroupsInput{
 			ReplicationGroupId: aws.String(resourceID),

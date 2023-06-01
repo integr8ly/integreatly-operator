@@ -74,7 +74,7 @@ func TestGCPMemorystoreRedisInstanceExist(t common.TestingTB, testingContext *co
 }
 
 func verifyRedisInstances(redisInstanceName string, databaseInstanceList map[string]string) bool {
-	for k, _ := range databaseInstanceList {
+	for k := range databaseInstanceList {
 		if k == redisInstanceName {
 			return true
 		}

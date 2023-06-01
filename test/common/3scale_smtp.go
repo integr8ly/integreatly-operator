@@ -148,7 +148,7 @@ func Test3ScaleCustomSMTPFullConfig(t TestingTB, ctx *TestingContext) {
 			t.Errorf("setup error getting service address: %v", err)
 		}
 		secret := &v1.Secret{}
-		data, err := copyAddonSecretData(secret, ctx, err, inst)
+		data, err := copyAddonSecretData(secret, ctx, inst)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -259,7 +259,7 @@ func Test3ScaleCustomSMTPPartialConfig(t TestingTB, ctx *TestingContext) {
 	if !managed {
 		// copy the current custom smtp values
 		secret := &v1.Secret{}
-		data, err := copyAddonSecretData(secret, ctx, err, inst)
+		data, err := copyAddonSecretData(secret, ctx, inst)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -797,17 +797,18 @@ func resetSecretData(t TestingTB, ctx *TestingContext, data map[string][]byte, s
 	}
 }
 
-func copyAddonSecretData(secret *v1.Secret, ctx *TestingContext, err error, inst *rhmiv1alpha1.RHMI) (map[string][]byte, error) {
+func copyAddonSecretData(secret *v1.Secret, ctx *TestingContext, inst *rhmiv1alpha1.RHMI) (map[string][]byte, error) {
 	// copy the current custom smtp values
-	secret, err = addonSecret(inst, ctx.Client)
+	newSecret, err := addonSecret(inst, ctx.Client)
 	if err != nil {
 		return nil, fmt.Errorf("error getting addon: %v", err)
 	}
 
 	data := make(map[string][]byte)
-	for key, value := range secret.Data {
+	for key, value := range newSecret.Data {
 		data[key] = value
 	}
+	*secret = *newSecret
 	return data, nil
 }
 

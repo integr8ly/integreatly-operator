@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"io"
 	"net/http"
@@ -106,7 +105,7 @@ func validateGitlabToken(t TestingTB, testUrl string) {
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	req.Header.Add("PRIVATE-TOKEN", fmt.Sprintf("%s", gitlabToken))
+	req.Header.Add("PRIVATE-TOKEN", gitlabToken)
 	testResp, err := client.Do(req)
 	if err != nil {
 		t.Skip(err)
@@ -158,7 +157,7 @@ func getSOPAlertLinkStatus(t TestingTB, url string, failedSOPUrls chan string) {
 	}
 
 	req.Header.Add("Accept", `application/json`)
-	req.Header.Add("PRIVATE-TOKEN", fmt.Sprintf("%s", gitlabToken))
+	req.Header.Add("PRIVATE-TOKEN", gitlabToken)
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Log(err)

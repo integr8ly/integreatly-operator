@@ -735,9 +735,9 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
 					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
-						switch obj.(type) {
+						switch obj := obj.(type) {
 						case *corev1.Namespace:
-							obj.(*corev1.Namespace).Labels = map[string]string{
+							obj.Labels = map[string]string{
 								addon.RhoamAddonInstallManagedLabel: "true",
 							}
 							return nil
@@ -769,12 +769,12 @@ func TestReconciler_deleteObservabilityCR(t *testing.T) {
 				serverClient: func() k8sclient.Client {
 					fakeClient := clientMock.NewSigsClientMoqWithScheme(scheme)
 					fakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
-						switch obj.(type) {
+						switch obj := obj.(type) {
 						case *corev1.Namespace:
-							obj.(*corev1.Namespace).Labels = map[string]string{addon.RhoamAddonInstallManagedLabel: "true"}
+							obj.Labels = map[string]string{addon.RhoamAddonInstallManagedLabel: "true"}
 							return nil
 						case *corev1.Secret:
-							obj.(*corev1.Secret).Data = map[string][]byte{"SNITCH_URL": []byte("www.example.com")}
+							obj.Data = map[string][]byte{"SNITCH_URL": []byte("www.example.com")}
 							return nil
 						default:
 							return nil

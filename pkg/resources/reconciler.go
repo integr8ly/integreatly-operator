@@ -46,9 +46,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 	// not those that are currently on the client. Copy the uris because arrays
 	// are references.
 	redirectUris := make([]string, len(client.RedirectURIs))
-	for index, uri := range client.RedirectURIs {
-		redirectUris[index] = uri
-	}
+	copy(redirectUris, client.RedirectURIs)
 
 	// Preserve secret and grant method too
 	secret := client.Secret
@@ -129,7 +127,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", namespace, err)
 		}
 
-		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false, true)
+		_, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}

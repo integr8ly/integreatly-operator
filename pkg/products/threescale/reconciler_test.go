@@ -3040,12 +3040,12 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
-					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error { //nolint:staticcheck
 						listOpts := k8sclient.ListOptions{}
 						listOpts.ApplyOptions(opts)
 
 						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
-							list = &routev1.RouteList{ // nolint:ineffassign
+							list = &routev1.RouteList{ // nolint:ineffassign, staticcheck
 								Items: []routev1.Route{
 									masterRoute,
 								},
@@ -3080,12 +3080,12 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: func() k8sclient.Client {
 					mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, systemSeed)
-					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
+					mockClient.ListFunc = func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error { // nolint:staticcheck
 						listOpts := k8sclient.ListOptions{}
 						listOpts.ApplyOptions(opts)
 
 						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
-							list = &routev1.RouteList{ // nolint:ineffassign
+							list = &routev1.RouteList{ // nolint:ineffassign, staticcheck
 								Items: []routev1.Route{
 									masterRoute,
 								},

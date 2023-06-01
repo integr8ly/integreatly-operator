@@ -123,11 +123,8 @@ func TestDashboardsData(t TestingTB, ctx *TestingContext) {
 			}
 
 			// completed pods don't use resources -> expected failure
-			matched, err := regexp.Match(`pod=~'.*(deploy|hook-pre|hook-post|build|pv-backup)*'`, []byte(failedQuery))
-			if err != nil {
-				t.Fatal("RegExp match failed: %v", err)
-			}
-			if matched {
+			pattern := regexp.MustCompile(`pod=~'.*(deploy|hook-pre|hook-post|build|pv-backup)*'`)
+			if pattern.MatchString(failedQuery) {
 				continue
 			}
 

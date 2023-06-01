@@ -196,16 +196,10 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			},
 		}
 
-		if &deployment.Spec.Template == nil {
-			deployment.Spec.Template = corev1.PodTemplateSpec{}
-		}
 		deployment.Spec.Template.ObjectMeta = v1.ObjectMeta{
 			Labels: map[string]string{
 				"app": quota.RateLimitName,
 			},
-		}
-		if &deployment.Spec.Template.Spec == nil {
-			deployment.Spec.Template.Spec = corev1.PodSpec{}
 		}
 		deployment.Spec.Template.Spec.PriorityClassName = r.Installation.Spec.PriorityClassName
 		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{

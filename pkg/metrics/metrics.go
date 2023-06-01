@@ -329,10 +329,8 @@ func SetThreeScalePortals(portals map[string]PortalInfo, value float64) {
 		LabelSystemDeveloper: "false",
 		LabelSystemProvider:  "false",
 	}
-	if portals != nil {
-		for key, portal := range portals {
-			labels[key] = strconv.FormatBool(portal.IsAvailable)
-		}
+	for key, portal := range portals {
+		labels[key] = strconv.FormatBool(portal.IsAvailable)
 	}
 	ThreeScalePortals.Reset()
 	ThreeScalePortals.With(labels).Set(value)

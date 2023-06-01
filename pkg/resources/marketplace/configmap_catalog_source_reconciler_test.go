@@ -191,6 +191,10 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 			FakeMapData: map[string]string{"test": "someNewData"},
 			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				configMap := &corev1.ConfigMap{}
+				if err != nil {
+					t.Fatalf("Unexpected error %v", err)
+				}
+
 				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
 
 				if err != nil && !reflect.DeepEqual(configMap.Data, configMapData) {
