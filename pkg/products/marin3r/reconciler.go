@@ -242,20 +242,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, r.installation.Namespace)
+	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Marin3r alerts", err)
 		return phase, err
 	}
 
 	// Reconcile API usage alerts
-	phase, err = r.reconcileAlerts(ctx, client, installation)
+	phase, err = r.reconcileAlerts(ctx, client, installation, config.GetOboNamespace(r.installation.Namespace))
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
 
-	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log, r.installation.Spec.Type, r.installation.Namespace)
+	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to instantiate rejected requests alert reconciler", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -274,7 +274,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	grafanaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
@@ -296,7 +296,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 	}
 
 	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", grafanaConsoleURL)
-	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL)
+	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}

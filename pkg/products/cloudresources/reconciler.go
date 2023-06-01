@@ -273,7 +273,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
-	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, r.installation.Namespace)
+	alertsReconciler, err := r.newAlertsReconciler(ctx, client, r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to get new alerts reconciler", err)
 		r.log.Error("Error getting cloud resources alerts reconciler", err)
