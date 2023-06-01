@@ -3046,7 +3046,7 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 						listOpts.ApplyOptions(opts)
 
 						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
-							list = &routev1.RouteList{ // nolint
+							list = &routev1.RouteList{ // nolint:ineffassign, staticcheck
 								Items: []routev1.Route{
 									masterRoute,
 								},
@@ -3086,7 +3086,7 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 						listOpts.ApplyOptions(opts)
 
 						if listOpts.LabelSelector.Matches(labels.Set(map[string]string{"zync.3scale.net/route-to": labelRouteToSystemMaster})) {
-							list = &routev1.RouteList{ // nolint
+							list = &routev1.RouteList{ // nolint:ineffassign, staticcheck
 								Items: []routev1.Route{
 									masterRoute,
 								},

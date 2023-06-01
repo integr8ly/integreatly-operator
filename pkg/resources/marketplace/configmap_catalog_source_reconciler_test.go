@@ -189,9 +189,13 @@ func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 				Data: map[string]string{"test": "outDatedData"},
 			}),
 			FakeMapData: map[string]string{"test": "someNewData"},
-			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) { // nolint:staticcheck
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				configMap := &corev1.ConfigMap{}
-				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap) // nolint:staticcheck
+				if err != nil {
+					t.Fatalf("Unexpected error %v", err)
+				}
+
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
 
 				if err != nil && !reflect.DeepEqual(configMap.Data, configMapData) {
 					t.Fatalf("Expected registry config map to be updated with data but wasn't: %v", err)
