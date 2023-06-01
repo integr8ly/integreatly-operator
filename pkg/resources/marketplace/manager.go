@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
@@ -65,13 +66,32 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		},
 	}
 
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: t.Namespace,
+		Name:      t.SubscriptionName,
+	}, sub)
+
+	if err != nil {
+		log.Errorf("getting subscription error", l.Fields{"subscription": t.SubscriptionName, "namespace": t.Namespace}, err)
+	}
+
 	mutateSub := func() error {
-		sub.Spec = &operatorsv1alpha1.SubscriptionSpec{
-			InstallPlanApproval:    approvalStrategy,
-			Channel:                t.Channel,
-			Package:                t.Package,
-			CatalogSource:          catalogSourceReconciler.CatalogSourceName(),
-			CatalogSourceNamespace: catalogSourceReconciler.CatalogSourceNamespace(),
+
+		if sub.Spec == nil {
+			sub.Spec = &operatorsv1alpha1.SubscriptionSpec{}
+		}
+
+		sub.Spec.InstallPlanApproval = approvalStrategy
+		sub.Spec.Channel = t.Channel
+		sub.Spec.Package = t.Package
+		sub.Spec.CatalogSource = catalogSourceReconciler.CatalogSourceName()
+		sub.Spec.CatalogSourceNamespace = catalogSourceReconciler.CatalogSourceNamespace()
+
+		if sub.Spec.Config == nil {
+			sub.Spec.Config = &operatorsv1alpha1.SubscriptionConfig{}
+		}
+		if sub.Spec.Config.Resources == nil {
+			sub.Spec.Config.Resources = &corev1.ResourceRequirements{}
 		}
 		return nil
 	}
