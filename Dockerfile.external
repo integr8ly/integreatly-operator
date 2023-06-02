@@ -28,7 +28,7 @@ COPY Makefile ./
 # compile test binary
 RUN make test/compile/functional
 
-FROM quay.io/openshift/origin-cli
+FROM registry.redhat.io/openshift4/ose-cli:v4.13
 # Install chrome for tests
 COPY test-dependency/*.repo /etc/yum.repos.d/
 COPY build/bin/setup_external.sh ./setup_external.sh
