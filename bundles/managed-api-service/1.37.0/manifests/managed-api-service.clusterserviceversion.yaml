@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.37.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.13"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -73,13 +73,13 @@ metadata:
           "marin3r.v0.11.0": "quay.io/3scale/marin3r:v0.11.0"
         },
         "rhsso-operator.18.0.x": {
-          "rhsso-operator.7.6.2-opr-002": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:b7e3770ca8d636f0b7c2091e16a8c5254814e5302f168bff5f67975b677f2701",
-          "sso7-rhel8-operator-b7e3770ca8d636f0b7c2091e16a8c5254814e5302f168bff5f67975b677f2701-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:b7e3770ca8d636f0b7c2091e16a8c5254814e5302f168bff5f67975b677f2701",
-          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:b7e3770ca8d636f0b7c2091e16a8c5254814e5302f168bff5f67975b677f2701",
-          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:b86164cb33d468e8be1526fd4c017d404dae9bc9be1bb6fb0a3a37c17b000ef4",
-          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:b86164cb33d468e8be1526fd4c017d404dae9bc9be1bb6fb0a3a37c17b000ef4",
-          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:1dfef1cdafcb10535c259d8866ceaca0a4264f348f9f9f87e3d1f892c722e2a4",
-          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:1dfef1cdafcb10535c259d8866ceaca0a4264f348f9f9f87e3d1f892c722e2a4"
+          "rhsso-operator.7.6.3-opr-001": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
+          "sso7-rhel8-operator-bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f-annotation": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
+          "rhsso-operator": "registry.redhat.io/rh-sso-7/sso7-rhel8-operator@sha256:bd83b8c92577ab7f3c4504fde70ac0d272449512fc85e7ff405a69fd2453084f",
+          "rhsso_openjdk": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:156114b236f527f2bc58abbe06d0beb1f5cc5447cf4c030199b67aabcd0d0218",
+          "rhsso_openj9": "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8@sha256:156114b236f527f2bc58abbe06d0beb1f5cc5447cf4c030199b67aabcd0d0218",
+          "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1",
+          "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1"
         },
         "observability-operator.v4.2.1": {
           "observability-operator.v4.2.1": "quay.io/rhoas/observability-operator:v4.2.1",
@@ -102,7 +102,7 @@ metadata:
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
         }
       }
-    serviceAffecting: "true"
+    serviceAffecting: "false"
   name: managed-api-service.v1.37.0
   namespace: placeholder
 spec:
@@ -667,7 +667,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.37.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
