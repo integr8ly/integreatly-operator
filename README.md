@@ -44,8 +44,9 @@ go install github.com/matryer/moq
 ## Local Development
 Ensure that the cluster satisfies minimal requirements:
 - RHOAM (managed-api and multitenant-managed-api): 18 vCPU. More details can be found in the [service definition](https://access.redhat.com/articles/5534341) 
-  under the "Resource Requirements" section
-*Note:* The LOCAL flag is set to true by default, this means the namespace used to install RHOAM will be set to `local-rhoam-operator` and other RHOAM related namespaces will be prefixed with `local-rhoam`. If you wish to use non-local namespaces then  set LOCAL to false by running the following command `export LOCAL=false`.
+  under the "Resource Requirements" section.
+
+
 
 ### 1. Clone the integreatly-operator
 Only if you haven't already cloned. Otherwise, navigate to an existing copy. 
@@ -97,7 +98,7 @@ INSTALLATION_TYPE=managed-api IN_PROW=true USE_CLUSTER_STORAGE=<true/false> make
 | INSTALLATION_TYPE   | `managed-api` or `multitenant-managed-api` | **Required** | `managed-api` | Manages installation type. `managed-api` for RHOAM. `multitenant-managed-api` for Multitenant RHOAM. |
 | IN_PROW             | `true` or `false`                          |   Optional   | `false`       | If `true`, reduces the number of pods created. Use for small clusters                                |
 | USE_CLUSTER_STORAGE | `true` or `false`                          |   Optional   | `true`        | If `true`, installs application to the cloud provider. Otherwise installs to the OpenShift.          |
-| LOCAL               | `true` or `false`                          |   Optional   | `true`        | If `true`, uses local-rhoam-operator as default namespace.                                           |
+
 
 ### 5. Run integreatly-operator
 Include the `INSTALLATION_TYPE` if you haven't already exported it. 
@@ -133,7 +134,7 @@ Once the installation completed the command wil result in following output:
 ### Local and OLM installation type
 If you installed RHOAM locally or via OLM then you can uninstall one of two ways:
 
-- for local installation use the `local-rhaom-operator Namespace`
+- for local installation use the namespace that the RHMI CR was created in.
 - for OLM installation use the `redhat-rhoam-operator Namespace`
 
 
@@ -154,14 +155,9 @@ oc delete namespace <NAMESPACE>
 ```
 
 #### Note: After uninstalling RHOAM you should clean up the cluster by running the following command.
-##### Local installation
+
 ```sh
 make cluster/cleanup && make cluster/cleanup/crds
-```
-
-##### OLM installation
-```sh
-LOCAL=false make cluster/cleanup && make cluster/cleanup/crds
 ```
 
 

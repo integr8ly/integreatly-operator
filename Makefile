@@ -75,7 +75,6 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 # Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE ?= managed-api
-export LOCAL ?= true
 export CLUSTER_CONFIG ?= redhat-rhoam
 
 export ALERT_SMTP_FROM ?= noreply-alert@devshift.org
@@ -215,7 +214,6 @@ image/build/push: image/build image/push
 
 ############ E2E TEST COMMANDS ############
 .PHONY: test/e2e/rhoam/prow
-test/e2e/rhoam/prow: export LOCAL := false
 test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
@@ -231,7 +229,6 @@ test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e/multitenant-rhoam/prow
 test/e2e/multitenant-rhoam/prow: export CLUSTER_CONFIG:=redhat-sandbox
-test/e2e/multitenant-rhoam/prow: export LOCAL := false
 test/e2e/multitenant-rhoam/prow: export component := integreatly-operator
 test/e2e/multitenant-rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_TYPE := multitenant-managed-api
