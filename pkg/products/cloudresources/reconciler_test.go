@@ -690,7 +690,7 @@ func TestReconciler_reconcileCloudResourceStrategies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	const testNamespace = "local-rhoam-operator"
+	const testNamespace = "test-namespace"
 
 	type fields struct {
 		Config        *config.CloudResources
