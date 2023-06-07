@@ -3,12 +3,15 @@ package common
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
 	"github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	sdk "github.com/openshift-online/ocm-sdk-go"
+	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	v12 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -465,8 +468,7 @@ func getQuotaConfig(t TestingTB, c k8sclient.Client) (*quota.Quota, error) {
 	return quotaConfig, nil
 }
 
-func changeQuota(t TestingTB, c k8sclient.Client,
-	quotaParam, quotaName string) error {
+func changeQuota(t TestingTB, c k8sclient.Client, quotaParam, quotaName string) error {
 	installation, err := GetRHMI(c, true)
 	if err != nil {
 		t.Fatal("Couldn't get RHMI cr for quota test")
@@ -480,24 +482,37 @@ func changeQuota(t TestingTB, c k8sclient.Client,
 		return nil
 	}
 
-	newSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "addon-managed-api-service-parameters",
-			Namespace: RHOAMOperatorNamespace,
-		},
-	}
-	_, err = controllerutil.CreateOrUpdate(context.TODO(), c, newSecret, func() error {
-		if newSecret.Data == nil {
-			newSecret.Data = make(map[string][]byte, 1)
-		}
-
-		newSecret.Data[addon.QuotaParamName] = []byte(quotaParam)
-		return nil
-	})
+	hiveManaged, err := addon.OperatorIsHiveManaged(context.TODO(), c, installation)
 	if err != nil {
-		t.Fatalf("failed updating addon secret with new quota: %v", err)
-		return err
+		t.Fatalf("unable to determine if install is hive managed: %v", err)
 	}
+
+	if hiveManaged {
+		t.Log("quota is hive managed, updating via ocm")
+		if err := changeQuotaViaOCM(t, quotaParam); err != nil {
+			return err
+		}
+	} else {
+		newSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "addon-managed-api-service-parameters",
+				Namespace: RHOAMOperatorNamespace,
+			},
+		}
+		_, err = controllerutil.CreateOrUpdate(context.TODO(), c, newSecret, func() error {
+			if newSecret.Data == nil {
+				newSecret.Data = make(map[string][]byte, 1)
+			}
+
+			newSecret.Data[addon.QuotaParamName] = []byte(quotaParam)
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("failed updating addon secret with new quota: %v", err)
+			return err
+		}
+	}
+
 	// verifyConfiguration again
 	startTime := time.Now()
 	endTime := startTime.Add(time.Minute * time.Duration(timeoutWaitingQuotachange))
@@ -514,6 +529,63 @@ func changeQuota(t TestingTB, c k8sclient.Client,
 			t.Log("Timeout waiting for Quota to be changed")
 		}
 	}
+	return nil
+}
+
+func changeQuotaViaOCM(t TestingTB, quotaParam string) error {
+	token := os.Getenv("OCM_TOKEN")
+	if token == "" {
+		return fmt.Errorf("OCM_TOKEN must be provided to update quota addon param")
+	}
+
+	clusterId := os.Getenv("CLUSTER_ID")
+	if clusterId == "" {
+		return fmt.Errorf("CLUSTER_ID must be provided to update quota addon param")
+	}
+
+	// Create the connection, and remember to close it:
+	connection, err := sdk.NewConnectionBuilder().
+		URL("https://api.stage.openshift.com").
+		Tokens(token).
+		Build()
+	if err != nil {
+		return fmt.Errorf("can't build connection: %v\n", err)
+	}
+	defer func(connection *sdk.Connection) {
+		if err := connection.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}(connection)
+
+	// Get the client for the resource that manages the collection of clusters:
+	collection := connection.ClustersMgmt().V1().Clusters()
+
+	addonInstall, err := cmv1.NewAddOnInstallation().
+		Addon(cmv1.NewAddOn()).
+		Parameters(
+			cmv1.NewAddOnInstallationParameterList().
+				Items(
+					cmv1.NewAddOnInstallationParameter().
+						ID("addon-managed-api-service").
+						Value(quotaParam),
+				),
+		).
+		Build()
+	if err != nil {
+		t.Fatalf("Can't build addonInstallation: %v\n", err)
+	}
+
+	// Send a request to update the addon parameter for the cluster:
+	_, err = collection.Cluster(clusterId).
+		Addons().
+		Addoninstallation("managed-api-service").
+		Update().
+		Body(addonInstall).
+		Send()
+	if err != nil {
+		return fmt.Errorf("can't update addon quota parameter: %v\n", err)
+	}
+
 	return nil
 }
 
