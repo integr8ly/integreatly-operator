@@ -144,9 +144,7 @@ federatedMetrics:
         'haproxy_backend_http_responses_total{route=~"^keycloak.*",
         exported_namespace=~"redhat-rhoam-.*sso$"}'
       - '''{ service="kube-state-metrics" }'''
-      - '''{ service="node-exporter" }'''
       - '''{ __name__=~"node_namespace_pod_container:.*" }'''
-      - '''{ __name__=~"node:.*" }'''
       - '''{ __name__=~"instance:.*" }'''
       - '''{ __name__=~"container_memory_.*" }'''
       - '''{ __name__=~":node_memory_.*" }'''
@@ -156,7 +154,7 @@ federatedMetrics:
 2. Verify that the secret additional-scrape-configs (in OpenShift console go to `redhat-rhoam-observability` namespace -> secrets -> `additional-scrape-configs` contains the following block
 
 ```
-match[]: ['kubelet_volume_stats_used_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','kubelet_volume_stats_capacity_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace=~"redhat-rhoam-.*sso$"}','{ service="kube-state-metrics" }','{ service="node-exporter" }','{ __name__=~"node_namespace_pod_container:.*" }','{ __name__=~"node:.*" }','{ __name__=~"instance:.*" }','{ __name__=~"container_memory_.*" }','{ __name__=~":node_memory_.*" }','{ __name__=~"csv_.*" }']
+match[]: ['kubelet_volume_stats_used_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','kubelet_volume_stats_capacity_bytes{endpoint="https-metrics",namespace=~"redhat-rhoam-.*"}','haproxy_backend_http_responses_total{route=~"^keycloak.*", exported_namespace=~"redhat-rhoam-.*sso$"}','{ service="kube-state-metrics" }','{ __name__=~"node_namespace_pod_container:.*" }','{ __name__=~"instance:.*" }','{ __name__=~"container_memory_.*" }','{ __name__=~":node_memory_.*" }','{ __name__=~"csv_.*" }']
 ```
 
 3. Verify that metrics are present in promethues by navigating to prometheus and running some queries.
