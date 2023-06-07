@@ -467,7 +467,7 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_0cfadde999b6dc58b0a195d370749df6f65cdbb31ce31cd6fb08272e6a3780e8
+                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_d225d23c95a3046187e0a58f4b552f4a8a3a8418192d14c4929cc76dbdd3ddcf
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_7786f60a3c62e4f9233ad126dd2b1cec9068eb11532843905b482664c27e4bad
                     name: manager
                     ports:
@@ -1066,7 +1066,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:0cfadde999b6dc58b0a195d370749df6f65cdbb31ce31cd6fb08272e6a3780e8
+    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:d225d23c95a3046187e0a58f4b552f4a8a3a8418192d14c4929cc76dbdd3ddcf
       name: system_searchd
   replaces: 3scale-operator.v0.11.5-mas
   version: 0.11.6-mas
