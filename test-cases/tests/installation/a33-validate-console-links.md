@@ -17,6 +17,8 @@ products:
       - 1.33.0
       - 1.36.0
 estimate: 15m
+tags:
+  - automated
 ---
 
 # A33 - Validate console links

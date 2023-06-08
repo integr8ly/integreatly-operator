@@ -12,6 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	customDomain "github.com/integr8ly/integreatly-operator/pkg/resources/custom-domain"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/utils"
 	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
@@ -34,7 +35,6 @@ import (
 	cs "github.com/integr8ly/integreatly-operator/pkg/resources/custom-smtp"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -506,7 +506,7 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 	// Before editing, understand the effect changes to the RoutingSubdomain will have on the following SOP:
 	//https://gitlab.cee.redhat.com/rhcloudservices/integreatly-help/-/blob/master/sops/rhoam/ChangeWildcardDomainRhoam/ChangeWildcardDomainRhoam.md
 
-	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
+	consoleRouteCR, err := utils.GetConsoleRouteCR(ctx, serverClient)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not find CR route: %w", err)
@@ -553,26 +553,6 @@ func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverC
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*routev1.Route, error) {
-	// discover and set master url and routing subdomain
-	consoleRouteCR := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "console",
-			Namespace: "openshift-console",
-		},
-	}
-	key := k8sclient.ObjectKey{
-		Name:      consoleRouteCR.GetName(),
-		Namespace: consoleRouteCR.GetNamespace(),
-	}
-
-	err := serverClient.Get(ctx, key, consoleRouteCR)
-	if err != nil {
-		return nil, err
-	}
-	return consoleRouteCR, nil
 }
 
 func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
