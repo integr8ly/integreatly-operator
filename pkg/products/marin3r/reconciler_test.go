@@ -188,7 +188,7 @@ func TestAlertCreation(t *testing.T) {
 
 			serverClient := tt.serverClient()
 
-			got, err := reconciler.reconcileAlerts(context.TODO(), serverClient, reconciler.installation)
+			got, err := reconciler.reconcileAlerts(context.TODO(), serverClient, reconciler.installation, getBasicInstallation().Name)
 			if tt.wantErr != "" && err.Error() != tt.wantErr {
 				t.Errorf("reconcileAlerts() error = %v, wantErr %v", err.Error(), tt.wantErr)
 				return

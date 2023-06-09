@@ -20,6 +20,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
@@ -180,7 +181,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 		"product":  installationName,
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(cr.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
@@ -207,7 +208,7 @@ func CreateAddonManagedApiServiceParametersExists(ctx context.Context, client k8
 		"product":  installationName,
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(cr.Namespace)
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlAddonManagedApiServiceParametersExists, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create addon-managed-api-service-parameters secret exists rule err: %s", err)
@@ -236,7 +237,7 @@ func CreateDeadMansSnitchSecretExists(ctx context.Context, client k8sclient.Clie
 		alertForXMins = alertFor60Mins
 	}
 
-	ruleNs := cr.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(cr.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, SopUrlDeadMansSnitchSecretExists, alertForXMins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create deadmanssnitch exists rule err: %s", err)
@@ -278,7 +279,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -319,7 +320,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -350,7 +351,7 @@ func createPostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -381,7 +382,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -411,7 +412,7 @@ func createPostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 		"product":     installationName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -453,7 +454,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertExp := intstr.FromString(
 		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[1h:1m], 5 * 3600) <= 0 and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25)))", job))
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -520,7 +521,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// conversion formula is MiB = bytes / (1024^2)
 	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average) < ((cro_postgres_max_memory / 100 ) * 10)")
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -547,7 +548,7 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -575,7 +576,7 @@ func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -602,7 +603,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -668,7 +669,7 @@ func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -695,7 +696,7 @@ func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -733,7 +734,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -771,7 +772,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
@@ -797,7 +798,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_engine_cpu_utilization_average > %s", alertPercentage))
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
@@ -822,7 +823,7 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 
 	alertExp := intstr.FromString("cro_redis_service_maintenance{ServiceUpdateType='security-update',UpdateActionStatus!~'complete|waiting-to-start|in-progress|scheduled|stopping',ServiceUpdateSeverity='critical'}")
 
-	ruleNs := inst.Spec.NamespacePrefix + "operator"
+	ruleNs := config.GetOboNamespace(inst.Namespace)
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, ruleNs, alertName, alertDescription, sopUrlRedisServiceMaintenanceCritical, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err

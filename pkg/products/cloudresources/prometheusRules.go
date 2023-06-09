@@ -88,7 +88,7 @@ func (r *Reconciler) newAlertsReconciler(ctx context.Context, client k8sclient.C
 		},
 	}
 
-	return addElasticCacheSnapshotNotFoundAlert(ctx, client, logger, installationName, *alertsReconciler, namespace)
+	return addElasticCacheSnapshotNotFoundAlert(ctx, client, logger, installationName, *alertsReconciler, r.installation.Namespace)
 }
 
 func addElasticCacheSnapshotNotFoundAlert(ctx context.Context, client k8sclient.Client, logger l.Logger, installationName string, alertsReconciler resources.AlertReconcilerImpl, ns string) (resources.AlertReconciler, error) {
