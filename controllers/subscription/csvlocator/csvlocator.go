@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -78,59 +78,45 @@ func (l *ConfigMapCSVLocator) GetCSV(ctx context.Context, client k8sclient.Clien
 			return csv, fmt.Errorf("error retrieving ConfigMap %s/%s: %v", ref.Namespace, ref.Name, err)
 		}
 
-		// The ConfigMap may contain other manifests other than the CSV. Iterate
-		// through the data and skip the ones that have a kind other than
-		// ClusterServiceVersion. This is for 4.8 clusters
-		csvStr := ""
-		for _, resourceStr := range csvConfigMap.Data {
-			csvCandidate, err := getCSVfromCM(&csvStr, resourceStr)
+		for _, resourceByte := range csvConfigMap.BinaryData {
+			// Decode base64 to string and compress before decompressing from gzip
+			compressedData, err := base64.StdEncoding.DecodeString(string(resourceByte))
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode base64: %s", err)
+			}
+
+			// Decompress from gzip
+			reader, err := gzip.NewReader(bytes.NewBuffer(compressedData))
+			if err != nil {
+				return nil, err
+			}
+
+			result, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, err
+			}
+
+			csvCandidate, err := getCSVfromCM(string(result))
 			if csvCandidate == nil {
 				continue
 			}
 			if err != nil {
-				return csv, err
+				return nil, err
 			}
+
+			err = reader.Close()
+			if err != nil {
+				return nil, err
+			}
+
 			csv = csvCandidate
 		}
-
-		// ConfigMap may contain CSV as binary data (on 4.9+ clusters). To account for this check
-		// if the CSV was found in a data and if not - look for a binary data
-		if csvStr == "" {
-			for _, resourceByte := range csvConfigMap.BinaryData {
-				// Decode base64 into a string
-				base64text := make([]byte, base64.StdEncoding.DecodedLen(len(resourceByte)))
-				_, err = base64.StdEncoding.Decode(base64text, resourceByte)
-				if err != nil {
-					return nil, err
-				}
-
-				// decompress from gzip
-				reader, err := gzip.NewReader(bytes.NewBuffer(base64text))
-				if err != nil {
-					return nil, err
-				}
-
-				result, err := ioutil.ReadAll(reader)
-				if err != nil {
-					return nil, err
-				}
-
-				csvCandidate, err := getCSVfromCM(&csvStr, string(result))
-				if csvCandidate == nil {
-					continue
-				}
-				if err != nil {
-					return csv, err
-				}
-				csv = csvCandidate
-
-			}
-		}
 	}
+
 	return csv, nil
 }
 
-func getCSVfromCM(csvStr *string, resourceStr string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+func getCSVfromCM(resourceStr string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 
 	// Decode the manifest
