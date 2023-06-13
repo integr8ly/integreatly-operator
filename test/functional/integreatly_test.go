@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	v1 "github.com/openshift/api/config/v1"
 
@@ -72,6 +73,12 @@ var _ = Describe("integreatly", func() {
 				Type:      "FAILURE TESTS",
 				TestCases: common.FAILURE_TESTS,
 			},
+		}
+		if strings.Trim(os.Getenv("IN_PROW"), "\"") != "true" {
+			tests = append(tests, common.Tests{
+				Type:      fmt.Sprintf("%s OBSERVABILITY TESTS", installType),
+				TestCases: common.GetObservabilityTestCases(installType),
+			})
 		}
 
 		testingContext, err := common.NewTestingContext(restConfig)

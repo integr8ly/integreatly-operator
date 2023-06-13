@@ -30,6 +30,10 @@ var _ = Describe("integreatly", func() {
 				Type:      fmt.Sprintf("%s HAPPY PATH", installType),
 				TestCases: common.GetHappyPathTestCases(installType),
 			},
+			{
+				Type:      fmt.Sprintf("%s OBSERVABILITY TESTS", installType),
+				TestCases: common.GetObservabilityTestCases(installType),
+			},
 		}
 
 		for _, test := range tests {
