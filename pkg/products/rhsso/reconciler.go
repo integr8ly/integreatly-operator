@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -242,12 +241,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.newAlertsReconciler(r.Log, r.Installation.Spec.Type, config.GetOboNamespace(r.Installation.Namespace)).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.exportDashboard(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to export dashboard to the observability namespace", err)
 		return phase, err
 	}
 
@@ -747,47 +740,6 @@ func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keyclo
 	})
 
 	return op, conflictFound, err
-}
-
-func (r *Reconciler) exportDashboard(ctx context.Context, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	dashboard := "keycloak"
-
-	ssoDB := &grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      dashboard,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-
-	err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: ssoDB.Name, Namespace: ssoDB.Namespace}, ssoDB)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	observabilityDB := &grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      dashboard,
-			Namespace: observabilityConfig.GetNamespace(),
-		},
-	}
-
-	opRes, err := controllerutil.CreateOrUpdate(ctx, apiClient, observabilityDB, func() error {
-		observabilityDB.Labels = ssoDB.Labels
-		observabilityDB.Spec = ssoDB.Spec
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if opRes != controllerutil.OperationResultNone {
-		r.Log.Infof("Operation result grafana ssoDB", l.Fields{"grafanaDashboard": observabilityDB.Name, "result": opRes})
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {

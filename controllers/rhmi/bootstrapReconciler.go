@@ -80,29 +80,7 @@ func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, installationQuota *quota.Quota, request ctrl.Request) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling bootstrap stage")
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	uninstall := false
-	if installation.DeletionTimestamp != nil {
-		uninstall = true
-	}
-
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(observabilityConfig.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, observabilityConfig.GetNamespace(), r.log)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
-		return phase, err
-	}
-
-	phase, err = resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
+	phase, err := resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile LimitRange for Namespace %s", r.installation.Namespace), err)
 		return phase, err
@@ -169,7 +147,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
 
-	observabilityConfig, err = r.ConfigManager.ReadObservability()
+	// TODO MGDAPI-5833 : Remove block
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -181,11 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
-	phase, err = r.ReconcileNamespace(ctx, observabilityConfig.GetNamespace(), installation, serverClient, log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to create observability operand namespace", err)
-		return phase, errors.Wrap(err, "failed to create observability operand namespace")
-	}
+	// MGDAPI-5833 : Remove block end
 
 	if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)

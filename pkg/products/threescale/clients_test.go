@@ -18,12 +18,8 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
 
-	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
@@ -53,42 +49,10 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 	}
 
 	sigsFakeClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj k8sclient.Object, opts ...k8sclient.GetOption) error {
-		switch obj := obj.(type) {
-		case *corev1.Secret:
-			if key.Name == "alertmanager-application-monitoring" {
-				obj.Data = getMockAlertManagerSecret()
-				return nil
-			}
-		}
 		return sigsFakeClient.GetSigsClient().Get(ctx, key, obj)
 	}
 
 	return sigsFakeClient
-}
-
-func getMockAlertManagerSecret() map[string][]byte {
-	templateUtil := monitoringcommon.NewTemplateHelper(map[string]string{
-		"SMTPHost":              "SMTPHost",
-		"SMTPPort":              "SMTPPort",
-		"SMTPFrom":              "test@test.com",
-		"SMTPUsername":          "SMTPUsername",
-		"SMTPPassword":          "SMTPPassword",
-		"SMTPToCustomerAddress": "SMTPToCustomerAddress",
-		"SMTPToSREAddress":      "SMTPToSREAddress",
-		"SMTPToBUAddress":       "SMTPToBUAddress",
-		"PagerDutyServiceKey":   "PagerDutyServiceKey",
-		"DeadMansSnitchURL":     "DeadMansSnitchURL",
-		"Subject":               "Subject",
-	})
-	configSecretData, err := templateUtil.LoadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
-	if err != nil {
-		fmt.Printf("error loading template for mock alertmanager secret %v", err)
-		return nil
-	}
-
-	return map[string][]byte{
-		"alertmanager.yaml": configSecretData,
-	}
 }
 
 func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Client.AppsV1Interface {

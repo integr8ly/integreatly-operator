@@ -50,7 +50,7 @@ type ConfigReadWriter interface {
 	ReadCloudResources() (*CloudResources, error)
 	ReadMonitoringSpec() (*MonitoringSpec, error)
 	ReadGrafana() (*Grafana, error)
-	ReadObservability() (*Observability, error)
+	ReadObservability() (*Observability, error) // TODO MGDAPI-5833 this needs to be removed
 	ReadMCG() (*MCG, error)
 }
 
