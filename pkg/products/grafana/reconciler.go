@@ -404,14 +404,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	prometheusService := &corev1.Service{}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: observabilityConfig.GetPrometheusOverride(), Namespace: observabilityConfig.GetNamespace()}, prometheusService)
+	namespace := config.GetOboNamespace(r.installation.Namespace)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: "rhoam-prometheus", Namespace: namespace}, prometheusService)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -421,7 +417,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	var upstreamPort int32
 	for _, port := range prometheusService.Spec.Ports {
-		if port.Name == "upstream" {
+		if port.Name == "web" {
 			upstreamPort = port.Port
 		}
 	}

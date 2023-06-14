@@ -58,12 +58,6 @@ func TestReconciler_TypeFactory(t *testing.T) {
 				},
 			},
 			{
-				Name: integreatlyv1alpha1.UninstallObservabilityStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
-				},
-			},
-			{
 				Name: integreatlyv1alpha1.UninstallBootstrap,
 			},
 		},

@@ -77,46 +77,6 @@ var (
 		},
 	)
 
-	// RhoamCriticalAlerts metric exported to telemeter. DO NOT increase cardinality
-	RhoamCriticalAlerts = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhoam_critical_alerts",
-			Help: "Count of RHOAM specific critical alerts pending/firing on cluster",
-		},
-		[]string{
-			"state", // "pending/firing
-		},
-	)
-
-	// RhoamWarningAlerts metric exported to telemeter. DO NOT increase cardinality
-	RhoamWarningAlerts = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhoam_warning_alerts",
-			Help: "Count of RHOAM specific warning alerts pending/firing on cluster",
-		},
-		[]string{
-			"state", // "pending/firing
-		},
-	)
-
-	// Rhoam7DPercentile metric exported to telemeter. DO NOT increase cardinality
-	Rhoam7DPercentile = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhoam_7d_slo_percentile",
-			Help: "RHOAM 7 day slo percentile value",
-		},
-		[]string{},
-	)
-
-	// Rhoam7DSloRemainingErrorBudget metric exported to telemeter. DO NOT increase cardinality
-	Rhoam7DSloRemainingErrorBudget = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "rhoam_7d_slo_remaining_error_budget",
-			Help: "RHOAM 7 day slo remaining error budget in milliseconds",
-		},
-		[]string{},
-	)
-
 	RHOAMStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rhoam_status",
@@ -346,28 +306,6 @@ func SetRhoamState(status RhoamState) {
 	RhoamStateMetric.With(labels).Set(1)
 }
 
-func SetRhoamCriticalAlerts(alerts resources.AlertMetrics) {
-	RhoamCriticalAlerts.Reset()
-	RhoamCriticalAlerts.WithLabelValues(string(prometheusv1.AlertStateFiring)).Set(float64(alerts.Firing))
-	RhoamCriticalAlerts.WithLabelValues(string(prometheusv1.AlertStatePending)).Set(float64(alerts.Pending))
-}
-
-func SetRhoamWarningAlerts(alerts resources.AlertMetrics) {
-	RhoamWarningAlerts.Reset()
-	RhoamWarningAlerts.WithLabelValues(string(prometheusv1.AlertStateFiring)).Set(float64(alerts.Firing))
-	RhoamWarningAlerts.WithLabelValues(string(prometheusv1.AlertStatePending)).Set(float64(alerts.Pending))
-}
-
-func SetRhoam7DPercentile(value float32) {
-	Rhoam7DPercentile.Reset()
-	Rhoam7DPercentile.With(prometheus.Labels{}).Set(float64(value))
-}
-
-func SetRhoam7DSloRemainingErrorBudget(value float32) {
-	Rhoam7DSloRemainingErrorBudget.Reset()
-	Rhoam7DSloRemainingErrorBudget.With(prometheus.Labels{}).Set(float64(value))
-}
-
 func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 	status := RhoamState{}
 
@@ -393,34 +331,6 @@ func GetRhoamState(cr *integreatlyv1alpha1.RHMI) (RhoamState, error) {
 		status.Version = cr.Status.Version
 	}
 	return status, nil
-}
-
-func SloRemainingErrorBudget(route string, token prometheusConfig.Secret) (float32, prometheusv1.Warnings, error) {
-
-	sloMs := SloDays * 24 * 60 * 60 * 1000
-	slo001Ms := float64(sloMs) * 0.001
-
-	query := fmt.Sprintf("%[1]v - (sum_over_time((clamp_max(sum(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"}), 1))[%[2]vd:10m]) * (10 * 60 * 1000))  or vector(%[1]v)", slo001Ms, SloDays)
-
-	value, warnings, err := vectorQuery(route, token, query)
-	if err != nil {
-		err = fmt.Errorf("slo remaining error budget : %s", err)
-	}
-
-	return value, warnings, err
-
-}
-
-func SloPercentile(route string, token prometheusConfig.Secret) (float32, prometheusv1.Warnings, error) {
-
-	query := fmt.Sprintf("clamp_max(sum_over_time((clamp_max(sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\", product=\"rhoam\"})), 1))[%[1]vd:10m]) / (%[1]v * 24 * 6) > 0, 1)", SloDays)
-
-	value, warnings, err := vectorQuery(route, token, query)
-	if err != nil {
-		err = fmt.Errorf("slo percentile : %s", err)
-	}
-
-	return value, warnings, err
 }
 
 func GetApiClient(route string, token prometheusConfig.Secret) (prometheusv1.API, error) {
@@ -458,21 +368,4 @@ func vectorQuery(route string, token prometheusConfig.Secret, query string) (flo
 	}
 
 	return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
-}
-
-func GetCurrentAlerts(route string, token prometheusConfig.Secret) ([]prometheusv1.Alert, error) {
-	v1api, err := GetApiClient(route, token)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	alerts, err := v1api.Alerts(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return alerts.Alerts, nil
 }

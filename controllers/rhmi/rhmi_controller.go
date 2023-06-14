@@ -26,16 +26,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/strfmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	prometheusConfig "github.com/prometheus/common/config"
 
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -401,16 +401,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
-	}
-
-	log.Info("set alerts summary metric")
-	err = r.composeAndSetSummaryMetrics(installation, configManager)
-	if err != nil {
-		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
-			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
-		} else {
-			log.Error("error setting alerts metric:", err)
-		}
 	}
 
 	log.Info("set cluster metric")
@@ -1308,65 +1298,6 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 }
 
-func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
-	var alerts []prometheusv1.Alert
-
-	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
-	if err != nil {
-		return fmt.Errorf("getting alerting namespace failed: %w", err)
-	}
-
-	observability, err := configManager.ReadObservability()
-	if err != nil {
-		return fmt.Errorf("getting observability configuration failed: %w", err)
-	}
-
-	for namespace := range alertingNamespaces {
-		if namespace == observability.GetNamespace() {
-
-			url, err := r.getURLFromRoute("prometheus", namespace, r.restConfig)
-			if err != nil {
-				return fmt.Errorf("error getting route : %w", err)
-			}
-
-			token := prometheusConfig.Secret(r.restConfig.BearerToken)
-
-			alerts, err = metrics.GetCurrentAlerts(url, token)
-			if err != nil {
-				return err
-			}
-
-			critical, warning := formatAlerts(alerts)
-			metrics.SetRhoamCriticalAlerts(critical)
-			metrics.SetRhoamWarningAlerts(warning)
-
-			value, warnings, err := metrics.SloPercentile(url, token)
-			if err != nil {
-				return err
-			}
-
-			for _, warning := range warnings {
-				log.Warning(warning)
-			}
-			metrics.SetRhoam7DPercentile(value)
-
-			value, warnings, err = metrics.SloRemainingErrorBudget(url, token)
-			if err != nil {
-				return err
-			}
-
-			for _, warning := range warnings {
-				log.Warning(warning)
-			}
-			metrics.SetRhoam7DSloRemainingErrorBudget(value)
-
-			return nil
-		}
-	}
-
-	return nil
-}
-
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 
 	clusterVersionCR, err := cluster.GetClusterVersionCR(context.TODO(), r.Client)
@@ -1525,37 +1456,4 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
-}
-
-func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics, warning resources.AlertMetrics) {
-	critical = resources.AlertMetrics{
-		Firing:  0,
-		Pending: 0,
-	}
-
-	warning = resources.AlertMetrics{
-		Firing:  0,
-		Pending: 0,
-	}
-
-	for _, alert := range alerts {
-		if alert.Labels["alertname"] == "DeadMansSwitch" {
-			// DeadManSwitch alert is always firing.
-			// Skipping its inclusion for a more accurate metric.
-			continue
-		}
-
-		switch {
-		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "critical":
-			critical.Firing++
-		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "critical":
-			critical.Pending++
-		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "warning":
-			warning.Firing++
-		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "warning":
-			warning.Pending++
-		}
-	}
-
-	return critical, warning
 }

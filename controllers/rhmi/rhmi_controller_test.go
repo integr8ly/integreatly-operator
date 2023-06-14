@@ -9,11 +9,8 @@ import (
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/utils"
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,71 +101,6 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestFormatAlerts(t *testing.T) {
-	input := []prometheusv1.Alert{
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStatePending,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStatePending,
-		},
-
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  prometheusv1.AlertStatePending,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "info alert", "severity": "info"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-	}
-	expectedCritical := resources.AlertMetrics{
-		Firing:  3,
-		Pending: 2,
-	}
-	expectedWarning := resources.AlertMetrics{
-		Firing:  1,
-		Pending: 1,
-	}
-
-	critical, warning := formatAlerts(input)
-
-	if !reflect.DeepEqual(critical, expectedCritical) {
-		t.Fatalf("critical alert metrics not equal; Actual: %v, Expected: %v", critical, expectedCritical)
-	}
-
-	if !reflect.DeepEqual(warning, expectedWarning) {
-		t.Fatalf("warning alert metrics not equal; Actual: %v, Expected: %v", warning, expectedWarning)
-	}
-
 }
 
 func TestHandleCROConfigDeletion(t *testing.T) {

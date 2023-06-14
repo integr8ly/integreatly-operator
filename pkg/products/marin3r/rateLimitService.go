@@ -560,7 +560,7 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 
 	// If there are difference, delete the limits and delete a pod to reload the limits from the config map
 	if r.differentLimitSettings(limitadorLimitsInRedis, limitadorSetting) {
-		phase, err := r.deleteRedisLimitsUsingObservabilityOperator(ctx, client, limitadorClient)
+		phase, err := r.deleteRedisLimits(ctx, client, limitadorClient)
 
 		if phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -581,31 +581,14 @@ func (r *RateLimitServiceReconciler) ensureLimits(ctx context.Context, client k8
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *RateLimitServiceReconciler) deleteRedisLimitsUsingObservabilityOperator(ctx context.Context, client k8sclient.Client, limitadorClient *LimitadorClient) (integreatlyv1alpha1.StatusPhase, error) {
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	observabilityOperatorPods := &corev1.PodList{}
-	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(observabilityConfig.GetOperatorNamespace()),
-		k8sclient.MatchingLabels(map[string]string{"control-plane": "controller-manager"}),
-	}
-	if err := client.List(ctx, observabilityOperatorPods, opts...); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if len(observabilityOperatorPods.Items) == 0 {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
+func (r *RateLimitServiceReconciler) deleteRedisLimits(ctx context.Context, client k8sclient.Client, limitadorClient *LimitadorClient) (integreatlyv1alpha1.StatusPhase, error) {
 
 	rateLimitService := &corev1.Service{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{Name: quota.RateLimitName, Namespace: r.Namespace}, rateLimitService); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	if err := limitadorClient.CurlDeleteLimitsByNameUsingPod(ratelimit.RateLimitDomain, observabilityConfig.GetOperatorNamespace(), observabilityOperatorPods.Items[0].Name, rateLimitService.Spec.ClusterIP); err != nil {
+	if err := limitadorClient.DeleteLimitsByNameUsingPod(ratelimit.RateLimitDomain, rateLimitService.Spec.ClusterIP); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 

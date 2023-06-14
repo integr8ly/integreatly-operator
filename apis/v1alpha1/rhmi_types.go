@@ -49,7 +49,6 @@ var (
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	UninstallProductsStage       StageName = "uninstall - products"
-	UninstallObservabilityStage  StageName = "uninstall - observability"
 	UninstallCloudResourcesStage StageName = "uninstall - cloud-resources"
 	UninstallBootstrap           StageName = "uninstall - bootstrap"
 
@@ -57,7 +56,7 @@ var (
 	ProductRHSSOUser      ProductName = "rhssouser"
 	Product3Scale         ProductName = "3scale"
 	ProductMonitoring     ProductName = "middleware-monitoring"
-	ProductObservability  ProductName = "observability"
+	ProductObservability  ProductName = "observability" // TODO MGDAPI-5833
 	ProductCloudResources ProductName = "cloud-resources"
 	ProductMonitoringSpec ProductName = "monitoring-spec"
 	ProductMarin3r        ProductName = "marin3r"
