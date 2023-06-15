@@ -271,12 +271,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePrometheusProbes(ctx, serverClient, "integreatly-rhssouser", r.Config.GetHost(), "rhssouser-ui")
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile prometheus probes", err)
-		return phase, err
-	}
-
 	phase, err = r.newAlertsReconciler(r.Log, r.Installation.Spec.Type, config.GetOboNamespace(r.Installation.Namespace)).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile alerts", err)

@@ -19,7 +19,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
@@ -459,13 +458,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcilePrometheusProbes(ctx, serverClient)
-	r.log.Infof("reconcilePrometheusProbes", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus probes", err)
 		return phase, err
 	}
 
@@ -2488,71 +2480,6 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-admin-ui", "http_2xx", monv1.ProbeTargetStaticConfig{
-		Targets: []string{r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI()},
-		Labels: map[string]string{
-			"service": "3scale-admin-ui",
-		},
-	})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.log.Error("Error creating threescale prometheus probe", err)
-		return phase, fmt.Errorf("error creating threescale prometheus probe: %w", err)
-	}
-
-	// Get custom system-developer route by UIBBT label key
-	threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
-		_, ok := r.Labels["uibbt"]
-		return ok
-	})
-	if err != nil {
-		r.log.Info("Failed to get threescaleRoute by UIBBT label key: " + err.Error())
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	//  If custom route does not exist - get route by 3scale Prefix
-	if threescaleRoute == nil {
-		// Create a prometheus probe for the developer console ui
-		threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
-			return strings.HasPrefix(r.Spec.Host, "3scale.")
-		})
-		if err != nil {
-			r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
-	}
-	if threescaleRoute == nil {
-		r.log.Info("Failed to retrieve threescale system-developer Route with 3scale prefix or uibbt label")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	phase, err = resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-system-developer", "http_2xx", monv1.ProbeTargetStaticConfig{
-		Targets: []string{"https://" + threescaleRoute.Spec.Host},
-		Labels: map[string]string{
-			"service": "3scale-developer-console-ui",
-		},
-	})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.log.Error("Error creating prometheus probe (system-developer)", err)
-		return phase, fmt.Errorf("error creating threescale prometheus probe (system-developer): %w", err)
-	}
-
-	// Create a prometheus probe for the master console ui
-	threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-	phase, err = resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-3scale-system-master", "http_2xx", monv1.ProbeTargetStaticConfig{
-		Targets: []string{"https://" + threescaleRoute.Spec.Host},
-		Labels: map[string]string{
-			"service": "3scale-system-admin-ui",
-		},
-	})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.log.Error("Error creating prometheus probe (system-master)", err)
-		return phase, fmt.Errorf("error creating threescale prometheus probe (system-master): %w", err)
-	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

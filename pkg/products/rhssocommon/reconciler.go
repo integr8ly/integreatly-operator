@@ -636,20 +636,6 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	return nil
 }
 
-func (r *Reconciler) ReconcilePrometheusProbes(ctx context.Context, client k8sclient.Client, targetName string, url string, service string) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := resources.CreatePrometheusProbe(ctx, client, r.Installation, targetName, "http_2xx", monv1.ProbeTargetStaticConfig{
-		Targets: []string{url},
-		Labels: map[string]string{
-			"service": service,
-		},
-	})
-
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, fmt.Errorf("failed to create rhsso prometheus probe: %w", err)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func (r *Reconciler) RemovePodMonitors(ctx context.Context, client k8sclient.Client, config config.ConfigReadable) (integreatlyv1alpha1.StatusPhase, error) {
 
 	podMonitor := &monitoringv1.PodMonitor{
