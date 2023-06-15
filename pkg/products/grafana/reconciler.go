@@ -24,7 +24,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	routev1 "github.com/openshift/api/route/v1"
-	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -199,11 +198,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if err := r.reconcileConsoleLink(ctx, client); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if phase, err = r.reconcilePrometheusProbes(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus probes", err)
-		return phase, err
 	}
 
 	productStatus.Host = r.Config.GetHost()
@@ -621,21 +615,6 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	}
 
 	return nil
-}
-
-func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := resources.CreatePrometheusProbe(ctx, client, r.installation, "integreatly-grafana", "http_2xx", monv1.ProbeTargetStaticConfig{
-		Targets: []string{r.Config.GetHost()},
-		Labels: map[string]string{
-			"service": "grafana-ui",
-		},
-	})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.log.Error("Error creating grafana prometheus probe", err)
-		return phase, fmt.Errorf("error creating grafana prometheus probe: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
