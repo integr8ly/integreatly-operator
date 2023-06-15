@@ -268,8 +268,7 @@ test/osde2e:
 .PHONY: test/prepare/ocp/obo
 test/prepare/ocp/obo:
 	# We need to apply these CRDs and create the -observability project on OCP clusters in order to install RHOAM with OBO.
-	# The Probes CRD will be removed in MGDAPI-5780 and the PrometheusRules CRDS will be removed when Phase 2 of the OBO migration is complete.
-	@oc apply -f https://raw.githubusercontent.com/rhobs/observability-operator/main/bundle/manifests/monitoring.rhobs_probes.yaml
+	# The PrometheusRules CRDS will be removed when Phase 2 of the OBO migration is complete.
 	@oc apply -f https://raw.githubusercontent.com/rhobs/observability-operator/main/bundle/manifests/monitoring.rhobs_prometheusrules.yaml
 	@ - oc new-project $(NAMESPACE)-observability
 	@oc label namespace $(NAMESPACE)-observability monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
