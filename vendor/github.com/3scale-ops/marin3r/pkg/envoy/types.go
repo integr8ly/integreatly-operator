@@ -2,6 +2,7 @@ package envoy
 
 import (
 	"fmt"
+	"net"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -36,26 +37,54 @@ func ParseAPIVersion(version string) (APIVersion, error) {
 	}
 }
 
-// Type is an enum of the supported envoy resource typeswe can just use a strings.Split to create the array of args from the custom resource field, with that each of the "words" will be passed correctly without the quotes around c
+// Type is an enum of the supported envoy resource types
 type Type string
 
 const (
 	// Endpoint is an envoy endpoint resource
-	Endpoint Type = "Endpoint"
+	Endpoint Type = "endpoint"
 	// Cluster is an envoy cluster resource
-	Cluster Type = "Cluster"
+	Cluster Type = "cluster"
 	// Route is an envoy route resource
-	Route Type = "Route"
+	Route Type = "route"
 	// ScopedRoute is an envoy scoped route resource
-	ScopedRoute Type = "ScopedRoute"
-	// VirtualHost is an enovy virtual host resource
-	VirtualHost Type = "VirtualHost"
+	ScopedRoute Type = "scopedRoute"
+	// VirtualHost is an enovy virtual host resource (not implemented)
+	VirtualHost Type = "virtualHost"
 	// Listener is an envoy listener resource
-	Listener Type = "Listener"
+	Listener Type = "listener"
 	// Secret is an envoy secret resource
-	Secret Type = "Secret"
+	Secret Type = "secret"
 	// Runtime is an envoy runtime resource
-	Runtime Type = "Runtime"
+	Runtime Type = "runtime"
 	// ExtensionConfig is an envoy extension config resource
-	ExtensionConfig Type = "ExtensionConfig"
+	ExtensionConfig Type = "extensionConfig"
 )
+
+type EndpointHealthStatus int32
+
+const (
+	// The health status is not known. This is interpreted by Envoy as ``HEALTHY``.
+	HealthStatus_UNKNOWN EndpointHealthStatus = 0
+	// Healthy.
+	HealthStatus_HEALTHY EndpointHealthStatus = 1
+	// Unhealthy.
+	HealthStatus_UNHEALTHY EndpointHealthStatus = 2
+	// Connection draining in progress. E.g.,
+	// `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_
+	// or
+	// `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_.
+	// This is interpreted by Envoy as ``UNHEALTHY``.
+	HealthStatus_DRAINING EndpointHealthStatus = 3
+	// Health check timed out. This is part of HDS and is interpreted by Envoy as
+	// ``UNHEALTHY``.
+	HealthStatus_TIMEOUT EndpointHealthStatus = 4
+	// Degraded.
+	HealthStatus_DEGRADED EndpointHealthStatus = 5
+)
+
+type UpstreamHost struct {
+	IP     net.IP
+	Port   uint32
+	Health EndpointHealthStatus
+}

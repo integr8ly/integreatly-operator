@@ -49,8 +49,8 @@ func (g Generator) New(rType envoy.Type) envoy.Resource {
 
 }
 
-// NewSecret generates return a new envoy seret given the certificate and key.
-func (g Generator) NewSecret(name, privateKey, certificateChain string) envoy.Resource {
+// NewTlsCertificateSecret generates a new envoy secret given the certificate and key.
+func (g Generator) NewTlsCertificateSecret(name, privateKey, certificateChain string) envoy.Resource {
 
 	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		Name: name,
@@ -60,6 +60,21 @@ func (g Generator) NewSecret(name, privateKey, certificateChain string) envoy.Re
 					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{InlineBytes: []byte(privateKey)},
 				},
 				CertificateChain: &envoy_config_core_v3.DataSource{
+					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{InlineBytes: []byte(certificateChain)},
+				},
+			},
+		},
+	}
+}
+
+// NewValidationContextSecret generates a new envoy validation context given the certificate and key.
+func (g Generator) NewValidationContextSecret(name, certificateChain string) envoy.Resource {
+
+	return &envoy_extensions_transport_sockets_tls_v3.Secret{
+		Name: name,
+		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
+			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
+				TrustedCa: &envoy_config_core_v3.DataSource{
 					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{InlineBytes: []byte(certificateChain)},
 				},
 			},
@@ -86,5 +101,43 @@ func (g Generator) NewSecretFromPath(name, certificateChainPath, privateKeyPath 
 					}},
 			},
 		},
+	}
+}
+
+func (g Generator) NewClusterLoadAssignment(clusterName string, hosts ...envoy.UpstreamHost) envoy.Resource {
+
+	return &envoy_config_endpoint_v3.ClusterLoadAssignment{
+		ClusterName: clusterName,
+		Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+			{
+				LbEndpoints: func() []*envoy_config_endpoint_v3.LbEndpoint {
+					endpoints := make([]*envoy_config_endpoint_v3.LbEndpoint, len(hosts))
+					for idx, host := range hosts {
+						endpoints[idx] = LbEndpoint(host).(*envoy_config_endpoint_v3.LbEndpoint)
+					}
+					return endpoints
+				}(),
+			},
+		},
+	}
+}
+
+func LbEndpoint(host envoy.UpstreamHost) envoy.Resource {
+	return &envoy_config_endpoint_v3.LbEndpoint{
+		HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+			Endpoint: &envoy_config_endpoint_v3.Endpoint{
+				Address: &envoy_config_core_v3.Address{
+					Address: &envoy_config_core_v3.Address_SocketAddress{
+						SocketAddress: &envoy_config_core_v3.SocketAddress{
+							Address: host.IP.String(),
+							PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+								PortValue: host.Port,
+							},
+						},
+					},
+				},
+			},
+		},
+		HealthStatus: envoy_config_core_v3.HealthStatus(host.Health),
 	}
 }
