@@ -2,6 +2,8 @@ package resources
 
 import (
 	"bytes"
+	"context"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -62,7 +64,7 @@ func (p PodExecutor) ExecuteRemoteCommand(ns string, podName string, command []s
 
 	p.Log.Infof("Executing", l.Fields{"command": command, "pod": podName})
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		Stdout: buf,
 		Stderr: errBuf,
 	})
@@ -105,7 +107,7 @@ func (p PodExecutor) ExecuteRemoteContainerCommand(ns string, podName string, co
 
 	p.Log.Infof("Executing", l.Fields{"command": command, "pod": podName})
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		Stdout: buf,
 		Stderr: errBuf,
 	})

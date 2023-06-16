@@ -6,6 +6,15 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
+	"math/big"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	portaclient "github.com/3scale/3scale-porta-go-client/client"
 	"github.com/headzoo/surf"
 	brow "github.com/headzoo/surf/browser"
@@ -14,24 +23,15 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
-	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"math/big"
-	"net/http"
-	"net/url"
-	"os"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -553,7 +553,7 @@ func grantViewRoleToTestUser(ctx *TestingContext) error {
 			},
 		}
 		roleBinding.RoleRef = rbac.RoleRef{
-			Kind: bundle.ClusterRoleKind,
+			Kind: "ClusterRole",
 			Name: "view",
 		}
 

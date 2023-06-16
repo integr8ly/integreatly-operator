@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/3scale-ops/marin3r/pkg/envoy"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -18,8 +19,7 @@ import (
 )
 
 const (
-	EnvoyImage      = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.2-3"
-	EnvoyAPIVersion = "v3"
+	EnvoyImage = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.2-3"
 )
 
 type envoyProxyServer struct {
@@ -87,13 +87,13 @@ func (envoyProxy *envoyProxyServer) patchDeploymentConfig(dcName, namespace, env
 			"marin3r.3scale.net/ports":             envoyPort,
 			"marin3r.3scale.net/envoy-image":       EnvoyImage,
 			"marin3r.3scale.net/status":            "enabled",
-			"marin3r.3scale.net/envoy-api-version": EnvoyAPIVersion,
+			"marin3r.3scale.net/envoy-api-version": envoy.APIv3.String(),
 		})
 
 	dc.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
 	dc.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = envoyNodeID
 	dc.Spec.Template.Annotations["marin3r.3scale.net/ports"] = envoyPort
-	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = EnvoyAPIVersion
+	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-api-version"] = envoy.APIv3.String()
 	dc.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = EnvoyImage
 	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.cpu"] = "190m"
 	dc.Spec.Template.Annotations["marin3r.3scale.net/resources.requests.memory"] = "90Mi"
