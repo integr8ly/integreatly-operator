@@ -1,7 +1,6 @@
 package marketplace
 
 import (
-	"io/ioutil"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -32,7 +31,7 @@ func NewFSProductInstallationLoader(path string) ProductsInstallationLoader {
 }
 
 func (l *FSProductsInstallationLoader) GetProductsInstallation() (*ProductsInstallation, error) {
-	file, err := ioutil.ReadFile(l.path)
+	file, err := os.ReadFile(l.path)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,10 @@ package monitoringcommon
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -10,16 +14,12 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	v1 "github.com/openshift/api/route/v1"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
-	"path/filepath"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 )
 
 const (
@@ -167,7 +167,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 	path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
-	emailConfigContents, err := ioutil.ReadFile(filepath.Clean(path))
+	emailConfigContents, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read alertmanager custom email template file: %w", err)
 	}

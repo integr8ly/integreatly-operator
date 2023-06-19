@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -606,7 +605,7 @@ func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.C
 		}
 	}(resp.Body)
 
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("unable to read body : %w", err)
 	}
@@ -646,7 +645,7 @@ func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.
 		}
 	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false, fmt.Errorf("unable to read body : %w", err)
 	}

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -180,7 +180,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 	// generate alertmanager custom email template
-	testEmailConfigContents, err := ioutil.ReadFile(path)
+	testEmailConfigContents, err := os.ReadFile(path)
 	if err != nil {
 		t.Errorf("Failed reading file: %v", err)
 	}
@@ -357,7 +357,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 				path := fmt.Sprintf("%s/%s", templatePath, config.AlertManagerCustomTemplatePath)
 
 				// generate alertmanager custom email template
-				testEmailConfigContents, err := ioutil.ReadFile(path)
+				testEmailConfigContents, err := os.ReadFile(path)
 				if err != nil {
 					return err
 				}

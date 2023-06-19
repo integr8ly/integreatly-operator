@@ -13,6 +13,10 @@ import (
 	"sync"
 )
 
+// Ensure, that SigsClientInterfaceMock does implement SigsClientInterface.
+// If this is not the case, regenerate this file with moq.
+var _ SigsClientInterface = &SigsClientInterfaceMock{}
+
 // SigsClientInterfaceMock is a mock implementation of SigsClientInterface.
 //
 //	func TestSomethingThatUsesSigsClientInterface(t *testing.T) {

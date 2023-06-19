@@ -3,7 +3,6 @@ package marketplace
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -120,7 +119,7 @@ func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml strin
 			} else {
 				// iterate all other versions look for crds that don't exist in the current version
 				// and add them to the stringlist for building the config map
-				files, err := ioutil.ReadDir(currentFolder)
+				files, err := os.ReadDir(currentFolder)
 				if err == nil {
 					for _, f := range files {
 						// iterate through all fils in the folder
@@ -157,7 +156,7 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 		if cfolder == currentFolder {
 			break
 		} else {
-			files, err := ioutil.ReadDir(cfolder)
+			files, err := os.ReadDir(cfolder)
 			if err == nil {
 				for _, f := range files {
 					if libRegEx.MatchString(f.Name()) {
@@ -179,8 +178,8 @@ func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder s
 }
 
 // GetCrdDetails reads the crd file
-func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
-	yamlFile, err := ioutil.ReadFile(filepath.Clean(currentFolder + string(os.PathSeparator) + f.Name()))
+func GetCrdDetails(crdConfig *apiextensionv1.CustomResourceDefinition, currentFolder string, f os.DirEntry) {
+	yamlFile, err := os.ReadFile(filepath.Clean(currentFolder + string(os.PathSeparator) + f.Name()))
 	if err != nil {
 		fmt.Printf("Error reading file: %s\n", err)
 	}
@@ -247,7 +246,7 @@ func ProcessYamlFile(path string, stringList *strings.Builder) error {
 // Process each line of files from manifest for correct yaml format to use in config map
 func ReadAndFormatManifestYamlFile(path string) (string, error) {
 	var formattedString strings.Builder
-	content, err := ioutil.ReadFile(filepath.Clean(path))
+	content, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", err
 	}

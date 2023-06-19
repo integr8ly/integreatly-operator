@@ -16,60 +16,60 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 //	func TestSomethingThatUsesConfigReadWriter(t *testing.T) {
 //
-// 		// make and configure a mocked ConfigReadWriter
-// 		mockedConfigReadWriter := &ConfigReadWriterMock{
-// 			GetBackupsSecretNameFunc: func() string {
-// 				panic("mock out the GetBackupsSecretName method")
-// 			},
-// 			GetGHOauthClientsSecretNameFunc: func() string {
-// 				panic("mock out the GetGHOauthClientsSecretName method")
-// 			},
-// 			GetOauthClientsSecretNameFunc: func() string {
-// 				panic("mock out the GetOauthClientsSecretName method")
-// 			},
-// 			GetOperatorNamespaceFunc: func() string {
-// 				panic("mock out the GetOperatorNamespace method")
-// 			},
-// 			ReadCloudResourcesFunc: func() (*CloudResources, error) {
-// 				panic("mock out the ReadCloudResources method")
-// 			},
-// 			ReadGrafanaFunc: func() (*Grafana, error) {
-// 				panic("mock out the ReadGrafana method")
-// 			},
-// 			ReadMCGFunc: func() (*MCG, error) {
-// 				panic("mock out the ReadMCG method")
-// 			},
-// 			ReadMarin3rFunc: func() (*Marin3r, error) {
-// 				panic("mock out the ReadMarin3r method")
-// 			},
-// 			ReadMonitoringFunc: func() (*Monitoring, error) {
-// 				panic("mock out the ReadMonitoring method")
-// 			},
-// 			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
-// 				panic("mock out the ReadMonitoringSpec method")
-// 			},
-// 			ReadObservabilityFunc: func() (*Observability, error) {
-// 				panic("mock out the ReadObservability method")
-// 			},
-// 			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
-// 				panic("mock out the ReadProduct method")
-// 			},
-// 			ReadRHSSOFunc: func() (*RHSSO, error) {
-// 				panic("mock out the ReadRHSSO method")
-// 			},
-// 			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
-// 				panic("mock out the ReadRHSSOUser method")
-// 			},
-// 			ReadThreeScaleFunc: func() (*ThreeScale, error) {
-// 				panic("mock out the ReadThreeScale method")
-// 			},
-// 			WriteConfigFunc: func(config ConfigReadable) error {
-// 				panic("mock out the WriteConfig method")
-// 			},
-// 			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
-// 				panic("mock out the readConfigForProduct method")
-// 			},
-// 		}
+//		// make and configure a mocked ConfigReadWriter
+//		mockedConfigReadWriter := &ConfigReadWriterMock{
+//			GetBackupsSecretNameFunc: func() string {
+//				panic("mock out the GetBackupsSecretName method")
+//			},
+//			GetGHOauthClientsSecretNameFunc: func() string {
+//				panic("mock out the GetGHOauthClientsSecretName method")
+//			},
+//			GetOauthClientsSecretNameFunc: func() string {
+//				panic("mock out the GetOauthClientsSecretName method")
+//			},
+//			GetOperatorNamespaceFunc: func() string {
+//				panic("mock out the GetOperatorNamespace method")
+//			},
+//			ReadCloudResourcesFunc: func() (*CloudResources, error) {
+//				panic("mock out the ReadCloudResources method")
+//			},
+//			ReadGrafanaFunc: func() (*Grafana, error) {
+//				panic("mock out the ReadGrafana method")
+//			},
+//			ReadMCGFunc: func() (*MCG, error) {
+//				panic("mock out the ReadMCG method")
+//			},
+//			ReadMarin3rFunc: func() (*Marin3r, error) {
+//				panic("mock out the ReadMarin3r method")
+//			},
+//			ReadMonitoringFunc: func() (*Monitoring, error) {
+//				panic("mock out the ReadMonitoring method")
+//			},
+//			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
+//				panic("mock out the ReadMonitoringSpec method")
+//			},
+//			ReadObservabilityFunc: func() (*Observability, error) {
+//				panic("mock out the ReadObservability method")
+//			},
+//			ReadProductFunc: func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
+//				panic("mock out the ReadProduct method")
+//			},
+//			ReadRHSSOFunc: func() (*RHSSO, error) {
+//				panic("mock out the ReadRHSSO method")
+//			},
+//			ReadRHSSOUserFunc: func() (*RHSSOUser, error) {
+//				panic("mock out the ReadRHSSOUser method")
+//			},
+//			ReadThreeScaleFunc: func() (*ThreeScale, error) {
+//				panic("mock out the ReadThreeScale method")
+//			},
+//			WriteConfigFunc: func(config ConfigReadable) error {
+//				panic("mock out the WriteConfig method")
+//			},
+//			readConfigForProductFunc: func(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
+//				panic("mock out the readConfigForProduct method")
+//			},
+//		}
 //
 //		// use mockedConfigReadWriter in code that requires ConfigReadWriter
 //		// and then make assertions.
@@ -383,7 +383,8 @@ func (mock *ConfigReadWriterMock) ReadMCG() (*MCG, error) {
 
 // ReadMCGCalls gets all the calls that were made to ReadMCG.
 // Check the length with:
-//     len(mockedConfigReadWriter.ReadMCGCalls())
+//
+//	len(mockedConfigReadWriter.ReadMCGCalls())
 func (mock *ConfigReadWriterMock) ReadMCGCalls() []struct {
 } {
 	var calls []struct {
