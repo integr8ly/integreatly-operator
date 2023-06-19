@@ -3,12 +3,12 @@ package monitoringcommon
 import (
 	"bytes"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/ghodss/yaml"
 
@@ -72,7 +72,7 @@ func joinQuote(values []v1alpha1.BlackboxtargetData) string {
 // under ./templates and the filename must be <resource-name>.yaml
 func (h *TemplateHelper) LoadTemplate(name string) ([]byte, error) {
 	path := fmt.Sprintf("%s/%s", h.TemplatePath, name)
-	tpl, err := ioutil.ReadFile(filepath.Clean(path))
+	tpl, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

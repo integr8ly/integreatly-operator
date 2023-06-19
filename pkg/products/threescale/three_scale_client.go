@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/3scale/3scale-porta-go-client/client"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
+
+	"github.com/3scale/3scale-porta-go-client/client"
 
 	"github.com/antchfx/xmlquery"
 	"github.com/sirupsen/logrus"
@@ -851,7 +852,7 @@ func assertStatusCode(expected int, res *http.Response) error {
 		return nil
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}

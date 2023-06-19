@@ -1,6 +1,6 @@
 module github.com/integr8ly/integreatly-operator/test
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/compute v1.18.0

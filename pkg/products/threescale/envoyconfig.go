@@ -41,11 +41,11 @@ const (
 )
 
 /*
-	Defines 3scale rate limit descriptor
-	rateLimits:
-	- actions:
-	- genericKey:
-		descriptorValue: slowpath
+Defines 3scale rate limit descriptor
+rateLimits:
+  - actions:
+  - genericKey:
+    descriptorValue: slowpath
 */
 var tsRatelimitDescriptor = envoyroutev3.RateLimit{
 	Stage: &wrappers.UInt32Value{Value: 0},
@@ -59,18 +59,18 @@ var tsRatelimitDescriptor = envoyroutev3.RateLimit{
 }
 
 /*
-	Defines actions for multitenantcy
-        - actions:
-            - header_value_match:
-                descriptor_value: per-mt-limit
-                headers:
-                - name: tenant
-                safe_regex_match:
-                    google_re2: {}
-                    regex: ".*apicast.*"
-                - request_headers:
-                    header_name: tenant
-                    descriptor_key: tenant
+		Defines actions for multitenantcy
+	        - actions:
+	            - header_value_match:
+	                descriptor_value: per-mt-limit
+	                headers:
+	                - name: tenant
+	                safe_regex_match:
+	                    google_re2: {}
+	                    regex: ".*apicast.*"
+	                - request_headers:
+	                    header_name: tenant
+	                    descriptor_key: tenant
 */
 var multiTenantRatelimitDescriptor = envoyroutev3.RateLimit{
 	Stage: &wrappers.UInt32Value{Value: 0},
@@ -104,12 +104,16 @@ var multiTenantRatelimitDescriptor = envoyroutev3.RateLimit{
 	},
 }
 
-/**
- httpFilters:
-	- &tsHTTPRateLimitFilter
-	- name: envoy.filters.http.grpc_http1_reverse_bridge
-	- name: envoy.filters.http.router
-**/
+/*
+*
+
+	 httpFilters:
+		- &tsHTTPRateLimitFilter
+		- name: envoy.filters.http.grpc_http1_reverse_bridge
+		- name: envoy.filters.http.router
+
+*
+*/
 func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 	/*
 		Defines http filters for the rate limit service
@@ -175,19 +179,19 @@ func getAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 }
 
 /*
-	function envoy_on_request(request_handle)
-	host = request_handle:headers():get('Host')
-	local headers = request_handle:headers()
-	split_string = Split(host, "-apicast")
-	headers:add('tenant',split_string[1])
-	end
-	function Split(s, delimiter)
-	result = {};
-	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-	table.insert(result, match);
-	end
-	return result;
-	end
+function envoy_on_request(request_handle)
+host = request_handle:headers():get('Host')
+local headers = request_handle:headers()
+split_string = Split(host, "-apicast")
+headers:add('tenant',split_string[1])
+end
+function Split(s, delimiter)
+result = {};
+for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+table.insert(result, match);
+end
+return result;
+end
 */
 func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 
@@ -220,7 +224,9 @@ func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 	return httpFilters, nil
 }
 
-/**
+/*
+*
+
 	httpFilters:
 	- name: envoy.filters.http.lua
 	typed_config:
@@ -242,7 +248,9 @@ func getMultitenantAPICastHTTPFilters() ([]*hcm.HttpFilter, error) {
 		stage: 0
 	  name: envoy.filters.http.ratelimit
 	- name: envoy.filters.http.router
-**/
+
+*
+*/
 func getBackendListenerHTTPFilters() ([]*hcm.HttpFilter, error) {
 
 	// function envoy_on_response(response_handle)
@@ -278,22 +286,23 @@ func getBackendListenerHTTPFilters() ([]*hcm.HttpFilter, error) {
 	return httpFilters, nil
 }
 
-/**
+/*
+*
 virtualHosts:
-	- domains:
-	- '*'
-	name: apicast-ratelimit
-	routes:
-	- match:
-		prefix: /
-		route:
-		cluster: apicast-ratelimit
-		timeout: 75s
-		rateLimits:
-		- actions:
-			- genericKey:
-				descriptorValue: slowpath
-			stage: 0
+  - domains:
+  - '*'
+    name: apicast-ratelimit
+    routes:
+  - match:
+    prefix: /
+    route:
+    cluster: apicast-ratelimit
+    timeout: 75s
+    rateLimits:
+  - actions:
+  - genericKey:
+    descriptorValue: slowpath
+    stage: 0
 */
 func getAPICastVirtualHosts(installation *integreatlyv1alpha1.RHMI, clusterName string) []*envoyroutev3.VirtualHost {
 	virtualHost := envoyroutev3.VirtualHost{
@@ -336,18 +345,21 @@ func getRateLimitsPerInstallType(installation *integreatlyv1alpha1.RHMI) []*envo
 	return routes
 }
 
-/**
+/*
+*
 virtual_hosts:
-	- name: backend-listener-ratelimit
-	domains: ["*"]
-	routes:
-		- match:
-			prefix: "/"
-		route:
-			cluster: backend-listener-ratelimit
-			timeout: 75s
-			rate_limits:
-**/
+  - name: backend-listener-ratelimit
+    domains: ["*"]
+    routes:
+  - match:
+    prefix: "/"
+    route:
+    cluster: backend-listener-ratelimit
+    timeout: 75s
+    rate_limits:
+
+*
+*/
 func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHost {
 	virtualHosts := []*envoyroutev3.VirtualHost{
 		{
@@ -380,19 +392,22 @@ func getBackendListenerVitualHosts(clusterName string) []*envoyroutev3.VirtualHo
 	return virtualHosts
 }
 
-/**
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-			httpFilters:
-				&httpFilters
-            routeConfig:
-               name: local_route
-			   virtualHosts: virtualHosts
-			statPrefix: ingress_http
-			httpProtocolOptions:
-				enableTrailers: true
-**/
+/*
+*
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+    httpFilters:
+    &httpFilters
+    routeConfig:
+    name: local_route
+    virtualHosts: virtualHosts
+    statPrefix: ingress_http
+    httpProtocolOptions:
+    enableTrailers: true
+
+*
+*/
 func getListenerResourceFilters(virtualHosts []*envoyroutev3.VirtualHost, httpFilters []*hcm.HttpFilter) ([]*envoylistenerv3.Filter, error) {
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.HttpConnectionManager_AUTO,
