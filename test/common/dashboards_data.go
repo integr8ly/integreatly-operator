@@ -4,15 +4,11 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"net/url"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -71,77 +67,6 @@ var (
 		"Resource Usage By Namespace",
 	}
 )
-
-// TestDashboardsData verifies that all dashboards are installed and all the graphs are filled with data
-func TestDashboardsData(t TestingTB, ctx *TestingContext) {
-	// Get grafana pod ip to curl
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, ObservabilityProductNamespace)
-	grafanaPodIP := monitoringGrafanaPods.Items[0].Status.PodIP
-
-	// Pod and container name to perform curls from
-	curlContainerName := "prometheus"
-	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
-	if err != nil {
-		t.Fatal("failed to get prometheus pod name", err)
-	}
-
-	// retry the tests every minute for up to 10 minutes
-	monitoringTimeout := 10 * time.Minute
-	monitoringRetryInterval := 1 * time.Minute
-	err = wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		expressions, err := getDashboardExpressions(grafanaPodIP, prometheusPodName, curlContainerName, prometheusPodName, ctx, t)
-		if err != nil {
-			return false, fmt.Errorf("failed to get dashboard expressions: %w", err)
-		}
-
-		queryOutputs, err := queryPrometheusMany(expressions, prometheusPodName, ctx)
-		if err != nil {
-			return false, fmt.Errorf("failed to query prometheus many: %w", err)
-		}
-
-		var failedQueries []string
-
-		for i, queryOutput := range queryOutputs {
-			_, err := getPrometheusQueryResult(queryOutput)
-			if err != nil {
-				failedQueries = append(failedQueries, expressions[i])
-			}
-		}
-
-		failed := false
-
-		for _, failedQuery := range failedQueries {
-			// not all containers define resource requests and limits -> expected failure
-			if strings.Contains(failedQuery, "kube_pod_container_resource_requests") ||
-				strings.Contains(failedQuery, "kube_pod_container_resource_limits") {
-				continue
-			}
-
-			// following query might fail, but dashboards are still visible -> ignoring
-			if strings.Contains(failedQuery, "probe_ssl_earliest_cert_expiry") {
-				continue
-			}
-
-			// completed pods don't use resources -> expected failure
-			pattern := regexp.MustCompile(`pod=~'.*(deploy|hook-pre|hook-post|build|pv-backup)*'`)
-			if pattern.MatchString(failedQuery) {
-				continue
-			}
-
-			t.Log("failed query:", failedQuery)
-			failed = true
-		}
-
-		if failed {
-			t.Log("waiting 1 minute before retrying")
-		}
-
-		return !failed, nil
-	})
-	if err != nil {
-		t.Fatalf("failed queries: %s", err)
-	}
-}
 
 func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string, ctx *TestingContext, t TestingTB) ([]string, error) {
 

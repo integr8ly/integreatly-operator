@@ -3,9 +3,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"time"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
@@ -15,8 +12,8 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusConfig "github.com/prometheus/common/config"
-	prometheusModel "github.com/prometheus/common/model"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 // Custom metrics
@@ -344,28 +341,4 @@ func GetApiClient(route string, token prometheusConfig.Secret) (prometheusv1.API
 
 	v1api := prometheusv1.NewAPI(client)
 	return v1api, nil
-}
-
-func vectorQuery(route string, token prometheusConfig.Secret, query string) (float32, prometheusv1.Warnings, error) {
-	v1api, err := GetApiClient(route, token)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, warnings, err := v1api.Query(ctx, query, time.Now())
-	if err != nil {
-		return 0, nil, err
-	}
-
-	resultValue := result.(prometheusModel.Vector)
-
-	if len(resultValue) == 1 {
-		value := float32(resultValue[0].Value)
-		return value, warnings, nil
-	}
-
-	return 0, warnings, fmt.Errorf("vector models length is unexpected: Expected 1; Got %v", len(resultValue))
 }

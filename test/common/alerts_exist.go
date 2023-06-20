@@ -761,6 +761,16 @@ func managedApiCommonExpectedRules(installationName string) []alertsTestRule {
 }
 
 func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
+	prow, err := isInProw(ctx)
+
+	if err != nil {
+		t.Errorf("failed to check if in PROW")
+	}
+
+	if prow {
+		t.Skip("Skipping test as it requires obo to be installed.")
+	}
+
 	platformType := GetPlatformType(ctx)
 
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -776,7 +786,8 @@ func TestIntegreatlyAlertsExist(t TestingTB, ctx *TestingContext) {
 
 	// exec into the prometheus pod
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
-		"prometheus-prometheus-0",
+
+		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {

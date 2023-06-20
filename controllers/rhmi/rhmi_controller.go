@@ -1073,7 +1073,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
-		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
+		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted && productName != rhmiv1alpha1.ProductObservability { // TODO MGDAPI-5833 : remove the product name check
 			for _, crd := range productConfig.GetWatchableCRDs() {
 				namespace := productConfig.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()

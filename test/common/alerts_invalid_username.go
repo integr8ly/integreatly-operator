@@ -8,6 +8,7 @@ import (
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	userv1 "github.com/openshift/api/user/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -253,7 +254,7 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 	}
 	// Ensure openshift users are deleted
 	err = ctx.Client.Delete(goCtx, userLongName)
-	if err != nil {
+	if err != nil && !k8errors.IsNotFound(err) {
 		t.Fatalf("failed to delete openshift user: %s, err: %v", userLongName, err)
 	}
 
@@ -264,7 +265,7 @@ func restoreClusterStatePreTest(t TestingTB, ctx *TestingContext) {
 			Namespace: RHSSOProductNamespace,
 		},
 	})
-	if err != nil {
+	if err != nil && !k8errors.IsNotFound(err) {
 		t.Fatalf("failed to delete Keycloak CR: %s, err: %v", fmt.Sprintf("%s-%s", TestingIDPRealm, userLong2), err)
 	}
 

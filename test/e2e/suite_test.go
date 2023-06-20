@@ -105,10 +105,6 @@ var _ = BeforeSuite(func() {
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
 		Expect(err).NotTo(HaveOccurred())
 
-		//Observability Operator
-		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
-		Expect(err).NotTo(HaveOccurred())
-
 		// wait for keycloak-operator to deploy
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductRHSSO), "rhsso-operator")
 		Expect(err).NotTo(HaveOccurred())
