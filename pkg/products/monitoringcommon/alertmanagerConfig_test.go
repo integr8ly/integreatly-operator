@@ -118,7 +118,7 @@ func TestReconciler_reconcileAlertManagerSecrets(t *testing.T) {
 	alertmanagerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      alertManagerServiceName,
-			Namespace: defaultInstallationNamespace,
+			Namespace: config.GetOboNamespace(installation.Namespace),
 		},
 	}
 

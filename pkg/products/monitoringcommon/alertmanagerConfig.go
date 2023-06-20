@@ -74,7 +74,7 @@ func ReconcileAlertManagerSecrets(ctx context.Context, serverClient k8sclient.Cl
 
 	// Attempt to fetch alert manager service
 	alertManagerService := &corev1.Service{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerServiceName, Namespace: installation.Namespace}, alertManagerService); err != nil {
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerServiceName, Namespace: config.GetOboNamespace(installation.Namespace)}, alertManagerService); err != nil {
 		if k8serr.IsNotFound(err) {
 			log.Infof("alert manager service not available yet, cannot create alert manager config secret", l.Fields{"service": alertManagerServiceName})
 			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
