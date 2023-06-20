@@ -89,7 +89,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 
 func getPrometheusTargets(ctx *TestingContext) (*prometheusv1.TargetsResult, error) {
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		"prometheus-prometheus-0",
+		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
@@ -124,14 +124,19 @@ func getTargets(installType string) map[string][]string {
 func TestRhoamVersionMetricExposed(t TestingTB, ctx *TestingContext) {
 	const rhoamVersionKey = "rhoam_version"
 	// Get the rhoam_version metric from prometheus
-	promQueryRes, err := queryPrometheus(rhoamVersionKey, "prometheus-prometheus-0", ctx)
+	promQueryRes, err := queryPrometheus(rhoamVersionKey, ObservabilityPrometheusPodName, ctx)
 	if err != nil {
-		t.Fatalf("Failed to query prometheus: %w", err)
+		t.Fatalf("Failed to query prometheus: %s", err)
 	}
 	if len(promQueryRes) == 0 {
 		t.Fatalf("No results for metric %s ", rhoamVersionKey)
 	}
-	rhoamVersionValue := promQueryRes[0].Metric["version"].(string)
+	version, ok := promQueryRes[0].Metric["version"]
+	if !ok {
+		t.Fatalf("Unable to find version field in metric")
+	}
+
+	rhoamVersionValue := version.(string)
 	// Semver regex (https://regexr.com/39s32)
 	re := regexp.MustCompile(`^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$`)
 	if !re.MatchString(rhoamVersionValue) {

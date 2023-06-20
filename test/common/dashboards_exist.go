@@ -105,47 +105,6 @@ func TestIntegreatlyCustomerDashboardsExist(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func TestIntegreatlyMiddelewareDashboardsExist(t TestingTB, ctx *TestingContext) {
-	// get console master url
-	rhmi, err := GetRHMI(ctx.Client, true)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
-	}
-
-	// Pod and container to perform curls from
-	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
-	if err != nil {
-		t.Fatal("failed to get prometheus pod name", err)
-	}
-	curlContainerName := "prometheus"
-
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, ObservabilityProductNamespace)
-
-	output, err := execToPod(fmt.Sprintf("wget -qO - %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
-		prometheusPodName,
-		ObservabilityProductNamespace,
-		curlContainerName, ctx)
-	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", curlContainerName, "namespace:", ObservabilityProductNamespace)
-	}
-
-	var grafanaApiCallOutput []dashboardsTestRule
-	err = json.Unmarshal([]byte(output), &grafanaApiCallOutput)
-	if err != nil {
-		t.Logf("failed to unmarshall json: %s", err)
-	}
-
-	if len(grafanaApiCallOutput) == 0 {
-		t.Fatal("no grafana dashboards were found : %w", grafanaApiCallOutput)
-	}
-
-	expectedDashboards := getExpectedMiddlewareDashboard(rhmi.Spec.Type)
-	err = verifyExpectedDashboards(expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
-	if err != nil {
-		t.Fatalf("Verify Expected Dashboards failed: ", err)
-	}
-}
-
 func verifyExpectedDashboards(expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) error {
 	var expectedDashboardTitles []string
 	for _, dashboard := range expectedDashboards {

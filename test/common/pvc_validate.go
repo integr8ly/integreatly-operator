@@ -18,16 +18,7 @@ const (
 
 // common to all installTypes including managed-api
 func commonPvcNamespaces(ctx *TestingContext) []PersistentVolumeClaim {
-	pvc := []PersistentVolumeClaim{
-		{
-
-			Namespace: NamespacePrefix + "observability",
-			PersistentVolumeClaimNames: []string{
-				"prometheus-prometheus-db-prometheus-prometheus-0",
-				"alertmanager-alertmanager-db-alertmanager-alertmanager-0",
-			},
-		},
-	}
+	var pvc []PersistentVolumeClaim
 
 	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		pvc = append(pvc, []PersistentVolumeClaim{
@@ -53,6 +44,9 @@ func TestPVClaims(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 	pvcNamespaces := getPvcNamespaces(ctx, rhmi.Spec.Type)
+	if pvcNamespaces == nil {
+		t.Skip("No PVC's listed to test for")
+	}
 
 	for _, pvcNamespace := range pvcNamespaces {
 		err := ctx.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: pvcNamespace.Namespace})

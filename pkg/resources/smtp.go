@@ -12,13 +12,8 @@ import (
 )
 
 const (
-	alertManagerConfigSecretFileName = "alertmanager.yaml"
-	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
+	alertManagerConfigSecretName = "alertmanager-application-monitoring"
 )
-
-type alertManagerConfig struct {
-	Global map[string]string `yaml:"global"`
-}
 
 // GetSMTPFromAddress returns the correct from address depending on how the operator is configured
 // For addon installs returns the address stated in the alertmanger.yaml or the address configured by the custom SMTP feature in ocm
