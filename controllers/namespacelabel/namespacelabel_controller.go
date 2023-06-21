@@ -19,9 +19,12 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+
 	croAWS "github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
+	"github.com/integr8ly/integreatly-operator/utils"
+
 	"strings"
 	"time"
 
@@ -97,14 +100,14 @@ var (
 func (r *NamespaceLabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Watches exclusively the operator namespace
-		For(&corev1.Namespace{}, builder.WithPredicates(namePredicate(r.operatorNamespace))).
+		For(&corev1.Namespace{}, builder.WithPredicates(utils.NamePredicate(r.operatorNamespace))).
 		// Watches ConfigMaps and enqueues requests to their namespace.
 		// Only watches ConfigMaps with the addon name and in the operator namespace
 		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &EnqueueNamespaceFromObject{}, builder.WithPredicates(
 			predicate.And(
-				namespacePredicate(r.operatorNamespace),
+				utils.NamespacePredicate(r.operatorNamespace),
 				predicate.Or(
-					namePredicate(deletionRHOAM),
+					utils.NamePredicate(deletionRHOAM),
 				),
 			),
 		)).
@@ -335,20 +338,4 @@ func CheckCidrValueAndUpdate(value string, request ctrl.Request, r *NamespaceLab
 		return err
 	}
 	return nil
-}
-
-// namespacePredicate is a reusable predicate to watch only resources on a given
-// namespace
-func namespacePredicate(namespace string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(m k8sclient.Object) bool {
-		return m.GetNamespace() == namespace
-	})
-}
-
-// namePredicate is a reusable predicate to watch only resources on a given
-// name
-func namePredicate(name string) predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(m k8sclient.Object) bool {
-		return m.GetName() == name
-	})
 }

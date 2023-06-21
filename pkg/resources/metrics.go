@@ -44,13 +44,13 @@ import (
 )
 
 const (
-	alertFor5Mins   = "5m"
-	alertFor15Mins  = "15m"
-	alertFor10Mins  = "10m"
-	alertFor20Mins  = "20m"
-	alertFor30Mins  = "30m"
-	alertFor60Mins  = "60m"
-	alertPercentage = "90"
+	alertFor5Mins   prometheusv1.Duration = "5m"
+	alertFor15Mins  prometheusv1.Duration = "15m"
+	alertFor10Mins  prometheusv1.Duration = "10m"
+	alertFor20Mins  prometheusv1.Duration = "20m"
+	alertFor30Mins  prometheusv1.Duration = "30m"
+	alertFor60Mins  prometheusv1.Duration = "60m"
+	alertPercentage prometheusv1.Duration = "90"
 )
 
 var (
@@ -831,7 +831,7 @@ func CreateRedisServiceMaintenanceAlerts(ctx context.Context, client k8sclient.C
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
-func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc, sopURL, alertFor string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
+func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc, sopURL string, alertFor prometheusv1.Duration, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
 	alertGroupName := alertName + "Group"
 	groups := []prometheusv1.RuleGroup{
 		{

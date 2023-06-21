@@ -38,6 +38,8 @@ import (
 	customdomainv1alpha1 "github.com/openshift/custom-domains-operator/api/v1alpha1"
 
 	cloudcredentialv1 "github.com/openshift/api/operator/v1"
+
+	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 )
 
 // AddToSchemes may be used to add all resources defined in the project to a Scheme
@@ -74,5 +76,6 @@ func init() {
 		cloudcredentialv1.Install,
 		noobaav1.SchemeBuilder.AddToScheme,
 		obv1.SchemeBuilder.AddToScheme,
+		addonv1alpha1.AddToScheme,
 	)
 }

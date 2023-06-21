@@ -1,15 +1,16 @@
 domain: integreatly.org
-layout: go.kubebuilder.io/v2
-projectName: managed-api-service
-repo: github.com/integr8ly/integreatly-operator
-resources:
-  - group: integreatly.org
-    controller: true
-    domain: integreatly.org
-    kind: RHMI
-    path: github.com/integr8ly/integreatly-operator/api/v1alpha1
-    version: v1alpha1
-version: "3"
+layout:
+- go.kubebuilder.io/v2
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
+projectName: managed-api-service
+repo: github.com/integr8ly/integreatly-operator
+resources:
+- controller: true
+  domain: integreatly.org
+  group: integreatly.org
+  kind: RHMI
+  path: github.com/integr8ly/integreatly-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

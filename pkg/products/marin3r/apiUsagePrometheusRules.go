@@ -2,10 +2,11 @@ package marin3r
 
 import (
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"regexp"
 	"strconv"
 	"strings"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -147,7 +148,7 @@ func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string,
 	}
 }
 
-func increaseExpr(totalRequestsMetric, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
+func increaseExpr(totalRequestsMetric string, period monitoringv1.Duration, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
 	if percenteageLimit == nil {
 		return nil
 	}
@@ -179,9 +180,9 @@ func (r *Reconciler) getRateLimitInSeconds(rateLimitUnit string, rateLimitReques
 // intervalToMinutes parses an interval string made up from a number and a unit
 // that can be "m" for minutes, or "h" for hours, and returns the value in minutes
 // or an error if the string representation is invalid
-func intervalToMinutes(interval string) (uint32, error) {
+func intervalToMinutes(interval monitoringv1.Duration) (uint32, error) {
 	re := regexp.MustCompile(`(?m)([0-9]+)([a-zA-Z])$`)
-	matches := re.FindAllStringSubmatch(interval, -1)
+	matches := re.FindAllStringSubmatch(string(interval), -1)
 
 	if len(matches) == 0 || len(matches[0]) != 3 {
 		return 0, fmt.Errorf("invalid value for interval %s", interval)
