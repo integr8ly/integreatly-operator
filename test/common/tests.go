@@ -104,6 +104,7 @@ var (
 				{"H34 - Verify 3scale custom SMTP full config", Test3ScaleCustomSMTPFullConfig},
 				{"H35 - Verify 3scale custom SMTP partial config", Test3ScaleCustomSMTPPartialConfig},
 				{"H24 - Verify selfmanaged Apicast", TestSelfmanagedApicast},
+				{"A33 - Verify console links", TestConsoleLinks},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
