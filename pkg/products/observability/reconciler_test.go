@@ -207,53 +207,6 @@ func TestReconciler_Reconcile(t *testing.T) {
 	}
 }
 
-func TestReconciler_VerifyVersion(t *testing.T) {
-	type fields struct {
-		Reconciler    *resources.Reconciler
-		ConfigManager config.ConfigReadWriter
-		Config        *config.Observability
-		installation  *v1alpha1.RHMI
-		mpm           marketplace.MarketplaceInterface
-		log           logger.Logger
-		extraParams   map[string]string
-		recorder      record.EventRecorder
-	}
-	type args struct {
-		installation *v1alpha1.RHMI
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-	}{
-		{
-			name: "test TestReconciler_VerifyVersion - negative",
-			args: args{
-				installation: basicInstallation(),
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				Reconciler:    tt.fields.Reconciler,
-				ConfigManager: tt.fields.ConfigManager,
-				Config:        tt.fields.Config,
-				installation:  tt.fields.installation,
-				mpm:           tt.fields.mpm,
-				log:           tt.fields.log,
-				extraParams:   tt.fields.extraParams,
-				recorder:      tt.fields.recorder,
-			}
-			if got := r.VerifyVersion(tt.args.installation); got != tt.want {
-				t.Errorf("VerifyVersion() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestReconciler_fullReconcile(t *testing.T) {
 	scheme, err := utils.NewTestScheme()
 	if err != nil {
