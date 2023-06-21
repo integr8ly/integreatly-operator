@@ -12,7 +12,6 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"github.com/integr8ly/integreatly-operator/version"
 	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
 	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -46,11 +45,7 @@ func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 }
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
-	return version.VerifyProductAndOperatorVersion(
-		installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductObservability],
-		string(integreatlyv1alpha1.VersionObservability),
-		string(integreatlyv1alpha1.OperatorVersionObservability),
-	)
+	return true
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger, productDeclaration *marketplace.ProductDeclaration) (*Reconciler, error) {

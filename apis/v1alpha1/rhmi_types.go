@@ -75,7 +75,7 @@ var (
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "4.2.1"
+	VersionObservability  ProductVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -91,7 +91,7 @@ var (
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "4.2.1"
+	OperatorVersionObservability  OperatorVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type
 	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
 	// Event reasons to be used when emitting events
