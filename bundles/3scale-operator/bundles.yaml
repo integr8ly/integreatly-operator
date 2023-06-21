@@ -32,4 +32,4 @@ bundles:
     - name: 3scale-operator.v0.11.5-mas
       image: quay.io/integreatly/3scale-bundle:v0.11.5-mas
     - name: 3scale-operator.v0.11.6-mas
-      image: quay.io/integreatly/delorean:3scale-bundle-0.11.6mas-44
+      image: quay.io/integreatly/delorean:3scale-bundle-0.11.6mas-45
