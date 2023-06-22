@@ -1768,8 +1768,8 @@ k8s.io/apiextensions-apiserver v0.18.3/go.mod h1:TMsNGs7DYpMXd+8MOCX8KzPOCx8fnZM
 k8s.io/apiextensions-apiserver v0.18.6/go.mod h1:lv89S7fUysXjLZO7ke783xOwVTm6lKizADfvUM/SS/M=
 k8s.io/apiextensions-apiserver v0.19.0/go.mod h1:znfQxNpjqz/ZehvbfMg5N6fvBJW5Lqu5HVLTJQdP4Fs=
 k8s.io/apiextensions-apiserver v0.22.1/go.mod h1:HeGmorjtRmRLE+Q8dJu6AYRoZccvCMsghwS8XTUYb2c=
-k8s.io/apiextensions-apiserver v0.26.2 h1:/yTG2B9jGY2Q70iGskMf41qTLhL9XeNN2KhI0uDgwko=
-k8s.io/apiextensions-apiserver v0.26.2/go.mod h1:Y7UPgch8nph8mGCuVk0SK83LnS8Esf3n6fUBgew8SH8=
+k8s.io/apiextensions-apiserver v0.26.3 h1:5PGMm3oEzdB1W/FTMgGIDmm100vn7IaUP5er36dB+YE=
+k8s.io/apiextensions-apiserver v0.26.3/go.mod h1:jdA5MdjNWGP+njw1EKMZc64xAT5fIhN6VJrElV3sfpQ=
 k8s.io/apimachinery v0.0.0-20190719140911-bfcf53abc9f8/go.mod h1:sBJWIJZfxLhp7mRsRyuAE/NfKTr3kXGR1iaqg8O0gJo=
 k8s.io/apimachinery v0.17.0/go.mod h1:b9qmWdKlLuU9EBh+06BtLcSf/Mu89rWL33naRxs1uZg=
 k8s.io/apimachinery v0.18.0-beta.2/go.mod h1:9SnR/e11v5IbyPCGbvJViimtJ0SwHG4nfZFjU77ftcA=
@@ -1808,8 +1808,8 @@ k8s.io/component-base v0.18.3/go.mod h1:bp5GzGR0aGkYEfTj+eTY0AN/vXTgkJdQXjNTTVUa
 k8s.io/component-base v0.18.6/go.mod h1:knSVsibPR5K6EW2XOjEHik6sdU5nCvKMrzMt2D4In14=
 k8s.io/component-base v0.19.0/go.mod h1:dKsY8BxkA+9dZIAh2aWJLL/UdASFDNtGYTCItL4LM7Y=
 k8s.io/component-base v0.22.1/go.mod h1:0D+Bl8rrnsPN9v0dyYvkqFfBeAd4u7n77ze+p8CMiPo=
-k8s.io/component-base v0.26.2 h1:IfWgCGUDzrD6wLLgXEstJKYZKAFS2kO+rBRi0p3LqcI=
-k8s.io/component-base v0.26.2/go.mod h1:DxbuIe9M3IZPRxPIzhch2m1eT7uFrSBJUBuVCQEBivs=
+k8s.io/component-base v0.26.3 h1:oC0WMK/ggcbGDTkdcqefI4wIZRYdK3JySx9/HADpV0g=
+k8s.io/component-base v0.26.3/go.mod h1:5kj1kZYwSC6ZstHJN7oHBqcJC6yyn41eR+Sqa/mQc8E=
 k8s.io/gengo v0.0.0-20190128074634-0689ccc1d7d6/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20190822140433-26a664648505/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20200114144118-36b2048a9120/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
@@ -1849,8 +1849,8 @@ k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42/go.mod h1:Z/45zLw8lUo4wdi
 k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280/go.mod h1:+Axhij7bCpeqhklhUTe3xmOn6bWxolyZEeyaFpjGtl4=
 k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a h1:gmovKNur38vgoWfGtP5QOGNOA7ki4n6qNYoFAgMlNvg=
 k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a/go.mod h1:y5VtZWM9sHHc2ZodIH/6SHzXj+TPU5USoA8lcIeKEKY=
-k8s.io/metrics v0.24.0 h1:nsFLJBDgj+B8mXvVBWFxTZBRRDJ8uTdf4C/Gedjy9BA=
-k8s.io/metrics v0.24.0/go.mod h1:jrLlFGdKl3X+szubOXPG0Lf2aVxuV3QJcbsgVRAM6fI=
+k8s.io/metrics v0.26.3 h1:pHI8XtmBbGGdh7bL0s2C3v93fJfxyktHPAFsnRYnDTo=
+k8s.io/metrics v0.26.3/go.mod h1:NNnWARAAz+ZJTs75Z66fJTV7jHcVb3GtrlDszSIr3fE=
 k8s.io/utils v0.0.0-20191114184206-e782cd3c129f/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
 k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
 k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=
