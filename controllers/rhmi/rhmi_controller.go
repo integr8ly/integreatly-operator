@@ -17,12 +17,9 @@ limitations under the License.
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -34,10 +31,8 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	prometheusConfig "github.com/prometheus/common/config"
 
-	"github.com/go-openapi/strfmt"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"github.com/prometheus/alertmanager/api/v2/models"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
@@ -508,30 +503,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	return retryRequeue, err
 }
 
-func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config, configManager *config.Manager) error {
-
-	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
-	if err != nil {
-		return fmt.Errorf("error getting alerting namespaces to silence: %s", err)
-	}
-
-	for namespace, route := range alertingNamespaces {
-		for _, alert := range alertsToSilence {
-			exists, err := r.silenceExists(namespace, route, rc, alert)
-			if err != nil {
-				log.Error("Error checking for silence : %w", err)
-			}
-			if !exists {
-				err := r.silenceAlert(namespace, route, rc, alert)
-				if err != nil {
-					log.Error("error silencing alert : %w", err)
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) (map[string]string, error) {
 
 	var alertingNamespaces = map[string]string{
@@ -547,128 +518,6 @@ func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, c
 	alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
 
 	return alertingNamespaces, nil
-}
-
-func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.Config, alertName string) error {
-
-	endpoint := "/api/v1/silences"
-	startsAt := strfmt.DateTime(time.Now())
-	endsAt := strfmt.DateTime(time.Now().Add(time.Hour * 1))
-
-	matchers := models.Matchers{}
-	matchers = append(matchers, &models.Matcher{
-		IsEqual: nil,
-		IsRegex: &[]bool{false}[0],
-		Name:    &[]string{"alertname"}[0],
-		Value:   &alertName,
-	})
-
-	comment := "Silence alert due to uninstall"
-	createdBy := "Integreatly Operator"
-	silence := models.Silence{
-		Comment:   &comment,
-		CreatedBy: &createdBy,
-		EndsAt:    &endsAt,
-		Matchers:  matchers,
-		StartsAt:  &startsAt,
-	}
-
-	url, err := r.getURLFromRoute(route, namespace, rc)
-	if err != nil {
-		return fmt.Errorf("error getting route : %w", err)
-
-	}
-	url = url + endpoint
-
-	var bearer = "Bearer " + r.restConfig.BearerToken
-
-	reqBodyBytes := new(bytes.Buffer)
-	err = json.NewEncoder(reqBodyBytes).Encode(silence)
-	if err != nil {
-		return fmt.Errorf("error encoding silence : %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, reqBodyBytes)
-	if err != nil {
-		return fmt.Errorf("error on request : %w", err)
-	}
-
-	req.Header.Add("Authorization", bearer)
-	req.Header.Add("Content-Type", "application/json")
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error on response : %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("silenceAlert: Body Close error : ", err)
-		}
-	}(resp.Body)
-
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("unable to read body : %w", err)
-	}
-	return nil
-}
-
-func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.Config, alert string) (bool, error) {
-	silenceExists := false
-	endpoint := "/api/v2/silences"
-
-	url, err := r.getURLFromRoute(route, namespace, rc)
-	if err != nil {
-		return false, err
-	}
-	url = url + endpoint
-
-	var bearer = "Bearer " + r.restConfig.BearerToken
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, fmt.Errorf("error on request : %w", err)
-	}
-
-	req.Header.Add("Authorization", bearer)
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("error on response : %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("silenceExisting: Body Close error : ", err)
-		}
-	}(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("unable to read body : %w", err)
-	}
-
-	var existingSilences models.GettableSilences
-
-	err = json.Unmarshal(body, &existingSilences)
-	if err != nil {
-		return false, fmt.Errorf("failed to unmarshal json: %w", err)
-	}
-
-	for _, silence := range existingSilences {
-		if *silence.Status.State == "active" && *silence.Silence.Matchers[0].Name == "alertname" && *silence.Silence.Matchers[0].Value == alert {
-			silenceExists = true
-		}
-	}
-
-	return silenceExists, nil
 }
 
 func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
@@ -780,9 +629,6 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 			return ctrl.Result{}, err
 		}
 	}
-
-	log.Info("Creating Silence for alerts")
-	err = r.createSilence(installation, r.restConfig, configManager)
 
 	if err != nil {
 		log.Error("error creating silence", err)
