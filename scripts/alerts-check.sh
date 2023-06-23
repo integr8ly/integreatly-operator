@@ -8,7 +8,23 @@
 # - jq
 # - oc (logged in at the cmd line in order to get the bearer token)
 # VARIABLES
+
+# wait for RHMI CR to appear and have namespace prefix populated
+until oc get RHMIs --all-namespaces -o jsonpath='{.items[0].spec.namespacePrefix}' &> /dev/null
+do
+    echo "Waiting for RHMI CR with namespace prefix set to appear on cluster. Next check to be in 1 minute."
+    sleep 60
+done
+
 NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-$(oc get RHMIs --all-namespaces -o jsonpath='{.items[0].spec.namespacePrefix}')}"
+
+# wait for monitoring route to appear and have host populated
+until oc get route prometheus -n ${NAMESPACE_PREFIX}observability -o=jsonpath='{.spec.host}' &> /dev/null
+do
+    echo "Waiting for Prometheus route in ${NAMESPACE_PREFIX}observability namespace to appear on cluster. Next check to be in 1 minute."
+    sleep 60
+done
+
 RHSSO="rhsso"
 USER_SSO="user-sso"
 THREESCALE="3scale"
