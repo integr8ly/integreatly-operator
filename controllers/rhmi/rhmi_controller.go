@@ -90,9 +90,6 @@ const (
 var (
 	productVersionMismatchFound bool
 	log                         = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "installation_controller"})
-	alertsToSilence             = []string{
-		"KeycloakInstanceNotAvailable",
-	}
 )
 
 // RHMIReconciler reconciles a RHMI object
