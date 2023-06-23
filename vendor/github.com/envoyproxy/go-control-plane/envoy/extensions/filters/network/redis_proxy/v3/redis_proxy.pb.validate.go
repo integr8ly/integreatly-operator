@@ -168,6 +168,40 @@ func (m *RedisProxy) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetDownstreamAuthPasswords() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RedisProxyValidationError{
+						field:  fmt.Sprintf("DownstreamAuthPasswords[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RedisProxyValidationError{
+						field:  fmt.Sprintf("DownstreamAuthPasswords[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return RedisProxyValidationError{
+					field:  fmt.Sprintf("DownstreamAuthPasswords[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	for idx, item := range m.GetFaults() {
 		_, _ = idx, item
 
@@ -504,6 +538,35 @@ func (m *RedisProxy_ConnPoolSettings) validate(all bool) error {
 	// no validation rules for EnableHashtagging
 
 	// no validation rules for EnableRedirection
+
+	if all {
+		switch v := interface{}(m.GetDnsCacheConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RedisProxy_ConnPoolSettingsValidationError{
+					field:  "DnsCacheConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RedisProxy_ConnPoolSettingsValidationError{
+					field:  "DnsCacheConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDnsCacheConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RedisProxy_ConnPoolSettingsValidationError{
+				field:  "DnsCacheConfig",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for MaxBufferSizeBeforeFlush
 

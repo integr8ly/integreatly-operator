@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/3scale-ops/marin3r/pkg/envoy"
+	envoyserializer "github.com/3scale-ops/marin3r/pkg/envoy/serializer"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -167,8 +169,8 @@ func (ec *EnvoyConfig) CreateEnvoyConfig(ctx context.Context, client k8sclient.C
 
 	_, err = controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, installation)
-		serialization := "yaml"
-		envoyAPIVersion := EnvoyAPIVersion
+		serialization := envoyserializer.YAML
+		envoyAPIVersion := envoy.APIv3
 		envoyconfig.Spec.NodeID = ec.nodeID
 		envoyconfig.Spec.EnvoyAPI = &envoyAPIVersion
 		envoyconfig.Spec.Serialization = &serialization

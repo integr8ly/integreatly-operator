@@ -3,13 +3,13 @@ package monitoringspec
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/version"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	rbac "k8s.io/api/rbac/v1"
@@ -380,7 +380,7 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 		}
 		roleBinding.RoleRef = rbac.RoleRef{
 			APIGroup: roleRefAPIGroup,
-			Kind:     bundle.RoleKind,
+			Kind:     "Role",
 			Name:     roleRefName,
 		}
 		return nil

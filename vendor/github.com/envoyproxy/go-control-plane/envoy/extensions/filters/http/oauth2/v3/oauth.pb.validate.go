@@ -137,9 +137,20 @@ func (m *OAuth2Credentials) validate(all bool) error {
 		}
 	}
 
-	switch m.TokenFormation.(type) {
-
+	oneofTokenFormationPresent := false
+	switch v := m.TokenFormation.(type) {
 	case *OAuth2Credentials_HmacSecret:
+		if v == nil {
+			err := OAuth2CredentialsValidationError{
+				field:  "TokenFormation",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		oneofTokenFormationPresent = true
 
 		if m.GetHmacSecret() == nil {
 			err := OAuth2CredentialsValidationError{
@@ -182,6 +193,9 @@ func (m *OAuth2Credentials) validate(all bool) error {
 		}
 
 	default:
+		_ = v // ensures v is used
+	}
+	if !oneofTokenFormationPresent {
 		err := OAuth2CredentialsValidationError{
 			field:  "TokenFormation",
 			reason: "value is required",
@@ -190,7 +204,6 @@ func (m *OAuth2Credentials) validate(all bool) error {
 			return err
 		}
 		errors = append(errors, err)
-
 	}
 
 	if len(errors) > 0 {
@@ -500,6 +513,17 @@ func (m *OAuth2Config) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if _, ok := OAuth2Config_AuthType_name[int32(m.GetAuthType())]; !ok {
+		err := OAuth2ConfigValidationError{
+			field:  "AuthType",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if len(errors) > 0 {

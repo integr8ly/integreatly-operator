@@ -22,7 +22,6 @@ import (
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -120,7 +119,7 @@ func createRoleBinding(name, namespace string) *rbac.RoleBinding {
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: roleRefAPIGroup,
-			Kind:     bundle.RoleKind,
+			Kind:     "Role",
 			Name:     roleRefName,
 		},
 	}

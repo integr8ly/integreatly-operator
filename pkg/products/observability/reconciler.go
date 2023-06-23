@@ -20,7 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/version"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observability "github.com/redhat-developer/observability-operator/v4/api/v1"
 	v1 "k8s.io/api/core/v1"
@@ -1068,7 +1067,7 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context, serverClient k8sc
 		}
 		roleBinding.RoleRef = rbac.RoleRef{
 			APIGroup: roleApiGroup,
-			Kind:     bundle.RoleKind,
+			Kind:     "Role",
 			Name:     roleName,
 		}
 		return nil
@@ -1121,7 +1120,7 @@ func (r *Reconciler) reconcileClusterRoleBinding(ctx context.Context, serverClie
 		}
 		clusterRoleBinding.RoleRef = rbac.RoleRef{
 			APIGroup: roleApiGroup,
-			Kind:     bundle.ClusterRoleKind,
+			Kind:     "ClusterRole",
 			Name:     roleName,
 		}
 

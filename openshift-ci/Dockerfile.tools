@@ -56,7 +56,7 @@ RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.
     && yum install -y --setopt=tsflags=nodocs ./google-chrome-stable_current_*.rpm
 
 # install gosec
-RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $GOPATH/bin v2.11.0
+RUN curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $GOPATH/bin v2.16.0
 
 # install promtool
 RUN wget https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz \

@@ -50,8 +50,11 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //			SchemeFunc: func() *runtime.Scheme {
 //				panic("mock out the Scheme method")
 //			},
-//			StatusFunc: func() k8sclient.StatusWriter {
+//			StatusFunc: func() k8sclient.SubResourceWriter {
 //				panic("mock out the Status method")
+//			},
+//			SubResourceFunc: func(subResource string) k8sclient.SubResourceClient {
+//				panic("mock out the SubResource method")
 //			},
 //			UpdateFunc: func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error {
 //				panic("mock out the Update method")
@@ -94,7 +97,10 @@ type SigsClientInterfaceMock struct {
 	SchemeFunc func() *runtime.Scheme
 
 	// StatusFunc mocks the Status method.
-	StatusFunc func() k8sclient.StatusWriter
+	StatusFunc func() k8sclient.SubResourceWriter
+
+	// SubResourceFunc mocks the SubResource method.
+	SubResourceFunc func(subResource string) k8sclient.SubResourceClient
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(ctx context.Context, obj k8sclient.Object, opts ...k8sclient.UpdateOption) error
@@ -174,6 +180,11 @@ type SigsClientInterfaceMock struct {
 		// Status holds details about calls to the Status method.
 		Status []struct {
 		}
+		// SubResource holds details about calls to the SubResource method.
+		SubResource []struct {
+			// SubResource is the subResource argument value.
+			SubResource string
+		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
 			// Ctx is the ctx argument value.
@@ -203,6 +214,7 @@ type SigsClientInterfaceMock struct {
 	lockRESTMapper    sync.RWMutex
 	lockScheme        sync.RWMutex
 	lockStatus        sync.RWMutex
+	lockSubResource   sync.RWMutex
 	lockUpdate        sync.RWMutex
 	lockWatch         sync.RWMutex
 }
@@ -537,7 +549,7 @@ func (mock *SigsClientInterfaceMock) SchemeCalls() []struct {
 }
 
 // Status calls StatusFunc.
-func (mock *SigsClientInterfaceMock) Status() k8sclient.StatusWriter {
+func (mock *SigsClientInterfaceMock) Status() k8sclient.SubResourceWriter {
 	if mock.StatusFunc == nil {
 		panic("SigsClientInterfaceMock.StatusFunc: method is nil but SigsClientInterface.Status was just called")
 	}
@@ -560,6 +572,38 @@ func (mock *SigsClientInterfaceMock) StatusCalls() []struct {
 	mock.lockStatus.RLock()
 	calls = mock.calls.Status
 	mock.lockStatus.RUnlock()
+	return calls
+}
+
+// SubResource calls SubResourceFunc.
+func (mock *SigsClientInterfaceMock) SubResource(subResource string) k8sclient.SubResourceClient {
+	if mock.SubResourceFunc == nil {
+		panic("SigsClientInterfaceMock.SubResourceFunc: method is nil but SigsClientInterface.SubResource was just called")
+	}
+	callInfo := struct {
+		SubResource string
+	}{
+		SubResource: subResource,
+	}
+	mock.lockSubResource.Lock()
+	mock.calls.SubResource = append(mock.calls.SubResource, callInfo)
+	mock.lockSubResource.Unlock()
+	return mock.SubResourceFunc(subResource)
+}
+
+// SubResourceCalls gets all the calls that were made to SubResource.
+// Check the length with:
+//
+//	len(mockedSigsClientInterface.SubResourceCalls())
+func (mock *SigsClientInterfaceMock) SubResourceCalls() []struct {
+	SubResource string
+} {
+	var calls []struct {
+		SubResource string
+	}
+	mock.lockSubResource.RLock()
+	calls = mock.calls.SubResource
+	mock.lockSubResource.RUnlock()
 	return calls
 }
 
