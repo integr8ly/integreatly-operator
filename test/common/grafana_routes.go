@@ -1,16 +1,9 @@
 package common
 
 import (
+	"context"
 	"fmt"
-	"net/http"
-	"net/http/httputil"
-	"strings"
-	"time"
-
-	"github.com/integr8ly/integreatly-operator/utils"
-	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
-	"golang.org/x/net/context"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

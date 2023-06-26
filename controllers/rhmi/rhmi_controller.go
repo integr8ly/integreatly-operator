@@ -26,13 +26,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/strfmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	prometheusConfig "github.com/prometheus/common/config"
 
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
