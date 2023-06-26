@@ -31,8 +31,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 )
 
 const (
@@ -406,14 +404,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
-	if testResources.RunningInProw(r.installation) { // TODO add a bit marker when the second PR is merged.
+	if !resources.IsInProw(r.installation) { // TODO add a bit marker when the second PR is merged.
 
 		phase, err := r.configDataSource(ctx, client)
 		if err != nil {
 			return phase, err
 		}
 	} else {
-		r.log.Warningf("Grafana data source on configured, running in PROW", l.Fields{"namespace": r.Config.GetNamespace()})
+		r.log.Warningf("Grafana data source not configured, running in PROW", l.Fields{"namespace": r.Config.GetNamespace()})
 	}
 
 	return r.reconcileServiceAccount(ctx, client)
