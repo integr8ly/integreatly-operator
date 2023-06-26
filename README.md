@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/gh/integr8ly/integreatly-operator/branch/master/graph/badge.svg)](https://codecov.io/gh/integr8ly/integreatly-operator)
-# Integreatly Operator
+# Integreatly Operator - Test
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling managed products.
 
