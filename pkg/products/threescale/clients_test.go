@@ -3,11 +3,12 @@ package threescale
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"math/rand"
 	"net/http"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -20,6 +21,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
+
+	coreosv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
