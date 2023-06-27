@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,48 +17,10 @@ type dashboardsTestRule struct {
 }
 
 // Common to all install types including managed api
-var commonExpectedDashboards = []dashboardsTestRule{
-	{
-		Title: "Endpoints Detailed",
-	},
-	{
-		Title: "Endpoints Report",
-	},
-	{
-		Title: "Endpoints Summary",
-	},
-	{
-		Title: "Resource Usage By Namespace",
-	},
-	{
-		Title: "Resource Usage By Pod",
-	},
-	{
-		Title: "Resource Usage for Cluster",
-	},
-	{
-		Title: "Critical SLO summary",
-	},
-	{
-		Title: "Keycloak Metrics",
-	},
-	{
-		Title: "CRO Resources",
-	},
-	{
-		Title: "SLO SSO Availability - 5xx HAProxy Errors",
-	},
-}
 
 var customerRHOAMDashboards = []dashboardsTestRule{
 	{
 		Title: "Rate Limiting",
-	},
-}
-
-var multitenantRHOAMDashboards = []dashboardsTestRule{
-	{
-		Title: "Multitenancy Detailed",
 	},
 }
 
@@ -148,13 +108,6 @@ func allowOnlyWorkLoadDashboard(unexpected []string) bool {
 
 func getExpectedCustomerDashboard(installType string) []dashboardsTestRule {
 	return customerRHOAMDashboards
-}
-
-func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
-		return append(commonExpectedDashboards, multitenantRHOAMDashboards...)
-	}
-	return commonExpectedDashboards
 }
 
 func getGrafanaPods(t TestingTB, ctx *TestingContext, ns string) corev1.PodList {

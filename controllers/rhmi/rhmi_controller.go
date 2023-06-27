@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -30,9 +29,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-
-	routev1 "github.com/openshift/api/route/v1"
-	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -502,36 +498,6 @@ func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, c
 	alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
 
 	return alertingNamespaces, nil
-}
-
-func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
-
-	client, err := appsv1Client.NewForConfig(rc)
-	if err != nil {
-		return "", fmt.Errorf("unable to create rest client %s", err)
-	}
-	client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
-
-	host := ""
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeName,
-			Namespace: namespace,
-		},
-	}
-
-	request := client.RESTClient().Get().Resource("routes").Name(route.Name).Namespace(route.Namespace).RequestURI(routeRequestUrl).Do(context.TODO())
-	requestBody, err := request.Raw()
-
-	if err != nil {
-		return "", fmt.Errorf("unable to find route %s Route probably already removed", err)
-	}
-	err = json.Unmarshal(requestBody, route)
-	if err != nil {
-		return "", fmt.Errorf("unable to unmarshal response body %s", err)
-	}
-	host = "https://" + route.Spec.Host
-	return host, nil
 }
 
 func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHMI) {

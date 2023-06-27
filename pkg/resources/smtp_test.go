@@ -5,7 +5,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	"github.com/integr8ly/integreatly-operator/utils"
 
 	"testing"
 
