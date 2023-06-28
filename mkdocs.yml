@@ -16,6 +16,7 @@ nav:
       - Identity Provider Setup: installation_guides/identity_provider_setup.md
       - Additional configuration: installation_guides/additional_configuration.md
       - Validation of installation: installation_guides/validation_of_installation.md
+      - Setting Up OBO with RHOAM: observability/obo_setup.md
     - Products:
       - Adding new product: products/adding_new_product.md
       - Configuring Custom Domain: products/custom_domain.md
