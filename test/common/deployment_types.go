@@ -54,14 +54,6 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "cloud-resource-operator", ExpectedReplicas: 1},
 			},
 		},
-		"observabilityDeployment": {
-			Name: ObservabilityProductNamespace,
-			Products: []Product{
-				{Name: "grafana-deployment", ExpectedReplicas: 1},
-				{Name: "grafana-operator", ExpectedReplicas: 1},
-				{Name: "prometheus-operator", ExpectedReplicas: 1},
-			},
-		},
 		"rhmiOperatorDeploymentForManagedApi": {
 			Name:     RHOAMOperatorNamespace,
 			Products: []Product{},
@@ -372,13 +364,6 @@ func TestStatefulSetsExpectedReplicas(t TestingTB, ctx *TestingContext) {
 		rhssoUserExpectedReplicas = int32(keycloakCR.Spec.Instances)
 	}
 	statefulSets := []Namespace{
-		{
-			Name: ObservabilityProductNamespace,
-			Products: []Product{
-				{Name: "alertmanager-alertmanager", ExpectedReplicas: 1},
-				{Name: "prometheus-prometheus", ExpectedReplicas: 1},
-			},
-		},
 		{
 			Name: NamespacePrefix + "rhsso",
 			Products: []Product{

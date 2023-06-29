@@ -28,7 +28,6 @@ var (
 		},
 		{
 			[]TestCase{
-				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 				{"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
@@ -80,12 +79,9 @@ var (
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 				{"C10B - Verify Prometheus blackbox targets", TestAdditionalBlackboxTargets},
 				{"C08B - Verify alert links to SOPs", TestSOPUrls},
-				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
-				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
-				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
-				{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
+				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},

@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 
@@ -11,7 +12,6 @@ import (
 
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
-	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"

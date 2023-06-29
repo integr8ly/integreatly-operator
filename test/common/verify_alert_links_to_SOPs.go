@@ -30,7 +30,7 @@ func TestSOPUrls(t TestingTB, ctx *TestingContext) {
 	validateGitlabToken(t, testUrl)
 
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/rules",
-		"prometheus-prometheus-0",
+		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus", ctx)
 	if err != nil {

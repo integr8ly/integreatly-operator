@@ -404,14 +404,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+	if !resources.IsInProw(r.installation) { // TODO add a bit marker when the second PR is merged.
+
+		phase, err := r.configDataSource(ctx, client)
+		if err != nil {
+			return phase, err
+		}
+	} else {
+		r.log.Warningf("Grafana data source not configured, running in PROW", l.Fields{"namespace": r.Config.GetNamespace()})
 	}
 
-	prometheusService := &corev1.Service{}
+	return r.reconcileServiceAccount(ctx, client)
+}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: observabilityConfig.GetPrometheusOverride(), Namespace: observabilityConfig.GetNamespace()}, prometheusService)
+func (r *Reconciler) configDataSource(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	prometheusService := &corev1.Service{}
+	namespace := config.GetOboNamespace(r.installation.Namespace)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "rhoam-prometheus", Namespace: namespace}, prometheusService)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -421,12 +430,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	var upstreamPort int32
 	for _, port := range prometheusService.Spec.Ports {
-		if port.Name == "upstream" {
+		if port.Name == "web" {
 			upstreamPort = port.Port
 		}
 	}
 	url := fmt.Sprintf("http://%s.%s.svc:%d", prometheusService.Name, prometheusService.Namespace, upstreamPort)
-
 	dataSourceCR := &grafanav1alpha1.GrafanaDataSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-prometheus",
@@ -434,7 +442,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		},
 	}
 
-	status, err = controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
+	status, err := controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(dataSourceCR, r.installation)
 
 		dataSourceCR.Spec = grafanav1alpha1.GrafanaDataSourceSpec{
@@ -456,14 +464,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		dataSourceCR.Spec.Name = "customer.yaml"
 		return nil
 	})
-
+	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
-	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
-
-	return r.reconcileServiceAccount(ctx, client)
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileServiceAccount(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

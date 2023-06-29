@@ -3,12 +3,11 @@ package monitoringcommon
 import (
 	"bytes"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
-
-	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 
 	"github.com/ghodss/yaml"
 

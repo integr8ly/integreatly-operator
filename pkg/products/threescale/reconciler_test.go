@@ -3884,21 +3884,10 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:        "Error getting installation CR",
-			want:        integreatlyv1alpha1.PhaseFailed,
-			wantErr:     true,
-			errContains: "nil pointer passed for installation",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: fake.NewClientBuilder().Build(),
-			},
-			fields: fields{},
-		},
-		{
 			name:        "Error getting existing SMTP from Address",
 			want:        integreatlyv1alpha1.PhaseFailed,
 			wantErr:     true,
-			errContains: "cannot unmarshal !!str",
+			errContains: "deploymentconfigs.apps.openshift.io \"\" not found",
 			args: args{
 				ctx: context.TODO(),
 				serverClient: fake.NewClientBuilder().WithRuntimeObjects(&corev1.Secret{
@@ -3927,6 +3916,10 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 							},
 						}, nil
 					}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				appsv1Client: fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1(),
 			},
 		},
 		{

@@ -26,7 +26,7 @@ var (
 				Name: integreatlyv1alpha1.InstallStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
-					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability},
+					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability}, // TODO MGDAPI-5833
 					integreatlyv1alpha1.ProductRHSSO:          {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.Product3Scale:         {Name: integreatlyv1alpha1.Product3Scale},
 					integreatlyv1alpha1.ProductMarin3r:        {Name: integreatlyv1alpha1.ProductMarin3r},
@@ -51,12 +51,6 @@ var (
 				},
 			},
 			{
-				Name: integreatlyv1alpha1.UninstallObservabilityStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
-				},
-			},
-			{
 				Name: integreatlyv1alpha1.UninstallBootstrap,
 			},
 		},
@@ -70,7 +64,7 @@ var (
 				Name: integreatlyv1alpha1.InstallStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
-					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability},
+					integreatlyv1alpha1.ProductObservability:  {Name: integreatlyv1alpha1.ProductObservability}, // TODO MGDAPI-5833
 					integreatlyv1alpha1.ProductRHSSO:          {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.Product3Scale:         {Name: integreatlyv1alpha1.Product3Scale},
 					integreatlyv1alpha1.ProductRHSSOUser:      {Name: integreatlyv1alpha1.ProductRHSSOUser},
@@ -94,12 +88,6 @@ var (
 				Name: integreatlyv1alpha1.UninstallCloudResourcesStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
-				},
-			},
-			{
-				Name: integreatlyv1alpha1.UninstallObservabilityStage,
-				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductObservability: {Name: integreatlyv1alpha1.ProductObservability},
 				},
 			},
 			{
