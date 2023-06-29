@@ -20,11 +20,11 @@ Feel free to consult the [Epic Brief](https://docs.google.com/document/d/1HEk2D8
     ```bash
     oc port-forward services/prometheus-operated -n redhat-rhoam-operator 9090:9090
     ```
-2. The Prometheus UI can be reached by directing your browser to http://127.0.0.1:9090/graph
+2. The Prometheus UI can be reached by directing your browser to [http://127.0.0.1:9090/graph](http://127.0.0.1:9090/graph)
 
 ## Access the Alertmanager UI
 1. OBO currently doesn't support the Alertmanager UI, however it can still be accessed by setting up port forwarding on your local machine:
     ```bash
     oc port-forward services/alertmanager-operated -n redhat-rhoam-operator 9093:9093
     ```
-2. The Alertmanager UI can be reached by directing your browser to http://127.0.0.1:9093/#/status
+2. The Alertmanager UI can be reached by directing your browser to [http://127.0.0.1:9093/#/status](http://127.0.0.1:9093/#/status)
