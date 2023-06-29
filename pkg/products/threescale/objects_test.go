@@ -682,13 +682,13 @@ var systemSidekiqDep = &appsv1.DeploymentConfig{
 	Status: appsv1.DeploymentConfigStatus{},
 }
 
-var systemSphinx = &appsv1.DeploymentConfig{
+var systemSearchd = &appsv1.DeploymentConfig{
 	TypeMeta: metav1.TypeMeta{},
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "system-sphinx",
+		Name:      "system-searchd",
 		Namespace: nsPrefix + defaultInstallationNamespace,
 		Labels: map[string]string{
-			"app": "system-sphinx",
+			"app": "system-searchd",
 		},
 	},
 	Spec: appsv1.DeploymentConfigSpec{
@@ -850,7 +850,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	systemMemcache.Namespace = threeScaleInstallationNamespace
 	systemSidekiq.Namespace = threeScaleInstallationNamespace
 	systemSidekiqDep.Namespace = threeScaleInstallationNamespace
-	systemSphinx.Namespace = threeScaleInstallationNamespace
+	systemSearchd.Namespace = threeScaleInstallationNamespace
 	zync.Namespace = threeScaleInstallationNamespace
 	zyncDatabase.Namespace = threeScaleInstallationNamespace
 	zyncQue.Namespace = threeScaleInstallationNamespace
@@ -897,7 +897,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		systemAppDep,
 		systemMemcache,
 		systemSidekiqDep,
-		systemSphinx,
+		systemSearchd,
 		zync,
 		zyncDatabase,
 		zyncQue,

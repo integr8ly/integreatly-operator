@@ -124,7 +124,7 @@ var (
 		"system-app",
 		"system-memcache",
 		"system-sidekiq",
-		"system-sphinx",
+		"system-searchd",
 		"zync",
 		"zync-database",
 		"zync-que",
@@ -560,20 +560,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)
-	r.log.Infof("reconcileDeploymentConfigs", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
-		return phase, err
-	}
-
-	phase, err = r.changesDeploymentConfigsEnvVar(ctx, serverClient)
-	r.log.Infof("changesDeploymentConfigsEnvVar", l.Fields{"phase": phase})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to change deployment config envvars", err)
-		return phase, err
-	}
-
 	phase, err = r.syncInvitationEmail(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		if err != nil {
@@ -801,6 +787,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					"threescale_component":         "system",
 					"threescale_component_element": "app",
 				}),
+				PriorityClassName: &r.installation.Spec.PriorityClassName,
 			}
 			apim.Spec.System.SidekiqSpec = &threescalev1.SystemSidekiqSpec{
 				Replicas:  apim.Spec.System.SidekiqSpec.Replicas,
@@ -809,6 +796,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					"threescale_component":         "system",
 					"threescale_component_element": "sidekiq",
 				}),
+				PriorityClassName: &r.installation.Spec.PriorityClassName,
 			}
 		} else {
 			apim.Spec.System = &threescalev1.SystemSpec{
@@ -818,12 +806,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "system",
 						"threescale_component_element": "app",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				SidekiqSpec: &threescalev1.SystemSidekiqSpec{
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "system",
 						"threescale_component_element": "sidekiq",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		}
@@ -845,6 +835,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					"threescale_component":         "apicast",
 					"threescale_component_element": "staging",
 				}),
+				PriorityClassName: &r.installation.Spec.PriorityClassName,
 			}
 
 			apim.Spec.Apicast.ProductionSpec = &threescalev1.ApicastProductionSpec{
@@ -855,6 +846,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					"threescale_component":         "apicast",
 					"threescale_component_element": "production",
 				}),
+				PriorityClassName: &r.installation.Spec.PriorityClassName,
 			}
 		} else {
 			apim.Spec.Apicast = &threescalev1.ApicastSpec{
@@ -863,12 +855,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "apicast",
 						"threescale_component_element": "staging",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				ProductionSpec: &threescalev1.ApicastProductionSpec{
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "apicast",
 						"threescale_component_element": "production",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		}
@@ -882,6 +876,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "backend",
 						"threescale_component_element": "cron",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				ListenerSpec: &threescalev1.BackendListenerSpec{
 					Replicas:  apim.Spec.Backend.ListenerSpec.Replicas,
@@ -890,6 +885,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "backend",
 						"threescale_component_element": "listener",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				WorkerSpec: &threescalev1.BackendWorkerSpec{
 					Replicas:  apim.Spec.Backend.WorkerSpec.Replicas,
@@ -898,6 +894,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "backend",
 						"threescale_component_element": "worker",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		} else {
@@ -907,18 +904,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "backend",
 						"threescale_component_element": "cron",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				ListenerSpec: &threescalev1.BackendListenerSpec{
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "backend",
 						"threescale_component_element": "listener",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				WorkerSpec: &threescalev1.BackendWorkerSpec{
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "backend",
 						"threescale_component_element": "worker",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		}
@@ -932,6 +932,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				QueSpec: &threescalev1.ZyncQueSpec{
 					Replicas:  apim.Spec.Zync.QueSpec.Replicas,
@@ -940,6 +941,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync-que",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		} else {
@@ -949,12 +951,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 				QueSpec: &threescalev1.ZyncQueSpec{
 					Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
 						"threescale_component":         "zync",
 						"threescale_component_element": "zync-que",
 					}),
+					PriorityClassName: &r.installation.Spec.PriorityClassName,
 				},
 			}
 		}
@@ -3058,121 +3062,6 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 	err := serverClient.Delete(ctx, cl)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error removing 3Scale console link, %s", err)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-
-	for _, name := range threeScaleDeploymentConfigs {
-		deploymentConfig := &appsv1.DeploymentConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: productNamespace,
-			},
-		}
-
-		podPriorityMutation := resources.MutatePodPriority(r.installation.Spec.PriorityClassName)
-
-		phase, err := resources.UpdatePodTemplateIfExists(
-			ctx,
-			serverClient,
-			resources.SelectFromDeploymentConfig,
-			resources.AllMutationsOf(
-				resources.MutateZoneTopologySpreadConstraints("app"),
-				podPriorityMutation,
-			),
-			deploymentConfig,
-		)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) changesDeploymentConfigsEnvVar(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-
-	for _, name := range threeScaleDeploymentConfigs {
-		deploymentConfig := &appsv1.DeploymentConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: r.Config.GetNamespace(),
-			},
-		}
-
-		objKey := k8sclient.ObjectKeyFromObject(deploymentConfig)
-		if err := serverClient.Get(ctx, objKey, deploymentConfig); err != nil {
-			if k8serr.IsNotFound(err) {
-				return integreatlyv1alpha1.PhaseInProgress, nil
-			}
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		if name == systemAppDCName {
-			envVars := make(map[string]corev1.EnvVarSource)
-			backendListenerServiceEndpoint := &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "backend-listener",
-					},
-					Key: "service_endpoint",
-				},
-			}
-
-			backendListenerRoute := &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "backend-listener",
-					},
-					Key: "route_endpoint",
-				},
-			}
-			envVars["APICAST_BACKEND_ROOT_ENDPOINT"] = *backendListenerRoute
-			envVars["BACKEND_ROUTE"] = *backendListenerServiceEndpoint
-			envVars["BACKEND_PUBLIC_URL"] = *backendListenerRoute
-
-			// Have to use the index when iterating here because when using range go creates a copy of the variable
-			// so any update will be applied to the copy
-			for envVarName := range envVars {
-				foundEnv := false
-				envVarValue := envVars[envVarName]
-
-				if deploymentConfig.Spec.Strategy.RollingParams != nil {
-					for i, env := range deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env {
-						if env.Name == envVarName {
-							deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env[i].Value = ""
-							deploymentConfig.Spec.Strategy.RollingParams.Pre.ExecNewPod.Env[i].ValueFrom = &envVarValue
-						}
-					}
-				}
-
-				for i, container := range deploymentConfig.Spec.Template.Spec.Containers {
-					for j, env := range container.Env {
-						if env.Name == envVarName {
-							foundEnv = true
-							r.log.Infof("updating env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
-							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].Value = ""
-							deploymentConfig.Spec.Template.Spec.Containers[i].Env[j].ValueFrom = &envVarValue
-						}
-					}
-
-					if !foundEnv {
-						r.log.Infof("adding env variable to system app", l.Fields{"envVarName": envVarName, "envVarValue": envVarValue, "foundVariable": foundEnv})
-
-						deploymentConfig.Spec.Template.Spec.Containers[i].Env = append(
-							deploymentConfig.Spec.Template.Spec.Containers[i].Env,
-							corev1.EnvVar{Name: envVarName, ValueFrom: &envVarValue},
-						)
-					}
-				}
-			}
-
-			if err := serverClient.Update(ctx, deploymentConfig); err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
