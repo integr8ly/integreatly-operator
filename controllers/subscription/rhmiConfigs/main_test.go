@@ -3,6 +3,7 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -70,6 +71,7 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 	scenarios := []struct {
 		Name                           string
 		RhoamCSV                       *operatorsv1alpha1.ClusterServiceVersion
+		configMap                      *corev1.ConfigMap
 		ExpectedServiceAffectingResult bool
 	}{
 		{
@@ -108,11 +110,51 @@ func TestIsUpgradeServiceAffecting(t *testing.T) {
 			},
 			ExpectedServiceAffectingResult: false,
 		},
+		{
+			Name: "Test config has service affecting data true",
+			RhoamCSV: &operatorsv1alpha1.ClusterServiceVersion{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"serviceAffecting": "false",
+					},
+				},
+			},
+			configMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "redhat-rhoam-upgrade",
+					Namespace: "redhat-rhoam-operator",
+				},
+				Data: map[string]string{
+					"serviceAffecting": "true",
+				},
+			},
+			ExpectedServiceAffectingResult: true,
+		},
+		{
+			Name: "Test config has service affecting data true",
+			RhoamCSV: &operatorsv1alpha1.ClusterServiceVersion{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"serviceAffecting": "false",
+					},
+				},
+			},
+			configMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "redhat-rhoam-upgrade",
+					Namespace: "redhat-rhoam-operator",
+				},
+				Data: map[string]string{
+					"serviceAffecting": "false",
+				},
+			},
+			ExpectedServiceAffectingResult: false,
+		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			isServiceAffecting := IsUpgradeServiceAffecting(scenario.RhoamCSV)
+			isServiceAffecting := IsUpgradeServiceAffecting(scenario.RhoamCSV, scenario.configMap)
 			if isServiceAffecting != scenario.ExpectedServiceAffectingResult {
 				t.Fatalf("Expected isServiceAffecting to be %v but got %v", scenario.ExpectedServiceAffectingResult, isServiceAffecting)
 			}

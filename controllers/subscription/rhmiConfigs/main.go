@@ -3,6 +3,8 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"strings"
 
 	"k8s.io/client-go/tools/record"
 
@@ -36,16 +38,23 @@ func GetLatestInstallPlan(ctx context.Context, subscription *operatorsv1alpha1.S
 	return latestInstallPlan, nil
 }
 
-func IsUpgradeServiceAffecting(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
+func IsUpgradeServiceAffecting(csv *operatorsv1alpha1.ClusterServiceVersion, config *corev1.ConfigMap) bool {
 	// Always default to the release being service affecting and requiring manual upgrade approval
 	serviceAffectingUpgrade := true
 	if csv == nil {
-		return serviceAffectingUpgrade
+		return true
 	}
 
 	if val, ok := csv.ObjectMeta.Annotations["serviceAffecting"]; ok && val == "false" {
 		serviceAffectingUpgrade = false
 	}
+
+	if config != nil {
+		if val, ok := config.Data["serviceAffecting"]; ok && strings.ToLower(val) == "true" {
+			serviceAffectingUpgrade = true
+		}
+	}
+
 	return serviceAffectingUpgrade
 }
 

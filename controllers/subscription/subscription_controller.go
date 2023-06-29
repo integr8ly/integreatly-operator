@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -229,7 +231,13 @@ func (r *SubscriptionReconciler) HandleUpgrades(ctx context.Context, rhmiSubscri
 		return ctrl.Result{}, err
 	}
 
-	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestCSV)
+	upgradeConfig := &corev1.ConfigMap{}
+	err = r.Client.Get(ctx, types.NamespacedName{Name: "redhat-rhoam-upgrade", Namespace: "redhat-rhoam-operator"}, upgradeConfig)
+	if err != nil && !errors.IsNotFound(err) {
+		return ctrl.Result{}, err
+	}
+
+	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestCSV, upgradeConfig)
 	log.Info(fmt.Sprintf("Upgrade is service affecting: %v", isServiceAffecting))
 
 	err = r.allowDatabaseUpdates(ctx, installation, isServiceAffecting)
