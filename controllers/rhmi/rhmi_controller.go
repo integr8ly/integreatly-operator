@@ -357,7 +357,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		if resources.Contains(installation.GetFinalizers(), previousDeletionFinalizer) {
 			installation.SetFinalizers(resources.Replace(installation.GetFinalizers(), previousDeletionFinalizer, deletionFinalizer))
 			if err = r.Update(context.TODO(), installation); err != nil {
-				return ctrl.Result{}, err
+				return retryRequeue, nil
 			}
 		} else {
 			installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
@@ -371,7 +371,11 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
-		return r.preflightChecks(installation, installType, configManager)
+		err := r.preflightChecks(installation, installType, configManager)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		return retryRequeue, nil
 	}
 
 	// If the CR is being deleted, handle uninstall and return
@@ -394,7 +398,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 		installation.Status.ToVersion = version.GetVersionByType(installation.Spec.Type)
 		log.Infof("Setting installation.Status.ToVersion on initial install", l.Fields{"version": version.GetVersionByType(installation.Spec.Type)})
 		if err := r.Status().Update(context.TODO(), installation); err != nil {
-			return ctrl.Result{}, err
+			return retryRequeue, nil
 		}
 		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetThreeScalePortals(nil, 0) // expose metric and set default value
@@ -762,14 +766,16 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := r.Client.List(context.TODO(), alerts, &k8sclient.ListOptions{
+	err = r.Client.List(context.TODO(), alerts, &k8sclient.ListOptions{
 		LabelSelector: ls,
-	}); err != nil {
+	})
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	for i := range alerts.Items {
-		if err := r.Client.Delete(context.TODO(), &alerts.Items[i]); err != nil {
+		err := r.Client.Delete(context.TODO(), &alerts.Items[i])
+		if err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -825,24 +831,26 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	if len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
 		log.Infof("Finalizers: ", l.Fields{"length": len(installation.Finalizers)})
 		// delete ConfigMap after all product finalizers finished
-		if err := r.Client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: installation.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
+		err := r.Client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: installation.Namespace}})
+		if err != nil && !k8serr.IsNotFound(err) {
 			merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
 			installation.Status.LastError = merr.Error()
 			err = r.Client.Update(context.TODO(), installation)
 			if err != nil {
 				merr.Add(err)
 			}
-			return retryRequeue, merr
+			return ctrl.Result{}, merr
 		}
 
-		if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
+		err = r.handleCROConfigDeletion(*installation)
+		if err != nil && !k8serr.IsNotFound(err) {
 			merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
 			installation.Status.LastError = merr.Error()
 			err = r.Update(context.TODO(), installation)
 			if err != nil {
 				merr.Add(err)
 			}
-			return retryRequeue, merr
+			return ctrl.Result{}, merr
 		}
 
 		installation.SetFinalizers(resources.Remove(installation.GetFinalizers(), deletionFinalizer))
@@ -850,12 +858,13 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 		err = r.Update(context.TODO(), installation)
 		if err != nil {
 			merr.Add(err)
-			return retryRequeue, merr
+			return ctrl.Result{}, merr
 		}
 
-		if err := addon.UninstallOperator(context.TODO(), r.Client, installation); err != nil {
+		err = addon.UninstallOperator(context.TODO(), r.Client, installation)
+		if err != nil {
 			merr.Add(err)
-			return retryRequeue, merr
+			return ctrl.Result{}, merr
 		}
 
 		log.Info("uninstall completed")
@@ -865,7 +874,10 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	log.Info("updating uninstallation object")
 	// no finalizers left, update object
 	err = r.Update(context.TODO(), installation)
-	return retryRequeue, err
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	return retryRequeue, nil
 }
 
 func (r *RHMIReconciler) handleUninstallProduct(installation *rhmiv1alpha1.RHMI, product rhmiv1alpha1.ProductName, stage Stage, finalizers []string, configManager *config.Manager, merr *resources.MultiErr) bool {
@@ -947,14 +959,9 @@ func upgradeFirstReconcile(installation *rhmiv1alpha1.RHMI) bool {
 	return status.Version != "" && status.ToVersion == "" && status.Version != version.GetVersionByType(installation.Spec.Type)
 }
 
-func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (ctrl.Result, error) {
+func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) error {
 	log.Info("Running preflight checks..")
 	installation.Status.Stage = "Preflight Checks"
-	result := ctrl.Result{
-		Requeue:      true,
-		RequeueAfter: 10 * time.Second,
-	}
-
 	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
 
 	// Validate the env vars used by the operator
@@ -970,7 +977,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			return nil
 		}),
 	}); err != nil {
-		return result, err
+		return err
 	}
 
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
@@ -979,10 +986,11 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		err := r.Status().Update(context.TODO(), installation)
 		if err != nil {
 			log.Infof("error updating status", l.Fields{"error": err.Error()})
-			return result, err
+			return err
 		}
 		log.Warning("preflight checks failed on useClusterStorage value")
-		return result, nil
+		return fmt.Errorf("Spec.useClusterStorage must be set to either 'true' or 'false' to continue, found: "+
+			"%s", installation.Spec.UseClusterStorage)
 	}
 
 	requiredSecrets := []string{installation.Spec.PagerDutySecret}
@@ -994,8 +1002,9 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 				Namespace: installation.Namespace,
 			},
 		}
-		if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
-			return ctrl.Result{}, err
+		exists, err := k8s.Exists(context.TODO(), r.Client, secret)
+		if err != nil {
+			return err
 		} else if !exists {
 			preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
 			log.Info(preflightMessage)
@@ -1006,10 +1015,10 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return ctrl.Result{}, err
+				return err
 			}
 
-			return result, nil
+			return fmt.Errorf("secret not found %s in namespace %s", secret.Name, installation.Namespace)
 		}
 		log.Infof("found required secret", l.Fields{"secret": secretName})
 		eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
@@ -1021,7 +1030,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.QuotaParamName, err)
 		log.Warning(preflightMessage)
-		return result, err
+		return err
 	}
 
 	// Check if the trial-quota parameter is found from the add-on when normal quota param is not found
@@ -1030,7 +1039,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		if err != nil {
 			preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.TrialQuotaParamName, err)
 			log.Warning(preflightMessage)
-			return result, err
+			return err
 		}
 	}
 
@@ -1067,10 +1076,9 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return result, err
+				return err
 			}
-
-			return result, nil
+			return fmt.Errorf("failed preflight check: %s", preflightMessage)
 		}
 	}
 
@@ -1080,7 +1088,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		// could not list namespaces, keep trying
 		log.Warningf("error listing namespaces", l.Fields{"error": err.Error()})
-		return result, err
+		return err
 	}
 
 	for _, ns := range namespaces.Items {
@@ -1088,7 +1096,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		if err != nil {
 			// error searching for existing products, keep trying
 			log.Info("error looking for existing deployments, will retry")
-			return result, err
+			return err
 		}
 		if len(nsProducts) != 0 {
 			//found one or more conflicting products
@@ -1098,9 +1106,9 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return result, err
+				return err
 			}
-			return result, err
+			return fmt.Errorf("found conflicting packages in namespace: %s", ns.GetName())
 		}
 	}
 
@@ -1108,7 +1116,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
 	if err != nil {
 		log.Error("Error checking STS mode", err)
-		return result, err
+		return err
 	}
 	if isSTS {
 		log.Info("STS mode enabled for cluster")
@@ -1120,7 +1128,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		log.Infof("error updating status", l.Fields{"error": err.Error()})
 	}
-	return result, nil
+	return nil
 }
 
 func (r *RHMIReconciler) checkNamespaceForProducts(ns corev1.Namespace, installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) ([]string, error) {
