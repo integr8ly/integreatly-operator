@@ -187,18 +187,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileDeploymentPriority(
-		ctx,
-		client,
-		"marin3r-instance",
-		threescaleConfig.GetNamespace(),
-		r.installation.Spec.PriorityClassName,
-	)
-	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
-		events.HandleError(r.recorder, r.installation, phase, "Failed to reconcile marin3r-instance deployment priority class name", err)
-		return phase, err
-	}
-
 	phase, err = r.ReconcileCsvDeploymentsPriority(
 		ctx,
 		client,
@@ -390,6 +378,7 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 	_, err = controllerutil.CreateOrUpdate(ctx, client, discoveryService, func() error {
 		image := fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
 		discoveryService.Spec.Image = &image
+		discoveryService.Spec.PodPriorityClass = &r.installation.Spec.PriorityClassName
 		return nil
 	})
 	if err != nil {

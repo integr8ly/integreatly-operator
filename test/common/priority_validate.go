@@ -3,13 +3,14 @@ package common
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func priorityStatefulSets(installType string) []CustomResource {
