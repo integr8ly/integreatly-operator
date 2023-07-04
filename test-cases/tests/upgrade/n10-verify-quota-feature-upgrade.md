@@ -43,7 +43,7 @@ Measure the downtime of the RHOAM components during Quota change. Verify quota i
    ```
    git clone https://github.com/integr8ly/workload-web-app
    cd workload-web-app
-   export GRAFANA_DASHBOARD=true RHOAM=true
+   export GRAFANA_DASHBOARD=true
    make local/deploy
    ```
 
@@ -51,10 +51,10 @@ Measure the downtime of the RHOAM components during Quota change. Verify quota i
 
    There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console.
 
-3. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
+3. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 4. Select the **Workload App** dashboard
@@ -110,12 +110,12 @@ EOF
 ocm get /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/addons/managed-api-service
 ```
 
-6. After Quota change is done, open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace again
+6. After Quota change is done, open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
 
 > Quota change is done when `toQuota` disappears from RHMI `rhoam` CR and `quota` is set to the expected value. Quota change takes ~1 minute.
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 7. Select the **Workload App** dashboard
