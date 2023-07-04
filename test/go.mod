@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/redis v1.11.0
 	cloud.google.com/go/storage v1.30.1
 	github.com/3scale-ops/marin3r v0.12.2
-	github.com/3scale/3scale-operator v0.10.1-0.20230508130827-ede8838d156d
+	github.com/3scale/3scale-operator v0.10.1-0.20230611051516-b93e37adaec7
 	github.com/3scale/3scale-porta-go-client v0.9.0
 	github.com/3scale/apicast-operator v0.7.1
 	github.com/PuerkitoBio/goquery v1.8.1

@@ -205,9 +205,9 @@ func (system *System) buildSystemBaseEnv() []v1.EnvVar {
 
 	result = append(result, system.SystemRedisEnvVars()...)
 	result = append(result, system.BackendRedisEnvVars()...)
-	bckListenerApicastRouteEnv := helper.EnvVarFromSecret("APICAST_BACKEND_ROOT_ENDPOINT", BackendSecretBackendListenerSecretName, BackendSecretBackendListenerRouteEndpointFieldName)
-	bckListenerRouteEnv := helper.EnvVarFromValue("BACKEND_ROUTE", system.Options.BackendServiceEndpoint)
-	result = append(result, bckListenerApicastRouteEnv, bckListenerRouteEnv)
+	bckServiceEndpointEnv := helper.EnvVarFromSecret("BACKEND_URL", BackendSecretBackendListenerSecretName, BackendSecretBackendListenerServiceEndpointFieldName)
+	bckPublicRouteEndpointEnv := helper.EnvVarFromSecret("BACKEND_PUBLIC_URL", BackendSecretBackendListenerSecretName, BackendSecretBackendListenerRouteEndpointFieldName)
+	result = append(result, bckServiceEndpointEnv, bckPublicRouteEndpointEnv)
 
 	smtpEnvSecretEnvs := system.getSystemSMTPEnvsFromSMTPSecret()
 	result = append(result, smtpEnvSecretEnvs...)
@@ -737,8 +737,9 @@ func (system *System) AppDeploymentConfig() *appsv1.DeploymentConfig {
 							ImagePullPolicy: v1.PullIfNotPresent,
 						},
 					},
-					ServiceAccountName: "amp",
-					PriorityClassName:  system.Options.AppPriorityClassName,
+					ServiceAccountName:        "amp",
+					PriorityClassName:         system.Options.AppPriorityClassName,
+					TopologySpreadConstraints: system.Options.AppTopologySpreadConstraints,
 				}},
 		},
 	}
@@ -888,8 +889,9 @@ func (system *System) SidekiqDeploymentConfig() *appsv1.DeploymentConfig {
 							Ports:           system.sideKiqPorts(),
 						},
 					},
-					ServiceAccountName: "amp",
-					PriorityClassName:  system.Options.SideKiqPriorityClassName,
+					ServiceAccountName:        "amp",
+					PriorityClassName:         system.Options.SideKiqPriorityClassName,
+					TopologySpreadConstraints: system.Options.SideKiqTopologySpreadConstraints,
 				}},
 		},
 	}
