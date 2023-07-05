@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
-	observabilityoperator "github.com/redhat-developer/observability-operator/v4/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -48,7 +47,6 @@ var (
 				RHSSOProductNamespace,
 				RHSSOOperatorNamespace,
 				CloudResourceOperatorNamespace,
-				ObservabilityOperatorNamespace,
 				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
@@ -56,9 +54,6 @@ var (
 					return err
 				}
 				if err := removeKeyCloakFinalizers(ctx, RHSSOProductNamespace); err != nil {
-					return err
-				}
-				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
 					return err
 				}
 
@@ -83,7 +78,6 @@ var (
 				RHSSOProductNamespace,
 				RHSSOOperatorNamespace,
 				CloudResourceOperatorNamespace,
-				ObservabilityOperatorNamespace,
 				ObservabilityProductNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
@@ -91,9 +85,6 @@ var (
 					return err
 				}
 				if err := removeKeyCloakFinalizers(ctx, RHSSOProductNamespace); err != nil {
-					return err
-				}
-				if err := removeObservabilityFinalizers(ctx, ObservabilityProductNamespace); err != nil {
 					return err
 				}
 
@@ -343,36 +334,6 @@ func getStagesForInstallType(ctx *TestingContext, installType string) []StageDel
 	} else {
 		return managedApiStages
 	}
-}
-
-func removeObservabilityFinalizers(ctx *TestingContext, namespace string) error {
-	err := wait.Poll(finalizerDeletionRetryInterval, finalizerDeletionTimeout, func() (done bool, err error) {
-		observabilityList := &observabilityoperator.ObservabilityList{}
-
-		err = ctx.Client.List(goctx.TODO(), observabilityList, &k8sclient.ListOptions{
-			Namespace: namespace,
-		})
-
-		if err != nil {
-			return false, err
-		}
-
-		for i := range observabilityList.Items {
-			observability := observabilityList.Items[i]
-			_, err = controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, &observability, func() error {
-				observability.Finalizers = []string{}
-				return nil
-			})
-
-			if err != nil {
-				return false, err
-			}
-		}
-
-		return true, nil
-	})
-
-	return err
 }
 
 func removeDiscoveryServiceFinalizers(ctx *TestingContext, namespace string) error {
