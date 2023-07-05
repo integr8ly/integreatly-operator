@@ -36,7 +36,7 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
    ```
    git clone https://github.com/integr8ly/workload-web-app
    cd workload-web-app
-   export GRAFANA_DASHBOARD=true RHOAM=true
+   export GRAFANA_DASHBOARD=true
    make local/deploy
    ```
 
@@ -103,10 +103,10 @@ CLUSTER_ID=$(ocm get clusters --parameter search="name like '%$CLUSTER_NAME%'" |
 
 > Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-sphinx`.
 
-9. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
+9. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 10. Select the **Workload App** dashboard
