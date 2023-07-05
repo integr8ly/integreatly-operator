@@ -16,7 +16,6 @@ var (
 	namespaceToVerify = []string{
 		RHOAMOperatorNamespace,
 		CloudResourceOperatorNamespace,
-		ObservabilityOperatorNamespace,
 		ObservabilityProductNamespace,
 		CustomerGrafanaNamespace,
 		RHSSOUserProductNamespace,

@@ -20,7 +20,6 @@ var (
 	OpenShiftConsoleRoute          = "console"
 	OpenShiftConsoleNamespace      = "openshift-console"
 	RHOAMOperatorNamespace         = NamespacePrefix + "operator"
-	ObservabilityOperatorNamespace = NamespacePrefix + "observability-operator"
 	ObservabilityProductNamespace  = NamespacePrefix + "operator-observability"
 	ObservabilityNamespacePrefix   = ObservabilityProductNamespace + "-"
 	ObservabilityPrometheusPodName = "prometheus-rhoam-0"

@@ -106,7 +106,6 @@ func setVars(possibleWN, possibleNS string, t *testing.T) {
 	common.NamespacePrefix = possibleNS
 	common.RHOAMOperatorNamespace = common.NamespacePrefix + "operator"
 	common.ObservabilityNamespacePrefix = common.NamespacePrefix + "observability-"
-	common.ObservabilityOperatorNamespace = common.NamespacePrefix + "observability-operator"
 	common.ObservabilityProductNamespace = common.NamespacePrefix + "observability"
 	common.CloudResourceOperatorNamespace = common.NamespacePrefix + "cloud-resources-operator"
 	common.RHSSOUserProductNamespace = common.NamespacePrefix + "user-sso"
