@@ -35,7 +35,7 @@ func TestThreeScale_GetBackendRedisNodeSize(t1 *testing.T) {
 				activeQuota:  quota.OneHundredMillionQuotaName,
 				platformType: configv1.AWSPlatformType,
 			},
-			want: "cache.m5.large",
+			want: "cache.m5.xlarge",
 		},
 		{
 			name: "test 11 is returned when active quota is 100 M and platformType GCP",
