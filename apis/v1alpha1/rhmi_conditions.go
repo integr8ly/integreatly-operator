@@ -89,6 +89,15 @@ func (i *RHMI) NonDegradedCondition() metav1.Condition {
 	)
 }
 
+func (i *RHMI) ReadyToBeDeletedCondition() metav1.Condition {
+	return metav1.Condition{
+		Type:    addonv1alpha1.AddonInstanceConditionReadyToBeDeleted.String(),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(addonv1alpha1.AddonInstanceReasonReadyToBeDeleted),
+		Message: "Teardown complete",
+	}
+}
+
 func newRHMICondition(conditionType RHMIConditionType, conditionStatus metav1.ConditionStatus, reason, msg string) metav1.Condition {
 	return metav1.Condition{
 		Type:    conditionType.String(),

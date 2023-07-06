@@ -37,11 +37,16 @@ type AddonSpec struct {
 
 	// Correlation ID for co-relating current AddonCR revision and reported status.
 	// +optional
-	CorrelationID string `json:"correlation_id,omitempty"`
+	CorrelationID string `json:"correlationID,omitempty"`
 
 	// Defines how an Addon is installed.
 	// This field is immutable.
 	Install AddonInstallSpec `json:"install"`
+
+	// Defines whether the addon needs acknowledgment from the underlying
+	// addon's operator before deletion.
+	// +optional
+	DeleteAckRequired bool `json:"deleteAckRequired"`
 
 	// UpgradePolicy enables status reporting via upgrade policies.
 	UpgradePolicy *AddonUpgradePolicy `json:"upgradePolicy,omitempty"`
@@ -240,6 +245,12 @@ const (
 	OLMOwnNamespace AddonInstallType = "OLMOwnNamespace"
 )
 
+// Annotation keys for delete signal from OCM.
+const (
+	DeleteAnnotationFlag  = "addons.managed.openshift.io/delete"
+	DeleteTimeoutDuration = "addons.managed.openshift.io/deletetimeout"
+)
+
 // Addon condition reasons
 
 const (
@@ -293,6 +304,15 @@ const (
 
 	// Addon has successfully been uninstalled.
 	AddonReasonNotInstalled = "AddonNotInstalled"
+
+	// Addon is ready to be deleted.
+	AddonReasonReadyToBeDeleted = "AddonReadyToBeDeleted"
+
+	// Addon is not yet ready to deleted.
+	AddonReasonNotReadyToBeDeleted = "AddonNotReadyToBeDeleted"
+
+	// Addon has timed out waiting for acknowledgement from the underlying addon.
+	AddonReasonDeletionTimedOut = "AddonReasonDeletionTimedOut"
 )
 
 type AddonNamespace struct {
@@ -325,6 +345,13 @@ const (
 	// Installed condition indicates that the addon has been installed successfully
 	// and was available atleast once.
 	Installed = "Installed"
+
+	// ReadyToBeDeleted condition indicates whether the addon is ready to be deleted or not.
+	ReadyToBeDeleted = "ReadyToBeDeleted"
+
+	// DeleteTimeout condition indicates whether an addon has timed out waiting for an delete acknowledgement
+	// from underlying addon.
+	DeleteTimeout = "DeleteTimeout"
 )
 
 // AddonStatus defines the observed state of Addon

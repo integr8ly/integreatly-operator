@@ -23,6 +23,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	github.com/openshift-online/ocm-sdk-go v0.1.344
+	github.com/openshift/addon-operator/apis v0.0.0-20230706051718-4032d89c8b54
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/operator-framework/api v0.17.5
 	github.com/pkg/errors v0.9.1
@@ -116,7 +117,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/openshift/addon-operator v1.12.0 // indirect
-	github.com/openshift/addon-operator/apis v0.0.0-20230505081548-bce54f373482 // indirect
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a // indirect
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6 // indirect
