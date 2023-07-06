@@ -96,7 +96,7 @@ func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1
 				{Name: "system-app", ExpectedReplicas: int32(replicas["systemApp"])},
 				{Name: "system-memcache", ExpectedReplicas: 1},
 				{Name: "system-sidekiq", ExpectedReplicas: int32(replicas["systemSidekiq"])},
-				{Name: "system-sphinx", ExpectedReplicas: 1},
+				{Name: "system-searchd", ExpectedReplicas: 1},
 				{Name: "zync", ExpectedReplicas: 1},
 				{Name: "zync-database", ExpectedReplicas: int32(replicas["zyncDatabase"])},
 				{Name: "zync-que", ExpectedReplicas: int32(replicas["zyncQue"])},

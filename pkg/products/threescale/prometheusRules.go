@@ -121,12 +121,12 @@ func (r *Reconciler) newAlertReconciler(logger l.Logger, installType string, ctx
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
 					{
-						Alert: "RHOAMThreeScaleSystemSphinxServiceEndpointDown",
+						Alert: "RHOAMThreeScaleSystemSearchdServiceEndpointDown",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlEndpointAvailableAlert,
 							"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-sphinx', namespace='%s'} < 1", r.Config.GetNamespace())),
+						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='system-searchd', namespace='%s'} < 1", r.Config.GetNamespace())),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning", "product": installationName},
 					},
