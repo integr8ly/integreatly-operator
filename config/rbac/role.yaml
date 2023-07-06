@@ -85,6 +85,23 @@ rules:
   - update
   - watch
 - apiGroups:
+  - addons.managed.openshift.io
+  resources:
+  - addoninstances
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - addons.managed.openshift.io
+  resources:
+  - addoninstances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - admissionregistration.k8s.io
   resources:
   - mutatingwebhookconfigurations

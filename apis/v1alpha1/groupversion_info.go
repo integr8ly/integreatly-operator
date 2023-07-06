@@ -24,9 +24,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+const group = "integreatly.org"
+
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "integreatly.org", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: group, Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

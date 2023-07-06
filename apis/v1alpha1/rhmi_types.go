@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,8 +46,6 @@ var (
 
 	BootstrapStage               StageName = "bootstrap"
 	InstallStage                 StageName = "installation"
-	CloudResourcesStage          StageName = "cloud-resources"
-	MonitoringStage              StageName = "monitoring"
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	UninstallProductsStage       StageName = "uninstall - products"
@@ -96,10 +96,10 @@ var (
 	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
 	// Event reasons to be used when emitting events
-	EventProcessingError       string = "ProcessingError"
-	EventInstallationCompleted string = "InstallationCompleted"
-	EventPreflightCheckPassed  string = "PreflightCheckPassed"
-	EventUpgradeApproved       string = "UpgradeApproved"
+	EventProcessingError       = "ProcessingError"
+	EventInstallationCompleted = "InstallationCompleted"
+	EventPreflightCheckPassed  = "PreflightCheckPassed"
+	EventUpgradeApproved       = "UpgradeApproved"
 
 	DefaultOriginPullSecretName      = "pull-secret"
 	DefaultOriginPullSecretNamespace = "openshift-config" // #nosec G101 -- This is a false positive
@@ -246,6 +246,65 @@ func (i *RHMI) GetPullSecretSpec() *PullSecretSpec {
 	} else {
 		return &PullSecretSpec{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}
 	}
+}
+
+// GetStage Helper to return a stage in Status
+func (i *RHMI) GetStage(stageName StageName) RHMIStageStatus {
+	return i.Status.Stages[stageName]
+}
+
+// GetInstallStage returns to install stage in Status
+func (i *RHMI) GetInstallStage() RHMIStageStatus {
+	return i.GetStage(InstallStage)
+}
+
+// GetDegradedComponents Returns all the components that are not in a phase complete state
+func (i *RHMI) GetDegradedComponents() []ProductName {
+	var degradedComponents []ProductName
+	for k := range i.GetInstallStage().Products {
+		if !i.IsProductInInstallStagePhaseComplete(k) {
+			degradedComponents = append(degradedComponents, k)
+		}
+	}
+
+	return degradedComponents
+}
+
+// IsProductInInstallStagePhaseComplete Helper for checking if a product in the installation stage is in a complete phase
+func (i *RHMI) IsProductInInstallStagePhaseComplete(productName ProductName) bool {
+	return i.GetInstallStage().Products[productName].Phase == PhaseCompleted
+}
+
+// IsInstalled when a version has been written to the status version before
+func (i *RHMI) IsInstalled() bool {
+	return i.Status.Version != ""
+}
+
+// IsInstallBlocked if the creation timestamp is over 2 hours old and installation has not completed and is also not uninstalling
+func (i *RHMI) IsInstallBlocked() bool {
+	return i.CreationTimestamp.Add(2*time.Hour).Before(time.Now()) && !i.IsInstalled() && !i.IsUninstalling()
+}
+
+// IsDegraded if not uninstalling and the overall status stage is not complete
+func (i *RHMI) IsDegraded() bool {
+	return !i.IsUninstalling() && i.Status.Stage != CompleteStage
+}
+
+// IsUninstalling when there is a deletion timestamp
+func (i *RHMI) IsUninstalling() bool {
+	return i.DeletionTimestamp != nil
+}
+
+// IsUninstallBlocked when IsUninstalling and deletion timestamp is over 2 hours old
+func (i *RHMI) IsUninstallBlocked() bool {
+	return i.IsUninstalling() && i.DeletionTimestamp.Add(2*time.Hour).Before(time.Now())
+}
+
+// IsCoreComponentsHealthy Helper for checking if core components affecting SLO are healthy
+func (i *RHMI) IsCoreComponentsHealthy() bool {
+	return i.IsProductInInstallStagePhaseComplete(ProductCloudResources) &&
+		i.IsProductInInstallStagePhaseComplete(ProductRHSSOUser) &&
+		i.IsProductInInstallStagePhaseComplete(Product3Scale)
 }
 
 // +kubebuilder:object:root=true

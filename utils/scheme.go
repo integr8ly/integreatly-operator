@@ -10,6 +10,7 @@ import (
 	keycloakv1alpha1 "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 	obv1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	noobaav1 "github.com/noobaa/noobaa-operator/v5/pkg/apis/noobaa/v1alpha1"
+	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -69,6 +70,7 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		noobaav1.SchemeBuilder.AddToScheme,
 		obv1.SchemeBuilder.AddToScheme,
 		storagev1.AddToScheme,
+		addonv1alpha1.AddToScheme,
 	)
 
 	if err := schemeBuilder.AddToScheme(scheme); err != nil {

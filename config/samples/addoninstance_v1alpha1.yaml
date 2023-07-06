@@ -1,0 +1,5 @@
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: AddonInstance
+metadata:
+  name: addon-instance
+spec: {}

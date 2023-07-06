@@ -294,7 +294,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not write cloud resources config: %w", err)
 	}
 
-	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.CloudResourcesStage, r.Config.GetProductName())
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Infof("Reconcile successful", l.Fields{"productStatus": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

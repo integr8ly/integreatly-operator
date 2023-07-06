@@ -23,37 +23,37 @@ import (
 // can be stubbed out for unit testing your code with the SDK without needing
 // to inject custom request handlers into the SDK's request pipeline.
 //
-//    // myFunc uses an SDK service client to make a request to
-//    // Amazon Relational Database Service.
-//    func myFunc(svc rdsiface.RDSAPI) bool {
-//        // Make svc.AddRoleToDBCluster request
-//    }
+//	// myFunc uses an SDK service client to make a request to
+//	// Amazon Relational Database Service.
+//	func myFunc(svc rdsiface.RDSAPI) bool {
+//	    // Make svc.AddRoleToDBCluster request
+//	}
 //
-//    func main() {
-//        sess := session.New()
-//        svc := rds.New(sess)
+//	func main() {
+//	    sess := session.New()
+//	    svc := rds.New(sess)
 //
-//        myFunc(svc)
-//    }
+//	    myFunc(svc)
+//	}
 //
 // In your _test.go file:
 //
-//    // Define a mock struct to be used in your unit tests of myFunc.
-//    type mockRDSClient struct {
-//        rdsiface.RDSAPI
-//    }
-//    func (m *mockRDSClient) AddRoleToDBCluster(input *rds.AddRoleToDBClusterInput) (*rds.AddRoleToDBClusterOutput, error) {
-//        // mock response/functionality
-//    }
+//	// Define a mock struct to be used in your unit tests of myFunc.
+//	type mockRDSClient struct {
+//	    rdsiface.RDSAPI
+//	}
+//	func (m *mockRDSClient) AddRoleToDBCluster(input *rds.AddRoleToDBClusterInput) (*rds.AddRoleToDBClusterOutput, error) {
+//	    // mock response/functionality
+//	}
 //
-//    func TestMyFunc(t *testing.T) {
-//        // Setup Test
-//        mockSvc := &mockRDSClient{}
+//	func TestMyFunc(t *testing.T) {
+//	    // Setup Test
+//	    mockSvc := &mockRDSClient{}
 //
-//        myfunc(mockSvc)
+//	    myfunc(mockSvc)
 //
-//        // Verify myFunc's functionality
-//    }
+//	    // Verify myFunc's functionality
+//	}
 //
 // It is important to note that this interface will have breaking changes
 // when the service model is updated and adds new API operations, paginators,
@@ -111,6 +111,10 @@ type RDSAPI interface {
 	CopyOptionGroup(*rds.CopyOptionGroupInput) (*rds.CopyOptionGroupOutput, error)
 	CopyOptionGroupWithContext(aws.Context, *rds.CopyOptionGroupInput, ...request.Option) (*rds.CopyOptionGroupOutput, error)
 	CopyOptionGroupRequest(*rds.CopyOptionGroupInput) (*request.Request, *rds.CopyOptionGroupOutput)
+
+	CreateBlueGreenDeployment(*rds.CreateBlueGreenDeploymentInput) (*rds.CreateBlueGreenDeploymentOutput, error)
+	CreateBlueGreenDeploymentWithContext(aws.Context, *rds.CreateBlueGreenDeploymentInput, ...request.Option) (*rds.CreateBlueGreenDeploymentOutput, error)
+	CreateBlueGreenDeploymentRequest(*rds.CreateBlueGreenDeploymentInput) (*request.Request, *rds.CreateBlueGreenDeploymentOutput)
 
 	CreateCustomDBEngineVersion(*rds.CreateCustomDBEngineVersionInput) (*rds.CreateCustomDBEngineVersionOutput, error)
 	CreateCustomDBEngineVersionWithContext(aws.Context, *rds.CreateCustomDBEngineVersionInput, ...request.Option) (*rds.CreateCustomDBEngineVersionOutput, error)
@@ -175,6 +179,10 @@ type RDSAPI interface {
 	CreateOptionGroup(*rds.CreateOptionGroupInput) (*rds.CreateOptionGroupOutput, error)
 	CreateOptionGroupWithContext(aws.Context, *rds.CreateOptionGroupInput, ...request.Option) (*rds.CreateOptionGroupOutput, error)
 	CreateOptionGroupRequest(*rds.CreateOptionGroupInput) (*request.Request, *rds.CreateOptionGroupOutput)
+
+	DeleteBlueGreenDeployment(*rds.DeleteBlueGreenDeploymentInput) (*rds.DeleteBlueGreenDeploymentOutput, error)
+	DeleteBlueGreenDeploymentWithContext(aws.Context, *rds.DeleteBlueGreenDeploymentInput, ...request.Option) (*rds.DeleteBlueGreenDeploymentOutput, error)
+	DeleteBlueGreenDeploymentRequest(*rds.DeleteBlueGreenDeploymentInput) (*request.Request, *rds.DeleteBlueGreenDeploymentOutput)
 
 	DeleteCustomDBEngineVersion(*rds.DeleteCustomDBEngineVersionInput) (*rds.DeleteCustomDBEngineVersionOutput, error)
 	DeleteCustomDBEngineVersionWithContext(aws.Context, *rds.DeleteCustomDBEngineVersionInput, ...request.Option) (*rds.DeleteCustomDBEngineVersionOutput, error)
@@ -247,6 +255,13 @@ type RDSAPI interface {
 	DescribeAccountAttributes(*rds.DescribeAccountAttributesInput) (*rds.DescribeAccountAttributesOutput, error)
 	DescribeAccountAttributesWithContext(aws.Context, *rds.DescribeAccountAttributesInput, ...request.Option) (*rds.DescribeAccountAttributesOutput, error)
 	DescribeAccountAttributesRequest(*rds.DescribeAccountAttributesInput) (*request.Request, *rds.DescribeAccountAttributesOutput)
+
+	DescribeBlueGreenDeployments(*rds.DescribeBlueGreenDeploymentsInput) (*rds.DescribeBlueGreenDeploymentsOutput, error)
+	DescribeBlueGreenDeploymentsWithContext(aws.Context, *rds.DescribeBlueGreenDeploymentsInput, ...request.Option) (*rds.DescribeBlueGreenDeploymentsOutput, error)
+	DescribeBlueGreenDeploymentsRequest(*rds.DescribeBlueGreenDeploymentsInput) (*request.Request, *rds.DescribeBlueGreenDeploymentsOutput)
+
+	DescribeBlueGreenDeploymentsPages(*rds.DescribeBlueGreenDeploymentsInput, func(*rds.DescribeBlueGreenDeploymentsOutput, bool) bool) error
+	DescribeBlueGreenDeploymentsPagesWithContext(aws.Context, *rds.DescribeBlueGreenDeploymentsInput, func(*rds.DescribeBlueGreenDeploymentsOutput, bool) bool, ...request.Option) error
 
 	DescribeCertificates(*rds.DescribeCertificatesInput) (*rds.DescribeCertificatesOutput, error)
 	DescribeCertificatesWithContext(aws.Context, *rds.DescribeCertificatesInput, ...request.Option) (*rds.DescribeCertificatesOutput, error)
@@ -511,6 +526,10 @@ type RDSAPI interface {
 	ListTagsForResourceWithContext(aws.Context, *rds.ListTagsForResourceInput, ...request.Option) (*rds.ListTagsForResourceOutput, error)
 	ListTagsForResourceRequest(*rds.ListTagsForResourceInput) (*request.Request, *rds.ListTagsForResourceOutput)
 
+	ModifyActivityStream(*rds.ModifyActivityStreamInput) (*rds.ModifyActivityStreamOutput, error)
+	ModifyActivityStreamWithContext(aws.Context, *rds.ModifyActivityStreamInput, ...request.Option) (*rds.ModifyActivityStreamOutput, error)
+	ModifyActivityStreamRequest(*rds.ModifyActivityStreamInput) (*request.Request, *rds.ModifyActivityStreamOutput)
+
 	ModifyCertificates(*rds.ModifyCertificatesInput) (*rds.ModifyCertificatesOutput, error)
 	ModifyCertificatesWithContext(aws.Context, *rds.ModifyCertificatesInput, ...request.Option) (*rds.ModifyCertificatesOutput, error)
 	ModifyCertificatesRequest(*rds.ModifyCertificatesInput) (*request.Request, *rds.ModifyCertificatesOutput)
@@ -698,6 +717,20 @@ type RDSAPI interface {
 	StopDBInstanceAutomatedBackupsReplication(*rds.StopDBInstanceAutomatedBackupsReplicationInput) (*rds.StopDBInstanceAutomatedBackupsReplicationOutput, error)
 	StopDBInstanceAutomatedBackupsReplicationWithContext(aws.Context, *rds.StopDBInstanceAutomatedBackupsReplicationInput, ...request.Option) (*rds.StopDBInstanceAutomatedBackupsReplicationOutput, error)
 	StopDBInstanceAutomatedBackupsReplicationRequest(*rds.StopDBInstanceAutomatedBackupsReplicationInput) (*request.Request, *rds.StopDBInstanceAutomatedBackupsReplicationOutput)
+
+	SwitchoverBlueGreenDeployment(*rds.SwitchoverBlueGreenDeploymentInput) (*rds.SwitchoverBlueGreenDeploymentOutput, error)
+	SwitchoverBlueGreenDeploymentWithContext(aws.Context, *rds.SwitchoverBlueGreenDeploymentInput, ...request.Option) (*rds.SwitchoverBlueGreenDeploymentOutput, error)
+	SwitchoverBlueGreenDeploymentRequest(*rds.SwitchoverBlueGreenDeploymentInput) (*request.Request, *rds.SwitchoverBlueGreenDeploymentOutput)
+
+	SwitchoverReadReplica(*rds.SwitchoverReadReplicaInput) (*rds.SwitchoverReadReplicaOutput, error)
+	SwitchoverReadReplicaWithContext(aws.Context, *rds.SwitchoverReadReplicaInput, ...request.Option) (*rds.SwitchoverReadReplicaOutput, error)
+	SwitchoverReadReplicaRequest(*rds.SwitchoverReadReplicaInput) (*request.Request, *rds.SwitchoverReadReplicaOutput)
+
+	WaitUntilDBClusterAvailable(*rds.DescribeDBClustersInput) error
+	WaitUntilDBClusterAvailableWithContext(aws.Context, *rds.DescribeDBClustersInput, ...request.WaiterOption) error
+
+	WaitUntilDBClusterDeleted(*rds.DescribeDBClustersInput) error
+	WaitUntilDBClusterDeletedWithContext(aws.Context, *rds.DescribeDBClustersInput, ...request.WaiterOption) error
 
 	WaitUntilDBClusterSnapshotAvailable(*rds.DescribeDBClusterSnapshotsInput) error
 	WaitUntilDBClusterSnapshotAvailableWithContext(aws.Context, *rds.DescribeDBClusterSnapshotsInput, ...request.WaiterOption) error

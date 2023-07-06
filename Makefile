@@ -309,7 +309,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.installation.phase}' | grep -q completed, installation phase, 40m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/addon-params
+cluster/prepare: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/addon-params cluster/prepare/addon-instance
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -354,7 +354,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance
 	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
 		echo "manual mode (sts)"; \
 		$(MAKE) cluster/prepare/sts; \
@@ -402,6 +402,11 @@ cluster/prepare/addon-params:
 cluster/prepare/sts:
 	@-oc process -n $(NAMESPACE_PREFIX)cloud-resources-operator NAME=sts-credentials NAMESPACE=$(NAMESPACE_PREFIX)cloud-resources-operator ROLE_ARN=$(CRO_ROLE_ARN) -f config/secrets/sts-secret.yaml | oc apply -f -
 	@-oc process -n $(NAMESPACE_PREFIX)3scale NAME=sts-s3-credentials NAMESPACE=$(NAMESPACE_PREFIX)3scale ROLE_ARN=$(THREESCALE_ROLE_ARN) -f config/secrets/sts-secret.yaml | oc apply -f -
+
+
+.PHONY: cluster/prepare/addon-instance
+cluster/prepare/addon-instance:
+	@-oc apply -f config/samples/addoninstance_v1alpha1.yaml
 
 .PHONY: cluster/prepare/quota/trial
 cluster/prepare/quota/trial:
@@ -454,7 +459,7 @@ cluster/cleanup/crds:
 	@-oc delete crd rhmiconfigs.integreatly.org
 	@-oc delete crd apimanagementtenants.integreatly.org
 
-.PHONY:cluster/cleanup/rbac/dedicated-admins
+.PHONY: cluster/cleanup/rbac/dedicated-admins
 cluster/cleanup/rbac/dedicated-admins:
 	@-oc delete -f config/rbac/dedicated_admins_rbac.yaml
 

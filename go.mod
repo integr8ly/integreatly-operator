@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/RHsyseng/operator-utils v1.4.9
 	github.com/antchfx/xmlquery v1.3.5
-	github.com/aws/aws-sdk-go v1.44.45
+	github.com/aws/aws-sdk-go v1.44.218
 	github.com/envoyproxy/go-control-plane v0.11.0
 	github.com/foxcpp/go-mockdns v1.0.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -22,6 +22,8 @@ require (
 	github.com/noobaa/noobaa-operator/v5 v5.11.0
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
+	github.com/openshift/addon-operator v1.12.0
+	github.com/openshift/addon-operator/apis v0.0.0-20230505081548-bce54f373482
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
@@ -29,14 +31,14 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.25.0
 	github.com/operator-framework/operator-registry v1.26.5
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.58.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.63.0
 	github.com/prometheus/alertmanager v0.22.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.42.0
 	github.com/redhat-developer/observability-operator/v4 v4.2.1
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.8.0
+	golang.org/x/text v0.9.0
 	google.golang.org/protobuf v1.29.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.3
@@ -44,7 +46,7 @@ require (
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/metrics v0.26.3
-	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/yaml v1.3.0
 )
@@ -76,7 +78,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getkin/kin-openapi v0.94.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/analysis v0.21.2 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect
@@ -123,6 +125,7 @@ require (
 	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
@@ -136,10 +139,10 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect

@@ -57,7 +57,7 @@ func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
 	return version.VerifyProductAndOperatorVersion(
-		installation.Status.Stages[integreatlyv1alpha1.MonitoringStage].Products[integreatlyv1alpha1.ProductMonitoringSpec],
+		installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductMonitoringSpec],
 		string(integreatlyv1alpha1.VersionMonitoringSpec),
 		"",
 	)
@@ -165,7 +165,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
 	}
 
-	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.MonitoringStage, r.Config.GetProductName())
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.Log.Infof("Reconciled successfully", l.Fields{"installation": packageName})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

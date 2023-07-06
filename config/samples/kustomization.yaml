@@ -3,4 +3,5 @@ resources:
 - rhmi.cr.yaml
 - integreatly-rhmi-cr.yaml
 - apimanagementtenant.yaml
+- addoninstance_v1alpha1.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
