@@ -3,7 +3,6 @@ package functional
 import (
 	"fmt"
 	"os"
-	packageOperatorV1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"testing"
 	"time"
 
