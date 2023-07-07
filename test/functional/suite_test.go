@@ -3,6 +3,7 @@ package functional
 import (
 	"fmt"
 	"os"
+	packageOperatorV1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"testing"
 	"time"
 
@@ -93,6 +94,9 @@ var _ = BeforeSuite(func() {
 		// +kubebuilder:scaffold:scheme
 
 		err = configv1.Install(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = packageOperatorV1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		close(done)

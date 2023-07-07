@@ -30,16 +30,17 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/redhat-developer/observability-operator/v4 v4.2.1
 	github.com/sirupsen/logrus v1.9.0
-	golang.org/x/net v0.8.0
-	golang.org/x/term v0.6.0
-	golang.org/x/text v0.8.0
+	golang.org/x/net v0.10.0
+	golang.org/x/term v0.8.0
+	golang.org/x/text v0.9.0
 	google.golang.org/api v0.114.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106
+	package-operator.run/apis v1.7.0
 	sigs.k8s.io/controller-runtime v0.14.5
 )
 
@@ -73,7 +74,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getkin/kin-openapi v0.94.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
@@ -135,7 +136,7 @@ require (
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
