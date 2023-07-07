@@ -28,6 +28,7 @@ import (
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	packageOperatorV1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -92,6 +93,9 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = operatorsv1alpha1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = packageOperatorV1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx, err := common.NewTestingContext(cfg)

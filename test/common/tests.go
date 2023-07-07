@@ -82,7 +82,7 @@ var (
 				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
-			},
+				{"Verify package operator resource stability", TestPackageOperatorResourceStability}},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
 		},
 		{
