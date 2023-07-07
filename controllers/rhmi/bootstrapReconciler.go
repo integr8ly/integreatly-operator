@@ -176,8 +176,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	if !resources.IsInProw(installation) {
+		// Creates the Alertmanager config secret
 		phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation)
-		r.log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
+		r.log.Infof("Reconcile Alertmanager config secret", l.Fields{"phase": phase})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			if err != nil {
 				r.log.Warning("failed to reconcile alert manager config secret " + err.Error())
@@ -185,6 +186,39 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
 			return phase, err
 		}
+
+		// Creates an alert to check for the presence of sendgrid smtp secret
+		phase, err = resources.CreateSmtpSecretExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile SendgridSmtpSecretExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile SendgridSmtpSecretExists alert", err)
+			return phase, err
+		}
+
+		// Creates an alert to check for the presence of DeadMansSnitch secret
+		phase, err = resources.CreateDeadMansSnitchSecretExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile DeadMansSnitchSecretExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile DeadMansSnitchSecretExists alert", err)
+			return phase, err
+		}
+
+		// Creates an alert to check for the presence of addon-managed-api-service-parameters secret
+		phase, err = resources.CreateAddonManagedApiServiceParametersExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile AddonManagedApiServiceParametersExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile AddonManagedApiServiceParametersExists alert", err)
+			return phase, err
+		}
+
+		// Creates remaining OBO alerts
+		phase, err = monitoringcommon.OboAlertsReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
+		r.log.Infof("Reconcile OBO alerts", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile OBO alerts", err)
+			return phase, err
+		}
+
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
