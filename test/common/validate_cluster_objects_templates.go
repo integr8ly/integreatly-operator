@@ -42,9 +42,9 @@ func TestClusterObjectTemplateState(t TestingTB, ctx *TestingContext) {
 	if cotCount != activeCount {
 		t.Log("ClusterObjectTemplates not in Active state")
 		for _, i := range problemCotList {
-			t.Log(i)
+			t.Logf("\t %s", i)
 		}
-		t.Fatal("Count of Status Active in ClusterObjectTemplates does not match the list count")
+		t.Fatalf("%d ClusterObjectTemplates are not in an active state", len(problemCotList))
 	}
 
 }
