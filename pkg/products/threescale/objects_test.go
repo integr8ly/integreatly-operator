@@ -331,7 +331,7 @@ var threescaleRoute1 = &v1.Route{
 	},
 }
 
-// Have two system-developer routes, the reconcile should pick up on 3scale.
+// Have two system-developer routes, the reconcile should pick up on 3scale + wildcard domain from apim.
 var threescaleRoute2 = &v1.Route{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "3scale-system-developer-route",
@@ -341,7 +341,7 @@ var threescaleRoute2 = &v1.Route{
 		},
 	},
 	Spec: v1.RouteSpec{
-		Host: "system-developer",
+		Host: "3scale.apps-somedomain.example.com",
 	},
 	Status: v1.RouteStatus{
 		Ingress: []v1.RouteIngress{
@@ -361,7 +361,7 @@ var threescaleRoute3 = &v1.Route{
 		},
 	},
 	Spec: v1.RouteSpec{
-		Host: "3scale.system-developer",
+		Host: "3scale.apps.example.com",
 	},
 }
 

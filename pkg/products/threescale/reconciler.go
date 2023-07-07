@@ -2401,6 +2401,80 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	apim := &threescalev1.APIManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apiManagerName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	key := k8sclient.ObjectKeyFromObject(apim)
+	err := client.Get(ctx, key, apim)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	cfg, err := r.ConfigManager.ReadObservability()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-admin-ui", "http_2xx", prometheus.ProbeTargetStaticConfig{
+		Targets: []string{r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI()},
+		Labels: map[string]string{
+			"service": "3scale-admin-ui",
+		},
+	})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		r.log.Error("Error creating threescale prometheus probe", err)
+		return phase, fmt.Errorf("error creating threescale prometheus probe: %w", err)
+	}
+
+	//  Get route by 3scale Prefix
+	// Create a prometheus probe for the developer console ui
+	threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+		return strings.HasPrefix(r.Spec.Host, fmt.Sprintf("3scale.%v", apim.Spec.WildcardDomain))
+	})
+	if err != nil {
+		r.log.Info("Failed to retrieve threescale threescaleRoute: " + err.Error())
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	if threescaleRoute == nil {
+		r.log.Info("Failed to retrieve threescale system-developer Route with 3scale prefix or uibbt label")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+	phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-developer", "http_2xx", prometheus.ProbeTargetStaticConfig{
+		Targets: []string{"https://" + threescaleRoute.Spec.Host},
+		Labels: map[string]string{
+			"service": "3scale-developer-console-ui",
+		},
+	})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		r.log.Error("Error creating prometheus probe (system-developer)", err)
+		return phase, fmt.Errorf("error creating threescale prometheus probe (system-developer): %w", err)
+	}
+
+	// Create a prometheus probe for the master console ui
+	threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+	phase, err = observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-3scale-system-master", "http_2xx", prometheus.ProbeTargetStaticConfig{
+		Targets: []string{"https://" + threescaleRoute.Spec.Host},
+		Labels: map[string]string{
+			"service": "3scale-system-admin-ui",
+		},
+	})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		r.log.Error("Error creating prometheus probe (system-master)", err)
+		return phase, fmt.Errorf("error creating threescale prometheus probe (system-master): %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string, filterFn func(r routev1.Route) bool) (*routev1.Route, error) {
 	// Add backwards compatible filter function, first element will do
 	if filterFn == nil {
