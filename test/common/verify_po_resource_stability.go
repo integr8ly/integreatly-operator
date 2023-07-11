@@ -4,18 +4,19 @@ import (
 	goctx "context"
 	"fmt"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
 
 var (
-	threescaleOperatorNs = "redhat-rhoam-3scale-operator"
-	serviceMonitorName   = "threescale-operator-controller-manager-metrics-monitor"
+	serviceMonitorNameNamespace = ThreeScaleOperatorNamespace
+	serviceMonitorName          = "threescale-operator-controller-manager-metrics-monitor"
 )
 
 func TestPackageOperatorResourceStability(t TestingTB, ctx *TestingContext) {
 	// Fetch the initial state of the resource
-	resource, err := getServiceMonitor(ctx, threescaleOperatorNs, serviceMonitorName)
+	resource, err := getServiceMonitor(ctx, serviceMonitorNameNamespace, serviceMonitorName)
 	if err != nil {
 		t.Fatalf("Failed to fetch resource: %v", err)
 	}
@@ -31,25 +32,17 @@ func TestPackageOperatorResourceStability(t TestingTB, ctx *TestingContext) {
 
 }
 
-func getServiceMonitor(ctx *TestingContext, nameSpace, serviceName string) (*monitoringv1.ServiceMonitor, error) {
-	// Get the list of service monitors in the namespace
-	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(nameSpace),
+func getServiceMonitor(ctx *TestingContext, namespace, serviceName string) (*monitoringv1.ServiceMonitor, error) {
+	sm := &monitoringv1.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+		},
 	}
-
-	serviceMonitors := &monitoringv1.ServiceMonitorList{}
-	err := ctx.Client.List(goctx.TODO(), serviceMonitors, listOpts...)
+	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: sm.Name, Namespace: sm.Namespace}, sm)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ServiceMonitor %s not found in namespace %s", serviceName, namespace)
 	}
 
-	// Iterate over the service monitors to find the one with the specified name
-	for _, sm := range serviceMonitors.Items {
-		if sm.Name == serviceName {
-			return sm, nil
-		}
-	}
-
-	// If the specific service monitor is not found, return an error
-	return nil, fmt.Errorf("ServiceMonitor %s not found in namespace %s", serviceName, nameSpace)
+	return sm, nil
 }
