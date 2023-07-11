@@ -1,4 +1,4 @@
-package monitoringcommon
+package obo
 
 import (
 	"context"

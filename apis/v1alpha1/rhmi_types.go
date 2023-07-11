@@ -45,7 +45,6 @@ var (
 	BootstrapStage               StageName = "bootstrap"
 	InstallStage                 StageName = "installation"
 	CloudResourcesStage          StageName = "cloud-resources"
-	MonitoringStage              StageName = "monitoring"
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	UninstallProductsStage       StageName = "uninstall - products"
