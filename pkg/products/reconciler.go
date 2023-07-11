@@ -11,8 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
-
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
 	"net/http"
@@ -55,7 +53,7 @@ type Interface interface {
 	//the namespace prefix.
 	//
 	//### product
-	//This is a pointer to the this reconciler's product in the status block of the CR, it can be used to set values
+	//This is a pointer to this reconciler's product in the status block of the CR, it can be used to set values
 	//such as version, host and operator version.
 	//### serverClient
 	//This is the client to the cluster, and is used for getting, creating, updating and deleting resources in the cluster.
@@ -75,7 +73,7 @@ type Interface interface {
 	//other reconcilers.
 	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 
-	//GetPreflightObjects informs the operator of what object it should look for, to check if the product is already installed. The
+	//GetPreflightObject informs the operator of what object it should look for, to check if the product is already installed. The
 	//namespace argument is the namespace currently being scanned for existing installations.
 	//
 	//For example, codeready looks for a deployment in the scanned namespace with the name "codeready", if found this
@@ -87,7 +85,7 @@ type Interface interface {
 	VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool
 }
 
-func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log l.Logger, productsInstalllationLoader marketplace.ProductsInstallationLoader) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log l.Logger, productsInstallationLoader marketplace.ProductsInstallationLoader) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 
 	if installation.Spec.SelfSignedCerts {
@@ -96,7 +94,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 
 	recorder := mgr.GetEventRecorderFor(string(product))
 
-	productsInstallation, err := productsInstalllationLoader.GetProductsInstallation()
+	productsInstallation, err := productsInstallationLoader.GetProductsInstallation()
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +126,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-	case integreatlyv1alpha1.ProductMonitoringSpec:
-		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
 		client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second

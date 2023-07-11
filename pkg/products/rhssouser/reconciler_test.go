@@ -1601,7 +1601,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSOUser})
 }
 
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {

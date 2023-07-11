@@ -58,7 +58,6 @@ var (
 	ProductMonitoring     ProductName = "middleware-monitoring"
 	ProductObservability  ProductName = "observability" // TODO MGDAPI-5833
 	ProductCloudResources ProductName = "cloud-resources"
-	ProductMonitoringSpec ProductName = "monitoring-spec"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
 	ProductMCG            ProductName = "mcg"
@@ -71,7 +70,6 @@ var (
 	VersionCloudResources ProductVersion = "1.1.0"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
-	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "4.2.0"
@@ -82,13 +80,11 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionMonitoring OperatorVersion = "1.8.0"
-	OperatorVersionRHSSO      OperatorVersion = "7.6.3-1"
-	OperatorVersionRHSSOUser  OperatorVersion = "7.6.3-1"
-
+	OperatorVersionMonitoring     OperatorVersion = "1.8.0"
+	OperatorVersionRHSSO          OperatorVersion = "7.6.3-1"
+	OperatorVersionRHSSOUser      OperatorVersion = "7.6.3-1"
 	OperatorVersionCloudResources OperatorVersion = "1.1.0"
 	OperatorVersion3Scale         OperatorVersion = "0.11.5-mas"
-	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
 	OperatorVersionObservability  OperatorVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type
