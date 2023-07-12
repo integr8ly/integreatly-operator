@@ -857,7 +857,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 			Name:      ruleName,
 			Namespace: ns,
 			Labels: map[string]string{
-				"monitoring-key": "middleware",
+				config.GetOboLabelSelectorKey(): config.GetOboLabelSelector(),
 			},
 		},
 		Spec: monv1.PrometheusRuleSpec{

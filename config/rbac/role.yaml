@@ -105,13 +105,6 @@ rules:
   - get
   - list
 - apiGroups:
-  - applicationmonitoring.integreatly.org
-  - integreatly.org
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
   - apps
   resources:
   - deployments
@@ -193,6 +186,12 @@ rules:
   - delete
   - get
   - update
+- apiGroups:
+  - integreatly.org
+  resources:
+  - '*'
+  verbs:
+  - '*'
 - apiGroups:
   - integreatly.org
   resources:

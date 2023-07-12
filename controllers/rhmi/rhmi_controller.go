@@ -117,7 +117,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // ClusterRole permissions
 
-// +kubebuilder:rbac:groups=integreatly.org;applicationmonitoring.integreatly.org,resources=*,verbs=*
+// +kubebuilder:rbac:groups=integreatly.org,resources=*,verbs=*
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
 
