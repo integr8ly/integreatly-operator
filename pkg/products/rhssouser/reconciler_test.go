@@ -76,11 +76,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetOauthClientsSecretNameFunc: func() string {
 			return "oauth-client-secrets"
 		},
-		ReadMonitoringFunc: func() (*config.Monitoring, error) {
-			return config.NewMonitoring(config.ProductConfig{
-				"NAMESPACE": "middleware-monitoring",
-			}), nil
-		},
 		ReadObservabilityFunc: func() (*config.Observability, error) {
 			return config.NewObservability(config.ProductConfig{
 				"NAMESPACE": "observability",

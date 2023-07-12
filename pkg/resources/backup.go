@@ -200,8 +200,6 @@ func reconcileCronjobs(ctx context.Context, serverClient k8sclient.Client, confi
 }
 
 func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, component BackupComponent) error {
-	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
-
 	cronjob := &batchv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      component.Name,
@@ -210,7 +208,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cronjob, func() error {
-		cronjob.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		cronjob.Labels = map[string]string{"integreatly": "yes", productsConfig.GetOboLabelSelectorKey(): productsConfig.GetOboLabelSelector()}
 		cronjob.Spec = batchv1.CronJobSpec{
 			Schedule:          component.Schedule,
 			ConcurrencyPolicy: "Forbid",
@@ -289,9 +287,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, installType string) error {
 	installationName := InstallationNames[installType]
 
-	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
-
-	rules := []monitoringv1.Rule{}
+	var rules []monitoringv1.Rule
 	for _, component := range config.Components {
 		rules = append(rules, monitoringv1.Rule{
 			Alert: "CronJobExists_" + config.Namespace + "_" + component.Name,
@@ -313,10 +309,10 @@ func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, 
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
-		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", productsConfig.GetOboLabelSelectorKey(): productsConfig.GetOboLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
-				monitoringv1.RuleGroup{
+				{
 					Name:  "general.rules",
 					Rules: rules,
 				},

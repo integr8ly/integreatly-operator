@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	projectv1 "github.com/openshift/api/project/v1"
 	k8sappsv1 "k8s.io/api/apps/v1"
@@ -334,8 +333,6 @@ func PrepareObjectLabels(object metav1.Object, install *integreatlyv1alpha1.RHMI
 	}
 	if addRHMIMonitoringLabels {
 		labels["monitoring-key"] = "middleware"
-		monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
-		labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
 	} else {
 		delete(labels, "monitoring-key")
 	}
