@@ -16,7 +16,7 @@ require (
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/golang/protobuf v1.5.3
 	github.com/grafana-operator/grafana-operator/v4 v4.10.0
-	github.com/integr8ly/cloud-resource-operator v1.1.0
+	github.com/integr8ly/cloud-resource-operator v1.1.1
 	github.com/integr8ly/keycloak-client v0.1.11
 	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
 	github.com/noobaa/noobaa-operator/v5 v5.11.0

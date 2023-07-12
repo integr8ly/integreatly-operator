@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/annotations"
 	"github.com/integr8ly/cloud-resource-operator/pkg/providers/gcp/gcpiface"
 	errorUtil "github.com/pkg/errors"
+	str2duration "github.com/xhit/go-str2duration/v2"
 	"google.golang.org/api/option"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 
@@ -31,6 +33,7 @@ const (
 	labelLatest                  = "latest"
 	labelBucketName              = "bucketName"
 	labelObjectName              = "objectName"
+	lifecycleAdditionalDays      = 10
 )
 
 type PostgresSnapshotProvider struct {
@@ -128,6 +131,24 @@ func (p *PostgresSnapshotProvider) reconcilePostgresSnapshot(ctx context.Context
 	if objectMeta == nil {
 		statusMessage, err := p.createPostgresSnapshot(ctx, snap, pg, config, storageClient, sqlClient)
 		return nil, statusMessage, err
+	}
+	snapshotRetention, err := str2duration.ParseDuration(string(pg.Spec.SnapshotRetention))
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to parse %q into go duration", pg.Spec.SnapshotRetention)
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	lifecycleDays := int64(math.Ceil(snapshotRetention.Hours()/24) + lifecycleAdditionalDays)
+	hasLifecycle, err := storageClient.HasBucketLifecycle(ctx, instanceName, lifecycleDays)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to check object lifecycle for bucket %s", instanceName)
+		return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+	}
+	if !hasLifecycle {
+		err = storageClient.SetBucketLifecycle(ctx, instanceName, lifecycleDays)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to set object lifecycle for bucket %s", instanceName)
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
+		}
 	}
 	statusMessage, err := p.reconcileSkipDelete(ctx, snap)
 	if err != nil {
