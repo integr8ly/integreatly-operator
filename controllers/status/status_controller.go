@@ -81,6 +81,12 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	if addonInstance.Spec.MarkedForDeletion && installation != nil {
+		if err := r.Client.Delete(ctx, installation); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	conditions := r.buildAddonInstanceConditions(installation)
 
 	if err := r.updateAddonInstanceWithConditions(ctx, addonInstance, conditions); err != nil {
@@ -112,7 +118,7 @@ func (r *StatusReconciler) buildAddonInstanceConditions(installation *v1alpha1.R
 
 	// Addon uninstall complete
 	if installation == nil {
-		conditions = append(conditions, installation.UninstalledCondition())
+		conditions = append(conditions, installation.UninstalledCondition(), installation.ReadyToBeDeletedCondition())
 		r.Log.Info("Addon Successfully uninstalled")
 		return conditions
 	}

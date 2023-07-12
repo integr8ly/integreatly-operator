@@ -9,6 +9,9 @@ import (
 
 // AddonInstanceSpec defines the configuration to consider while taking AddonInstance-related decisions such as HeartbeatTimeouts
 type AddonInstanceSpec struct {
+	// This field indicates whether the addon is marked for deletion.
+	// +optional
+	MarkedForDeletion bool `json:"markedForDeletion"`
 	// The periodic rate at which heartbeats are expected to be received by the AddonInstance object
 	// +kubebuilder:default="10s"
 	HeartbeatUpdatePeriod metav1.Duration `json:"heartbeatUpdatePeriod,omitempty"`
@@ -96,6 +99,9 @@ const (
 	// 'True' or 'False' with additional detail provided thorugh messages
 	// while condition is still 'False'.
 	AddonInstanceConditionInstalled AddonInstanceCondition = "Installed"
+
+	// ReadyToBeDeleted condition indicates whether the addon is ready to be deleted or not.
+	AddonInstanceConditionReadyToBeDeleted AddonInstanceCondition = "ReadyToBeDeleted"
 )
 
 // AddonInstanceHealthyReason is a condition reason used by
@@ -140,6 +146,20 @@ const (
 	// AddonInstanceInstalledReasonBlocked is a status condition
 	// reason used when addon installation is blocked.
 	AddonInstanceInstalledReasonBlocked AddonInstanceInstalledReason = "Blocked"
+)
+
+type AddonInstanceReadyToBeDeleted string
+
+func (r AddonInstanceReadyToBeDeleted) String() string {
+	return string(r)
+}
+
+const (
+	// Addon is ready to be deleted.
+	AddonInstanceReasonReadyToBeDeleted AddonInstanceReadyToBeDeleted = "AddonReadyToBeDeleted"
+
+	// Addon is not yet ready to deleted.
+	AddonInstanceReasonNotReadyToBeDeleted AddonInstanceReadyToBeDeleted = "AddonNotReadyToBeDeleted"
 )
 
 func init() {

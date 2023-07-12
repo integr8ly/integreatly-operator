@@ -32,7 +32,7 @@ func TestStatusReconciler_BuildAddonInstanceConditions(t *testing.T) {
 	}{
 		{
 			name: "test uninstalled condition if installation is nil",
-			want: []metav1.Condition{installation.UninstalledCondition()},
+			want: []metav1.Condition{installation.UninstalledCondition(), installation.ReadyToBeDeletedCondition()},
 		},
 		{
 			name: "test installed, core components unhealthy and degraded condition",
@@ -279,6 +279,14 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	installation := &v1alpha1.RHMI{ObjectMeta: metav1.ObjectMeta{Namespace: testDetail}}
+	addonInstanceD := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}, Spec: addonv1alpha1.AddonInstanceSpec{MarkedForDeletion: true}}
+
+	clientDeleteErr := moqclient.NewSigsClientMoqWithScheme(scheme, addonInstanceD, installation)
+	clientDeleteErr.DeleteFunc = func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+		return fmt.Errorf("error")
+	}
+
 	type fields struct {
 		Client client.Client
 		Log    logger.Logger
@@ -301,10 +309,34 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 				req: requestFactory(testDetail, testDetail),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}}, &v1alpha1.RHMI{ObjectMeta: metav1.ObjectMeta{Namespace: testDetail}}),
+				Client: utils.NewTestClient(scheme, &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}}, installation),
 			},
 			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
 			wantErr: false,
+		},
+		{
+			name: "test successful reconcile - deletion",
+			args: args{
+				ctx: ctx,
+				req: requestFactory(testDetail, testDetail),
+			},
+			fields: fields{
+				Client: utils.NewTestClient(scheme, addonInstanceD, installation),
+			},
+			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
+			wantErr: false,
+		},
+		{
+			name: "test error deleting RHMI CR",
+			args: args{
+				ctx: ctx,
+				req: requestFactory(testDetail, testDetail),
+			},
+			fields: fields{
+				Client: clientDeleteErr,
+			},
+			want:    controllerruntime.Result{},
+			wantErr: true,
 		},
 		{
 			name: "test error patching AddonInstance CR",

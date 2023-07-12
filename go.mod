@@ -23,7 +23,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.3
 	github.com/openshift/addon-operator v1.12.0
-	github.com/openshift/addon-operator/apis v0.0.0-20230505081548-bce54f373482
+	github.com/openshift/addon-operator/apis v0.0.0-20230706051718-4032d89c8b54
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6
