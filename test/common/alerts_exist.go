@@ -378,15 +378,13 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 			},
 		},
 		{
-			File: ObservabilityNamespacePrefix + "ksm-endpoint-alerts.yaml",
+			File: ObservabilityNamespacePrefix + "obo-ksm-endpoint-alerts.yaml",
 			Rules: []string{
-				"RHOAMMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
-				"RHOAMMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHOAMOboAlertmanagerOperatedServiceEndpointDown",
+				"RHOAMOboAlertmanagerServiceEndpointDown",
+				"RHOAMOboPrometheusOperatedServiceEndpointDown",
+				"RHOAMOboPrometheusServiceEndpointDown",
+				"RHOAMOboBlackboxExporterEndpointDown",
 			},
 		},
 		{
