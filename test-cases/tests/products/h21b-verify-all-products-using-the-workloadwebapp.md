@@ -42,10 +42,10 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
    > THREE_SCALE_URL=https://...
    > ```
 
-4. Open the RHOAM Grafana Console in the `redhat-rhoam-observability` namespace
+4. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
 
    ```bash
-   echo "https://$(oc get route grafana-route -n redhat-rhoam-observability -o=jsonpath='{.spec.host}')"
+   echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
    ```
 
 5. Select the **Workload App** dashboard
