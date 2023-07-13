@@ -42,7 +42,7 @@ More info: <https://issues.redhat.com/browse/INTLY-9043>
    3. Scale `system-app` down to 0 pods
 4. Check that all `ThreeScale**UIBBT` alerts are firing
    1. **Networking > Routes**
-   2. Select `redhat-rhoam-observability` project
+   2. Select `redhat-rhoam-operator-operator-observability` project
    3. Open route for `alertmanager`
       > `ThreeScale**UIBBT` should be firing
 5. Scale 3scale operator back up

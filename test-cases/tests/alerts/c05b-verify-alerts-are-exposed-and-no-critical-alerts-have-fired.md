@@ -43,20 +43,19 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 4. Check there are no currently firing alerts.
 
-   - Get the prometheus route `oc get routes -n redhat-rhoam-observability | grep prometheus`
-   - Login to Prometheus using kubeadmin credentials
-   - Allow permissions
-   - In the alerts tab in the prometheus ui confirm that only one alert DeadMansSwitch is firing
+   - Access the prometheus pod on the `redhat-rhoam-operator-observability` namespace with:
+
+     - `oc exec -n redhat-rhoam-operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate http://localhost:9090/api/v1/alerts | jq -r '.data.alerts[] | [.labels.alertname, .state, .activeAt] | @tsv'`
+
+   - Confirm that only one alert DeadMansSwitch is firing
 
    > The only RHOAM alert here should be DeadMansSwitch.
-   >
-   > Note: there may be other alerts from the Openshift firing, however for the purposses of this test, it only fails if RHOAM alerts are firing here.
 
 5. Check no unexpected alert email notifications were received. Check this when cluster is more than a few hours old, at least 1 day old, and before cluster is deprovisioned.
 
    > If any critical alerts fired during any of these periods:
    >
-   > 1. Take screenshots showing the time the alerts fired and when they were resolved
+   > 1. Take note of the time the alerts fired and when they were resolved
    > 2. Create a followup bug JIRA and inform release coordinators. Example JIRA: https://issues.redhat.com/browse/INTLY-9443
    > 3. Request that cluster lifespan be extended to allow time for cluster to be investigated (ask release coordinator).
 

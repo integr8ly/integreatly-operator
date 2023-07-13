@@ -66,10 +66,10 @@ You should get the output `rhmi.integreatly.org/rhoam patched`.
 
 You can verify that the email will be redirected by checking the status in _Alertmanager_.
 
-- Open alert manager with the command (on your testing cluster)
+- Open alert manager by following the port forwarded address using the following command (on your testing cluster)
 
 ```
-open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+oc port-forward -n redhat-rhoam-operator-observability alertmanager-rhoam-0 9093:9093
 ```
 
 - Login with kube admin and select the **Status** option from the nav menu.
@@ -238,13 +238,13 @@ Example:
 const url = "https://api-3scale-apicast-production.apps.mgdapi-84-trdoy.ro2p.s1.devshift.org:443/?user_key=7e9c1ef1c9c156af05fa7894f4a3529f"
 ```
 
-**8. Access Prometheus route (from your terminal on local machine)**
+**8. Port forward the Prometheus Route (from your terminal on local machine)**
 
 ```bash
- open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+oc port-forward -n redhat-rhoam-operator-observability prometheus-rhoam-0 9090:9090
 ```
 
-and login to Prometheus as _Kubeadmin_.
+follow the port forwarded url and login to Prometheus as _Kubeadmin_.
 
 **9. Run the load test:**
 

@@ -96,7 +96,7 @@ CLUSTER_ID=$(ocm get clusters --parameter search="name like '%$CLUSTER_NAME%'" |
    ```
    cd delorean
    make build/cli
-   ./delorean pipeline query-report --namespace redhat-rhoam-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
+   ./delorean pipeline query-report --namespace redhat-rhoam-operator-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
    ```
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)

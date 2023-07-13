@@ -49,7 +49,7 @@ tags:
 
     ```shell script
 
-    oc get prometheusrules -n redhat-rhoam-observability | grep marin3r-api
+    oc get prometheusrules.monitoring.rhobs -n redhat-rhoam-operator-observability | grep marin3r-api
     ```
 
 3.  Ensure the installation is on 1 million quota to test
@@ -111,14 +111,14 @@ tags:
     Open the Alert Manager console and login via Openshift:
 
     ```shell script
-
-    # For Mac
-    open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
-    # For Linux
-    xdg-open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+     oc exec -n redhat-rhoam-operator-observability alertmanager-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate 'http://localhost:9093/api/v1/status/' | jq -r '.data.configJSON.receivers[] | select(.name == "BUandCustomer") | .email_configs[].to'
     ```
 
-    Go to `Status -> Config` and check that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
+    ```shell script
+     oc exec -n redhat-rhoam-operator-observability alertmanager-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate 'http://localhost:9093/api/v1/status/' | jq -r '.data.configJSON.receivers[] | select(.name == "SRECustomerBU") | .email_configs[].to'
+    ```
+
+    Run those commands and verify that the BU, SRE and Customer email addresses are included in the `BUAndCustomer` and `SRECustomerBU` receivers in the Alert Manager configuration where appropriate.
 
 7.  From the OpenShift console, retrieve the 3Scale admin password by going to `Secrets` > `system-seed` under the `redhat-rhoam-3scale` namespace and copying the `admin` password
 
@@ -169,13 +169,10 @@ tags:
     It takes 30 minutes for the RHOAMApiUsageOverLimit to fire. In a following step the number of requests required to trigger this
     alert will be reached. You will be asked to note the time at that point. Ensure the alert is present by taking the following steps:
 
-    Navigate to the Prometheus Alert Console
+    Using the command below verify that the RHOAMApiUsageOverLimit alert contains `695` at the end of its query. For example:
 
     ```shell script
-    # For Mac
-    open "https://$(oc get route prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
-    # For Linux
-    xdg-open "https://$(oc get route prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')/alerts"
+    oc exec -n redhat-rhoam-operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate "http://localhost:9090/api/v1/rules" | jq -r '.data.groups[].rules[] | select(.name == "RHOAMApiUsageOverLimit") | .query'
     ```
 
     Verify that the RHOAMApiUsageOverLimit alert contains `695` at the end of its query. For example:
@@ -190,23 +187,13 @@ tags:
         | RHOAMApiUsageLevel2ThresholdExceeded | 640                         | BU and Customers      |
         | RHOAMApiUsageLevel3ThresholdExceeded | 670                         | BU, Customers and SRE |
 
-    Open the Prometheus console:
+    Execute the following terminal command:
 
     ```shell script
-
-    # For Mac
-    open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
-    # For Linux
-    xdg-open "https://$(oc get routes prometheus -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+    oc exec -n redhat-rhoam-operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate "http://localhost:9090/api/v1/query?query=increase(authorized_calls%5B1m%5D)%20%2B%20increase(limited_calls%5B1m%5D)" | jq -r
     ```
 
-    Add the following expression into the `Expression` field in the console:
-
-    ```
-    increase(authorized_calls[1m]) + increase(limited_calls[1m])
-    ```
-
-    Click the `Execute` button. A `empty query result` should be returned.
+    An `empty query result` should be returned.
 
     Navigate back to the prometheus console, go to `Alerts` and search for the corresponding alert name in the table above e.g. `RHOAMApiUsageLevel1ThresholdExceeded`
 

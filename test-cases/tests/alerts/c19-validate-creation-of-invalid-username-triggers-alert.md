@@ -70,7 +70,7 @@ open "https://$(oc get route keycloak -n redhat-rhoam-rhsso -o=jsonpath='{.spec.
 10. Go to alert manager and log in as kubeadmin
 
 ```bash
-open "https://$(oc get route alertmanager -n redhat-rhoam-observability -o jsonpath='{.spec.host}')"
+oc exec -n redhat-rhoam-operator-observability alertmanager-rhoam-0 -- wget -qO- --header='Accept: application/json' --no-check-certificate http://localhost:9093/api/v1/alerts | jq -r
 ```
 
 > Validate there is "ThreeScaleUserCreationFailed" alert firing
