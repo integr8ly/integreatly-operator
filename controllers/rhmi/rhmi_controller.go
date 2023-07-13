@@ -929,7 +929,6 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			log.Infof("error validating cluster package availability", l.Fields{"error": err.Error()})
 			return result, err
 		}
-
 	}
 
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
