@@ -38,6 +38,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,6 +66,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
+
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 const (
@@ -78,6 +81,7 @@ const (
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
+	clusterPackageName               = "rhoam-config"
 )
 
 var (
@@ -919,11 +923,39 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		log.Info("STS mode enabled for cluster")
 	}
 
+	if !resources.IsInProw(installation) {
+		err = r.checkClusterPackageAvailablity()
+		if err != nil {
+			log.Infof("error validating cluster package availability", l.Fields{"error": err.Error()})
+		}
+	}
+
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"
 	err = r.Status().Update(context.TODO(), installation)
 	if err != nil {
 		log.Infof("error updating status", l.Fields{"error": err.Error()})
+	}
+	return nil
+}
+
+func (r *RHMIReconciler) checkClusterPackageAvailablity() error {
+
+	clusterPackage := &packageOperatorv1alpha1.ClusterPackage{
+		ObjectMeta: v1.ObjectMeta{
+			Name: clusterPackageName,
+		},
+	}
+
+	err := r.Get(context.TODO(), k8sclient.ObjectKey{Name: clusterPackage.Name}, clusterPackage)
+	if err != nil {
+		log.Infof("error cluster package not available", l.Fields{"error": err.Error()})
+		return err
+	}
+
+	if clusterPackage.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
+		log.Info("error cluster package state is not phase available")
+		return fmt.Errorf("error cluster package state is not phase available")
 	}
 	return nil
 }

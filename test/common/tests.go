@@ -75,6 +75,7 @@ var (
 		//This is because the prow checks run on OCP clusters and OCP clusters don't install OBO by default. See MGDAPI-5783.
 		{
 			[]TestCase{
+				{"Test if cluster package is available", TestClusterPackageAvailable},
 				{"Test RHMI installation CR metric", TestRHMICRMetrics},
 				{"A06 - Verify PVC", TestPVClaims},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},

@@ -34,6 +34,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 // NewTestScheme returns a scheme for use in unit tests
@@ -73,6 +74,7 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		obv1.SchemeBuilder.AddToScheme,
 		storagev1.AddToScheme,
 		addonv1alpha1.AddToScheme,
+		packageOperatorv1alpha1.AddToScheme,
 	)
 
 	if err := schemeBuilder.AddToScheme(scheme); err != nil {
