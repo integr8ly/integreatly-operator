@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"strings"
 	"time"
 
@@ -86,10 +87,10 @@ func TestIntegreatlyAlertsMechanism(t TestingTB, ctx *TestingContext) {
 	}
 	t.Log("Keycloak alerts are not firing")
 
-	// verify alertmanager-application-monitoring secret
+	// verify alertmanager-rhoam secret
 	err = verifySecrets(ctx.KubeClient)
 	if err != nil {
-		t.Fatal("failed to verify alertmanager-application-monitoring secret", err)
+		t.Fatal("failed to verify %s secret with err: %s", config.AlertManagerConfigSecretName, err)
 	}
 
 	t.Log("Alert mechanism test successful")
@@ -130,7 +131,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return err
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(ObservabilityProductNamespace).Get(goctx.TODO(), "alertmanager-application-monitoring", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(ObservabilityProductNamespace).Get(goctx.TODO(), config.AlertManagerConfigSecretName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -187,7 +188,7 @@ func performTest(t TestingTB, ctx *TestingContext, originalOperatorReplicas int3
 
 func checkAlertManager(ctx *TestingContext, t TestingTB) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
-		"alertmanager-alertmanager-0",
+		"alertmanager-rhoam-0",
 		ObservabilityProductNamespace,
 		"alertmanager",
 		ctx)
