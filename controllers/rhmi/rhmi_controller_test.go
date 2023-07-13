@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -462,6 +463,83 @@ func Test_getRebalancePods(t *testing.T) {
 			}
 			if got := getRebalancePods(); got != tt.want {
 				t.Errorf("getRebalancePods() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Client                     client.Client
+		Scheme                     *runtime.Scheme
+		mgr                        controllerruntime.Manager
+		controller                 controller.Controller
+		restConfig                 *rest.Config
+		customInformers            map[string]map[string]*cache.Informer
+		productsInstallationLoader marketplace.ProductsInstallationLoader
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		{
+			name: "Test - RHOAM - cluster package successfully reconciled",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: clusterPackageName,
+						},
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
+						},
+					},
+				)},
+			wantErr: false,
+		},
+		{
+			name: "Test - RHOAM - cluster package not found",
+			fields: fields{
+				Client: utils.NewTestClient(scheme)},
+			wantErr: true,
+		},
+		{
+			name: "Test - RHOAM - cluster package is not phase available",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Phase: packageOperatorv1alpha1.PackagePhaseNotReady,
+						},
+					},
+				)},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			r := &RHMIReconciler{
+				Client:                     tt.fields.Client,
+				Scheme:                     tt.fields.Scheme,
+				mgr:                        tt.fields.mgr,
+				controller:                 tt.fields.controller,
+				restConfig:                 tt.fields.restConfig,
+				customInformers:            tt.fields.customInformers,
+				productsInstallationLoader: tt.fields.productsInstallationLoader,
+			}
+
+			err := r.checkClusterPackageAvailablity()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAlertingNamespace() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
