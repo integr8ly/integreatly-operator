@@ -41,6 +41,7 @@ import (
 func NewTestScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
+		packageOperatorv1alpha1.AddToScheme,
 		monv1.AddToScheme,
 		policyv1.AddToScheme,
 		corev1.AddToScheme,
