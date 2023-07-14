@@ -336,12 +336,13 @@ func (p *RedisProvider) createElasticacheCluster(ctx context.Context, r *v1alpha
 			}
 			logger.Infof("set pending modifications to elasticache replication group %s", *foundCache.ReplicationGroupId)
 		}
-		if serviceUpdates != nil && len(serviceUpdates.updates) > 0 {
-			err = p.applySpecifiedSecurityUpdates(cacheSvc, foundCache, serviceUpdates)
-			if err != nil {
-				errMsg := "there was an error applying critical security updates"
-				return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
-			}
+	}
+
+	if serviceUpdates != nil && len(serviceUpdates.updates) > 0 {
+		err = p.applySpecifiedSecurityUpdates(cacheSvc, foundCache, serviceUpdates)
+		if err != nil {
+			errMsg := "there was an error applying critical security updates"
+			return nil, croType.StatusMessage(errMsg), errorUtil.Wrap(err, errMsg)
 		}
 	}
 

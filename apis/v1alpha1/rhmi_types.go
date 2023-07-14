@@ -69,7 +69,7 @@ var (
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionMonitoring     ProductVersion = "1.8.0"
 	Version3Scale         ProductVersion = "2.13.0"
-	VersionCloudResources ProductVersion = "1.1.0"
+	VersionCloudResources ProductVersion = "1.1.1"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMonitoringSpec ProductVersion = "1.0"
@@ -87,7 +87,7 @@ var (
 	OperatorVersionRHSSO      OperatorVersion = "7.6.3-1"
 	OperatorVersionRHSSOUser  OperatorVersion = "7.6.3-1"
 
-	OperatorVersionCloudResources OperatorVersion = "1.1.0"
+	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.5-mas"
 	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
