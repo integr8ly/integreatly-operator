@@ -166,7 +166,7 @@ func (t *ThreeScale) GetBackendRedisNodeSize(activeQuota string, platformType co
 	if activeQuota == quota.OneHundredMillionQuotaName {
 		switch platformType {
 		case configv1.AWSPlatformType:
-			return "cache.m5.large"
+			return "cache.m5.xlarge"
 		case configv1.GCPPlatformType:
 			// size in GB on GCP
 			return "11"
