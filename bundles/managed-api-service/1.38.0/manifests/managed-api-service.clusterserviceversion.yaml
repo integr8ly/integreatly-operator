@@ -184,6 +184,13 @@ spec:
       clusterPermissions:
         - rules:
             - apiGroups:
+                - package-operator.run
+              resources:
+                - clusterpackages
+              verbs:
+                - get
+                - list
+            - apiGroups:
                 - ""
               resources:
                 - configmaps
@@ -437,6 +444,20 @@ spec:
                 - get
                 - list
                 - update
+            - apiGroups:
+                - monitoring.rhobs
+              resources:
+                - podmonitors
+                - probes
+                - prometheusrules
+                - servicemonitors
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
             - apiGroups:
                 - noobaa.io
               resources:
