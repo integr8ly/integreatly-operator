@@ -124,6 +124,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // +kubebuilder:rbac:groups=integreatly.org,resources=*,verbs=*
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=package-operator.run,resources=clusterpackages, verbs=get;list
 
 // We need to add leases permissions to establish the leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update;delete;watch
@@ -927,6 +928,13 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		err = r.checkClusterPackageAvailablity()
 		if err != nil {
 			log.Infof("error validating cluster package availability", l.Fields{"error": err.Error()})
+			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+			installation.Status.PreflightMessage = "error validating cluster package availability"
+			err = r.Status().Update(context.TODO(), installation)
+			if err != nil {
+				log.Infof("error updating status", l.Fields{"error": err.Error()})
+				return result, err
+			}
 			return result, err
 		}
 	}

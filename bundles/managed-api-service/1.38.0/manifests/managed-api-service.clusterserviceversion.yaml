@@ -184,6 +184,13 @@ spec:
       clusterPermissions:
         - rules:
             - apiGroups:
+                - package-operator.run
+              resources:
+                - clusterpackages
+              verbs:
+                - get
+                - list
+            - apiGroups:
                 - ""
               resources:
                 - configmaps

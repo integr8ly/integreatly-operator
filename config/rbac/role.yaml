@@ -394,6 +394,13 @@ rules:
   - delete
   - update
 - apiGroups:
+  - package-operator.run
+  resources:
+  - clusterpackages
+  verbs:
+  - get
+  - list
+- apiGroups:
   - project.openshift.io
   resources:
   - projects
