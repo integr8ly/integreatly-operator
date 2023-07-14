@@ -4214,7 +4214,7 @@ services-rhoam:master/github.com/opencontainers/image-spec-v1.1.0-rc2
 services-rhoam:master/github.com/opencontainers/runc-v0.0.0-20191031171055-b133feaeeb2e
 services-rhoam:master/github.com/openshift/addon-operator-v1.12.0
 services-rhoam:master/github.com/openshift/addon-operator/apis-v0.0.0-20230309184833-806514f6132f
-services-rhoam:master/github.com/openshift/addon-operator/apis-v0.0.0-20230505081548-bce54f373482
+services-rhoam:master/github.com/openshift/addon-operator/apis-v0.0.0-20230706051718-4032d89c8b54
 services-rhoam:master/github.com/openshift/api-v0.0.0-20200827090112-c05698d102cf
 services-rhoam:master/github.com/openshift/api-v0.0.0-20201103184615-27004eede929
 services-rhoam:master/github.com/openshift/api-v0.0.0-20210521075222-e273a339932a
