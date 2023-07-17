@@ -45,10 +45,8 @@ type ConfigReadWriter interface {
 	ReadThreeScale() (*ThreeScale, error)
 	ReadMarin3r() (*Marin3r, error)
 	GetOperatorNamespace() string
-	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadCloudResources() (*CloudResources, error)
-	ReadMonitoringSpec() (*MonitoringSpec, error)
 	ReadGrafana() (*Grafana, error)
 	ReadObservability() (*Observability, error) // TODO MGDAPI-5833 this needs to be removed
 	ReadMCG() (*MCG, error)
@@ -98,10 +96,6 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadRHSSOUser()
 	case integreatlyv1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
-	case integreatlyv1alpha1.ProductMonitoring:
-		return m.ReadMonitoring()
-	case integreatlyv1alpha1.ProductMonitoringSpec:
-		return m.ReadMonitoringSpec()
 	case integreatlyv1alpha1.ProductMarin3r:
 		return m.ReadMarin3r()
 	case integreatlyv1alpha1.ProductGrafana:
@@ -153,22 +147,6 @@ func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
 		return nil, err
 	}
 	return NewRHSSOUser(config), nil
-}
-
-func (m *Manager) ReadMonitoring() (*Monitoring, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoring)
-	if err != nil {
-		return nil, err
-	}
-	return NewMonitoring(config), nil
-}
-
-func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoringSpec)
-	if err != nil {
-		return nil, err
-	}
-	return NewMonitoringSpec(config), nil
 }
 
 func (m *Manager) ReadGrafana() (*Grafana, error) {

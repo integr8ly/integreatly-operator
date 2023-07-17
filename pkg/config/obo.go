@@ -10,7 +10,10 @@ import (
 )
 
 const (
-	OboNamespaceSuffix = "-observability"
+	OboLabelSelector    = "middleware"
+	OboLabelSelectorKey = "monitoring-key"
+	OboNamespaceSuffix  = "-observability"
+
 	// Alert manager configuration
 	AlertManagerConfigSecretName            = "alertmanager-rhoam"
 	AlertManagerConfigSecretFileName        = "alertmanager.yaml"
@@ -26,6 +29,53 @@ const (
 
 func GetOboNamespace(installationNamespace string) string {
 	return installationNamespace + OboNamespaceSuffix
+}
+
+func GetOboLabelSelector() string {
+	return OboLabelSelector
+}
+
+func GetOboLabelSelectorKey() string {
+	return OboLabelSelectorKey
+}
+
+// TODO MGDAPI-5833: everything *Observability related to be removed
+
+var rhmiTemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-rhmi-alerts",
+	"cro-resources",
+	"rhoam-rhsso-availability-slo",
+}
+
+var managedAPITemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-managed-api-alerts",
+	"cro-resources",
+	"rhoam-rhsso-availability-slo",
+}
+
+var multitenantManagedAPITemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-managed-api-alerts",
+	"cro-resources",
+	"rhoam-rhsso-availability-slo",
+	"multitenancy-detailed",
 }
 
 type Observability struct {
