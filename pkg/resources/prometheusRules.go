@@ -102,7 +102,7 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 					{
 						Name:     alert.GroupName,
 						Rules:    alertRules,
-						Interval: alert.Interval,
+						Interval: monv1.Duration(alert.Interval),
 					},
 				},
 			}
@@ -127,7 +127,7 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 					{
 						Name:     alert.GroupName,
 						Rules:    alertRules,
-						Interval: alert.Interval,
+						Interval: monitoringv1.Duration(alert.Interval),
 					},
 				},
 			}

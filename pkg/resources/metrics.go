@@ -841,7 +841,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 				{
 					Alert:  alertName,
 					Expr:   alertExp,
-					For:    alertFor,
+					For:    monv1.Duration(alertFor),
 					Labels: labels,
 					Annotations: map[string]string{
 						"description": desc,
@@ -876,7 +876,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 					{
 						Alert:  alertName,
 						Expr:   alertExp,
-						For:    alertFor,
+						For:    monv1.Duration(alertFor),
 						Labels: labels,
 						Annotations: map[string]string{
 							"description": desc,
