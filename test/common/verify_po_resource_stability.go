@@ -3,7 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -32,8 +32,8 @@ func TestPackageOperatorResourceStability(t TestingTB, ctx *TestingContext) {
 
 }
 
-func getServiceMonitor(ctx *TestingContext, namespace, serviceName string) (*monitoringv1.ServiceMonitor, error) {
-	sm := &monitoringv1.ServiceMonitor{
+func getServiceMonitor(ctx *TestingContext, namespace, serviceName string) (*monv1.ServiceMonitor, error) {
+	sm := &monv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
 			Namespace: namespace,
