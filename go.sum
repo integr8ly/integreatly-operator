@@ -887,8 +887,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021/go.mod h1:prYjPmNq4d1NPVmpShWobRqXY3q7Vp+80DqgxxUrUIA=
 github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.50.0/go.mod h1:3WYi4xqXxGGXWDdQIITnLNmuDzO5n6wYva9spVhR4fg=
-github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.63.0 h1:efsW3CfymG5bZUpeIsYfdihB33YItCn7uHBOEbnHQG8=
-github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.63.0/go.mod h1:/UtstAaWVaS3Z9GK9jo8+4SN9T+RMSq7VlOcQMmiEsc=
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1 h1:bvntWler8vOjDJtxBwGDakGNC6srSZmgawGM9Jf7HC8=
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1/go.mod h1:cfNgxpCPGyIydmt3HcwDqKDt0nYdlGRhzftl+DZH7WA=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3/go.mod h1:/TN21ttK/J9q6uSwhBd54HahCDft0ttaMvbicHlPoso=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
@@ -925,8 +925,8 @@ github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40T
 github.com/redhat-developer/observability-operator/v4 v4.2.1 h1:vtdNL7TD3jZYs/AT0hY+N2gB/IQ24zsr3uqIgrxDq28=
 github.com/redhat-developer/observability-operator/v4 v4.2.1/go.mod h1:8rGHdo/+QoESmdnFBIJXmfb5JAY5W2Js1uXEOVt0bTs=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
-github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1 h1:sI4OJX9/XkSd8O6/sY4cxJPiuwM1RHv3qygIbDpBoAY=
-github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1/go.mod h1:u8ctCYj9Nq8gkMLfNLxHoslu8SEGrqXP2gFiMUNsn9g=
+github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3 h1:vy4ElN2RHyrIzzPn5b8vKuQLg4ZofuUAz65eLqLqloA=
+github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3/go.mod h1:p+YsgXodntOtgwXKTpWrJzVS7QmMfZlGDG0v6Noze7s=
 github.com/rhobs/observability-operator v0.0.20 h1:u4Ejzq/Yt3rY4b/apKhpgYIvmp+MpcV9hhEzhzedpk4=
 github.com/robfig/cron v1.2.0/go.mod h1:JGuDeoQd7Z6yL4zQhZ3OPEVHB7fL6Ka6skscFHfmt2k=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=

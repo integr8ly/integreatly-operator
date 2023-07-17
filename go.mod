@@ -30,11 +30,11 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.25.0
 	github.com/operator-framework/operator-registry v1.26.5
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.63.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.42.0
 	github.com/redhat-developer/observability-operator/v4 v4.2.1
-	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.9.0

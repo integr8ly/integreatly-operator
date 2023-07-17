@@ -27,9 +27,9 @@ require (
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/operator-framework/api v0.17.5
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.63.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1
 	github.com/prometheus/client_golang v1.14.0
-	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.61.1-rhobs1
+	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/net v0.10.0
 	golang.org/x/term v0.8.0
