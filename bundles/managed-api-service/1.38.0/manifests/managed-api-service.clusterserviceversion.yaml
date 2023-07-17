@@ -283,13 +283,6 @@ spec:
                 - get
                 - list
             - apiGroups:
-                - applicationmonitoring.integreatly.org
-                - integreatly.org
-              resources:
-                - '*'
-              verbs:
-                - '*'
-            - apiGroups:
                 - apps
               resources:
                 - deployments
@@ -374,6 +367,12 @@ spec:
             - apiGroups:
                 - integreatly.org
               resources:
+                - '*'
+              verbs:
+                - '*'
+            - apiGroups:
+                - integreatly.org
+              resources:
                 - apimanagementtenant
               verbs:
                 - get
@@ -437,6 +436,20 @@ spec:
                 - get
                 - list
                 - update
+            - apiGroups:
+                - monitoring.rhobs
+              resources:
+                - podmonitors
+                - probes
+                - prometheusrules
+                - servicemonitors
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - update
+                - watch
             - apiGroups:
                 - noobaa.io
               resources:
@@ -645,8 +658,6 @@ spec:
                     command:
                       - rhmi-operator
                     env:
-                      - name: INSTALLATION_TYPE
-                        value: managed-api
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -661,6 +672,8 @@ spec:
                         value: "true"
                       - name: LOG_LEVEL
                         value: info
+                      - name: INSTALLATION_TYPE
+                        value: managed-api
                       - name: REBALANCE_PODS
                         value: "true"
                       - name: ALERT_SMTP_FROM

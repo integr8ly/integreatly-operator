@@ -57,10 +57,8 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
-
 	for _, alert := range r.Alerts {
-		if or, err := r.reconcileRule(ctx, client, monitoringConfig, alert); err != nil {
+		if or, err := r.reconcileRule(ctx, client, alert); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		} else if or != controllerutil.OperationResultNone {
 			r.Log.Infof("Operation result", l.Fields{"productName": r.ProductName, "alertName": alert.AlertName, "result": string(or)})
@@ -81,7 +79,7 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclient.Client, monitoringConfig *config.Monitoring, alert AlertConfiguration) (controllerutil.OperationResult, error) {
+func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclient.Client, alert AlertConfiguration) (controllerutil.OperationResult, error) {
 
 	var alertRulesType interface{} = alert.Rules
 
@@ -96,8 +94,8 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 
 		return controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 			rule.ObjectMeta.Labels = map[string]string{
-				"integreatly":                          "yes",
-				monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector(),
+				"integreatly":                   "yes",
+				config.GetOboLabelSelectorKey(): config.GetOboLabelSelector(),
 			}
 			rule.Spec = monv1.PrometheusRuleSpec{
 				Groups: []monv1.RuleGroup{
@@ -121,8 +119,8 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 
 		return controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 			rule.ObjectMeta.Labels = map[string]string{
-				"integreatly":                          "yes",
-				monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector(),
+				"integreatly":                   "yes",
+				config.GetOboLabelSelectorKey(): config.GetOboLabelSelector(),
 			}
 			rule.Spec = monitoringv1.PrometheusRuleSpec{
 				Groups: []monitoringv1.RuleGroup{

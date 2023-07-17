@@ -46,6 +46,7 @@ var (
 
 	BootstrapStage               StageName = "bootstrap"
 	InstallStage                 StageName = "installation"
+	CloudResourcesStage          StageName = "cloud-resources"
 	ProductsStage                StageName = "products"
 	CompleteStage                StageName = "complete"
 	UninstallProductsStage       StageName = "uninstall - products"
@@ -55,10 +56,8 @@ var (
 	ProductRHSSO          ProductName = "rhsso"
 	ProductRHSSOUser      ProductName = "rhssouser"
 	Product3Scale         ProductName = "3scale"
-	ProductMonitoring     ProductName = "middleware-monitoring"
 	ProductObservability  ProductName = "observability" // TODO MGDAPI-5833
 	ProductCloudResources ProductName = "cloud-resources"
-	ProductMonitoringSpec ProductName = "monitoring-spec"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
 	ProductMCG            ProductName = "mcg"
@@ -66,12 +65,10 @@ var (
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
-	VersionMonitoring     ProductVersion = "1.8.0"
 	Version3Scale         ProductVersion = "2.13.0"
 	VersionCloudResources ProductVersion = "1.1.1"
 	VersionRHSSO          ProductVersion = "7.6"
 	VersionRHSSOUser      ProductVersion = "7.6"
-	VersionMonitoringSpec ProductVersion = "1.0"
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "4.2.0"
@@ -82,13 +79,10 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionMonitoring OperatorVersion = "1.8.0"
-	OperatorVersionRHSSO      OperatorVersion = "7.6.3-1"
-	OperatorVersionRHSSOUser  OperatorVersion = "7.6.3-1"
-
+	OperatorVersionRHSSO          OperatorVersion = "7.6.3-1"
+	OperatorVersionRHSSOUser      OperatorVersion = "7.6.3-1"
 	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
-	OperatorVersionMonitoringSpec OperatorVersion = "1.0"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
 	OperatorVersionObservability  OperatorVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type

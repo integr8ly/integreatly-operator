@@ -464,15 +464,11 @@ cluster/cleanup/olm: cluster/cleanup
 
 .PHONY: cluster/cleanup/crds
 cluster/cleanup/crds:
-	@-oc delete crd applicationmonitorings.applicationmonitoring.integreatly.org
-	@-oc delete crd blackboxtargets.applicationmonitoring.integreatly.org
 	@-oc delete crd grafanadashboards.integreatly.org
 	@-oc delete crd grafanadatasources.integreatly.org
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd observabilities.observability.redhat.com
 	@-oc delete crd rhmis.integreatly.org
-	@-oc delete crd webapps.integreatly.org
-	@-oc delete crd rhmiconfigs.integreatly.org
 	@-oc delete crd apimanagementtenants.integreatly.org
 
 .PHONY: cluster/cleanup/rbac/dedicated-admins

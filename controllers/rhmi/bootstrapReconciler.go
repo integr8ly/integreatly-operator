@@ -24,7 +24,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringcommon"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -177,8 +177,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if !resources.IsInProw(installation) {
 		// Creates the Alertmanager config secret
-		phase, err = monitoringcommon.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation)
-		r.log.Infof("Reconcile Alertmanager config secret", l.Fields{"phase": phase})
+		phase, err = obo.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation)
+		r.log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			if err != nil {
 				r.log.Warning("failed to reconcile alert manager config secret " + err.Error())
@@ -212,7 +212,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 
 		// Creates remaining OBO alerts
-		phase, err = monitoringcommon.OboAlertsReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
+		phase, err = obo.OboAlertsReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
 		r.log.Infof("Reconcile OBO alerts", l.Fields{"phase": phase})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile OBO alerts", err)

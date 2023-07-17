@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"testing"
-	"time"
-
 	"github.com/integr8ly/integreatly-operator/utils"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
+	"testing"
+	"time"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 
@@ -818,6 +818,149 @@ func TestReconciler_ReconcileCsvDeploymentsPriority(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ReconcileCsvDeploymentsPriority() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_CreateNSWithProjectRequest(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nsName := "test-ns"
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+		},
+	}
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "install",
+			UID:  types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RHMI",
+			APIVersion: integreatlyv1alpha1.GroupVersion.String(),
+		},
+	}
+
+	type args struct {
+		ctx                       context.Context
+		namespace                 string
+		client                    k8sclient.Client
+		inst                      *integreatlyv1alpha1.RHMI
+		addRHMIMonitoringLabels   bool
+		addClusterMonitoringLabel bool
+		disableUserAlerting       bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *corev1.Namespace
+		wantErr bool
+	}{
+		{
+			name: "test create namespace from project request with basic labels",
+			args: args{
+				ctx:                       context.TODO(),
+				namespace:                 nsName,
+				client:                    utils.NewTestClient(scheme, installation, testNamespace),
+				inst:                      installation,
+				addRHMIMonitoringLabels:   false,
+				addClusterMonitoringLabel: false,
+				disableUserAlerting:       false,
+			},
+			want: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						"integreatly": "true",
+						OwnerLabelKey: string(installation.GetUID()),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test create namespace from project request with rhmi monitoring labels",
+			args: args{
+				ctx:                       context.TODO(),
+				namespace:                 nsName,
+				client:                    utils.NewTestClient(scheme, installation, testNamespace),
+				inst:                      installation,
+				addRHMIMonitoringLabels:   true,
+				addClusterMonitoringLabel: false,
+				disableUserAlerting:       false,
+			},
+			want: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						"monitoring-key": "middleware",
+						"integreatly":    "true",
+						OwnerLabelKey:    string(installation.GetUID()),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test create namespace from project request with cluster monitoring labels",
+			args: args{
+				ctx:                       context.TODO(),
+				namespace:                 nsName,
+				client:                    utils.NewTestClient(scheme, installation, testNamespace),
+				inst:                      installation,
+				addRHMIMonitoringLabels:   false,
+				addClusterMonitoringLabel: true,
+				disableUserAlerting:       false,
+			},
+			want: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						"openshift.io/cluster-monitoring": "true",
+						"integreatly":                     "true",
+						OwnerLabelKey:                     string(installation.GetUID()),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test create namespace from project request with user monitoring disabled",
+			args: args{
+				ctx:                       context.TODO(),
+				namespace:                 nsName,
+				client:                    utils.NewTestClient(scheme, installation, testNamespace),
+				inst:                      installation,
+				addRHMIMonitoringLabels:   false,
+				addClusterMonitoringLabel: false,
+				disableUserAlerting:       true,
+			},
+			want: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					Labels: map[string]string{
+						"openshift.io/user-monitoring": "false",
+						"integreatly":                  "true",
+						OwnerLabelKey:                  string(installation.GetUID()),
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CreateNSWithProjectRequest(tt.args.ctx, tt.args.namespace, tt.args.client, tt.args.inst, tt.args.addRHMIMonitoringLabels, tt.args.addClusterMonitoringLabel, tt.args.disableUserAlerting)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateNSWithProjectRequest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got.GetLabels(), tt.want.GetLabels()) {
+				t.Errorf("CreateNSWithProjectRequest() got Labels = %v, want Labels %v", got, tt.want)
 			}
 		})
 	}
