@@ -786,6 +786,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		// Set priority class names
 		apim.Spec.System.AppSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.System.SidekiqSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
+		apim.Spec.System.MemcachedPriorityClassName = &r.installation.Spec.PriorityClassName
+		apim.Spec.System.SearchdSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.Apicast.StagingSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.Apicast.ProductionSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.Backend.CronSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
@@ -793,6 +795,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.Backend.WorkerSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.Zync.AppSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
 		apim.Spec.Zync.QueSpec.PriorityClassName = &r.installation.Spec.PriorityClassName
+		apim.Spec.Zync.DatabasePriorityClassName = &r.installation.Spec.PriorityClassName
 
 		// Reconcile replicas
 		if apim.Spec.System.AppSpec.Replicas == nil || *apim.Spec.System.AppSpec.Replicas < replicas["systemApp"] {
