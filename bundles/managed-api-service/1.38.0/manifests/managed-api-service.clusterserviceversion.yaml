@@ -62,12 +62,12 @@ metadata:
           "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:a7b8f11c35d5efc3d60a1ba4e1f7f664b54104890edcdc664990bfe4648732ac",
           "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:70075a897fac365f60a059f4947a9b2c157b2450bff505c70f1f65284f821e1e"
         },
-        "cloud-resource-operator.v1.1.0": {
+        "cloud-resource-operator.v1.1.1": {
           "cloud-resources.v1.1.0": "quay.io/integreatly/cloud-resource-operator:v1.1.0"
         },
         "grafana-operator.v4.2.0": {
           "grafana-operator.v4.2.0": "quay.io/grafana-operator/grafana-operator:v4.2.0",
-          "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:20507ebcaa06a2f027c7f7eb37a549b548f1d47b0335efa2be17813472acbdae"
+          "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:582fc2d21cb3654f22f3ca50c39966041846e16a1543fc35c6a83948a2fa6c40"
         },
         "marin3r.v0.11.0": {
           "marin3r.v0.11.0": "quay.io/3scale/marin3r:v0.11.0"
@@ -96,13 +96,12 @@ metadata:
           "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v4.2.1"
         },
         "ratelimit": {
-          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.2-3"
+          "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.4-3"
         },
         "limitador": {
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
         }
       }
-    serviceAffecting: "false"
   name: managed-api-service.v1.38.0
   namespace: placeholder
 spec:
@@ -184,13 +183,6 @@ spec:
       clusterPermissions:
         - rules:
             - apiGroups:
-                - package-operator.run
-              resources:
-                - clusterpackages
-              verbs:
-                - get
-                - list
-            - apiGroups:
                 - ""
               resources:
                 - configmaps
@@ -269,6 +261,23 @@ spec:
                 - list
                 - update
                 - watch
+            - apiGroups:
+                - addons.managed.openshift.io
+              resources:
+                - addoninstances
+              verbs:
+                - get
+                - list
+                - patch
+                - watch
+            - apiGroups:
+                - addons.managed.openshift.io
+              resources:
+                - addoninstances/status
+              verbs:
+                - get
+                - patch
+                - update
             - apiGroups:
                 - admissionregistration.k8s.io
               resources:
@@ -561,6 +570,13 @@ spec:
                 - create
                 - delete
                 - update
+            - apiGroups:
+                - package-operator.run
+              resources:
+                - clusterpackages
+              verbs:
+                - get
+                - list
             - apiGroups:
                 - project.openshift.io
               resources:
