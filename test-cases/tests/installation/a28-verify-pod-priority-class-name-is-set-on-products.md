@@ -47,7 +47,7 @@ This test case should verify that the pod priority class is name is updated on R
 | redhat-rhoam-3scale | zync-que           |
 | redhat-rhoam-3scale | zync-database      |
 | redhat-rhoam-3scale | zync               |
-| redhat-rhoam-3scale | system-sphinx      |
+| redhat-rhoam-3scale | system-searchd     |
 | redhat-rhoam-3scale | system-sidekiq     |
 | redhat-rhoam-3scale | system-memcache    |
 | redhat-rhoam-3scale | system-app         |

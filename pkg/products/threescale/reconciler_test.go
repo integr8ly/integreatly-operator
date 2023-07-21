@@ -592,6 +592,19 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	nodes := &corev1.NodeList{
+		ListMeta: metav1.ListMeta{},
+		Items: []corev1.Node{
+			corev1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"topology.kubernetes.io/zone": "eu-west-1a",
+					},
+				},
+			},
+		},
+	}
+
 	type fields struct {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
@@ -631,7 +644,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -651,8 +664,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 							Name:      "3scale",
 							Namespace: "test",
 						},
-						Spec:   threescalev1.APIManagerSpec{},
-						Status: threescalev1.APIManagerStatus{},
 					},
 					&cloudcredentialv1.CloudCredential{
 						ObjectMeta: metav1.ObjectMeta{
@@ -683,7 +694,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -740,7 +751,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -787,7 +798,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -823,7 +834,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -894,7 +905,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			args: args{
 				ctx: context.TODO(),
-				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(),
+				serverClient: utils.NewTestClient(scheme, getTestBlobStorage(), nodes,
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
@@ -949,6 +960,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if got != tt.want {
 				t.Errorf("reconcileComponents() got = %v, want %v", got, tt.want)
 			}

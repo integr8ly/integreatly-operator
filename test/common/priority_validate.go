@@ -64,7 +64,7 @@ func priorityDeploymentConfigs() []CustomResource {
 		},
 		{
 			Namespace: NamespacePrefix + "3scale",
-			Name:      "system-sphinx",
+			Name:      "system-searchd",
 		},
 		{
 			Namespace: NamespacePrefix + "3scale",

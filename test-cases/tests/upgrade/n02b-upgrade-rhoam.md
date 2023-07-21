@@ -93,6 +93,6 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There should be no additional downtime compared to pre-upgrade report.
 
-> Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-sphinx`.
+> Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-searchd`.
 
 7. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)

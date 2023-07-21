@@ -356,7 +356,7 @@ func commonExpectedRules(installationName string) []alertsTestRule {
 				"RHOAMThreeScaleSystemMasterServiceEndpointDown",
 				"RHOAMThreeScaleSystemMemcacheServiceEndpointDown",
 				"RHOAMThreeScaleSystemProviderServiceEndpointDown",
-				"RHOAMThreeScaleSystemSphinxServiceEndpointDown",
+				"RHOAMThreeScaleSystemSearchdServiceEndpointDown",
 				"RHOAMThreeScaleZyncDatabaseServiceEndpointDown",
 				"RHOAMThreeScaleZyncServiceEndpointDown",
 			},
