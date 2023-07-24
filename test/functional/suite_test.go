@@ -21,6 +21,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 const (
@@ -93,6 +94,9 @@ var _ = BeforeSuite(func() {
 		// +kubebuilder:scaffold:scheme
 
 		err = configv1.Install(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = packageOperatorv1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		close(done)

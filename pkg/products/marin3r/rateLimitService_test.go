@@ -657,14 +657,6 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 		},
 	}
 
-	observabilityOperatorPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oo-pod",
-			Namespace: namespace,
-			Labels:    map[string]string{"control-plane": "controller-manager"},
-		},
-	}
-
 	rateLimitService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: quota.RateLimitName, Namespace: namespace},
 		Spec:       corev1.ServiceSpec{ClusterIP: "1.1.1.1"},
@@ -786,7 +778,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 				}}},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -808,7 +800,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseInProgress,
 		},
@@ -829,7 +821,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, rateLimitPod, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitPod, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},
@@ -856,7 +848,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 	}
 }
 
-func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(t *testing.T) {
+func TestRateLimitServiceReconciler_deleteRedisLimits(t *testing.T) {
 	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
@@ -874,14 +866,6 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 		},
 	}
 
-	observabilityOperatorPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oo-pod",
-			Namespace: namespace,
-			Labels:    map[string]string{"control-plane": "controller-manager"},
-		},
-	}
-
 	rateLimitService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: quota.RateLimitName, Namespace: namespace},
 		Spec:       corev1.ServiceSpec{ClusterIP: "1.1.1.1"},
@@ -892,7 +876,6 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 		RedisSecretName string
 		Installation    *integreatlyv1alpha1.RHMI
 		RateLimitConfig marin3rconfig.RateLimitConfig
-		PodExecutor     resources.PodExecutorInterface
 		ConfigManager   config.ConfigReadWriter
 	}
 	type args struct {
@@ -916,9 +899,6 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 				},
 				Namespace:       namespace,
 				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
-				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
-				}},
 				ConfigManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
 					return nil, fmt.Errorf("genericError")
 				}},
@@ -931,42 +911,6 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 			wantErr: true,
 		},
 		{
-			name: "test phase failed listing observability operator pods",
-			fields: fields{
-				Namespace:     namespace,
-				ConfigManager: configManager,
-			},
-			args: args{
-				ctx: context.TODO(),
-				client: &moqclient.SigsClientInterfaceMock{ListFunc: func(ctx context.Context, list k8sclient.ObjectList, opts ...k8sclient.ListOption) error {
-					return fmt.Errorf("listError")
-				}},
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
-		{
-			name: "test phase awaiting components when waiting for observability pod",
-			fields: fields{
-				Installation: &integreatlyv1alpha1.RHMI{
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-					},
-				},
-				Namespace:       namespace,
-				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
-				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
-				}},
-				ConfigManager: configManager,
-			},
-			args: args{
-				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme),
-			},
-			want: integreatlyv1alpha1.PhaseAwaitingComponents,
-		},
-		{
 			name: "test phase failed getting rate limit service",
 			fields: fields{
 				Installation: &integreatlyv1alpha1.RHMI{
@@ -976,14 +920,11 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 				},
 				Namespace:       namespace,
 				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
-				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":1,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
-				}},
-				ConfigManager: configManager,
+				ConfigManager:   configManager,
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, observabilityOperatorPod),
+				client: utils.NewTestClient(scheme),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -991,15 +932,12 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 		{
 			name: "test phase failed if unable to delete limits from rate limit pod",
 			fields: fields{
-				Namespace: namespace,
-				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-					return "", "", fmt.Errorf("genericError")
-				}},
+				Namespace:     namespace,
 				ConfigManager: configManager,
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme),
 			},
 			want:    integreatlyv1alpha1.PhaseFailed,
 			wantErr: true,
@@ -1014,14 +952,11 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 				},
 				Namespace:       namespace,
 				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "minute", RequestsPerUnit: 1},
-				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
-					return "", "", nil
-				}},
-				ConfigManager: configManager,
+				ConfigManager:   configManager,
 			},
 			args: args{
 				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme, observabilityOperatorPod, rateLimitService),
+				client: utils.NewTestClient(scheme, rateLimitService),
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 		},
@@ -1033,17 +968,16 @@ func TestRateLimitServiceReconciler_deleteRedisLimitsUsingObservabilityOperator(
 				RedisSecretName: tt.fields.RedisSecretName,
 				Installation:    tt.fields.Installation,
 				RateLimitConfig: tt.fields.RateLimitConfig,
-				PodExecutor:     tt.fields.PodExecutor,
 				ConfigManager:   tt.fields.ConfigManager,
 			}
 
-			got, err := r.deleteRedisLimitsUsingObservabilityOperator(tt.args.ctx, tt.args.client, NewLimitadorClient(tt.fields.PodExecutor, tt.fields.Namespace, observabilityOperatorPod.Name))
+			got, err := r.deleteRedisLimits(tt.args.ctx, tt.args.client, NewLimitadorClient(resources.PodExecutor{}, tt.fields.Namespace, ""))
 			if (err != nil) != tt.wantErr {
-				t.Errorf("deleteRedisLimitsUsingObservabilityOperator() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("deleteRedisLimits() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("deleteRedisLimitsUsingObservabilityOperator() got = %v, want %v", got, tt.want)
+				t.Errorf("deleteRedisLimits() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

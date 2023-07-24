@@ -17,30 +17,18 @@ limitations under the License.
 package controllers
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	prometheusConfig "github.com/prometheus/common/config"
-
-	"github.com/go-openapi/strfmt"
-	routev1 "github.com/openshift/api/route/v1"
-	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"github.com/prometheus/alertmanager/api/v2/models"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/poddistribution"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -50,6 +38,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -77,6 +66,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
+
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 const (
@@ -90,14 +81,12 @@ const (
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
+	clusterPackageName               = "rhoam-config"
 )
 
 var (
 	productVersionMismatchFound bool
 	log                         = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "installation_controller"})
-	alertsToSilence             = []string{
-		"KeycloakInstanceNotAvailable",
-	}
 )
 
 // RHMIReconciler reconciles a RHMI object
@@ -132,9 +121,10 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // ClusterRole permissions
 
-// +kubebuilder:rbac:groups=integreatly.org;applicationmonitoring.integreatly.org,resources=*,verbs=*
+// +kubebuilder:rbac:groups=integreatly.org,resources=*,verbs=*
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=integreatly.org,resources=rhmis/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=package-operator.run,resources=clusterpackages, verbs=get;list
 
 // We need to add leases permissions to establish the leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update;delete;watch
@@ -183,6 +173,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Monitoring resources not covered by namespace "admin" permissions
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
+// +kubebuilder:rbac:groups=monitoring.rhobs,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete;watch
 
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings;roles;rolebindings,verbs=*
 
@@ -371,11 +362,7 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == rhmiv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == rhmiv1alpha1.PreflightFail {
-		err := r.preflightChecks(installation, installType, configManager)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		return retryRequeue, nil
+		return r.preflightChecks(installation, installType, configManager)
 	}
 
 	// If the CR is being deleted, handle uninstall and return
@@ -408,16 +395,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, string(externalClusterId), installation.CreationTimestamp.Unix())
 		metrics.SetQuota(installation.Status.Quota, installation.Status.ToQuota)
-	}
-
-	log.Info("set alerts summary metric")
-	err = r.composeAndSetSummaryMetrics(installation, configManager)
-	if err != nil {
-		if installation.Status.Version == "" && installation.Status.ToVersion != "" {
-			log.Warning(fmt.Sprintf("Initial installation, possible monitoring not available: %s", err))
-		} else {
-			log.Error("error setting alerts metric:", err)
-		}
 	}
 
 	log.Info("set cluster metric")
@@ -507,30 +484,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	return retryRequeue, err
 }
 
-func (r *RHMIReconciler) createSilence(installation *rhmiv1alpha1.RHMI, rc *rest.Config, configManager *config.Manager) error {
-
-	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
-	if err != nil {
-		return fmt.Errorf("error getting alerting namespaces to silence: %s", err)
-	}
-
-	for namespace, route := range alertingNamespaces {
-		for _, alert := range alertsToSilence {
-			exists, err := r.silenceExists(namespace, route, rc, alert)
-			if err != nil {
-				log.Error("Error checking for silence : %w", err)
-			}
-			if !exists {
-				err := r.silenceAlert(namespace, route, rc, alert)
-				if err != nil {
-					log.Error("error silencing alert : %w", err)
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) (map[string]string, error) {
 
 	var alertingNamespaces = map[string]string{
@@ -546,158 +499,6 @@ func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, c
 	alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
 
 	return alertingNamespaces, nil
-}
-
-func (r *RHMIReconciler) silenceAlert(namespace string, route string, rc *rest.Config, alertName string) error {
-
-	endpoint := "/api/v1/silences"
-	startsAt := strfmt.DateTime(time.Now())
-	endsAt := strfmt.DateTime(time.Now().Add(time.Hour * 1))
-
-	matchers := models.Matchers{}
-	matchers = append(matchers, &models.Matcher{
-		IsEqual: nil,
-		IsRegex: &[]bool{false}[0],
-		Name:    &[]string{"alertname"}[0],
-		Value:   &alertName,
-	})
-
-	comment := "Silence alert due to uninstall"
-	createdBy := "Integreatly Operator"
-	silence := models.Silence{
-		Comment:   &comment,
-		CreatedBy: &createdBy,
-		EndsAt:    &endsAt,
-		Matchers:  matchers,
-		StartsAt:  &startsAt,
-	}
-
-	url, err := r.getURLFromRoute(route, namespace, rc)
-	if err != nil {
-		return fmt.Errorf("error getting route : %w", err)
-
-	}
-	url = url + endpoint
-
-	var bearer = "Bearer " + r.restConfig.BearerToken
-
-	reqBodyBytes := new(bytes.Buffer)
-	err = json.NewEncoder(reqBodyBytes).Encode(silence)
-	if err != nil {
-		return fmt.Errorf("error encoding silence : %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, reqBodyBytes)
-	if err != nil {
-		return fmt.Errorf("error on request : %w", err)
-	}
-
-	req.Header.Add("Authorization", bearer)
-	req.Header.Add("Content-Type", "application/json")
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error on response : %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("silenceAlert: Body Close error : ", err)
-		}
-	}(resp.Body)
-
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("unable to read body : %w", err)
-	}
-	return nil
-}
-
-func (r *RHMIReconciler) silenceExists(namespace string, route string, rc *rest.Config, alert string) (bool, error) {
-	silenceExists := false
-	endpoint := "/api/v2/silences"
-
-	url, err := r.getURLFromRoute(route, namespace, rc)
-	if err != nil {
-		return false, err
-	}
-	url = url + endpoint
-
-	var bearer = "Bearer " + r.restConfig.BearerToken
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, fmt.Errorf("error on request : %w", err)
-	}
-
-	req.Header.Add("Authorization", bearer)
-
-	client := &http.Client{}
-	client.Timeout = time.Second * 10
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("error on response : %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Error("silenceExisting: Body Close error : ", err)
-		}
-	}(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("unable to read body : %w", err)
-	}
-
-	var existingSilences models.GettableSilences
-
-	err = json.Unmarshal(body, &existingSilences)
-	if err != nil {
-		return false, fmt.Errorf("failed to unmarshal json: %w", err)
-	}
-
-	for _, silence := range existingSilences {
-		if *silence.Status.State == "active" && *silence.Silence.Matchers[0].Name == "alertname" && *silence.Silence.Matchers[0].Value == alert {
-			silenceExists = true
-		}
-	}
-
-	return silenceExists, nil
-}
-
-func (r *RHMIReconciler) getURLFromRoute(routeName string, namespace string, rc *rest.Config) (string, error) {
-
-	client, err := appsv1Client.NewForConfig(rc)
-	if err != nil {
-		return "", fmt.Errorf("unable to create rest client %s", err)
-	}
-	client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
-
-	host := ""
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeName,
-			Namespace: namespace,
-		},
-	}
-
-	request := client.RESTClient().Get().Resource("routes").Name(route.Name).Namespace(route.Namespace).RequestURI(routeRequestUrl).Do(context.TODO())
-	requestBody, err := request.Raw()
-
-	if err != nil {
-		return "", fmt.Errorf("unable to find route %s Route probably already removed", err)
-	}
-	err = json.Unmarshal(requestBody, route)
-	if err != nil {
-		return "", fmt.Errorf("unable to unmarshal response body %s", err)
-	}
-	host = "https://" + route.Spec.Host
-	return host, nil
 }
 
 func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHMI) {
@@ -758,7 +559,7 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/656
 	alerts := &unstructured.UnstructuredList{}
 	alerts.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "monitoring.coreos.com",
+		Group:   "monitoring.rhobs",
 		Kind:    "PrometheusRule",
 		Version: "v1",
 	})
@@ -779,9 +580,6 @@ func (r *RHMIReconciler) handleUninstall(installation *rhmiv1alpha1.RHMI, instal
 			return ctrl.Result{}, err
 		}
 	}
-
-	log.Info("Creating Silence for alerts")
-	err = r.createSilence(installation, r.restConfig, configManager)
 
 	if err != nil {
 		log.Error("error creating silence", err)
@@ -959,9 +757,14 @@ func upgradeFirstReconcile(installation *rhmiv1alpha1.RHMI) bool {
 	return status.Version != "" && status.ToVersion == "" && status.Version != version.GetVersionByType(installation.Spec.Type)
 }
 
-func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) error {
+func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (ctrl.Result, error) {
 	log.Info("Running preflight checks..")
 	installation.Status.Stage = "Preflight Checks"
+	result := ctrl.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
+
 	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
 
 	// Validate the env vars used by the operator
@@ -977,7 +780,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			return nil
 		}),
 	}); err != nil {
-		return err
+		return result, err
 	}
 
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
@@ -986,11 +789,10 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		err := r.Status().Update(context.TODO(), installation)
 		if err != nil {
 			log.Infof("error updating status", l.Fields{"error": err.Error()})
-			return err
+			return result, err
 		}
 		log.Warning("preflight checks failed on useClusterStorage value")
-		return fmt.Errorf("Spec.useClusterStorage must be set to either 'true' or 'false' to continue, found: "+
-			"%s", installation.Spec.UseClusterStorage)
+		return result, nil
 	}
 
 	requiredSecrets := []string{installation.Spec.PagerDutySecret}
@@ -1002,9 +804,8 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 				Namespace: installation.Namespace,
 			},
 		}
-		exists, err := k8s.Exists(context.TODO(), r.Client, secret)
-		if err != nil {
-			return err
+		if exists, err := k8s.Exists(context.TODO(), r.Client, secret); err != nil {
+			return ctrl.Result{}, err
 		} else if !exists {
 			preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
 			log.Info(preflightMessage)
@@ -1015,10 +816,10 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return err
+				return ctrl.Result{}, err
 			}
 
-			return fmt.Errorf("secret not found %s in namespace %s", secret.Name, installation.Namespace)
+			return ctrl.Result{}, err
 		}
 		log.Infof("found required secret", l.Fields{"secret": secretName})
 		eventRecorder.Eventf(installation, "Normal", rhmiv1alpha1.EventPreflightCheckPassed,
@@ -1030,7 +831,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.QuotaParamName, err)
 		log.Warning(preflightMessage)
-		return err
+		return result, err
 	}
 
 	// Check if the trial-quota parameter is found from the add-on when normal quota param is not found
@@ -1039,7 +840,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		if err != nil {
 			preflightMessage := fmt.Sprintf("failed to retrieve addon parameter %s: %v", addon.TrialQuotaParamName, err)
 			log.Warning(preflightMessage)
-			return err
+			return result, err
 		}
 	}
 
@@ -1076,9 +877,10 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return err
+				return result, err
 			}
-			return fmt.Errorf("failed preflight check: %s", preflightMessage)
+
+			return result, nil
 		}
 	}
 
@@ -1088,7 +890,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	if err != nil {
 		// could not list namespaces, keep trying
 		log.Warningf("error listing namespaces", l.Fields{"error": err.Error()})
-		return err
+		return result, err
 	}
 
 	for _, ns := range namespaces.Items {
@@ -1096,7 +898,7 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 		if err != nil {
 			// error searching for existing products, keep trying
 			log.Info("error looking for existing deployments, will retry")
-			return err
+			return result, err
 		}
 		if len(nsProducts) != 0 {
 			//found one or more conflicting products
@@ -1106,9 +908,9 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 			err = r.Status().Update(context.TODO(), installation)
 			if err != nil {
 				log.Infof("error updating status", l.Fields{"error": err.Error()})
-				return err
+				return result, err
 			}
-			return fmt.Errorf("found conflicting packages in namespace: %s", ns.GetName())
+			return result, err
 		}
 	}
 
@@ -1116,10 +918,25 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	isSTS, err := sts.IsClusterSTS(context.TODO(), r.Client, log)
 	if err != nil {
 		log.Error("Error checking STS mode", err)
-		return err
+		return result, err
 	}
 	if isSTS {
 		log.Info("STS mode enabled for cluster")
+	}
+
+	if !resources.IsInProw(installation) {
+		err = r.checkClusterPackageAvailablity()
+		if err != nil {
+			log.Infof("error validating cluster package availability", l.Fields{"error": err.Error()})
+			installation.Status.PreflightStatus = rhmiv1alpha1.PreflightFail
+			installation.Status.PreflightMessage = "error validating cluster package availability"
+			err = r.Status().Update(context.TODO(), installation)
+			if err != nil {
+				log.Infof("error updating status", l.Fields{"error": err.Error()})
+				return result, err
+			}
+			return result, err
+		}
 	}
 
 	installation.Status.PreflightStatus = rhmiv1alpha1.PreflightSuccess
@@ -1127,6 +944,27 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 	err = r.Status().Update(context.TODO(), installation)
 	if err != nil {
 		log.Infof("error updating status", l.Fields{"error": err.Error()})
+	}
+	return result, nil
+}
+
+func (r *RHMIReconciler) checkClusterPackageAvailablity() error {
+
+	clusterPackage := &packageOperatorv1alpha1.ClusterPackage{
+		ObjectMeta: v1.ObjectMeta{
+			Name: clusterPackageName,
+		},
+	}
+
+	err := r.Get(context.TODO(), k8sclient.ObjectKey{Name: clusterPackage.Name}, clusterPackage)
+	if err != nil {
+		log.Infof("error cluster package not available", l.Fields{"error": err.Error()})
+		return err
+	}
+
+	if clusterPackage.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
+		log.Info("error cluster package state is not phase available")
+		return fmt.Errorf("error cluster package state is not phase available")
 	}
 	return nil
 }
@@ -1239,7 +1077,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
-		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
+		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted && productName != rhmiv1alpha1.ProductObservability { // TODO MGDAPI-5833 : remove the product name check
 			for _, crd := range productConfig.GetWatchableCRDs() {
 				namespace := productConfig.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()
@@ -1464,65 +1302,6 @@ func (r *RHMIReconciler) createInstallationCR(ctx context.Context, serverClient 
 
 }
 
-func (r *RHMIReconciler) composeAndSetSummaryMetrics(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) error {
-	var alerts []prometheusv1.Alert
-
-	alertingNamespaces, err := r.getAlertingNamespace(installation, configManager)
-	if err != nil {
-		return fmt.Errorf("getting alerting namespace failed: %w", err)
-	}
-
-	observability, err := configManager.ReadObservability()
-	if err != nil {
-		return fmt.Errorf("getting observability configuration failed: %w", err)
-	}
-
-	for namespace := range alertingNamespaces {
-		if namespace == observability.GetNamespace() {
-
-			url, err := r.getURLFromRoute("prometheus", namespace, r.restConfig)
-			if err != nil {
-				return fmt.Errorf("error getting route : %w", err)
-			}
-
-			token := prometheusConfig.Secret(r.restConfig.BearerToken)
-
-			alerts, err = metrics.GetCurrentAlerts(url, token)
-			if err != nil {
-				return err
-			}
-
-			critical, warning := formatAlerts(alerts)
-			metrics.SetRhoamCriticalAlerts(critical)
-			metrics.SetRhoamWarningAlerts(warning)
-
-			value, warnings, err := metrics.SloPercentile(url, token)
-			if err != nil {
-				return err
-			}
-
-			for _, warning := range warnings {
-				log.Warning(warning)
-			}
-			metrics.SetRhoam7DPercentile(value)
-
-			value, warnings, err = metrics.SloRemainingErrorBudget(url, token)
-			if err != nil {
-				return err
-			}
-
-			for _, warning := range warnings {
-				log.Warning(warning)
-			}
-			metrics.SetRhoam7DSloRemainingErrorBudget(value)
-
-			return nil
-		}
-	}
-
-	return nil
-}
-
 func (r *RHMIReconciler) setRHOAMClusterMetric() error {
 
 	clusterVersionCR, err := cluster.GetClusterVersionCR(context.TODO(), r.Client)
@@ -1681,37 +1460,4 @@ func getInstallation() (*rhmiv1alpha1.RHMI, error) {
 			Type: installType,
 		},
 	}, nil
-}
-
-func formatAlerts(alerts []prometheusv1.Alert) (critical resources.AlertMetrics, warning resources.AlertMetrics) {
-	critical = resources.AlertMetrics{
-		Firing:  0,
-		Pending: 0,
-	}
-
-	warning = resources.AlertMetrics{
-		Firing:  0,
-		Pending: 0,
-	}
-
-	for _, alert := range alerts {
-		if alert.Labels["alertname"] == "DeadMansSwitch" {
-			// DeadManSwitch alert is always firing.
-			// Skipping its inclusion for a more accurate metric.
-			continue
-		}
-
-		switch {
-		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "critical":
-			critical.Firing++
-		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "critical":
-			critical.Pending++
-		case alert.State == prometheusv1.AlertStateFiring && alert.Labels["severity"] == "warning":
-			warning.Firing++
-		case alert.State == prometheusv1.AlertStatePending && alert.Labels["severity"] == "warning":
-			warning.Pending++
-		}
-	}
-
-	return critical, warning
 }

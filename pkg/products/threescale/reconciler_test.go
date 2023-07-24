@@ -3896,30 +3896,10 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:        "Error getting Observability config",
-			want:        integreatlyv1alpha1.PhaseFailed,
-			wantErr:     true,
-			errContains: "some error",
-			args: args{
-				ctx:          context.TODO(),
-				serverClient: fake.NewClientBuilder().Build(),
-			},
-			fields: fields{
-				ConfigManager: &config.ConfigReadWriterMock{
-					ReadObservabilityFunc: func() (*config.Observability, error) {
-						return &config.Observability{
-							Config: config.ProductConfig{
-								"NAMESPACE": "namespace",
-							},
-						}, fmt.Errorf("some error")
-					}},
-			},
-		},
-		{
 			name:        "Error getting existing SMTP from Address",
 			want:        integreatlyv1alpha1.PhaseFailed,
 			wantErr:     true,
-			errContains: "cannot unmarshal !!str",
+			errContains: "deploymentconfigs.apps.openshift.io \"\" not found",
 			args: args{
 				ctx: context.TODO(),
 				serverClient: fake.NewClientBuilder().WithRuntimeObjects(&corev1.Secret{
@@ -3934,8 +3914,12 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				}).Build(),
 			},
 			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{},
-				log:          getLogger(),
+				installation: &integreatlyv1alpha1.RHMI{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+					},
+				},
+				log: getLogger(),
 				ConfigManager: &config.ConfigReadWriterMock{
 					ReadObservabilityFunc: func() (*config.Observability, error) {
 						return &config.Observability{
@@ -3944,6 +3928,10 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 							},
 						}, nil
 					}},
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": defaultInstallationNamespace,
+				}),
+				appsv1Client: fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1(),
 			},
 		},
 		{

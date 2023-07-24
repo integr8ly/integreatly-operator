@@ -9,15 +9,13 @@ import (
 
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/utils"
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -104,71 +102,6 @@ func TestRHMIReconciler_getAlertingNamespace(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestFormatAlerts(t *testing.T) {
-	input := []prometheusv1.Alert{
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "Low"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStatePending,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy", "severity": "critical"},
-			State:  prometheusv1.AlertStatePending,
-		},
-
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "dummy two", "severity": "warning"},
-			State:  prometheusv1.AlertStatePending,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "DeadMansSwitch", "severity": "critical"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-		{
-			Labels: model.LabelSet{"alertname": "info alert", "severity": "info"},
-			State:  prometheusv1.AlertStateFiring,
-		},
-	}
-	expectedCritical := resources.AlertMetrics{
-		Firing:  3,
-		Pending: 2,
-	}
-	expectedWarning := resources.AlertMetrics{
-		Firing:  1,
-		Pending: 1,
-	}
-
-	critical, warning := formatAlerts(input)
-
-	if !reflect.DeepEqual(critical, expectedCritical) {
-		t.Fatalf("critical alert metrics not equal; Actual: %v, Expected: %v", critical, expectedCritical)
-	}
-
-	if !reflect.DeepEqual(warning, expectedWarning) {
-		t.Fatalf("warning alert metrics not equal; Actual: %v, Expected: %v", warning, expectedWarning)
-	}
-
 }
 
 func TestHandleCROConfigDeletion(t *testing.T) {
@@ -530,6 +463,83 @@ func Test_getRebalancePods(t *testing.T) {
 			}
 			if got := getRebalancePods(); got != tt.want {
 				t.Errorf("getRebalancePods() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		Client                     client.Client
+		Scheme                     *runtime.Scheme
+		mgr                        controllerruntime.Manager
+		controller                 controller.Controller
+		restConfig                 *rest.Config
+		customInformers            map[string]map[string]*cache.Informer
+		productsInstallationLoader marketplace.ProductsInstallationLoader
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		{
+			name: "Test - RHOAM - cluster package successfully reconciled",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: clusterPackageName,
+						},
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
+						},
+					},
+				)},
+			wantErr: false,
+		},
+		{
+			name: "Test - RHOAM - cluster package not found",
+			fields: fields{
+				Client: utils.NewTestClient(scheme)},
+			wantErr: true,
+		},
+		{
+			name: "Test - RHOAM - cluster package is not phase available",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Phase: packageOperatorv1alpha1.PackagePhaseNotReady,
+						},
+					},
+				)},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			r := &RHMIReconciler{
+				Client:                     tt.fields.Client,
+				Scheme:                     tt.fields.Scheme,
+				mgr:                        tt.fields.mgr,
+				controller:                 tt.fields.controller,
+				restConfig:                 tt.fields.restConfig,
+				customInformers:            tt.fields.customInformers,
+				productsInstallationLoader: tt.fields.productsInstallationLoader,
+			}
+
+			err := r.checkClusterPackageAvailablity()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAlertingNamespace() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}

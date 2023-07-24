@@ -42,12 +42,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //			ReadMarin3rFunc: func() (*Marin3r, error) {
 //				panic("mock out the ReadMarin3r method")
 //			},
-//			ReadMonitoringFunc: func() (*Monitoring, error) {
-//				panic("mock out the ReadMonitoring method")
-//			},
-//			ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
-//				panic("mock out the ReadMonitoringSpec method")
-//			},
 //			ReadObservabilityFunc: func() (*Observability, error) {
 //				panic("mock out the ReadObservability method")
 //			},
@@ -100,12 +94,6 @@ type ConfigReadWriterMock struct {
 	// ReadMarin3rFunc mocks the ReadMarin3r method.
 	ReadMarin3rFunc func() (*Marin3r, error)
 
-	// ReadMonitoringFunc mocks the ReadMonitoring method.
-	ReadMonitoringFunc func() (*Monitoring, error)
-
-	// ReadMonitoringSpecFunc mocks the ReadMonitoringSpec method.
-	ReadMonitoringSpecFunc func() (*MonitoringSpec, error)
-
 	// ReadObservabilityFunc mocks the ReadObservability method.
 	ReadObservabilityFunc func() (*Observability, error)
 
@@ -153,12 +141,6 @@ type ConfigReadWriterMock struct {
 		// ReadMarin3r holds details about calls to the ReadMarin3r method.
 		ReadMarin3r []struct {
 		}
-		// ReadMonitoring holds details about calls to the ReadMonitoring method.
-		ReadMonitoring []struct {
-		}
-		// ReadMonitoringSpec holds details about calls to the ReadMonitoringSpec method.
-		ReadMonitoringSpec []struct {
-		}
 		// ReadObservability holds details about calls to the ReadObservability method.
 		ReadObservability []struct {
 		}
@@ -195,8 +177,6 @@ type ConfigReadWriterMock struct {
 	lockReadGrafana                 sync.RWMutex
 	lockReadMCG                     sync.RWMutex
 	lockReadMarin3r                 sync.RWMutex
-	lockReadMonitoring              sync.RWMutex
-	lockReadMonitoringSpec          sync.RWMutex
 	lockReadObservability           sync.RWMutex
 	lockReadProduct                 sync.RWMutex
 	lockReadRHSSO                   sync.RWMutex
@@ -419,60 +399,6 @@ func (mock *ConfigReadWriterMock) ReadMarin3rCalls() []struct {
 	mock.lockReadMarin3r.RLock()
 	calls = mock.calls.ReadMarin3r
 	mock.lockReadMarin3r.RUnlock()
-	return calls
-}
-
-// ReadMonitoring calls ReadMonitoringFunc.
-func (mock *ConfigReadWriterMock) ReadMonitoring() (*Monitoring, error) {
-	if mock.ReadMonitoringFunc == nil {
-		panic("ConfigReadWriterMock.ReadMonitoringFunc: method is nil but ConfigReadWriter.ReadMonitoring was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadMonitoring.Lock()
-	mock.calls.ReadMonitoring = append(mock.calls.ReadMonitoring, callInfo)
-	mock.lockReadMonitoring.Unlock()
-	return mock.ReadMonitoringFunc()
-}
-
-// ReadMonitoringCalls gets all the calls that were made to ReadMonitoring.
-// Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMonitoringCalls())
-func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadMonitoring.RLock()
-	calls = mock.calls.ReadMonitoring
-	mock.lockReadMonitoring.RUnlock()
-	return calls
-}
-
-// ReadMonitoringSpec calls ReadMonitoringSpecFunc.
-func (mock *ConfigReadWriterMock) ReadMonitoringSpec() (*MonitoringSpec, error) {
-	if mock.ReadMonitoringSpecFunc == nil {
-		panic("ConfigReadWriterMock.ReadMonitoringSpecFunc: method is nil but ConfigReadWriter.ReadMonitoringSpec was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadMonitoringSpec.Lock()
-	mock.calls.ReadMonitoringSpec = append(mock.calls.ReadMonitoringSpec, callInfo)
-	mock.lockReadMonitoringSpec.Unlock()
-	return mock.ReadMonitoringSpecFunc()
-}
-
-// ReadMonitoringSpecCalls gets all the calls that were made to ReadMonitoringSpec.
-// Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadMonitoringSpecCalls())
-func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadMonitoringSpec.RLock()
-	calls = mock.calls.ReadMonitoringSpec
-	mock.lockReadMonitoringSpec.RUnlock()
 	return calls
 }
 

@@ -4,20 +4,12 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string, namespace string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
-
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil
-	}
-
-	namespace := observabilityConfig.GetNamespace()
 	alertName := "3scale-ksm-marin3r-alerts"
 
 	return &resources.AlertReconcilerImpl{
@@ -29,7 +21,7 @@ func (r *Reconciler) newEnvoyAlertReconciler(logger l.Logger, installType string
 				AlertName: alertName,
 				GroupName: "general.rules",
 				Namespace: namespace,
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "Marin3rEnvoyApicastStagingContainerDown",
 						Annotations: map[string]string{

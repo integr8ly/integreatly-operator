@@ -28,7 +28,6 @@ var (
 		},
 		{
 			[]TestCase{
-				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
 				{"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
@@ -37,10 +36,8 @@ var (
 			[]TestCase{
 				// Keep test as first on the list, as it ensures that all products are reported as complete
 				{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus},
-				{"Test RHMI installation CR metric", TestRHMICRMetrics},
 				{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 				{"A05 - Verify product operator version", TestProductOperatorVersions},
-				{"A06 - Verify PVC", TestPVClaims},
 				{"A07 - Verify product versions", TestProductVersions},
 				{"A08 - Verify all products routes are created", TestIntegreatlyRoutesExist},
 				{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
@@ -51,17 +48,7 @@ var (
 				{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				{"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
-				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
-				{"C10B - Verify Prometheus blackbox targets", TestAdditionalBlackboxTargets},
-				{"C08B - Verify alert links to SOPs", TestSOPUrls},
-				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
-				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
-				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
-				{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
-				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
-				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
@@ -76,9 +63,35 @@ var (
 		},
 		{
 			[]TestCase{
-				{"M02B - Verify RHOAM version metric is exposed in Prometheus", TestRhoamVersionMetricExposed},
 				{"Validate resource requirements are set", ValidateResourceRequirements},
 				{"Verify addon instance status conditions", TestStatusConditions},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+	}
+
+	OBSERVABILITY_TESTS = []TestSuite{
+		//Observability related tests are kept separate from HAPPY_PATH because we skip these tests when IN_PROW is true.
+		//This is because the prow checks run on OCP clusters and OCP clusters don't install OBO by default. See MGDAPI-5783.
+		{
+			[]TestCase{
+				{"Test if cluster package is available", TestClusterPackageAvailable},
+				{"Test RHMI installation CR metric", TestRHMICRMetrics},
+				{"A06 - Verify PVC", TestPVClaims},
+				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
+				{"C10B - Verify Prometheus blackbox targets", TestAdditionalBlackboxTargets},
+				{"C08B - Verify alert links to SOPs", TestSOPUrls},
+				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
+				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
+				{"Verify ClusterObjectTemplates ready state", TestClusterObjectTemplateState},
+				{"Verify package operator resource stability", TestPackageOperatorResourceStability},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi, v1alpha1.InstallationTypeMultitenantManagedApi},
+		},
+		{
+			[]TestCase{
+				{"M02B - Verify RHOAM version metric is exposed in Prometheus", TestRhoamVersionMetricExposed},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
 		},

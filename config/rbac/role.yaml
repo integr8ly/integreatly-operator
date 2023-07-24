@@ -122,13 +122,6 @@ rules:
   - get
   - list
 - apiGroups:
-  - applicationmonitoring.integreatly.org
-  - integreatly.org
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
   - apps
   resources:
   - deployments
@@ -213,6 +206,12 @@ rules:
 - apiGroups:
   - integreatly.org
   resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - integreatly.org
+  resources:
   - apimanagementtenant
   verbs:
   - get
@@ -276,6 +275,20 @@ rules:
   - get
   - list
   - update
+- apiGroups:
+  - monitoring.rhobs
+  resources:
+  - podmonitors
+  - probes
+  - prometheusrules
+  - servicemonitors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - noobaa.io
   resources:
@@ -380,6 +393,13 @@ rules:
   - create
   - delete
   - update
+- apiGroups:
+  - package-operator.run
+  resources:
+  - clusterpackages
+  verbs:
+  - get
+  - list
 - apiGroups:
   - project.openshift.io
   resources:

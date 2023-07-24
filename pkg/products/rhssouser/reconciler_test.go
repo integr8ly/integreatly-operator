@@ -76,11 +76,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetOauthClientsSecretNameFunc: func() string {
 			return "oauth-client-secrets"
 		},
-		ReadMonitoringFunc: func() (*config.Monitoring, error) {
-			return config.NewMonitoring(config.ProductConfig{
-				"NAMESPACE": "middleware-monitoring",
-			}), nil
-		},
 		ReadObservabilityFunc: func() (*config.Observability, error) {
 			return config.NewObservability(config.ProductConfig{
 				"NAMESPACE": "observability",
@@ -1601,7 +1596,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 }
 
 func getLogger() l.Logger {
-	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSOUser})
 }
 
 func validGrafanaDashboardResourceList() *metav1.APIResourceList {

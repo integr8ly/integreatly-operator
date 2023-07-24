@@ -55,9 +55,8 @@ redhat-rhoam-cloud-resources-operator              Active   1h
 redhat-rhoam-customer-monitoring-operator          Active   1h
 redhat-rhoam-marin3r                               Active   1h
 redhat-rhoam-marin3r-operator                      Active   1h
-redhat-rhoam-observability                         Active   1h
-redhat-rhoam-observability-opreator                Active   1h
 redhat-rhoam-operator                              Active   5d13h
+redhat-rhoam-operator-observability                Active   1h
 redhat-rhoam-rhsso                                 Active   1h
 redhat-rhoam-rhsso-operator                        Active   1h
 redhat-rhoam-user-sso                              Active   1h

@@ -24,6 +24,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	observabilityv1 "github.com/redhat-developer/observability-operator/v4/api/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -33,12 +34,15 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
 // NewTestScheme returns a scheme for use in unit tests
 func NewTestScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
+		packageOperatorv1alpha1.AddToScheme,
+		monv1.AddToScheme,
 		policyv1.AddToScheme,
 		corev1.AddToScheme,
 		appsv1.AddToScheme,
@@ -71,6 +75,7 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		obv1.SchemeBuilder.AddToScheme,
 		storagev1.AddToScheme,
 		addonv1alpha1.AddToScheme,
+		packageOperatorv1alpha1.AddToScheme,
 	)
 
 	if err := schemeBuilder.AddToScheme(scheme); err != nil {

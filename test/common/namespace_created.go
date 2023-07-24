@@ -2,7 +2,7 @@ package common
 
 import (
 	goctx "context"
-
+	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
 	configv1 "github.com/openshift/api/config/v1"
@@ -12,8 +12,6 @@ import (
 
 func managedApiNamespaces() []string {
 	return []string{
-		ObservabilityOperatorNamespace,
-		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOUserProductNamespace,
 		RHSSOUserOperatorNamespace,
@@ -29,8 +27,6 @@ func managedApiNamespaces() []string {
 
 func mtManagedApiNamespaces() []string {
 	return []string{
-		ObservabilityOperatorNamespace,
-		ObservabilityProductNamespace,
 		CloudResourceOperatorNamespace,
 		RHSSOProductNamespace,
 		RHSSOOperatorNamespace,
@@ -46,15 +42,24 @@ func TestNamespaceCreated(t TestingTB, ctx *TestingContext) {
 
 	namespacesCreated := getNamespaces(t, ctx)
 
+	var messages []string
+
 	for _, namespace := range namespacesCreated {
 		ns := &corev1.Namespace{}
 		err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: namespace}, ns)
 
 		if err != nil {
-			t.Errorf("Expected %s namespace to be created but wasn't: %s", namespace, err)
-			continue
+			messages = append(messages, fmt.Sprintf("Expected %s namespace to be created but wasn't: %s", namespace, err))
 		}
 	}
+
+	if messages != nil {
+		for _, message := range messages {
+			t.Log(message)
+		}
+		t.Fail()
+	}
+
 }
 
 func getNamespaces(t TestingTB, ctx *TestingContext) []string {

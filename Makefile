@@ -2,6 +2,8 @@ include ./make/*.mk
 
 ORG ?= integreatly
 
+CONFIG_IMAGE ?= 'quay.io/integreatly/managed-api-service-config:latest'
+
 REG=quay.io
 SHELL=/bin/bash
 
@@ -73,7 +75,6 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 # Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE ?= managed-api
-export LOCAL ?= true
 export CLUSTER_CONFIG ?= redhat-rhoam
 
 export ALERT_SMTP_FROM ?= noreply-alert@devshift.org
@@ -213,7 +214,6 @@ image/build/push: image/build image/push
 
 ############ E2E TEST COMMANDS ############
 .PHONY: test/e2e/rhoam/prow
-test/e2e/rhoam/prow: export LOCAL := false
 test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
@@ -224,12 +224,11 @@ test/e2e/rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhoam
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/rhoam/prow: export INSTALLATION_SHORTHAND := rhoam
-test/e2e/rhoam/prow: IN_PROW = "true"
+test/e2e/rhoam/prow: export IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 .PHONY: test/e2e/multitenant-rhoam/prow
 test/e2e/multitenant-rhoam/prow: export CLUSTER_CONFIG:=redhat-sandbox
-test/e2e/multitenant-rhoam/prow: export LOCAL := false
 test/e2e/multitenant-rhoam/prow: export component := integreatly-operator
 test/e2e/multitenant-rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_TYPE := multitenant-managed-api
@@ -240,12 +239,12 @@ test/e2e/multitenant-rhoam/prow: export NAMESPACE:= $(NAMESPACE_PREFIX)operator
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_PREFIX := sandbox-rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_NAME := rhoam
 test/e2e/multitenant-rhoam/prow: export INSTALLATION_SHORTHAND := sandbox
-test/e2e/multitenant-rhoam/prow: IN_PROW = "true"
+test/e2e/multitenant-rhoam/prow: export IN_PROW = "true"
 test/e2e/multitenant-rhoam/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
-test/e2e: cluster/deploy
+test/e2e: cluster/deploy test/prepare/ocp/obo
 	cd test && go clean -testcache && go test -v ./e2e -timeout=120m -ginkgo.v
 
 .PHONY: test/e2e/single
@@ -265,6 +264,14 @@ test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
 	cd test && go clean -testcache && go test ./osde2e -test.v -ginkgo.v -ginkgo.progress -timeout=120m
+
+.PHONY: test/prepare/ocp/obo
+test/prepare/ocp/obo:
+	# We need to apply these CRDs and create the -observability project on OCP clusters in order to install RHOAM with OBO.
+	# The PrometheusRules CRDS will be removed when Phase 2 of the OBO migration is complete.
+	@oc apply -f https://raw.githubusercontent.com/rhobs/observability-operator/main/bundle/manifests/monitoring.rhobs_prometheusrules.yaml
+	@ - oc new-project $(NAMESPACE)-observability
+	@oc label namespace $(NAMESPACE)-observability monitoring-key=middleware openshift.io/cluster-monitoring="true" --overwrite
 
 ############ E2E TEST COMMANDS ############
 
@@ -354,7 +361,7 @@ cluster/prepare/crd: kustomize
 	$(KUSTOMIZE) build config/crd-sandbox | oc apply -f -
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance
+cluster/prepare/local: kustomize cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/addon-params cluster/prepare/delorean cluster/prepare/rbac/dedicated-admins cluster/prepare/addon-instance cluster/prepare/rhoam-config
 	@if [ "$(CREDENTIALS_MODE)" = Manual ]; then \
 		echo "manual mode (sts)"; \
 		$(MAKE) cluster/prepare/sts; \
@@ -427,8 +434,17 @@ endif
 cluster/prepare/rbac/dedicated-admins:
 	@-oc create -f config/rbac/dedicated_admins_rbac.yaml
 
+.PHONY: cluster/prepare/rhoam-config
+cluster/prepare/rhoam-config:
+ifeq ($(IN_PROW),true)
+	@echo "Not creating rhoam-config ClusterPackage because IN_PROW is set to true"
+else
+	@-oc process -n $(NAMESPACE) CONFIG_IMAGE=$(CONFIG_IMAGE) NAMESPACE=$(NAMESPACE) -f config/hive-config/package.yaml | oc apply -f -
+endif
+
 .PHONY: cluster/cleanup
 cluster/cleanup: kustomize
+	@-oc delete clusterpackage rhoam-config --wait
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete namespace $(NAMESPACE_PREFIX)cloud-resources-operator --timeout=60s --wait
@@ -448,15 +464,11 @@ cluster/cleanup/olm: cluster/cleanup
 
 .PHONY: cluster/cleanup/crds
 cluster/cleanup/crds:
-	@-oc delete crd applicationmonitorings.applicationmonitoring.integreatly.org
-	@-oc delete crd blackboxtargets.applicationmonitoring.integreatly.org
 	@-oc delete crd grafanadashboards.integreatly.org
 	@-oc delete crd grafanadatasources.integreatly.org
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd observabilities.observability.redhat.com
 	@-oc delete crd rhmis.integreatly.org
-	@-oc delete crd webapps.integreatly.org
-	@-oc delete crd rhmiconfigs.integreatly.org
 	@-oc delete crd apimanagementtenants.integreatly.org
 
 .PHONY: cluster/cleanup/rbac/dedicated-admins

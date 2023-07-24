@@ -6,11 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	consolev1 "github.com/openshift/api/console/v1"
-	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/util/retry"
 
@@ -192,7 +190,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type)
+	alertsReconciler := r.newAlertReconciler(r.log, r.installation.Spec.Type, config.GetOboNamespace(r.installation.Namespace))
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana alerts", err)
 		return phase, err
@@ -200,11 +198,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	if err := r.reconcileConsoleLink(ctx, client); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	if phase, err = r.reconcilePrometheusProbes(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus probes", err)
-		return phase, err
 	}
 
 	productStatus.Host = r.Config.GetHost()
@@ -411,14 +404,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	r.log.Infof("Grafana CR: ", l.Fields{"status": status})
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
+	if !resources.IsInProw(r.installation) { // TODO add a bit marker when the second PR is merged.
+
+		phase, err := r.configDataSource(ctx, client)
+		if err != nil {
+			return phase, err
+		}
+	} else {
+		r.log.Warningf("Grafana data source not configured, running in PROW", l.Fields{"namespace": r.Config.GetNamespace()})
 	}
 
-	prometheusService := &corev1.Service{}
+	return r.reconcileServiceAccount(ctx, client)
+}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: observabilityConfig.GetPrometheusOverride(), Namespace: observabilityConfig.GetNamespace()}, prometheusService)
+func (r *Reconciler) configDataSource(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	prometheusService := &corev1.Service{}
+	namespace := config.GetOboNamespace(r.installation.Namespace)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "rhoam-prometheus", Namespace: namespace}, prometheusService)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -428,12 +430,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	var upstreamPort int32
 	for _, port := range prometheusService.Spec.Ports {
-		if port.Name == "upstream" {
+		if port.Name == "web" {
 			upstreamPort = port.Port
 		}
 	}
 	url := fmt.Sprintf("http://%s.%s.svc:%d", prometheusService.Name, prometheusService.Namespace, upstreamPort)
-
 	dataSourceCR := &grafanav1alpha1.GrafanaDataSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "customer-prometheus",
@@ -441,7 +442,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		},
 	}
 
-	status, err = controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
+	status, err := controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(dataSourceCR, r.installation)
 
 		dataSourceCR.Spec = grafanav1alpha1.GrafanaDataSourceSpec{
@@ -463,14 +464,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		dataSourceCR.Spec.Name = "customer.yaml"
 		return nil
 	})
-
+	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
-	r.log.Infof("Grafana datasource: ", l.Fields{"status": status})
-
-	return r.reconcileServiceAccount(ctx, client)
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileServiceAccount(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -622,26 +620,6 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	}
 
 	return nil
-}
-
-func (r *Reconciler) reconcilePrometheusProbes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	phase, err := observability.CreatePrometheusProbe(ctx, client, r.installation, cfg, "integreatly-grafana", "http_2xx", prometheus.ProbeTargetStaticConfig{
-		Targets: []string{r.Config.GetHost()},
-		Labels: map[string]string{
-			"service": "grafana-ui",
-		},
-	})
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		r.log.Error("Error creating grafana prometheus probe", err)
-		return phase, fmt.Errorf("error creating grafana prometheus probe: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {

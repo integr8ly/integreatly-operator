@@ -20,18 +20,28 @@ func mangedApiTargets() map[string][]string {
 			"/integreatly-rhsso",
 			"/integreatly-rhssouser",
 		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
-			"/redhat-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
-			"/redhat-rhoam-marin3r-ratelimit/0",
-			"/redhat-rhoam-rhsso-keycloak-service-monitor/0",
-			"/redhat-rhoam-rhsso-keycloak-service-monitor/1",
-			"/redhat-rhoam-rhsso-operator-rhsso-operator-metrics/0",
-			"/redhat-rhoam-rhsso-operator-rhsso-operator-metrics/1",
-			"/redhat-rhoam-user-sso-keycloak-service-monitor/0",
-			"/redhat-rhoam-user-sso-keycloak-service-monitor/1",
-			"/redhat-rhoam-user-sso-operator-rhsso-operator-metrics/0",
-			"/redhat-rhoam-user-sso-operator-rhsso-operator-metrics/1",
+		"serviceMonitor/" + RHSSOProductNamespace: {
+			"/rhsso-keycloak-service-monitor/0",
+			"/rhsso-keycloak-service-monitor/1",
 		},
+		"serviceMonitor/" + RHSSOOperatorNamespace: {
+			"/rhsso-operator-metrics/0",
+			"/rhsso-operator-metrics/1",
+		},
+		"serviceMonitor/" + RHSSOUserProductNamespace: {
+			"/user-sso-keycloak-service-monitor/0",
+			"/user-sso-keycloak-service-monitor/1",
+		},
+		"serviceMonitor/" + RHSSOUserOperatorNamespace: {
+			"/user-sso-operator-rhsso-operator-metrics/0",
+			"/user-sso-operator-rhsso-operator-metrics/1",
+		},
+		"serviceMonitor/" + CloudResourceOperatorNamespace: {"/cloud-resource-operator-metrics/0"},
+		"serviceMonitor/" + Marin3rProductNamespace:        {"/ratelimit/0"},
+		"serviceMonitor/" + ThreeScaleOperatorNamespace:    {"/threescale-operator-controller-manager-metrics-monitor/0"},
+		"serviceMonitor/" + ThreeScaleProductNamespace:     {"/3scale-service-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace:  {"/openshift-monitoring-federation/0"},
+		"serviceMonitor/" + RHOAMOperatorNamespace:         {"/rhmi-operator-metrics/0"},
 	}
 }
 
@@ -44,14 +54,20 @@ func mtMangedApiTargets() map[string][]string {
 			"/integreatly-grafana",
 			"/integreatly-rhsso",
 		},
-		"serviceMonitor/" + ObservabilityProductNamespace: {
-			"/sandbox-rhoam-cloud-resources-operator-cloud-resource-operator-metrics/0",
-			"/sandbox-rhoam-marin3r-ratelimit/0",
-			"/sandbox-rhoam-rhsso-keycloak-service-monitor/0",
-			"/sandbox-rhoam-rhsso-keycloak-service-monitor/1",
-			"/sandbox-rhoam-rhsso-operator-rhsso-operator-metrics/0",
-			"/sandbox-rhoam-rhsso-operator-rhsso-operator-metrics/1",
+		"serviceMonitor/" + RHSSOProductNamespace: {
+			"/rhsso-keycloak-service-monitor/0",
+			"/rhsso-keycloak-service-monitor/1",
 		},
+		"serviceMonitor/" + RHSSOOperatorNamespace: {
+			"/rhsso-operator-metrics/0",
+			"/rhsso-operator-metrics/1",
+		},
+		"serviceMonitor/" + CloudResourceOperatorNamespace: {"/cloud-resource-operator-metrics/0"},
+		"serviceMonitor/" + Marin3rProductNamespace:        {"/ratelimit/0"},
+		"serviceMonitor/" + ThreeScaleOperatorNamespace:    {"/threescale-operator-controller-manager-metrics-monitor/0"},
+		"serviceMonitor/" + ThreeScaleProductNamespace:     {"/3scale-service-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace:  {"/openshift-monitoring-federation/0"},
+		"serviceMonitor/" + RHOAMOperatorNamespace:         {"/rhmi-operator-metrics/0"},
 	}
 }
 
@@ -89,7 +105,7 @@ func TestMetricsScrappedByPrometheus(t TestingTB, ctx *TestingContext) {
 
 func getPrometheusTargets(ctx *TestingContext) (*prometheusv1.TargetsResult, error) {
 	output, err := execToPod("wget -qO - localhost:9090/api/v1/targets?state=active",
-		"prometheus-prometheus-0",
+		ObservabilityPrometheusPodName,
 		ObservabilityProductNamespace,
 		"prometheus",
 		ctx)
@@ -124,14 +140,19 @@ func getTargets(installType string) map[string][]string {
 func TestRhoamVersionMetricExposed(t TestingTB, ctx *TestingContext) {
 	const rhoamVersionKey = "rhoam_version"
 	// Get the rhoam_version metric from prometheus
-	promQueryRes, err := queryPrometheus(rhoamVersionKey, "prometheus-prometheus-0", ctx)
+	promQueryRes, err := queryPrometheus(rhoamVersionKey, ObservabilityPrometheusPodName, ctx)
 	if err != nil {
-		t.Fatalf("Failed to query prometheus: %w", err)
+		t.Fatalf("Failed to query prometheus: %s", err)
 	}
 	if len(promQueryRes) == 0 {
 		t.Fatalf("No results for metric %s ", rhoamVersionKey)
 	}
-	rhoamVersionValue := promQueryRes[0].Metric["version"].(string)
+	version, ok := promQueryRes[0].Metric["version"]
+	if !ok {
+		t.Fatalf("Unable to find version field in metric")
+	}
+
+	rhoamVersionValue := version.(string)
 	// Semver regex (https://regexr.com/39s32)
 	re := regexp.MustCompile(`^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$`)
 	if !re.MatchString(rhoamVersionValue) {

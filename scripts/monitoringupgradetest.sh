@@ -43,12 +43,12 @@ done
 # The time is noted and stored for use later
 while true
 do
-  ooPrometheus=$(oc get statefulset prometheus-prometheus -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
+  ooPrometheus=$(oc get statefulset prometheus-rhoam -n redhat-rhoam-operator-observability -o yaml | yq e '.status.readyReplicas' -)
   if [ "$ooPrometheus" -ge 1 ]; then
     echo "Prometheus reporting 1 replica ready"
-    ooAlertManager=$(oc get statefulset alertmanager-alertmanager -n redhat-rhoam-observability -o yaml | yq e '.status.readyReplicas' -)
+    ooAlertManager=$(oc get statefulset alertmanager-rhoam -n redhat-rhoam-operator-observability -o yaml | yq e '.status.readyReplicas' -)
     if [ "$ooAlertManager" -ge 1 ]; then
-      echo "AlertManager reporting 1 replica ready"
+      echo "AlertManager reporting 2 replica ready"
       date +"%T"
       END=$(date +%s);
       break

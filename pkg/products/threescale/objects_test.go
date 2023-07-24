@@ -1058,11 +1058,6 @@ func getBasicConfigMoc() *config.ConfigReadWriterMock {
 				},
 			}, nil
 		},
-		ReadMonitoringFunc: func() (*config.Monitoring, error) {
-			return config.NewMonitoring(config.ProductConfig{
-				"NAMESPACE": "middleware-monitoring",
-			}), nil
-		},
 	}
 }
 

@@ -47,7 +47,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    ```
    cd delorean
    make build/cli
-   ./delorean pipeline query-report --namespace redhat-rhoam-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
+   ./delorean pipeline query-report --namespace redhat-rhoam-operator-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
    ```
 
    There will be a yaml file generated in the output directory. Take a look if there's any downtime pre-upgrade. There might be some if the cluster was created less than 1 hour ago.
@@ -88,7 +88,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 6. Run the following command to generate a downtime report using the delorean cli again post-upgrade:
 
    ```
-   ./delorean pipeline query-report --namespace redhat-rhoam-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
+   ./delorean pipeline query-report --namespace redhat-rhoam-operator-observability --config-file ./configurations/downtime-report-config-rhoam.yaml -o <output_dir>
    ```
 
    There should be no additional downtime compared to pre-upgrade report.

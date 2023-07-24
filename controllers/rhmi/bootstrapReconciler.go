@@ -24,6 +24,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -79,29 +80,7 @@ func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, installationQuota *quota.Quota, request ctrl.Request) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Reconciling bootstrap stage")
 
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	uninstall := false
-	if installation.DeletionTimestamp != nil {
-		uninstall = true
-	}
-
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(observabilityConfig.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, observabilityConfig.GetNamespace(), r.log)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}, r.log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
-		return phase, err
-	}
-
-	phase, err = resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
+	phase, err := resources.ReconcileLimitRange(ctx, serverClient, r.installation.Namespace, resources.DefaultLimitRangeParams)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile LimitRange for Namespace %s", r.installation.Namespace), err)
 		return phase, err
@@ -168,7 +147,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
 
-	observabilityConfig, err = r.ConfigManager.ReadObservability()
+	// TODO MGDAPI-5833 : Remove block
+	observabilityConfig, err := r.ConfigManager.ReadObservability()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -180,11 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
-	phase, err = r.ReconcileNamespace(ctx, observabilityConfig.GetNamespace(), installation, serverClient, log)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to create observability operand namespace", err)
-		return phase, errors.Wrap(err, "failed to create observability operand namespace")
-	}
+	// MGDAPI-5833 : Remove block end
 
 	if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)
@@ -197,6 +173,52 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Reconciling custom SMTP has failed ", err)
 		return phase, errors.Wrap(err, "reconciling custom SMTP has failed ")
+	}
+
+	if !resources.IsInProw(installation) {
+		// Creates the Alertmanager config secret
+		phase, err = obo.ReconcileAlertManagerSecrets(ctx, serverClient, r.installation)
+		r.log.Infof("ReconcileAlertManagerConfigSecret", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			if err != nil {
+				r.log.Warning("failed to reconcile alert manager config secret " + err.Error())
+			}
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
+			return phase, err
+		}
+
+		// Creates an alert to check for the presence of sendgrid smtp secret
+		phase, err = resources.CreateSmtpSecretExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile SendgridSmtpSecretExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile SendgridSmtpSecretExists alert", err)
+			return phase, err
+		}
+
+		// Creates an alert to check for the presence of DeadMansSnitch secret
+		phase, err = resources.CreateDeadMansSnitchSecretExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile DeadMansSnitchSecretExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile DeadMansSnitchSecretExists alert", err)
+			return phase, err
+		}
+
+		// Creates an alert to check for the presence of addon-managed-api-service-parameters secret
+		phase, err = resources.CreateAddonManagedApiServiceParametersExists(ctx, serverClient, installation)
+		r.log.Infof("Reconcile AddonManagedApiServiceParametersExists alert", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile AddonManagedApiServiceParametersExists alert", err)
+			return phase, err
+		}
+
+		// Creates remaining OBO alerts
+		phase, err = obo.OboAlertsReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
+		r.log.Infof("Reconcile OBO alerts", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile OBO alerts", err)
+			return phase, err
+		}
+
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)

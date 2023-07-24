@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -94,6 +95,9 @@ var _ = BeforeSuite(func() {
 		err = operatorsv1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
+		err = packageOperatorv1alpha1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
 		ctx, err := common.NewTestingContext(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -103,10 +107,6 @@ var _ = BeforeSuite(func() {
 
 		// wait for cloud resource to deploy
 		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductCloudResources), "cloud-resource-operator")
-		Expect(err).NotTo(HaveOccurred())
-
-		//Observability Operator
-		err = waitForProductDeployment(ctx.KubeClient, string(rhmiv1alpha1.ProductObservability), "observability-operator-controller-manager")
 		Expect(err).NotTo(HaveOccurred())
 
 		// wait for keycloak-operator to deploy

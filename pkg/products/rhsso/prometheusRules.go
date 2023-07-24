@@ -6,21 +6,12 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string, namespace string) resources.AlertReconciler {
 	installationName := resources.InstallationNames[installType]
-
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		logger.Warning("failed to get observability config")
-		return nil
-	}
-
-	namespace := observabilityConfig.GetNamespace()
-	operatorNamespace := observabilityConfig.GetNamespace()
 
 	alertName := "rhsso-ksm-endpoint-alerts"
 	operatorAlertName := "rhsso-operator-ksm-endpoint-alerts"
@@ -35,7 +26,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				AlertName: alertName,
 				Namespace: namespace,
 				GroupName: "rhsso-endpoint.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMRhssoKeycloakServiceEndpointDown",
 						Annotations: map[string]string{
@@ -62,7 +53,7 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 				AlertName: rhssoAlerts,
 				Namespace: namespace,
 				GroupName: "rhoam-general-rhsso.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "KeycloakInstanceNotAvailable",
 						Annotations: map[string]string{
@@ -77,9 +68,9 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			},
 			{
 				AlertName: operatorAlertName,
-				Namespace: operatorNamespace,
+				Namespace: namespace,
 				GroupName: "rhsso-operator-endpoint.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: "RHOAMRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
 						Annotations: map[string]string{
@@ -108,9 +99,9 @@ func (r *Reconciler) newAlertsReconciler(logger l.Logger, installType string) re
 			//https://promtools.dev/alerts/errors
 			{
 				AlertName: "rhsso-slo-availability-alerts",
-				Namespace: operatorNamespace,
+				Namespace: namespace,
 				GroupName: "rhsso-slo-availability.rules",
-				Rules: []monitoringv1.Rule{
+				Rules: []monv1.Rule{
 					{
 						Alert: fmt.Sprintf("%sRhssoAvailability5mto1hErrorBudgetBurn", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
