@@ -3356,6 +3356,7 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 	}
 
 	var hasUnavailablePortal float64
+
 	for key, portal := range portals {
 		// #nosec G402 -- intentionally allowed
 		customHTTPClient := &http.Client{
@@ -3379,6 +3380,8 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to ping %v 3scale portal (%v): %v", portal.PortalName, portal.Host, err)
 		}
+
+		r.log.Infof("Got initial status code", l.Fields{"url": url, "code": res.StatusCode})
 
 		ok := true
 		statusCode := http.StatusOK
