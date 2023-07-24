@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.38.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.13"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -52,15 +52,16 @@ metadata:
     containerImages: |-
       {
         "3scale-operator.3scale-2.13.1-GA": {
-          "3scale-operator.v0.11.5-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
-          "3scale-rhel7-operator-9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
-          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:9b13560229a8a8df5645dfbd07be0ae45688ea8b960bc92d3107bce0551b97f5",
-          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:064a33fa841f355acead1ee9463f72726658ab8cfcd114a0f07447a9f86cbf93",
-          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:c17b0c561562ee1024bb9f0b8ea06b567b13e51f11c29004d60096f85bae6148",
-          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:0380dae3973578f19e47ab3e7938d6d74ef785ad4634139da236013f53428a53",
-          "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:189a71aa5b7d017ef3772fcb590ff8cc078cd81d8674da85659676beba14a261",
-          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:a7b8f11c35d5efc3d60a1ba4e1f7f664b54104890edcdc664990bfe4648732ac",
-          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:70075a897fac365f60a059f4947a9b2c157b2450bff505c70f1f65284f821e1e"
+          "3scale-operator.v0.11.6-mas": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:b4c21ef2d30a86798dd6854b150b09502e19b041d3bac87f2e66e0d53e5b6202",
+          "3scale-rhel7-operator-b4c21ef2d30a86798dd6854b150b09502e19b041d3bac87f2e66e0d53e5b6202-annotation": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:b4c21ef2d30a86798dd6854b150b09502e19b041d3bac87f2e66e0d53e5b6202",
+          "manager": "registry.redhat.io/3scale-mas/3scale-rhel7-operator@sha256:b4c21ef2d30a86798dd6854b150b09502e19b041d3bac87f2e66e0d53e5b6202",
+          "backend": "registry.redhat.io/3scale-mas/backend-rhel8@sha256:f7c3bb6abecee08663a3dfb29f6c07c67b781f316fac246ca2dfa35685f81253",
+          "apicast": "registry.redhat.io/3scale-mas/apicast-gateway-rhel8@sha256:bf0433d020c7529d783df56c8d8ba566159ac06402dc19dbcf0cb86225506a29",
+          "system": "registry.redhat.io/3scale-mas/system-rhel7@sha256:46164b56c8993428fabbda15d74065dd29964774ebd0b91c0d955344dcb7c3eb",
+          "zync": "registry.redhat.io/3scale-mas/zync-rhel8@sha256:3f3d9ce5d25cfcd1182cf600150077702b3312d9b6cb557f78e955585b0dee64",
+          "system_memcached": "registry.redhat.io/3scale-mas/memcached-rhel7@sha256:51e78ee68a7fb9364ab5d1ab466f37c535d7485a8fafbaea8069963942252957",
+          "system_postgresql": "registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:6d11943de0765723697c27b784804aeaab572bfd2c838146fbf4eda3c77fa7e1",
+          "system_searchd": "registry.redhat.io/3scale-mas/searchd-rhel7@sha256:0a660658bbeeaf95b04722bee720a99f14216b6bc035a68b4fcb3d36c2d821f2"
         },
         "cloud-resource-operator.v1.1.1": {
           "cloud-resources.v1.1.0": "quay.io/integreatly/cloud-resource-operator:v1.1.0"
@@ -102,6 +103,7 @@ metadata:
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
         }
       }
+    serviceAffecting: "true"
   name: managed-api-service.v1.38.0
   namespace: placeholder
 spec:
@@ -681,6 +683,8 @@ spec:
                     command:
                       - rhmi-operator
                     env:
+                      - name: INSTALLATION_TYPE
+                        value: managed-api
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -695,15 +699,13 @@ spec:
                         value: "true"
                       - name: LOG_LEVEL
                         value: info
-                      - name: INSTALLATION_TYPE
-                        value: managed-api
                       - name: REBALANCE_PODS
                         value: "true"
                       - name: ALERT_SMTP_FROM
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.38.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
