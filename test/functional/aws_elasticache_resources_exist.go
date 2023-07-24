@@ -51,16 +51,6 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 		replicationGroup := foundElasticacheReplicationGroups.ReplicationGroups[0]
 		nodeGroup := replicationGroup.NodeGroups[0]
 
-		cacheClusterID := replicationGroup.MemberClusters[0]
-
-		result, err := elasticacheapi.DescribeCacheClusters(&elasticache.DescribeCacheClustersInput{
-			CacheClusterId: aws.String(*cacheClusterID),
-		})
-		if err != nil {
-			fmt.Println("Failed to describe cache clusters:", err)
-			return
-		}
-
 		// perform checks to verify state is as expected
 		if !verifyMultiAZ(nodeGroup.NodeGroupMembers) {
 			testErrors = append(testErrors, fmt.Errorf("elasticache resource %s multiAZ failure %v", resourceID, err))
@@ -71,27 +61,22 @@ func AWSElasticacheResourcesExistTest(t common.TestingTB, ctx *common.TestingCon
 		if replicationGroup.SnapshotWindow == nil {
 			testErrors = append(testErrors, fmt.Errorf("elasticache resource %s does not have automatic snapshotting enabled", resourceID))
 		}
-		// check cluster arn for non sts
-		var resourceARN string
-
-		if isSTS {
-			resourceARN = *replicationGroup.ARN
-		} else {
-			resourceARN = *result.CacheClusters[0].ARN
-		}
 
 		resp, err := elasticacheapi.ListTagsForResource(&elasticache.ListTagsForResourceInput{
-			ResourceName: aws.String(resourceARN),
+			ResourceName: replicationGroup.ARN,
 		})
 		if err != nil {
 			t.Fatalf("failed to get elasticache resource tags: %v", err)
 		}
 
-		if isSTS && !elasticacheTagsContains(resp.TagList, awsClusterTypeKey, awsClusterTypeRosaValue) {
-			testErrors = append(testErrors, fmt.Errorf("elasticache resource %s does not have %s tag", resourceID, awsClusterTypeKey))
-		}
-		if !elasticacheTagsContains(resp.TagList, awsManagedTagKey, awsManagedTagValue) {
-			testErrors = append(testErrors, fmt.Errorf("elasticache resource %s does not have %s tag", resourceID, awsManagedTagKey))
+		if isSTS {
+			// Check for managed tag for sts clusters only until https://issues.redhat.com/browse/MGDAPI-4729
+			if !elasticacheTagsContains(resp.TagList, awsManagedTagKey, awsManagedTagValue) {
+				testErrors = append(testErrors, fmt.Errorf("elasticache resource %s does not have %s tag", resourceID, awsManagedTagKey))
+			}
+			if !elasticacheTagsContains(resp.TagList, awsClusterTypeKey, awsClusterTypeRosaValue) {
+				testErrors = append(testErrors, fmt.Errorf("elasticache resource %s does not have %s tag", resourceID, awsClusterTypeKey))
+			}
 		}
 	}
 
