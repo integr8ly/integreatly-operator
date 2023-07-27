@@ -102,9 +102,25 @@ func TestReconciler_Reconcile3scale(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	openshiftIngress := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "",
+			Namespace: "openshift-ingress",
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					corev1.LoadBalancerIngress{
+						IP: "0.0.0.0",
+					},
+				},
+			},
+		},
+	}
 
 	objects := getSuccessfullRHOAMTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace)
 	objects = append(objects, getValidInstallation(integreatlyv1alpha1.InstallationTypeMultitenantManagedApi))
+	objects = append(objects, &openshiftIngress)
 
 	tests := []ThreeScaleTestScenario{
 		{
@@ -2948,6 +2964,21 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 			},
 		},
 	}
+	openshiftIngress := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "",
+			Namespace: "openshift-ingress",
+		},
+		Status: corev1.ServiceStatus{
+			LoadBalancer: corev1.LoadBalancerStatus{
+				Ingress: []corev1.LoadBalancerIngress{
+					corev1.LoadBalancerIngress{
+						IP: "0.0.0.0",
+					},
+				},
+			},
+		},
+	}
 
 	tests := []struct {
 		name       string
@@ -3150,6 +3181,7 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 						&masterRoute,
 						&developerRoute,
 						&providerRoute,
+						&openshiftIngress,
 					)
 					return mockClient
 				},
@@ -3177,7 +3209,7 @@ func TestReconciler_ping3scalePortals(t *testing.T) {
 				recorder:      tt.fields.recorder,
 				log:           tt.fields.log,
 			}
-			got, err := r.ping3scalePortals(tt.args.ctx, tt.args.serverClient(), tt.args.ips)
+			got, err := r.ping3scalePortals(tt.args.ctx, tt.args.serverClient())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ping3scalePortals() error = %v, wantErr %v", err, tt.wantErr)
 				return

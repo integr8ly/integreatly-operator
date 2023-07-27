@@ -427,7 +427,7 @@ func TestGetIngressRouterService(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetIngressRouterService(tt.args.ctx, tt.args.serverClient())
+			got, err := GetIngressRouterService(tt.args.ctx, tt.args.serverClient(), "router-default")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetIngressRouterService() error = %v, wantErr %v", err, tt.wantErr)
 				return

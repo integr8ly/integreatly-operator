@@ -92,10 +92,10 @@ func UpdateErrorAndCustomDomainMetric(installation *v1alpha1.RHMI, active bool, 
 	metrics.SetCustomDomain(active, 0)
 }
 
-func GetIngressRouterService(ctx context.Context, serverClient client.Client) (*v1.Service, error) {
+func GetIngressRouterService(ctx context.Context, serverClient client.Client, svcName string) (*v1.Service, error) {
 	ingressRouterService := &v1.Service{}
 	key := client.ObjectKey{
-		Name:      "router-default",
+		Name:      svcName,
 		Namespace: "openshift-ingress",
 	}
 	err := serverClient.Get(ctx, key, ingressRouterService)

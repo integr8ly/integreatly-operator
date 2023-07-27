@@ -181,6 +181,7 @@ const (
 
 type PortalInfo struct {
 	Host        string
+	Ingress     string
 	PortalName  string
 	IsAvailable bool
 }
