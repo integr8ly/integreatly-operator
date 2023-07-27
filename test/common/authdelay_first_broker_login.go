@@ -5,15 +5,15 @@ import (
 	goctx "context"
 	"crypto/rand"
 	"fmt"
-	"math/big"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
+	"math/big"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
@@ -327,10 +327,14 @@ func isUserAuthenticated(browser *browser.Browser, tsDashboardURL string) bool {
 }
 
 func authenticateThroughRHSSO(browser *browser.Browser) error {
-	// click on authenticate throught rhsso
-	err := browser.Click("a.authorizeLink")
+	rhssoUrl, err := retrieveRHSSOLink(browser)
 	if err != nil {
-		return fmt.Errorf("failed to click on a.authorizeLink to authenticate throught rhsso: %w", err)
+		return fmt.Errorf("failed to authenticate through rhsso: %w", err)
+	}
+
+	err = browser.Open(rhssoUrl)
+	if err != nil {
+		return fmt.Errorf("failed to open RHSSO link: %w", err)
 	}
 
 	return nil
@@ -345,4 +349,29 @@ func selectRHSSOIDP(browser *browser.Browser, idp string) error {
 	}
 
 	return nil
+}
+
+func retrieveRHSSOLink(browser *browser.Browser) (string, error) {
+	// Get body from HTML response
+	htmlBody, err := browser.Find("body").Html()
+	if err != nil {
+		return "", err
+	}
+
+	// Split body on Unicode Decimal code for double quote, &#34;
+	data := strings.Split(htmlBody, "&#34;")
+
+	// Find RHSSO authorization link
+	for _, d := range data {
+		if strings.Contains(d, "rhsso") {
+			// Decodes string
+			decoded, err := strconv.Unquote(`"` + d + `"`)
+			if err != nil {
+				return "", fmt.Errorf("failed to decode string: %w", err)
+			}
+			return decoded, nil
+		}
+	}
+
+	return "", fmt.Errorf("failed to retrieve RHSSO link")
 }
