@@ -1,27 +1,18 @@
 package common
 
 import (
-	"context"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestClusterPackageAvailable(t TestingTB, ctx *TestingContext) {
 
-	clusterPackage := &packageOperatorv1alpha1.ClusterPackage{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "rhoam-config",
-		},
-	}
-
-	err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: clusterPackage.Name}, clusterPackage)
+	pkg, err := obo.GetOboClusterPackage(ctx.Client)
 	if err != nil {
-		t.Fatalf("failed to get cluster package: %v", err)
+		t.Errorf("failed to get ClusterPackage: %w", err)
 	}
 
-	if clusterPackage.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
-		t.Fatalf("cluster package status is not available: %v", err)
+	if pkg.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
+		t.Errorf("error cluster package state is not phase available, current phase: %s", pkg.Status.Phase)
 	}
 }

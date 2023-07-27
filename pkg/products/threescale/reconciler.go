@@ -802,7 +802,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			apim.Spec.Apicast.StagingSpec.Replicas = &apicastStageReplicas
 		}
 
-		if apim.Spec.Backend.CronSpec.Replicas == nil || *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCronReplicas"] {
+		if apim.Spec.Backend.CronSpec.Replicas == nil || *apim.Spec.Backend.CronSpec.Replicas < replicas["backendCron"] {
 			apim.Spec.Backend.CronSpec.Replicas = &backendCronReplicas
 		}
 

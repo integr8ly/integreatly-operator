@@ -1,12 +1,12 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: rhoam-config
+  name: managed-api-service
 objects:
   - apiVersion: package-operator.run/v1alpha1
     kind: ClusterPackage
     metadata:
-      name: rhoam-config
+      name: managed-api-service
       namespace: ${NAMESPACE}
     spec:
       image: ${CONFIG_IMAGE}
