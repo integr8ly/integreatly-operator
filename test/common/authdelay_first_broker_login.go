@@ -4,10 +4,12 @@ import (
 	"context"
 	goctx "context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -328,7 +330,12 @@ func isUserAuthenticated(browser *browser.Browser, tsDashboardURL string) bool {
 
 func authenticateThroughRHSSO(browser *browser.Browser) error {
 	// click on authenticate throught rhsso
-	err := browser.Click("a.authorizeLink")
+	authLink, err := retrieveRHSSOLink(browser)
+	if err != nil {
+		return fmt.Errorf("error retrieving rhsso link %w", err)
+	}
+
+	err = myClick(browser, authLink)
 	if err != nil {
 		return fmt.Errorf("failed to click on a.authorizeLink to authenticate throught rhsso: %w", err)
 	}
@@ -345,4 +352,43 @@ func selectRHSSOIDP(browser *browser.Browser, idp string) error {
 	}
 
 	return nil
+}
+
+func myClick(browser *browser.Browser, authorizationURL string) error {
+
+	//create URL
+	myURL, err := url.Parse(authorizationURL)
+	if err != nil {
+		return err
+	}
+
+	//reusing attrToResolvedURL
+	href := browser.ResolveUrl(myURL)
+	if err != nil {
+		return err
+	}
+
+	return browser.HttpGET(href, browser.Url())
+}
+
+func retrieveRHSSOLink(browser *browser.Browser) (string, error) {
+
+	htmlBody, err := browser.Find("body").Html()
+	if err != nil {
+		return "", err
+	}
+
+	data := strings.Split(htmlBody, "&#34;")
+
+	for _, d := range data {
+		if strings.Contains(d, "rhsso") {
+			url, err := strconv.Unquote(`"` + d + `"`)
+			if err != nil {
+				return "", err
+			}
+			return url, nil
+		}
+	}
+
+	return "", errors.New("RHSSO URL Not Found")
 }
