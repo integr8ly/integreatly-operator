@@ -120,3 +120,4 @@ _6. Verify your work_
 - value in `.spec.customPolicies.<your-policy>.name` must match with value in `apicast-policy.json`
 - check the policy, policy configuration and the policy chain in 3scale Admin Portal
 - you can do the above also using `Proxy Policies Chain Show` API endpoint - to bypass the UI in case of a bug there
+- if there are multiple `h24_test_product` products, remove all the products except the first one created (lowest ID)
