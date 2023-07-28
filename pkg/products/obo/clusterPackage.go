@@ -48,19 +48,9 @@ func getClusterPackageName() (string, error) {
 		return "", err
 	}
 
-	var clusterPackageName string
-
-	switch watchNS {
-	case "redhat-rhoam-operator":
-		clusterPackageName = RHOAMOboClusterPackageName
-	case "redhat-rhoami-operator":
+	clusterPackageName := RHOAMOboClusterPackageName
+	if watchNS == "redhat-rhoami-operator" {
 		clusterPackageName = RHOAMInternalOboClusterPackageName
-	case "sandbox-rhoam-operator":
-		clusterPackageName = RHOAMOboClusterPackageName
-	case "testing-namespaces-operator":
-		clusterPackageName = RHOAMOboClusterPackageName
-	default:
-		return "", fmt.Errorf("unknown WATCH_NAMESPACE %s", watchNS)
 	}
 
 	return clusterPackageName, nil
