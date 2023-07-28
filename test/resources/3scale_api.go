@@ -201,18 +201,22 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	selector := doc.Find("a.pf-c-nav__link")
+
+	// Get the div containing a link that contains the product ID
+	selector := doc.Find("a.pf-c-button")
 	if selector.Length() == 0 {
 		return "", errors.New("unable to retrieve service id")
 	}
 
+	// Parse the href from the div
 	href, _ := selector.Attr("href")
 	if !strings.Contains(href, "/") {
 		return "", fmt.Errorf("invalid href format %v", href)
 	}
 
+	// Parse the product ID from the href
 	id := strings.Split(href, "/")
-	return id[len(id)-1], nil
+	return id[len(id)-2], nil
 }
 
 // Create a 3Scale user invite

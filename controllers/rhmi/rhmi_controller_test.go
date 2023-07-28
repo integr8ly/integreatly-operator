@@ -495,7 +495,7 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: clusterPackageName,
+							Name: "managed-api-service",
 						},
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
@@ -505,21 +505,39 @@ func TestRHMIReconciler_checkClusterPackageAvailability(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Test - RHOAM - cluster package not found",
-			fields: fields{
-				Client: utils.NewTestClient(scheme)},
-			wantErr: true,
-		},
-		{
 			name: "Test - RHOAM - cluster package is not phase available",
 			fields: fields{
 				Client: utils.NewTestClient(scheme,
 					&packageOperatorv1alpha1.ClusterPackage{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "managed-api-service",
+						},
 						Status: packageOperatorv1alpha1.PackageStatus{
 							Phase: packageOperatorv1alpha1.PackagePhaseNotReady,
 						},
 					},
 				)},
+			wantErr: true,
+		},
+		{
+			name: "Test - RHOAM - incorrect cluster package name",
+			fields: fields{
+				Client: utils.NewTestClient(scheme,
+					&packageOperatorv1alpha1.ClusterPackage{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "incorrect-name",
+						},
+						Status: packageOperatorv1alpha1.PackageStatus{
+							Phase: packageOperatorv1alpha1.PackagePhaseAvailable,
+						},
+					},
+				)},
+			wantErr: true,
+		},
+		{
+			name: "Test - RHOAM - cluster package not found",
+			fields: fields{
+				Client: utils.NewTestClient(scheme)},
 			wantErr: true,
 		},
 	}

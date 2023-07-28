@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"os"
 	"reflect"
 	"strconv"
@@ -38,7 +39,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,7 +81,6 @@ const (
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
 	managedServicePriorityClassName  = "rhoam-pod-priority"
 	routeRequestUrl                  = "/apis/route.openshift.io/v1"
-	clusterPackageName               = "rhoam-config"
 )
 
 var (
@@ -950,21 +949,13 @@ func (r *RHMIReconciler) preflightChecks(installation *rhmiv1alpha1.RHMI, instal
 
 func (r *RHMIReconciler) checkClusterPackageAvailablity() error {
 
-	clusterPackage := &packageOperatorv1alpha1.ClusterPackage{
-		ObjectMeta: v1.ObjectMeta{
-			Name: clusterPackageName,
-		},
-	}
-
-	err := r.Get(context.TODO(), k8sclient.ObjectKey{Name: clusterPackage.Name}, clusterPackage)
+	pkg, err := obo.GetOboClusterPackage(r.Client)
 	if err != nil {
-		log.Infof("error cluster package not available", l.Fields{"error": err.Error()})
-		return err
+		return fmt.Errorf("failed to get ClusterPackage: %w", err)
 	}
 
-	if clusterPackage.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
-		log.Info("error cluster package state is not phase available")
-		return fmt.Errorf("error cluster package state is not phase available")
+	if pkg.Status.Phase != packageOperatorv1alpha1.PackagePhaseAvailable {
+		return fmt.Errorf("error cluster package state is not phase available, current phase: %s", pkg.Status.Phase)
 	}
 	return nil
 }

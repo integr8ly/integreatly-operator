@@ -2,7 +2,9 @@ package common
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"k8s.io/apimachinery/pkg/labels"
+
 	packageOperatorV1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -10,12 +12,19 @@ import (
 func TestClusterObjectTemplateState(t TestingTB, ctx *TestingContext) {
 	cotList := &packageOperatorV1alpha1.ClusterObjectTemplateList{}
 
-	label, err := labels.Parse("package-operator.run/package=rhoam-config")
+	label, err := obo.GetOboClusterPackageLabel(ctx.Client)
+	if err != nil {
+		t.Errorf("Failed to get label", err)
+	}
+
+	parsedLabel, err := labels.Parse(label)
 	if err != nil {
 		t.Errorf("Failed to parse label", err)
 	}
+
 	opts := &client.ListOptions{
-		LabelSelector: label}
+		LabelSelector: parsedLabel,
+	}
 
 	err = ctx.Client.List(context.TODO(), cotList, opts)
 	if err != nil {
