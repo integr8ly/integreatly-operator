@@ -3340,17 +3340,20 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		portals[metrics.LabelSystemMaster] = metrics.PortalInfo{
 			Host:       systemMasterRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemMaster,
+			Ingress: 	strings.Split(systemMasterRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 		}
 	}
 	if systemDeveloperRoute != nil && systemDeveloperRoute.Status.Ingress != nil && len(systemDeveloperRoute.Status.Ingress) > 0 {
 		portals[metrics.LabelSystemDeveloper] = metrics.PortalInfo{
 			Host:       systemDeveloperRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemDeveloper,
+			Ingress: 	strings.Split(systemDeveloperRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 		}
 	}
 	if systemProviderRoute != nil && systemProviderRoute.Status.Ingress != nil && len(systemProviderRoute.Status.Ingress) > 0 {
 		portals[metrics.LabelSystemProvider] = metrics.PortalInfo{
 			Host:       systemProviderRoute.Status.Ingress[0].Host,
+			Ingress: 	strings.Split(systemProviderRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 			PortalName: labelRouteToSystemProvider,
 		}
 	}
@@ -3358,6 +3361,12 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 	var hasUnavailablePortal float64
 
 	for key, portal := range portals {
+
+		// GETIP for portal
+		// TODO: error handle
+		service, err = customDomain.GetIngressRouterService(portal.Ingress)
+		ips, err = customDomain.GetIngressRouterIPs(service.Status.LoadBalancer.Ingress)
+
 		// #nosec G402 -- intentionally allowed
 		customHTTPClient := &http.Client{
 			Transport: &http.Transport{
