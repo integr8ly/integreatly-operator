@@ -3364,6 +3364,7 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 
 		// GETIP for portal
 		// TODO: error handle
+		// TODO: Add a comment explaining why this is needed and link to OHSS JIRA
 		service, err = customDomain.GetIngressRouterService(portal.Ingress)
 		ips, err = customDomain.GetIngressRouterIPs(service.Status.LoadBalancer.Ingress)
 
