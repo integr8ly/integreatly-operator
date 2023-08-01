@@ -390,25 +390,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	ingressRouterService, err := customDomain.GetIngressRouterService(ctx, serverClient)
-	if err != nil || len(ingressRouterService.Status.LoadBalancer.Ingress) == 0 {
-		errorMessage := "failed to retrieve ingress router service"
-		r.log.Error(errorMessage, err)
-		phase = integreatlyv1alpha1.PhaseFailed
-		events.HandleError(r.recorder, installation, phase, errorMessage, err)
-		return phase, fmt.Errorf("%s: %v", errorMessage, err)
-	}
-
-	ips, err := customDomain.GetIngressRouterIPs(ingressRouterService.Status.LoadBalancer.Ingress)
-	if err != nil {
-		errorMessage := "failed to retrieve ingress router ips"
-		r.log.Error(errorMessage, err)
-		phase = integreatlyv1alpha1.PhaseFailed
-		events.HandleError(r.recorder, installation, phase, errorMessage, err)
-		return phase, fmt.Errorf("%s: %v", errorMessage, err)
-	}
-
-	phase, err = r.ping3scalePortals(ctx, serverClient, ips)
+	phase, err = r.ping3scalePortals(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		errorMessage := "failed pinging 3scale portals through the ingress cluster router"
 		r.log.Error(errorMessage, err)
@@ -3308,7 +3290,7 @@ func (r *Reconciler) findCustomDomainCr(ctx context.Context, serverClient k8scli
 	return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("finding CustomDomain CR failed: %v", err)
 }
 
-func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client, ips []net.IP) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	format := "failed to retrieve %s 3scale route"
 	portals := map[string]metrics.PortalInfo{}
 
@@ -3340,24 +3322,49 @@ func (r *Reconciler) ping3scalePortals(ctx context.Context, serverClient k8sclie
 		portals[metrics.LabelSystemMaster] = metrics.PortalInfo{
 			Host:       systemMasterRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemMaster,
+			Ingress:    strings.Split(systemMasterRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 		}
 	}
 	if systemDeveloperRoute != nil && systemDeveloperRoute.Status.Ingress != nil && len(systemDeveloperRoute.Status.Ingress) > 0 {
 		portals[metrics.LabelSystemDeveloper] = metrics.PortalInfo{
 			Host:       systemDeveloperRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemDeveloper,
+			Ingress:    strings.Split(systemDeveloperRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 		}
 	}
 	if systemProviderRoute != nil && systemProviderRoute.Status.Ingress != nil && len(systemProviderRoute.Status.Ingress) > 0 {
 		portals[metrics.LabelSystemProvider] = metrics.PortalInfo{
 			Host:       systemProviderRoute.Status.Ingress[0].Host,
 			PortalName: labelRouteToSystemProvider,
+			Ingress:    strings.Split(systemProviderRoute.Status.Ingress[0].RouterCanonicalHostname, ".")[0],
 		}
 	}
 
 	var hasUnavailablePortal float64
 
 	for key, portal := range portals {
+
+		// GETIP for portal
+		// we GET IP for portal here because 3scales routes are not always exposed on ingress router-default,
+		// Example for such case is Jira: https://issues.redhat.com/browse/OHSS-24580
+		service, err := customDomain.GetIngressRouterService(ctx, serverClient, portal.Ingress)
+		if err != nil || len(service.Status.LoadBalancer.Ingress) == 0 {
+			errorMessage := "failed to retrieve ingress router service"
+			r.log.Error(errorMessage, err)
+			phase := integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, r.installation, phase, errorMessage, err)
+			return phase, fmt.Errorf("%s: %v", errorMessage, err)
+		}
+
+		ips, err := customDomain.GetIngressRouterIPs(service.Status.LoadBalancer.Ingress)
+		if err != nil {
+			errorMessage := "failed to retrieve ingress router ips"
+			r.log.Error(errorMessage, err)
+			phase := integreatlyv1alpha1.PhaseFailed
+			events.HandleError(r.recorder, r.installation, phase, errorMessage, err)
+			return phase, fmt.Errorf("%s: %v", errorMessage, err)
+		}
+
 		// #nosec G402 -- intentionally allowed
 		customHTTPClient := &http.Client{
 			Transport: &http.Transport{
