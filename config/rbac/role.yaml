@@ -278,6 +278,7 @@ rules:
 - apiGroups:
   - monitoring.rhobs
   resources:
+  - monitoringstacks
   - podmonitors
   - probes
   - prometheusrules

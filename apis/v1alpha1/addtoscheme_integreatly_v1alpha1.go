@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	obo "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
@@ -57,6 +58,7 @@ func init() {
 		authv1.Install,
 		keycloak.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
+		obo.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
 		routev1.Install,

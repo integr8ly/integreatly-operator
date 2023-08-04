@@ -18,15 +18,16 @@ package status
 
 import (
 	"context"
-
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"github.com/integr8ly/integreatly-operator/utils"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	addoninstance "github.com/openshift/addon-operator/pkg/client"
+	obov1 "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,11 +35,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"time"
 )
 
 // StatusReconciler reconciles a AddonInstance object
 type StatusReconciler struct {
 	client.Client
+	mgr                 ctrl.Manager
+	restConfig          *rest.Config
 	Log                 l.Logger
 	Scheme              *runtime.Scheme
 	addonInstanceClient *addoninstance.AddonInstanceClientImpl
@@ -51,9 +55,14 @@ func New(mgr manager.Manager, opts ...ControllerConfig) (*StatusReconciler, erro
 	cfg.Option(opts...)
 	cfg.Default()
 
+	restconfig := ctrl.GetConfigOrDie()
+	restconfig.Timeout = 10 * time.Second
+
 	return &StatusReconciler{
 		Client:              mgr.GetClient(),
 		Scheme:              mgr.GetScheme(),
+		mgr:                 mgr,
+		restConfig:          restconfig,
 		Log:                 l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "status_controller"}),
 		addonInstanceClient: addoninstance.NewAddonInstanceClient(mgr.GetClient()),
 		cfg:                 cfg,
@@ -87,7 +96,12 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	conditions := r.buildAddonInstanceConditions(installation)
+	monitoringStack, err := getMonitoringStack(r, ctx)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	conditions := r.buildAddonInstanceConditions(installation, monitoringStack)
 
 	if err := r.updateAddonInstanceWithConditions(ctx, addonInstance, conditions); err != nil {
 		return ctrl.Result{}, err
@@ -112,8 +126,24 @@ func (r *StatusReconciler) getAddonInstance(ctx context.Context, req ctrl.Reques
 	return addonInstance, nil
 }
 
+func getMonitoringStack(r *StatusReconciler, ctx context.Context) (*obov1.MonitoringStack, error) {
+
+	serverClient, _ := client.New(r.restConfig, client.Options{
+		Scheme: r.mgr.GetScheme(),
+	})
+
+	monitoringStack := &obov1.MonitoringStack{}
+
+	err := serverClient.Get(context.TODO(), client.ObjectKey{Namespace: "redhat-rhoam-operator-observability", Name: "rhoam"}, monitoringStack)
+	if err != nil {
+		return nil, err
+	}
+
+	return monitoringStack, nil
+}
+
 // BuildAddonInstanceConditions returns the conditions to update the addon instance with
-func (r *StatusReconciler) buildAddonInstanceConditions(installation *v1alpha1.RHMI) []metav1.Condition {
+func (r *StatusReconciler) buildAddonInstanceConditions(installation *v1alpha1.RHMI, monitoringStack *obov1.MonitoringStack) []metav1.Condition {
 	var conditions []metav1.Condition
 
 	// Addon uninstall complete
@@ -126,6 +156,7 @@ func (r *StatusReconciler) buildAddonInstanceConditions(installation *v1alpha1.R
 	conditions = append(conditions, r.appendInstalledConditions(installation)...)
 	conditions = append(conditions, r.appendHealthConditions(installation)...)
 	conditions = append(conditions, r.appendDegradedConditions(installation)...)
+	conditions = append(conditions, r.appendMonitoringStackConditions(monitoringStack)...)
 
 	return conditions
 }
@@ -168,6 +199,34 @@ func (r *StatusReconciler) appendDegradedConditions(installation *v1alpha1.RHMI)
 		conditions = append(conditions, installation.DegradedCondition())
 	} else {
 		conditions = append(conditions, installation.NonDegradedCondition())
+	}
+
+	return conditions
+}
+
+func (r *StatusReconciler) appendMonitoringStackConditions(monitoringStack *obov1.MonitoringStack) []metav1.Condition {
+	var conditions []metav1.Condition
+
+	msConditions := monitoringStack.Status.Conditions
+
+	if msConditions != nil {
+		for _, cond := range msConditions {
+			// Modify "available" with the actual condition type you want to filter.
+			if cond.Type == "Available" {
+
+				// Append the condition to the conditions list.
+				availableCondition := metav1.Condition{
+					Type:               "MonitoringStackAvailable",
+					Status:             metav1.ConditionStatus(cond.Status),
+					ObservedGeneration: cond.ObservedGeneration,
+					LastTransitionTime: cond.LastTransitionTime,
+					Reason:             cond.Reason,
+					Message:            cond.Message,
+				}
+
+				conditions = append(conditions, availableCondition)
+			}
+		}
 	}
 
 	return conditions

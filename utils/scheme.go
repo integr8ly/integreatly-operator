@@ -24,6 +24,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
+	obo "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -74,6 +75,7 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		storagev1.AddToScheme,
 		addonv1alpha1.AddToScheme,
 		packageOperatorv1alpha1.AddToScheme,
+		obo.AddToScheme,
 	)
 
 	if err := schemeBuilder.AddToScheme(scheme); err != nil {
