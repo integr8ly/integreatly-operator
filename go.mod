@@ -34,6 +34,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.42.0
 	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3
+	github.com/rhobs/observability-operator v0.0.20
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.9.0

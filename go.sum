@@ -927,6 +927,7 @@ github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uY
 github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3 h1:vy4ElN2RHyrIzzPn5b8vKuQLg4ZofuUAz65eLqLqloA=
 github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3/go.mod h1:p+YsgXodntOtgwXKTpWrJzVS7QmMfZlGDG0v6Noze7s=
 github.com/rhobs/observability-operator v0.0.20 h1:u4Ejzq/Yt3rY4b/apKhpgYIvmp+MpcV9hhEzhzedpk4=
+github.com/rhobs/observability-operator v0.0.20/go.mod h1:F+exF/48C17xz9Ci9WK9Ri53Z9EZdad0otSOpeFxCXE=
 github.com/robfig/cron v1.2.0/go.mod h1:JGuDeoQd7Z6yL4zQhZ3OPEVHB7fL6Ka6skscFHfmt2k=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
