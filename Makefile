@@ -445,7 +445,7 @@ endif
 .PHONY: cluster/cleanup
 cluster/cleanup: export WATCH_NAMESPACE := $(NAMESPACE)
 cluster/cleanup: kustomize
-	@-oc delete clusterpackage $(WATCH_NAMESPACE) --wait
+	@-oc delete clusterpackage $(OLM_TYPE) --wait
 	@-oc delete rhmis $(INSTALLATION_NAME) -n $(NAMESPACE) --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete namespace $(NAMESPACE_PREFIX)cloud-resources-operator --timeout=60s --wait

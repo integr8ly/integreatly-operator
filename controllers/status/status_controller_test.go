@@ -3,27 +3,35 @@ package status
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/utils"
 	addonv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	addoninstance "github.com/openshift/addon-operator/pkg/client"
+	obov1 "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"testing"
+	"time"
+)
+
+var (
+	testDetail              = "test"
+	defaultTestNamespace    = "test"
+	defaultTestNamespaceObo = defaultTestNamespace + config.OboNamespaceSuffix
 )
 
 func TestStatusReconciler_BuildAddonInstanceConditions(t *testing.T) {
 	var installation v1alpha1.RHMI
 
 	type args struct {
-		installation *v1alpha1.RHMI
+		installation    *v1alpha1.RHMI
+		monitoringStack *obov1.MonitoringStack
 	}
 	tests := []struct {
 		name string
@@ -37,7 +45,8 @@ func TestStatusReconciler_BuildAddonInstanceConditions(t *testing.T) {
 		{
 			name: "test installed, core components unhealthy and degraded condition",
 			args: args{
-				installation: &v1alpha1.RHMI{Status: v1alpha1.RHMIStatus{Version: "0.0.0", Stage: v1alpha1.ProductsStage}},
+				installation:    &v1alpha1.RHMI{Status: v1alpha1.RHMIStatus{Version: "0.0.0", Stage: v1alpha1.ProductsStage}},
+				monitoringStack: &obov1.MonitoringStack{},
 			},
 			want: []metav1.Condition{installation.InstalledCondition(), installation.UnHealthyCondition(), installation.DegradedCondition()},
 		},
@@ -47,7 +56,7 @@ func TestStatusReconciler_BuildAddonInstanceConditions(t *testing.T) {
 			r := &StatusReconciler{
 				Log: logger.NewLogger(),
 			}
-			if got := r.buildAddonInstanceConditions(tt.args.installation); !reflect.DeepEqual(got, tt.want) {
+			if got := r.buildAddonInstanceConditions(tt.args.installation, tt.args.monitoringStack); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BuildAddonInstanceConditions() = %v, want %v", got, tt.want)
 			}
 		})
@@ -184,14 +193,14 @@ func TestStatusReconciler_UpdateAddonInstanceWithConditions(t *testing.T) {
 			Namespace: namespace,
 		}}
 	}
-	cfg := ControllerOptions{AddonInstanceName: testDetail, AddonInstanceNamespace: testDetail}
+	cfg := ControllerOptions{AddonInstanceName: testDetail, AddonInstanceNamespace: defaultTestNamespace}
 	cfg.Default()
 
 	scheme, err := utils.NewTestScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
-	addonInstance := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}}
+	addonInstance := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: defaultTestNamespace}}
 	basicClient := utils.NewTestClient(scheme, addonInstance)
 	errStatusClient := moqclient.NewSigsClientMoqWithScheme(scheme, addonInstance)
 	errStatusClient.StatusFunc = func() client.SubResourceWriter {
@@ -216,7 +225,7 @@ func TestStatusReconciler_UpdateAddonInstanceWithConditions(t *testing.T) {
 			name: "test successfully updating addon instance",
 			args: args{
 				ctx:        ctx,
-				req:        requestFactory(testDetail, testDetail),
+				req:        requestFactory(testDetail, defaultTestNamespace),
 				conditions: []metav1.Condition{},
 			},
 			fields: fields{
@@ -239,7 +248,7 @@ func TestStatusReconciler_UpdateAddonInstanceWithConditions(t *testing.T) {
 			name: "test error updating addon instance",
 			args: args{
 				ctx:        ctx,
-				req:        requestFactory(testDetail, testDetail),
+				req:        requestFactory(testDetail, defaultTestNamespace),
 				conditions: []metav1.Condition{},
 			},
 			fields: fields{
@@ -263,7 +272,6 @@ func TestStatusReconciler_UpdateAddonInstanceWithConditions(t *testing.T) {
 }
 
 func TestStatusReconciler_Reconcile(t *testing.T) {
-	testDetail := "test"
 	ctx := context.Background()
 	requestFactory := func(name, namespace string) controllerruntime.Request {
 		return controllerruntime.Request{NamespacedName: types.NamespacedName{
@@ -271,7 +279,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			Namespace: namespace,
 		}}
 	}
-	cfg := ControllerOptions{AddonInstanceName: testDetail, AddonInstanceNamespace: testDetail}
+	cfg := ControllerOptions{AddonInstanceName: testDetail, AddonInstanceNamespace: defaultTestNamespace}
 	cfg.Default()
 
 	scheme, err := utils.NewTestScheme()
@@ -279,10 +287,11 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	installation := &v1alpha1.RHMI{ObjectMeta: metav1.ObjectMeta{Namespace: testDetail}}
-	addonInstanceD := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}, Spec: addonv1alpha1.AddonInstanceSpec{MarkedForDeletion: true}}
+	installation := &v1alpha1.RHMI{ObjectMeta: metav1.ObjectMeta{Namespace: defaultTestNamespace}}
+	addonInstance := &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: defaultTestNamespace}, Spec: addonv1alpha1.AddonInstanceSpec{MarkedForDeletion: true}}
+	monitoringStack := &obov1.MonitoringStack{ObjectMeta: metav1.ObjectMeta{Name: config.OboMonitoringStackName, Namespace: defaultTestNamespaceObo}}
 
-	clientDeleteErr := moqclient.NewSigsClientMoqWithScheme(scheme, addonInstanceD, installation)
+	clientDeleteErr := moqclient.NewSigsClientMoqWithScheme(scheme, addonInstance, installation)
 	clientDeleteErr.DeleteFunc = func(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 		return fmt.Errorf("error")
 	}
@@ -306,10 +315,10 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			name: "test successful reconcile",
 			args: args{
 				ctx: ctx,
-				req: requestFactory(testDetail, testDetail),
+				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}}, installation),
+				Client: utils.NewTestClient(scheme, addonInstance, installation, monitoringStack),
 			},
 			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
 			wantErr: false,
@@ -318,10 +327,10 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			name: "test successful reconcile - deletion",
 			args: args{
 				ctx: ctx,
-				req: requestFactory(testDetail, testDetail),
+				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, addonInstanceD, installation),
+				Client: utils.NewTestClient(scheme, addonInstance, installation, monitoringStack),
 			},
 			want:    controllerruntime.Result{RequeueAfter: defaultRequeueTime},
 			wantErr: false,
@@ -330,7 +339,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			name: "test error deleting RHMI CR",
 			args: args{
 				ctx: ctx,
-				req: requestFactory(testDetail, testDetail),
+				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
 				Client: clientDeleteErr,
@@ -342,7 +351,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			name: "test error patching AddonInstance CR",
 			args: args{
 				ctx: ctx,
-				req: requestFactory(testDetail, testDetail),
+				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
 				Client: &moqclient.SigsClientInterfaceMock{
@@ -361,7 +370,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			name: "test error getting RHMI CR",
 			args: args{
 				ctx: ctx,
-				req: requestFactory(testDetail, testDetail),
+				req: requestFactory(testDetail, defaultTestNamespace),
 			},
 			fields: fields{
 				Client: &moqclient.SigsClientInterfaceMock{
@@ -386,7 +395,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 				req: requestFactory(testDetail, "non-existent"),
 			},
 			fields: fields{
-				Client: utils.NewTestClient(scheme, &addonv1alpha1.AddonInstance{ObjectMeta: metav1.ObjectMeta{Name: testDetail, Namespace: testDetail}}, &v1alpha1.RHMI{ObjectMeta: metav1.ObjectMeta{Namespace: testDetail}}),
+				Client: utils.NewTestClient(scheme, addonInstance, installation, monitoringStack),
 			},
 			want:    controllerruntime.Result{},
 			wantErr: true,
@@ -397,6 +406,7 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			r := &StatusReconciler{
 				Client:              tt.fields.Client,
 				Log:                 logger.NewLogger(),
+				Scheme:              scheme,
 				cfg:                 cfg,
 				addonInstanceClient: addoninstance.NewAddonInstanceClient(tt.fields.Client),
 			}
@@ -407,6 +417,72 @@ func TestStatusReconciler_Reconcile(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Reconcile() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStatusReconciler_appendMonitoringStackConditions(t *testing.T) {
+	availableConditionTypeName := "MonitoringStackAvailable"
+
+	type args struct {
+		monitoringStack *obov1.MonitoringStack
+	}
+	tests := []struct {
+		name string
+		args args
+		want []metav1.Condition
+	}{
+		{
+			name: "test healthy condition if monitoring stack is available",
+			args: args{
+				monitoringStack: &obov1.MonitoringStack{
+					Status: obov1.MonitoringStackStatus{
+						Conditions: []obov1.Condition{
+							{
+								Type:   obov1.AvailableCondition,
+								Status: obov1.ConditionTrue,
+							},
+						},
+					},
+				},
+			},
+			want: []metav1.Condition{
+				{
+					Type:   availableConditionTypeName,
+					Status: metav1.ConditionTrue,
+				},
+			},
+		},
+		{
+			name: "test degraded condition if monitoring stack is not available",
+			args: args{
+				monitoringStack: &obov1.MonitoringStack{
+					Status: obov1.MonitoringStackStatus{
+						Conditions: []obov1.Condition{
+							{
+								Type:   obov1.AvailableCondition,
+								Status: obov1.ConditionFalse,
+							},
+						},
+					},
+				},
+			},
+			want: []metav1.Condition{
+				{
+					Type:   availableConditionTypeName,
+					Status: metav1.ConditionFalse,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &StatusReconciler{
+				Log: logger.NewLogger(),
+			}
+			if got := r.appendMonitoringStackConditions(tt.args.monitoringStack); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AppendMonitoringStackConditions() = %v, want %v", got, tt.want)
 			}
 		})
 	}

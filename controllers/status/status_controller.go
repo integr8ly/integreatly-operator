@@ -19,6 +19,7 @@ package status
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/rhmi"
 	"github.com/integr8ly/integreatly-operator/utils"
@@ -27,10 +28,9 @@ import (
 	obov1 "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -40,9 +40,7 @@ import (
 
 // StatusReconciler reconciles a AddonInstance object
 type StatusReconciler struct {
-	client.Client
-	mgr                 ctrl.Manager
-	restConfig          *rest.Config
+	k8sclient.Client
 	Log                 l.Logger
 	Scheme              *runtime.Scheme
 	addonInstanceClient *addoninstance.AddonInstanceClientImpl
@@ -55,14 +53,19 @@ func New(mgr manager.Manager, opts ...ControllerConfig) (*StatusReconciler, erro
 	cfg.Option(opts...)
 	cfg.Default()
 
-	restconfig := ctrl.GetConfigOrDie()
-	restconfig.Timeout = 10 * time.Second
+	restConfig := ctrl.GetConfigOrDie()
+	restConfig.Timeout = 10 * time.Second
+
+	client, err := k8sclient.New(restConfig, k8sclient.Options{
+		Scheme: mgr.GetScheme(),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &StatusReconciler{
-		Client:              mgr.GetClient(),
+		Client:              client,
 		Scheme:              mgr.GetScheme(),
-		mgr:                 mgr,
-		restConfig:          restconfig,
 		Log:                 l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "status_controller"}),
 		addonInstanceClient: addoninstance.NewAddonInstanceClient(mgr.GetClient()),
 		cfg:                 cfg,
@@ -80,7 +83,7 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if addonInstance.Spec.HeartbeatUpdatePeriod.Duration != r.cfg.HeartBeatInterval {
 		addonInstance.Spec.HeartbeatUpdatePeriod.Duration = r.cfg.HeartBeatInterval
-		if err := r.Client.Patch(ctx, addonInstance, client.Merge); err != nil {
+		if err := r.Client.Patch(ctx, addonInstance, k8sclient.Merge); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -96,9 +99,13 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	monitoringStack, err := getMonitoringStack(r, ctx)
-	if err != nil {
-		return ctrl.Result{}, err
+	monitoringStack := &obov1.MonitoringStack{}
+
+	if installation != nil {
+		monitoringStack, err = config.GetOboMonitoringStack(r.Client, config.GetOboNamespace(installation.Namespace))
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	conditions := r.buildAddonInstanceConditions(installation, monitoringStack)
@@ -112,7 +119,7 @@ func (r *StatusReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 func (r *StatusReconciler) getAddonInstance(ctx context.Context, req ctrl.Request) (*addonv1alpha1.AddonInstance, error) {
 	// addon instance key
-	objectKey := client.ObjectKey{
+	objectKey := k8sclient.ObjectKey{
 		Namespace: req.Namespace,
 		Name:      r.cfg.AddonInstanceName,
 	}
@@ -124,22 +131,6 @@ func (r *StatusReconciler) getAddonInstance(ctx context.Context, req ctrl.Reques
 	}
 
 	return addonInstance, nil
-}
-
-func getMonitoringStack(r *StatusReconciler, ctx context.Context) (*obov1.MonitoringStack, error) {
-
-	serverClient, _ := client.New(r.restConfig, client.Options{
-		Scheme: r.mgr.GetScheme(),
-	})
-
-	monitoringStack := &obov1.MonitoringStack{}
-
-	err := serverClient.Get(context.TODO(), client.ObjectKey{Namespace: "redhat-rhoam-operator-observability", Name: "rhoam"}, monitoringStack)
-	if err != nil {
-		return nil, err
-	}
-
-	return monitoringStack, nil
 }
 
 // BuildAddonInstanceConditions returns the conditions to update the addon instance with
@@ -209,23 +200,21 @@ func (r *StatusReconciler) appendMonitoringStackConditions(monitoringStack *obov
 
 	msConditions := monitoringStack.Status.Conditions
 
-	if msConditions != nil {
-		for _, cond := range msConditions {
-			// Modify "available" with the actual condition type you want to filter.
-			if cond.Type == "Available" {
+	for _, cond := range msConditions {
+		// Modify "available" with the actual condition type you want to filter.
+		if cond.Type == "Available" {
 
-				// Append the condition to the conditions list.
-				availableCondition := metav1.Condition{
-					Type:               "MonitoringStackAvailable",
-					Status:             metav1.ConditionStatus(cond.Status),
-					ObservedGeneration: cond.ObservedGeneration,
-					LastTransitionTime: cond.LastTransitionTime,
-					Reason:             cond.Reason,
-					Message:            cond.Message,
-				}
-
-				conditions = append(conditions, availableCondition)
+			// Append the condition to the conditions list.
+			availableCondition := metav1.Condition{
+				Type:               "MonitoringStackAvailable",
+				Status:             metav1.ConditionStatus(cond.Status),
+				ObservedGeneration: cond.ObservedGeneration,
+				LastTransitionTime: cond.LastTransitionTime,
+				Reason:             cond.Reason,
+				Message:            cond.Message,
 			}
+
+			conditions = append(conditions, availableCondition)
 		}
 	}
 
