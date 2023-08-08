@@ -28,9 +28,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	"github.com/3scale/3scale-operator/pkg/3scale/amp/component"
+	"github.com/3scale/3scale-operator/apis/apps"
 	"github.com/3scale/3scale-operator/pkg/3scale/amp/product"
-	"github.com/3scale/3scale-operator/pkg/common"
+	"github.com/3scale/3scale-operator/pkg/apispkg/common"
 	"github.com/3scale/3scale-operator/version"
 )
 
@@ -267,6 +267,10 @@ type ApicastProductionSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type ApicastStagingSpec struct {
@@ -329,6 +333,10 @@ type ApicastStagingSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type BackendSpec struct {
@@ -348,6 +356,10 @@ type BackendSpec struct {
 	RedisPriorityClassName *string `json:"redisPriorityClassName,omitempty"`
 	// +optional
 	RedisTopologySpreadConstraints []v1.TopologySpreadConstraint `json:"redisTopologySpreadConstraints,omitempty"`
+	// +optional
+	RedisLabels map[string]string `json:"redisLabels,omitempty"`
+	// +optional
+	RedisAnnotations map[string]string `json:"redisAnnotations,omitempty"`
 
 	// +optional
 	ListenerSpec *BackendListenerSpec `json:"listenerSpec,omitempty"`
@@ -375,6 +387,10 @@ type BackendListenerSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type BackendWorkerSpec struct {
@@ -390,6 +406,10 @@ type BackendWorkerSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type BackendCronSpec struct {
@@ -405,6 +425,10 @@ type BackendCronSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type SystemSpec struct {
@@ -424,6 +448,10 @@ type SystemSpec struct {
 	MemcachedPriorityClassName *string `json:"memcachedPriorityClassName,omitempty"`
 	// +optional
 	MemcachedTopologySpreadConstraints []v1.TopologySpreadConstraint `json:"memcachedTopologySpreadConstraints,omitempty"`
+	// +optional
+	MemcachedLabels map[string]string `json:"memcachedLabels,omitempty"`
+	// +optional
+	MemcachedAnnotations map[string]string `json:"memcachedAnnotations,omitempty"`
 
 	// +optional
 	RedisImage *string `json:"redisImage,omitempty"`
@@ -439,6 +467,10 @@ type SystemSpec struct {
 	RedisPriorityClassName *string `json:"redisPriorityClassName,omitempty"`
 	// +optional
 	RedisTopologySpreadConstraints []v1.TopologySpreadConstraint `json:"redisTopologySpreadConstraints,omitempty"`
+	// +optional
+	RedisLabels map[string]string `json:"redisLabels,omitempty"`
+	// +optional
+	RedisAnnotations map[string]string `json:"redisAnnotations,omitempty"`
 
 	// TODO should this field be optional? We have different approaches in Kubernetes.
 	// For example, in v1.Volume it is optional and there's an implied behaviour
@@ -485,6 +517,10 @@ type SystemAppSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type SystemSidekiqSpec struct {
@@ -500,6 +536,10 @@ type SystemSidekiqSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type SystemSearchdSpec struct {
@@ -517,6 +557,10 @@ type SystemSearchdSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type SystemSphinxSpec struct {
@@ -609,6 +653,10 @@ type SystemMySQLSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type SystemPostgreSQLSpec struct {
@@ -627,6 +675,10 @@ type SystemPostgreSQLSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type ZyncSpec struct {
@@ -652,6 +704,10 @@ type ZyncSpec struct {
 	DatabasePriorityClassName *string `json:"databasePriorityClassName,omitempty"`
 	// +optional
 	DatabaseTopologySpreadConstraints []v1.TopologySpreadConstraint `json:"databaseTopologySpreadConstraints,omitempty"`
+	// +optional
+	DatabaseLabels map[string]string `json:"databaseLabels,omitempty"`
+	// +optional
+	DatabaseAnnotations map[string]string `json:"databaseAnnotations,omitempty"`
 }
 
 type ZyncAppSpec struct {
@@ -667,6 +723,10 @@ type ZyncAppSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type ZyncQueSpec struct {
@@ -682,6 +742,10 @@ type ZyncQueSpec struct {
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 	// +optional
 	TopologySpreadConstraints []v1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 type HighAvailabilitySpec struct {
@@ -1187,7 +1251,7 @@ func (apimanager *APIManager) Validate() field.ErrorList {
 				}
 
 				// For now only "jaeger" is accepted" as the tracing library
-				if openTracingConfigSpec.TracingLibrary != nil && *openTracingConfigSpec.TracingLibrary != component.APIcastDefaultTracingLibrary {
+				if openTracingConfigSpec.TracingLibrary != nil && *openTracingConfigSpec.TracingLibrary != apps.APIcastDefaultTracingLibrary {
 					tracingLibraryFldPath := field.NewPath("spec").
 						Child("apicast").
 						Child("productionSpec").
@@ -1258,7 +1322,7 @@ func (apimanager *APIManager) Validate() field.ErrorList {
 					}
 				}
 				// For now only "jaeger" is accepted" as the tracing library
-				if openTracingConfigSpec.TracingLibrary != nil && *openTracingConfigSpec.TracingLibrary != component.APIcastDefaultTracingLibrary {
+				if openTracingConfigSpec.TracingLibrary != nil && *openTracingConfigSpec.TracingLibrary != apps.APIcastDefaultTracingLibrary {
 					tracingLibraryFldPath := field.NewPath("spec").
 						Child("apicast").
 						Child("stagingSpec").
