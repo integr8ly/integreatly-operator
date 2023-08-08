@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	serviceMonitorNameNamespace = ThreeScaleOperatorNamespace
+	serviceMonitorNameNamespace = ObservabilityProductNamespace
 	serviceMonitorName          = "threescale-operator-controller-manager-metrics-monitor"
 )
 

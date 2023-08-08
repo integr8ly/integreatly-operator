@@ -20,28 +20,28 @@ func mangedApiTargets() map[string][]string {
 			"/integreatly-rhsso",
 			"/integreatly-rhssouser",
 		},
-		"serviceMonitor/" + RHSSOProductNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/rhsso-keycloak-service-monitor/0",
 			"/rhsso-keycloak-service-monitor/1",
 		},
-		"serviceMonitor/" + RHSSOOperatorNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/rhsso-operator-metrics/0",
 			"/rhsso-operator-metrics/1",
 		},
-		"serviceMonitor/" + RHSSOUserProductNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/user-sso-keycloak-service-monitor/0",
 			"/user-sso-keycloak-service-monitor/1",
 		},
-		"serviceMonitor/" + RHSSOUserOperatorNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/user-sso-operator-rhsso-operator-metrics/0",
 			"/user-sso-operator-rhsso-operator-metrics/1",
 		},
-		"serviceMonitor/" + CloudResourceOperatorNamespace: {"/cloud-resource-operator-metrics/0"},
-		"serviceMonitor/" + Marin3rProductNamespace:        {"/ratelimit/0"},
-		"serviceMonitor/" + ThreeScaleOperatorNamespace:    {"/threescale-operator-controller-manager-metrics-monitor/0"},
-		"serviceMonitor/" + ThreeScaleProductNamespace:     {"/3scale-service-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace:  {"/openshift-monitoring-federation/0"},
-		"serviceMonitor/" + RHOAMOperatorNamespace:         {"/rhmi-operator-metrics/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/cloud-resource-operator-metrics/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/ratelimit/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/threescale-operator-controller-manager-metrics-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/3scale-service-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/openshift-monitoring-federation/0"},
+		"serviceMonitor/" + RHOAMOperatorNamespace:        {"/rhmi-operator-metrics/0"},
 	}
 }
 
@@ -54,20 +54,20 @@ func mtMangedApiTargets() map[string][]string {
 			"/integreatly-grafana",
 			"/integreatly-rhsso",
 		},
-		"serviceMonitor/" + RHSSOProductNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/rhsso-keycloak-service-monitor/0",
 			"/rhsso-keycloak-service-monitor/1",
 		},
-		"serviceMonitor/" + RHSSOOperatorNamespace: {
+		"serviceMonitor/" + ObservabilityProductNamespace: {
 			"/rhsso-operator-metrics/0",
 			"/rhsso-operator-metrics/1",
 		},
-		"serviceMonitor/" + CloudResourceOperatorNamespace: {"/cloud-resource-operator-metrics/0"},
-		"serviceMonitor/" + Marin3rProductNamespace:        {"/ratelimit/0"},
-		"serviceMonitor/" + ThreeScaleOperatorNamespace:    {"/threescale-operator-controller-manager-metrics-monitor/0"},
-		"serviceMonitor/" + ThreeScaleProductNamespace:     {"/3scale-service-monitor/0"},
-		"serviceMonitor/" + ObservabilityProductNamespace:  {"/openshift-monitoring-federation/0"},
-		"serviceMonitor/" + RHOAMOperatorNamespace:         {"/rhmi-operator-metrics/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/cloud-resource-operator-metrics/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/ratelimit/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/threescale-operator-controller-manager-metrics-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/3scale-service-monitor/0"},
+		"serviceMonitor/" + ObservabilityProductNamespace: {"/openshift-monitoring-federation/0"},
+		"serviceMonitor/" + RHOAMOperatorNamespace:        {"/rhmi-operator-metrics/0"},
 	}
 }
 
