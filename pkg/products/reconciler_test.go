@@ -1,6 +1,7 @@
 package products
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -12,8 +13,11 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -28,10 +32,43 @@ func createTestLogger(productName string) l.Logger {
 	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: productName})
 }
 
-func TestNewReconciler(t *testing.T) {
-	restConfig := ctrl.GetConfigOrDie()
+func configureTestServer(t *testing.T) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		list := &metav1.APIResourceList{
+			// "integreatly.org/v1alpha1"
+			GroupVersion: "integreatly.org/v1alpha1",
+			APIResources: []metav1.APIResource{},
+		}
 
-	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{})
+		output, err := json.Marshal(list)
+		if err != nil {
+			t.Errorf("unexpected encoding error: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(output)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}))
+	return server
+}
+
+func TestNewReconciler(t *testing.T) {
+	scheme, err := utils.NewTestScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := configureTestServer(t)
+	defer server.Close()
+
+	restConfig := &rest.Config{Host: server.URL}
+
+	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
+		Scheme: scheme,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
