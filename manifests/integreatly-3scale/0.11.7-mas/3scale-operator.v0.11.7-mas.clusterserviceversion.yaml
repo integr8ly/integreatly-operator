@@ -451,7 +451,7 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM
                         value: quay.io/integreatly/delorean:3scale-mas-system-rhel7_156a98c4bdf8f4ecde6308f4aa9d5607c69f27a22a489fa64cb1bff2dd97486b
                       - name: RELATED_IMAGE_ZYNC
-                        value: quay.io/integreatly/delorean:3scale-mas-zync-rhel8_c753a0204e76445d1000a83591205b6763f5c21aabcfe08c740f3dc8b46d3857
+                        value: quay.io/integreatly/delorean:3scale-mas-zync-rhel8_8a108677b0b4100a3d58d924b2c7a47425292492df3dc6a2ebff33c58ca4e9e8
                       - name: RELATED_IMAGE_SYSTEM_MEMCACHED
                         value: quay.io/integreatly/delorean:3scale-mas-memcached-rhel7_f6088f0e5fa669b08ff72f11e7f1d3ce96e54c8170527a3aea0ad66eb6143fcf
                       - name: RELATED_IMAGE_BACKEND_REDIS
@@ -459,7 +459,7 @@ spec:
                       - name: RELATED_IMAGE_SYSTEM_REDIS
                         value: quay.io/integreatly/delorean:rhscl-redis-5-rhel7_91781cf512d695339f5a92da8bfae40b42a5585d3b5627d30e6fea08afc932a4
                       - name: RELATED_IMAGE_SYSTEM_MYSQL
-                        value: quay.io/integreatly/delorean:rhel8-mysql-80_031239cfc1f37747708fb6ba0d77551597b9575985c0e1685ec0c639c7a648d2
+                        value: quay.io/integreatly/delorean:rhel8-mysql-80_60598b4b091f7702ad26da8e881da6c294a2825d3138628e2c17989e4fe021d3
                       - name: RELATED_IMAGE_SYSTEM_POSTGRESQL
                         value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_87071a34273cc963652fe0c707bd1a830bb1ada997f3c9c574475bb951e55031
                       - name: RELATED_IMAGE_ZYNC_POSTGRESQL
@@ -467,7 +467,7 @@ spec:
                       - name: RELATED_IMAGE_OC_CLI
                         value: quay.io/integreatly/delorean:openshift4-ose-cli_1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
                       - name: RELATED_IMAGE_SYSTEM_SEARCHD
-                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_64c0fa7f8641e5598826c2fe95639591e6bf331469146edca9d811e986c7ff86
+                        value: quay.io/integreatly/delorean:3scale-mas-searchd-rhel7_a0d9c3fea0f800d09fa254295d5250e1234791fb2c9e33da0a660d3c2fa5b924
                     image: quay.io/integreatly/delorean:3scale-mas-3scale-rhel7-operator_8f2f6835a7ddfde32c36f13bdd8940207c2b2232afac650cfe472e9839e14a2c
                     name: manager
                     ports:
@@ -1050,7 +1050,7 @@ spec:
       name: apicast
     - image: registry.redhat.io/3scale-mas/system-rhel7@sha256:156a98c4bdf8f4ecde6308f4aa9d5607c69f27a22a489fa64cb1bff2dd97486b
       name: system
-    - image: registry.redhat.io/3scale-mas/zync-rhel8@sha256:c753a0204e76445d1000a83591205b6763f5c21aabcfe08c740f3dc8b46d3857
+    - image: registry.redhat.io/3scale-mas/zync-rhel8@sha256:8a108677b0b4100a3d58d924b2c7a47425292492df3dc6a2ebff33c58ca4e9e8
       name: zync
     - image: registry.redhat.io/3scale-mas/memcached-rhel7@sha256:f6088f0e5fa669b08ff72f11e7f1d3ce96e54c8170527a3aea0ad66eb6143fcf
       name: system_memcached
@@ -1058,7 +1058,7 @@ spec:
       name: backend_redis
     - image: registry.redhat.io/rhscl/redis-5-rhel7@sha256:91781cf512d695339f5a92da8bfae40b42a5585d3b5627d30e6fea08afc932a4
       name: system_redis
-    - image: registry.redhat.io/rhel8/mysql-80@sha256:031239cfc1f37747708fb6ba0d77551597b9575985c0e1685ec0c639c7a648d2
+    - image: registry.redhat.io/rhel8/mysql-80@sha256:60598b4b091f7702ad26da8e881da6c294a2825d3138628e2c17989e4fe021d3
       name: system_mysql
     - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:87071a34273cc963652fe0c707bd1a830bb1ada997f3c9c574475bb951e55031
       name: system_postgresql
@@ -1066,7 +1066,7 @@ spec:
       name: zync_postgresql
     - image: registry.redhat.io/openshift4/ose-cli@sha256:1a8caae40be21f23ba3cb48b75809a73333907033a6041927aa568b5c9290f3c
       name: oc_cli
-    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:64c0fa7f8641e5598826c2fe95639591e6bf331469146edca9d811e986c7ff86
+    - image: registry.redhat.io/3scale-mas/searchd-rhel7@sha256:a0d9c3fea0f800d09fa254295d5250e1234791fb2c9e33da0a660d3c2fa5b924
       name: system_searchd
   replaces: 3scale-operator.v0.11.6-mas
   version: 0.11.7-mas
