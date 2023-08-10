@@ -853,7 +853,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	r.log.Infof("API Manager: ", l.Fields{"status": status})
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
-
 		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider", func(r routev1.Route) bool {
 			return strings.HasPrefix(r.Spec.Host, "3scale-admin.")
 		})
@@ -867,19 +866,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			r.log.Error("Error getting system-provider route", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		// Its not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
+
+		// It's not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
 		exist, err := r.routesExist(ctx, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		if exist {
 			return integreatlyv1alpha1.PhaseCompleted, nil
-		} else {
-			// If the system-provider route does not exist at this point (i.e. when Deployments are ready)
-			// we can force a resync of routes. see below for more details on why this is required:
-			// https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.7/html/operating_3scale/backup-restore#creating_equivalent_zync_routes
-			// This scenario will manifest during a backup and restore and also if the product ns was accidentally deleted.
-			return r.resyncRoutes(ctx, serverClient)
 		}
 	}
 	r.log.Infof("3Scale Deployments in progress",
@@ -945,48 +939,6 @@ func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Cli
 	}
 	r.log.Warningf("Required number of routes do not exist", l.Fields{"found": len(routes.Items), "required": expectedRoutes})
 	return false, nil
-}
-
-func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	ns := r.Config.GetNamespace()
-	podname := ""
-
-	pods := &corev1.PodList{}
-	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(ns),
-		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-sidekiq"}),
-	}
-	err := client.List(ctx, pods, listOpts...)
-	if err != nil {
-		r.log.Error("Error getting list of pods", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	for _, pod := range pods.Items {
-		if pod.Status.Phase == "Running" {
-			podname = pod.ObjectMeta.Name
-			break
-		}
-	}
-
-	if podname == "" {
-		r.log.Info("Waiting on system-sidekiq pod to start, 3Scale install in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	stdout, stderr, err := r.podExecutor.ExecuteRemoteCommand(ns, podname, []string{"/bin/bash",
-		"-c", "bundle exec rake zync:resync:domains"})
-	if err != nil {
-		r.log.Error("Failed to resync 3Scale routes", err)
-		return integreatlyv1alpha1.PhaseFailed, nil
-	} else if stderr != "" {
-		err := errors.New(stderr)
-		r.log.Error("Error attempting to resync 3Scale routes", err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else {
-		r.log.Infof("Resync 3Scale routes result", l.Fields{"stdout": stdout})
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
 }
 
 func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
