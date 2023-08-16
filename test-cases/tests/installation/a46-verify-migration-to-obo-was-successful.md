@@ -6,8 +6,8 @@ products:
       - osd-post-upgrade
     targets:
       - 1.38.0
-    tags:
-      - manual-selection
+tags:
+  - manual-selection
 ---
 
 # A46 - Verify migration to OBO was successful

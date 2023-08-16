@@ -36,7 +36,8 @@ This test case should prove that the rate limiting Redis counter correctly incre
 2. Copy `oc login` command and login to your cluster in the terminal
 3. Start the automated test run
    ```sh
-   ./test/scripts/products/h22-validate-that-rate-limit-service-is-working-as-expected/test.sh | tee test-output.txt
+   cd test
+   ./scripts/products/h22-validate-that-rate-limit-service-is-working-as-expected/test.sh | tee test-output.txt
    ```
 4. Wait for the test to finish. Ensure that it finished successfully, the output
    should look like this:
