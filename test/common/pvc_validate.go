@@ -18,7 +18,14 @@ const (
 
 // common to all installTypes including managed-api
 func commonPvcNamespaces(ctx *TestingContext) []PersistentVolumeClaim {
-	var pvc []PersistentVolumeClaim
+	pvc := []PersistentVolumeClaim{
+		{
+			Namespace: ObservabilityProductNamespace,
+			PersistentVolumeClaimNames: []string{
+				"prometheus-rhoam-db-prometheus-rhoam-0",
+			},
+		},
+	}
 
 	if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 		pvc = append(pvc, []PersistentVolumeClaim{
