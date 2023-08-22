@@ -42,10 +42,8 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 		t.Logf("Deployment successfully scaled back up")
 
 		// Poll until alerts will stop firing
-		ctxPoll, cancel := context.WithTimeout(context.Background(), 7*time.Minute)
-		defer cancel()
 
-		err = wait.PollUntilContextCancel(ctxPoll, 1*time.Minute, true, func(context context.Context) (bool, error) {
+		err = wait.Poll(1*time.Minute, 7*time.Minute, func() (bool, error) {
 			// Check condition here
 			t.Logf("Checking if alerts stopped firing. Repeating for 7 minutes, every 1 minute")
 			isFiring, err := isThreeScaleUIBBTAlertFiring(ctx, t)
@@ -58,7 +56,7 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 		})
 
 		if err != nil {
-			t.Logf("Failed to check if ThreeScale**UIBBT alert stopped firing: %v", err)
+			t.Logf("1Failed to check if ThreeScale**UIBBT alert stopped firing: %v", err)
 		} else {
 			t.Logf("ThreeScale**UIBBT alert successfully stopped firing")
 		}
@@ -88,10 +86,7 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("Failed to scale down system-app: %v", err)
 	}
 
-	ctxPoll, cancel := context.WithTimeout(context.Background(), 7*time.Minute)
-	defer cancel()
-
-	err = wait.PollUntilContextCancel(ctxPoll, 1*time.Minute, true, func(context context.Context) (bool, error) {
+	err = wait.Poll(1*time.Minute, 7*time.Minute, func() (bool, error) {
 		// Check if alerts are firing
 		t.Logf("Checking if alerts started firing. Repeating for 7 minutes, every 1 minute")
 		isFiring, err := isThreeScaleUIBBTAlertFiring(ctx, t)
@@ -104,13 +99,13 @@ func TestThreeScaleUIBBTAlerts(t TestingTB, ctx *TestingContext) {
 	})
 
 	if err != nil {
-		t.Fatalf("Failed to check if ThreeScale**UIBBT alert is firing: %v", err)
+		t.Fatalf("2Failed to check if ThreeScale**UIBBT alert is firing: %v", err)
 	}
 
 	// Check if alert is firing after polling
 	isThreeScaleUIBBTAlertFiring, err := isThreeScaleUIBBTAlertFiring(ctx, t)
 	if err != nil {
-		t.Fatalf("Failed to check if ThreeScale**UIBBT alert is firing: %v", err)
+		t.Fatalf("3Failed to check if ThreeScale**UIBBT alert is firing: %v", err)
 	}
 	if !isThreeScaleUIBBTAlertFiring {
 		t.Fatalf("ThreeScale**UIBBT alert is not firing")
@@ -187,6 +182,7 @@ func isThreeScaleUIBBTAlertFiring(ctx *TestingContext, t TestingTB) (bool, error
 	}
 
 	// If we got here, all alerts are firing
+	t.Logf("alerts are firing")
 	return true, nil
 }
 
