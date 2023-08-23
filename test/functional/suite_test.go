@@ -68,7 +68,8 @@ func TestAPIs(t *testing.T) {
 
 	// Fetch the current config
 	suiteConfig, reporterConfig := GinkgoConfiguration()
-	suiteConfig.Timeout = time.Minute * 90
+	// This timeout is slightly less that 3h because that is the default timeout on ci-cd level
+	suiteConfig.Timeout = time.Minute * 170
 	// Update the JUnitReport
 	reporterConfig.JUnitReport = jUnitReportLocation
 	// Pass the updated config to RunSpecs()
