@@ -22,10 +22,9 @@ ROUTE="http://localhost:9090/api/v1/alerts"
 NAMESPACE_PREFIX="${NAMESPACE_PREFIX:-$(oc get RHMIs --all-namespaces -o jsonpath='{.items[0].spec.namespacePrefix}')}"
 TOKEN=$(oc whoami --show-token)
 # wait for monitoring route to appear and have host populated
-# wait for rhoam install to be complete
-until oc exec -n ${NAMESPACE_PREFIX}operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --header="Authorization: Bearer $TOKEN" --no-check-certificate $ROUTE &> /dev/null && [[ $(oc get rhmi rhoam -n ${NAMESPACE_PREFIX}operator -o json | jq -r '.status.stage') == "complete" ]]
+until oc exec -n ${NAMESPACE_PREFIX}operator-observability prometheus-rhoam-0 -- wget -qO- --header='Accept: application/json' --header="Authorization: Bearer $TOKEN" --no-check-certificate $ROUTE &> /dev/null
 do
-    echo "Waiting for ${NAMESPACE_PREFIX}operator-observability pods to be available and RHOAM installation to be complete. Next check in 1 minute."
+    echo "Waiting for ${NAMESPACE_PREFIX}operator-observability pods to be available. Next check in 1 minute."
     sleep 60
 done
 
@@ -95,14 +94,19 @@ function CHECK_NO_ALERTS() {
     echo "$rhoam_alerts_pending"
     echo "============================================================================"
   else
-    echo "============================================================================"
-    echo "Following alerts are firing:"
     date
-    echo "$all_alerts"
     echo "============================================================================"
-    echo "Following alerts are pending:"
-    date
-    echo "$all_alerts_pending"
+    echo "Following alerts are firing for ${NAMESPACE_PREFIX}operator-observability:"
+    echo "$rhoam_alerts"
+    echo "============================================================================"
+    echo "Following alerts are pending for ${NAMESPACE_PREFIX}operator-observability:"
+    echo "$rhoam_alerts_pending"
+    echo "============================================================================"
+    echo "Following alerts are firing for openshift-monitoring:"
+    echo "$openshift_alerts"
+    echo "============================================================================"
+    echo "Following alerts are pending for openshift-monitoring:"
+    echo "$openshift_alerts_pending"
     echo "============================================================================"
   fi
 }
@@ -171,7 +175,7 @@ if [[ "$2" == "" ]]; then
 
     CHECK_NO_ALERTS
 
-    echo "=================== Sleeping for $SLEEP_TIME seconds ======================"
+    echo -e "\n=================== Sleeping for $SLEEP_TIME seconds ======================\n"
     sleep $SLEEP_TIME
     # If the above sleep failed sleep for 5 seconds (default)
     if [[ $? != 0 ]]; then
