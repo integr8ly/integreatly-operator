@@ -14,7 +14,6 @@ var (
 		"installation": {
 			"rhsso",
 			"cloud-resources",
-			"observability",
 			"rhssouser",
 			"3scale",
 			"marin3r",
@@ -27,7 +26,6 @@ var (
 		"installation": {
 			"rhsso",
 			"cloud-resources",
-			"observability",
 			"3scale",
 			"marin3r",
 			"grafana",
