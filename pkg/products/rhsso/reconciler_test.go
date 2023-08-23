@@ -75,13 +75,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetGHOauthClientsSecretNameFunc: func() string {
 			return "github-oauth-secret"
 		},
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return config.NewObservability(config.ProductConfig{
-				"NAMESPACE":          "redhat-rhoam-observability",
-				"OPERATOR_NAMESPACE": "redhat-rhoam-observability-operator",
-				"NAMESPACE_PREFIX":   "redhat-rhoam-",
-			}), nil
-		},
 	}
 }
 

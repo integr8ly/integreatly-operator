@@ -31,12 +31,10 @@ import (
 )
 
 var (
-	testRhssoNamespace         = "test-rhsso"
-	testRhssoRealm             = "test-realm"
-	testRhssoURL               = "https://test.rhsso.url"
-	nsPrefix                   = "testing-namespaces-"
-	testOONamespace            = "test-observability-operator"
-	testObservabilityNamespace = "test-observability"
+	testRhssoNamespace = "test-rhsso"
+	testRhssoRealm     = "test-realm"
+	testRhssoURL       = "https://test.rhsso.url"
+	nsPrefix           = "testing-namespaces-"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{
@@ -44,8 +42,7 @@ var configManagerConfigMap = &corev1.ConfigMap{
 		Name: "integreatly-installation-config",
 	},
 	Data: map[string]string{
-		"rhsso":         fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
-		"observability": fmt.Sprintf("NAMESPACE: %s\nNAMESPACE_PREFIX: %s\nOPERATOR_NAMESPACE: %s", testObservabilityNamespace, nsPrefix, testOONamespace),
+		"rhsso": fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
 	},
 }
 
@@ -1036,11 +1033,6 @@ func getBasicConfigMoc() *config.ConfigReadWriterMock {
 		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
-		},
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return config.NewObservability(config.ProductConfig{
-				"NAMESPACE": "observability",
-			}), nil
 		},
 		ReadRHSSOFunc: func() (*config.RHSSO, error) {
 			return config.NewRHSSO(config.ProductConfig{

@@ -647,15 +647,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 		},
 	}
 
-	configManager := &config.ConfigReadWriterMock{
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return &config.Observability{
-				Config: config.ProductConfig{
-					"NAMESPACE": namespace,
-				},
-			}, nil
-		},
-	}
+	configManager := &config.ConfigReadWriterMock{}
 
 	rateLimitService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: quota.RateLimitName, Namespace: namespace},
@@ -773,9 +765,7 @@ func TestRateLimitServiceReconciler_ensureLimits(t *testing.T) {
 				PodExecutor: &resources.PodExecutorInterfaceMock{ExecuteRemoteCommandFunc: func(ns string, podName string, command []string) (string, string, error) {
 					return "[{\"namespace\":\"apicast-ratelimit\",\"max_value\":70,\"seconds\":60,\"name\":null,\"conditions\":[\"generic_key == slowpath\"],\"variables\":[\"generic_key\"]}]", "", nil
 				}},
-				ConfigManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-					return nil, fmt.Errorf("genericError")
-				}}},
+				ConfigManager: &config.ConfigReadWriterMock{}},
 			args: args{
 				ctx:    context.TODO(),
 				client: utils.NewTestClient(scheme, rateLimitPod),
@@ -856,15 +846,7 @@ func TestRateLimitServiceReconciler_deleteRedisLimits(t *testing.T) {
 
 	const namespace = "redhat-test-marin3r"
 
-	configManager := &config.ConfigReadWriterMock{
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return &config.Observability{
-				Config: config.ProductConfig{
-					"NAMESPACE": namespace,
-				},
-			}, nil
-		},
-	}
+	configManager := &config.ConfigReadWriterMock{}
 
 	rateLimitService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: quota.RateLimitName, Namespace: namespace},
@@ -889,27 +871,6 @@ func TestRateLimitServiceReconciler_deleteRedisLimits(t *testing.T) {
 		want    integreatlyv1alpha1.StatusPhase
 		wantErr bool
 	}{
-		{
-			name: "test phase failed getting observability config",
-			fields: fields{
-				Installation: &integreatlyv1alpha1.RHMI{
-					Spec: integreatlyv1alpha1.RHMISpec{
-						Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
-					},
-				},
-				Namespace:       namespace,
-				RateLimitConfig: marin3rconfig.RateLimitConfig{Unit: "second", RequestsPerUnit: 1},
-				ConfigManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-					return nil, fmt.Errorf("genericError")
-				}},
-			},
-			args: args{
-				ctx:    context.TODO(),
-				client: utils.NewTestClient(scheme),
-			},
-			want:    integreatlyv1alpha1.PhaseFailed,
-			wantErr: true,
-		},
 		{
 			name: "test phase failed getting rate limit service",
 			fields: fields{

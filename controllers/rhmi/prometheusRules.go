@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"strings"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -34,7 +34,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 	alerts := []resources.AlertConfiguration{
 		{
 			AlertName: fmt.Sprintf("%s-installation-alerts", installationName),
-			Namespace: observability.OpenshiftMonitoringNamespace,
+			Namespace: config.OpenshiftMonitoringNamespace,
 			GroupName: fmt.Sprintf("%s-installation.rules", installationName),
 			Rules: []monitoringv1.Rule{
 				{
@@ -51,7 +51,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 		},
 		{
 			AlertName: fmt.Sprintf("%s-upgrade-alerts", installationName),
-			Namespace: observability.OpenshiftMonitoringNamespace,
+			Namespace: config.OpenshiftMonitoringNamespace,
 			GroupName: fmt.Sprintf("%s-upgrade.rules", installationName),
 			Rules: []monitoringv1.Rule{
 				{
@@ -78,7 +78,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 		},
 		{
 			AlertName: fmt.Sprintf("%s-missing-metrics", installationName),
-			Namespace: observability.OpenshiftMonitoringNamespace,
+			Namespace: config.OpenshiftMonitoringNamespace,
 			GroupName: fmt.Sprintf("%s-general.rules", installationName),
 			Rules: []monitoringv1.Rule{
 				{
@@ -95,7 +95,7 @@ func (r *RHMIReconciler) newAlertsReconciler(installation *integreatlyv1alpha1.R
 		},
 		{
 			AlertName: fmt.Sprintf("%s-telemetry", installationName),
-			Namespace: observability.OpenshiftMonitoringNamespace,
+			Namespace: config.OpenshiftMonitoringNamespace,
 			GroupName: fmt.Sprintf("%s-telemetry.rules", installationName),
 			Interval:  "30s",
 			Rules: []monitoringv1.Rule{

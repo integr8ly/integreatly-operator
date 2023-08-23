@@ -26,21 +26,19 @@ import (
 )
 
 var (
-	rhoamOperatorNs         = "redhat-rhoam-operator"
-	threescaleNs            = "redhat-rhoam-3scale"
-	threescaleOperatorNs    = "redhat-rhoam-3scale-operator"
-	croNs                   = "redhat-rhoam-cloud-resources"
-	customerMonitoringNs    = "redhat-rhoam-customer-monitoring"
-	marin3rNs               = "redhat-rhoam-marin3r"
-	marin3rOperatorNs       = "redhat-rhoam-marin3r-operator"
-	monitoringNs            = "redhat-rhoam-monitoring"
-	observabilityNs         = "redhat-rhoam-observability"
-	observabilityOperatorNs = "redhat-rhoam-observability-operator"
-	rhssoNs                 = "redhat-rhoam-rhsso"
-	rhssoOperatorNs         = "redhat-rhoam-rhsso-operator"
-	userSsoNs               = "redhat-rhoam-user-sso"
-	userSsoOperatorNs       = "redhat-rhoam-user-sso-operator"
-	someRandomNs            = "some-random-nspace"
+	rhoamOperatorNs      = "redhat-rhoam-operator"
+	threescaleNs         = "redhat-rhoam-3scale"
+	threescaleOperatorNs = "redhat-rhoam-3scale-operator"
+	croNs                = "redhat-rhoam-cloud-resources"
+	customerMonitoringNs = "redhat-rhoam-customer-monitoring"
+	marin3rNs            = "redhat-rhoam-marin3r"
+	marin3rOperatorNs    = "redhat-rhoam-marin3r-operator"
+	oboNs                = "redhat-rhoam-operator-observability"
+	rhssoNs              = "redhat-rhoam-rhsso"
+	rhssoOperatorNs      = "redhat-rhoam-rhsso-operator"
+	userSsoNs            = "redhat-rhoam-user-sso"
+	userSsoOperatorNs    = "redhat-rhoam-user-sso-operator"
+	someRandomNs         = "some-random-nspace"
 )
 
 func getNamespaces() *corev1.NamespaceList {
@@ -103,23 +101,7 @@ func getNamespaces() *corev1.NamespaceList {
 			},
 			{
 				ObjectMeta: v1.ObjectMeta{
-					Name: monitoringNs,
-					Labels: map[string]string{
-						"integreatly": "true",
-					},
-				},
-			},
-			{
-				ObjectMeta: v1.ObjectMeta{
-					Name: observabilityNs,
-					Labels: map[string]string{
-						"integreatly": "true",
-					},
-				},
-			},
-			{
-				ObjectMeta: v1.ObjectMeta{
-					Name: observabilityOperatorNs,
+					Name: oboNs,
 					Labels: map[string]string{
 						"integreatly": "true",
 					},

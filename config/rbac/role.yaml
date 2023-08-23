@@ -326,12 +326,6 @@ rules:
   verbs:
   - list
 - apiGroups:
-  - observability.redhat.com
-  resources:
-  - observabilities
-  verbs:
-  - '*'
-- apiGroups:
   - operator.marin3r.3scale.net
   resources:
   - discoveryservices

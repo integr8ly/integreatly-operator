@@ -74,11 +74,6 @@ products:
     channel: rhmi
     installFrom: local
     manifestsDir: integreatly-marin3r
-  observability:
-    channel: alpha
-    package: observability-operator
-    installFrom: index
-    index: quay.io/rhoas/observability-operator-index:v4.2.1
   rhsso:
     channel: stable
     installFrom: index

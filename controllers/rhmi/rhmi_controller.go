@@ -200,9 +200,6 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 // Permission to remove crd for the marin3r operator upgrade from 0.5.1 to 0.7.0
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=delete;get;list
 
-// Observability
-// +kubebuilder:rbac:groups=observability.redhat.com,resources=observabilities,verbs=*
-
 // Required for multitenant installations of RHOAM because the RHOAM operator is cluster scoped in these installations
 // +kubebuilder:rbac:groups="*",resources=configmaps;secrets;services;subscriptions,verbs=get;list;watch;create;update
 
@@ -481,23 +478,6 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 
 	err = r.updateStatusAndObject(originalInstallation, installation)
 	return retryRequeue, err
-}
-
-func (r *RHMIReconciler) getAlertingNamespace(installation *rhmiv1alpha1.RHMI, configManager *config.Manager) (map[string]string, error) {
-
-	var alertingNamespaces = map[string]string{
-		"openshift-monitoring": "alertmanager-main",
-	}
-
-	// Read from Observability config
-	observabilityConfig, err := configManager.ReadObservability()
-	if err != nil {
-		return alertingNamespaces, err
-	}
-
-	alertingNamespaces[observabilityConfig.GetNamespace()] = observabilityConfig.GetAlertManagerRouteName()
-
-	return alertingNamespaces, nil
 }
 
 func (r *RHMIReconciler) reconcilePodDistribution(installation *rhmiv1alpha1.RHMI) {
@@ -1068,7 +1048,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
-		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted && productName != rhmiv1alpha1.ProductObservability { // TODO MGDAPI-5833 : remove the product name check
+		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
 			for _, crd := range productConfig.GetWatchableCRDs() {
 				namespace := productConfig.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()

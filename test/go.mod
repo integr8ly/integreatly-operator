@@ -122,10 +122,10 @@ require (
 	github.com/openshift/cloud-credential-operator v0.0.0-20211102171825-9d7d082fe277 // indirect
 	github.com/openshift/custom-domains-operator v0.0.0-20220614181227-281815c251d6 // indirect
 	github.com/openshift/custom-resource-status v0.0.0-20190801200128-4c95b3a336cd // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/redhat-developer/observability-operator/v4 v4.2.1 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
