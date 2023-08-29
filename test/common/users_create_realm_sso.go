@@ -12,7 +12,6 @@ import (
 	"github.com/chromedp/chromedp"
 	rhmiv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	logger "github.com/sirupsen/logrus"
-
 )
 
 func TestUsersCreateRealmSSO(t TestingTB, ctx *TestingContext) {
@@ -55,7 +54,6 @@ func TestUsersCreateRealmSSO(t TestingTB, ctx *TestingContext) {
 		createRealmInUserSSO(t, userSSOConsoleUrl, developerUser)
 		createRealmInUserSSO(t, userSSOConsoleUrl, dedicatedAdminUser)
 	}
-	
 
 }
 
@@ -67,9 +65,9 @@ func createRealmInUserSSOActions(t TestingTB, userSSOConsoleUrl, userName string
 	logger.Infof("Attempting to create realm in User SSO: %s for user: %s", userSSOConsoleUrl, userName)
 
 	randomName := rand.HexadecimalString(6)
-	
+
 	return []chromedp.Action{
-		chromedp.Navigate(userSSOConsoleUrl),		
+		chromedp.Navigate(userSSOConsoleUrl),
 		chromedp.WaitVisible(`html[data-test-id="login"]`), // Wait to allow page to redirect to oauth page
 		chromedp.Click(`a[title="Log in with testing-idp"]`),
 		chromedp.SendKeys(`//input[@name="username"]`, userName),
