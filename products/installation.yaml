@@ -79,11 +79,6 @@ products:
         installFrom: index
         package: mcg-operator
         index: quay.io/integreatly/mcg-index:v4.12.3-rhodf
-    observability:
-        channel: alpha
-        installFrom: index
-        package: observability-operator
-        index: quay.io/rhoas/observability-operator-index:v4.2.1
     rhsso:
         channel: stable
         installFrom: index

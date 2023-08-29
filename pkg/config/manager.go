@@ -48,7 +48,6 @@ type ConfigReadWriter interface {
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadCloudResources() (*CloudResources, error)
 	ReadGrafana() (*Grafana, error)
-	ReadObservability() (*Observability, error) // TODO MGDAPI-5833 this needs to be removed
 	ReadMCG() (*MCG, error)
 }
 
@@ -100,8 +99,6 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadMarin3r()
 	case integreatlyv1alpha1.ProductGrafana:
 		return m.ReadGrafana()
-	case integreatlyv1alpha1.ProductObservability:
-		return m.ReadObservability()
 	case integreatlyv1alpha1.ProductMCG:
 		return m.ReadMCG()
 	}
@@ -180,14 +177,6 @@ func (m *Manager) ReadMCG() (*MCG, error) {
 		return nil, err
 	}
 	return NewMCG(config), nil
-}
-
-func (m *Manager) ReadObservability() (*Observability, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductObservability)
-	if err != nil {
-		return nil, err
-	}
-	return NewObservability(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {

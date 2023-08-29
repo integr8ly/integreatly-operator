@@ -82,20 +82,6 @@ metadata:
           "keycloak_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1",
           "rhsso_init_container": "registry.redhat.io/rh-sso-7/sso7-rhel8-init-container@sha256:5232b24e6d0421057e482a5a85d5deb2c541e94e4f46b2316a92130fe0d0fec1"
         },
-        "observability-operator.v4.2.1": {
-          "observability-operator.v4.2.1": "quay.io/rhoas/observability-operator:v4.2.1",
-          "observability-prometheus-operator-index": "quay.io/integreatly/custom-prometheus-index:2.0.0",
-          "observability-prometheus-operator": "quay.io/prometheus-operator/prometheus-operator@sha256:066fce4a6b7392f07f7179b59ed4448bacc0767277637de99809449637be924b",
-          "observability-prometheus-alertmanager": "quay.io/prometheus/alertmanager:v0.22.2",
-          "observability-openshift-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy:v4.12",
-          "observability-prometheus": "quay.io/prometheus/prometheus:v2.29.2",
-          "observability-prometheus-blackbox": "quay.io/prometheus/blackbox-exporter:v0.19.0",
-          "observability-prometheus-config-reloader": "quay.io/prometheus-operator/prometheus-config-reloader@sha256:c8f6b2fb77894bc06b6c5257b5935a591ed7e9b6ac0821f9e42bd44193325441",
-          "observability-grafana-operator-index": "quay.io/rhoas/grafana-operator-index:v3.10.8",
-          "observability-grafana-operator": "quay.io/rhoas/grafana-operator:v3.10.8",
-          "observability-grafana-plugins-init": "quay.io/grafana-operator/grafana_plugins_init:0.1.0",
-          "observability-observability-operator": "quay.io/rhoas/observability-operator-index:v4.2.1"
-        },
         "ratelimit": {
           "3scale-openshift-service-mesh": "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.3.4-3"
         },
@@ -504,12 +490,6 @@ spec:
                 - objectbuckets
               verbs:
                 - list
-            - apiGroups:
-                - observability.redhat.com
-              resources:
-                - observabilities
-              verbs:
-                - '*'
             - apiGroups:
                 - operator.marin3r.3scale.net
               resources:

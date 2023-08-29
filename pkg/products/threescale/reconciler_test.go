@@ -3951,15 +3951,8 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 						Namespace: "namespace",
 					},
 				},
-				log: getLogger(),
-				ConfigManager: &config.ConfigReadWriterMock{
-					ReadObservabilityFunc: func() (*config.Observability, error) {
-						return &config.Observability{
-							Config: config.ProductConfig{
-								"NAMESPACE": "namespace",
-							},
-						}, nil
-					}},
+				log:           getLogger(),
+				ConfigManager: &config.ConfigReadWriterMock{},
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": defaultInstallationNamespace,
 				}),
@@ -3977,17 +3970,9 @@ func TestReconciler_reconcileSystemAppSupportEmailAddress(t *testing.T) {
 				serverClient: fake.NewClientBuilder().Build(),
 			},
 			fields: fields{
-				installation: &integreatlyv1alpha1.RHMI{},
-				log:          getLogger(),
-				ConfigManager: &config.ConfigReadWriterMock{
-					ReadObservabilityFunc: func() (*config.Observability, error) {
-						return &config.Observability{
-							Config: config.ProductConfig{
-								"NAMESPACE": "namespace",
-							},
-						}, nil
-					},
-				},
+				installation:  &integreatlyv1alpha1.RHMI{},
+				log:           getLogger(),
+				ConfigManager: &config.ConfigReadWriterMock{},
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": defaultInstallationNamespace,
 				}),

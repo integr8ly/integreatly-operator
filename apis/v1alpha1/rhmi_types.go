@@ -56,7 +56,6 @@ var (
 	ProductRHSSO          ProductName = "rhsso"
 	ProductRHSSOUser      ProductName = "rhssouser"
 	Product3Scale         ProductName = "3scale"
-	ProductObservability  ProductName = "observability" // TODO MGDAPI-5833
 	ProductCloudResources ProductName = "cloud-resources"
 	ProductMarin3r        ProductName = "marin3r"
 	ProductGrafana        ProductName = "grafana"
@@ -72,7 +71,6 @@ var (
 	VersionMarin3r        ProductVersion = "0.11.0"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
 	VersionGrafana        ProductVersion = "4.2.0"
-	VersionObservability  ProductVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -85,7 +83,6 @@ var (
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.11.0"
 	OperatorVersionGrafana        OperatorVersion = "4.2.0"
-	OperatorVersionObservability  OperatorVersion = "4.2.1" // TODO MGDAPI-5833 : Remove this type
 	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
 	// Event reasons to be used when emitting events

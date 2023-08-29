@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	observabilityoperator "github.com/redhat-developer/observability-operator/v4/api/v1"
 	apiextensionv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	envoyconfigv1 "github.com/3scale-ops/marin3r/apis/marin3r/v1alpha1"
@@ -75,7 +74,6 @@ func init() {
 		discoveryservicev1.SchemeBuilder.AddToScheme,
 		apiextensionv1beta1.SchemeBuilder.AddToScheme,
 		apiextensionv1.SchemeBuilder.AddToScheme,
-		observabilityoperator.SchemeBuilder.AddToScheme,
 		customdomainv1alpha1.AddToScheme,
 		cloudcredentialv1.Install,
 		noobaav1.SchemeBuilder.AddToScheme,

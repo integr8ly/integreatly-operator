@@ -65,14 +65,6 @@ func setupRecorder() record.EventRecorder {
 
 func getBasicConfig() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return config.NewObservability(config.ProductConfig{
-				"NAMESPACE":          "redhat-rhoam-observability",
-				"OPERATOR_NAMESPACE": "redhat-rhoam-observability-operator",
-				"NAMESPACE_PREFIX":   "redhat-rhoam-",
-			}), nil
-		},
-
 		GetOperatorNamespaceFunc: func() string {
 			return defaultInstallationNamespace
 		},

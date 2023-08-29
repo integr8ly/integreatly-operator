@@ -23,7 +23,6 @@ import (
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	prometheusv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	observabilityv1 "github.com/redhat-developer/observability-operator/v4/api/v1"
 	monv1 "github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -69,7 +68,6 @@ func NewTestScheme() (*runtime.Scheme, error) {
 		customdomainv1alpha1.AddToScheme,
 		cloudcredentialv1.Install,
 		envoyconfigv1.AddToScheme,
-		observabilityv1.AddToScheme,
 		crov1.AddToScheme,
 		noobaav1.SchemeBuilder.AddToScheme,
 		obv1.SchemeBuilder.AddToScheme,

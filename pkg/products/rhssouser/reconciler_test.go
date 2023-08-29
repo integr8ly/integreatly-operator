@@ -76,11 +76,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetOauthClientsSecretNameFunc: func() string {
 			return "oauth-client-secrets"
 		},
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return config.NewObservability(config.ProductConfig{
-				"NAMESPACE": "observability",
-			}), nil
-		},
 	}
 }
 
@@ -905,7 +900,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 		},
 	}
 
-	// prometheus rule created by the SSO operator that is exported to the observability operator namespace
+	// prometheus rule created by the SSO operator that is exported to the observability namespace
 	ssoAlert := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak",

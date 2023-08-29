@@ -51,11 +51,6 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
-		ReadObservabilityFunc: func() (*config.Observability, error) {
-			return config.NewObservability(config.ProductConfig{
-				"NAMESPACE": "namespace",
-			}), nil
-		},
 	}
 }
 

@@ -33,7 +33,6 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.64.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.42.0
-	github.com/redhat-developer/observability-operator/v4 v4.2.1
 	github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring v0.64.1-rhobs3
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/sync v0.1.0
@@ -43,7 +42,7 @@ require (
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/client-go v0.26.3
 	k8s.io/metrics v0.26.3
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	package-operator.run/apis v1.7.0
@@ -155,9 +154,6 @@ require (
 
 // Required until we bump Cloud Credential Operator in Cloud Resource Operator - https://issues.redhat.com/browse/MGDAPI-4892
 replace github.com/openshift/api => github.com/openshift/api v0.0.0-20210831091943-07e756545ac1
-
-// Required until OO dependency is removed or; OO bumps their client-go - Jira: https://issues.redhat.com/browse/MGDAPI-4954
-replace k8s.io/client-go => k8s.io/client-go v0.26.3
 
 // Required until the following jira is resolved - https://issues.redhat.com/browse/MGDAPI-4996
 replace github.com/grafana-operator/grafana-operator/v4 => github.com/grafana-operator/grafana-operator/v4 v4.2.0

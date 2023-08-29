@@ -1506,28 +1506,20 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 		verificationFunction func(*monv1.PrometheusRule) bool
 	}{
 		{
-			name:          "alerting rules correctly mirrored without kc alert when OBO groups are nil",
-			expectedRules: []monv1.Rule{},
-			installation:  installation,
-			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
-				}), nil
-			}},
+			name:                 "alerting rules correctly mirrored without kc alert when OBO groups are nil",
+			expectedRules:        []monv1.Rule{},
+			installation:         installation,
+			configManager:        &config.ConfigReadWriterMock{},
 			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOBO),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
 			verificationFunction: kcAlertHasNotBeenMirrored,
 		},
 		{
-			name:          "alerting rules correctly mirrored without kc alert when OBO groups are not nil",
-			expectedRules: []monv1.Rule{},
-			installation:  installation,
-			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
-				}), nil
-			}},
+			name:                 "alerting rules correctly mirrored without kc alert when OBO groups are not nil",
+			expectedRules:        []monv1.Rule{},
+			installation:         installation,
+			configManager:        &config.ConfigReadWriterMock{},
 			fakeClient:           utils.NewTestClient(scheme, prometheusRulesSSO, prometheusRulesOBOwithKcExisting),
 			wantErr:              false,
 			want:                 integreatlyv1alpha1.PhaseCompleted,
@@ -1537,14 +1529,10 @@ func TestReconciler_reconcileExportAlerts(t *testing.T) {
 			name:          "failing phase on getting keycloak prom rules",
 			expectedRules: []monv1.Rule{},
 			installation:  installation,
-			configManager: &config.ConfigReadWriterMock{ReadObservabilityFunc: func() (*config.Observability, error) {
-				return config.NewObservability(config.ProductConfig{
-					"NAMESPACE": config.GetOboNamespace(installation.Namespace),
-				}), nil
-			}},
-			fakeClient: utils.NewTestClient(scheme, prometheusRulesOBOwithKcExisting),
-			wantErr:    true,
-			want:       integreatlyv1alpha1.PhaseFailed,
+			configManager: &config.ConfigReadWriterMock{},
+			fakeClient:    utils.NewTestClient(scheme, prometheusRulesOBOwithKcExisting),
+			wantErr:       true,
+			want:          integreatlyv1alpha1.PhaseFailed,
 			verificationFunction: func(pr *monv1.PrometheusRule) bool {
 				return true
 			},

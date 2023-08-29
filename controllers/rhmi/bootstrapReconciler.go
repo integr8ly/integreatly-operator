@@ -25,7 +25,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
-	"github.com/integr8ly/integreatly-operator/pkg/products/observability"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -146,21 +145,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
 		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
-
-	// TODO MGDAPI-5833 : Remove block
-	observabilityConfig, err := r.ConfigManager.ReadObservability()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	ns := observability.GetDefaultNamespace(r.installation.Spec.NamespacePrefix)
-	if observabilityConfig.GetNamespace() == "" {
-		observabilityConfig.SetNamespace(ns)
-		err := r.ConfigManager.WriteConfig(observabilityConfig)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-	// MGDAPI-5833 : Remove block end
 
 	if err = r.processQuota(installation, request.Namespace, installationQuota, serverClient); err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Error while processing the Quota", err)

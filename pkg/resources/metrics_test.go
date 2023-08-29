@@ -17,9 +17,7 @@ import (
 )
 
 var (
-	observabilityNs         = "redhat-rhoam-observability"
-	observabilityOperatorNs = "redhat-rhoam-observability-operator"
-	rhoamNS                 = "redhat-rhoam-operator"
+	rhoamNS = "redhat-rhoam-operator"
 )
 
 func TestInstallationState(t *testing.T) {
@@ -277,22 +275,6 @@ func getNamespaces() *corev1.NamespaceList {
 		TypeMeta: v1.TypeMeta{},
 		ListMeta: v1.ListMeta{},
 		Items: []corev1.Namespace{
-			{
-				ObjectMeta: v1.ObjectMeta{
-					Name: observabilityNs,
-					Labels: map[string]string{
-						"integreatly": "true",
-					},
-				},
-			},
-			{
-				ObjectMeta: v1.ObjectMeta{
-					Name: observabilityOperatorNs,
-					Labels: map[string]string{
-						"integreatly": "true",
-					},
-				},
-			},
 			{
 				ObjectMeta: v1.ObjectMeta{
 					Name: rhoamNS,
