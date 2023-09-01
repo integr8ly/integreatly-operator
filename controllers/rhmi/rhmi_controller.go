@@ -172,7 +172,7 @@ func New(mgr ctrl.Manager) *RHMIReconciler {
 
 // Monitoring resources not covered by namespace "admin" permissions
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete
-// +kubebuilder:rbac:groups=monitoring.rhobs,resources=prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete;watch
+// +kubebuilder:rbac:groups=monitoring.rhobs,resources=monitoringstacks;prometheusrules;servicemonitors;podmonitors;probes,verbs=get;list;create;update;delete;watch
 
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings;roles;rolebindings,verbs=*
 

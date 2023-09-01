@@ -1,11 +1,18 @@
 package config
 
+import (
+	"context"
+	obov1 "github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
 const (
 	OpenshiftMonitoringNamespace = "openshift-monitoring"
 
-	OboLabelSelector    = "middleware"
-	OboLabelSelectorKey = "monitoring-key"
-	OboNamespaceSuffix  = "-observability"
+	OboLabelSelector       = "middleware"
+	OboLabelSelectorKey    = "monitoring-key"
+	OboNamespaceSuffix     = "-observability"
+	OboMonitoringStackName = "rhoam"
 
 	// Alertmanager configuration
 	AlertManagerConfigSecretName            = "alertmanager-rhoam"
@@ -30,4 +37,15 @@ func GetOboLabelSelector() string {
 
 func GetOboLabelSelectorKey() string {
 	return OboLabelSelectorKey
+}
+
+func GetOboMonitoringStack(client k8sclient.Client, OboNamespace string) (*obov1.MonitoringStack, error) {
+	monitoringStack := &obov1.MonitoringStack{}
+
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: OboMonitoringStackName, Namespace: OboNamespace}, monitoringStack)
+	if err != nil {
+		return nil, err
+	}
+
+	return monitoringStack, nil
 }
