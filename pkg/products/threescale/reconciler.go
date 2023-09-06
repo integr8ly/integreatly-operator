@@ -12,13 +12,11 @@ import (
 	"time"
 
 	portaClient "github.com/3scale/3scale-porta-go-client/client"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/k8s"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	k8sTypes "k8s.io/apimachinery/pkg/types"
-
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/sts"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
@@ -3251,30 +3249,12 @@ func (r *Reconciler) reconcileRatelimitPortAnnotation(ctx context.Context, clien
 		},
 	}
 
-	// check if httpsproxy has been applied to the service, if not, enable 3scale apicast service port reconciler
-	// To be removed post RHOAM 1.35.0 promotion to production
-	// Jira - https://issues.redhat.com/browse/MGDAPI-5614
-	phase, apicastProductionPortReconciled, err := r.checkHTTsProxyApicastServiceReconciled(ctx, client, "apicast-production")
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	phase, apicastStagingPortReconciled, err := r.checkHTTsProxyApicastServiceReconciled(ctx, client, "apicast-staging")
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	disableServiceReconciler := "true"
-	if !apicastProductionPortReconciled || !apicastStagingPortReconciled {
-		disableServiceReconciler = "false"
-	}
-
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, apim, func() error {
 		annotations := apim.ObjectMeta.GetAnnotations()
 		if annotations == nil {
 			annotations = map[string]string{}
 		}
-		annotations["apps.3scale.net/disable-apicast-service-reconciler"] = disableServiceReconciler
+		annotations["apps.3scale.net/disable-apicast-service-reconciler"] = "true"
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -3601,27 +3581,6 @@ func updateContainerSupportEmail(dc *appsv1.DeploymentConfig, existingSMTPFromAd
 func updateSystemAppAddresses(dc *appsv1.DeploymentConfig, value string) bool {
 	return updateContainerSupportEmail(dc, value, "SUPPORT_EMAIL")
 
-}
-
-// To be removed post RHOAM 1.35.0 promotion to production
-// Jira - https://issues.redhat.com/browse/MGDAPI-5614
-func (r *Reconciler) checkHTTsProxyApicastServiceReconciled(ctx context.Context, serverClient k8sclient.Client, svcName string) (integreatlyv1alpha1.StatusPhase, bool, error) {
-	service := &corev1.Service{}
-	err := serverClient.Get(ctx, k8sTypes.NamespacedName{Name: svcName, Namespace: r.Config.GetNamespace()}, service)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseAwaitingComponents, false, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, false, err
-	}
-
-	for _, serviceName := range service.Spec.Ports {
-		if serviceName.Name == "httpsproxy" {
-			return integreatlyv1alpha1.PhaseCompleted, true, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, false, nil
 }
 
 func updateSystemSidekiqAddresses(dc *appsv1.DeploymentConfig, value string) bool {
