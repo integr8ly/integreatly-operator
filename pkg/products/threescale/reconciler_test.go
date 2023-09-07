@@ -33,8 +33,8 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 
+	apps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	threescaleAmp "github.com/3scale/3scale-operator/pkg/3scale/amp/component"
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
@@ -3615,8 +3615,8 @@ func TestReconciler_createStsS3Secret(t *testing.T) {
 				},
 				blobStorageSec: &corev1.Secret{
 					Data: map[string][]byte{
-						threescaleAmp.AwsBucket: []byte("bucket"),
-						threescaleAmp.AwsRegion: []byte("region"),
+						apps.AwsBucket: []byte("bucket"),
+						apps.AwsRegion: []byte("region"),
 					},
 				},
 			},
@@ -3674,8 +3674,8 @@ func TestReconciler_createMCGS3Secret(t *testing.T) {
 			Namespace: mcg.DefaultInstallationNamespace + "-operator",
 		},
 		Data: map[string][]byte{
-			threescaleAmp.AwsAccessKeyID:     []byte("id"),
-			threescaleAmp.AwsSecretAccessKey: []byte("key"),
+			apps.AwsAccessKeyID:     []byte("id"),
+			apps.AwsSecretAccessKey: []byte("key"),
 		},
 	}
 

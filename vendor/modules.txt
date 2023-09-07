@@ -55,16 +55,12 @@ github.com/3scale-ops/marin3r/pkg/envoy/serializer
 github.com/3scale-ops/marin3r/pkg/envoy/serializer/v3
 github.com/3scale-ops/marin3r/pkg/image
 github.com/3scale-ops/marin3r/pkg/util/pointer
-# github.com/3scale/3scale-operator v0.10.1-0.20230611051516-b93e37adaec7
-## explicit; go 1.18
+# github.com/3scale/3scale-operator v0.10.1-0.20230901071118-2447e55d3259
+## explicit; go 1.19
 github.com/3scale/3scale-operator/apis/apps
 github.com/3scale/3scale-operator/apis/apps/v1alpha1
-github.com/3scale/3scale-operator/pkg/3scale/amp/component
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
-github.com/3scale/3scale-operator/pkg/assets
-github.com/3scale/3scale-operator/pkg/common
-github.com/3scale/3scale-operator/pkg/crypto/rand
-github.com/3scale/3scale-operator/pkg/helper
+github.com/3scale/3scale-operator/pkg/apispkg/common
 github.com/3scale/3scale-operator/version
 # github.com/3scale/3scale-porta-go-client v0.9.0
 ## explicit; go 1.13
@@ -173,8 +169,6 @@ github.com/cncf/xds/go/xds/type/v3
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484
-## explicit
 # github.com/emicklei/go-restful/v3 v3.10.2
 ## explicit; go 1.13
 github.com/emicklei/go-restful/v3
@@ -433,10 +427,6 @@ github.com/foxcpp/go-mockdns
 # github.com/fsnotify/fsnotify v1.6.0
 ## explicit; go 1.16
 github.com/fsnotify/fsnotify
-# github.com/getkin/kin-openapi v0.94.0
-## explicit; go 1.16
-github.com/getkin/kin-openapi/jsoninfo
-github.com/getkin/kin-openapi/openapi3
 # github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 ## explicit
 github.com/ghodss/yaml
@@ -457,16 +447,6 @@ github.com/go-openapi/jsonreference/internal
 # github.com/go-openapi/swag v0.22.3
 ## explicit; go 1.18
 github.com/go-openapi/swag
-# github.com/go-playground/locales v0.14.0
-## explicit; go 1.13
-github.com/go-playground/locales
-github.com/go-playground/locales/currency
-# github.com/go-playground/universal-translator v0.18.0
-## explicit; go 1.13
-github.com/go-playground/universal-translator
-# github.com/go-playground/validator/v10 v10.11.1
-## explicit; go 1.13
-github.com/go-playground/validator/v10
 # github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0
 ## explicit; go 1.13
 github.com/go-task/slim-sprig
@@ -595,9 +575,6 @@ github.com/json-iterator/go
 github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io
 github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1
 github.com/kube-object-storage/lib-bucket-provisioner/pkg/provisioner/api
-# github.com/leodido/go-urn v1.2.1
-## explicit; go 1.13
-github.com/leodido/go-urn
 # github.com/mailru/easyjson v0.7.7
 ## explicit; go 1.12
 github.com/mailru/easyjson/buffer
@@ -606,11 +583,9 @@ github.com/mailru/easyjson/jwriter
 # github.com/matttproud/golang_protobuf_extensions v1.0.4
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/miekg/dns v1.1.40
+# github.com/miekg/dns v1.1.25
 ## explicit; go 1.12
 github.com/miekg/dns
-# github.com/mitchellh/mapstructure v1.5.0
-## explicit; go 1.14
 # github.com/moby/spdystream v0.2.0
 ## explicit; go 1.13
 github.com/moby/spdystream
@@ -765,6 +740,8 @@ github.com/rhobs/obo-prometheus-operator/pkg/apis/monitoring/v1
 # github.com/rhobs/observability-operator v0.0.20
 ## explicit; go 1.18
 github.com/rhobs/observability-operator/pkg/apis/monitoring/v1alpha1
+# github.com/rogpeppe/go-internal v1.11.0
+## explicit; go 1.19
 # github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
@@ -822,10 +799,6 @@ go.uber.org/zap/zapcore
 # golang.org/x/crypto v0.5.0
 ## explicit; go 1.17
 golang.org/x/crypto/ed25519
-golang.org/x/crypto/sha3
-# golang.org/x/mod v0.9.0
-## explicit; go 1.17
-golang.org/x/mod/semver
 # golang.org/x/net v0.10.0
 ## explicit; go 1.17
 golang.org/x/net/bpf
@@ -861,7 +834,6 @@ golang.org/x/oauth2/jwt
 golang.org/x/sync/errgroup
 # golang.org/x/sys v0.8.0
 ## explicit; go 1.17
-golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix

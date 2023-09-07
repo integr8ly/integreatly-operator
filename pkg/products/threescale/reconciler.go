@@ -49,8 +49,8 @@ import (
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
+	apps "github.com/3scale/3scale-operator/apis/apps"
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
-	threescaleAmp "github.com/3scale/3scale-operator/pkg/3scale/amp/component"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
@@ -1048,13 +1048,13 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 				for key, value := range blobStorageSec.Data {
 					switch key {
 					case "credentialKeyID":
-						credSec.Data[threescaleAmp.AwsAccessKeyID] = blobStorageSec.Data["credentialKeyID"]
+						credSec.Data[apps.AwsAccessKeyID] = blobStorageSec.Data["credentialKeyID"]
 					case "credentialSecretKey":
-						credSec.Data[threescaleAmp.AwsSecretAccessKey] = blobStorageSec.Data["credentialSecretKey"]
+						credSec.Data[apps.AwsSecretAccessKey] = blobStorageSec.Data["credentialSecretKey"]
 					case "bucketName":
-						credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
+						credSec.Data[apps.AwsBucket] = blobStorageSec.Data["bucketName"]
 					case "bucketRegion":
-						credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
+						credSec.Data[apps.AwsRegion] = blobStorageSec.Data["bucketRegion"]
 					default:
 						credSec.Data[key] = value
 					}
@@ -1101,14 +1101,14 @@ func (r *Reconciler) createStsS3Secret(ctx context.Context, serverClient k8sclie
 		for key := range blobStorageSec.Data {
 			switch key {
 			case "bucketName":
-				credSec.Data[threescaleAmp.AwsBucket] = blobStorageSec.Data["bucketName"]
+				credSec.Data[apps.AwsBucket] = blobStorageSec.Data["bucketName"]
 			case "bucketRegion":
-				credSec.Data[threescaleAmp.AwsRegion] = blobStorageSec.Data["bucketRegion"]
+				credSec.Data[apps.AwsRegion] = blobStorageSec.Data["bucketRegion"]
 			}
 		}
 
-		credSec.Data[threescaleAmp.AwsRoleArn] = stsSecret.Data["role_arn"]
-		credSec.Data[threescaleAmp.AwsWebIdentityTokenFile] = []byte(stsWebIdentityTokenFilePath)
+		credSec.Data[apps.AwsRoleArn] = stsSecret.Data["role_arn"]
+		credSec.Data[apps.AwsWebIdentityTokenFile] = []byte(stsWebIdentityTokenFilePath)
 
 		return nil
 	})
@@ -1143,16 +1143,16 @@ func (r *Reconciler) createMCGS3Secret(ctx context.Context, serverClient k8sclie
 		// Set required fields for MCG
 		for key := range bucketSecret.Data {
 			switch key {
-			case threescaleAmp.AwsAccessKeyID:
-				credSec.Data[threescaleAmp.AwsAccessKeyID] = bucketSecret.Data[threescaleAmp.AwsAccessKeyID]
-			case threescaleAmp.AwsSecretAccessKey:
-				credSec.Data[threescaleAmp.AwsSecretAccessKey] = bucketSecret.Data[threescaleAmp.AwsSecretAccessKey]
+			case apps.AwsAccessKeyID:
+				credSec.Data[apps.AwsAccessKeyID] = bucketSecret.Data[apps.AwsAccessKeyID]
+			case apps.AwsSecretAccessKey:
+				credSec.Data[apps.AwsSecretAccessKey] = bucketSecret.Data[apps.AwsSecretAccessKey]
 			}
 		}
-		credSec.Data[threescaleAmp.AwsBucket] = []byte(objbc.Spec.BucketName)
-		credSec.Data[threescaleAmp.AwsHostname] = []byte(s3Route.Spec.Host)
-		credSec.Data[threescaleAmp.AwsRegion] = []byte(s3BucketRegion)
-		credSec.Data[threescaleAmp.AwsPathStyle] = []byte(s3PathStyle)
+		credSec.Data[apps.AwsBucket] = []byte(objbc.Spec.BucketName)
+		credSec.Data[apps.AwsHostname] = []byte(s3Route.Spec.Host)
+		credSec.Data[apps.AwsRegion] = []byte(s3BucketRegion)
+		credSec.Data[apps.AwsPathStyle] = []byte(s3PathStyle)
 		return nil
 	})
 
