@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
-	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -19,10 +18,6 @@ const (
 	ManagedAPIService   = "managed-api-service"
 	RHMI                = "rhmi"
 	DefaultSecretName   = "addon-managed-api-service-parameters"
-)
-
-var (
-	log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "addon"})
 )
 
 // GetParameter retrieves the value for an addon parameter by finding the Subscription
