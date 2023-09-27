@@ -269,10 +269,11 @@ func (r *RHMIReconciler) Reconcile(ctx context.Context, request ctrl.Request) (c
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error creating client for alerts: %v", err)
 	}
-	// reconciles rhmi installation alerts
-	_, err = r.newAlertsReconciler(installation).ReconcileAlerts(context.TODO(), alertsClient)
+
+	// remove installation, upgrade and missingMetrics alerts from openshift monitoring
+	err = r.removeInstallationRules(installation, context.TODO(), alertsClient)
 	if err != nil {
-		log.Error("Error reconciling alerts for the installation", err)
+		log.Error("Error reconciling removing alerts installation, upgrade and missing metrics from openshift-monitoring namespace", err)
 	}
 
 	originalInstallation := installation.DeepCopy()
