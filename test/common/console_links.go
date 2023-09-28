@@ -42,10 +42,6 @@ func TestConsoleLinks(t TestingTB, ctx *TestingContext) {
 			Icon: expectedIcon,
 		},
 		{
-			URL:  rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductGrafana].Host,
-			Icon: expectedIcon,
-		},
-		{
 			URL:  rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host,
 			Icon: expectedIcon,
 		},

@@ -33,9 +33,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //			ReadCloudResourcesFunc: func() (*CloudResources, error) {
 //				panic("mock out the ReadCloudResources method")
 //			},
-//			ReadGrafanaFunc: func() (*Grafana, error) {
-//				panic("mock out the ReadGrafana method")
-//			},
 //			ReadMCGFunc: func() (*MCG, error) {
 //				panic("mock out the ReadMCG method")
 //			},
@@ -82,9 +79,6 @@ type ConfigReadWriterMock struct {
 	// ReadCloudResourcesFunc mocks the ReadCloudResources method.
 	ReadCloudResourcesFunc func() (*CloudResources, error)
 
-	// ReadGrafanaFunc mocks the ReadGrafana method.
-	ReadGrafanaFunc func() (*Grafana, error)
-
 	// ReadMCGFunc mocks the ReadMCG method.
 	ReadMCGFunc func() (*MCG, error)
 
@@ -126,9 +120,6 @@ type ConfigReadWriterMock struct {
 		// ReadCloudResources holds details about calls to the ReadCloudResources method.
 		ReadCloudResources []struct {
 		}
-		// ReadGrafana holds details about calls to the ReadGrafana method.
-		ReadGrafana []struct {
-		}
 		// ReadMCG holds details about calls to the ReadMCG method.
 		ReadMCG []struct {
 		}
@@ -165,7 +156,6 @@ type ConfigReadWriterMock struct {
 	lockGetOauthClientsSecretName   sync.RWMutex
 	lockGetOperatorNamespace        sync.RWMutex
 	lockReadCloudResources          sync.RWMutex
-	lockReadGrafana                 sync.RWMutex
 	lockReadMCG                     sync.RWMutex
 	lockReadMarin3r                 sync.RWMutex
 	lockReadProduct                 sync.RWMutex
@@ -308,33 +298,6 @@ func (mock *ConfigReadWriterMock) ReadCloudResourcesCalls() []struct {
 	mock.lockReadCloudResources.RLock()
 	calls = mock.calls.ReadCloudResources
 	mock.lockReadCloudResources.RUnlock()
-	return calls
-}
-
-// ReadGrafana calls ReadGrafanaFunc.
-func (mock *ConfigReadWriterMock) ReadGrafana() (*Grafana, error) {
-	if mock.ReadGrafanaFunc == nil {
-		panic("ConfigReadWriterMock.ReadGrafanaFunc: method is nil but ConfigReadWriter.ReadGrafana was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockReadGrafana.Lock()
-	mock.calls.ReadGrafana = append(mock.calls.ReadGrafana, callInfo)
-	mock.lockReadGrafana.Unlock()
-	return mock.ReadGrafanaFunc()
-}
-
-// ReadGrafanaCalls gets all the calls that were made to ReadGrafana.
-// Check the length with:
-//
-//	len(mockedConfigReadWriter.ReadGrafanaCalls())
-func (mock *ConfigReadWriterMock) ReadGrafanaCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockReadGrafana.RLock()
-	calls = mock.calls.ReadGrafana
-	mock.lockReadGrafana.RUnlock()
 	return calls
 }
 

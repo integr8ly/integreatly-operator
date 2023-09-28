@@ -92,16 +92,16 @@ var (
 )
 
 var managedApiExpectedRoutes = map[string][]ExpectedRoute{
-	"3scale":                       threeScaleRoutes,
-	"rhsso":                        rhssoRoutes,
-	"user-sso":                     rhoamUserSsoRoutes,
-	"customer-monitoring-operator": customerGrafanaRoutes,
+	"3scale":   threeScaleRoutes,
+	"rhsso":    rhssoRoutes,
+	"user-sso": rhoamUserSsoRoutes,
+	//"customer-monitoring": customerGrafanaRoutes,
 }
 
 var mtManagedApiExpectedRoutes = map[string][]ExpectedRoute{
-	"3scale":                       threeScaleRoutes,
-	"rhsso":                        rhssoRoutes,
-	"customer-monitoring-operator": customerGrafanaRoutes,
+	"3scale": threeScaleRoutes,
+	"rhsso":  rhssoRoutes,
+	//"customer-monitoring": customerGrafanaRoutes,
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created

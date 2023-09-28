@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
 	"github.com/integr8ly/integreatly-operator/utils"
@@ -770,13 +769,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	dashboard := &grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keycloak",
-			Namespace: "rhsso",
-		},
-	}
-
 	infrastructureAws := &configv1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
@@ -807,7 +799,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient: func() k8sclient.Client {
-				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv, dashboard, prometheusRules, infrastructureAws)
+				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, normalRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet, csv /*dashboard,*/, prometheusRules, infrastructureAws)
 				mockClient.PatchFunc = func(ctx context.Context, obj k8sclient.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
 					return nil
 				}
@@ -847,7 +839,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			server := configureTestServer(t, validGrafanaDashboardResourceList())
+			server := configureTestServer(t)
 			defer server.Close()
 
 			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
@@ -1116,37 +1108,10 @@ func errorContains(out error, want string) bool {
 	return strings.Contains(out.Error(), want)
 }
 
-func validGrafanaDashboardResourceList() *metav1.APIResourceList {
-	return &metav1.APIResourceList{
-		// "integreatly.org/v1alpha1"
-		GroupVersion: grafanav1alpha1.GroupVersion.String(),
-		APIResources: []metav1.APIResource{
-			{
-				Group:   "integreatly.org",
-				Version: "v1alpha1",
-				Kind:    "GrafanaDashboard",
-			},
-		},
-	}
-}
-
-func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptest.Server {
+func configureTestServer(t *testing.T /*, apiList *metav1.APIResourceList*/) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var list interface{}
 		switch req.URL.Path {
-		case fmt.Sprintf("/apis/%s", apiList.GroupVersion):
-			list = apiList
-		case "/apis":
-			list = &metav1.APIGroupList{
-				Groups: []metav1.APIGroup{
-					{
-						Name: "integreatly.org",
-						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
-						},
-					},
-				},
-			}
 		case "/api/v1":
 			list = &metav1.APIResourceList{
 				GroupVersion: "v1",

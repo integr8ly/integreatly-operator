@@ -58,7 +58,6 @@ var (
 	Product3Scale         ProductName = "3scale"
 	ProductCloudResources ProductName = "cloud-resources"
 	ProductMarin3r        ProductName = "marin3r"
-	ProductGrafana        ProductName = "grafana"
 	ProductMCG            ProductName = "mcg"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded

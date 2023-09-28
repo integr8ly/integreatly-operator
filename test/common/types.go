@@ -34,7 +34,8 @@ var (
 	ThreeScaleOperatorNamespace    = ThreeScaleProductNamespace + "-operator"
 	Marin3rOperatorNamespace       = NamespacePrefix + "marin3r-operator"
 	Marin3rProductNamespace        = NamespacePrefix + "marin3r"
-	CustomerGrafanaNamespace       = NamespacePrefix + "customer-monitoring-operator"
+	CustomerGrafanaNamespace       = NamespacePrefix + "customer-monitoring"
+	CustomerGrafanaNamespacePrefix = CustomerGrafanaNamespace + "-"
 	McgOperatorNamespace           = NamespacePrefix + "mcg-operator"
 )
 

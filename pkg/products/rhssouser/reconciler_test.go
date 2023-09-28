@@ -21,7 +21,6 @@ import (
 
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -719,7 +718,7 @@ func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			server := configureTestServer(t, validGrafanaDashboardResourceList())
+			server := configureTestServer(t)
 			defer server.Close()
 
 			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
@@ -1080,7 +1079,7 @@ func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			server := configureTestServer(t, validGrafanaDashboardResourceList())
+			server := configureTestServer(t)
 			defer server.Close()
 
 			oauthv1Client, err := oauthClient.NewForConfig(&rest.Config{Host: server.URL})
@@ -1594,37 +1593,10 @@ func getLogger() l.Logger {
 	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSOUser})
 }
 
-func validGrafanaDashboardResourceList() *metav1.APIResourceList {
-	return &metav1.APIResourceList{
-		// "integreatly.org/v1alpha1"
-		GroupVersion: grafanav1alpha1.GroupVersion.String(),
-		APIResources: []metav1.APIResource{
-			{
-				Group:   "integreatly.org",
-				Version: "v1alpha1",
-				Kind:    "GrafanaDashboard",
-			},
-		},
-	}
-}
-
-func configureTestServer(t *testing.T, apiList *metav1.APIResourceList) *httptest.Server {
+func configureTestServer(t *testing.T) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var list interface{}
 		switch req.URL.Path {
-		case fmt.Sprintf("/apis/%s", apiList.GroupVersion):
-			list = apiList
-		case "/apis":
-			list = &metav1.APIGroupList{
-				Groups: []metav1.APIGroup{
-					{
-						Name: "integreatly.org",
-						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: grafanav1alpha1.GroupVersion.String(), Version: "v1alpha1"},
-						},
-					},
-				},
-			}
 		case "/api/v1":
 			list = &metav1.APIResourceList{
 				GroupVersion: "v1",

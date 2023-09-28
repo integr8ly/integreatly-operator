@@ -103,13 +103,6 @@ func TestGetQuota(t *testing.T) {
 						}),
 						quota: pointerToQuota,
 					},
-					v1alpha1.ProductGrafana: {
-						v1alpha1.ProductGrafana,
-						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
-						}),
-						pointerToQuota,
-					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,
 						getResourceConfig(func(rcs map[string]ResourceConfig) {
@@ -177,13 +170,6 @@ func TestGetQuota(t *testing.T) {
 							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						quota: pointerToQuota,
-					},
-					v1alpha1.ProductGrafana: {
-						v1alpha1.ProductGrafana,
-						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
-						}),
-						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						productName: v1alpha1.ProductMarin3r,
@@ -253,13 +239,6 @@ func TestGetQuota(t *testing.T) {
 							rcs[BackendWorkerName] = ResourceConfig{0, corev1.ResourceRequirements{}}
 						}),
 						quota: pointerToQuota,
-					},
-					v1alpha1.ProductGrafana: {
-						v1alpha1.ProductGrafana,
-						getResourceConfig(func(rcs map[string]ResourceConfig) {
-							rcs[GrafanaName] = ResourceConfig{0, corev1.ResourceRequirements{}}
-						}),
-						pointerToQuota,
 					},
 					v1alpha1.ProductMarin3r: {
 						v1alpha1.ProductMarin3r,

@@ -465,9 +465,9 @@ cluster/cleanup/olm: cluster/cleanup
 
 .PHONY: cluster/cleanup/crds
 cluster/cleanup/crds:
-	@-oc delete crd grafanadashboards.integreatly.org
-	@-oc delete crd grafanadatasources.integreatly.org
-	@-oc delete crd grafanas.integreatly.org
+	#@-oc delete crd grafanadashboards.integreatly.org
+	#@-oc delete crd grafanadatasources.integreatly.org
+	#@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd apimanagementtenants.integreatly.org
 

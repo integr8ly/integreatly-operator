@@ -24,6 +24,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/obo"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -171,6 +172,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		// Creates Grafana config secrets
+		phase, err = grafana.ReconcileGrafanaSecrets(ctx, serverClient, r.installation)
+		r.log.Infof("ReconcileGrafanaSecrets", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			if err != nil {
+				r.log.Warning("failed to reconcile Grafana config secrets " + err.Error())
+			}
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana config secrets", err)
+			return phase, err
+		}
+
 		// Creates an alert to check for the presence of sendgrid smtp secret
 		phase, err = resources.CreateSmtpSecretExists(ctx, serverClient, installation)
 		r.log.Infof("Reconcile SendgridSmtpSecretExists alert", l.Fields{"phase": phase})
@@ -200,6 +212,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.log.Infof("Reconcile OBO alerts", l.Fields{"phase": phase})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile OBO alerts", err)
+			return phase, err
+		}
+
+		// Creates remaining OBO alerts
+		phase, err = grafana.GrafanaAlertReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
+		r.log.Infof("Reconcile Grafana alerts", l.Fields{"phase": phase})
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana alerts", err)
 			return phase, err
 		}
 

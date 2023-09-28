@@ -17,7 +17,7 @@ var (
 			"rhssouser",
 			"3scale",
 			"marin3r",
-			"grafana",
+			//"grafana",
 		},
 	}
 
@@ -28,7 +28,7 @@ var (
 			"cloud-resources",
 			"3scale",
 			"marin3r",
-			"grafana",
+			//"grafana",
 		},
 	}
 )

@@ -42,10 +42,6 @@ func managedApiSubscriptionsToCheck() []SubscriptionCheck {
 			Name:      constants.RHSSOSubscriptionName,
 			Namespace: RHSSOUserOperatorNamespace,
 		},
-		{
-			Name:      constants.GrafanaSubscriptionName,
-			Namespace: CustomerGrafanaNamespace,
-		},
 	}
 }
 

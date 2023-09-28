@@ -18,7 +18,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -161,8 +160,6 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductMarin3r:
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
-	case integreatlyv1alpha1.ProductGrafana:
-		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	case integreatlyv1alpha1.ProductMCG:
 		reconciler, err = mcg.NewReconciler(configManager, installation, mpm, recorder, log, productDeclaration)
 	default:

@@ -21,7 +21,7 @@ func managedApiNamespaces() []string {
 		ThreeScaleOperatorNamespace,
 		Marin3rOperatorNamespace,
 		Marin3rProductNamespace,
-		CustomerGrafanaNamespace,
+		//CustomerGrafanaNamespace,
 	}
 }
 
@@ -34,7 +34,7 @@ func mtManagedApiNamespaces() []string {
 		ThreeScaleOperatorNamespace,
 		Marin3rOperatorNamespace,
 		Marin3rProductNamespace,
-		CustomerGrafanaNamespace,
+		//CustomerGrafanaNamespace,
 	}
 }
 

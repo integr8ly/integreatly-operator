@@ -50,7 +50,10 @@ func TestProductLogins(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	grafanaHost := rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductGrafana].Host
+	grafanaHost, err := GetGrafanaRouteHostname(ctx.Client, CustomerGrafanaNamespace)
+	if err != nil {
+		t.Fatal("failed to get grafana route Hostname", err)
+	}
 	userSSOConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSOUser].Host, keyCloakAuthConsolePath)
 	rhssoConsoleUrl := fmt.Sprintf("%s%s", rhmi.Status.Stages[rhmiv1alpha1.InstallStage].Products[rhmiv1alpha1.ProductRHSSO].Host, keyCloakAuthConsolePath)
 	for _, developerUser := range developerUsers {

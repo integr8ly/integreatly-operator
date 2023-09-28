@@ -104,14 +104,9 @@ func getBasicInstallation() *integreatlyv1alpha1.RHMI {
 		Status: integreatlyv1alpha1.RHMIStatus{
 			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
 				integreatlyv1alpha1.InstallStage: {
-					Name:  integreatlyv1alpha1.InstallStage,
-					Phase: integreatlyv1alpha1.PhaseInProgress,
-					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-						integreatlyv1alpha1.ProductGrafana: {
-							Name:  integreatlyv1alpha1.ProductGrafana,
-							Phase: integreatlyv1alpha1.PhaseInProgress,
-						},
-					},
+					Name:     integreatlyv1alpha1.InstallStage,
+					Phase:    integreatlyv1alpha1.PhaseInProgress,
+					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{},
 				},
 			},
 		},

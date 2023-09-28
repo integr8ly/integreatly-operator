@@ -31,7 +31,6 @@ const (
 	ApicastProductionName       = "apicast_production"
 	ApicastStagingName          = "apicast_staging"
 	KeycloakName                = "rhssouser"
-	GrafanaName                 = "grafana"
 	NoobaaCoreName              = "noobaa-core"
 	OneHundredThousandQuotaName = "100K"
 	OneMillionQuotaName         = "1 Million"
@@ -56,9 +55,6 @@ var (
 		},
 		v1alpha1.ProductMarin3r: {
 			RateLimitName,
-		},
-		v1alpha1.ProductGrafana: {
-			GrafanaName,
 		},
 	}
 )

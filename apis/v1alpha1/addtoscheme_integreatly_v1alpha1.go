@@ -12,8 +12,6 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/apis/integreatly/v1alpha1"
 
-	grafanav1alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
-
 	keycloak "github.com/integr8ly/keycloak-client/apis/keycloak/v1alpha1"
 
 	threescalev1 "github.com/3scale/3scale-operator/apis/apps/v1alpha1"
@@ -59,7 +57,6 @@ func init() {
 		keycloak.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
 		obo.SchemeBuilder.AddToScheme,
-		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
 		routev1.Install,
 		appsv1.Install,
