@@ -124,6 +124,7 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// wait for installation phase to complete (40 minutes timeout)
+		logrus.Info("TEST on master waitForInstallationStageCompletion")
 		err = waitForInstallationStageCompletion(ctx.Client, retryInterval, installStageTimeout, string(rhmiv1alpha1.InstallStage))
 		Expect(err).NotTo(HaveOccurred())
 		// +kubebuilder:scaffold:scheme
