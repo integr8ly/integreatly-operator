@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+    {
+    "name": "Launch (vendor)",
+    "type": "go",
+    "request": "launch",
+    "mode": "auto",
+    "program": "${workspaceRoot}/main.go",
+    "env": {
+    "MTR_RECONCILED": "true",
+    "LOCAL": "false",
+    "WATCH_NAMESPACE": "redhat-rhoam-operator",
+    "OPERATOR_NAME": "integreatly-operator",
+    "OSDK_FORCE_RUN_MODE": "local",
+    "ALERT_SMTP_FROM": "noreply-alert@devshift.org",
+    "INSTALLATION_TYPE":   "managed-api",
+    "INSTALLATION_NAME":   "rhoam",
+    "INSTALLATION_PREFIX": "redhat-rhoam",
+    "USE_CLUSTER_STORAGE": "true",
+    "NUMBER_OF_TENANTS": "5",
+    "IDENTITY_PROVIDER_NAME": "rhd",
+    "TENANTS_CREATION_TIMEOUT": "3"
+    },
+    "args": [
+        "-test.timeout=300s",
+        "--grace-period=300s"
+    ],
+    "cwd": "${workspaceFolder}"
+    }]
+    }
