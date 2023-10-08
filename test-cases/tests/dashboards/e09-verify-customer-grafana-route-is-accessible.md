@@ -24,6 +24,6 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 
 ## Steps
 
-1. Go to redhat-rhmi-customer-monitoring-operator namespace
+1. Go to redhat-rhmi-customer-monitoring namespace
 2. Go to Routes -> grafana-route and login as customer-admin user using testing-idp
    > Verify that you can successfully log in to the Grafana

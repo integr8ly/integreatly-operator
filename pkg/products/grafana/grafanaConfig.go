@@ -2,7 +2,9 @@ package grafana
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -10,6 +12,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -39,7 +42,6 @@ func ReconcileGrafanaSecrets(ctx context.Context, client k8sclient.Client, insta
 		grafanaProxySecret.Data["session_secret"] = []byte(resources.GenerateRandomPassword(20, 2, 2, 2))
 		return nil
 	})
-
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -49,17 +51,13 @@ func ReconcileGrafanaSecrets(ctx context.Context, client k8sclient.Client, insta
 			Name:      "grafana-admin-credentials",
 			Namespace: nsPrefix + "customer-monitoring",
 		},
+		Data: getAdminCredsSecretData(),
+		Type: corev1.SecretTypeOpaque,
 	}
+
 	_, err = controllerutil.CreateOrUpdate(ctx, client, grafanaAdminCredsSecret, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(grafanaAdminCredsSecret, installation)
-		if grafanaAdminCredsSecret.Data == nil {
-			grafanaAdminCredsSecret.Data = map[string][]byte{}
-		}
-		grafanaAdminCredsSecret.Data["GF_SECURITY_ADMIN_USER"] = []byte(populateAdminUser())
-		grafanaAdminCredsSecret.Data["GF_SECURITY_ADMIN_PASSWORD"] = []byte(resources.GenerateRandomPassword(20, 2, 2, 2))
 		return nil
 	})
-
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -67,8 +65,26 @@ func ReconcileGrafanaSecrets(ctx context.Context, client k8sclient.Client, insta
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func populateAdminUser() string {
-	return base64.StdEncoding.EncodeToString([]byte(gfSecurityAdminUser))
+func getAdminCredsSecretData() map[string][]byte {
+	password := []byte(RandStringRunes(10))
+	credentials := map[string][]byte{
+		"GF_SECURITY_ADMIN_USER":     []byte(gfSecurityAdminUser),
+		"GF_SECURITY_ADMIN_PASSWORD": password,
+	}
+
+	// Make the credentials available to the environment, similar is it was done in Grafana operator (resolve admin login issue?)
+	err := os.Setenv("GF_SECURITY_ADMIN_USER", string(credentials["GF_SECURITY_ADMIN_USER"]))
+	if err != nil {
+		fmt.Printf("can't set credentials as environment vars (optional)")
+		return credentials
+	}
+	err = os.Setenv("GF_SECURITY_ADMIN_PASSWORD", string(credentials["GF_SECURITY_ADMIN_PASSWORD"]))
+	if err != nil {
+		fmt.Printf("can't set credentials as environment vars (optional)")
+		return credentials
+	}
+
+	return credentials
 }
 
 func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
@@ -82,4 +98,18 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 	}
 
 	return "https://" + grafanaRoute.Spec.Host, nil
+}
+
+func generateRandomBytes(n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func RandStringRunes(s int) string {
+	b := generateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b)
 }

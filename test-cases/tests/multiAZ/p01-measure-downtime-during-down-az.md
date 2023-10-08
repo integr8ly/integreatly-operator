@@ -180,10 +180,10 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
 > Note: the critical 3scale components that _must not_ report any downtime are `apicast-production`, `backend-worker`, and `backend-listener`. On the other hand, the non-critical 3scale components that are ok to experience short downtime (up to 2-3 minutes) are `backend-cron`, `zync-database`, `system-memcache`, `system-searchd`.
 
-13. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
+13. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring` namespace
 
     ```bash
-    echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
+    echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring -o=jsonpath='{.spec.host}')"
     ```
 
 14. Select the **Workload App** dashboard

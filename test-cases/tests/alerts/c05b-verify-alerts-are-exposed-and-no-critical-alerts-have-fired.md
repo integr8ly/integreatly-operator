@@ -59,10 +59,10 @@ Testcase should not be performed on a cluster that has been used for destructive
    > 2. Create a followup bug JIRA and inform release coordinators. Example JIRA: https://issues.redhat.com/browse/INTLY-9443
    > 3. Request that cluster lifespan be extended to allow time for cluster to be investigated (ask release coordinator).
 
-6. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring-operator` namespace
+6. Open the RHOAM Grafana Console in the `redhat-rhoam-customer-monitoring` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-customer-monitoring -o=jsonpath='{.spec.host}')"
 ```
 
 7. Select the **Workload App** dashboard

@@ -223,9 +223,9 @@ tags:
     ```shell script
 
     # For Mac
-    open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring-operator -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
+    open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
     # For Linux
-    xdg-open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring-operator -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
+    xdg-open "https://$(oc get routes grafana-route -n redhat-rhoam-customer-monitoring -o jsonpath='{.spec.host}')/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting"
     ```
 
     Navigate again to Grafana and verify that the dashboard queries and the variables are present and in the expected order.

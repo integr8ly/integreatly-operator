@@ -27,18 +27,17 @@ This test case should verify that the pod priority class is name is updated on R
 
 ### Deployments
 
-| **Namespace**                             | **Name**                                  |
-| ----------------------------------------- | ----------------------------------------- |
-| redhat-rhoam-3scale                       | marin3r-instance                          |
-| redhat-rhoam-3scale-operator              | threescale-operator-controller-manager-v2 |
-| redhat-rhoam-cloud-resources-operator     | cloud-resource-operator                   |
-| redhat-rhoam-customer-monitoring-operator | grafana-operator-controller-manager       |
-| redhat-rhoam-customer-monitoring-operator | grafana-deployment                        |
-| redhat-rhoam-marin3r                      | ratelimit                                 |
-| redhat-rhoam-marin3r-operator             | marin3r-controller-webhook                |
-| redhat-rhoam-marin3r-operator             | marin3r-controller-manager                |
-| redhat-rhoam-rhsso-operator               | rhsso-operator                            |
-| redhat-rhoam-user-sso-operator            | rhsso-operator                            |
+| **Namespace**                         | **Name**                                  |
+| ------------------------------------- | ----------------------------------------- |
+| redhat-rhoam-3scale                   | marin3r-instance                          |
+| redhat-rhoam-3scale-operator          | threescale-operator-controller-manager-v2 |
+| redhat-rhoam-cloud-resources-operator | cloud-resource-operator                   |
+| redhat-rhoam-customer-monitoring      | grafana-deployment                        |
+| redhat-rhoam-marin3r                  | ratelimit                                 |
+| redhat-rhoam-marin3r-operator         | marin3r-controller-webhook                |
+| redhat-rhoam-marin3r-operator         | marin3r-controller-manager                |
+| redhat-rhoam-rhsso-operator           | rhsso-operator                            |
+| redhat-rhoam-user-sso-operator        | rhsso-operator                            |
 
 ### DeploymentConfigs
 
