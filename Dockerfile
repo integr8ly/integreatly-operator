@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM registry.ci.openshift.org/openshift/release:golang-1.19 AS builder
+FROM registry.redhat.io/ubi8/go-toolset:1.19.13-2 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
