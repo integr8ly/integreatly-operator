@@ -47,6 +47,7 @@ type ConfigReadWriter interface {
 	GetOperatorNamespace() string
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadCloudResources() (*CloudResources, error)
+	ReadGrafana() (*Grafana, error)
 	ReadMCG() (*MCG, error)
 }
 
@@ -96,6 +97,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadCloudResources()
 	case integreatlyv1alpha1.ProductMarin3r:
 		return m.ReadMarin3r()
+	case integreatlyv1alpha1.ProductGrafana:
+		return m.ReadGrafana()
 	case integreatlyv1alpha1.ProductMCG:
 		return m.ReadMCG()
 	}
@@ -141,6 +144,15 @@ func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
 		return nil, err
 	}
 	return NewRHSSOUser(config), nil
+}
+
+func (m *Manager) ReadGrafana() (*Grafana, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductGrafana)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewGrafana(config), nil
 }
 
 func (m *Manager) ReadCloudResources() (*CloudResources, error) {

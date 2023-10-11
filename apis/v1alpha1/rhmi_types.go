@@ -58,6 +58,7 @@ var (
 	Product3Scale         ProductName = "3scale"
 	ProductCloudResources ProductName = "cloud-resources"
 	ProductMarin3r        ProductName = "marin3r"
+	ProductGrafana        ProductName = "grafana"
 	ProductMCG            ProductName = "mcg"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -69,7 +70,6 @@ var (
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMarin3r        ProductVersion = "0.12.3"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
-	VersionGrafana        ProductVersion = "4.2.0"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"

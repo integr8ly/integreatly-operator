@@ -8,6 +8,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
 	"github.com/integr8ly/integreatly-operator/pkg/products/mcg"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
@@ -203,6 +204,24 @@ func TestNewReconciler(t *testing.T) {
 				productsInstallationLoader: productsInstallationLoader,
 			},
 			wantedReconciler: (*marin3r.Reconciler)(nil),
+			wantErr:          true,
+		},
+		{
+			name: "Fail on bad ProductGrafana Config",
+			args: args{
+				product: integreatlyv1alpha1.ProductGrafana,
+				rc:      restConfig,
+				configManager: &config.ConfigReadWriterMock{
+					ReadGrafanaFunc: func() (ready *config.Grafana, e error) {
+						return nil, errors.New("could not read grafana config")
+					},
+				},
+				installation:               installation,
+				mgr:                        mgr,
+				logger:                     createTestLogger(string(integreatlyv1alpha1.ProductGrafana)),
+				productsInstallationLoader: productsInstallationLoader,
+			},
+			wantedReconciler: (*grafana.Reconciler)(nil),
 			wantErr:          true,
 		},
 		{

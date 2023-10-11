@@ -268,7 +268,15 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		if err != nil {
 			if installStage, ok := installation.Status.Stages[integreatlyv1alpha1.InstallStage]; ok {
 				if installStage.Products != nil {
-					return integreatlyv1alpha1.PhaseInProgress, nil
+					grafanaProduct, grafanaProductExists := installStage.Products[integreatlyv1alpha1.ProductGrafana]
+					// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
+					if !grafanaProductExists ||
+						(grafanaProduct.Phase != integreatlyv1alpha1.PhaseCompleted &&
+							(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
+
+						r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
+						return integreatlyv1alpha1.PhaseInProgress, nil
+					}
 				}
 			}
 			r.log.Error("failed to get Grafana console URL", err)

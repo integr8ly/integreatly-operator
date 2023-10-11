@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/cluster"
@@ -95,13 +96,11 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale":   threeScaleRoutes,
 	"rhsso":    rhssoRoutes,
 	"user-sso": rhoamUserSsoRoutes,
-	//"customer-monitoring": customerGrafanaRoutes,
 }
 
 var mtManagedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"3scale": threeScaleRoutes,
 	"rhsso":  rhssoRoutes,
-	//"customer-monitoring": customerGrafanaRoutes,
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created
@@ -113,7 +112,7 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 
-	expectedRoutes := getExpectedRoutes(rhmi.Spec.Type, ctx)
+	expectedRoutes := getExpectedRoutes(rhmi, ctx)
 
 	for product, routes := range expectedRoutes {
 		for _, expectedRoute := range routes {
@@ -134,15 +133,21 @@ func TestIntegreatlyRoutesExist(t TestingTB, ctx *TestingContext) {
 	}
 }
 
-func getExpectedRoutes(installType string, ctx *TestingContext) map[string][]ExpectedRoute {
-	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installType)) {
+func getExpectedRoutes(installation *integreatlyv1alpha1.RHMI, ctx *TestingContext) map[string][]ExpectedRoute {
+	if integreatlyv1alpha1.IsRHOAMMultitenant(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 			mtManagedApiExpectedRoutes["mcg-operator"] = mcgRoutes
+		}
+		if !resources.IsInProw(installation) {
+			mtManagedApiExpectedRoutes["mcustomer-monitoring"] = customerGrafanaRoutes
 		}
 		return mtManagedApiExpectedRoutes
 	} else {
 		if platformType, err := cluster.GetPlatformType(goctx.TODO(), ctx.Client); err != nil && platformType == configv1.GCPPlatformType {
 			managedApiExpectedRoutes["mcg-operator"] = mcgRoutes
+		}
+		if !resources.IsInProw(installation) {
+			managedApiExpectedRoutes["mcustomer-monitoring"] = customerGrafanaRoutes
 		}
 		return managedApiExpectedRoutes
 	}

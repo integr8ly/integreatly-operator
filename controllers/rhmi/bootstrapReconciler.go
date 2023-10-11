@@ -215,7 +215,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		// Creates remaining OBO alerts
+		// Creates Grafana alerts
 		phase, err = grafana.GrafanaAlertReconciler(r.log, r.installation).ReconcileAlerts(ctx, serverClient)
 		r.log.Infof("Reconcile Grafana alerts", l.Fields{"phase": phase})
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
