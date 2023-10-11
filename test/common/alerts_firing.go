@@ -185,7 +185,7 @@ func getFiringAlerts(t TestingTB, ctx *TestingContext) error {
 
 		// tmp workaround for **ErrorBudgetBurn alerts firing during installation (https://issues.redhat.com/browse/MGDAPI-5992)
 		ignoredAlertsPatterns := []string{
-			"soAvailability2hto1dErrorBudgetBurn",
+			"soAvailability[a-z0-9]+ErrorBudgetBurn",
 		}
 		isIgnored := false
 		for _, ignoredAlertPattern := range ignoredAlertsPatterns {
@@ -334,14 +334,14 @@ func getFiringOrPendingAlerts(t TestingTB, ctx *TestingContext) error {
 
 		// tmp workaround for **ErrorBudgetBurn alerts firing during installation (https://issues.redhat.com/browse/MGDAPI-5992)
 		ignoredAlertsPatterns := []string{
-			"soAvailability2hto1dErrorBudgetBurn",
+			"soAvailability[a-z0-9]+ErrorBudgetBurn",
 		}
 		isIgnored := false
 		for _, ignoredAlertPattern := range ignoredAlertsPatterns {
 			t.Logf("\tPattern ignored: %s", ignoredAlertPattern)
 			matchFound, err := regexp.MatchString(ignoredAlertPattern, alertName)
 			if err == nil && matchFound {
-				t.Logf("\tFiring alert to be ignored: %s", alertName)
+				t.Logf("\tFiring/Pending alert to be ignored: %s", alertName)
 				isIgnored = true
 				continue
 			}
