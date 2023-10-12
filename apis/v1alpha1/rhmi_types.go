@@ -70,6 +70,7 @@ var (
 	VersionRHSSOUser      ProductVersion = "7.6"
 	VersionMarin3r        ProductVersion = "0.12.3"
 	VersionMCG            ProductVersion = "4.12.3-rhodf"
+	VersionGrafana        ProductVersion = "9.0.9"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -81,7 +82,6 @@ var (
 	OperatorVersionCloudResources OperatorVersion = "1.1.1"
 	OperatorVersion3Scale         OperatorVersion = "0.11.6-mas"
 	OperatorVersionMarin3r        OperatorVersion = "0.12.3"
-	OperatorVersionGrafana        OperatorVersion = "4.2.0"
 	OperatorVersionMCG            OperatorVersion = "4.12.3-rhodf"
 
 	// Event reasons to be used when emitting events

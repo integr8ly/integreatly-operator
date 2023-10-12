@@ -9,7 +9,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -18,9 +17,7 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "customer-monitoring"
-	defaultRoutename             = "grafana-route"
-	gfSecurityAdminUser          = "admin"
+	gfSecurityAdminUser = "admin"
 )
 
 func ReconcileGrafanaSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
@@ -85,19 +82,6 @@ func getAdminCredsSecretData() map[string][]byte {
 	}
 
 	return credentials
-}
-
-func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
-
-	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
-	grafanaRoute := &routev1.Route{}
-
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: ns}, grafanaRoute)
-	if err != nil {
-		return "", err
-	}
-
-	return "https://" + grafanaRoute.Spec.Host, nil
 }
 
 func generateRandomBytes(n int) []byte {

@@ -10,11 +10,21 @@ import (
 	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/quota"
+	consolev1 "github.com/openshift/api/console/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	defaultInstallationNamespace = "customer-monitoring"
+	defaultRoutename             = "grafana-route"
+	grafanaConsoleLink           = "grafana-user-console-link"
+	grafanaIcon                  = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAzNyAzNyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzcgMzc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRUUwMDAwO30KCS5zdDF7ZmlsbDojRkZGRkZGO30KPC9zdHlsZT4KPGc+Cgk8cGF0aCBkPSJNMjcuNSwwLjVoLTE4Yy00Ljk3LDAtOSw0LjAzLTksOXYxOGMwLDQuOTcsNC4wMyw5LDksOWgxOGM0Ljk3LDAsOS00LjAzLDktOXYtMThDMzYuNSw0LjUzLDMyLjQ3LDAuNSwyNy41LDAuNUwyNy41LDAuNXoiCgkJLz4KCTxnPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNSwyMi4zN2MtMC45NSwwLTEuNzUsMC42My0yLjAyLDEuNWgtMS44NVYyMS41YzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYycy0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDIuNDhjMC4yNywwLjg3LDEuMDcsMS41LDIuMDIsMS41YzEuMTcsMCwyLjEyLTAuOTUsMi4xMi0yLjEyUzI2LjE3LDIyLjM3LDI1LDIyLjM3eiBNMjUsMjUuMzcKCQkJYy0wLjQ4LDAtMC44OC0wLjM5LTAuODgtMC44OHMwLjM5LTAuODgsMC44OC0wLjg4czAuODgsMC4zOSwwLjg4LDAuODhTMjUuNDgsMjUuMzcsMjUsMjUuMzd6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIwLjUsMTYuMTJjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTIuMzhoMS45MWMwLjMyLDAuNzcsMS4wOCwxLjMxLDEuOTYsMS4zMQoJCQljMS4xNywwLDIuMTItMC45NSwyLjEyLTIuMTJzLTAuOTUtMi4xMi0yLjEyLTIuMTJjLTEuMDIsMC0xLjg4LDAuNzMtMi4wOCwxLjY5SDIwLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYydjMKCQkJQzE5Ljg3LDE1Ljg1LDIwLjE2LDE2LjEyLDIwLjUsMTYuMTJ6IE0yNSwxMS40M2MwLjQ4LDAsMC44OCwwLjM5LDAuODgsMC44OHMtMC4zOSwwLjg4LTAuODgsMC44OHMtMC44OC0wLjM5LTAuODgtMC44OAoJCQlTMjQuNTIsMTEuNDMsMjUsMTEuNDN6Ii8+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTEyLjEyLDE5Ljk2di0wLjg0aDIuMzhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJzLTAuMjgtMC42Mi0wLjYyLTAuNjJoLTIuMzh2LTAuOTEKCQkJYzAtMC4zNS0wLjI4LTAuNjItMC42Mi0wLjYyaC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYzYzAsMC4zNSwwLjI4LDAuNjIsMC42MiwwLjYyaDNDMTEuODQsMjAuNTksMTIuMTIsMjAuMzEsMTIuMTIsMTkuOTYKCQkJeiBNMTAuODcsMTkuMzRIOS4xMnYtMS43NWgxLjc1VjE5LjM0eiIvPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yOC41LDE2LjM0aC0zYy0wLjM0LDAtMC42MiwwLjI4LTAuNjIsMC42MnYwLjkxSDIyLjVjLTAuMzQsMC0wLjYyLDAuMjgtMC42MiwwLjYyczAuMjgsMC42MiwwLjYyLDAuNjJoMi4zOAoJCQl2MC44NGMwLDAuMzUsMC4yOCwwLjYyLDAuNjIsMC42MmgzYzAuMzQsMCwwLjYyLTAuMjgsMC42Mi0wLjYydi0zQzI5LjEyLDE2LjYyLDI4Ljg0LDE2LjM0LDI4LjUsMTYuMzR6IE0yNy44NywxOS4zNGgtMS43NXYtMS43NQoJCQloMS43NVYxOS4zNHoiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwyMC44N2MtMC4zNCwwLTAuNjMsMC4yOC0wLjYzLDAuNjJ2Mi4zOGgtMS44NWMtMC4yNy0wLjg3LTEuMDctMS41LTIuMDItMS41CgkJCWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMmMwLjk1LDAsMS43NS0wLjYzLDIuMDItMS41aDIuNDhjMC4zNCwwLDAuNjItMC4yOCwwLjYyLTAuNjJ2LTMKCQkJQzE3LjEyLDIxLjE1LDE2Ljg0LDIwLjg3LDE2LjUsMjAuODd6IE0xMiwyNS4zN2MtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4CgkJCVMxMi40OCwyNS4zNywxMiwyNS4zN3oiLz4KCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTYuNSwxMS44N2gtMi40MmMtMC4yLTAuOTctMS4wNi0xLjY5LTIuMDgtMS42OWMtMS4xNywwLTIuMTIsMC45NS0yLjEyLDIuMTJzMC45NSwyLjEyLDIuMTIsMi4xMgoJCQljMC44OCwwLDEuNjQtMC41NCwxLjk2LTEuMzFoMS45MXYyLjM4YzAsMC4zNSwwLjI4LDAuNjIsMC42MywwLjYyczAuNjItMC4yOCwwLjYyLTAuNjJ2LTNDMTcuMTIsMTIuMTUsMTYuODQsMTEuODcsMTYuNSwxMS44N3oKCQkJIE0xMiwxMy4xOGMtMC40OCwwLTAuODgtMC4zOS0wLjg4LTAuODhzMC4zOS0wLjg4LDAuODgtMC44OHMwLjg4LDAuMzksMC44OCwwLjg4UzEyLjQ4LDEzLjE4LDEyLDEzLjE4eiIvPgoJPC9nPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTE4LjUsMjIuNjJjLTIuMjcsMC00LjEzLTEuODUtNC4xMy00LjEyczEuODUtNC4xMiw0LjEzLTQuMTJzNC4xMiwxLjg1LDQuMTIsNC4xMlMyMC43NywyMi42MiwxOC41LDIyLjYyegoJCSBNMTguNSwxNS42MmMtMS41OCwwLTIuODgsMS4yOS0yLjg4LDIuODhzMS4yOSwyLjg4LDIuODgsMi44OHMyLjg4LTEuMjksMi44OC0yLjg4UzIwLjA4LDE1LjYyLDE4LjUsMTUuNjJ6Ii8+CjwvZz4KPC9zdmc+Cg=="
 )
 
 type Reconciler struct {
@@ -41,6 +51,8 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("could not retrieve grafana config: %w", err)
 	}
 
+	nsPrefix := installation.Spec.NamespacePrefix
+	productConfig.SetNamespace(nsPrefix + "customer-monitoring")
 	if err := configManager.WriteConfig(productConfig); err != nil {
 		return nil, fmt.Errorf("error writing grafana config : %w", err)
 	}
@@ -56,21 +68,69 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=list;get;watch;update;delete
+
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Grafana reconcile")
+	if resources.IsInProw(installation) {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	productNamespace := r.Config.GetNamespace()
+	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), uninstall, func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		if err = r.deleteConsoleLink(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}, r.log)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+		return phase, err
+	}
+
+	if uninstall {
+		return phase, nil
+	}
 
 	requestsPerUnitStr := fmt.Sprint(productConfig.GetRateLimitConfig().RequestsPerUnit)
 	activeQuota := productConfig.GetActiveQuota()
 
-	if !resources.IsInProw(installation) {
-		// Creates Grafana RateLimit ConfigMap
-		phase, err := ReconcileGrafanaRateLimmitDashboardConfigMap(ctx, client, r.installation, requestsPerUnitStr, activeQuota)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana Ratelimit Dashboard ConfigMap", err)
-			return phase, err
+	// Creates Grafana RateLimit ConfigMap
+	phase, err = ReconcileGrafanaRateLimmitDashboardConfigMap(ctx, client, r.installation, requestsPerUnitStr, activeQuota)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana Ratelimit Dashboard ConfigMap", err)
+		return phase, err
+	}
+
+	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionGrafana) {
+		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionGrafana))
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error writing grafana config : %w", err)
 		}
 	}
 
+	phase, err = r.reconcileHost(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile host", err)
+		return phase, err
+	}
+	if err := r.reconcileConsoleLink(ctx, client); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	productStatus.Host = r.Config.GetHost()
+	productStatus.Version = r.Config.GetProductVersion()
+
+	if err := r.deleteMonitoringOperatorNamespace(ctx, client, installation); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.log.Info("Reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -98,4 +158,102 @@ func ReconcileGrafanaRateLimmitDashboardConfigMap(ctx context.Context, client k8
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	grafanaRoute := &routev1.Route{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, grafanaRoute)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get route for Grafana: %w", err)
+	}
+
+	r.Config.SetHost("https://" + grafanaRoute.Spec.Host)
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Could not set Grafana route: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
+
+	grafanaConsoleURL := installation.Status.Stages[integreatlyv1alpha1.InstallStage].Products[integreatlyv1alpha1.ProductGrafana].Host
+	if grafanaConsoleURL != "" {
+		return grafanaConsoleURL, nil
+	}
+
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
+	grafanaRoute := &routev1.Route{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: ns}, grafanaRoute)
+	if err != nil {
+		return "", err
+	}
+
+	return "https://" + grafanaRoute.Spec.Host, nil
+}
+
+func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
+	// If the installation type isn't managed-api, ensure that the ConsoleLink
+	// doesn't exist
+	if integreatlyv1alpha1.IsRHOAMSingletenant(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
+
+		cl := &consolev1.ConsoleLink{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: grafanaConsoleLink,
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
+			cl.Spec = consolev1.ConsoleLinkSpec{
+				ApplicationMenu: &consolev1.ApplicationMenuSpec{
+					ImageURL: grafanaIcon,
+					Section:  "OpenShift Managed Services",
+				},
+				Location: consolev1.ApplicationMenu,
+				Link: consolev1.Link{
+					Href: r.Config.GetHost(),
+					Text: "API Management Dashboards",
+				},
+			}
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error reconciling console link: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
+	cl := &consolev1.ConsoleLink{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: grafanaConsoleLink,
+		},
+	}
+
+	err := serverClient.Delete(ctx, cl)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return fmt.Errorf("error removing grafana console link: %v", err)
+	}
+
+	return nil
+}
+
+func (r *Reconciler) deleteMonitoringOperatorNamespace(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {
+	nsPrefix := installation.Spec.NamespacePrefix
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsPrefix + "customer-monitoring-operator",
+		},
+	}
+	err := serverClient.Delete(ctx, ns)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return fmt.Errorf("error removing unused customer-monitoring-operator namespace: %v", err)
+	}
+	return nil
 }

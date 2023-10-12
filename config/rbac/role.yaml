@@ -25,6 +25,7 @@ rules:
   resources:
   - namespaces
   verbs:
+  - delete
   - get
   - list
   - update
