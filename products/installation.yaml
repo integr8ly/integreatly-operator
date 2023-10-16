@@ -60,7 +60,7 @@ products:
         channel: threescale-mas
         installFrom: index
         package: 3scale-operator
-        index: quay.io/integreatly/delorean:3scale-index-0.11.8mas-39
+        index: quay.io/integreatly/delorean:3scale-index-0.11.8mas-40
     cloud-resources:
         channel: rhmi
         installFrom: index
