@@ -104,25 +104,36 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
-  "gnetId": null,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
-  "iteration": 1605286887536,
+  "id": 1,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -131,29 +142,58 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       },
       "id": 20,
       "panels": [],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "refId": "A"
+        }
+      ],
       "title": "RHOAM API Rate Limiting",
       "type": "row"
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorPostfix": false,
-      "colorPrefix": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus"
+      },
       "description": "",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#299c46",
+                "value": null
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": null
+              },
+              {
+                "color": "#d44a3a"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -162,84 +202,78 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         "y": 1
       },
       "id": 4,
-      "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "9.0.9",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0))",
           "instant": true,
           "refId": "A"
         }
       ],
-      "thresholds": "$perMinuteRequestsPerUnit",
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Last 1 Minute - No. Requests",
       "transparent": true,
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
+      "type": "stat"
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus"
+      },
       "description": "",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#299c46",
+                "value": null
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 1
+              },
+              {
+                "color": "#d44a3a"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -248,149 +282,129 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         "y": 1
       },
       "id": 10,
-      "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "9.0.9",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "sum(increase(limited_calls[1m])) > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
       ],
-      "thresholds": "1",
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Last 1 Minute - Rejected",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
+      "id": 22,
+      "interval": "",
+      "links": [],
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.0.9",
+      "targets": [
         {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "(sum(increase(limited_calls[1m])) > 0 or vector(0))/(sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0)))*100 > 0 or vector(0)",
+          "instant": true,
+          "refId": "A"
         }
       ],
-      "valueName": "avg"
+      "title": "Last 1 Minute - Rejected/Requests",
+      "type": "stat"
     },
-	{
-	"id": 22,
-	"gridPos": {
-	  "h": 5,
-	  "w": 3,
-	  "x": 6,
-	  "y": 1
-	},
-	"type": "stat",
-	"title": "Last 1 Minute - Rejected/Requests",
-	"maxDataPoints": 100,
-	"links": [],
-	"datasource": {
-	  "type": "prometheus"
-	},
-	"fieldConfig": {
-	  "defaults": {
-		"mappings": [
-		  {
-			"type": "special",
-			"options": {
-			  "match": "null",
-			  "result": {
-				"text": "N/A"
-			  }
-			}
-		  }
-		],
-		"thresholds": {
-		  "mode": "percentage",
-		  "steps": [
-			{
-			  "value": null,
-			  "color": "green"
-			},
-			{
-			  "value": 80,
-			  "color": "red"
-			}
-		  ]
-		},
-		"unit": "percent",
-		"color": {
-		  "mode": "thresholds"
-		}
-	  },
-	  "overrides": []
-	},
-	"targets": [
-	  {
-		"expr": "(sum(increase(limited_calls[1m])) > 0 or vector(0))/(sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0)))*100 > 0 or vector(0)",
-		"instant": true,
-		"refId": "A",
-		"datasource": {
-		  "type": "prometheus"
-		}
-	  }
-	],
-	"options": {
-	  "reduceOptions": {
-		"values": false,
-		"calcs": [
-		  "mean"
-		],
-		"fields": ""
-	  },
-	  "orientation": "horizontal",
-	  "textMode": "auto",
-	  "colorMode": "none",
-	  "graphMode": "none",
-	  "justifyMode": "auto"
-	},
-	"cacheTimeout": null,
-	"interval": "",
-	"timeFrom": null,
-	"timeShift": null
-	},
     {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus"
+      },
       "decimals": 0,
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 4,
       "gridPos": {
@@ -419,9 +433,10 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "linewidth": 1,
       "nullPointMode": "null as zero",
       "options": {
-        "dataLinks": []
+        "alertThreshold": true
       },
       "percentage": false,
+      "pluginVersion": "9.0.9",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -431,13 +446,19 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "sum(increase(authorized_calls[1m]) or vector(0)) + sum(increase(limited_calls[1m]) or vector(0))",
           "instant": false,
           "interval": "30s",
           "legendFormat": "No. of Requests",
           "refId": "A"
         },
-		{
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "$perMinuteRequestsPerUnit",
           "instant": false,
           "interval": "30s",
@@ -446,9 +467,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Per Minute API Requests",
       "tooltip": {
         "shared": true,
@@ -457,53 +476,67 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         },
         {
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": false
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus"
+      },
       "description": "",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#299c46",
+                "value": null
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": null
+              },
+              {
+                "color": "#d44a3a"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -515,80 +548,75 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "id": 6,
       "interval": "",
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "9.0.9",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "sum(increase(authorized_calls[24h]) or vector(0)) + sum(increase(limited_calls[24h]) or vector(0)) > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
       ],
-      "thresholds": "$perMinuteRequestsPerUnit*60*24",
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Last 24 Hours - No. Requests",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
+      "type": "stat"
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "Prometheus",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
+      "datasource": {
+        "type": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#299c46",
+                "value": null
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 1
+              },
+              {
+                "color": "#d44a3a"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 5,
@@ -600,172 +628,129 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
       "id": 16,
       "interval": "",
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
       "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "first"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
       },
-      "tableColumn": "",
+      "pluginVersion": "9.0.9",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "expr": "sum(increase(limited_calls[24h]) or vector(0))",
           "format": "time_series",
           "instant": true,
           "refId": "A"
         }
       ],
-      "thresholds": "1",
-      "timeFrom": null,
-      "timeShift": null,
       "title": "Last 24 Hours - Rejected",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "first"
+      "type": "stat"
     },
     {
-      "id": 18,
-      "gridPos": {
-        "h": 5,
-        "w": 3,
-        "x": 6,
-        "y": 6
-      },
-      "type": "stat",
-      "title": "Last 24 Hours -  Rejected/Requests",
-      "maxDataPoints": 100,
-      "links": [],
       "datasource": {
         "type": "prometheus"
       },
-      "targets": [
-        {
-          "expr": "(sum(increase(limited_calls[24h])) > 0 or vector(0))/(sum(increase(authorized_calls[24h]) or vector(0)) + sum(increase(limited_calls[24h]) or vector(0)))*100 > 0 or vector(0)",
-          "instant": true,
-          "legendFormat": "",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus"
-          }
-        }
-      ],
+      "description": "",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
           "mappings": [
             {
-              "type": "special",
               "options": {
                 "match": "null",
                 "result": {
                   "text": "N/A"
                 }
-              }
+              },
+              "type": "special"
             }
           ],
           "thresholds": {
             "mode": "percentage",
             "steps": [
               {
-                "value": null,
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
-                "value": 80,
-                "color": "red"
+                "color": "red",
+                "value": 80
               }
             ]
           },
-          "unit": "percent",
-          "color": {
-            "mode": "thresholds"
-          }
+          "unit": "percent"
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 6,
+        "y": 6
+      },
+      "id": 18,
+      "interval": "",
+      "links": [],
+      "maxDataPoints": 100,
       "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "mean"
           ],
-          "fields": ""
+          "fields": "",
+          "values": false
         },
-        "orientation": "horizontal",
-        "textMode": "auto",
-        "colorMode": "none",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "textMode": "auto"
       },
       "pluginVersion": "9.0.9",
-      "cacheTimeout": null,
-      "description": "",
-      "interval": "",
-      "timeFrom": null,
-      "timeShift": null
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "(sum(increase(limited_calls[24h])) > 0 or vector(0))/(sum(increase(authorized_calls[24h]) or vector(0)) + sum(increase(limited_calls[24h]) or vector(0)))*100 > 0 or vector(0)",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Last 24 Hours -  Rejected/Requests",
+      "type": "stat"
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 21,
+  "schemaVersion": 36,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "` + requestsPerUnit + `",
-          "value": "` + requestsPerUnit + `"
-        },
         "hide": 2,
-        "label": null,
         "name": "perMinuteRequestsPerUnit",
-        "options": [
-          {
-            "selected": true,
-            "text": "` + requestsPerUnit + `",
-            "value": "` + requestsPerUnit + `"
-          }
-        ],
         "query": "` + requestsPerUnit + `",
         "skipUrlSync": false,
         "type": "constant"
       }
-	]
+    ]
   },
   "time": {
     "from": "now-12h",
@@ -788,7 +773,8 @@ func getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota stri
   "timezone": "",
   "title": "Rate Limiting",
   "uid": "66ab72e0d012aacf34f907be9d81cd9e",
-  "version": 1
+  "version": 1,
+  "weekStart": ""
 }`
 }
 
