@@ -72,7 +72,7 @@ func getAdminCredsSecretData() map[string][]byte {
 	// Make the credentials available to the environment, similar is it was done in Grafana operator (resolve admin login issue?)
 	err := os.Setenv("GF_SECURITY_ADMIN_USER", string(credentials["GF_SECURITY_ADMIN_USER"]))
 	if err != nil {
-		fmt.Printf("can't set credentials as environment vars (optional)")
+		fmt.Printf("can't set credentials as environment vars")
 		return credentials
 	}
 	err = os.Setenv("GF_SECURITY_ADMIN_PASSWORD", string(credentials["GF_SECURITY_ADMIN_PASSWORD"]))

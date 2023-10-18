@@ -42,6 +42,8 @@ func (r *Reconciler) GetPreflightObject(_ string) k8sclient.Object {
 }
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	// Stub. To implement this function need get installed version of running Grafana, that installed by Package Operator
+	// Jira could be opened (for discussion).
 	return true
 }
 
@@ -51,8 +53,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("could not retrieve grafana config: %w", err)
 	}
 
-	nsPrefix := installation.Spec.NamespacePrefix
-	productConfig.SetNamespace(nsPrefix + "customer-monitoring")
+	productConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	if err := configManager.WriteConfig(productConfig); err != nil {
 		return nil, fmt.Errorf("error writing grafana config : %w", err)
 	}
@@ -73,6 +74,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, productStatus *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client, productConfig quota.ProductConfig, uninstall bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.log.Info("Start Grafana reconcile")
 	if resources.IsInProw(installation) {
+		r.log.Info("Running in prow, skipping Grafana reconciliation")
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
@@ -102,7 +104,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	activeQuota := productConfig.GetActiveQuota()
 
 	// Creates Grafana RateLimit ConfigMap
-	phase, err = ReconcileGrafanaRateLimmitDashboardConfigMap(ctx, client, r.installation, requestsPerUnitStr, activeQuota)
+	phase, err = r.ReconcileGrafanaRateLimitDashboardConfigMap(ctx, client, requestsPerUnitStr, activeQuota)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Grafana Ratelimit Dashboard ConfigMap", err)
 		return phase, err
@@ -135,15 +137,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func ReconcileGrafanaRateLimmitDashboardConfigMap(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, requestsPerUnit string, activeQuota string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileGrafanaRateLimitDashboardConfigMap(ctx context.Context, client k8sclient.Client, requestsPerUnit string, activeQuota string) (integreatlyv1alpha1.StatusPhase, error) {
 	log := l.NewLogger()
 	log.Info("reconciling Grafana RateLimit Dashboard ConfigMap")
-	nsPrefix := installation.Spec.NamespacePrefix
 
 	rateLimitConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ratelimit-grafana-dashboard",
-			Namespace: nsPrefix + "customer-monitoring",
+			Namespace: r.Config.GetNamespace(),
 		},
 		Data: map[string]string{
 			"ratelimit.json": getCustomerMonitoringGrafanaRateLimitJSON(requestsPerUnit, activeQuota),
@@ -245,10 +246,9 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 }
 
 func (r *Reconciler) deleteMonitoringOperatorNamespace(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {
-	nsPrefix := installation.Spec.NamespacePrefix
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: nsPrefix + "customer-monitoring-operator",
+			Name: r.Config.GetNamespace() + "-operator",
 		},
 	}
 	err := serverClient.Delete(ctx, ns)

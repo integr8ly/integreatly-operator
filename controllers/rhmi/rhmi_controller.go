@@ -67,7 +67,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/apis/v1alpha1"
 	packageOperatorv1alpha1 "package-operator.run/apis/core/v1alpha1"
 )
 
@@ -1050,7 +1049,7 @@ func (r *RHMIReconciler) processStage(installation *rhmiv1alpha1.RHMI, stage *St
 			return rhmiv1alpha1.PhaseFailed, fmt.Errorf("failed to read productStatus config for %s: %v", string(productStatus.Name), err)
 		}
 
-		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted && productName != integreatlyv1alpha1.ProductGrafana {
+		if productStatus.Phase == rhmiv1alpha1.PhaseCompleted {
 			for _, crd := range productConfig.GetWatchableCRDs() {
 				namespace := productConfig.GetNamespace()
 				gvk := crd.GetObjectKind().GroupVersionKind().String()
