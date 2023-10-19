@@ -43,7 +43,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:master
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.39.0
     olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.13"}]'
     operatorframework.io/suggested-namespace: redhat-rhoam-operator
     operators.operatorframework.io/builder: operator-sdk-v1.21.0
@@ -83,9 +83,11 @@ metadata:
         },
         "limitador": {
           "marin3r-limitador": "quay.io/3scale/limitador:v0.5.1"
+        },
+        "grafana-operator": {
+          "observability-origin-oauth-proxy": "registry.redhat.io/openshift4/ose-oauth-proxy@sha256:582fc2d21cb3654f22f3ca50c39966041846e16a1543fc35c6a83948a2fa6c40"
         }
       }
-    serviceAffecting: "true"
   name: managed-api-service.v1.39.0
   namespace: placeholder
 spec:
@@ -186,6 +188,7 @@ spec:
               resources:
                 - namespaces
               verbs:
+                - delete
                 - get
                 - list
                 - update
@@ -209,6 +212,14 @@ spec:
                 - pods/exec
               verbs:
                 - create
+            - apiGroups:
+                - ""
+              resourceNames:
+                - grafana-datasources
+              resources:
+                - secrets
+              verbs:
+                - get
             - apiGroups:
                 - ""
               resourceNames:
@@ -431,6 +442,7 @@ spec:
             - apiGroups:
                 - monitoring.rhobs
               resources:
+                - monitoringstacks
                 - podmonitors
                 - probes
                 - prometheusrules
@@ -673,7 +685,7 @@ spec:
                         value: default@test.com
                       - name: QUOTA
                         value: "200"
-                    image: quay.io/integreatly/managed-api-service:master
+                    image: quay.io/integreatly/managed-api-service:rhoam-v1.39.0
                     imagePullPolicy: Always
                     livenessProbe:
                       exec:
